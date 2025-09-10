@@ -1,0 +1,294 @@
+[
+  {
+    "version": "1.2.25",
+    "zip": "background-open-v1.2.25-1752911184406-a9ff8c6b.zip",
+    "timestamp": 1752911184433,
+    "checksum": "a9ff8c6b",
+    "git": {
+      "commitHash": "7cba94a",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 15:26:26 +0800"
+    },
+    "buildDate": "2025-07-19T07:46:24.520Z",
+    "size": 38712,
+    "createdAt": "2025-07-19T07:46:24.521Z"
+  },
+  {
+    "version": "1.2.24",
+    "zip": "background-open-v1.2.24-1752909959354-97b264d2.zip",
+    "timestamp": 1752909959375,
+    "checksum": "97b264d2",
+    "git": {
+      "commitHash": "7967f2d",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 15:21:25 +0800"
+    },
+    "buildDate": "2025-07-19T07:25:59.428Z",
+    "size": 38711,
+    "createdAt": "2025-07-19T07:25:59.428Z"
+  },
+  {
+    "version": "1.2.23",
+    "zip": "background-open-v1.2.23-1752909670765-bcf3fef6.zip",
+    "timestamp": 1752909670785,
+    "checksum": "bcf3fef6",
+    "git": {
+      "commitHash": "4fa9cd8",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 15:11:50 +0800"
+    },
+    "buildDate": "2025-07-19T07:21:10.840Z",
+    "size": 636411,
+    "createdAt": "2025-07-19T07:21:10.840Z"
+  },
+  {
+    "version": "1.2.22",
+    "zip": "background-open-v1.2.22-1752909643328-d295060e.zip",
+    "timestamp": 1752909643347,
+    "checksum": "d295060e",
+    "git": {
+      "commitHash": "4fa9cd8",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 15:11:50 +0800"
+    },
+    "buildDate": "2025-07-19T07:20:43.396Z",
+    "size": 636411,
+    "createdAt": "2025-07-19T07:20:43.397Z"
+  },
+  {
+    "version": "1.2.21",
+    "zip": "background-open-v1.2.21-1752909098447-b38a4231.zip",
+    "timestamp": 1752909098468,
+    "checksum": "b38a4231",
+    "git": {
+      "commitHash": "d80f20f",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 15:10:41 +0800"
+    },
+    "buildDate": "2025-07-19T07:11:38.519Z",
+    "size": 636404,
+    "createdAt": "2025-07-19T07:11:38.520Z"
+  },
+  {
+    "version": "1.2.20",
+    "zip": "background-open-v1.2.20-1752909027427-970a23b9.zip",
+    "timestamp": 1752909027450,
+    "checksum": "970a23b9",
+    "git": {
+      "commitHash": "e17a7a0",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:51:07 +0800"
+    },
+    "buildDate": "2025-07-19T07:10:27.568Z",
+    "size": 636405,
+    "createdAt": "2025-07-19T07:10:27.568Z"
+  },
+  {
+    "version": "1.2.19",
+    "zip": "background-open-v1.2.19-1752908534237-50b4bf5d.zip",
+    "timestamp": 1752908534296,
+    "checksum": "50b4bf5d",
+    "git": {
+      "commitHash": "e17a7a0",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:51:07 +0800"
+    },
+    "buildDate": "2025-07-19T07:02:14.393Z",
+    "size": 636405,
+    "createdAt": "2025-07-19T07:02:14.394Z"
+  },
+  {
+    "version": "1.2.18",
+    "zip": "background-open-v1.2.18-1752907855308-2f266464.zip",
+    "timestamp": 1752907855329,
+    "checksum": "2f266464",
+    "git": {
+      "commitHash": "11f3d81",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:48:46 +0800"
+    },
+    "buildDate": "2025-07-19T06:50:55.383Z",
+    "size": 636404,
+    "createdAt": "2025-07-19T06:50:55.384Z"
+  },
+  {
+    "version": "1.2.17",
+    "zip": "background-open-v1.2.17-1752907715229-15338e55.zip",
+    "timestamp": 1752907715251,
+    "checksum": "15338e55",
+    "git": {
+      "commitHash": "e8bebd7",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:42:59 +0800"
+    },
+    "buildDate": "2025-07-19T06:48:35.343Z",
+    "size": 636556,
+    "createdAt": "2025-07-19T06:48:35.344Z"
+  },
+  {
+    "version": "1.2.16",
+    "zip": "background-open-v1.2.16-1752907366135-a76d3d3f.zip",
+    "timestamp": 1752907366156,
+    "checksum": "a76d3d3f",
+    "git": {
+      "commitHash": "c1e658a",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:41:31 +0800"
+    },
+    "buildDate": "2025-07-19T06:42:46.270Z",
+    "size": 636474,
+    "createdAt": "2025-07-19T06:42:46.270Z"
+  },
+  {
+    "version": "1.2.15",
+    "zip": "background-open-v1.2.15-1752907273422-19ec08f2.zip",
+    "timestamp": 1752907273445,
+    "checksum": "19ec08f2",
+    "git": {
+      "commitHash": "06963b5",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:38:06 +0800"
+    },
+    "buildDate": "2025-07-19T06:41:13.500Z",
+    "size": 636420,
+    "createdAt": "2025-07-19T06:41:13.500Z"
+  },
+  {
+    "version": "1.2.14",
+    "zip": "background-open-v1.2.14-1752907075297-6daff234.zip",
+    "timestamp": 1752907075322,
+    "checksum": "6daff234",
+    "git": {
+      "commitHash": "828eac7",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:28:42 +0800"
+    },
+    "buildDate": "2025-07-19T06:37:55.438Z",
+    "size": 636121,
+    "createdAt": "2025-07-19T06:37:55.438Z"
+  },
+  {
+    "version": "1.2.13",
+    "zip": "background-open-v1.2.13-1752906992291-d4307f1c.zip",
+    "timestamp": 1752906992311,
+    "checksum": "d4307f1c",
+    "git": {
+      "commitHash": "828eac7",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:28:42 +0800"
+    },
+    "buildDate": "2025-07-19T06:36:32.366Z",
+    "size": 636550,
+    "createdAt": "2025-07-19T06:36:32.366Z"
+  },
+  {
+    "version": "1.2.12",
+    "zip": "background-open-v1.2.12-1752906500282-fff6e4d9.zip",
+    "timestamp": 1752906500305,
+    "checksum": "fff6e4d9",
+    "git": {
+      "commitHash": "0023be9",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:23:59 +0800"
+    },
+    "buildDate": "2025-07-19T06:28:20.405Z",
+    "size": 636407,
+    "createdAt": "2025-07-19T06:28:20.407Z"
+  },
+  {
+    "version": "1.2.11",
+    "zip": "background-open-v1.2.11-1752906215876-f9732d38.zip",
+    "timestamp": 1752906215959,
+    "checksum": "f9732d38",
+    "git": {
+      "commitHash": "0f54201",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:12:16 +0800"
+    },
+    "buildDate": "2025-07-19T06:23:36.012Z",
+    "size": 636408,
+    "createdAt": "2025-07-19T06:23:36.012Z"
+  },
+  {
+    "version": "1.2.10",
+    "zip": "background-open-v1.2.10-1752906165031-380c413e.zip",
+    "timestamp": 1752906165062,
+    "checksum": "380c413e",
+    "git": {
+      "commitHash": "0f54201",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:12:16 +0800"
+    },
+    "buildDate": "2025-07-19T06:22:45.121Z",
+    "size": 636347,
+    "createdAt": "2025-07-19T06:22:45.121Z"
+  },
+  {
+    "version": "1.2.9",
+    "zip": "background-open-v1.2.9-1752905524412-0d924129.zip",
+    "timestamp": 1752905524469,
+    "checksum": "0d924129",
+    "git": {
+      "commitHash": "f4bb99e",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 14:08:25 +0800"
+    },
+    "buildDate": "2025-07-19T06:12:04.566Z",
+    "size": 636346,
+    "createdAt": "2025-07-19T06:12:04.566Z"
+  },
+  {
+    "version": "1.2.8",
+    "zip": "background-open-v1.2.8-1752905277064-4501c288.zip",
+    "timestamp": 1752905277089,
+    "checksum": "4501c288",
+    "git": {
+      "commitHash": "5dcf54e",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 13:56:41 +0800"
+    },
+    "buildDate": "2025-07-19T06:07:57.205Z",
+    "size": 636082,
+    "createdAt": "2025-07-19T06:07:57.205Z"
+  },
+  {
+    "version": "1.2.7",
+    "zip": "background-open-v1.2.7-1752901585719-fc475c5a.zip",
+    "timestamp": 1752901585755,
+    "checksum": "fc475c5a",
+    "git": {
+      "commitHash": "e404540",
+      "branch": "main",
+      "lastCommitDate": "2025-07-19 12:50:33 +0800"
+    },
+    "buildDate": "2025-07-19T05:06:25.840Z",
+    "size": 635597,
+    "createdAt": "2025-07-19T05:06:25.841Z"
+  },
+  {
+    "version": "1.2.6",
+    "zip": "background-open-v1.2.6.zip",
+    "timestamp": 1721318400000,
+    "checksum": "1a2b3c4",
+    "git": {
+      "commitHash": "1a2b3c4",
+      "branch": "main",
+      "lastCommitDate": "2025-07-18 12:00:00 +0800"
+    },
+    "buildDate": "2025-07-18T04:00:00.000Z",
+    "size": 102500,
+    "createdAt": "2025-07-18T04:00:00.000Z",
+    "features": [
+      "修复错误信息显示问题",
+      "改进chrome.runtime.lastError错误处理",
+      "提供清晰的错误信息便于调试",
+      "统一错误处理格式"
+    ],
+    "changelog": [
+      "修复content.js中错误信息显示为[object Object]的问题",
+      "改进所有chrome.runtime.lastError错误处理机制",
+      "统一错误处理格式，提供清晰的错误信息",
+      "优化调试体验，便于问题排查"
+    ]
+  }
+]

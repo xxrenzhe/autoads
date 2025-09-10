@@ -1,0 +1,85 @@
+-- This is your Prisma schema file,
+-- learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 简化的用户风险表
+model user_risk {
+  user_id     String   @id @map("user_id")
+  risk_level  RiskLevel @default(NORMAL) @map("risk_level")
+  risk_score Int      @default(0) @map("risk_score")
+  factors     String[] @default([]) @map("factors")
+  created_at  DateTime @default(now()) @map("created_at")
+  updated_at  DateTime @updatedAt @map("updated_at")
+
+  @@map("user_risks")
+}
+
+// 简化的可疑事件表
+model suspicious_event {
+  id          String      @id @default(cuid()) @map("id")
+  user_id     String      @map("user_id")
+  event_type  String      @map("event_type")
+  severity    EventSeverity @map("severity")
+  message     String      @map("message")
+  metadata    Json?       @map("metadata")
+  timestamp   DateTime    @default(now()) @map("timestamp")
+  resolved    Boolean     @default(false) @map("resolved")
+  resolved_at DateTime?   @map("resolved_at")
+  resolved_by String?     @map("resolved_by")
+
+  @@map("suspicious_events")
+}
+
+// 简化的用户活动表（保留核心字段）
+model user_activity {
+  id         String    @id @default(cuid()) @map("id")
+  user_id    String    @map("user_id")
+  action     String    @map("action")
+  resource   String    @map("resource")
+  metadata   Json?     @map("metadata")
+  ip         String?   @map("ip")
+  created_at DateTime  @default(now()) @map("created_at")
+
+  @@index([user_id, created_at])
+  @@map("user_activities")
+}
+
+// 用户限制表（简化版）
+model user_restriction {
+  id         String           @id @default(cuid()) @map("id")
+  user_id    String           @map("user_id")
+  type       RestrictionType  @map("type")
+  reason     String           @map("reason")
+  expires_at DateTime         @map("expires_at")
+  created_at DateTime         @default(now()) @map("created_at")
+  metadata   Json?            @map("metadata")
+
+  @@map("user_restrictions")
+}
+
+// 枚举定义
+enum RiskLevel {
+  NORMAL
+  SUSPICIOUS
+  DANGEROUS
+}
+
+enum EventSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum RestrictionType {
+  API_LIMIT
+  BATCH_LIMIT
+  ACCOUNT_SUSPEND
+}

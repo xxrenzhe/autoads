@@ -1,0 +1,14 @@
+
+> changelink-autoads@2.5.10 type-check
+> tsc --noEmit --skipLibCheck
+
+src/app/api/batchopen/proxy-url-validate/route.ts(224,91): error TS2554: Expected 1-2 arguments, but got 3.
+src/app/api/batchopen/silent-progress/route.ts(377,86): error TS2554: Expected 1-2 arguments, but got 3.
+src/app/api/batchopen/task/[taskId]/route.ts(27,88): error TS2554: Expected 1-2 arguments, but got 3.
+src/lib/cache/CacheMonitor.ts(431,31): error TS2554: Expected 2-3 arguments, but got 4.
+src/lib/services/unified-proxy-service.ts(429,63): error TS2554: Expected 1-2 arguments, but got 3.
+src/lib/siterank/optimized-similarweb-service.ts(222,60): error TS2554: Expected 1-2 arguments, but got 3.
+src/lib/siterank/optimized-similarweb-service.ts(284,52): error TS2554: Expected 1-2 arguments, but got 3.
+src/lib/utils/proxy-diagnostics.ts(141,53): error TS2554: Expected 1-2 arguments, but got 3.
+src/lib/utils/unified-error-handling.ts(487,47): error TS2554: Expected 1-2 arguments, but got 3.
+src/lib/utils/unified-error-handling.ts(514,66): error TS2554: Expected 1-2 arguments, but got 3.

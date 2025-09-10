@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-08-25T16:23:29.644Z",
+  "isCompatible": false,
+  "issues": [
+    {
+      "type": "breaking",
+      "component": "siterank",
+      "description": "API端点文件不存在",
+      "impact": "high",
+      "solution": "检查文件路径或重新创建API端点"
+    },
+    {
+      "type": "breaking",
+      "component": "batchopen",
+      "description": "API端点文件不存在",
+      "impact": "high",
+      "solution": "检查文件路径或重新创建API端点"
+    },
+    {
+      "type": "breaking",
+      "component": "changelink",
+      "description": "API端点文件不存在",
+      "impact": "high",
+      "solution": "检查文件路径或重新创建API端点"
+    }
+  ],
+  "warnings": [
+    {
+      "type": "security",
+      "component": "api",
+      "description": "确保管理员API端点有适当的权限保护",
+      "recommendation": "验证所有管理员端点都有权限检查"
+    }
+  ],
+  "summary": {
+    "totalChecks": 8,
+    "passedChecks": 5,
+    "failedChecks": 3,
+    "warningCount": 1,
+    "compatibilityScore": 60.5
+  }
+}

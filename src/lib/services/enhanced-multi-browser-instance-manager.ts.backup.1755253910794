@@ -1,0 +1,1629 @@
+/**
+ * Enhanced Multi-Browser Instance Manager
+ * 增强的多浏览器实例管理器
+ * 
+ * 修复内容：
+ * 1. 强制初始化浏览器实例
+ * 2. 区分代理失败和浏览器实例问题
+ * 3. 添加健康检查机制
+ * 4. 实现降级策略
+ */
+
+import { createLogger } from '@/lib/utils/security/secure-logger';
+import { getBrowserPoolService, BrowserInstance, BrowserPoolService } from './browser-pool-service';
+import { ProxyConfig } from '@/lib/utils/proxy-utils';
+
+const logger = createLogger('EnhancedMultiBrowserInstanceManager');
+
+interface BrowserInstanceTask {
+  id: string;
+  url: string;
+  proxy?: ProxyConfig;
+  referer: string;
+  userAgent?: string;
+  priority: number;
+  assignedInstance?: string;
+  startTime?: number;
+  endTime?: number;
+  result?: any;
+  failureType?: 'proxy' | 'browser' | 'network' | 'timeout' | 'instance_unavailable' | 'ssl_error';
+}
+
+interface InstanceLoad {
+  instanceId: string;
+  activeTasks: number;
+  totalTasks: number;
+  averageResponseTime: number;
+  successRate: number;
+  healthScore: number;
+  lastUsed: number;
+  recentResponseTimes: number[]; // 最近10次响应时间
+  timeoutCount: number; // 超时计数
+  lastTimeoutTime: number; // 最后一次超时时间
+  networkQuality: 'excellent' | 'good' | 'fair' | 'poor' | 'unknown';
+}
+
+interface ConcurrencyManagerConfig {
+  maxInstances: number;
+  maxTasksPerInstance: number;
+  loadBalancingStrategy: 'round-robin' | 'least-loaded' | 'weighted' | 'health-based';
+  healthCheckInterval: number;
+  performanceMonitoringInterval: number;
+  enableAdaptiveScaling: boolean;
+  scalingThreshold: number;
+  forceInitialization: boolean;
+  initializationTimeout: number;
+  pageTimeout: number;
+  minPageTimeout: number;
+  maxPageTimeout: number;
+  adaptiveTimeoutEnabled: boolean;
+  timeoutRetryCount: number;
+  networkSlowThreshold: number;
+  networkFastThreshold: number;
+}
+
+const DEFAULT_CONFIG: ConcurrencyManagerConfig = {
+  maxInstances: 12,  // 统一配置为12个实例以匹配BrowserPoolService
+  maxTasksPerInstance: 12,
+  loadBalancingStrategy: 'least-loaded',
+  healthCheckInterval: 30000,
+  performanceMonitoringInterval: 10000,
+  enableAdaptiveScaling: true,
+  scalingThreshold: 0.8,
+  forceInitialization: true,
+  initializationTimeout: 60000,
+  pageTimeout: 30000,
+  minPageTimeout: 15000,
+  maxPageTimeout: 60000,
+  adaptiveTimeoutEnabled: true,
+  timeoutRetryCount: 2,
+  networkSlowThreshold: 10000, // 10秒认为是慢速网络
+  networkFastThreshold: 3000  // 3秒认为是快速网络
+};
+
+class EnhancedMultiBrowserInstanceManager {
+  private config: ConcurrencyManagerConfig;
+  private browserPoolService: any;
+  private activeTasks: Map<string, BrowserInstanceTask> = new Map();
+  private instanceLoads: Map<string, InstanceLoad> = new Map();
+  private healthCheckTimer: NodeJS.Timeout | null = null;
+  private performanceTimer: NodeJS.Timeout | null = null;
+  private taskQueue: BrowserInstanceTask[] = [];
+  private isProcessing: boolean = false;
+  private isInitialized: boolean = false;
+  private initializationPromise: Promise<void> | null = null;
+  
+  // 实例使用跟踪，防止多管理器冲突
+  private instanceUsage: Map<string, Set<string>> = new Map(); // instanceId -> Set<taskId>
+
+  constructor(config: Partial<ConcurrencyManagerConfig> = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.browserPoolService = getBrowserPoolService();
+    
+    logger.info('增强多浏览器实例并发管理器初始化', { 
+      config: this.config,
+      strategy: this.config.loadBalancingStrategy
+    });
+    
+    // 如果启用强制初始化，立即初始化
+    if (this.config.forceInitialization) {
+      this.initialize();
+    }
+  }
+
+  /**
+   * 初始化浏览器实例
+   */
+  private async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this.performInitialization();
+    return this.initializationPromise;
+  }
+
+  /**
+   * 执行初始化
+   */
+  private async performInitialization(): Promise<void> {
+    try {
+      logger.info('开始强制初始化浏览器实例', {
+        maxInstances: this.config.maxInstances,
+        timeout: this.config.initializationTimeout
+      });
+
+      // 检查是否已有实例
+      const currentInstances = this.browserPoolService.getAllInstances();
+      if (currentInstances.length >= this.config.maxInstances) {
+        logger.info('已有足够的浏览器实例，跳过初始化', {
+          currentInstances: currentInstances.length,
+          maxInstances: this.config.maxInstances
+        });
+        this.isInitialized = true;
+        this.startHealthCheck();
+        this.startPerformanceMonitoring();
+        return;
+      }
+      
+      // 计算需要创建的实例数量
+      const instancesToCreate = Math.min(
+        this.config.maxInstances - currentInstances.length,
+        this.config.maxInstances
+      );
+      
+      // 创建浏览器实例
+      const initializationPromises = [];
+      for (let i = 0; i < instancesToCreate; i++) {
+        initializationPromises.push(this.createInitializationInstance());
+      }
+
+      // 等待实例创建
+      const results = await Promise.allSettled(initializationPromises);
+      const successfulInstances = results.filter(r => r.status === 'fulfilled').length;
+
+      if (successfulInstances === 0) {
+        throw new Error('无法创建任何浏览器实例');
+      }
+
+      logger.info('浏览器实例初始化完成', {
+        attempted: instancesToCreate,
+        successful: successfulInstances,
+        totalInstances: currentInstances.length + successfulInstances,
+        maxInstances: this.config.maxInstances
+      });
+
+      this.isInitialized = true;
+      this.startHealthCheck();
+      this.startPerformanceMonitoring();
+      
+      // 初始化所有实例的负载数据
+      this.initializeAllInstanceLoads();
+
+    } catch (error) {
+      logger.error('浏览器实例初始化失败', new Error(`初始化失败: ${error instanceof Error ? error.message : String(error)}`));
+      throw error;
+    }
+  }
+
+  /**
+   * 初始化所有实例的负载数据
+   */
+  private initializeAllInstanceLoads(): void {
+    const allInstances = this.browserPoolService.getAllInstances();
+    
+    for (const instance of allInstances) {
+      if (!this.instanceLoads.has(instance.id)) {
+        const load: InstanceLoad = {
+          instanceId: instance.id,
+          activeTasks: 0,
+          totalTasks: 0,
+          averageResponseTime: 0,
+          successRate: 1.0, // 初始成功率为100%
+          healthScore: 1.0, // 初始健康评分为满分
+          lastUsed: Date.now(),
+          recentResponseTimes: [],
+          timeoutCount: 0,
+          lastTimeoutTime: 0,
+          networkQuality: 'unknown'
+        };
+        this.instanceLoads.set(instance.id, load);
+        
+        logger.debug('初始化实例负载数据', {
+          instanceId: instance.id,
+          healthScore: load.healthScore,
+          successRate: load.successRate,
+          networkQuality: load.networkQuality
+        });
+      }
+    }
+    
+    logger.info('所有实例负载数据初始化完成', {
+      totalInstances: allInstances.length,
+      initializedLoads: this.instanceLoads.size
+    });
+  }
+
+  /**
+   * 创建初始化实例
+   */
+  private async createInitializationInstance(): Promise<BrowserInstance> {
+    try {
+      const instance = await this.browserPoolService.getOrCreateInstance();
+      logger.debug('初始化实例创建成功', { instanceId: instance.id });
+      return instance;
+    } catch (error) {
+      logger.warn('初始化实例创建失败', { error: error instanceof Error ? error.message : String(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * 分配任务到最佳浏览器实例
+   */
+  async assignTaskToInstance(task: BrowserInstanceTask): Promise<string | null> {
+    try {
+      // 确保已初始化
+      if (!this.isInitialized) {
+        await this.initialize();
+      }
+
+      // 获取所有可用实例
+      let availableInstances = this.getAvailableInstances();
+      
+      // 如果没有可用实例，尝试创建新实例
+      if (availableInstances.length === 0) {
+        logger.info('没有可用的浏览器实例，尝试创建新实例', { taskId: task.id });
+        
+        // 检查是否已达到最大实例数限制
+        const currentInstances = this.browserPoolService.getAllInstances();
+        if (currentInstances.length >= this.config.maxInstances) {
+          logger.warn('已达到最大实例数限制，无法创建新实例', {
+            taskId: task.id,
+            currentInstances: currentInstances.length,
+            maxInstances: this.config.maxInstances
+          });
+          task.failureType = 'instance_unavailable';
+          return null;
+        }
+        
+        try {
+          const newInstance = await this.browserPoolService.getOrCreateInstance(task.proxy, task.userAgent);
+          if (newInstance) {
+            logger.info('成功创建新的浏览器实例', { 
+              instanceId: newInstance.id,
+              taskId: task.id 
+            });
+            availableInstances = [newInstance];
+          }
+        } catch (error) {
+          logger.error('创建浏览器实例失败', new Error(`创建实例失败: ${error instanceof Error ? error.message : String(error)}`));
+          task.failureType = 'instance_unavailable';
+          return null;
+        }
+      }
+      
+      if (availableInstances.length === 0) {
+        logger.warn('没有可用的浏览器实例，标记为实例不可用', { 
+          taskId: task.id,
+          url: task.url,
+          totalInstances: this.browserPoolService.getStats().totalInstances,
+          maxInstances: this.config.maxInstances,
+          message: '所有实例都在使用中或已达到最大实例数限制'
+        });
+        task.failureType = 'instance_unavailable';
+        return null;
+      }
+
+      // 根据负载均衡策略选择实例
+      const selectedInstance = this.selectBestInstance(availableInstances, task);
+      
+      if (!selectedInstance) {
+        logger.warn('无法选择合适的浏览器实例', { taskId: task.id });
+        task.failureType = 'browser';
+        return null;
+      }
+
+      // 更新实例负载信息
+      this.updateInstanceLoad(selectedInstance.id, task);
+      
+      // 分配任务到实例
+      task.assignedInstance = selectedInstance.id;
+      task.startTime = Date.now();
+      this.activeTasks.set(task.id, task);
+      
+      // 标记实例为正在使用
+      this.markInstanceInUse(selectedInstance.id, task.id);
+
+      logger.info('任务已分配到浏览器实例', {
+        taskId: task.id,
+        instanceId: selectedInstance.id,
+        url: task.url,
+        proxy: task.proxy ? `${task.proxy.host}:${task.proxy.port}` : 'direct',
+        strategy: this.config.loadBalancingStrategy
+      });
+
+      return selectedInstance.id;
+    } catch (error) {
+      logger.error('分配任务到浏览器实例失败', new Error(`分配任务失败: ${error instanceof Error ? error.message : String(error)}`));
+      task.failureType = 'browser';
+      return null;
+    }
+  }
+
+  /**
+   * 获取可用实例列表
+   */
+  private getAvailableInstances(): BrowserInstance[] {
+    const allInstances = this.browserPoolService.getAllInstances();
+    const availableInstances: BrowserInstance[] = [];
+    
+    logger.info('获取可用实例 - 详细状态', {
+      totalInstances: allInstances.length,
+      healthyInstances: allInstances.filter((inst: any) => inst.isHealthy).length,
+      instances: allInstances.map((inst: any) => ({
+        id: inst.id,
+        isHealthy: inst.isHealthy,
+        pages: inst.pages.length,
+        maxPages: inst.maxPages,
+        useCount: inst.useCount || 0,
+        load: this.instanceLoads.get(inst.id)
+      }))
+    });
+
+    for (const instance of allInstances) {
+      // 检查实例是否健康、有可用页面容量且未被其他任务占用
+      if (instance.isHealthy && 
+          instance.pages.length < instance.maxPages &&
+          !this.isInstanceInUse(instance.id)) {
+        availableInstances.push(instance);
+      }
+    }
+    
+    logger.info('可用实例筛选结果', {
+      totalInstances: allInstances.length,
+      availableInstances: availableInstances.length,
+      availableIds: availableInstances.map(inst => inst.id)
+    });
+
+    return availableInstances;
+  }
+
+  /**
+   * 检查实例是否正在使用中
+   */
+  private isInstanceInUse(instanceId: string): boolean {
+    return this.instanceUsage.has(instanceId) && 
+           this.instanceUsage.get(instanceId)!.size > 0;
+  }
+
+  /**
+   * 标记实例为正在使用
+   */
+  private markInstanceInUse(instanceId: string, taskId: string): void {
+    if (!this.instanceUsage.has(instanceId)) {
+      this.instanceUsage.set(instanceId, new Set());
+    }
+    this.instanceUsage.get(instanceId)!.add(taskId);
+  }
+
+  /**
+   * 标记实例为不再使用
+   */
+  private markInstanceNotInUse(instanceId: string, taskId: string): void {
+    if (this.instanceUsage.has(instanceId)) {
+      this.instanceUsage.get(instanceId)!.delete(taskId);
+      if (this.instanceUsage.get(instanceId)!.size === 0) {
+        this.instanceUsage.delete(instanceId);
+      }
+    }
+  }
+
+  /**
+   * 根据负载均衡策略选择最佳实例
+   */
+  private selectBestInstance(instances: BrowserInstance[], task: BrowserInstanceTask): BrowserInstance | null {
+    if (instances.length === 0) {
+      return null;
+    }
+
+    switch (this.config.loadBalancingStrategy) {
+      case 'round-robin':
+        return this.selectByRoundRobin(instances);
+      
+      case 'least-loaded':
+        return this.selectByLeastLoaded(instances);
+      
+      case 'weighted':
+        return this.selectByWeighted(instances);
+      
+      case 'health-based':
+        return this.selectByHealth(instances);
+      
+      default:
+        return instances[0];
+    }
+  }
+
+  /**
+   * 轮询选择实例
+   */
+  private selectByRoundRobin(instances: BrowserInstance[]): BrowserInstance {
+    const lastIndex = this.taskQueue.length % instances.length;
+    return instances[lastIndex];
+  }
+
+  /**
+   * 选择负载最轻的实例
+   */
+  private selectByLeastLoaded(instances: BrowserInstance[]): BrowserInstance {
+    // 找出负载最轻的实例
+    const instanceLoads = instances.map(instance => {
+      const load = this.instanceLoads.get(instance.id);
+      const activeTasks = load?.activeTasks || 0;
+      const useCount = instance.useCount || 0;
+      
+      return {
+        instance,
+        activeTasks,
+        useCount
+      };
+    });
+    
+    // 按活跃任务数排序
+    instanceLoads.sort((a, b) => a.activeTasks - b.activeTasks);
+    
+    // 获取最低负载
+    const lowestLoad = instanceLoads[0].activeTasks;
+    
+    // 找出所有负载最低的实例
+    const leastLoadedInstances = instanceLoads.filter(il => il.activeTasks === lowestLoad);
+    
+    // 如果有多个实例负载相同，优先选择使用次数最少的
+    if (leastLoadedInstances.length > 1) {
+      // 按使用次数排序
+      leastLoadedInstances.sort((a, b) => a.useCount - b.useCount);
+      
+      // 如果仍有多个实例使用次数相同，随机选择一个
+      if (leastLoadedInstances.filter(il => il.useCount === leastLoadedInstances[0].useCount).length > 1) {
+        const candidates = leastLoadedInstances.filter(il => il.useCount === leastLoadedInstances[0].useCount);
+        const randomIndex = Math.floor(Math.random() * candidates.length);
+        const selected = candidates[randomIndex];
+        
+        logger.debug('多个实例负载相同，随机选择', {
+          totalInstances: instances.length,
+          candidates: candidates.length,
+          selectedIndex: randomIndex,
+          selectedInstance: selected.instance.id,
+          activeTasks: lowestLoad
+        });
+        
+        return selected.instance;
+      }
+      
+      return leastLoadedInstances[0].instance;
+    }
+    
+    return instanceLoads[0].instance;
+  }
+
+  /**
+   * 基于权重选择实例
+   */
+  private selectByWeighted(instances: BrowserInstance[]): BrowserInstance {
+    return instances.reduce((best, current) => {
+      const bestLoad = this.instanceLoads.get(best.id);
+      const currentLoad = this.instanceLoads.get(current.id);
+      
+      const bestScore = this.calculateInstanceWeight(best, bestLoad);
+      const currentScore = this.calculateInstanceWeight(current, currentLoad);
+      
+      return currentScore > bestScore ? current : best;
+    });
+  }
+
+  /**
+   * 基于健康状态选择实例
+   */
+  private selectByHealth(instances: BrowserInstance[]): BrowserInstance {
+    // 计算所有实例的得分
+    const instanceScores = instances.map(instance => {
+      const load = this.instanceLoads.get(instance.id);
+      const health = load?.healthScore || 1.0;
+      const activeTasks = load?.activeTasks || 0;
+      
+      // 综合考虑健康状态和负载
+      const score = health * 0.7 + (1 - activeTasks / this.config.maxTasksPerInstance) * 0.3;
+      
+      return {
+        instance,
+        score,
+        health,
+        activeTasks
+      };
+    });
+    
+    // 按得分排序
+    instanceScores.sort((a, b) => b.score - a.score);
+    
+    // 获取最高分
+    const highestScore = instanceScores[0].score;
+    
+    // 找出所有得分为最高分的实例
+    const bestInstances = instanceScores.filter(is => is.score === highestScore);
+    
+    // 如果有多个实例得分相同，使用轮询选择
+    if (bestInstances.length > 1) {
+      const index = this.taskQueue.length % bestInstances.length;
+      const selected = bestInstances[index];
+      
+      logger.debug('多个实例得分相同，使用轮询选择', {
+        totalInstances: instances.length,
+        tiedInstances: bestInstances.length,
+        selectedIndex: index,
+        selectedInstance: selected.instance.id,
+        score: highestScore
+      });
+      
+      return selected.instance;
+    }
+    
+    // 否则返回得分最高的实例
+    return instanceScores[0].instance;
+  }
+
+  /**
+   * 计算实例权重
+   */
+  private calculateInstanceWeight(instance: BrowserInstance, load?: InstanceLoad): number {
+    const activeTasks = load?.activeTasks || 0;
+    const successRate = load?.successRate || 0.5;
+    const avgResponseTime = load?.averageResponseTime || 1000;
+    
+    // 基础权重基于当前负载
+    const loadWeight = 1 - (activeTasks / this.config.maxTasksPerInstance);
+    
+    // 性能权重
+    const performanceWeight = successRate * 0.5 + (1 - Math.min(avgResponseTime / 10000, 1)) * 0.5;
+    
+    // 使用频率权重（使用次数少的权重更高）
+    const usageWeight = 1 - (instance.useCount / Math.max(instance.useCount + 10, 1));
+    
+    return loadWeight * 0.4 + performanceWeight * 0.4 + usageWeight * 0.2;
+  }
+
+  /**
+   * 更新实例负载信息
+   */
+  private updateInstanceLoad(instanceId: string, task: BrowserInstanceTask): void {
+    let load = this.instanceLoads.get(instanceId);
+    
+    if (!load) {
+      load = {
+        instanceId,
+        activeTasks: 0,
+        totalTasks: 0,
+        averageResponseTime: 0,
+        successRate: 0.5,
+        healthScore: 1.0,
+        lastUsed: Date.now(),
+        recentResponseTimes: [],
+        timeoutCount: 0,
+        lastTimeoutTime: 0,
+        networkQuality: 'unknown'
+      };
+      this.instanceLoads.set(instanceId, load);
+    }
+    
+    load.activeTasks++;
+    load.totalTasks++;
+    load.lastUsed = Date.now();
+    
+    logger.debug('更新实例负载', {
+      instanceId,
+      activeTasks: load.activeTasks,
+      totalTasks: load.totalTasks,
+      taskId: task.id
+    });
+  }
+
+  /**
+   * 完成任务并更新实例状态
+   */
+  async completeTask(taskId: string, result: any): Promise<void> {
+    const task = this.activeTasks.get(taskId);
+    if (!task) {
+      logger.warn('尝试完成不存在的任务', { taskId });
+      return;
+    }
+
+    const instanceId = task.assignedInstance;
+    if (!instanceId) {
+      logger.warn('任务没有分配到实例', { taskId });
+      this.activeTasks.delete(taskId);
+      return;
+    }
+
+    // 更新任务信息
+    task.result = result;
+    task.endTime = Date.now();
+
+    // 更新实例负载
+    const load = this.instanceLoads.get(instanceId);
+    if (load) {
+      load.activeTasks--;
+      
+      // 更新性能指标
+      const taskDuration = task.endTime - (task.startTime || task.endTime);
+      const success = result.success;
+      const isTimeout = task.failureType === 'timeout';
+      
+      // 更新最近响应时间（只保留最近10次）
+      load.recentResponseTimes.push(taskDuration);
+      if (load.recentResponseTimes.length > 10) {
+        load.recentResponseTimes.shift();
+      }
+      
+      // 更新超时计数
+      if (isTimeout) {
+        load.timeoutCount++;
+        load.lastTimeoutTime = Date.now();
+      }
+      
+      // 更新平均响应时间
+      if (load.totalTasks === 1) {
+        load.averageResponseTime = taskDuration;
+      } else {
+        load.averageResponseTime = load.averageResponseTime * 0.9 + taskDuration * 0.1;
+      }
+      
+      // 更新成功率
+      if (load.totalTasks === 1) {
+        load.successRate = success ? 1 : 0;
+      } else {
+        load.successRate = load.successRate * 0.9 + (success ? 1 : 0) * 0.1;
+      }
+      
+      // 更新网络质量评估
+      this.updateNetworkQuality(load);
+      
+      // 更新健康评分
+      load.healthScore = this.calculateHealthScore(load);
+      
+      logger.debug('更新实例性能指标', {
+        instanceId,
+        taskDuration,
+        success,
+        isTimeout,
+        timeoutCount: load.timeoutCount,
+        avgResponseTime: Math.round(load.averageResponseTime),
+        networkQuality: load.networkQuality
+      });
+    }
+
+    // 标记实例为不再使用
+    this.markInstanceNotInUse(instanceId, taskId);
+    
+    this.activeTasks.delete(taskId);
+
+    logger.info('任务完成', {
+      taskId,
+      instanceId,
+      success: result.success,
+      duration: task.endTime - (task.startTime || task.endTime),
+      failureType: task.failureType,
+      instanceLoad: load ? load.activeTasks : 'unknown'
+    });
+
+    // 检查是否有待处理的任务
+    this.processTaskQueue();
+  }
+
+  /**
+   * 计算自适应超时时间
+   */
+  private calculateAdaptiveTimeout(instanceId: string): number {
+    if (!this.config.adaptiveTimeoutEnabled) {
+      return this.config.pageTimeout;
+    }
+    
+    const load = this.instanceLoads.get(instanceId);
+    if (!load || load.recentResponseTimes.length === 0) {
+      return this.config.pageTimeout;
+    }
+    
+    // 计算平均响应时间
+    const avgResponseTime = load.recentResponseTimes.reduce((sum, time) => sum + time, 0) / load.recentResponseTimes.length;
+    
+    // 计算超时率
+    const timeoutRate = load.timeoutCount / Math.max(load.totalTasks, 1);
+    
+    // 基于网络质量调整超时
+    let timeoutMultiplier = 1.0;
+    
+    // 根据平均响应时间调整
+    if (avgResponseTime > this.config.networkSlowThreshold) {
+      timeoutMultiplier = 2.0; // 慢速网络，超时时间翻倍
+    } else if (avgResponseTime < this.config.networkFastThreshold) {
+      timeoutMultiplier = 0.7; // 快速网络，减少超时时间
+    }
+    
+    // 根据超时率调整
+    if (timeoutRate > 0.3) {
+      timeoutMultiplier *= 1.5; // 高超时率，增加超时时间
+    } else if (timeoutRate < 0.05 && load.totalTasks > 10) {
+      timeoutMultiplier *= 0.8; // 低超时率，适当减少超时时间
+    }
+    
+    // 计算最终超时时间
+    let adaptiveTimeout = Math.round(this.config.pageTimeout * timeoutMultiplier);
+    
+    // 确保在最小和最大超时时间之间
+    adaptiveTimeout = Math.max(this.config.minPageTimeout, Math.min(this.config.maxPageTimeout, adaptiveTimeout));
+    
+    logger.debug('计算自适应超时时间', {
+      instanceId,
+      avgResponseTime: Math.round(avgResponseTime),
+      timeoutRate: Math.round(timeoutRate * 100) / 100,
+      timeoutMultiplier: Math.round(timeoutMultiplier * 100) / 100,
+      adaptiveTimeout,
+      baseTimeout: this.config.pageTimeout
+    });
+    
+    return adaptiveTimeout;
+  }
+  
+  /**
+   * 更新网络质量评估
+   */
+  private updateNetworkQuality(load: InstanceLoad): void {
+    if (load.recentResponseTimes.length < 3) {
+      load.networkQuality = 'unknown';
+      return;
+    }
+    
+    const avgResponseTime = load.recentResponseTimes.reduce((sum, time) => sum + time, 0) / load.recentResponseTimes.length;
+    const timeoutRate = load.timeoutCount / Math.max(load.totalTasks, 1);
+    
+    if (avgResponseTime < this.config.networkFastThreshold && timeoutRate < 0.05) {
+      load.networkQuality = 'excellent';
+    } else if (avgResponseTime < this.config.networkSlowThreshold && timeoutRate < 0.1) {
+      load.networkQuality = 'good';
+    } else if (avgResponseTime < this.config.networkSlowThreshold * 1.5 && timeoutRate < 0.2) {
+      load.networkQuality = 'fair';
+    } else {
+      load.networkQuality = 'poor';
+    }
+  }
+  
+  /**
+   * 计算实例健康评分
+   */
+  private calculateHealthScore(load: InstanceLoad): number {
+    // 基于成功率、响应时间和负载计算健康评分
+    const successRateWeight = 0.4;
+    const responseTimeWeight = 0.3;
+    const loadWeight = 0.3;
+    
+    const successRateScore = load.successRate;
+    const responseTimeScore = Math.max(0, 1 - (load.averageResponseTime / 10000));
+    const loadScore = 1 - (load.activeTasks / this.config.maxTasksPerInstance);
+    
+    return successRateScore * successRateWeight + 
+           responseTimeScore * responseTimeWeight + 
+           loadScore * loadWeight;
+  }
+
+  /**
+   * 添加任务到队列
+   */
+  async addTask(task: Omit<BrowserInstanceTask, 'id'>): Promise<string> {
+    // 确保已初始化
+    if (!this.isInitialized) {
+      try {
+        await this.initialize();
+      } catch (error) {
+        logger.error('初始化失败，任务将进入等待队列', error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+    
+    // 检查是否有可用的浏览器实例
+    const availableInstances = this.getAvailableInstances();
+    if (availableInstances.length === 0) {
+      logger.warn('没有可用的浏览器实例，任务将等待', {
+        url: task.url,
+        totalInstances: this.browserPoolService.getStats().totalInstances
+      });
+      
+      // 如果没有可用实例，添加到等待队列
+      const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_pending`;
+      const fullTask: BrowserInstanceTask = {
+        id: taskId,
+        ...task,
+        startTime: Date.now(),
+        failureType: 'instance_unavailable'
+      };
+      
+      this.taskQueue.push(fullTask);
+      
+      logger.warn('任务已添加到等待队列', {
+        taskId,
+        queueLength: this.taskQueue.length,
+        url: task.url
+      });
+      
+      return taskId;
+    }
+    
+    const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const fullTask: BrowserInstanceTask = {
+      id: taskId,
+      ...task,
+      startTime: Date.now()
+    };
+    
+    this.taskQueue.push(fullTask);
+    
+    logger.debug('任务已添加到队列', {
+      taskId,
+      queueLength: this.taskQueue.length,
+      url: task.url
+    });
+    
+    // 处理任务队列
+    this.processTaskQueue();
+    
+    return taskId;
+  }
+
+  /**
+   * 处理任务队列
+   */
+  private async processTaskQueue(): Promise<void> {
+    if (this.isProcessing || this.taskQueue.length === 0) {
+      return;
+    }
+    
+    this.isProcessing = true;
+    
+    try {
+      while (this.taskQueue.length > 0) {
+        const task = this.taskQueue.shift()!;
+        const instanceId = await this.assignTaskToInstance(task);
+        
+        if (instanceId) {
+          // 任务成功分配，异步执行任务（不等待完成）
+          this.executeTask(task).catch(error => {
+            logger.error('异步任务执行失败', error instanceof Error ? error : new Error(String(error)));
+          });
+        } else {
+          // 无法分配实例，重新放回队列
+          this.taskQueue.unshift(task);
+          break;
+        }
+      }
+    } catch (error) {
+      logger.error('处理任务队列失败', error instanceof Error ? error : new Error(String(error)));
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+
+  /**
+   * 执行任务
+   */
+  private async executeTask(task: BrowserInstanceTask): Promise<void> {
+    try {
+      logger.debug('开始执行任务', {
+        taskId: task.id,
+        instanceId: task.assignedInstance,
+        url: task.url
+      });
+      
+      // 使用BrowserPoolService创建页面
+      let page: any, instance: any;
+      try {
+        // 先获取已分配的实例
+        instance = this.browserPoolService.getAllInstances().find((inst: any) => inst.id === task.assignedInstance);
+        
+        if (!instance) {
+          throw new Error(`分配的实例 ${task.assignedInstance} 不存在`);
+        }
+        
+        // 检查实例是否还有页面容量
+        if (instance.pages.length >= instance.maxPages) {
+          throw new Error(`实例 ${task.assignedInstance} 已达到最大页面数限制 (${instance.pages.length}/${instance.maxPages})`);
+        }
+        
+        // 在指定实例中创建页面
+        if (!instance.context) {
+          throw new Error('浏览器上下文未初始化');
+        }
+        
+        page = await instance.context.newPage();
+        
+        // 设置页面级别的错误处理
+        page.on('pageerror', (error: any) => {
+          logger.warn('页面错误', { 
+            instanceId: (instance as any).id,
+            error: error.message,
+            stack: error.stack 
+          });
+        });
+        
+        // 添加页面到实例的页面列表
+        (instance as any).pages.push(page);
+        (instance as any).lastUsed = Date.now();
+        
+        // 页面关闭时从实例中移除
+        page.on('close', () => {
+          const index = (instance as any).pages.indexOf(page);
+          if (index > -1) {
+            (instance as any).pages.splice(index, 1);
+          }
+        });
+        
+        logger.debug('在指定实例中创建页面成功', { 
+          instanceId: instance.id,
+          pagesCount: instance.pages.length,
+          maxPages: instance.maxPages
+        });
+        
+      } catch (error) {
+        logger.error('创建浏览器页面失败', new Error(`创建页面失败: ${error instanceof Error ? error.message : String(error)}`));
+        
+        // 检查是否是实例数限制导致的错误
+        if (error instanceof Error && error.message.includes('已达到最大实例数限制')) {
+          task.failureType = 'instance_unavailable';
+        } else if (error instanceof Error && error.message.includes('已达到最大页面数限制')) {
+          task.failureType = 'instance_unavailable';
+        } else {
+          task.failureType = 'browser';
+        }
+        throw error;
+      }
+      
+      if (!page || !instance) {
+        throw new Error('无法创建浏览器页面');
+      }
+      
+      // 用户代理已在BrowserPoolService的createContext中设置
+      // 无需在页面级别重复设置
+      
+      // 设置referer
+      if (task.referer) {
+        await page.setExtraHTTPHeaders({ referer: task.referer });
+      }
+      
+      // 执行URL访问
+      const startTime = Date.now();
+      let response = null;
+      let retryCount = 0;
+      const maxRetries = this.config.timeoutRetryCount;
+      
+      // 计算自适应超时时间
+      const adaptiveTimeout = this.calculateAdaptiveTimeout(instance.id);
+      
+      while (retryCount <= maxRetries) {
+        try {
+          logger.debug('尝试访问URL', {
+            taskId: task.id,
+            url: task.url,
+            retryCount,
+            maxRetries,
+            timeout: adaptiveTimeout,
+            instanceId: instance.id
+          });
+          
+          response = await page.goto(task.url, { 
+            waitUntil: 'domcontentloaded',
+            timeout: adaptiveTimeout
+          });
+          
+          // 成功访问，跳出重试循环
+          break;
+          
+        } catch (gotoError) {
+          retryCount++;
+          const errorMessage = gotoError instanceof Error ? gotoError.message : String(gotoError);
+          
+          // 特殊处理超时错误
+          if (errorMessage.includes('Timeout') || errorMessage.includes('timeout')) {
+            if (retryCount <= maxRetries) {
+              logger.warn('页面访问超时，正在重试', {
+                taskId: task.id,
+                retryCount,
+                maxRetries,
+                url: task.url,
+                timeoutUsed: adaptiveTimeout,
+                instanceId: instance.id
+              });
+              
+              // 指数退避策略，重试间隔递增
+              const retryDelay = Math.min(5000 * Math.pow(2, retryCount - 1), 30000);
+              await new Promise(resolve => setTimeout(resolve, retryDelay));
+              
+              // 对于超时错误，下次尝试使用更长的超时时间
+              continue;
+            } else {
+              task.failureType = 'timeout';
+              throw new Error(`页面访问超时，已重试${maxRetries}次，最后使用的超时时间: ${adaptiveTimeout}ms: ${errorMessage}`);
+            }
+          }
+          
+          // 特殊处理SSL协议错误
+          if (errorMessage.includes('ERR_SSL_PROTOCOL_ERROR')) {
+            if (retryCount <= maxRetries) {
+              logger.warn('SSL协议错误，正在重试', {
+                taskId: task.id,
+                retryCount,
+                maxRetries,
+                url: task.url
+              });
+              
+              // 等待一段时间后重试
+              await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+              continue;
+            } else {
+              task.failureType = 'ssl_error';
+              throw new Error(`SSL协议错误，已重试${maxRetries}次: ${errorMessage}`);
+            }
+          }
+          
+          // 特殊处理连接关闭错误
+          if (errorMessage.includes('ERR_CONNECTION_CLOSED') || errorMessage.includes('net::ERR_CONNECTION_CLOSED')) {
+            if (retryCount <= maxRetries) {
+              logger.warn('连接被关闭，正在重试', {
+                taskId: task.id,
+                retryCount,
+                maxRetries,
+                url: task.url,
+                instanceId: task.assignedInstance
+              });
+              
+              // 等待一段时间后重试，时间随重试次数增加
+              await new Promise(resolve => setTimeout(resolve, 3000 * retryCount));
+              continue;
+            } else {
+              task.failureType = 'network';
+              throw new Error(`连接被关闭，已重试${maxRetries}次: ${errorMessage}`);
+            }
+          }
+          
+          // 其他错误直接抛出
+          throw gotoError;
+        }
+      }
+      
+      const loadTime = Date.now() - startTime;
+      
+      // 关闭页面
+      await page.close();
+      
+      // 执行结果
+      const result = {
+        success: response !== null && response.ok(),
+        loadTime,
+        statusCode: response?.status() || 500,
+        browserInstanceId: instance.id
+      };
+      
+      await this.completeTask(task.id, result);
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // 根据错误类型设置failureType
+      if (errorMessage.includes('proxy') || errorMessage.includes('Proxy')) {
+        task.failureType = 'proxy';
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+        task.failureType = 'timeout';
+      } else if (errorMessage.includes('network') || errorMessage.includes('ENOTFOUND')) {
+        task.failureType = 'network';
+      } else if (errorMessage.includes('SSL协议错误') || errorMessage.includes('ERR_SSL_PROTOCOL_ERROR')) {
+        task.failureType = 'ssl_error';
+      } else if (errorMessage.includes('ERR_CONNECTION_CLOSED') || errorMessage.includes('net::ERR_CONNECTION_CLOSED')) {
+        task.failureType = 'network';
+        
+        // 如果是连接关闭错误，标记实例为不健康以便重新创建
+        const instanceId = task.assignedInstance;
+        if (instanceId) {
+          const load = this.instanceLoads.get(instanceId);
+          if (load) {
+            load.healthScore = Math.max(0, load.healthScore - 0.3); // 降低健康分数
+            logger.warn('连接关闭错误，降低实例健康分数', {
+              instanceId,
+              newHealthScore: load.healthScore,
+              error: errorMessage
+            });
+          }
+        }
+      } else {
+        task.failureType = 'browser';
+      }
+      
+      const errorDetails = {
+        taskId: task.id,
+        instanceId: task.assignedInstance,
+        error: errorMessage,
+        failureType: task.failureType,
+        url: task.url
+      };
+      
+      // 根据错误类型使用不同的日志级别
+      if (task.failureType === 'timeout') {
+        logger.warn('任务执行超时', {
+          ...errorDetails,
+          message: `任务 ${task.id} 访问 ${task.url} 超时`
+        });
+        
+        // 如果是超时错误，降低实例健康分数
+        const instanceId = task.assignedInstance;
+        if (instanceId) {
+          const load = this.instanceLoads.get(instanceId);
+          if (load) {
+            // 超时对健康分数的影响比其他错误小
+            load.healthScore = Math.max(0, load.healthScore - 0.1);
+            logger.debug('因超时降低实例健康分数', {
+              instanceId,
+              newHealthScore: load.healthScore,
+              timeoutCount: load.timeoutCount
+            });
+          }
+        }
+      } else {
+        logger.error('执行任务失败', new Error(`任务 ${task.id} 执行失败: ${errorMessage}`));
+      }
+      
+      await this.completeTask(task.id, {
+        success: false,
+        error: errorMessage,
+        loadTime: Date.now() - (task.startTime || Date.now()),
+        failureType: task.failureType
+      });
+    }
+  }
+
+  /**
+   * 启动健康检查
+   */
+  private startHealthCheck(): void {
+    if (this.healthCheckTimer) {
+      clearInterval(this.healthCheckTimer);
+    }
+    
+    this.healthCheckTimer = setInterval(() => {
+      this.performHealthCheck();
+    }, this.config.healthCheckInterval);
+  }
+
+  /**
+   * 执行健康检查
+   */
+  private async performHealthCheck(): Promise<void> {
+    try {
+      const stats = this.browserPoolService.getStats();
+      
+      // 检查实例健康状态
+      for (const [instanceId, load] of this.instanceLoads.entries()) {
+        // 重置超时统计（如果需要）
+        this.resetInstanceTimeoutStats(instanceId);
+        
+        // 基于性能指标更新健康评分
+        load.healthScore = this.calculateHealthScore(load);
+        
+        // 如果健康评分过低，记录警告
+        if (load.healthScore < 0.3) {
+          logger.warn('实例健康评分过低', {
+            instanceId,
+            healthScore: load.healthScore,
+            activeTasks: load.activeTasks,
+            successRate: load.successRate,
+            timeoutCount: load.timeoutCount,
+            networkQuality: load.networkQuality
+          });
+        }
+      }
+      
+      logger.debug('健康检查完成', {
+        totalInstances: this.instanceLoads.size,
+        healthyInstances: Array.from(this.instanceLoads.values()).filter(load => load.healthScore > 0.5).length
+      });
+      
+    } catch (error) {
+      logger.error('健康检查失败', new Error(`健康检查失败: ${error instanceof Error ? error.message : String(error)}`));
+    }
+  }
+
+  /**
+   * 启动性能监控
+   */
+  private startPerformanceMonitoring(): void {
+    if (this.performanceTimer) {
+      clearInterval(this.performanceTimer);
+    }
+    
+    this.performanceTimer = setInterval(() => {
+      this.monitorPerformance();
+      // 尝试处理pending任务
+      this.retryPendingTasks();
+    }, this.config.performanceMonitoringInterval);
+  }
+
+  /**
+   * 重置实例超时统计
+   */
+  private resetInstanceTimeoutStats(instanceId: string): void {
+    const load = this.instanceLoads.get(instanceId);
+    if (load && load.timeoutCount > 0) {
+      const now = Date.now();
+      const timeSinceLastTimeout = now - load.lastTimeoutTime;
+      
+      // 如果超过30分钟没有超时，且超时率已降到5%以下，重置统计
+      const timeoutRate = load.timeoutCount / Math.max(load.totalTasks, 1);
+      if (timeSinceLastTimeout > 30 * 60 * 1000 && timeoutRate < 0.05) {
+        logger.info('重置实例超时统计', {
+          instanceId,
+          oldTimeoutCount: load.timeoutCount,
+          timeoutRate: Math.round(timeoutRate * 100) / 100,
+          timeSinceLastTimeout: Math.round(timeSinceLastTimeout / 1000)
+        });
+        
+        load.timeoutCount = 0;
+        load.lastTimeoutTime = 0;
+      }
+    }
+  }
+
+  /**
+   * 重试pending任务
+   */
+  private retryPendingTasks(): void {
+    const pendingTasks = this.taskQueue.filter(task => task.id.includes('_pending'));
+    if (pendingTasks.length === 0) {
+      return;
+    }
+    
+    const availableInstances = this.getAvailableInstances();
+    if (availableInstances.length === 0) {
+      return;
+    }
+    
+    logger.info('尝试重新处理pending任务', {
+      pendingCount: pendingTasks.length,
+      availableInstances: availableInstances.length
+    });
+    
+    // 重新处理pending任务
+    for (const task of pendingTasks) {
+      const taskIndex = this.taskQueue.findIndex(t => t.id === task.id);
+      if (taskIndex !== -1) {
+        // 移除pending标记
+        const newTaskId = task.id.replace('_pending', '');
+        task.id = newTaskId;
+        task.failureType = undefined;
+        
+        // 移动到队列前面
+        this.taskQueue.splice(taskIndex, 1);
+        this.taskQueue.unshift(task);
+        
+        logger.debug('pending任务已重新排队', {
+          taskId: newTaskId,
+          url: task.url
+        });
+      }
+    }
+    
+    // 触发任务处理
+    this.processTaskQueue();
+  }
+
+  /**
+   * 监控性能
+   */
+  private monitorPerformance(): void {
+    try {
+      const totalActiveTasks = this.activeTasks.size;
+      const totalQueuedTasks = this.taskQueue.length;
+      const instanceStats = Array.from(this.instanceLoads.values());
+      
+      const avgResponseTime = instanceStats.reduce((sum, load) => sum + load.averageResponseTime, 0) / instanceStats.length || 0;
+      const avgSuccessRate = instanceStats.reduce((sum, load) => sum + load.successRate, 0) / instanceStats.length || 0;
+      const avgHealthScore = instanceStats.reduce((sum, load) => sum + load.healthScore, 0) / instanceStats.length || 0;
+      
+      // 统计失败类型
+      const failureTypes = new Map<string, number>();
+      this.activeTasks.forEach(task => {
+        if (task.failureType) {
+          failureTypes.set(task.failureType, (failureTypes.get(task.failureType) || 0) + 1);
+        }
+      });
+      
+      // 计算超时统计
+    let totalTimeouts = 0;
+    const networkQualityDistribution = {
+      excellent: 0,
+      good: 0,
+      fair: 0,
+      poor: 0,
+      unknown: 0
+    };
+    
+    instanceStats.forEach(load => {
+      totalTimeouts += load.timeoutCount;
+      networkQualityDistribution[load.networkQuality]++;
+    });
+    
+    const totalCompletedTasks = instanceStats.reduce((sum, load) => sum + load.totalTasks, 0);
+    const overallTimeoutRate = totalCompletedTasks > 0 ? (totalTimeouts / totalCompletedTasks) * 100 : 0;
+    
+    logger.debug('性能监控数据', {
+      activeTasks: totalActiveTasks,
+      queuedTasks: totalQueuedTasks,
+      avgResponseTime: Math.round(avgResponseTime),
+      avgSuccessRate: Math.round(avgSuccessRate * 100) / 100,
+      avgHealthScore: Math.round(avgHealthScore * 100) / 100,
+      instanceCount: instanceStats.length,
+      failureTypes: Object.fromEntries(failureTypes),
+      timeoutStats: {
+        totalTimeouts,
+        overallTimeoutRate: Math.round(overallTimeoutRate * 100) / 100,
+        adaptiveTimeoutEnabled: this.config.adaptiveTimeoutEnabled
+      },
+      networkQualityDistribution
+    });
+      
+      // 检查是否需要扩容
+      if (this.config.enableAdaptiveScaling) {
+        this.checkScalingNeeds();
+      }
+      
+    } catch (error) {
+      logger.error('性能监控失败', error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  /**
+   * 检查扩容需求
+   */
+  private checkScalingNeeds(): void {
+    const instanceStats = Array.from(this.instanceLoads.values());
+    if (instanceStats.length === 0) return;
+    
+    const avgLoad = instanceStats.reduce((sum, load) => sum + load.activeTasks, 0) / instanceStats.length;
+    const maxLoad = Math.max(...instanceStats.map(load => load.activeTasks));
+    
+    // 如果平均负载超过阈值，且还有扩容空间
+    if (avgLoad > this.config.maxTasksPerInstance * this.config.scalingThreshold && 
+        instanceStats.length < this.config.maxInstances) {
+      logger.info('检测到高负载，建议扩容', {
+        avgLoad: Math.round(avgLoad),
+        maxLoad,
+        threshold: this.config.maxTasksPerInstance * this.config.scalingThreshold,
+        currentInstances: instanceStats.length,
+        maxInstances: this.config.maxInstances
+      });
+    }
+  }
+
+  /**
+   * 取消任务
+   */
+  async cancelTask(taskId: string): Promise<boolean> {
+    try {
+      // 检查是否在活跃任务中
+      if (this.activeTasks.has(taskId)) {
+        const task = this.activeTasks.get(taskId);
+        
+        // 更新实例负载
+        const instanceId = task?.assignedInstance;
+        if (instanceId) {
+          const load = this.instanceLoads.get(instanceId);
+          if (load) {
+            load.activeTasks = Math.max(0, load.activeTasks - 1);
+          }
+          
+          // 标记实例为不再使用
+          this.markInstanceNotInUse(instanceId, taskId);
+        }
+        
+        // 从活跃任务中移除
+        this.activeTasks.delete(taskId);
+        
+        logger.info('已取消活跃任务', {
+          taskId,
+          instanceId
+        });
+        
+        return true;
+      }
+      
+      // 检查是否在队列中
+      const queueIndex = this.taskQueue.findIndex(t => t.id === taskId);
+      if (queueIndex !== -1) {
+        this.taskQueue.splice(queueIndex, 1);
+        
+        logger.info('已取消队列中的任务', {
+          taskId
+        });
+        
+        return true;
+      }
+      
+      logger.warn('未找到要取消的任务', {
+        taskId
+      });
+      
+      return false;
+    } catch (error) {
+      logger.error('取消任务失败', new Error(`取消任务 ${taskId} 失败: ${error instanceof Error ? error.message : String(error)}`));
+      
+      return false;
+    }
+  }
+
+  /**
+   * 获取浏览器池服务实例（供预热等优化操作使用）
+   */
+  getBrowserPoolService(): BrowserPoolService | null {
+    return this.browserPoolService || null;
+  }
+
+  /**
+   * 获取统计信息
+   */
+  getStats(): {
+    totalInstances: number;
+    activeTasks: string[];
+    activeTasksCount: number;
+    queuedTasks: string[];
+    queuedTasksCount: number;
+    pendingTasks: string[];
+    pendingTasksCount: number;
+    averageResponseTime: number;
+    averageSuccessRate: number;
+    averageHealthScore: number;
+    instanceLoads: InstanceLoad[];
+    strategy: string;
+    isInitialized: boolean;
+    failureTypes: Record<string, number>;
+    timeoutStats: {
+      totalTimeouts: number;
+      averageTimeoutRate: number;
+      instancesWithHighTimeoutRate: string[];
+      adaptiveTimeoutEnabled: boolean;
+      averageAdaptiveTimeout: number;
+    };
+    networkQualityStats: {
+      excellent: number;
+      good: number;
+      fair: number;
+      poor: number;
+      unknown: number;
+    };
+  } {
+    const instanceStats = Array.from(this.instanceLoads.values());
+    const avgResponseTime = instanceStats.reduce((sum, load) => sum + load.averageResponseTime, 0) / instanceStats.length || 0;
+    const avgSuccessRate = instanceStats.reduce((sum, load) => sum + load.successRate, 0) / instanceStats.length || 0;
+    const avgHealthScore = instanceStats.reduce((sum, load) => sum + load.healthScore, 0) / instanceStats.length || 0;
+    
+    // 防御性编程：确保activeTasks和queuedTasks始终是数组
+    const activeTasks = this.activeTasks ? Array.from(this.activeTasks.keys()) : [];
+    const queuedTasks = this.taskQueue ? this.taskQueue.map(task => task.id) : [];
+    
+    // 检查是否有pending任务（等待实例的任务）
+    const pendingTasks = queuedTasks.filter(taskId => taskId.includes('_pending'));
+    const activeTasksCount = activeTasks.length;
+    const queuedTasksCount = queuedTasks.length - pendingTasks.length;
+    
+    // 统计失败类型
+    const failureTypes = new Map<string, number>();
+    this.activeTasks.forEach(task => {
+      if (task.failureType) {
+        failureTypes.set(task.failureType, (failureTypes.get(task.failureType) || 0) + 1);
+      }
+    });
+    
+    // 计算超时统计
+    let totalTimeouts = 0;
+    let totalTasks = 0;
+    const instancesWithHighTimeoutRate: string[] = [];
+    
+    instanceStats.forEach(load => {
+      totalTimeouts += load.timeoutCount;
+      totalTasks += load.totalTasks;
+      
+      // 计算超时率
+      const timeoutRate = load.totalTasks > 0 ? load.timeoutCount / load.totalTasks : 0;
+      if (timeoutRate > 0.2) { // 超过20%的超时率认为是高超时率
+        instancesWithHighTimeoutRate.push(load.instanceId);
+      }
+    });
+    
+    const averageTimeoutRate = totalTasks > 0 ? totalTimeouts / totalTasks : 0;
+    
+    // 计算平均自适应超时时间
+    const adaptiveTimeouts = instanceStats.map(load => this.calculateAdaptiveTimeout(load.instanceId));
+    const averageAdaptiveTimeout = adaptiveTimeouts.length > 0 
+      ? adaptiveTimeouts.reduce((sum, timeout) => sum + timeout, 0) / adaptiveTimeouts.length 
+      : this.config.pageTimeout;
+    
+    // 统计网络质量分布
+    const networkQualityStats = {
+      excellent: 0,
+      good: 0,
+      fair: 0,
+      poor: 0,
+      unknown: 0
+    };
+    
+    instanceStats.forEach(load => {
+      networkQualityStats[load.networkQuality]++;
+    });
+    
+    return {
+      totalInstances: instanceStats.length,
+      activeTasks,
+      activeTasksCount,
+      queuedTasks,
+      queuedTasksCount,
+      pendingTasks,
+      pendingTasksCount: pendingTasks.length,
+      averageResponseTime: Math.round(avgResponseTime),
+      averageSuccessRate: Math.round(avgSuccessRate * 100) / 100,
+      averageHealthScore: Math.round(avgHealthScore * 100) / 100,
+      instanceLoads: instanceStats,
+      strategy: this.config.loadBalancingStrategy,
+      isInitialized: this.isInitialized,
+      failureTypes: Object.fromEntries(failureTypes),
+      timeoutStats: {
+        totalTimeouts,
+        averageTimeoutRate: Math.round(averageTimeoutRate * 100) / 100,
+        instancesWithHighTimeoutRate,
+        adaptiveTimeoutEnabled: this.config.adaptiveTimeoutEnabled,
+        averageAdaptiveTimeout: Math.round(averageAdaptiveTimeout)
+      },
+      networkQualityStats
+    };
+  }
+
+  /**
+   * 销毁管理器
+   */
+  async destroy(): Promise<void> {
+    if (this.healthCheckTimer) {
+      clearInterval(this.healthCheckTimer);
+      this.healthCheckTimer = null;
+    }
+    
+    if (this.performanceTimer) {
+      clearInterval(this.performanceTimer);
+      this.performanceTimer = null;
+    }
+    
+    // 取消所有活跃任务
+    for (const [taskId, task] of this.activeTasks) {
+      if (task.assignedInstance) {
+        this.markInstanceNotInUse(task.assignedInstance, taskId);
+      }
+    }
+    
+    this.activeTasks.clear();
+    this.instanceLoads.clear();
+    this.instanceUsage.clear();
+    this.taskQueue = [];
+    this.isInitialized = false;
+    this.initializationPromise = null;
+    
+    logger.info('增强多浏览器实例并发管理器已销毁');
+  }
+}
+
+// 导出类供动态实例化使用
+export { EnhancedMultiBrowserInstanceManager };
+
+// 导出单例实例
+let enhancedMultiBrowserInstanceManager: EnhancedMultiBrowserInstanceManager | null = null;
+
+export function getEnhancedMultiBrowserInstanceManager(): EnhancedMultiBrowserInstanceManager {
+  if (!enhancedMultiBrowserInstanceManager) {
+    enhancedMultiBrowserInstanceManager = new EnhancedMultiBrowserInstanceManager();
+  }
+  return enhancedMultiBrowserInstanceManager;
+}
+
+export function resetEnhancedMultiBrowserInstanceManager(): void {
+  if (enhancedMultiBrowserInstanceManager) {
+    enhancedMultiBrowserInstanceManager.destroy().catch(error => {
+      console.error('销毁增强多浏览器实例管理器失败:', error);
+    });
+    enhancedMultiBrowserInstanceManager = null;
+  }
+}
+
+// 导出类型供测试使用
+export type { BrowserInstanceTask, InstanceLoad, ConcurrencyManagerConfig };

@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": false,
+    "types": []
+  },
+  "include": [
+    "src/app/api/**/*.ts",
+    "src/lib/services/proxy-service.ts",
+    "src/lib/services/session-cookie-manager.ts", 
+    "src/lib/services/smart-request-scheduler.ts",
+    "src/lib/cache/optimized-redis-client.ts",
+    "src/lib/startup/optimized-initializer.ts",
+    "src/lib/performance/advanced-memory-optimizer.ts",
+    "middleware.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ]
+}

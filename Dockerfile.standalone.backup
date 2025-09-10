@@ -1,0 +1,117 @@
+# Alternative Dockerfile with different registry
+# 简化的多环境 Dockerfile for Next.js
+# 遵循简单实用原则，支持2C4G环境
+
+# Try alternative registries if Docker Hub is down
+FROM public.ecr.aws/docker/library/node:20.18.0-alpine AS base
+# Alternative: FROM ghcr.io/library/node:20.18.0-alpine AS base
+
+# 安装必要的系统依赖
+RUN apk add --no-cache \
+    libc6-compat \
+    curl \
+    bash \
+    && rm -rf /var/cache/apk/*
+
+WORKDIR /app
+
+# 依赖安装阶段
+FROM base AS deps
+
+# 复制依赖文件
+COPY package.json package-lock.json ./
+
+# 优化npm配置以加速安装
+RUN npm config set registry https://registry.npmjs.org/ && \
+    npm config set cache /tmp/.npm && \
+    npm config set prefer-offline true && \
+    npm config set maxsockets 20
+
+# 安装生产依赖（内存优化）
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+RUN npm ci --only=production --no-audit --no-fund --prefer-offline
+
+# 构建阶段
+FROM base AS builder
+
+# 优化npm配置
+RUN npm config set registry https://registry.npmjs.org/ && \
+    npm config set cache /tmp/.npm && \
+    npm config set prefer-offline true && \
+    npm config set maxsockets 20
+
+# 安装所有依赖（包括devDependencies用于构建）
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund --prefer-offline
+
+# 先复制Prisma schema以利用缓存
+COPY prisma ./prisma
+
+# 生成 Prisma 客户端（利用缓存）
+RUN npx prisma generate
+
+# 复制源代码（放在Prisma之后以优化缓存）
+COPY . .
+
+# 构建应用（支持多环境）
+ARG NEXT_PUBLIC_DEPLOYMENT_ENV=preview
+ARG NEXT_PUBLIC_DOMAIN=urlchecker.dev
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_DEPLOYMENT_ENV=${NEXT_PUBLIC_DEPLOYMENT_ENV}
+ENV NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN}
+
+# 构建阶段需要更多内存
+ENV NODE_OPTIONS="--max-old-space-size=2048"
+
+RUN npm run build
+
+# 生产运行阶段
+FROM base AS runner
+
+# 创建非root用户
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+WORKDIR /app
+
+# 复制生产依赖
+COPY --from=deps /app/node_modules ./node_modules
+
+# 复制构建产物
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# 复制 Prisma 文件和启动脚本
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/smart-start.sh ./scripts/
+
+# 设置环境变量（2C4G优化）
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# 内存优化配置
+# 4G容器: 2048MB堆内存 (50%规则)
+# 2G容器: 1024MB堆内存 (50%规则)  
+ENV NODE_OPTIONS="--max-old-space-size=2048 --max-semi-space-size=128 --incremental-marking"
+ENV MEMORY_OPTIMIZED=true
+
+# 切换到非root用户
+USER nextjs
+
+# 暴露端口
+EXPOSE 3000
+
+# 简化的健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+# 使用智能启动脚本（自动配置内存）
+CMD ["./scripts/smart-start.sh"]
+</text>
+</invoke>

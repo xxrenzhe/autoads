@@ -101,7 +101,11 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 - **FR3.6**: 新用户注册自动获得14天Pro套餐
 - **FR3.7**: 邀请注册机制（邀请者和被邀请者各得30天Pro）
 - **FR3.8**: 套餐到期自动降级机制
-- **FR3.9**: 套餐配置后台管理功能
+- **FR3.9**: 试用期叠加规则：
+  - 新用户通过邀请链接注册：获得14天（新用户）+ 30天（邀请奖励）= 44天Pro
+  - 多次邀请奖励可累加，但最长不超过365天
+  - 试用期从激活开始计算，不可暂停
+- **FR3.10**: 套餐配置后台管理功能
 
 #### FR4: BatchGo 微服务（支持HTTP和Puppeteer访问模式）
 - **FR4.1**: 完整迁移三种执行模式（Basic/Silent/Automated）
@@ -122,8 +126,10 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 
 - **FR4.5**: **Basic 版本权限**：
   - 支持单线程串行执行
+  - 使用轻量级HTTP请求模式（无浏览器渲染）
   - 简单的任务结果统计
   - 最大支持 100 个 URL/任务
+  - 不支持代理轮换和高级功能
 
 - **FR4.6**: **Silent 版本权限**：
   - 支持多线程并发执行（最多 5 线程）
@@ -198,23 +204,21 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 - **FR7.7**: 多用户界面适配（用户信息展示等）
 
 #### FR8: Token 管理系统
-- **FR8.1**: 统一 Token 余额架构：
-  - **主余额 (main_balance)**: 所有功能消费的统一扣除账户
-  - **活动余额 (activity_balance)**: 签到、邀请等营销活动获得
-  - **购买余额 (purchased_balance)**: 用户充值购买的Tokens
-  - **订阅余额 (subscription_balance)**: 套餐包含的Tokens
-  - 所有子账户余额自动汇总到主余额用于消费
+- **FR8.1**: 简化 Token 余额架构：
+  - **单一 Token 余额**: 所有用户只有一个 token_balance 字段
+  - **交易来源追踪**: 通过 transaction 记录区分 Token 来源（订阅/购买/活动奖励）
+  - **优先级逻辑**: 消费时自动按优先级扣除不同来源的 Token
 
-- **FR8.2**: Token 充值和消费统计
-- **FR8.3**: Token 消费规则配置
-- **FR8.4**: Token 交易记录管理
-- **FR8.5**: Token 使用分析报表
-- **FR8.6**: 每日签到奖励 Token 机制
-- **FR8.7**: Token 余额优先级使用规则：
-  1. 订阅余额（最先使用，避免浪费）
-  2. 活动余额（有有效期限制）
-  3. 购买余额（用户付费购买）
-  4. 系统自动计算最优使用策略
+- **FR8.2**: Token 来源和优先级：
+  1. **订阅赠送**: 套餐包含的 Tokens（优先使用，避免过期浪费）
+  2. **活动奖励**: 签到、邀请等活动获得（有30天有效期）
+  3. **用户购买**: 充值购买的 Tokens（无有效期限制）
+
+- **FR8.3**: Token 充值和消费统计
+- **FR8.4**: Token 消费规则配置
+- **FR8.5**: Token 交易记录管理（记录每笔交易的来源）
+- **FR8.6**: Token 使用分析报表
+- **FR8.7**: 每日签到奖励 Token 机制
 
 #### FR9: 用户中心功能
 - **FR9.1**: 个人信息管理
@@ -286,7 +290,7 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 - **NFR2.5**: 完整的操作审计日志
 
 #### NFR3: 数据库需求
-- **NFR3.1**: 使用 MySQL 8.0 作为主数据库（重要：当前Prisma schema配置为PostgreSQL，需迁移至MySQL）
+- **NFR3.1**: 使用 MySQL 8.0 作为主数据库（全新部署，无需数据迁移）
 - **NFR3.2**: 使用 Redis 7.0 作为缓存和会话存储
 - **NFR3.3**: 支持数据库连接池和读写分离
 - **NFR3.4**: 数据定期备份和恢复机制
@@ -472,7 +476,7 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 - **配置示例**: 
   - DATABASE_URL=mysql://root:jtl85fn8@dbprovider.sg-members-1.clawcloudrun.com:30354
   - REDIS_URL=redis://default:9xdjb8nf@dbprovider.sg-members-1.clawcloudrun.com:32284
-- **注意**: 当前Prisma schema使用PostgreSQL，需要迁移到MySQL 8.0
+- **注意**: 全新MySQL数据库部署，无需迁移现有数据
 
 #### 3.3.2 用户数据隔离
 采用**用户ID字段**方案，所有业务表包含 user_id 字段：
@@ -668,7 +672,145 @@ CREATE TABLE api_rate_limit (
 );
 ```
 
-#### 3.3.2 业务表结构示例
+#### 3.3.3 API 限速实现策略
+
+**限流算法选择**: 滑动时间窗口算法
+
+**Redis 键设计**:
+```
+rate_limit:{user_id}:{api_path}:{minute}
+```
+
+**实现示例**:
+```go
+func RateLimitMiddleware(apiPath string) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        userID := c.GetUint("user_id")
+        planID := getUserPlanID(userID)
+        
+        // 从Redis获取限流配置
+        limits, _ := getRateLimits(apiPath, planID)
+        
+        // 滑动窗口计数
+        key := fmt.Sprintf("rate_limit:%d:%s:%d", userID, apiPath, time.Now().Unix()/60)
+        count, _ := redis.Incr(key)
+        if count == 1 {
+            redis.Expire(key, 60*time.Second)
+        }
+        
+        if int(count) > limits.PerMinute {
+            c.JSON(429, gin.H{
+                "code": 429,
+                "message": "请求过于频繁，请稍后再试",
+                "retry_after": "60s"
+            })
+            c.Abort()
+            return
+        }
+        
+        c.Next()
+    }
+}
+```
+
+**热更新机制**:
+- 限流配置变更时，发布到Redis频道
+- 所有服务订阅配置变更，实时更新内存缓存
+- 无需重启服务即可生效
+
+#### 3.3.5 外部API Key管理
+
+**API Key存储架构**:
+```go
+// API Key管理器
+type APIKeyManager struct {
+    redis   *redis.Client
+    cipher  *crypto.Cipher
+    config  *Config
+}
+
+// 加密存储API Key
+func (m *APIKeyManager) StoreKey(service, key string) error {
+    encrypted, err := m.cipher.Encrypt(key)
+    if err != nil {
+        return err
+    }
+    
+    return m.redis.HSet("api_keys", service, encrypted)
+}
+
+// 获取API Key
+func (m *APIKeyManager) GetKey(service string) (string, error) {
+    encrypted, err := m.redis.HGet("api_keys", service)
+    if err != nil {
+        return "", err
+    }
+    
+    return m.cipher.Decrypt(encrypted)
+}
+```
+
+**Key轮换和监控**:
+- 定期自动轮换API Key（每90天）
+- 使用量监控和异常检测
+- 多Key备份机制确保服务连续性
+- Key失效自动切换到备用Key
+
+**使用策略**:
+- SimilarWeb API: 轮询使用多个Key
+- Google Ads API: 每个用户独立的OAuth Token
+- 代理服务API: 动态分配最优Key
+
+#### 3.3.6 监控和告警系统
+
+**监控指标收集**:
+```yaml
+# Prometheus配置示例
+scrape_configs:
+  - job_name: 'autoads_services'
+    static_configs:
+      - targets: ['api-gateway:8080']
+      - targets: ['batchgo:8081']
+      - targets: ['siterank:8082']
+      - targets: ['changelink:8083']
+```
+
+**关键监控指标**:
+- 系统指标: CPU、内存、磁盘、网络使用率
+- 应用指标: QPS、响应时间、错误率、Token消耗速度
+- 业务指标: 用户活跃度、任务成功率、API调用次数
+- 数据库指标: 连接数、慢查询、锁等待时间
+
+**告警规则配置**:
+```yaml
+groups:
+- name: autoads_alerts
+  rules:
+  - alert: HighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "HTTP错误率过高"
+      description: "5分钟内错误率超过10%"
+  
+  - alert: TokenBalanceLow
+    expr: user_token_balance < 100
+    for: 1h
+    labels:
+      severity: warning
+    annotations:
+      summary: "用户Token余额不足"
+      description: "用户Token余额低于100"
+```
+
+**通知渠道**:
+- 飞书Webhook: 实时告警通知
+- 邮件通知: 每日/周报
+- 短信告警: P0级故障
+
+#### 3.3.7 业务表结构示例
 ```sql
 -- BatchGo 任务表
 CREATE TABLE batch_task (
@@ -737,9 +879,121 @@ INSERT INTO subscription_plan (name, code, price, annual_price, tokens, features
 ```
 ```
 
-### 3.4 API 设计
+### 3.4 技术实现澄清
 
-#### 3.4.1 RESTful API 规范
+#### 3.4.1 GoFly 集成范围明细
+
+**需要集成的 GoFly 模块**：
+| 模块名称 | 集成方式 | 用途 |
+|---------|----------|------|
+| 用户管理 | 完整集成 | 用户注册、登录、资料管理 |
+| RBAC权限 | 完整集成 | 角色权限控制 |
+| 系统配置 | 完整集成 | 系统参数配置管理 |
+| 操作日志 | 完整集成 | 审计日志记录 |
+| 数据可视化 | 选择性集成 | 仅使用图表组件 |
+| 菜单管理 | 自定义开发 | 根据业务需求定制 |
+| 通知系统 | 自定义开发 | 集成飞书等特定需求 |
+
+**自定义开发的功能模块**：
+- 套餐管理系统
+- Token 充值和消费系统
+- 签到和邀请系统
+- 三大核心业务功能
+
+#### 3.4.2 微服务通信矩阵
+
+**服务间通信协议**：
+- **API Gateway → 业务服务**: gRPC (高性能内部通信)
+- **前端 → API Gateway**: RESTful API + WebSocket
+- **业务服务 → 外部API**: HTTP/HTTPS
+
+**服务依赖关系**：
+```
+API Gateway (GoFly)
+    ├── User Service (gRPC)
+    ├── BatchGo Service (gRPC)
+    ├── SiteRankGo Service (gRPC)
+    ├── ChangeLinkGo Service (gRPC)
+    └── External APIs (HTTP)
+        ├── SimilarWeb API
+        ├── Google Ads API
+        └── AdsPower API
+```
+
+#### 3.4.3 性能指标明确定义
+
+**BatchGo 性能基准**：
+- **当前性能基准**: Node.js单进程，最高20并发
+- **目标性能提升**: 500% (从20并发提升到100并发)
+- **各套餐并发限制**:
+  - Free: 1并发 (Basic版本)
+  - Pro: 5并发 (Silent版本)
+  - Max: 50并发 (Automated版本)
+- **HTTP模式性能**: 10倍于Puppeteer模式并发量
+
+**系统整体性能目标**：
+- API响应时间: P95 < 200ms
+- 支持并发用户: 5,000+
+- 系统可用性: 99.9%
+- 数据库查询: P95 < 100ms
+
+#### 3.4.4 数据隔离实现策略
+
+**数据库层面隔离**：
+- 所有业务表必须包含 `user_id` 字段
+- 所有查询必须包含 `user_id = ?` 条件
+- 使用数据库视图简化常用查询
+
+**应用层面隔离**：
+```go
+// 数据查询中间件示例
+func UserDataMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        userID := c.GetUint("user_id")
+        if userID == 0 {
+            c.JSON(401, gin.H{"error": "未授权"})
+            c.Abort()
+            return
+        }
+        
+        // 将user_id注入查询参数
+        c.Set("db_user_id", userID)
+        c.Next()
+    }
+}
+```
+
+**API层面隔离**：
+- 所有API自动验证用户权限
+- 禁止跨用户数据访问
+- 操作日志记录所有数据访问
+
+#### 3.4.5 缓存策略详解
+
+**缓存层级**：
+1. **Redis缓存** (共享)
+   - 用户会话信息
+   - 热点业务数据
+   - API限流计数器
+
+2. **本地缓存** (服务内)
+   - 配置信息
+   - 字典数据
+   - 用户权限信息
+
+**缓存失效策略**：
+- **主动失效**: 数据更新时立即清除相关缓存
+- **被动失效**: TTL过期自动清除
+- **预热机制**: 系统启动时加载热点数据
+
+**SiteRankGo缓存规则**：
+- 查询结果缓存: 24小时
+- 域名基本信息: 7天
+- 趋势分析数据: 1小时
+
+### 3.5 API 设计
+
+#### 3.5.1 RESTful API 规范
 ```
 # 用户认证相关
 POST   /api/v1/auth/register          # 用户注册
@@ -1877,6 +2131,7 @@ services:
 | v6.0 | 2025-01-09 | 移除Stripe支付集成，更新Token充值价格为¥150/10,000起，确认套餐配置信息 | 产品团队 |
 | v7.0 | 2025-01-10 | 优化前端访问策略：支持免登录浏览，功能按钮强制登录；细化BatchGo权限矩阵；更新微服务部署流程 | 产品团队 |
 | v8.0 | 2025-01-10 | 完善需求描述，解决不一致问题：明确使用MySQL数据库；统一Token系统架构；细化BatchGo模式选择逻辑；明确手动充值模式；选择性集成GoFly框架 | 产品团队 |
+| v9.0 | 2025-01-10 | 完善技术实现细节：添加外部API Key管理策略；完善监控和告警系统；明确所有 ambiguities；添加性能指标和部署流程 | 产品团队 |
 
 ## 7. 附录
 
