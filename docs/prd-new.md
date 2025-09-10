@@ -108,7 +108,7 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 - **FR1.5**: 登录状态保持和自动续期
 
 #### FR2: 管理员系统
-- **FR2.1**: 初始化超级管理员账号（用户名: admin，密码可配置）
+- **FR2.1**: 初始化管理员账号（用户名: admin，密码可配置）
 - **FR2.2**: 管理员通过账号密码登录后台管理系统
 - **FR2.3**: 管理员可管理所有用户账号
 - **FR2.4**: 管理员可查看系统运行状态和日志
@@ -476,7 +476,7 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 - 三级权限控制：模块级 → 角色级 → 操作级
 - 动态菜单生成
 - 数据范围自动过滤
-- 支持超级管理员角色
+- 支持管理员角色
 
 **3. 自研ORM (gform)**
 - Active Record模式
@@ -650,7 +650,7 @@ CREATE TABLE users (
     name VARCHAR(191),
     avatar VARCHAR(191),
     email_verified BOOLEAN DEFAULT false,
-    role ENUM('USER', 'ADMIN', 'SUPER_ADMIN') DEFAULT 'USER',
+    role ENUM('USER', 'ADMIN') DEFAULT 'USER',
     status ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED', 'BANNED') DEFAULT 'ACTIVE',
     password VARCHAR(191) UNIQUE,
     -- Token余额相关字段
@@ -1969,7 +1969,7 @@ services:
 **so that** 我可以管理用户和系统配置。
 
 **验收标准**:
-- [ ] 初始化超级管理员账号（admin）
+- [ ] 初始化管理员账号（admin）
 - [ ] 独立的后台登录入口
 - [ ] 管理员密码可修改
 - [ ] 登录失败次数限制
@@ -2503,7 +2503,7 @@ ADMIN (管理员):
 ```
 
 **移除的角色**：
-- SUPER_ADMIN: 功能合并到ADMIN
+- 简化角色系统：只保留USER和ADMIN两个角色
 - MANAGER: 功能下放到ADMIN或通过套餐权限控制
 
 #### 6.2.2 权限控制机制
@@ -3011,7 +3011,7 @@ func AuthMiddleware(permissions ...string) gin.HandlerFunc {
 ```
 1. 访问管理后台登录页面 (/admin/login)
 2. 输入管理员账号和密码
-   - 管理员账号由系统预设或超级管理员创建
+   - 管理员账号由系统预设或现有管理员创建
    - 不提供公开注册功能
    - 账号信息存储在admin_account表
 3. GoFly Admin内置认证系统验证
@@ -3267,12 +3267,7 @@ func RoleMiddleware(roles ...string) gin.HandlerFunc {
 
 // 管理后台访问控制
 func AdminAccessMiddleware() gin.HandlerFunc {
-    return RoleMiddleware("ADMIN", "SUPER_ADMIN")
-}
-
-// 超级管理员权限控制
-func SuperAdminMiddleware() gin.HandlerFunc {
-    return RoleMiddleware("SUPER_ADMIN")
+    return RoleMiddleware("ADMIN")
 }
 ```
 
@@ -4713,7 +4708,7 @@ CREATE TABLE admin_account (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE COMMENT '管理员用户名',
     password VARCHAR(255) NOT NULL COMMENT '密码(加密存储)',
-    role ENUM('SUPER_ADMIN', 'ADMIN', 'OPERATOR') DEFAULT 'ADMIN' COMMENT '角色',
+    role ENUM('ADMIN') DEFAULT 'ADMIN' COMMENT '角色',
     name VARCHAR(100) COMMENT '显示名称',
     email VARCHAR(100) COMMENT '邮箱',
     status TINYINT DEFAULT 1 COMMENT '状态:1启用,0禁用',
@@ -4737,7 +4732,7 @@ CREATE TABLE business_account (
     avatar VARCHAR(500) COMMENT '头像URL',
     google_id VARCHAR(100) COMMENT 'Google用户ID',
     email_verified BOOLEAN DEFAULT false COMMENT '邮箱是否验证',
-    role ENUM('USER', 'ADMIN', 'SUPER_ADMIN') DEFAULT 'USER' COMMENT '角色',
+    role ENUM('USER', 'ADMIN') DEFAULT 'USER' COMMENT '角色',
     status ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED', 'BANNED') DEFAULT 'ACTIVE' COMMENT '状态',
     plan ENUM('FREE', 'PRO', 'MAX') DEFAULT 'FREE' COMMENT '当前套餐',
     tokens INT DEFAULT 0 COMMENT 'Token余额',
@@ -5191,7 +5186,7 @@ GoFly后端 → WebSocket → 前端组件
 
 **3. 认证统一化**
 - 用户和管理员使用同一套认证系统
-- 基于角色的权限控制（USER/ADMIN/SUPER_ADMIN）
+- 基于角色的权限控制（USER/ADMIN）
 - 统一的JWT Token，通过role字段区分权限
 - 管理员通过独立入口访问管理后台
 
