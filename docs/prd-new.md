@@ -125,12 +125,13 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
   - 适合需要真实浏览器环境的任务
 
 - **FR4.5**: **Basic 版本权限**：
-  - 支持单线程串行执行
-  - **必须使用Puppeteer模式**（真实浏览器环境）
-  - 简单的任务结果统计
+  - **纯前端实现**：使用浏览器原生 window.open() API
+  - 在用户浏览器中批量打开新标签页
+  - 不依赖后端服务器资源
+  - 固定200ms打开间隔
   - 最大支持 100 个 URL/任务
-  - 不支持代理轮换和高级功能
-  - 适合需要真实浏览器渲染的简单任务
+  - 依赖用户手动配置代理
+  - 适合简单的批量打开需求
 
 - **FR4.6**: **Silent 版本权限**：
   - 支持多线程并发执行（最多 5 线程）
@@ -330,14 +331,14 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 #### 套餐配置详情
 
 **免费套餐（Free）**:
-- "真实点击"功能，仅支持"初级版本"（Basic，Puppeteer模式）
+- "真实点击"功能，包括"初级版本"（Basic，前端标签页打开）和"静默版本"（Silent，支持HTTP和Puppeteer模式）
 - "网站排名"功能，批量查询域名上限 100 个/次
 - 包含 1,000 tokens
 
 **高级套餐（Pro）**:
 - ¥298/月（年付优惠 50%）
 - 支持所有免费套餐的功能
-- "真实点击"功能，新增"静默版本"（Silent，支持HTTP和Puppeteer模式）
+- "真实点击"功能，新增"自动化版本"（Automated，支持HTTP和Puppeteer模式）
 - "网站排名"功能，批量查询域名上限 500 个/次
 - "自动化广告"功能，批量管理 ads 账号（上限 10 个）
 - 包含 10,000 tokens
@@ -345,7 +346,6 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 **白金套餐（Max）**:
 - ¥998/月（年付优惠 50%）
 - 支持所有高级套餐的功能
-- "真实点击"功能，新增"自动化版本"（Automated，支持HTTP和Puppeteer模式）
 - "网站排名"功能，批量查询域名上限 5,000 个/次
 - "自动化广告"功能，批量管理 ads 账号（上限 100 个）
 - 包含 100,000 tokens
@@ -354,11 +354,12 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 
 | 功能模块 | Free 套餐 | Pro 套餐 | Max 套餐 |
 |---------|-----------|----------|----------|
-| **BatchGo Basic** | ✓ (仅Puppeteer) | ✓ (仅Puppeteer) | ✓ (仅Puppeteer) |
-| **BatchGo Silent** | ✗ | ✓ (HTTP+Puppeteer) | ✓ (HTTP+Puppeteer) |
-| **BatchGo Automated** | ✗ | ✗ | ✓ (HTTP+Puppeteer) |
-| **HTTP访问模式** | ✗ | ✓ (仅Silent) | ✓ (Silent+Automated) |
-| **Puppeteer访问模式** | ✓ (仅Basic) | ✓ (所有版本) | ✓ (所有版本) |
+| **BatchGo Basic** | ✓ (前端打开) | ✓ (前端打开) | ✓ (前端打开) |
+| **BatchGo Silent** | ✓ (HTTP+Puppeteer) | ✓ (HTTP+Puppeteer) | ✓ (HTTP+Puppeteer) |
+| **BatchGo Automated** | ✗ | ✓ (HTTP+Puppeteer) | ✓ (HTTP+Puppeteer) |
+| **HTTP访问模式** | ✓ (仅Silent) | ✓ (Silent+Automated) | ✓ (Silent+Automated) |
+| **Puppeteer访问模式** | ✓ (仅Silent) | ✓ (Silent+Automated) | ✓ (Silent+Automated) |
+| **前端标签页打开** | ✓ (仅Basic) | ✓ (包含Basic) | ✓ (包含Basic) |
 | **单次任务URL数量** | 100 | 1,000 | 5,000 |
 | **并发任务数** | 1 | 5 | 50 |
 | **HTTP模式并发倍数** | - | 10x | 10x |
@@ -2715,17 +2716,22 @@ const apiClient = {
 
 套餐功能权限:
   Free套餐:
-    - BatchGo Basic: 100个URL/任务，串行执行
+    - BatchGo Basic: 100个URL/任务，前端标签页打开
+    - BatchGo Silent: 100个URL/任务，1并发（HTTP+Puppeteer）
     - SiteRankGo: 100个域名/次
     - ChangeLinkGo: 不支持
   
   Pro套餐:
-    - BatchGo Silent: 1,000个URL/任务，5并发
+    - BatchGo Basic: 100个URL/任务，前端标签页打开
+    - BatchGo Silent: 1,000个URL/任务，5并发（HTTP+Puppeteer）
+    - BatchGo Automated: 1,000个URL/任务，5并发（HTTP+Puppeteer）
     - SiteRankGo: 500个域名/次
     - ChangeLinkGo: 10个Google Ads账户
   
   Max套餐:
-    - BatchGo Automated: 5,000个URL/任务，50并发
+    - BatchGo Basic: 100个URL/任务，前端标签页打开
+    - BatchGo Silent: 5,000个URL/任务，50并发（HTTP+Puppeteer）
+    - BatchGo Automated: 5,000个URL/任务，50并发（HTTP+Puppeteer）
     - SiteRankGo: 5,000个域名/次
     - ChangeLinkGo: 100个Google Ads账户
 ```
@@ -2815,6 +2821,7 @@ GoFly后端 → WebSocket → 前端组件
 | v13.0 | 2025-01-10 | 全面补充GoFly集成架构：添加业务模块管理界面、前端交互集成、权限系统集成、数据流设计和详细实施计划 | 产品团队 |
 | v14.0 | 2025-01-10 | 优化系统架构：评估并选择Redis Pub/Sub替代Kafka；简化角色系统为USER和ADMIN两级；设计完整的API限流和安全机制 | 产品团队 |
 | v15.0 | 2025-01-10 | 进一步简化架构：从微服务改为单体应用+模块化设计；修正Basic版本权限描述（仅支持Puppeteer模式）；优化部署流程 | 产品团队 |
+| v17.0 | 2025-01-10 | 修正套餐内容和权限矩阵：Free套餐支持Basic+Silent版本；Pro套餐新增Automated版本；Max套餐SiteRank查询上限5000个；更新各版本URL数量和并发数配置 | 产品团队 |
 
 ## 8. 附录
 
