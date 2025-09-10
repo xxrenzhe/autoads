@@ -4,7 +4,7 @@
 - **项目名称**: AutoAds 多用户 SaaS 系统重构
 - **版本**: v2.0
 - **创建日期**: 2025-01-09
-- **最后更新**: 2025-01-09
+- **最后更新**: 2025-01-10
 - **负责人**: 产品团队
 
 ## 执行摘要
@@ -122,13 +122,12 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 
 - **FR4.5**: **Basic 版本权限**：
   - 支持单线程串行执行
-  - 可选择HTTP或Puppeteer模式
-  - 基础代理轮换功能
   - 简单的任务结果统计
   - 最大支持 100 个 URL/任务
 
 - **FR4.6**: **Silent 版本权限**：
   - 支持多线程并发执行（最多 5 线程）
+  - 支持 **HTTP访问模式** 和 **Puppeteer访问模式**
   - 高级代理池管理（自动检测和切换）
   - 智能重试机制和错误恢复
   - 支持自定义执行间隔
@@ -136,6 +135,7 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 
 - **FR4.7**: **Automated 版本权限**：
   - 支持大规模并发执行（最多 50 线程）
+  - 支持 **HTTP访问模式** 和 **Puppeteer访问模式**
   - 企业级代理池（多地区、自动负载均衡）
   - 智能调度和优先级队列
   - 实时监控和性能分析
@@ -161,10 +161,16 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 
 #### FR7: 前端界面优化
 - **FR7.1**: 保持现有页面布局和导航结构
-- **FR7.2**: 优化 UI 设计，提升视觉体验
-- **FR7.3**: 响应式设计，支持移动端访问
-- **FR7.4**: 实时数据展示和交互优化
-- **FR7.5**: 多用户界面适配（用户信息展示等）
+- **FR7.2**: 支持免登录访问网站页面（无需模糊预览）
+- **FR7.3**: 功能按钮点击时强制引导登录：
+  - SiteRank的"开始分析"按钮
+  - BatchOpen的"代理认证"、"批量打开"、"新增任务"按钮
+  - ChangeLink的"立即使用"按钮
+  - 价格页面的"立即订阅"按钮
+- **FR7.4**: 优化 UI 设计，提升视觉体验
+- **FR7.5**: 响应式设计，支持移动端访问
+- **FR7.6**: 实时数据展示和交互优化
+- **FR7.7**: 多用户界面适配（用户信息展示等）
 
 #### FR8: Token 管理系统
 - **FR8.1**: Token 充值和消费统计
@@ -285,13 +291,13 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 | **BatchGo Basic** | ✓ | ✓ | ✓ |
 | **BatchGo Silent** | ✓ | ✓ | ✓ |
 | **BatchGo Automated** | ✗ | ✓ | ✓ |
-| **HTTP访问模式** | ✓ | ✓ | ✓ |
-| **Puppeteer访问模式** | ✓ | ✓ | ✓ |
+| **HTTP访问模式** | ✗ | ✓ (仅Silent/Automated) | ✓ (仅Silent/Automated) |
+| **Puppeteer访问模式** | ✗ | ✓ (仅Silent/Automated) | ✓ (仅Silent/Automated) |
 | **单次任务URL数量** | 100 | 1,000 | 5,000 |
 | **并发任务数** | 1 | 5 | 50 |
-| **HTTP模式并发倍数** | 10x | 10x | 10x |
+| **HTTP模式并发倍数** | - | 10x | 10x |
 | **SiteRankGo 查询限制** | 100/次 | 500/次 | 5,000/次 |
-| **SiteRankGo 查询频率** | 100/天 | 1,000/天 | 无限制 |
+| **SiteRankGo 查询频率** | 无限制 | 无限制 | 无限制 |
 | **ChangeLinkGo 账户数** | 不支持 | 10个 | 100个 |
 | **包含Token数量** | 1,000 | 10,000 | 100,000 |
 | **API 调用频率** | 100/小时 | 1,000/小时 | 10,000/小时 |
@@ -990,13 +996,188 @@ type LogEntry struct {
 
 #### 构建过程集成
 - 前端：Next.js 构建
-- 后端：Go 二进制文件
+- 后端：Go 微服务独立构建
 - Docker 容器化部署
+
+#### 微服务镜像构建和部署流程
+
+**1. 镜像构建策略**
+```yaml
+# GitHub Actions 工作流示例
+name: Build and Deploy Microservices
+on:
+  push:
+    branches: [ main, production ]
+  tags:
+    - 'v*'
+
+jobs:
+  # 前端构建
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Build Frontend
+        run: |
+          npm ci
+          npm run build
+          docker build -f Dockerfile.frontend -t ghcr.io/xxrenzhe/autoads-frontend:${{ github.sha }} .
+      
+  # GoFly API 网关构建
+  build-gofly-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21'
+      - name: Build GoFly API
+        run: |
+          cd gofly_admin_v3
+          go mod download
+          CGO_ENABLED=0 GOOS=linux go build -o main .
+          docker build -f Dockerfile.gofly -t ghcr.io/xxrenzhe/autoads-gofly-api:${{ github.sha }} .
+      
+  # BatchGo 服务构建
+  build-batchgo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21'
+      - name: Build BatchGo Service
+        run: |
+          cd services/batchgo
+          go mod download
+          CGO_ENABLED=0 GOOS=linux go build -o batchgo .
+          docker build -f Dockerfile.service -t ghcr.io/xxrenzhe/autoads-batchgo:${{ github.sha }} .
+      
+  # SiteRankGo 服务构建
+  build-siterankgo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21'
+      - name: Build SiteRankGo Service
+        run: |
+          cd services/siterankgo
+          go mod download
+          CGO_ENABLED=0 GOOS=linux go build -o siterankgo .
+          docker build -f Dockerfile.service -t ghcr.io/xxrenzhe/autoads-siterankgo:${{ github.sha }} .
+      
+  # ChangeLinkGo 服务构建
+  build-changelinkgo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21'
+      - name: Build ChangeLinkGo Service
+        run: |
+          cd services/changelinkgo
+          go mod download
+          CGO_ENABLED=0 GOOS=linux go build -o changelinkgo .
+          docker build -f Dockerfile.service -t ghcr.io/xxrenzhe/autoads-changelinkgo:${{ github.sha }} .
+```
+
+**2. 部署流程**
+
+**步骤 1：镜像推送规则**
+- Preview 环境：`ghcr.io/xxrenzhe/autoads-*-service:preview-latest`
+- Production 环境：`ghcr.io/xxrenzhe/autoads-*-service:prod-latest`
+- 版本标签：`ghcr.io/xxrenzhe/autoads-*-service:prod-v1.0.0`
+
+**步骤 2：ClawCloud 部署配置**
+```yaml
+# docker-compose.yml 示例
+version: '3.8'
+services:
+  # API 网关
+  gofly-api:
+    image: ghcr.io/xxrenzhe/autoads-gofly-api:prod-latest
+    ports:
+      - "8200:8200"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - mysql
+      - redis
+  
+  # BatchGo 服务
+  batchgo-service:
+    image: ghcr.io/xxrenzhe/autoads-batchgo:prod-latest
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - GOFLY_API_URL=http://gofly-api:8200
+    depends_on:
+      - gofly-api
+  
+  # SiteRankGo 服务
+  siterankgo-service:
+    image: ghcr.io/xxrenzhe/autoads-siterankgo:prod-latest
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SIMILARWEB_API_KEY=${SIMILARWEB_API_KEY}
+    depends_on:
+      - gofly-api
+  
+  # ChangeLinkGo 服务
+  changelinkgo-service:
+    image: ghcr.io/xxrenzhe/autoads-changelinkgo:prod-latest
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - GOOGLE_ADS_CLIENT_ID=${GOOGLE_ADS_CLIENT_ID}
+      - ADSPOWER_API_KEY=${ADSPOWER_API_KEY}
+    depends_on:
+      - gofly-api
+  
+  # 前端
+  frontend:
+    image: ghcr.io/xxrenzhe/autoads-frontend:prod-latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=https://api.autoads.dev
+    depends_on:
+      - gofly-api
+```
+
+**步骤 3：部署顺序**
+1. 部署基础设施（MySQL、Redis）
+2. 部署 API 网关（GoFly）
+3. 并行部署业务微服务
+4. 部署前端应用
+5. 配置负载均衡和域名
+
+**步骤 4：健康检查和监控**
+- 每个服务提供 `/health` 端点
+- 自动故障检测和重启
+- 服务发现和注册
+- 实时性能监控
 
 #### 部署策略
 - 使用 GitHub Actions 构建 Docker 镜像
 - ClawCloud 容器平台部署
 - 支持预发和生产环境
+- 微服务独立部署和滚动更新
+- 灰度发布和蓝绿部署支持
 
 #### 监控和日志
 - 集成 Prometheus + Grafana
@@ -1612,6 +1793,7 @@ type LogEntry struct {
 | v4.0 | 2025-01-09 | 更新为使用新数据库无需迁移，添加HTTP/Puppeteer双模式支持 | 产品团队 |
 | v5.0 | 2025-01-09 | 添加完整的用户运营功能：Token系统、签到、邀请、试用套餐、个人中心、管理员仪表板等 | 产品团队 |
 | v6.0 | 2025-01-09 | 移除Stripe支付集成，更新Token充值价格为¥150/10,000起，确认套餐配置信息 | 产品团队 |
+| v7.0 | 2025-01-10 | 优化前端访问策略：支持免登录浏览，功能按钮强制登录；细化BatchGo权限矩阵；更新微服务部署流程 | 产品团队 |
 
 ## 7. 附录
 
