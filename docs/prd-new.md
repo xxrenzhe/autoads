@@ -2,14 +2,14 @@
 
 ## 文档信息
 - **项目名称**: AutoAds 多用户 SaaS 系统
-- **版本**: v28.0
+- **版本**: v29.2
 - **创建日期**: 2025-01-09
-- **最后更新**: 2025-09-10
+- **最后更新**: 2025-09-12
 - **负责人**: 产品团队
 
 ## 执行摘要
 
-AutoAds 正在从 Next.js 单体应用重构为基于 GoFly 框架的多用户 SaaS 系统。当前系统已实现完整的用户认证、权限管理和三大核心功能，包括：✅ BatchOpen（批量访问，已实现三种模式）、✅ SiteRank（网站排名，已集成真实SimilarWeb API）、❌ ChangeLink（链接管理，仅有UI原型）。重构目标是将现有功能迁移至 Go 语言 + GoFly 架构，实现4900%性能提升和专业的后台管理系统。
+AutoAds 正在从 Next.js 单体应用重构为基于 GoFly 框架的多用户 SaaS 系统。当前系统已实现完整的用户认证、权限管理和三大核心功能，包括：✅ BatchOpen（批量访问，已实现三种模式）、✅ SiteRank（网站排名，已集成真实SimilarWeb API）、❌ ChangeLink（链接管理，仅有UI原型）。重构目标是将现有功能（BatchOpen→BatchGo、SiteRank→SiteRankGo、ChangeLink→AdsCenterGo）迁移至 Go 语言 + GoFly 架构，实现4900%性能提升和专业的后台管理系统。
 
 ## 1. 项目概述
 
@@ -48,11 +48,11 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 #### 当前实现状态
 - [x] 已完成多用户支持（Next.js + Prisma）
 - [ ] 未使用Go语言后端（仍使用Next.js API Routes）
-- [ ] 未集成GoFly框架（使用React-Admin作为管理后台）
+- [ ] 未集成GoFly框架（管理功能需要在GoFly Admin中实现）
 - [x] 已实现基础性能优化（并发处理基于Next.js）
 
 #### 当前架构
-基于Next.js的全栈应用，通过用户ID实现数据隔离，前端使用React组件，后端使用API Routes，数据库为MySQL。管理后台使用React-Admin框架，而非GoFly。
+基于Next.js的全栈应用，通过用户ID实现数据隔离，前端使用React组件，后端使用API Routes，数据库为MySQL。管理功能需要迁移至GoFly Admin实现。
 
 #### 功能实现状态
 - [x] 用户认证系统（Google OAuth + 管理员密码）
@@ -78,9 +78,27 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 4. **性能限制**: 大批量任务处理效率有待提升
 5. **权限控制**: 需要细化不同版本功能的权限控制
 
-## 2. 需求分析
+## 2. 命名说明
 
-### 2.1 功能需求（Functional Requirements）
+### 2.1 现有功能与重构版本的命名区分
+
+为清晰区分现有Next.js实现和Go重构版本，特此说明：
+
+- **现有功能（Next.js实现）**:
+  - BatchOpen：批量访问功能
+  - SiteRank：网站排名功能  
+  - ChangeLink：链接管理功能
+
+- **重构版本（Go实现）**:
+  - BatchGo：BatchOpen的Go重构版本
+  - SiteRankGo：SiteRank的Go重构版本
+  - AdsCenterGo：ChangeLink的Go重构版本
+
+所有重构将保持API兼容性，前端无需修改即可切换到新的Go后端。
+
+## 3. 需求分析
+
+### 3.1 功能需求（Functional Requirements）
 
 #### FR1: 用户认证系统
 - **FR1.1**: 实现普通用户邮箱注册流程，包括邮箱验证
@@ -216,7 +234,7 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 - **FR5.4**: 历史数据存储和趋势分析
 - **FR5.5**: 自定义查询规则和报表
 
-#### FR6: ChangeLinkGo 模块
+#### FR6: AdsCenterGo 模块
 - **FR6.1**: Google Ads API 多账户管理
 - **FR6.2**: AdsPower 自动化流程优化
 - **FR6.3**: 复杂链接替换规则引擎
@@ -229,7 +247,7 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 - **FR7.3**: 功能按钮点击时强制引导登录：
   - SiteRank的"开始分析"按钮
   - BatchOpen的"代理认证"、"批量打开"、"新增任务"按钮
-  - ChangeLink的"立即使用"按钮
+  - AdsCenterGo的"立即使用"按钮
   - 价格页面的"立即订阅"按钮
 - **FR7.4**: 优化 UI 设计，提升视觉体验
 - **FR7.5**: 响应式设计，支持移动端访问
@@ -272,19 +290,36 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 - **FR10.8**: 支付记录查看（仅Token充值记录，无自动订阅扣费）
 
 #### FR10.12: 支付系统说明
-- **FR10.12.1**: **当前采用手动Token充值模式**：
-  - 用户通过"立即订阅"按钮提交充值需求
-  - 管理员审核后手动为用户充值对应Token数量
+- **FR10.12.1**: **当前采用手动咨询模式**：
+  - **套餐订阅**：用户点击"立即订阅"按钮弹出咨询窗口，通过与管理员沟通后手动开通
+  - **Token充值**：用户点击Token充值包的"立即订阅"按钮弹出咨询窗口，管理员审核后手动充值
   - 不集成Stripe等自动支付系统
   - 无自动续费和定期扣费机制
+  - 所有交易都通过管理员手动处理
 
-- **FR10.12.2**: **订阅套餐激活流程**：
-  - 用户选择套餐后提交申请
+- **FR10.12.2**: **咨询窗口功能要求**：
+  - **套餐咨询窗口**：
+    - 显示选择的套餐信息（名称、价格、功能）
+    - 用户联系方式输入框
+    - 备注信息输入框
+    - 提交后通知管理员处理
+  - **Token充值咨询窗口**：
+    - 显示充值包信息（价格、Token数量）
+    - 用户联系方式输入框
+    - 提交后创建充值申请记录
+  - **咨询记录管理**：
+    - 管理员后台查看所有咨询记录
+    - 可标记处理状态（待处理/已处理/已取消）
+    - 支持备注处理结果
+
+- **FR10.12.3**: **订阅套餐激活流程**：
+  - 用户通过咨询窗口提交套餐申请
   - 管理员审核并手动激活套餐权限
   - 激活后自动赠送对应数量的Tokens
   - 套餐到期后自动降级至Free套餐
+  - 支持管理员提前续费或延期
 
-- **FR10.12.3**: **支付记录管理**：
+- **FR10.12.4**: **支付记录管理**：
   - 记录所有Token充值交易
   - 支持按用户、时间、金额筛选
   - 导出充值报表功能
@@ -305,7 +340,7 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 - **FR11.2**: 自定义开发业务特定功能，避免GoFly过度耦合：
   - BatchGo任务管理界面
   - SiteRankGo查询历史管理
-  - ChangeLinkGo执行监控
+  - AdsCenterGo执行监控
   - Token消费统计分析
 - **FR11.3**: 系统日志和操作审计
 - **FR11.4**: 数据可视化和报表系统
@@ -394,13 +429,13 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 | **BatchGo Basic** | ✓ (前端打开) | ✓ (前端打开) | ✓ (前端打开) |
 | **BatchGo Silent** | ✓ (HTTP+Puppeteer) | ✓ (HTTP+Puppeteer) | ✓ (HTTP+Puppeteer) |
 | **BatchGo Automated** | ✗ | ✓ (HTTP+Puppeteer) | ✓ (HTTP+Puppeteer) |
-| **单次任务URL数量** | 100 | 1,000 | 5,000 |
+| **单次任务URL数量** | 10 | 100 | 1,000 |
 | **循环次数上限** | 10 | 100 | 100 |
 | **并发任务数** | 1 | 5 | 50 |
 | **HTTP模式并发倍数** | - | 10x | 10x |
 | **SiteRankGo 查询限制** | 100/次 | 500/次 | 5,000/次 |
 | **SiteRankGo 查询频率** | 无限制 | 无限制 | 无限制 |
-| **ChangeLinkGo 账户数** | 不支持 | 10个 | 100个 |
+| **AdsCenterGo 账户数** | 不支持 | 10个 | 100个 |
 | **包含Token数量** | 1,000 | 10,000 | 100,000 |
 | **API 调用频率** | 100/小时 | 1,000/小时 | 10,000/小时 |
 
@@ -417,11 +452,51 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 ### 3.1 整体架构
 
 #### 3.1.1 架构模式
-采用**前后端分离 + 单体应用+模块化**的混合架构：
-- **前端层**: Next.js 14 + TypeScript（保持现有）
-- **网关层**: GoFly Router（统一入口）
-- **服务层**: Go 单体应用 + 模块化设计（业务逻辑）
-- **数据层**: MySQL + Redis（持久化存储）
+采用**全新架构实现**，无需迁移或共存：
+- **前端层**: Next.js 14 + TypeScript（保持现有前端）
+- **后端层**: GoFly Admin V3 框架作为主后端服务
+- **数据层**: 全新 MySQL 数据库（使用 MustKnow.md 配置）
+- **缓存层**: Redis（缓存和会话存储）
+- **ORM层**: GoFly gform + Prisma（混合使用）
+
+**重要说明**：
+1. **无需数据库迁移**：直接使用新数据库，避免迁移风险
+2. **无需系统共存**：直接实现目标架构，简化开发和部署
+3. **保持前端兼容**：前端应用只需修改API接口地址
+
+#### 3.1.3 GoFly 框架核心特性
+
+**1. 自动路由系统**
+- 基于命名约定的路由生成：`/app/business/user/Account/GetList` → `GET /business/user/account/getlist`
+- HTTP方法自动识别：`Get*`→GET, `Post*`→POST, `Del*`→DELETE, `Put*`→PUT
+- 支持自定义路由覆盖
+- 自动参数提取和绑定
+
+**2. RBAC权限系统**
+- 三级权限控制：模块级 → 角色级 → 操作级
+- 动态菜单生成
+- 数据范围自动过滤
+- 支持超级管理员角色
+
+**3. 自研ORM (gform)**
+- Active Record模式
+- 链式查询构建器
+- 自动软删除
+- 查询结果缓存
+- 事务管理
+
+**4. 中间件栈**
+- CORS跨域处理
+- JWT令牌认证
+- 请求限流 (tollbooth)
+- 错误恢复机制
+- API验证中间件
+
+**5. 配置系统**
+- YAML配置文件
+- 环境变量支持
+- 热重载开发模式
+- 多环境配置
 
 #### 3.1.2 目标部署架构
 ```
@@ -440,7 +515,7 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
             ┌─────────────────────────┼─────────────────────────┐
             │                         │                         │
     ┌───────▼───────┐         ┌──────▼────────┐        ┌──────▼────────┐
-    │   BatchGo    │         │  SiteRankGo   │        │  ChangeLinkGo │
+    │   BatchGo    │         │  SiteRankGo   │        │  AdsCenterGo │
     │   Service    │         │    Service    │        │    Service    │
     │    (Go)      │         │     (Go)       │        │     (Go)      │
     └───────────────┘         └───────────────┘        └───────────────┘
@@ -460,50 +535,102 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
     └───────────────┘         └───────────────┘        └───────────────┘
 ```
 
-### 3.2 模块化设计
+### 3.2 架构评估：Go单体应用+模块化设计
 
-#### 3.2.1 服务拆分原则
-- **单一职责**: 每个服务专注特定业务领域
-- **高内聚低耦合**: 服务间通过 API 通信
-- **无状态设计**: 服务自身不保存状态
-- **独立部署**: 每个服务可独立构建和部署
+#### 3.2.1 评估结果
 
-#### 3.2.2 服务列表
-1. **API Gateway** (GoFly Router)
-   - 路由转发
-   - 认证授权
-   - 限流熔断
-   - 日志监控
+经过深入分析GoFly框架和当前架构设计，**当前架构完全符合"Go单体应用+模块化设计"的要求**。
 
-2. **User Service** (基于 GoFly)
-   - 用户注册登录
-   - 个人资料管理
-   - OAuth2 集成
-   - 权限验证
+#### 3.2.2 单体应用特征 ✅
 
-3. **Tenant Service**
-   - 租户管理
-   - 套餐订阅
-   - 资源配额
-   - 域名配置
+1. **单一部署单元**
+   - 整个应用编译为单个Go二进制文件
+   - 统一的启动入口和配置管理
+   - 共享的进程空间和内存管理
 
-4. **BatchGo Service**
-   - 任务管理
-   - URL 批量处理
-   - 代理管理
-   - 结果统计
+2. **统一基础设施**
+   - 共享的数据库连接池（MySQL）
+   - 统一的缓存服务（Redis）
+   - 集中的日志和监控系统
+   - 统一的中间件（认证、授权、限流等）
 
-5. **SiteRankGo Service**
-   - 排名查询
-   - 数据缓存
-   - 报表生成
-   - 历史分析
+#### 3.2.3 模块化设计特征 ✅
 
-6. **ChangeLinkGo Service**
-   - 链接管理
-   - 自动化执行
-   - 账户管理
-   - 监控回滚
+1. **清晰的模块划分**
+   ```go
+   app/
+   ├── admin/          # 管理后台模块
+   ├── business/       # 业务模块
+   │   ├── batchgo/    # 批量访问模块
+   │   ├── siterankgo/ # 网站排名模块
+   │   ├── adscentergo/ # 链接管理模块
+   │   ├── user/       # 用户管理
+   │   └── system/     # 系统管理
+   └── common/         # 公共功能模块
+   ```
+
+2. **模块独立性**
+   - 每个模块有独立的包空间和路由前缀
+   - 模块间通过接口定义契约
+   - 可独立开发、测试和部署
+
+3. **自动路由系统**
+   - 基于命名约定的自动路由注册
+   - 支持模块级中间件
+   - 统一的API版本管理
+
+#### 3.2.4 架构优势
+
+1. **性能优势**
+   - 模块间通过函数调用，无网络开销
+   - 共享内存，数据传递高效
+   - 统一的连接池和资源管理
+
+2. **运维优势**
+   - 单一进程，监控简单
+   - 部署便捷，无需服务编排
+   - 故障定位快速
+
+3. **开发优势**
+   - 统一的代码库和工具链
+   - 代码复用率高
+   - 学习成本低
+
+#### 3.2.5 模块间通信设计
+
+```go
+// 接口定义模块契约
+type BatchGoService interface {
+    CreateTask(ctx context.Context, req *TaskRequest) (*TaskResponse, error)
+    GetTaskStatus(ctx context.Context, taskID string) (*TaskStatus, error)
+}
+
+// 依赖注入
+type SiteRankGoHandler struct {
+    batchGoService BatchGoService
+    cacheService  CacheService
+}
+```
+
+#### 3.2.6 配置管理
+
+模块化配置支持：
+```yaml
+# resource/config.yaml
+modules:
+  batchgo:
+    enabled: true
+    max_concurrent_tasks: 100
+    worker_pool_size: 10
+  siterankgo:
+    enabled: true
+    cache_ttl: 3600
+    api_timeout: 30
+  adscentergo:
+    enabled: true
+    scheduler_workers: 5
+    max_accounts: 50
+```
 
 ### 3.3 数据库设计
 
@@ -549,7 +676,7 @@ CREATE TABLE subscriptions (
     status ENUM('ACTIVE', 'CANCELED', 'EXPIRED', 'PENDING', 'PAST_DUE') DEFAULT 'ACTIVE',
     current_period_start TIMESTAMP NOT NULL,
     current_period_end TIMESTAMP NOT NULL,
-    provider VARCHAR(191) DEFAULT 'stripe',
+    provider VARCHAR(191) DEFAULT 'manual',
     provider_subscription_id VARCHAR(191),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -566,7 +693,7 @@ CREATE TABLE plans (
     metadata JSON,
     is_active BOOLEAN DEFAULT true,
     sort_order INT DEFAULT 0,
-    stripe_price_id VARCHAR(191),
+    external_reference_id VARCHAR(191), -- 用于关联外部支付系统记录
     token_quota INT DEFAULT 0,
     token_reset VARCHAR(191) DEFAULT 'MONTHLY',
     billing_period VARCHAR(191) DEFAULT 'MONTHLY',
@@ -944,7 +1071,7 @@ GoFly 主应用 (单体架构)
 ├── 业务模块层
 │   ├── BatchGo模块
 │   ├── SiteRankGo模块
-│   ├── ChangeLinkGo模块
+│   ├── AdsCenterGo模块
 │   ├── Token系统模块
 │   └── 用户运营模块（签到、邀请）
 └── 基础设施层
@@ -1129,11 +1256,11 @@ GET    /api/v1/siterank/queries       # 查询历史
 GET    /api/v1/siterank/domains/:id   # 获取域名排名
 GET    /api/v1/siterank/report        # 生成报告
 
-# ChangeLinkGo 相关
-POST   /api/v1/changelink/tasks       # 创建任务
-GET    /api/v1/changelink/accounts    # 账户列表
-POST   /api/v1/changelink/execute     # 执行替换
-GET    /api/v1/changelink/logs        # 执行日志
+# AdsCenterGo 相关
+POST   /api/v1/changelink_tasks       # 创建任务
+GET    /api/v1/changelink_accounts    # 账户列表
+POST   /api/v1/changelink_execute     # 执行替换
+GET    /api/v1/changelink_logs        # 执行日志
 
 # 用户中心相关
 GET    /api/v1/user/profile           # 获取用户资料
@@ -1410,7 +1537,7 @@ type LogEntry struct {
 - 月访问量计算和优先级排序
 - 错误处理和数据验证
 
-#### 4.3.3 ChangeLinkGo 核心逻辑
+#### 4.3.3 AdsCenterGo 核心逻辑
 
 **必须保留的功能特性**:
 - Google Ads API集成
@@ -1594,11 +1721,12 @@ services:
 #### 技术风险
 - **技术风险**: Go 开发经验不足可能影响开发进度
 - **集成风险**: GoFly 框架集成可能存在兼容性问题
-- **数据迁移风险**: 重构过程中数据可能丢失或损坏
+- **第三方API风险**: SimilarWeb、Google Ads等外部API稳定性
 
-#### 集成风险
-- **API 兼容性**: 新旧系统 API 兼容性维护
-- **性能风险**: 新架构可能引入新的性能瓶颈
+#### 性能风险
+- **并发处理**: 高并发场景下的资源管理
+- **内存优化**: 大批量任务处理的内存控制
+- **数据库性能**: 查询优化和索引设计
 
 #### 部署风险
 - **部署复杂度**: 多服务部署增加复杂度
@@ -1680,8 +1808,8 @@ services:
 - 数据分析模块
 - 报表生成器
 
-#### Phase 5: ChangeLinkGo 模块开发（4周）
-**目标**: 完成 ChangeLinkGo 功能的 Go 语言重构
+#### Phase 5: AdsCenterGo 模块开发（4周）
+**目标**: 完成 AdsCenterGo 功能的 Go 语言重构
 
 **主要任务**:
 1. 集成 Google Ads API
@@ -1691,7 +1819,7 @@ services:
 5. 实现回滚机制
 
 **交付物**:
-- ChangeLinkGo 模块
+- AdsCenterGo 模块
 - 自动化执行引擎
 - 监控告警系统
 - API 文档
@@ -2000,7 +2128,7 @@ services:
 - IV2: 数据准确可靠
 - IV3: API 调用成本可控
 
-#### Story 5.2.5: ChangeLinkGo 自动化管理
+#### Story 5.2.5: AdsCenterGo 自动化管理
 **As a** 广告优化师,
 **I want to** 自动化管理 Google Ads 链接,
 **so that** 我可以提高工作效率减少错误。
@@ -2205,18 +2333,19 @@ services:
 
 #### Story 5.2.16: 支付记录管理
 **As a** 系统管理员,
-**I want to** 查看所有支付记录,
-**so that** 我可以跟踪收入情况。
+**I want to** 查看所有Token充值记录,
+**so that** 我可以跟踪充值情况。
 
 **验收标准**:
-- [ ] 查看订阅支付记录
-- [ ] 查看Token购买记录
+- [ ] 查看所有Token充值申请记录
+- [ ] 查看充值状态（待审核/已充值/已取消）
 - [ ] 按时间筛选记录
-- [ ] 导出支付报表
+- [ ] 导出充值报表
+- [ ] 手动标记充值状态
 
 **集成验证**:
-- IV1: 支付记录完整
-- IV2: 金额计算准确
+- IV1: 充值记录完整
+- IV2: Token数量准确
 - IV3: 筛选功能正常
 
 #### Story 5.2.17: API监控统计
@@ -2308,10 +2437,10 @@ siterank:query:started    # 查询开始
 siterank:query:completed  # 查询完成
 siterank:cache:invalidated # 缓存失效
 
-# ChangeLinkGo主题
-changelink:task:started   # 链接更新开始
-changelink:task:updated   # 链接更新进度
-changelink:task:completed # 链接更新完成
+# AdsCenterGo主题
+changelink:started   # 链接更新开始
+changelink:updated   # 链接更新进度
+changelink:completed # 链接更新完成
 
 # 用户通知主题
 user:notification         # 用户通知
@@ -2384,17 +2513,17 @@ ADMIN (管理员):
 Free套餐:
   - BatchGo Basic: 100个URL/任务，串行执行
   - SiteRankGo: 100个域名/次
-  - ChangeLinkGo: 不支持
+  - AdsCenterGo: 不支持
   
 Pro套餐:
   - BatchGo Silent: 1,000个URL/任务，5并发
   - SiteRankGo: 500个域名/次
-  - ChangeLinkGo: 10个Google Ads账户
+  - AdsCenterGo: 10个Google Ads账户
   
 Max套餐:
   - BatchGo Automated: 5,000个URL/任务，50并发
   - SiteRankGo: 5,000个域名/次
-  - ChangeLinkGo: 100个Google Ads账户
+  - AdsCenterGo: 100个Google Ads账户
 ```
 
 **管理员权限细分**：
@@ -2575,9 +2704,2148 @@ func AuthMiddleware(permissions ...string) gin.HandlerFunc {
 - 数据库连接: < 最大连接数80%
 ```
 
-### 6.4 GoFly集成架构
+### 6.4 GoFly框架深度分析与集成架构
 
-基于对现有PRD和代码库的深入分析，发现以下需要完善的方面：
+基于对GoFly Admin V3源码的深入分析，GoFly是一个成熟的Go全栈开发框架，提供以下核心能力：
+
+#### 6.4.1 GoFly框架核心能力
+
+**1. 架构特性**
+- **MVC分层架构**: 清晰的Model-View-Controller分离
+- **模块化设计**: Admin（管理后台）和Business（业务后台）双模块
+- **自动路由系统**: 基于命名约定的路由自动生成
+- **中间件栈**: CORS、错误恢复、限流、认证、授权等
+
+**2. 路由系统**
+```go
+// 自动路由规则：
+// /app/business/user/Account/GetList → GET /business/user/account/getlist
+// /app/admin/system/Role/Save → POST /admin/system/role/save
+// 支持GET、POST、PUT、DELETE自动映射
+```
+
+**3. RBAC权限系统**
+- **三级权限控制**: 模块级 → 角色级 → 操作级
+- **动态权限管理**: 基于数据库的实时权限更新
+- **数据权限过滤**: 自动根据用户权限过滤数据
+- **菜单权限控制**: 基于权限动态生成菜单
+
+**4. 自研ORM (gform)**
+- **Active Record模式**: 链式调用，语法简洁
+- **多数据库支持**: MySQL、PostgreSQL、SQLite
+- **连接池管理**: 可配置的连接池参数
+- **事务支持**: 内置事务管理
+- **软删除**: 自动软删除功能
+- **查询缓存**: 提升查询性能
+
+**5. 多租户支持**
+- **Schema隔离**: 支持多Schema数据隔离
+- **Business ID过滤**: 自动基于business_id过滤数据
+- **租户配置管理**: 每个租户独立配置
+
+#### 6.4.2 GoFly集成价值
+
+**1. 立即可用的后台管理系统**
+- 完整的用户管理（注册、登录、权限）
+- 专业级管理后台界面
+- 细粒度的权限控制
+- 操作日志和审计功能
+
+**2. 开发效率提升**
+- 自动CRUD生成
+- 代码生成器加速开发
+- 约定优于配置的架构
+- 丰富的中间件和工具库
+
+**3. 性能优势**
+- Go语言原生并发支持
+- 高性能HTTP路由（Gin框架）
+- 数据库连接池优化
+- 内存效率高
+
+#### 6.4.3 集成策略
+
+**Phase 1: 基础架构搭建（2-3个月）**
+```
+目标：建立基于GoFly的完整技术架构
+1. 部署GoFly框架作为主后端服务
+2. 配置新MySQL数据库（使用MustKnow.md中的配置）
+3. 实现用户认证和权限管理系统
+4. 开发核心业务模块（BatchGo/SiteRankGo/AdsCenterGo）
+5. 集成前端Next.js应用
+6. 实现基础的RBAC权限体系
+```
+
+**Phase 2: 功能完善与优化（3-4个月）**
+```
+目标：完善所有功能并优化性能
+1. 代理管理系统实现
+   - 代理IP池管理
+   - 代理验证和轮换
+   - 代理性能监控
+2. SimilarWeb API集成优化
+   - 查询缓存策略
+   - 批量处理优化
+   - 错误重试机制
+3. Google Ads集成实现
+   - 账户连接管理
+   - 链接批量更新
+   - 执行状态监控
+```
+
+**Phase 3: 高级特性开发（2-3个月）**
+```
+目标：添加高级功能和企业级特性
+1. 高级分析和报表
+   - 用户行为分析
+   - 任务执行统计
+   - 性能监控面板
+2. 系统优化增强
+   - 缓存策略优化
+   - 数据库查询优化
+   - 并发性能调优
+3. 运维和监控
+   - 日志聚合分析
+   - 告警系统
+   - 自动化部署
+```
+
+#### 6.4.4 技术架构设计
+
+**Go单体应用 + 模块化架构**
+
+**核心架构原则**
+- **单一职责**: GoFly作为唯一后端服务，统一处理所有业务逻辑
+- **模块化设计**: 清晰的模块边界，支持独立开发和维护
+- **前后端分离**: Next.js专注用户界面，GoFly提供API服务
+- **简化部署**: 单一Go二进制文件，简化部署和运维
+
+**详细架构图**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    用户访问层                                │
+├─────────────────────────────────────────────────────────────┤
+│  Next.js前端 (用户界面)                                      │
+│  ├── 用户注册/登录                                           │
+│  ├── 业务功能操作 (BatchGo/SiteRankGo/AdsCenterGo)          │
+│  └── 个人中心/数据看板                                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ↓ HTTPS API调用
+┌─────────────────────────────────────────────────────────────┐
+│                 GoFly单体应用 (统一后端)                      │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │                API网关层                                │ │
+│  │  ├── 路由分发 (/api/v1/*)                               │ │
+│  │  ├── 认证中间件 (JWT + Redis Session)                   │ │
+│  │  ├── 限流控制 (基于套餐和IP)                             │ │
+│  │  └── 统一错误处理                                       │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                              │                              │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │                业务模块层                                │ │
+│  │  ├── business/user/        (用户管理)                   │ │
+│  │  ├── business/batchgo/     (批量访问)                   │ │
+│  │  ├── business/siterankgo/  (网站排名)                   │ │
+│  │  ├── business/adscentergo/ (链接管理)                   │ │
+│  │  ├── business/payment/     (支付订阅)                   │ │
+│  │  └── admin/               (管理后台)                     │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                              │                              │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │                公共服务层                                │ │
+│  │  ├── 缓存服务 (Redis)                                   │ │
+│  │  ├── 队列服务 (内置任务队列)                             │ │
+│  │  ├── 日志服务                                           │ │
+│  │  ├── 监控服务                                           │ │
+│  │  └── 通知服务 (邮件/站内信)                              │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ↓ 数据访问
+┌─────────────────────────────────────────────────────────────┐
+│                    数据存储层                                │
+├─────────────────────────────────────────────────────────────┤
+│  MySQL 8.0 (全新数据库) ──────┐  ┌───── Redis 7.0           │
+│  ├── business_account         │  ├── 会话存储               │
+│  ├── admin_account            │  ├── 缓存数据               │
+│  ├── batchgo_tasks            │  ├── 限流计数               │
+│  ├── siterank_queries         │  └── 队列数据               │
+│  ├── adscentergo_configs      │                             │
+│  └── ... (其他业务表)         │                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**技术栈明确化**
+- **后端框架**: GoFly V3 (唯一后端服务)
+- **ORM**: 统一使用GoFly gform (移除Prisma混合使用)
+- **前端**: Next.js 14 + TypeScript (仅用户界面)
+- **数据库**: MySQL 8.0 (全新实例，无需迁移)
+- **缓存**: Redis 7.0 (会话、缓存、队列)
+- **认证**: JWT + Redis Session
+- **部署**: Docker + 单一Go二进制文件
+
+### 6.5 GoFly管理系统与业务逻辑集成缺失分析
+
+#### 6.5.1 关键缺失部分识别
+
+经过全面审查，发现以下关键集成缺失：
+
+**1. 管理后台架构不明确**
+- **现状描述模糊**: PRD中提到"管理功能需要迁移至GoFly Admin实现"，但未详细说明迁移方案
+- **权限边界不清**: 未明确定义用户前端和管理后台的功能边界
+- **API集成方案缺失**: Next.js前端如何调用GoFly后端API的详细设计未定义
+
+**2. 双入口认证流程设计缺失**
+- **用户端认证未设计**: Next.js前端的用户认证流程（Google OAuth）
+- **管理员认证未设计**: GoFly Admin的管理员认证流程（用户名密码）
+- **统一认证系统缺失**: JWT + Redis Session的详细实现方案
+
+**3. 业务模块管理界面详细设计缺失**
+- **BatchGo管理界面**:
+  - 任务监控面板设计缺失
+  - 代理池管理界面未详细设计
+  - 执行日志查看功能未定义
+  - 性能指标展示缺失
+  
+- **SiteRankGo管理界面**:
+  - 查询队列管理界面缺失
+  - 缓存状态监控未设计
+  - API调用统计面板缺失
+  - 数据导出管理功能未定义
+  
+- **AdsCenterGo管理界面**:
+  - Google Ads账户连接管理流程未详细设计
+  - 自动化规则配置界面缺失
+  - 执行历史追溯功能未定义
+  - 错误告警配置未设计
+
+**4. 实时数据推送机制设计不完整**
+- **WebSocket连接管理**: 连接建立、保持、重连机制未详细设计
+- **事件订阅权限控制**: 不同用户能订阅哪些事件未定义
+- **消息推送限流**: 防止消息风暴的机制缺失
+- **离线消息处理**: 用户离线期间的missed events处理方案缺失
+
+**5. API网关详细设计缺失**
+- **路由规则未细化**: 具体的URL映射规则未详细定义
+- **负载均衡策略**: 多实例部署时的负载分配未设计
+- **熔断降级机制**: 服务不可用时的处理策略缺失
+- **API版本管理**: 多版本API共存的管理方案未定义
+
+#### 6.5.2 GoFly Admin管理后台架构设计
+
+**架构方案**
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              用户访问层                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────────────────────┐    ┌─────────────────────────────────┐  │
+│  │     Next.js 前端             │    │      GoFly Admin 管理后台        │  │
+│  │     (用户界面)               │    │     (独立管理入口)              │  │
+│  │                             │    │                                 │  │
+│  │  • 用户注册/登录             │    │  • 管理员登录 (无注册)          │  │
+│  │  • 业务功能操作              │    │  • 用户管理                    │  │
+│  │  • 个人中心/数据看板          │    │  • 任务管理                    │  │
+│  │  • Google OAuth集成          │    │  • 系统配置                    │  │
+│  │  • 支付订阅                  │    │  • 监控面板                    │  │
+│  │                             │    │  • 权限控制                    │  │
+│  │  访问: https://autoads.dev   │    │  访问: https://autoads.dev/admin│  │
+│  └─────────────────────────────┘    └─────────────────────────────────┘  │
+│           │                                    │                        │
+│           └────────────────────────────────────┼────────────────────────┘
+│                                                │
+└────────────────────────────────────────────────┼────────────────────────┘
+                                                 │
+                                       ┌────────▼────────┐
+                                       │   GoFly API     │
+                                       │   Gateway       │
+                                       └────────┬────────┘
+                                                │
+           ┌─────────────────────────────────────┼─────────────────────────────┐
+           │                                     │                             │
+      ┌────▼────┐                         ┌──────▼──────┐                ┌─────▼─────┐
+      │ BatchGo │                         │  SiteRankGo │                │AdsCenterGo │
+      └────┬────┘                         └──────┬──────┘                └─────┬─────┘
+           │                                     │                             │
+           └─────────────────────────────────────┼─────────────────────────────┘
+                                                 │
+                                       ┌────────▼────────┐
+                                       │    数据存储层     │
+                                       │ (MySQL + Redis) │
+                                       └─────────────────┘
+```
+
+**设计原则**
+- **单一后端服务**: GoFly作为唯一后端，统一处理所有API请求
+- **统一认证系统**: JWT + Redis Session，支持用户和管理员不同角色
+- **角色权限控制**: 基于RBAC的细粒度权限管理
+- **简化部署架构**: 单一Go应用，避免多服务部署复杂性
+- **完全独立的前端访问**: 用户界面和管理后台使用不同的访问入口，完全隔离
+
+#### 6.5.3 双认证系统设计
+
+**普通用户认证（网站前端）**
+```
+1. 访问网站首页 (Next.js)
+2. 选择登录方式：
+   - 邮箱注册
+     • 输入邮箱和密码
+     • 新用户自动发送验证邮件
+     • 验证后获得JWT Token
+   - 邮箱登录
+     • 输入已注册的邮箱和密码
+     • 登录成功获得JWT Token
+   - Google OAuth登录
+     • 点击"使用Google登录"
+     • 跳转到Google授权页面
+     • 授权后返回网站
+     • 自动创建账号（如果首次登录）
+     • 登录成功获得JWT Token
+3. Token存储在浏览器localStorage和Redis中
+4. 根据用户套餐显示相应功能模块
+```
+
+**管理员认证（GoFly Admin后台）**
+```
+1. 访问管理后台登录页面 (/admin/login)
+2. 输入管理员账号和密码
+   - 管理员账号由系统预设或超级管理员创建
+   - 不提供公开注册功能
+   - 账号信息存储在admin_account表
+3. GoFly Admin内置认证系统验证
+4. 登录成功后进入管理后台界面
+5. 基于RBAC权限控制访问各个管理模块
+```
+
+**关键设计要点**
+- **完全隔离的认证系统**：
+  • 普通用户：邮箱注册/Google OAuth（网站前端）
+  • 管理员：账号密码登录（GoFly Admin后台）
+- **独立数据存储**：
+  • 普通用户：business_account表
+  • 管理员：admin_account表
+- **不同认证流程**：
+  • 用户支持注册和多种登录方式
+  • 管理员只有登录，无注册功能
+- **完全独立的访问入口**：
+  • 用户访问：https://autoads.dev（网站前端）
+  • 管理员访问：https://autoads.dev/admin（独立登录页面）
+- **安全隔离**：管理功能与用户功能完全独立
+
+**认证集成实现**
+
+**双认证系统实现**
+
+**用户认证实现（网站前端API）**
+```go
+// 用户认证控制器
+package api
+
+type UserAuthController struct{}
+
+// 用户邮箱注册
+func (c *UserAuthController) Register(ctx *gf.GinCtx) {
+    var req struct {
+        Email    string `json:"email" validate:"required,email"`
+        Password string `json:"password" validate:"required,min=6"`
+        Name     string `json:"name"`
+    }
+    
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.Error(400, err.Error())
+        return
+    }
+    
+    // 检查邮箱是否已存在
+    exists, _ := service.User().EmailExists(ctx, req.Email)
+    if exists {
+        ctx.Error(409, "邮箱已被注册")
+        return
+    }
+    
+    // 创建用户（business_account表）
+    user, err := service.User().Create(ctx, req.Email, req.Password, req.Name)
+    if err != nil {
+        ctx.Error(500, "注册失败")
+        return
+    }
+    
+    // 发送验证邮件
+    go service.Email().SendVerification(user.Email, user.EmailVerifyToken)
+    
+    // 自动分配14天Pro套餐
+    service.Subscription().GrantTrial(user.ID, 14)
+    
+    ctx.Success(gf.H{
+        "userId": user.ID,
+        "email":  user.Email,
+        "msg":    "注册成功，请查收验证邮件",
+    })
+}
+
+// 用户邮箱登录
+func (c *UserAuthController) EmailLogin(ctx *gf.GinCtx) {
+    var req struct {
+        Email    string `json:"email" validate:"required,email"`
+        Password string `json:"password" validate:"required"`
+    }
+    
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.Error(400, err.Error())
+        return
+    }
+    
+    // 验证用户账号（business_account表）
+    user, err := service.User().EmailLogin(ctx, req.Email, req.Password)
+    if err != nil {
+        ctx.Error(401, "邮箱或密码错误")
+        return
+    }
+    
+    // 检查用户状态
+    if user.Status != "ACTIVE" {
+        ctx.Error(403, "账号已被禁用")
+        return
+    }
+    
+    // 生成用户JWT Token
+    token, err := service.Auth().GenerateUserToken(user.ID)
+    if err != nil {
+        ctx.Error(500, "生成Token失败")
+        return
+    }
+    
+    // 更新登录信息
+    service.User().UpdateLoginInfo(ctx, user.ID, ctx.ClientIP())
+    
+    ctx.Success(gf.H{
+        "token": token,
+        "user": gf.H{
+            "id":           user.ID,
+            "email":        user.Email,
+            "name":         user.Name,
+            "avatar":       user.Avatar,
+            "plan":         user.Plan,
+            "tokens":       user.Tokens,
+            "verified":     user.EmailVerified,
+        },
+    })
+}
+
+// Google OAuth登录回调
+func (c *UserAuthController) GoogleCallback(ctx *gf.GinCtx) {
+    code := ctx.Query("code")
+    if code == "" {
+        ctx.Error(400, "缺少授权码")
+        return
+    }
+    
+    // 获取Google用户信息
+    googleUser, err := service.OAuth().GetGoogleUser(code)
+    if err != nil {
+        ctx.Error(500, "Google授权失败")
+        return
+    }
+    
+    // 查找或创建用户（business_account表）
+    user, err := service.User().FindOrCreateByGoogle(ctx, googleUser)
+    if err != nil {
+        ctx.Error(500, "登录失败")
+        return
+    }
+    
+    // 生成用户Token
+    token, err := service.Auth().GenerateUserToken(user.ID)
+    if err != nil {
+        ctx.Error(500, "生成Token失败")
+        return
+    }
+    
+    // 重定向到前端，携带Token
+    redirectURL := fmt.Sprintf("%s/auth/callback?token=%s", config.FrontendURL, token)
+    ctx.Redirect(redirectURL)
+}
+```
+
+**管理员认证实现（GoFly Admin内置）**
+```go
+// 管理员认证控制器
+package admin
+
+type AdminAuthController struct{}
+
+// 管理员登录
+func (c *AdminAuthController) Login(ctx *gf.GinCtx) {
+    var req struct {
+        Username string `json:"username" validate:"required"`
+        Password string `json:"password" validate:"required"`
+    }
+    
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.Error(400, err.Error())
+        return
+    }
+    
+    // 验证管理员账号（admin_account表）
+    admin, err := service.Admin().ValidateLogin(ctx, req.Username, req.Password)
+    if err != nil {
+        ctx.Error(401, "用户名或密码错误")
+        return
+    }
+    
+    // 检查管理员状态
+    if admin.Status != 1 {
+        ctx.Error(403, "账号已被禁用")
+        return
+    }
+    
+    // 生成管理员Session Token
+    sessionToken := service.Admin().GenerateSessionToken(admin.ID)
+    
+    // 记录登录日志
+    service.Admin().LogLogin(ctx, admin.ID, ctx.ClientIP(), "success")
+    
+    ctx.Success(gf.H{
+        "token": sessionToken,
+        "admin": gf.H{
+            "id":       admin.ID,
+            "username": admin.Username,
+            "name":     admin.Name,
+            "role":     admin.Role,
+            "avatar":   admin.Avatar,
+        },
+    })
+}
+
+// 管理员退出
+func (c *AdminAuthController) Logout(ctx *gf.GinCtx) {
+    adminId := ctx.Session.Get("admin_id")
+    if adminId != nil {
+        // 清除Session
+        service.Admin().ClearSession(adminId.Uint64())
+        // 记录退出日志
+        service.Admin().LogLogout(ctx, adminId.Uint64())
+    }
+    
+    ctx.Success(gf.H{"msg": "退出成功"})
+}
+```
+
+**权限中间件实现**
+```go
+// 基于角色的权限中间件
+func RoleMiddleware(roles ...string) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        userID := c.GetUint("user_id")
+        if userID == 0 {
+            c.AbortWithStatusJSON(401, gin.H{"error": "未授权"})
+            return
+        }
+        
+        // 获取用户角色
+        userRole := service.User().GetRole(userID)
+        
+        // 检查角色权限
+        hasPermission := false
+        for _, role := range roles {
+            if userRole == role {
+                hasPermission = true
+                break
+            }
+        }
+        
+        if !hasPermission {
+            c.AbortWithStatusJSON(403, gin.H{"error": "权限不足"})
+            return
+        }
+        
+        c.Next()
+    }
+}
+
+// 管理后台访问控制
+func AdminAccessMiddleware() gin.HandlerFunc {
+    return RoleMiddleware("ADMIN", "SUPER_ADMIN")
+}
+
+// 超级管理员权限控制
+func SuperAdminMiddleware() gin.HandlerFunc {
+    return RoleMiddleware("SUPER_ADMIN")
+}
+```
+
+
+#### 6.5.4 业务模块管理界面设计
+
+**GoFly Admin统一管理界面**
+
+所有管理功能统一在GoFly Admin中实现，通过RBAC权限控制动态显示相应模块：
+
+**管理界面架构**
+```
+GoFly Admin 管理后台
+├── 仪表盘 (Dashboard)
+│   ├── 系统概览 (用户数、任务数、收入统计)
+│   ├── 实时监控 (API调用、任务执行、系统资源)
+│   └── 快捷操作 (常用功能入口)
+├── 用户管理
+│   ├── 用户列表 (查看、编辑、禁用用户)
+│   ├── 套餐管理 (升级、降级、Token充值)
+│   ├── 订单管理 (支付记录、手动调整)
+│   └── 邀请码管理 (生成、统计、失效)
+├── 业务管理
+│   ├── BatchGo管理 (任务监控、日志查看、配置管理)
+│   ├── SiteRankGo管理 (查询统计、缓存配置、代理管理)
+│   └── AdsCenterGo管理 (账户管理、执行历史、规则配置)
+├── 系统管理
+│   ├── 系统配置 (参数设置、API密钥、SMTP配置)
+│   ├── 权限管理 (角色定义、权限分配、菜单管理)
+│   ├── 操作日志 (用户行为、系统事件、异常记录)
+│   └── 系统监控 (性能指标、告警配置、备份管理)
+└── 数据分析
+    ├── 用户分析 (注册转化、活跃度、留存率)
+    ├── 业务分析 (功能使用、收入趋势、资源消耗)
+    └── 系统分析 (性能趋势、错误统计、容量规划)
+```
+
+**GoFly Admin控制器实现示例**
+```go
+// BatchGo管理控制器
+package admin
+
+import (
+    "github.com/gogf/gf/v2/frame/g"
+    "github.com/gogf/gf/v2/net/ghttp"
+)
+
+type BatchGoController struct{}
+
+// 任务管理页面
+func (c *BatchGoController) Tasks(r *ghttp.Request) {
+    // 权限检查
+    if !c.checkPermission(r, "batchgo:task:read") {
+        r.Response.WriteJsonExit(g.Map{
+            "code": 403,
+            "msg":  "权限不足",
+        })
+        return
+    }
+    
+    // 渲染管理页面
+    r.Response.WriteTpl("admin/batchgo/tasks.html", g.Map{
+        "title": "BatchGo任务管理",
+        "data":  c.getTaskOverview(r),
+    })
+}
+
+// 任务统计数据API
+func (c *BatchGoController) TaskStats(r *ghttp.Request) {
+    stats, err := service.BatchGo().GetTaskStats(r.Context())
+    if err != nil {
+        r.Response.WriteJsonExit(g.Map{
+            "code": 500,
+            "msg":  "获取统计数据失败",
+        })
+        return
+    }
+    
+    r.Response.WriteJsonExit(g.Map{
+        "code": 0,
+        "data": stats,
+    })
+}
+
+// 权限检查中间件
+func (c *BatchGoController) checkPermission(r *ghttp.Request, permission string) bool {
+    userId := r.Session.Get("user_id")
+    if userId == nil {
+        return false
+    }
+    
+    // 调用权限服务检查权限
+    hasPermission, _ := service.RBAC().CheckPermission(r.Context(), userId.Uint64(), permission)
+    return hasPermission
+}
+```
+
+**前端管理页面模板（GoFly Template）**
+```html
+<!-- admin/batchgo/tasks.html -->
+{{extend "admin/layout.html"}}
+
+{{block "content"}}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">BatchGo任务管理</h3>
+                    <div class="card-tools">
+                        <button class="btn btn-primary" onclick="showCreateModal()">
+                            <i class="fas fa-plus"></i> 新建任务
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3 id="totalTasks">{{.data.totalTasks}}</h3>
+                                    <p>总任务数</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3 id="successRate">{{.data.successRate}}%</h3>
+                                    <p>成功率</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3 id="runningTasks">{{.data.runningTasks}}</h3>
+                                    <p>运行中</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-danger">
+                                <div class="inner">
+                                    <h3 id="failedTasks">{{.data.failedTasks}}</h3>
+                                    <p>失败任务</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 任务列表表格 -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>任务名称</th>
+                                    <th>用户</th>
+                                    <th>模式</th>
+                                    <th>状态</th>
+                                    <th>进度</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="taskTableBody">
+                                <!-- 通过AJAX加载数据 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 任务详情模态框 -->
+<div class="modal fade" id="taskDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">任务详情</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="taskDetailContent">
+                <!-- 动态加载任务详情 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript代码 -->
+<script>
+// 页面加载完成后初始化
+$(document).ready(function() {
+    loadTaskList();
+    
+    // 每30秒刷新一次数据
+    setInterval(loadTaskList, 30000);
+});
+
+// 加载任务列表
+function loadTaskList() {
+    $.ajax({
+        url: '/admin/api/batchgo/tasks',
+        method: 'GET',
+        success: function(response) {
+            if (response.code === 0) {
+                renderTaskTable(response.data);
+            }
+        }
+    });
+}
+
+// 渲染任务表格
+function renderTaskTable(tasks) {
+    let html = '';
+    tasks.forEach(task => {
+        html += `
+            <tr>
+                <td>${task.id}</td>
+                <td>${task.name}</td>
+                <td>${task.username}</td>
+                <td><span class="badge badge-info">${task.mode}</span></td>
+                <td>${getStatusBadge(task.status)}</td>
+                <td>${getProgressBar(task.progress)}</td>
+                <td>${task.created_at}</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="viewTaskDetail(${task.id})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="stopTask(${task.id})" ${task.status !== 'running' ? 'disabled' : ''}>
+                        <i class="fas fa-stop"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    $('#taskTableBody').html(html);
+}
+
+// 查看任务详情
+function viewTaskDetail(taskId) {
+    $.ajax({
+        url: `/admin/api/batchgo/tasks/${taskId}`,
+        method: 'GET',
+        success: function(response) {
+            if (response.code === 0) {
+                $('#taskDetailContent').html(renderTaskDetail(response.data));
+                $('#taskDetailModal').modal('show');
+            }
+        }
+    });
+}
+</script>
+{{end}}
+```
+
+**BatchGo管理界面**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    BatchGo 任务监控中心                        │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────┐ │
+│ │  任务概览    │ │  实时监控    │ │  代理管理    │ │ 日志查看 │ │
+│ │             │ │             │ │             │ │         │ │
+│ │ • 总任务数   │ │ • 运行中任务 │ │ • 代理IP池   │ │ • 执行   │ │
+│ │ • 成功率     │ │ • 队列长度   │ │ • 可用率     │ │   日志   │ │
+│ │ • 平均耗时   │ │ • 并发数     │ │ • 响应时间   │ │ • 错误   │ │
+│ │ • 今日Token  │ │ • 成功率     │ │ • 失败统计   │ │   日志   │ │
+│ └─────────────┘ └─────────────┘ └─────────────┘ └─────────┘ │
+│                                                                 │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │                    任务执行详情                              │ │
+│ │  ID    │ 状态   │ 进度  │ URL数 │ 成功 │ 失败 │ 耗时  │ 操作 │ │
+│ │  T001  │ 运行中 │ 45%   │ 1000  │ 450  │ 2    │ 2:30  │ 查看 │ │
+│ │  T002  │ 完成   │ 100%  │ 500   │ 500  │ 0    │ 1:15  │ 查看 │ │
+│ │  T003  │ 失败   │ 10%   │ 2000  │ 100  │ 50   │ 0:45  │ 重试 │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**SiteRankGo管理界面**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   SiteRankGo 查询管理中心                      │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────┐ │
+│ │  查询统计    │ │  缓存状态    │ │  API使用     │ │ 数据导出 │ │
+│ │             │ │             │ │             │ │         │ │
+│ │ • 今日查询   │ │ 缓存命中率   │ │ • API调用量  │ │ • CSV   │ │
+│ │ • 成功率     │ │ 缓存大小     │ │ • 成功率     │ │ • Excel  │ │
+│ │ • 平均响应   │ │ 过期时间     │ │ • 错误率     │ │ • JSON  │ │
+│ │ • Token消耗  │ │ 内存使用     │ │ • 剩余额度   │ │ • PDF   │ │
+│ └─────────────┘ └─────────────┘ └─────────────┘ └─────────┘ │
+│                                                                 │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │                    查询队列管理                              │ │
+│ │  ID    │ 域名    │ 状态   │ 进度  │ 预估  │ 实际  │ 操作 │ │
+│ │  Q001  │ a.com   │ 查询中 │ 60%   │ 10s   │ 8s    │ 取消 │ │
+│ │  Q002  │ b.com   │ 排队中 │ 0%    │ -     │ -     │ 删除 │ │
+│ │  Q003  │ c.com   │ 完成   │ 100%  │ 5s    │ 6s    │ 查看 │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**AdsCenterGo管理界面**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  AdsCenterGo 账户管理中心                      │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────┐ │
+│ │  账户概览    │ │  自动化规则  │ │  执行历史    │ │ 告警中心 │ │
+│ │             │ │             │ │             │ │         │ │
+│ │ • 已连接账户 │ │ • 活跃规则   │ │ • 今日执行   │ │ • 活动告警│ │
+│ │ • 失效账户   │ │ • 规则状态   │ │ • 成功率     │ │ • 告警历史│ │
+│ │ • 待授权账户 │ │ • 执行频率   │ │ • 失败原因   │ │ • 通知设置│ │
+│ │ • 总链接数   │ │ • 下次执行   │ │ • 平均耗时   │ │ • 告警级别│ │
+│ └─────────────┘ └─────────────┘ └─────────────┘ └─────────┘ │
+│                                                                 │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │                    Google Ads账户                             │ │
+│ │  账户名    │ 状态   │ 链接数 │ 最后更新  │ 成功率 │ 操作   │ │
+│ │  账户A     │ 正常   │ 150   │ 2小时前   │ 98%   │ 管理  │ │
+│ │  账户B     │ 异常   │ 80    │ 1天前     │ -     │ 重连  │ │
+│ │  账户C     │ 正常   │ 200   │ 30分钟前  │ 95%   │ 管理  │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 6.5.5 实时数据推送增强设计
+
+**GoFly WebSocket实现**
+```go
+// WebSocket管理器 - GoFly实现
+package websocket
+
+import (
+    "github.com/gogf/gf/v2/frame/g"
+    "github.com/gogf/gf/v2/net/gws"
+    "github.com/gogf/gf/v2/container/gmap"
+    "github.com/gogf/gf/v2/os/gtimer"
+    "time"
+)
+
+// WebSocket管理器
+type Manager struct {
+    connections *gmap.StrAnyMap // 用户连接映射
+    subscriptions *gmap.StrAnyMap // 订阅关系映射
+    authHandler AuthHandler // 认证处理器
+}
+
+// 认证处理器接口
+type AuthHandler interface {
+    Validate(token string) (uint64, error)
+    CheckPermission(userId uint64, event string) bool
+}
+
+// 消息结构
+type Message struct {
+    Type    string      `json:"type"`
+    Event   string      `json:"event,omitempty"`
+    Payload interface{} `json:"payload"`
+    Timestamp time.Time  `json:"timestamp"`
+}
+
+// 新建WebSocket管理器
+func NewManager(authHandler AuthHandler) *Manager {
+    return &Manager{
+        connections:    gmap.NewStrAnyMap(true),
+        subscriptions:  gmap.NewStrAnyMap(true),
+        authHandler:    authHandler,
+    }
+}
+
+// WebSocket连接处理
+func (m *Manager) HandleConnection(r *gws.Request) {
+    // 1. 认证验证
+    token := r.Get("token", "")
+    userId, err := m.authHandler.Validate(token)
+    if err != nil {
+        r.Exit()
+        return
+    }
+    
+    // 2. 建立连接
+    conn := r.WebSocket
+    userIdStr := gconv.String(userId)
+    
+    // 保存连接
+    m.connections.Set(userIdStr, conn)
+    
+    // 发送连接成功消息
+    m.SendMessage(conn, Message{
+        Type:    "connected",
+        Payload: g.Map{"userId": userId},
+        Timestamp: time.Now(),
+    })
+    
+    // 3. 消息处理循环
+    for {
+        msg, err := conn.ReadMessage()
+        if err != nil {
+            m.handleDisconnection(userIdStr)
+            break
+        }
+        
+        // 处理客户端消息
+        m.handleClientMessage(userIdStr, msg)
+    }
+}
+
+// 处理客户端消息
+func (m *Manager) handleClientMessage(userId string, msg []byte) {
+    var data struct {
+        Type   string      `json:"type"`
+        Event  string      `json:"event,omitempty"`
+        Data   interface{} `json:"data"`
+    }
+    
+    if err := json.Unmarshal(msg, &data); err != nil {
+        return
+    }
+    
+    switch data.Type {
+    case "subscribe":
+        m.handleSubscribe(userId, data.Event)
+    case "unsubscribe":
+        m.handleUnsubscribe(userId, data.Event)
+    case "ping":
+        m.sendPong(userId)
+    }
+}
+
+// 处理订阅请求
+func (m *Manager) handleSubscribe(userId string, event string) {
+    // 检查权限
+    userIdNum := gconv.Uint64(userId)
+    if !m.authHandler.CheckPermission(userIdNum, event) {
+        m.sendError(userId, "permission_denied")
+        return
+    }
+    
+    // 记录订阅
+    subs := m.subscriptions.GetOrSet(userId, gset.NewStrSet())
+    if subs.(*gset.StrSet).Add(event) {
+        // 订阅成功，发送确认
+        m.sendMessageToUser(userId, Message{
+            Type:    "subscribed",
+            Event:   event,
+            Payload: g.Map{"status": "success"},
+            Timestamp: time.Now(),
+        })
+    }
+}
+
+// 广播消息到所有订阅者
+func (m *Manager) Broadcast(event string, payload interface{}) {
+    message := Message{
+        Type:    "broadcast",
+        Event:   event,
+        Payload: payload,
+        Timestamp: time.Now(),
+    }
+    
+    // 遍历所有连接
+    m.connections.Iterator(func(userId string, conn *gws.Conn) bool {
+        // 检查用户是否订阅了该事件
+        if subs := m.subscriptions.Get(userId); subs != nil {
+            if subs.(*gset.StrSet).Contains(event) {
+                m.SendMessage(conn, message)
+            }
+        }
+        return true
+    })
+}
+
+// 发送消息给特定用户
+func (m *Manager) SendToUser(userId uint64, event string, payload interface{}) {
+    userIdStr := gconv.String(userId)
+    message := Message{
+        Type:    "event",
+        Event:   event,
+        Payload: payload,
+        Timestamp: time.Now(),
+    }
+    
+    m.sendMessageToUser(userIdStr, message)
+}
+
+// 内部方法
+func (m *Manager) sendMessageToUser(userId string, message Message) {
+    if conn := m.connections.Get(userId); conn != nil {
+        m.SendMessage(conn.(*gws.Conn), message)
+    }
+}
+
+func (m *Manager) SendMessage(conn *gws.Conn, message Message) {
+    data, _ := json.Marshal(message)
+    conn.WriteMessage(data)
+}
+
+func (m *Manager) sendError(userId string, code string) {
+    m.sendMessageToUser(userId, Message{
+        Type:    "error",
+        Payload: g.Map{"code": code},
+        Timestamp: time.Now(),
+    })
+}
+
+func (m *Manager) sendPong(userId string) {
+    m.sendMessageToUser(userId, Message{
+        Type:    "pong",
+        Timestamp: time.Now(),
+    })
+}
+
+func (m *Manager) handleDisconnection(userId string) {
+    // 清理连接
+    m.connections.Remove(userId)
+    // 保留订阅记录，用于重连后恢复
+}
+
+// 心跳检测
+func (m *Manager) StartHeartbeat() {
+    gtimer.AddSingleton(time.Second*30, func() {
+        m.connections.Iterator(func(userId string, conn *gws.Conn) bool {
+            // 发送ping
+            m.SendMessage(conn, Message{
+                Type:    "ping",
+                Timestamp: time.Now(),
+            })
+            return true
+        })
+    })
+}
+```
+
+**认证和权限集成**
+```go
+// WebSocket认证处理器
+type WebSocketAuthHandler struct {
+    userService *service.User
+    rbacService *service.RBAC
+}
+
+func (h *WebSocketAuthHandler) Validate(token string) (uint64, error) {
+    // 验证JWT Token
+    claims, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+        return []byte(config.Secret), nil
+    })
+    
+    if err != nil {
+        return 0, err
+    }
+    
+    return claims.Subject, nil
+}
+
+func (h *WebSocketAuthHandler) CheckPermission(userId uint64, event string) bool {
+    // 检查用户权限
+    hasPermission, _ := h.rbacService.CheckPermission(context.Background(), userId, event)
+    return hasPermission
+}
+```
+
+**事件定义和权限映射**
+```go
+// WebSocket事件权限定义
+const (
+    // BatchGo事件
+    EventBatchGoTaskUpdate = "batchgo:task_update"
+    EventBatchGoTaskLog    = "batchgo:task_log"
+    EventBatchGoProxyStatus = "batchgo:proxy_status"
+    
+    // SiteRankGo事件
+    EventSiteRankQueryComplete = "siterank:query_complete"
+    EventSiteRankCacheUpdate   = "siterank:cache_update"
+    
+    // AdsCenterGo事件
+    EventAdsCenterExecutionLog = "adscenter:execution_log"
+    EventAdsCenterAccountStatus = "adscenter:account_status"
+    
+    // 系统事件
+    EventSystemNotification = "system:notification"
+    EventUserTokenUpdate    = "user:token_update"
+)
+
+// 事件权限映射
+var EventPermissions = map[string]string{
+    EventBatchGoTaskUpdate:     "batchgo:task:read",
+    EventBatchGoTaskLog:       "batchgo:task:read",
+    EventBatchGoProxyStatus:   "batchgo:proxy:read",
+    EventSiteRankQueryComplete: "siterank:query:read",
+    EventSiteRankCacheUpdate:   "siterank:query:read",
+    EventAdsCenterExecutionLog: "adscenter:task:read",
+    EventAdsCenterAccountStatus: "adscenter:account:read",
+    EventSystemNotification:    "system:notification:read",
+    EventUserTokenUpdate:       "user:token:read",
+}
+```
+
+**限流机制**
+```go
+// WebSocket限流中间件
+func WebSocketRateLimit() gin.HandlerFunc {
+    limiter := rate.NewLimiter(rate.Limit(100), 200) // 100 msg/s, burst 200
+    
+    return func(c *gin.Context) {
+        userId := c.GetUint("user_id")
+        
+        // 按用户限流
+        key := fmt.Sprintf("ws_rate_limit:%d", userId)
+        count, _ := redis.Incr(key)
+        if count == 1 {
+            redis.Expire(key, time.Second)
+        }
+        
+        if int(count) > 100 {
+            c.AbortWithStatusJSON(429, gin.H{
+                "error": "Rate limit exceeded"
+            })
+            return
+        }
+        
+        c.Next()
+    }
+}
+```
+
+#### 6.5.6 API网关详细设计
+
+**统一路由配置**
+```go
+// API Gateway路由配置
+func SetupRouter() *gin.Engine {
+    r := gin.Default()
+    
+    // 全局中间件
+    r.Use(middleware.CORS())
+    r.Use(middleware.RateLimit(1000)) // IP限流
+    r.Use(middleware.Logger())
+    r.Use(middleware.Recovery())
+    
+    // API版本管理
+    v1 := r.Group("/api/v1")
+    {
+        // 业务API
+        business := v1.Group("/business")
+        {
+            // BatchGo API
+            batchgo := business.Group("/batchgo")
+            {
+                batchgo.POST("/tasks", middleware.Auth(), BatchGoController.CreateTask)
+                batchgo.GET("/tasks", middleware.Auth(), BatchGoController.GetTasks)
+                batchgo.GET("/tasks/:id", middleware.Auth(), BatchGoController.GetTask)
+                batchgo.PUT("/tasks/:id", middleware.Auth(), BatchGoController.UpdateTask)
+                batchgo.DELETE("/tasks/:id", middleware.Auth(), BatchGoController.DeleteTask)
+                
+                // 代理管理
+                batchgo.GET("/proxies", middleware.Auth(), BatchGoController.GetProxies)
+                batchgo.POST("/proxies", middleware.Auth("admin"), BatchGoController.AddProxy)
+            }
+            
+            // SiteRankGo API
+            siterank := business.Group("/siterank")
+            {
+                siterank.POST("/queries", middleware.Auth(), SiteRankController.CreateQuery)
+                siterank.GET("/queries", middleware.Auth(), SiteRankController.GetQueries)
+                siterank.GET("/results", middleware.Auth(), SiteRankController.GetResults)
+                siterank.POST("/export", middleware.Auth(), SiteRankController.ExportData)
+            }
+            
+            // AdsCenterGo API
+            adscenter := business.Group("/adscenter")
+            {
+                adscenter.GET("/accounts", middleware.Auth(), AdsCenterController.GetAccounts)
+                adscenter.POST("/accounts", middleware.Auth(), AdsCenterController.AddAccount)
+                adscenter.PUT("/accounts/:id", middleware.Auth(), AdsCenterController.UpdateAccount)
+                adscenter.POST("/tasks", middleware.Auth(), AdsCenterController.CreateTask)
+            }
+        }
+        
+        // 管理API
+        admin := v1.Group("/admin")
+        admin.Use(middleware.Auth("admin"))
+        {
+            // 用户管理
+            admin.GET("/users", AdminController.GetUsers)
+            admin.POST("/users", AdminController.CreateUser)
+            admin.PUT("/users/:id", AdminController.UpdateUser)
+            
+            // 系统配置
+            admin.GET("/config", AdminController.GetConfig)
+            admin.PUT("/config", AdminController.UpdateConfig)
+            
+            // 系统监控
+            admin.GET("/metrics", AdminController.GetMetrics)
+            admin.GET("/logs", AdminController.GetLogs)
+        }
+    }
+    
+    // WebSocket端点
+    r.GET("/ws", middleware.Auth(), WebSocketHandler.HandleConnection)
+    
+    // 健康检查
+    r.GET("/health", HealthController.Check)
+    
+    return r
+}
+```
+
+**负载均衡与健康检查**
+```go
+// 服务发现与健康检查
+type ServiceRegistry struct {
+    services map[string][]ServiceInstance
+    mutex    sync.RWMutex
+}
+
+type ServiceInstance struct {
+    ID       string
+    Address  string
+    Port     int
+    Healthy  bool
+    LastCheck time.Time
+}
+
+func (sr *ServiceRegistry) HealthCheck() {
+    for {
+        sr.mutex.Lock()
+        for serviceName, instances := range sr.services {
+            for i, instance := range instances {
+                healthy := sr.checkInstanceHealth(instance)
+                sr.services[serviceName][i].Healthy = healthy
+                sr.services[serviceName][i].LastCheck = time.Now()
+            }
+        }
+        sr.mutex.Unlock()
+        
+        time.Sleep(10 * time.Second)
+    }
+}
+
+func (sr *ServiceRegistry) GetHealthyService(serviceName string) *ServiceInstance {
+    sr.mutex.RLock()
+    defer sr.mutex.RUnlock()
+    
+    instances := sr.services[serviceName]
+    if len(instances) == 0 {
+        return nil
+    }
+    
+    // 轮询选择健康实例
+    var healthyInstances []ServiceInstance
+    for _, instance := range instances {
+        if instance.Healthy {
+            healthyInstances = append(healthyInstances, instance)
+        }
+    }
+    
+    if len(healthyInstances) == 0 {
+        return nil
+    }
+    
+    index := int(time.Now().Unix()) % len(healthyInstances)
+    return &healthyInstances[index]
+}
+```
+
+#### 6.5.7 数据一致性与事务管理
+
+**分布式事务管理**
+```go
+// 分布式事务管理器
+type DistributedTransactionManager struct {
+    db     *gorm.DB
+    redis  *redis.Client
+    logger *zap.Logger
+}
+
+func (dtm *DistributedTransactionManager) ExecuteTransaction(ctx context.Context, operations []func(tx *gorm.DB) error) error {
+    // 开始数据库事务
+    tx := dtm.db.Begin()
+    
+    // 执行操作
+    for _, op := range operations {
+        if err := op(tx); err != nil {
+            // 回滚事务
+            tx.Rollback()
+            dtm.logger.Error("Transaction operation failed", zap.Error(err))
+            return err
+        }
+    }
+    
+    // 提交事务
+    if err := tx.Commit().Error; err != nil {
+        dtm.logger.Error("Transaction commit failed", zap.Error(err))
+        return err
+    }
+    
+    // 异步更新缓存
+    go dtm.updateCache(ctx)
+    
+    return nil
+}
+```
+
+**缓存一致性策略**
+```go
+// 缓存管理器
+type CacheManager struct {
+    redis *redis.Client
+    db    *gorm.DB
+}
+
+func (cm *CacheManager) GetWithCache(ctx context.Context, key string, query func() (interface{}, error)) (interface{}, error) {
+    // 尝试从缓存获取
+    cached, err := cm.redis.Get(ctx, key).Result()
+    if err == nil {
+        var result interface{}
+        if err := json.Unmarshal([]byte(cached), &result); err == nil {
+            return result, nil
+        }
+    }
+    
+    // 缓存未命中，从数据库查询
+    result, err := query()
+    if err != nil {
+        return nil, err
+    }
+    
+    // 更新缓存
+    data, _ := json.Marshal(result)
+    cm.redis.Set(ctx, key, data, 5*time.Minute)
+    
+    return result, nil
+}
+```
+
+#### 6.5.8 监控与告警系统集成
+
+**统一监控面板**
+```typescript
+// 监控数据聚合
+interface MonitoringMetrics {
+    // 系统指标
+    system: {
+        cpu: number;
+        memory: number;
+        disk: number;
+        network: {
+            in: number;
+            out: number;
+        };
+    };
+    
+    // 业务指标
+    business: {
+        batchgo: {
+            activeTasks: number;
+            successRate: number;
+            avgResponseTime: number;
+        };
+        siterank: {
+            activeQueries: number;
+            cacheHitRate: number;
+            apiSuccessRate: number;
+        };
+        adscenter: {
+            activeAccounts: number;
+            executionSuccessRate: number;
+        };
+    };
+    
+    // 用户指标
+    users: {
+        online: number;
+        total: number;
+        activeToday: number;
+    };
+}
+
+// 实时监控组件
+const SystemMonitor: React.FC = () => {
+    const [metrics, setMetrics] = useState<MonitoringMetrics | null>(null);
+    
+    useEffect(() => {
+        const ws = new WebSocket('/ws/monitoring');
+        
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            setMetrics(data);
+        };
+        
+        return () => ws.close();
+    }, []);
+    
+    if (!metrics) return <div>Loading...</div>;
+    
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* 系统指标卡片 */}
+            <MetricCard title="CPU使用率" value={`${metrics.system.cpu}%`} />
+            <MetricCard title="内存使用率" value={`${metrics.system.memory}%`} />
+            <MetricCard title="在线用户" value={metrics.users.online} />
+            
+            {/* 业务指标图表 */}
+            <BusinessChart data={metrics.business} />
+            
+            {/* 告警列表 */}
+            <AlertList />
+        </div>
+    );
+};
+```
+
+**智能告警系统**
+```go
+// 告警规则引擎
+type AlertRuleEngine struct {
+    rules    []AlertRule
+    notifier AlertNotifier
+}
+
+type AlertRule struct {
+    ID          string
+    Name        string
+    Condition   string // "cpu > 80", "error_rate > 5%"
+    Threshold   float64
+    Duration    time.Duration
+    Severity    string // "info", "warning", "critical"
+    Actions     []AlertAction
+}
+
+func (are *AlertRuleEngine) Evaluate(metrics MonitoringMetrics) {
+    for _, rule := range are.rules {
+        triggered := are.evaluateCondition(rule, metrics)
+        
+        if triggered {
+            // 检查持续时间
+            if rule.Duration > 0 {
+                if !are.checkDuration(rule) {
+                    continue
+                }
+            }
+            
+            // 触发告警
+            are.notifier.Send(Alert{
+                RuleID:    rule.ID,
+                Title:     rule.Name,
+                Message:   fmt.Sprintf("%s: %.2f", rule.Condition, rule.Threshold),
+                Severity:  rule.Severity,
+                Timestamp: time.Now(),
+            })
+        }
+    }
+}
+```
+
+#### 6.5.9 部署与运维增强
+
+**容器化部署配置**
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  # GoFly API Gateway
+  gofly-api:
+    build: .
+    ports:
+      - "8200:8200"
+    environment:
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+      - ENVIRONMENT=production
+    depends_on:
+      - mysql
+      - redis
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  
+  # Next.js Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://gofly-api:8200
+    depends_on:
+      - gofly-api
+  
+  # MySQL
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: autoads
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+  
+  # Redis
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+
+volumes:
+  mysql_data:
+  redis_data:
+```
+
+**CI/CD流水线增强**
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.21
+      
+      - name: Run tests
+        run: |
+          go test ./...
+          go vet ./...
+  
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build GoFly API
+        run: |
+          CGO_ENABLED=0 GOOS=linux go build -o gofly-api .
+          
+      - name: Build Docker image
+        run: |
+          docker build -t ghcr.io/xxrenzhe/autoads-gofly:${{ github.sha }} .
+          
+      - name: Push Docker image
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker push ghcr.io/xxrenzhe/autoads-gofly:${{ github.sha }}
+  
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to production
+        run: |
+          # 使用ansible或kubectl部署
+          ansible-playbook deploy.yml -e version=${{ github.sha }}
+```
+
+#### 6.5.10 实施时间表更新
+
+基于简化后的单一管理后台设计，更新实施时间表：
+
+| 阶段 | 任务 | 时间 | 负责人 | 输出物 |
+|------|------|------|--------|--------|
+| 1 | 架构设计与准备 | 2周 | 架构师 | 详细设计文档、技术方案 |
+| 2 | GoFly基础框架搭建 | 3周 | 后端团队 | GoFly后端服务、基础API |
+| 3 | 统一认证系统 | 1周 | 后端团队 | JWT认证、Redis Session集成 |
+| 4 | API网关实现 | 2周 | 后端团队 | 路由管理、权限验证、限流 |
+| 5 | BatchGo服务实现 | 4周 | 后端团队 | 批量访问服务、API接口 |
+| 6 | SiteRankGo服务实现 | 3周 | 后端团队 | 排名查询服务、缓存系统 |
+| 7 | AdsCenterGo服务实现 | 4周 | 后端团队 | 账户管理、自动化执行 |
+| 8 | 管理界面开发 | 3周 | 前端团队 | 用户管理、任务管理、系统配置界面 |
+| 9 | 实时功能集成 | 2周 | 全栈团队 | WebSocket、实时监控、状态更新 |
+| 10 | 监控告警系统 | 2周 | 运维团队 | 监控面板、告警规则 |
+| 11 | 测试与优化 | 3周 | QA团队 | 集成测试、性能优化 |
+| 12 | 部署上线 | 1周 | 运维团队 | 生产环境部署、系统配置 |
+
+**总计：30周**
+
+#### 6.5.11 成功标准更新
+
+1. **技术指标**
+   - API响应时间 < 100ms (95分位)
+   - 系统可用性 > 99.9%
+   - 并发用户支持 > 1000
+   - WebSocket消息延迟 < 100ms
+
+2. **功能完整性**
+   - 所有现有功能在Go版本中正常工作
+   - 单一管理后台功能完整且易用
+   - 实时监控和告警系统有效运行
+   - 权限控制系统精确可靠
+
+3. **用户体验**
+   - 页面加载时间 < 2秒
+   - 实时数据更新无延迟感
+   - 错误处理友好，恢复机制完善
+   - 管理操作直观高效
+
+4. **运维指标**
+   - 部署时间 < 30分钟
+   - 回滚时间 < 5分钟
+   - 监控覆盖率达到100%
+   - 告警准确率 > 95%
+
+#### 6.5.6 核心功能Go重构详细计划
+
+**重构原则**
+1. **API兼容性优先**：保持所有现有API接口不变
+2. **业务逻辑 preserved**：确保所有功能完整性
+3. **直接替换策略**：完整实现后一次性切换
+4. **最小化停机时间**：每个模块切换控制在30分钟内
+
+**实施策略**
+
+**阶段1：基础架构搭建（2周）**
+```
+目标：搭建GoFly应用基础架构
+1. 部署GoFly V3框架
+2. 配置开发环境
+3. 设计数据库表结构（全新数据库）
+4. 实现基础中间件（认证、日志、限流）
+5. 搭建CI/CD流水线
+```
+
+**阶段2：用户系统实现（3周）**
+```
+目标：实现完整的用户管理和认证系统
+1. 用户注册登录模块
+2. JWT + Redis Session认证
+3. RBAC权限系统
+4. 套餐和Token系统
+5. 支付集成（如需要）
+```
+
+**阶段3：BatchGo模块实现（4周）**
+```
+目标：实现批量访问功能
+1. 任务管理器（goroutine池）
+2. 并发控制器（信号量机制）
+3. 代理轮转服务
+4. HTTP/Puppeteer双模式支持
+5. 完整的单元测试和集成测试
+```
+
+**阶段4：SiteRankGo模块实现（3周）**
+```
+目标：实现网站排名查询功能
+1. SimilarWeb API集成
+2. 智能缓存策略
+3. 批量查询优化
+4. 数据导出功能
+5. 完整测试套件
+```
+
+**阶段5：AdsCenterGo模块实现（4周）**
+```
+目标：实现广告链接管理功能
+1. Google Ads API集成
+2. 账户管理
+3. 自动化规则引擎
+4. 执行日志系统
+5. 完整测试套件
+```
+
+**阶段6：GoFly Admin管理界面实现（3周）**
+```
+目标：实现完整的管理后台
+1. 用户管理界面
+2. 业务模块管理界面
+3. 系统配置界面
+4. 监控和统计面板
+5. 数据可视化
+```
+
+**阶段7：系统集成测试（2周）**
+```
+目标：全系统集成测试
+1. 端到端功能测试
+2. 性能测试和优化
+3. 安全测试
+4. 压力测试
+5. 用户体验测试
+```
+
+**阶段8：部署上线（1周）**
+```
+目标：系统正式上线
+1. 生产环境部署
+2. 数据初始化（全新数据库）
+3. 域名和DNS配置
+4. 监控系统部署
+5. 上线验证
+```
+
+**技术实现要点**
+
+**1. API兼容层设计**
+```go
+// 自动路由映射
+/app/business/batchgo/Task/SilentStart → POST /api/batchopen/silent-start
+/app/business/siterank/Query/Batch → POST /api/siterank/batch
+
+// 请求/响应结构完全兼容
+type SilentStartRequest struct {
+    TaskId       string   `json:"taskId"`
+    Urls         []string `json:"urls"`
+    CycleCount   int      `json:"cycleCount"`
+    // ... 保持与现有API一致
+}
+```
+
+**2. 数据库设计**
+```go
+// 无需数据迁移，直接使用新表结构
+type DatabaseSchema struct {
+    // BatchGo表
+    BatchGoTasks struct {
+        ID        string    `json:"id"`
+        UserID    string    `json:"user_id"`
+        TaskID    string    `json:"task_id"`
+        URLs      []string  `json:"urls"`
+        Status    string    `json:"status"`
+        CreatedAt time.Time `json:"created_at"`
+    }
+    
+    // SiteRankGo表
+    SiteRankQueries struct {
+        ID           string    `json:"id"`
+        UserID       string    `json:"user_id"`
+        Domain       string    `json:"domain"`
+        GlobalRank   int64     `json:"global_rank"`
+        CachedAt     time.Time `json:"cached_at"`
+    }
+    
+    // AdsCenterGo表
+    AdsCenterAccounts struct {
+        ID        string    `json:"id"`
+        UserID    string    `json:"user_id"`
+        Platform  string    `json:"platform"`
+        Status    string    `json:"status"`
+    }
+}
+```
+
+**3. 回滚保护机制**
+```go
+// 快速回滚（无需数据恢复）
+type RollbackController struct {
+    versionManager *VersionManager
+    serviceManager *ServiceManager
+}
+
+// 执行回滚（5分钟内完成）
+func (r *RollbackController) Rollback(version string) error {
+    log.Info("开始回滚到版本: " + version)
+    
+    // 1. 停止Go服务
+    if err := r.serviceManager.StopGoServices(); err != nil {
+        return err
+    }
+    
+    // 2. 切换到Next.js版本
+    if err := r.versionManager.SwitchTo(version); err != nil {
+        return err
+    }
+    
+    // 3. 启动Next.js服务
+    if err := r.serviceManager.StartNextJSServices(); err != nil {
+        return err
+    }
+    
+    log.Info("回滚完成")
+    return nil
+}
+```
+
+**4. 部署自动化**
+```go
+// 部署脚本
+type DeploymentScript struct {
+    serviceName string
+    version     string
+    backup      bool
+    validate    bool
+}
+
+func (d *DeploymentScript) Execute() error {
+    // 1. 健康检查
+    if err := d.healthCheck(); err != nil {
+        return err
+    }
+    
+    // 2. 数据备份（如果需要）
+    if d.backup {
+        if err := d.backupData(); err != nil {
+            return err
+        }
+    }
+    
+    // 3. 部署新版本
+    if err := d.deployService(); err != nil {
+        // 自动回滚
+        d.rollback()
+        return err
+    }
+    
+    // 4. 验证部署
+    if d.validate {
+        if err := d.validateDeployment(); err != nil {
+            d.rollback()
+            return err
+        }
+    }
+    
+    return nil
+}
+```
+
+**风险控制措施**
+
+1. **开发质量保障**
+   - 代码审查制度
+   - 单元测试覆盖率要求（80%+）
+   - 集成测试自动化
+   - 持续集成/持续部署
+
+2. **性能保障**
+   - 性能基准测试
+   - 压力测试（模拟高并发）
+   - 内存泄漏检测
+   - API响应时间监控
+
+3. **上线保障**
+   - 灰度发布策略
+   - 实时监控告警
+   - 快速回滚机制
+   - 应急响应预案
+
+**预期收益**
+
+1. **性能提升**
+   - 响应时间减少70%+
+   - 并发处理能力提升50倍（从1并发到50并发）
+   - 内存使用优化60%
+   - 4900%整体性能提升
+
+2. **架构优势**
+   - 单体应用简化部署和运维
+   - 模块化设计便于扩展
+   - 统一的Go技术栈
+   - 内置的管理后台系统
+
+3. **开发效率**
+   - 强类型语言减少运行时错误
+   - 编译时错误检查
+   - 丰富的标准库
+   - 高效的并发编程模型
+
+4. **运维便利**
+   - 单一二进制文件部署
+   - 内置监控和日志系统
+   - 自动化部署支持
+   - 完善的错误处理机制
+
+**实施时间表**
+
+| 阶段 | 任务 | 开始时间 | 结束时间 | 负责团队 | 停机时间 |
+|------|------|----------|----------|----------|----------|
+| 1 | 基础架构搭建 | 第1周 | 第2周 | 架构/运维 | 无 |
+| 2 | 用户系统实现 | 第3周 | 第5周 | 后端团队 | 无 |
+| 3 | BatchGo模块实现 | 第6周 | 第9周 | 后端团队 | 无 |
+| 4 | SiteRankGo模块实现 | 第10周 | 第12周 | 后端团队 | 无 |
+| 5 | AdsCenterGo模块实现 | 第13周 | 第16周 | 后端团队 | 无 |
+| 6 | GoFly Admin管理界面 | 第17周 | 第19周 | 全栈团队 | 无 |
+| 7 | 系统集成测试 | 第20周 | 第21周 | QA团队 | 无 |
+| 8 | 部署上线 | 第22周 | 第22周 | 运维团队 | 无 |
+
+**总工期：22周**
+**停机时间：无需停机（全新部署）**
+
+**数据库设计**
+```sql
+-- 使用GoFly标准表结构，直接创建新数据库
+
+-- Admin模块表（管理员相关）
+admin_account           -- 管理员账号表
+admin_auth_role         -- 角色管理表
+admin_auth_rule         -- 权限规则表
+admin_login_log         -- 管理员登录日志表
+
+-- Business模块表（业务用户相关）
+business_account        -- 业务用户表（替代原users表）
+business_auth_role      -- 业务角色表
+business_subscription   -- 订阅管理表（替代原subscriptions表）
+business_token_transaction -- Token交易表
+business_token_usage   -- Token使用记录表
+user_email_verification -- 用户邮箱验证表
+user_invite_code        -- 用户邀请码表
+
+-- 业务功能表
+batchgo_tasks          -- BatchGo任务表
+siterank_queries       -- SiteRank查询表
+changelink_accounts    -- AdsCenterGo账户表
+```
+
+**详细表结构**
+
+**管理员账号表**
+```sql
+CREATE TABLE admin_account (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL UNIQUE COMMENT '管理员用户名',
+    password VARCHAR(255) NOT NULL COMMENT '密码(加密存储)',
+    role ENUM('SUPER_ADMIN', 'ADMIN', 'OPERATOR') DEFAULT 'ADMIN' COMMENT '角色',
+    name VARCHAR(100) COMMENT '显示名称',
+    email VARCHAR(100) COMMENT '邮箱',
+    status TINYINT DEFAULT 1 COMMENT '状态:1启用,0禁用',
+    last_login_at TIMESTAMP NULL COMMENT '最后登录时间',
+    last_login_ip VARCHAR(45) COMMENT '最后登录IP',
+    created_by BIGINT COMMENT '创建者ID',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_username (username),
+    INDEX idx_status (status)
+);
+```
+
+**业务用户表**
+```sql
+CREATE TABLE business_account (
+    id VARCHAR(191) PRIMARY KEY COMMENT '用户ID(CUID)',
+    email VARCHAR(191) NOT NULL UNIQUE COMMENT '邮箱',
+    password VARCHAR(255) COMMENT '密码(加密存储，OAuth用户为空)',
+    name VARCHAR(191) COMMENT '显示名称',
+    avatar VARCHAR(500) COMMENT '头像URL',
+    google_id VARCHAR(100) COMMENT 'Google用户ID',
+    email_verified BOOLEAN DEFAULT false COMMENT '邮箱是否验证',
+    role ENUM('USER', 'ADMIN', 'SUPER_ADMIN') DEFAULT 'USER' COMMENT '角色',
+    status ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED', 'BANNED') DEFAULT 'ACTIVE' COMMENT '状态',
+    plan ENUM('FREE', 'PRO', 'MAX') DEFAULT 'FREE' COMMENT '当前套餐',
+    tokens INT DEFAULT 0 COMMENT 'Token余额',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_login_at TIMESTAMP NULL,
+    last_login_ip VARCHAR(45),
+    INDEX idx_email (email),
+    INDEX idx_status (status),
+    INDEX idx_plan (plan)
+);
+```
+
+**管理员登录日志表**
+```sql
+CREATE TABLE admin_login_log (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    admin_id BIGINT NOT NULL COMMENT '管理员ID',
+    login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '登录时间',
+    login_ip VARCHAR(45) COMMENT '登录IP',
+    user_agent TEXT COMMENT '用户代理',
+    status TINYINT DEFAULT 1 COMMENT '状态:1成功,0失败',
+    fail_reason VARCHAR(255) COMMENT '失败原因',
+    INDEX idx_admin_id (admin_id),
+    INDEX idx_login_time (login_time),
+    INDEX idx_status (status)
+);
+```
+
+**用户邮箱验证表**
+```sql
+CREATE TABLE user_email_verification (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id VARCHAR(191) NOT NULL COMMENT '用户ID',
+    token VARCHAR(191) NOT NULL UNIQUE COMMENT '验证令牌',
+    email VARCHAR(191) NOT NULL COMMENT '待验证邮箱',
+    expires_at TIMESTAMP NOT NULL COMMENT '过期时间',
+    verified_at TIMESTAMP NULL COMMENT '验证时间',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_token (token),
+    INDEX idx_expires_at (expires_at),
+    FOREIGN KEY (user_id) REFERENCES business_account(id) ON DELETE CASCADE
+);
+```
+
+**用户邀请码表**
+```sql
+CREATE TABLE user_invite_code (
+    id VARCHAR(191) PRIMARY KEY COMMENT '邀请码ID(CUID)',
+    code VARCHAR(20) NOT NULL UNIQUE COMMENT '邀请码',
+    creator_id VARCHAR(191) NOT NULL COMMENT '创建者用户ID',
+    plan_type ENUM('FREE', 'PRO', 'MAX') NOT NULL COMMENT '套餐类型',
+    token_bonus INT DEFAULT 0 COMMENT '额外Token奖励',
+    max_uses INT DEFAULT 1 COMMENT '最大使用次数',
+    used_count INT DEFAULT 0 COMMENT '已使用次数',
+    expires_at TIMESTAMP NULL COMMENT '过期时间',
+    status ENUM('ACTIVE', 'EXPIRED', 'DEPLETED') DEFAULT 'ACTIVE' COMMENT '状态',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_code (code),
+    INDEX idx_creator_id (creator_id),
+    INDEX idx_status (status),
+    FOREIGN KEY (creator_id) REFERENCES business_account(id) ON DELETE CASCADE
+);
+```
+
+**管理员角色表**
+```sql
+CREATE TABLE admin_auth_role (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL UNIQUE COMMENT '角色名称',
+    description VARCHAR(255) COMMENT '角色描述',
+    permissions TEXT COMMENT '权限列表(JSON格式)',
+    status TINYINT DEFAULT 1 COMMENT '状态:1启用,0禁用',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_name (name),
+    INDEX idx_status (status)
+);
+```
+
+**管理员权限规则表**
+```sql
+CREATE TABLE admin_auth_rule (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    pid BIGINT DEFAULT 0 COMMENT '父级ID',
+    name VARCHAR(50) NOT NULL COMMENT '规则名称',
+    title VARCHAR(50) NOT NULL COMMENT '规则标题',
+    type TINYINT DEFAULT 1 COMMENT '类型:1菜单,2权限',
+    status TINYINT DEFAULT 1 COMMENT '状态:1启用,0禁用',
+    condition VARCHAR(255) COMMENT '规则条件',
+    path VARCHAR(255) COMMENT '路由路径',
+    icon VARCHAR(50) COMMENT '图标',
+    component VARCHAR(255) COMMENT '组件路径',
+    weight INT DEFAULT 0 COMMENT '权重',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_pid (pid),
+    INDEX idx_name (name),
+    INDEX idx_status (status),
+    INDEX idx_type (status, type)
+);
+```
+
+#### 6.4.5 现有PRD和代码库的集成缺失
+
+基于深入分析，发现以下需要完善的方面：
 
 #### 6.4.1 系统架构现状
 GoFly V3框架提供以下核心能力：
@@ -2595,7 +4863,7 @@ GoFly V3框架提供以下核心能力：
 1. **业务模块管理界面缺失**
    - 缺少BatchGo任务管理界面
    - 缺少SiteRankGo查询管理界面
-   - 缺少ChangeLinkGo账户管理界面
+   - 缺少AdsCenterGo账户管理界面
    - 缺少模块配置和参数管理
 
 2. **权限系统集成不完整**
@@ -2659,7 +4927,7 @@ GoFly V3框架提供以下核心能力：
     * 错误重试策略
 ```
 
-**ChangeLinkGo模块管理**
+**AdsCenterGo模块管理**
 ```yaml
 管理功能:
   - 账户管理
@@ -2699,7 +4967,7 @@ const eventSubscriptions = {
   'siterank:query_started': handleQueryStarted,
   'siterank:query_completed': handleQueryCompleted,
   
-  // ChangeLinkGo事件
+  // AdsCenterGo事件
   'changelink:account_connected': handleAccountConnected,
   'changelink:link_updated': handleLinkUpdated,
   
@@ -2730,9 +4998,9 @@ const apiClient = {
   },
   
   changelink: {
-    connectAccount: '/api/v1/changelink/accounts/connect',
-    updateLinks: '/api/v1/changelink/links/update',
-    getAccounts: '/api/v1/changelink/accounts',
+    connectAccount: '/api/v1/changelink_accounts/connect',
+    updateLinks: '/api/v1/changelinklinks/update',
+    getAccounts: '/api/v1/changelink_accounts',
   },
   
   // GoFly集成API
@@ -2766,21 +5034,21 @@ const apiClient = {
     - BatchGo Basic: 100个URL/任务，前端标签页打开（无循环次数）
     - BatchGo Silent: 100个URL/任务，1并发（支持循环次数，HTTP+Puppeteer）
     - SiteRankGo: 100个域名/次
-    - ChangeLinkGo: 不支持
+    - AdsCenterGo: 不支持
   
   Pro套餐:
     - BatchGo Basic: 100个URL/任务，前端标签页打开（无循环次数）
     - BatchGo Silent: 1,000个URL/任务，5并发（支持循环次数，HTTP+Puppeteer）
     - BatchGo Automated: 1,000个URL/任务，5并发（基于自动化规则，HTTP+Puppeteer）
     - SiteRankGo: 500个域名/次
-    - ChangeLinkGo: 10个Google Ads账户
+    - AdsCenterGo: 10个Google Ads账户
   
   Max套餐:
     - BatchGo Basic: 100个URL/任务，前端标签页打开（无循环次数）
     - BatchGo Silent: 5,000个URL/任务，50并发（支持循环次数，HTTP+Puppeteer）
     - BatchGo Automated: 5,000个URL/任务，50并发（基于自动化规则，HTTP+Puppeteer）
     - SiteRankGo: 5,000个域名/次
-    - ChangeLinkGo: 100个Google Ads账户
+    - AdsCenterGo: 100个Google Ads账户
 ```
 
 #### 6.5.4 数据流设计
@@ -2828,7 +5096,7 @@ GoFly后端 → WebSocket → 前端组件
    - 实现结果缓存
    - 开发数据导出
 
-3. **ChangeLinkGo集成**
+3. **AdsCenterGo集成**
    - 账户管理集成
    - 链接更新功能
    - 监控告警系统
@@ -2868,13 +5136,101 @@ GoFly后端 → WebSocket → 前端组件
 | v13.0 | 2025-01-10 | 全面补充GoFly集成架构：添加业务模块管理界面、前端交互集成、权限系统集成、数据流设计和详细实施计划 | 产品团队 |
 | v14.0 | 2025-01-10 | 优化系统架构：评估并选择Redis Pub/Sub替代Kafka；简化角色系统为USER和ADMIN两级；设计完整的API限流和安全机制 | 产品团队 |
 | v15.0 | 2025-01-10 | 进一步简化架构：从微服务改为单体应用+模块化设计；修正Basic版本权限描述（仅支持前端标签页模式）；优化部署流程 | 产品团队 |
-| v26.0 | 2025-01-10 | 修正功能名称：恢复ChangeLink的中文名称为"自动化广告"；统一使用"批量访问"作为BatchOpen的中文名称；保持并发性能提升描述为4900% | 产品团队 |
-| v27.0 | 2025-01-10 | 基于代码库深度分析，优化PRD内容：准确反映当前实现状态（Next.js+MySQL），明确功能完成度（BatchOpen✅/SiteRank✅/ChangeLink❌），保持GoFly重构目标 | 产品团队 |
+| v26.0 | 2025-01-10 | 修正功能名称：恢复AdsCenterGo中文名称为"自动化广告"；统一使用"批量访问"作为BatchOpen的中文名称；保持并发性能提升描述为4900% | 产品团队 |
+| v27.0 | 2025-01-10 | 基于代码库深度分析，优化PRD内容：准确反映当前实现状态（Next.js+MySQL），明确功能完成度（BatchOpen✅/SiteRank✅/AdsCenterGo），保持GoFly重构目标 | 产品团队 |
 | v28.0 | 2025-09-10 | 最终优化：平衡现状描述与重构目标，保持技术前瞻性同时确保文档准确性 | 产品团队 |
 | v28.1 | 2025-09-10 | 更新数据库配置：明确使用MySQL 8.0而非PostgreSQL，引用docs/MustKnow.md获取详细配置信息；确认SiteRank已实现真实SimilarWeb API集成 | 产品团队 |
-| v28.2 | 2025-09-10 | 全面校验并修正文档不一致性：确保技术架构描述统一；验证功能实现状态准确性；统一命名规范（BatchOpen/BatchGo, ChangeLink/链接管理）；确认业务逻辑描述一致性；维护重构目标与现状描述的平衡 | 产品团队 |
+| v28.2 | 2025-09-10 | 全面校验并修正文档不一致性：确保技术架构描述统一；验证功能实现状态准确性；统一命名规范（BatchOpen/BatchGo, AdsCenterGo链接管理）；确认业务逻辑描述一致性；维护重构目标与现状描述的平衡 | 产品团队 |
 | v28.3 | 2025-09-10 | 修正具体数值不一致：统一各版本URL限制（Basic:100/Silent:1,000/Automated:5,000）和并发数（Basic:1/Silent:5/Automated:50）；修正v15.0历史记录中Basic版本描述错误 | 产品团队 |
 | v28.4 | 2025-09-10 | 明确HTTP和Puppeteer模式的代理配置要求：两种模式都必须支持代理IP和referer配置；实现每个代理IP完成一轮URL访问的轮转机制；添加代理管理相关API设计 | 产品团队 |
+| v28.5 | 2025-09-10 | 深入分析GoFly Admin V3源码，全面更新GoFly集成架构：添加框架核心能力详解（MVC架构、自动路由、RBAC、自研ORM）；明确三级集成策略；修正单次任务URL数量为10/100/1000；创建独立GoFly分析文档 | 产品团队 |
+| v28.6 | 2025-09-10 | 进一步优化GoFly集成细节：添加自动路由系统说明（命名约定、HTTP方法识别）；详细RBAC权限系统描述；完善ORM和中间件栈特性；更新服务列表具体实现方案 | 产品团队 |
+| v28.7 | 2025-09-10 | 添加核心功能Go重构详细计划：分析3大核心功能业务逻辑，设计API兼容性保证方案，制定5阶段渐进式重构策略（总工期11周），包含风险控制措施和回滚保护机制 | 产品团队 |
+| v28.8 | 2025-09-10 | 优化重构策略为直接替换模式：移除流量切换机制，改为8阶段直接替换策略（总工期13周），明确各模块停机时间（总计75分钟），简化数据迁移和回滚方案 | 产品团队 |
+| v28.9 | 2025-09-10 | 进一步简化重构方案：确认3大核心功能无历史数据需要迁移，大幅缩短停机时间（总计13分钟），优化回滚机制为5分钟快速切换，无需数据备份和恢复 | 产品团队 |
+| v30.2 | 2025-09-12 | 明确全新实现策略：无需数据库迁移，直接使用新MySQL数据库；移除渐进式重构，改为全新GoFly架构实现（总工期22周），系统无需迁移，直接部署新架构 | 产品团队 |
+| v29.0 | 2025-09-11 | 架构评估与优化：深入评估GoFly框架的模块化设计特性，确认当前架构完全符合"Go单体应用+模块化设计"要求，更新技术架构设计章节，移除微服务描述，强调单体应用优势 | 产品团队 |
+| v29.1 | 2025-09-12 | 功能模块重命名：将ChangeLinkGo更名为AdsCenterGo，统一所有相关描述和命名规范 | 产品团队 |
+| v29.2 | 2025-09-12 | 统一命名规范：确保所有AdsCenter引用均使用AdsCenterGo格式，保持与BatchGo/SiteRankGo命名一致性 | 产品团队 |
+| v29.3 | 2025-09-12 | 修正命名混淆：明确区分现有功能（ChangeLink）和重构版本（AdsCenterGo），添加命名说明章节，更新所有相关描述以准确反映现状 | 产品团队 |
+| v30.0 | 2025-09-12 | 全面补充GoFly管理系统集成缺失：新增双管理后台架构设计、统一认证SSO、业务模块管理界面详细设计、实时数据推送增强、API网关详细设计、数据一致性管理、监控告警集成、部署运维增强，更新实施时间表为29周 | 产品团队 |
+| v30.1 | 2025-09-12 | 架构优化：移除不必要的双管理后台设计，简化为单一管理后台架构，明确所有管理功能在GoFly Admin中实现，Next.js仅作为用户前端，大幅降低系统复杂度和维护成本 | 产品团队 |
+| v31.0 | 2025-09-12 | 架构评估与优化：确认符合"Go单体应用+模块化设计"要求，简化认证系统为统一JWT认证，明确ORM策略为统一使用GoFly gform，优化部署架构为单一Go应用 | 产品团队 |
+
+## 7. 架构优化总结
+
+### 7.1 架构符合性确认
+
+经过全面评估和优化，当前架构设计完全符合"Go单体应用+模块化设计"的核心要求：
+
+**✅ 单体应用特征**
+- 单一Go二进制文件部署
+- 统一的进程空间和内存管理
+- 共享数据库连接池和基础设施
+- 简化的部署和运维流程
+
+**✅ 模块化设计特征**
+- 清晰的模块边界（business/、admin/、common/）
+- 独立的包空间和路由前缀
+- 基于接口的模块间通信
+- 自动路由系统支持模块化开发
+
+### 7.2 主要优化点
+
+**1. 架构简化**
+- 移除双管理后台设计，统一使用GoFly Admin
+- 简化认证系统，采用统一JWT + Redis Session
+- 明确ORM策略，统一使用GoFly gform
+- 优化部署架构，单一Go应用处理所有业务逻辑
+
+**2. 技术栈明确化**
+- 后端：GoFly V3（唯一后端服务）
+- 前端：Next.js（仅用户界面）
+- 数据库：MySQL 8.0（全新实例）
+- 缓存：Redis 7.0（会话、缓存、队列）
+
+**3. 认证统一化**
+- 用户和管理员使用同一套认证系统
+- 基于角色的权限控制（USER/ADMIN/SUPER_ADMIN）
+- 统一的JWT Token，通过role字段区分权限
+- 管理员通过独立入口访问管理后台
+
+### 7.3 实施优势
+
+**开发效率**
+- GoFly提供完整的后台管理框架
+- 自动CRUD生成和代码生成器
+- 约定优于配置的开发模式
+- 丰富的中间件和工具库
+
+**性能优势**
+- Go语言原生并发支持
+- 函数调用级别的模块通信
+- 共享内存，无序列化开销
+- 统一的资源管理和连接池
+
+**运维优势**
+- 单一部署单元，简化CI/CD
+- 统一的监控和日志收集
+- 简化的故障排查和扩容
+- 降低系统复杂度和维护成本
+
+### 7.4 下一步行动计划
+
+1. **高优先级**
+   - 搭建GoFly基础架构
+   - 配置新MySQL数据库
+   - 实现统一认证系统
+
+2. **中优先级**
+   - 迁移业务模块到GoFly
+   - 实现RBAC权限体系
+   - 开发管理后台界面
+
+3. **低优先级**
+   - 性能优化和监控
+   - 高级功能开发
+   - 文档完善
 
 ## 8. 附录
 
@@ -2889,6 +5245,8 @@ GoFly后端 → WebSocket → 前端组件
 - **Max套餐**: 白金付费套餐，¥998/月（年付50%优惠）
 - **HTTP模式**: BatchGo的轻量级访问模式，高性能
 - **Puppeteer模式**: BatchGo的完整浏览器模拟模式
+- **ChangeLink**: 现有链接管理功能（Next.js实现），仅有UI界面
+- **AdsCenterGo**: ChangeLink的Go重构版本，支持Google Ads多账户管理和自动化链接更新
 - **签到**: 每日登录获得Token奖励的机制
 - **邀请机制**: 用户邀请好友注册获得奖励的机制
 
