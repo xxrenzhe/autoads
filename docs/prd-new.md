@@ -357,8 +357,6 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 | **BatchGo Basic** | ✓ (前端打开) | ✓ (前端打开) | ✓ (前端打开) |
 | **BatchGo Silent** | ✓ (HTTP+Puppeteer) | ✓ (HTTP+Puppeteer) | ✓ (HTTP+Puppeteer) |
 | **BatchGo Automated** | ✗ | ✓ (HTTP+Puppeteer) | ✓ (HTTP+Puppeteer) |
-| **HTTP访问模式** | ✓ (仅Silent) | ✓ (Silent+Automated) | ✓ (Silent+Automated) |
-| **Puppeteer访问模式** | ✓ (仅Silent) | ✓ (Silent+Automated) | ✓ (Silent+Automated) |
 | **前端标签页打开** | ✓ (仅Basic) | ✓ (包含Basic) | ✓ (包含Basic) |
 | **单次任务URL数量** | 100 | 1,000 | 5,000 |
 | **并发任务数** | 1 | 5 | 50 |
@@ -2821,7 +2819,7 @@ GoFly后端 → WebSocket → 前端组件
 | v13.0 | 2025-01-10 | 全面补充GoFly集成架构：添加业务模块管理界面、前端交互集成、权限系统集成、数据流设计和详细实施计划 | 产品团队 |
 | v14.0 | 2025-01-10 | 优化系统架构：评估并选择Redis Pub/Sub替代Kafka；简化角色系统为USER和ADMIN两级；设计完整的API限流和安全机制 | 产品团队 |
 | v15.0 | 2025-01-10 | 进一步简化架构：从微服务改为单体应用+模块化设计；修正Basic版本权限描述（仅支持Puppeteer模式）；优化部署流程 | 产品团队 |
-| v17.0 | 2025-01-10 | 修正套餐内容和权限矩阵：Free套餐支持Basic+Silent版本；Pro套餐新增Automated版本；Max套餐SiteRank查询上限5000个；更新各版本URL数量和并发数配置 | 产品团队 |
+| v18.0 | 2025-01-10 | 简化权限矩阵：移除HTTP和Puppeteer访问模式作为独立权限项，这些模式是BatchGo Silent和Automated的内部实现方式 | 产品团队 |
 
 ## 8. 附录
 
