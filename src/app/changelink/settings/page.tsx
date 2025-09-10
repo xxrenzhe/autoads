@@ -68,7 +68,7 @@ export default function SimpleSettingsPage() {
       const url = URL.createObjectURL(dataBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `changelink-config-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `adscenter-config-${new Date().toISOString().split('T')[0]}.json`;
       link.click();
       URL.revokeObjectURL(url);
       

@@ -77,7 +77,7 @@ export function FeatureCards() {
               <p>批量处理和优化网站链接</p>
               <Button 
                 className="mt-4" 
-                onClick={() => handleFeatureClick('changelink')}
+                onClick={() => handleFeatureClick('adscenter')}
               >
                 使用工具
               </Button>
@@ -137,7 +137,7 @@ export function FeatureCards() {
               <p className="text-gray-600 mb-3">自动化链接优化和批量处理，支持多种格式</p>
               <div className="flex gap-2">
                 <Button 
-                  onClick={() => handleFeatureClick('changelink')}
+                  onClick={() => handleFeatureClick('adscenter')}
                   className="flex-1"
                 >
                   开始处理

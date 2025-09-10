@@ -76,7 +76,7 @@ interface TokenRulesEditProps {
 const FEATURE_OPTIONS = [
   { value: 'siterank', label: 'SiteRank', description: '网站排名查询功能' },
   { value: 'batchopen', label: 'BatchOpen', description: '批量网页打开功能' },
-  { value: 'changelink', label: 'ChangeLink', description: '链接转换功能' },
+  { value: 'adscenter', label: 'ChangeLink', description: '链接转换功能' },
   { value: 'api', label: 'API', description: 'API调用功能' },
   { value: 'webhook', label: 'Webhook', description: 'Webhook功能' },
   { value: 'notification', label: 'Notification', description: '通知功能' },
@@ -95,7 +95,7 @@ const METHOD_OPTIONS = {
     { value: 'puppeteer', label: 'Puppeteer模式' },
     { value: 'selenium', label: 'Selenium模式' },
   ],
-  changelink: [
+  adscenter: [
     { value: 'default', label: '默认转换' },
     { value: 'advanced', label: '高级转换' },
   ],
@@ -252,7 +252,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
     const recommendations: { [key: string]: { [key: string]: number } } = {
       siterank: { default: 1, detailed: 2, bulk: 3 },
       batchopen: { http: 1, puppeteer: 2, selenium: 3 },
-      changelink: { default: 1, advanced: 2 },
+      adscenter: { default: 1, advanced: 2 },
     };
 
     const featureRec = recommendations[formData.feature];

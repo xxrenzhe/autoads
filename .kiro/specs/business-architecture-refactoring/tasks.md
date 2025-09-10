@@ -150,28 +150,28 @@ This implementation plan transforms the AutoAds platform into a modern, componen
   - Write end-to-end tests for complete user workflows
   - _Requirements: 1.2, 2.2, 4.1_
 
-- [x] 6. Migrate ChangeLink Module to Clean Architecture
+- [x] 6. Migrate AdsCenter Module to Clean Architecture
   - Create domain entities: AdCampaign, AdLink, UpdateSchedule
   - Implement value objects: CampaignConfiguration, LinkUpdateResult
   - Build domain services: LinkValidationService, CampaignSyncService
   - Write unit tests for campaign management logic
   - _Requirements: 1.3, 2.3, 5.1_
 
-- [x] 6.1 Implement ChangeLink Application Layer
+- [x] 6.1 Implement AdsCenter Application Layer
   - Create use cases: UpdateCampaignLinks, ScheduleUpdates, SyncWithGoogleAds
   - Build automated scheduling and execution system
   - Implement campaign configuration validation
   - Write integration tests for Google Ads API integration
   - _Requirements: 1.3, 2.3, 5.2_
 
-- [x] 6.2 Build ChangeLink Infrastructure Layer
-  - Implement PrismaChangeLinkRepository with audit logging
+- [x] 6.2 Build AdsCenter Infrastructure Layer
+  - Implement PrismaAdsCenterRepository with audit logging
   - Create GoogleAdsApiClient with OAuth2 authentication
   - Build AdsPowerApiClient with session management
   - Implement API rate limiting and error recovery
   - _Requirements: 1.3, 2.3, 5.4_
 
-- [x] 6.3 Create ChangeLink Presentation Layer
+- [x] 6.3 Create AdsCenter Presentation Layer
   - Build React components: CampaignDashboard, LinkEditor, ScheduleManager
   - Implement campaign configuration wizard
   - Create execution monitoring and reporting interface

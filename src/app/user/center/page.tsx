@@ -9,7 +9,7 @@ function convertPlanFeaturesToLegacyFormat(planFeatures: any[]) {
   const features: any = {
     siterank: { enabled: false },
     batchopen: { enabled: false },
-    changelink: { enabled: false }
+    adscenter: { enabled: false }
   };
 
   planFeatures.forEach(feature => {
@@ -45,15 +45,15 @@ function convertPlanFeaturesToLegacyFormat(planFeatures: any[]) {
         break;
         
       case 'AUTOMATED_ADS':
-        features.changelink = {
+        features.adscenter = {
           enabled: feature.enabled,
           maxAccountsManaged: value || 5
         };
         break;
         
       case 'ADS_ACCOUNT_LIMIT':
-        if (features.changelink.enabled) {
-          features.changelink.maxAccountsManaged = value || 5;
+        if (features.adscenter.enabled) {
+          features.adscenter.maxAccountsManaged = value || 5;
         }
         break;
     }

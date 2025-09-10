@@ -5,7 +5,7 @@
 ### 1.1 设计目标
 - 将单体 AutoAds 应用重构为支持多用户的 SaaS 系统
 - 利用 GoFly 框架提供企业级后台管理功能
-- 保持三大核心业务功能（BatchGo、SiteRankGo、ChangeLinkGo）的完整性
+- 保持三大核心业务功能（BatchGo、SiteRankGo、AdsCenterGo）的完整性
 - 实现高性能、高可用、可扩展的系统架构
 
 ### 1.2 架构原则
@@ -33,7 +33,7 @@
             ┌─────────────────────────┼─────────────────────────┐
             │                         │                         │
     ┌───────▼───────┐         ┌──────▼────────┐        ┌──────▼────────┐
-    │   BatchGo     │         │  SiteRankGo   │        │  ChangeLinkGo │
+    │   BatchGo     │         │  SiteRankGo   │        │  AdsCenterGo │
     │   Service     │         │    Service    │        │    Service    │
     │    (Go)       │         │     (Go)       │        │     (Go)      │
     └───────────────┘         └───────────────┘        └───────────────┘
@@ -167,8 +167,8 @@ type TenantConfig struct {
 - 缓存管理
 - 数据分析
 
-#### 4.1.5 ChangeLinkGo服务
-重构现有ChangeLink功能：
+#### 4.1.5 AdsCenterGo服务
+重构现有AdsCenter功能：
 - Google Ads集成
 - AdsPower自动化
 - 链接管理
@@ -483,7 +483,7 @@ spec:
 - 性能优化
 - 缓存实现
 
-### Phase 5: ChangeLinkGo服务迁移（4周）
+### Phase 5: AdsCenterGo服务迁移（4周）
 - 核心功能迁移
 - 自动化流程
 - 监控实现

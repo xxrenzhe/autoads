@@ -23,7 +23,7 @@ export class AccessControlMiddleware {
       // API routes
       { path: '/api/features/siterank', feature: $Enums.tokenusagefeature.SITERANK, operation: 'analyze', requiresAuth: true },
       { path: '/api/features/batchopen', feature: $Enums.tokenusagefeature.BATCHOPEN, operation: 'batch', requiresAuth: true },
-      { path: '/api/features/changelink', feature: $Enums.tokenusagefeature.CHANGELINK, operation: 'change', requiresAuth: true },
+      { path: '/api/features/adscenter', feature: $Enums.tokenusagefeature.CHANGELINK, operation: 'change', requiresAuth: true },
       { path: '/api/user/tokens', feature: $Enums.tokenusagefeature.REPORT, requiresAuth: true },
       { path: '/api/user/export', feature: $Enums.tokenusagefeature.EXPORT, requiresAuth: true },
       
@@ -31,7 +31,7 @@ export class AccessControlMiddleware {
       { path: '/dashboard', feature: $Enums.tokenusagefeature.ADMIN, requiresAuth: true },
       { path: '/features/siterank', feature: $Enums.tokenusagefeature.SITERANK, requiresAuth: true },
       { path: '/features/batchopen', feature: $Enums.tokenusagefeature.BATCHOPEN, requiresAuth: true },
-      { path: '/features/changelink', feature: $Enums.tokenusagefeature.CHANGELINK, requiresAuth: true }
+      { path: '/features/adscenter', feature: $Enums.tokenusagefeature.CHANGELINK, requiresAuth: true }
     ],
     bypassPaths: [
       '/api/auth',

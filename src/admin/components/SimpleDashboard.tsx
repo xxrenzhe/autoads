@@ -28,12 +28,12 @@ interface SimpleDashboardStats {
   featureUsage: {
     siterank: number;
     batchopen: number;
-    changelink: number;
+    adscenter: number;
   };
   tokenConsumption: {
     siterank: number;
     batchopen: number;
-    changelink: number;
+    adscenter: number;
     total: number;
   };
   apiStats: {
@@ -184,7 +184,7 @@ const SimpleAdminDashboard: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="ChangeLink使用"
-            value={stats?.featureUsage?.changelink || 0}
+            value={stats?.featureUsage?.adscenter || 0}
             icon={<Assessment />}
             color="#607d8b"
             subtitle="今日使用次数"
@@ -271,7 +271,7 @@ const SimpleAdminDashboard: React.FC = () => {
                     ChangeLink
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
-                    {stats?.tokenConsumption?.changelink || 0} tokens
+                    {stats?.tokenConsumption?.adscenter || 0} tokens
                   </Typography>
                 </Box>
               </Box>

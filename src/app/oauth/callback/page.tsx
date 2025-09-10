@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { globalConfigurationManager } from '@/app/changelink/models/ConfigurationManager';
+import { globalConfigurationManager } from '@/app/adscenter/models/ConfigurationManager';
 import { getDomainConfig } from '@/lib/domain-config';
 import { EnhancedError } from '@/lib/utils/error-handling';
 

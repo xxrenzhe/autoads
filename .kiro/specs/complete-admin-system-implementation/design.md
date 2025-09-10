@@ -123,7 +123,7 @@ interface AdminSigninProps {
 ```typescript
 interface TokenRule {
   id: string;
-  feature: 'siterank' | 'batchopen' | 'changelink';
+  feature: 'siterank' | 'batchopen' | 'adscenter';
   action: string;
   baseCost: number;
   conditions: Record<string, any>;

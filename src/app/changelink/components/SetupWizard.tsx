@@ -273,7 +273,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
           : googleAdsConfig.loginCustomerId
       };
       
-      const response = await fetch('/api/changelink/reports', {
+      const response = await fetch('/api/adscenter/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -294,7 +294,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
 
   const saveEmailConfig = async () => {
     try {
-      const response = await fetch('/api/changelink/reports', {
+      const response = await fetch('/api/adscenter/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -351,7 +351,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
       };
       
       // 最终保存所有配置
-      const response = await fetch('/api/changelink/reports', {
+      const response = await fetch('/api/adscenter/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

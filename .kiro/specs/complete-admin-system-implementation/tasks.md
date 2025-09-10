@@ -92,7 +92,7 @@ This implementation plan focuses on completing the remaining 8 components to ful
 
 - [x] 3.2 Add Feature-Specific Token Metrics
   - Enhance token consumption display to show breakdown by feature
-  - Add siterank, batchopen, and changelink specific usage statistics
+  - Add siterank, batchopen, and adscenter specific usage statistics
   - Implement real-time token usage monitoring
   - Add token usage trends and projections
   - _Requirements: 3.4_

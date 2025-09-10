@@ -35,8 +35,8 @@ export const AUTH_FEATURES: Record<string, AuthFeatureConfig> = {
     minRole: 'USER'
   },
   
-  changelink: {
-    id: 'changelink',
+  adscenter: {
+    id: 'adscenter',
     name: '广告链接管理',
     description: '自动化广告投放，智能链接替换和管理',
     requireAuth: false, // 页面可访问

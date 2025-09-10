@@ -122,10 +122,10 @@ const searchableItems: SearchResult[] = [
     requiresAuth: true
   },
   {
-    id: 'changelink',
+    id: 'adscenter',
     title: 'ChangeLink',
     description: 'Google Ads automation management',
-    href: '/features/changelink',
+    href: '/features/adscenter',
     category: 'feature',
     requiresAuth: true
   },

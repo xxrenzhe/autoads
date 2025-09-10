@@ -223,7 +223,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
               <Grid size={{ xs: 12, md: 6 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>功能过滤:</Typography>
                 <Stack direction="row" spacing={1}>
-                  {['siterank', 'batchopen', 'changelink'].map((feature) => (
+                  {['siterank', 'batchopen', 'adscenter'].map((feature) => (
                     <Chip
                       key={feature}
                       label={feature.toUpperCase()}

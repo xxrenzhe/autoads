@@ -230,19 +230,19 @@ export default function SimpleDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Link href="/changelink/setup">
+                  <Link href="/adscenter/setup">
                     <Button className="w-full" variant="outline">
                       <Plus className="h-4 w-4 mr-2" />
                       开始配置
                     </Button>
                   </Link>
-                  <Link href="/changelink/configs">
+                  <Link href="/adscenter/configs">
                     <Button className="w-full" variant="outline">
                       <Settings className="h-4 w-4 mr-2" />
                       管理配置
                     </Button>
                   </Link>
-                  <Link href="/changelink/executions">
+                  <Link href="/adscenter/executions">
                     <Button className="w-full" variant="outline">
                       <Activity className="h-4 w-4 mr-2" />
                       执行监控
@@ -263,7 +263,7 @@ export default function SimpleDashboard() {
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500 mb-4">暂无配置的账号</p>
-                  <Link href="/changelink/setup">
+                  <Link href="/adscenter/setup">
                     <Button>
                       <Plus className="h-4 w-4 mr-2" />
                       添加账号
@@ -284,7 +284,7 @@ export default function SimpleDashboard() {
                 <div className="text-center py-8">
                   <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500 mb-4">暂无自动化配置</p>
-                  <Link href="/changelink/configs">
+                  <Link href="/adscenter/configs">
                     <Button>
                       <Plus className="h-4 w-4 mr-2" />
                       创建配置
@@ -305,7 +305,7 @@ export default function SimpleDashboard() {
                 <div className="text-center py-8">
                   <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500 mb-4">暂无执行记录</p>
-                  <Link href="/changelink/executions">
+                  <Link href="/adscenter/executions">
                     <Button>
                       <Play className="h-4 w-4 mr-2" />
                       查看详情

@@ -189,7 +189,7 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
         return '🔍'
       case 'batchopen':
         return '🚀'
-      case 'changelink':
+      case 'adscenter':
         return '🔗'
       default:
         return '⚡'

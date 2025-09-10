@@ -222,7 +222,7 @@ export default function ChangelogPage() {
               网站排名分析
             </button>
           </Link>
-          <Link href="/changelink" className="w-full sm:w-auto">
+          <Link href="/adscenter" className="w-full sm:w-auto">
             <button className={`${UI_CONSTANTS.buttons.outline} w-full flex items-center justify-center gap-2 text-sm px-4 py-2`}>
               <ExternalLink className="h-4 w-4" />
               自动化广告

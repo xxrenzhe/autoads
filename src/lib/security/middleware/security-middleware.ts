@@ -253,7 +253,7 @@ export class SecurityMiddleware {
     // Feature routes
     if (pathname.includes('/siterank')) return { resource: 'siterank', action: 'use' }
     if (pathname.includes('/batchopen')) return { resource: 'batchopen', action: 'use' }
-    if (pathname.includes('/changelink')) return { resource: 'changelink', action: 'use' }
+    if (pathname.includes('/adscenter')) return { resource: 'adscenter', action: 'use' }
 
     return { resource: 'general', action: method.toLowerCase() }
   }

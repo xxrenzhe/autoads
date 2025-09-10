@@ -17,7 +17,7 @@ export function useTokenConsumption() {
    * @returns Promise<{success: boolean, remainingBalance?: number, error?: string}>
    */
   const consumeTokens = async (
-    feature: 'batchopen' | 'siterank' | 'changelink',
+    feature: 'batchopen' | 'siterank' | 'adscenter',
     operation: string,
     tokens: number,
     options: {

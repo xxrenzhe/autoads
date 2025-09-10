@@ -175,10 +175,10 @@ export async function GET(request: NextRequest) {
     const [
       siterankTokensToday,
       batchopenTokensToday,
-      changelinkTokensToday,
+      adscenterTokensToday,
       siterankTokensMonth,
       batchopenTokensMonth,
-      changelinkTokensMonth
+      adscenterTokensMonth
     ] = await Promise.all([
       prisma.token_usage.aggregate({
         where: {
@@ -338,12 +338,12 @@ export async function GET(request: NextRequest) {
           today: {
             siterank: siterankTokensToday._sum?.tokensConsumed || 0,
             batchopen: batchopenTokensToday._sum?.tokensConsumed || 0,
-            changelink: changelinkTokensToday._sum?.tokensConsumed || 0
+            adscenter: adscenterTokensToday._sum?.tokensConsumed || 0
           },
           thisMonth: {
             siterank: siterankTokensMonth._sum?.tokensConsumed || 0,
             batchopen: batchopenTokensMonth._sum?.tokensConsumed || 0,
-            changelink: changelinkTokensMonth._sum?.tokensConsumed || 0
+            adscenter: adscenterTokensMonth._sum?.tokensConsumed || 0
           }
         }
       },
@@ -377,7 +377,7 @@ export async function GET(request: NextRequest) {
       featureUsage: {
         siterank: todaySiteRankUsage,
         batchopen: todayBatchOpenUsage,
-        changelink: todayChangeLinkUsage
+        adscenter: todayChangeLinkUsage
       },
       subscriptionByPlan,
       growth: {

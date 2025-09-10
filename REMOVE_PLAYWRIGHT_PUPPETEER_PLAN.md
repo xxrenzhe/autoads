@@ -19,7 +19,7 @@
 - `src/lib/services/smart-request-scheduler.ts` - 智能请求调度器
 - `src/lib/services/session-cookie-manager.ts` - 会话Cookie管理器
 - `src/lib/utils/session-manager.ts` - 会话管理器
-- `src/app/changelink/models/AdsPowerService.ts` - AdsPower服务（仅Puppeteer）
+- `src/app/adscenter/models/AdsPowerService.ts` - AdsPower服务（仅Puppeteer）
 
 #### 3. 工具文件
 - `src/lib/utils/ad-link-handler.ts` - 广告链接处理器

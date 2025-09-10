@@ -38,7 +38,7 @@ interface TokenConfig {
     batchMultiplier: number
     description?: string
   }
-  changelink: {
+  adscenter: {
     costPerLinkChange: number
     batchMultiplier: number
     description?: string
@@ -92,7 +92,7 @@ export default function TokenConfigManager() {
   const [historyLoading, setHistoryLoading] = useState(false)
   
   // Calculator state
-  const [calcFeature, setCalcFeature] = useState<'siterank' | 'batchopen' | 'changelink'>('siterank')
+  const [calcFeature, setCalcFeature] = useState<'siterank' | 'batchopen' | 'adscenter'>('siterank')
   const [calcItemCount, setCalcItemCount] = useState(1)
   const [calcIsBatch, setCalcIsBatch] = useState(false)
 
@@ -172,15 +172,15 @@ export default function TokenConfigManager() {
       errors.push({ field: 'batchopen.batchMultiplier', message: 'Batch multiplier must be between 0 and 1' })
     }
 
-    // Validate changelink
-    if (configToValidate.changelink.costPerLinkChange < 0) {
-      errors.push({ field: 'changelink.costPerLinkChange', message: 'Cost per link change must be non-negative' })
+    // Validate adscenter
+    if (configToValidate.adscenter.costPerLinkChange < 0) {
+      errors.push({ field: 'adscenter.costPerLinkChange', message: 'Cost per link change must be non-negative' })
     }
-    if (configToValidate.changelink.costPerLinkChange > 100) {
-      errors.push({ field: 'changelink.costPerLinkChange', message: 'Cost per link change seems too high (>100)' })
+    if (configToValidate.adscenter.costPerLinkChange > 100) {
+      errors.push({ field: 'adscenter.costPerLinkChange', message: 'Cost per link change seems too high (>100)' })
     }
-    if (configToValidate.changelink.batchMultiplier < 0 || configToValidate.changelink.batchMultiplier > 1) {
-      errors.push({ field: 'changelink.batchMultiplier', message: 'Batch multiplier must be between 0 and 1' })
+    if (configToValidate.adscenter.batchMultiplier < 0 || configToValidate.adscenter.batchMultiplier > 1) {
+      errors.push({ field: 'adscenter.batchMultiplier', message: 'Batch multiplier must be between 0 and 1' })
     }
 
     return errors
@@ -619,43 +619,43 @@ export default function TokenConfigManager() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="changelink-cost">Cost per Link Change</Label>
+                  <Label htmlFor="adscenter-cost">Cost per Link Change</Label>
                   <Input
-                    id="changelink-cost"
+                    id="adscenter-cost"
                     type="number"
                     min="0"
                     step="0.1"
-                    value={config.changelink.costPerLinkChange}
-                    onChange={(e) => updateFeatureConfig('changelink', 'costPerLinkChange', parseFloat(e.target.value) || 0)}
-                    className={hasFieldError('changelink.costPerLinkChange') ? 'border-red-500' : ''}
+                    value={config.adscenter.costPerLinkChange}
+                    onChange={(e) => updateFeatureConfig('adscenter', 'costPerLinkChange', parseFloat(e.target.value) || 0)}
+                    className={hasFieldError('adscenter.costPerLinkChange') ? 'border-red-500' : ''}
                   />
-                  {hasFieldError('changelink.costPerLinkChange') && (
-                    <p className="text-sm text-red-600">{getFieldError('changelink.costPerLinkChange')}</p>
+                  {hasFieldError('adscenter.costPerLinkChange') && (
+                    <p className="text-sm text-red-600">{getFieldError('adscenter.costPerLinkChange')}</p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="changelink-batch">Batch Multiplier</Label>
+                  <Label htmlFor="adscenter-batch">Batch Multiplier</Label>
                   <Input
-                    id="changelink-batch"
+                    id="adscenter-batch"
                     type="number"
                     min="0"
                     max="1"
                     step="0.01"
-                    value={config.changelink.batchMultiplier}
-                    onChange={(e) => updateFeatureConfig('changelink', 'batchMultiplier', parseFloat(e.target.value) || 0)}
-                    className={hasFieldError('changelink.batchMultiplier') ? 'border-red-500' : ''}
+                    value={config.adscenter.batchMultiplier}
+                    onChange={(e) => updateFeatureConfig('adscenter', 'batchMultiplier', parseFloat(e.target.value) || 0)}
+                    className={hasFieldError('adscenter.batchMultiplier') ? 'border-red-500' : ''}
                   />
-                  {hasFieldError('changelink.batchMultiplier') && (
-                    <p className="text-sm text-red-600">{getFieldError('changelink.batchMultiplier')}</p>
+                  {hasFieldError('adscenter.batchMultiplier') && (
+                    <p className="text-sm text-red-600">{getFieldError('adscenter.batchMultiplier')}</p>
                   )}
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="changelink-desc">Description</Label>
+                <Label htmlFor="adscenter-desc">Description</Label>
                 <Input
-                  id="changelink-desc"
-                  value={config.changelink.description || ''}
-                  onChange={(e) => updateFeatureConfig('changelink', 'description', e.target.value)}
+                  id="adscenter-desc"
+                  value={config.adscenter.description || ''}
+                  onChange={(e) => updateFeatureConfig('adscenter', 'description', e.target.value)}
                   placeholder="Description of this feature's token usage"
                 />
               </div>
@@ -683,7 +683,7 @@ export default function TokenConfigManager() {
                   >
                     <option value="siterank">SiteRank</option>
                     <option value="batchopen">BatchOpen</option>
-                    <option value="changelink">ChangeLink</option>
+                    <option value="adscenter">ChangeLink</option>
                   </select>
                 </div>
                 <div className="space-y-2">

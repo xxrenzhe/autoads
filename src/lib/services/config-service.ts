@@ -325,10 +325,10 @@ class ConfigService {
         isHotReloadable: true
       },
       {
-        key: 'token_cost_changelink',
+        key: 'token_cost_adscenter',
         value: '2',
         type: 'number',
-        description: 'Token cost for changelink feature',
+        description: 'Token cost for adscenter feature',
         isHotReloadable: true
       },
       {

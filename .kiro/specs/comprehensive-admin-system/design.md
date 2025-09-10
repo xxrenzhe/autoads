@@ -2,7 +2,7 @@
 
 ## Design Overview
 
-This design document outlines the complete implementation of a comprehensive admin management system for the AutoAds platform. The design builds upon the existing Clean Architecture foundation while adding all missing functionality specified in the requirements. The system will maintain the stability of core business functions (siterank, batchopen, changelink) while providing complete administrative capabilities, user management, subscription systems, and payment integration.
+This design document outlines the complete implementation of a comprehensive admin management system for the AutoAds platform. The design builds upon the existing Clean Architecture foundation while adding all missing functionality specified in the requirements. The system will maintain the stability of core business functions (siterank, batchopen, adscenter) while providing complete administrative capabilities, user management, subscription systems, and payment integration.
 
 ## Architecture Principles
 
@@ -102,7 +102,7 @@ bscription and Payment Enhancement
 model PlanFeature {
   id          String   @id @default(cuid())
   planId      String
-  featureName String   // siterank, batchopen, changelink
+  featureName String   // siterank, batchopen, adscenter
   enabled     Boolean  @default(true)
   limits      Json     // Feature-specific limits
   config      Json     // Feature-specific configuration

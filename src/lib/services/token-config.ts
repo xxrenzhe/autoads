@@ -14,7 +14,7 @@ const TokenConfigSchema = z.object({
     batchMultiplier: z.number().min(0).max(1).default(1),
     description: z.string().optional()
   }),
-  changelink: z.object({
+  adscenter: z.object({
     costPerLinkChange: z.number().min(0),
     batchMultiplier: z.number().min(0).max(1).default(1),
     description: z.string().optional()
@@ -26,7 +26,7 @@ export type TokenConfig = z.infer<typeof TokenConfigSchema>
 export interface TokenUsageRecord {
   id: string
   userId: string
-  feature: 'siterank' | 'batchopen' | 'changelink'
+  feature: 'siterank' | 'batchopen' | 'adscenter'
   operation: string
   tokensConsumed: number
   itemCount: number
@@ -68,8 +68,8 @@ export class TokenConfigService {
             'token.siterank.batchMultiplier',
             'token.batchopen.costPerUrl', 
             'token.batchopen.batchMultiplier',
-            'token.changelink.costPerLinkChange',
-            'token.changelink.batchMultiplier'
+            'token.adscenter.costPerLinkChange',
+            'token.adscenter.batchMultiplier'
           ]
         }
       }
@@ -87,7 +87,7 @@ export class TokenConfigService {
         batchMultiplier: 1,
         description: 'Cost per URL in batch opening'
       },
-      changelink: {
+      adscenter: {
         costPerLinkChange: 2,
         batchMultiplier: 1,
         description: 'Cost per link change operation'
@@ -168,18 +168,18 @@ export class TokenConfigService {
       }
     }
 
-    if (config.changelink) {
-      if (config.changelink.costPerLinkChange !== undefined) {
+    if (config.adscenter) {
+      if (config.adscenter.costPerLinkChange !== undefined) {
         updates.push({
-          key: 'token.changelink.costPerLinkChange',
-          value: config.changelink.costPerLinkChange.toString(),
+          key: 'token.adscenter.costPerLinkChange',
+          value: config.adscenter.costPerLinkChange.toString(),
           type: 'number'
         })
       }
-      if (config.changelink.batchMultiplier !== undefined) {
+      if (config.adscenter.batchMultiplier !== undefined) {
         updates.push({
-          key: 'token.changelink.batchMultiplier',
-          value: config.changelink.batchMultiplier.toString(),
+          key: 'token.adscenter.batchMultiplier',
+          value: config.adscenter.batchMultiplier.toString(),
           type: 'number'
         })
       }
@@ -224,7 +224,7 @@ export class TokenConfigService {
    * Calculate token cost for an operation
    */
   async calculateTokenCost(
-    feature: 'siterank' | 'batchopen' | 'changelink',
+    feature: 'siterank' | 'batchopen' | 'adscenter',
     itemCount: number,
     isBatch: boolean = false
   ): Promise<number> {
@@ -239,7 +239,7 @@ export class TokenConfigService {
       case 'batchopen':
         baseCost = (featureConfig as any).costPerUrl * itemCount
         break
-      case 'changelink':
+      case 'adscenter':
         baseCost = (featureConfig as any).costPerLinkChange * itemCount
         break
       default:
@@ -259,7 +259,7 @@ export class TokenConfigService {
    */
   async recordTokenUsage(
     userId: string,
-    feature: 'siterank' | 'batchopen' | 'changelink',
+    feature: 'siterank' | 'batchopen' | 'adscenter',
     operation: string,
     itemCount: number,
     tokensConsumed: number,

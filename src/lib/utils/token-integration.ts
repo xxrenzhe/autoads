@@ -17,7 +17,7 @@ export interface TokenConsumptionResult {
  */
 export async function checkTokenBalance(
   userId: string,
-  feature: 'siterank' | 'batchopen' | 'changelink',
+  feature: 'siterank' | 'batchopen' | 'adscenter',
   itemCount: number,
   isBatch: boolean = false
 ): Promise<{ hasBalance: boolean; requiredTokens: number; currentBalance: number }> {
@@ -44,7 +44,7 @@ export async function checkTokenBalance(
  */
 export async function consumeTokens(
   userId: string,
-  feature: 'siterank' | 'batchopen' | 'changelink',
+  feature: 'siterank' | 'batchopen' | 'adscenter',
   operation: string,
   itemCount: number,
   isBatch: boolean = false,
@@ -143,7 +143,7 @@ export async function consumeTokensForChangeLink(
 ): Promise<TokenConsumptionResult> {
   return consumeTokens(
     userId,
-    'changelink',
+    'adscenter',
     'link_replacement',
     linkChanges.length,
     isBatch,
@@ -211,7 +211,7 @@ export async function getUserTokenSummary(userId: string) {
  * Middleware function to check tokens before API operations
  */
 export function withTokenCheck(
-  feature: 'siterank' | 'batchopen' | 'changelink',
+  feature: 'siterank' | 'batchopen' | 'adscenter',
   getItemCount: (req: any) => number,
   getIsBatch: (req: any) => boolean = () => false
 ) {
@@ -236,7 +236,7 @@ export function withTokenCheck(
  */
 export async function refundTokens(
   userId: string,
-  feature: 'siterank' | 'batchopen' | 'changelink',
+  feature: 'siterank' | 'batchopen' | 'adscenter',
   tokensToRefund: number,
   reason: string
 ): Promise<void> {

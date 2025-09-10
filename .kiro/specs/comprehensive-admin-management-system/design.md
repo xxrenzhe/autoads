@@ -181,7 +181,7 @@ interface Permission {
 }
 
 interface FeatureAccess {
-  feature: 'siterank' | 'batchopen' | 'changelink';
+  feature: 'siterank' | 'batchopen' | 'adscenter';
   enabled: boolean;
   limits?: FeatureLimits;
 }
@@ -300,7 +300,7 @@ interface TokenUsageAnalytics {
 #### Default Token Costs
 - **SiteRank**: 1 token per domain analysis
 - **BatchOpen**: 1 token per URL access
-- **ChangeLink**: 2 tokens per link replacement operation
+- **AdsCenter**: 2 tokens per link replacement operation
 
 ### 7. Payment Integration System
 
@@ -542,7 +542,7 @@ interface ErrorHandler {
 ### Core Feature Integration
 - BatchOpen functionality preservation
 - SiteRank feature compatibility
-- ChangeLink operation support
+- AdsCenter operation support
 - Token consumption tracking
 
 ## Performance Optimization

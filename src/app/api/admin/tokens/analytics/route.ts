@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 const AnalyticsQuerySchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  feature: z.enum(['siterank', 'batchopen', 'changelink']).optional(),
+  feature: z.enum(['siterank', 'batchopen', 'adscenter']).optional(),
   limit: z.string().transform(Number).default("100"),
   offset: z.string().transform(Number).default("0")
 })
@@ -26,7 +26,7 @@ interface ValidatedData {
   query: {
     startDate?: string
     endDate?: string
-    feature?: 'siterank' | 'batchopen' | 'changelink'
+    feature?: 'siterank' | 'batchopen' | 'adscenter'
     limit: number
     offset: number
   }
@@ -228,14 +228,14 @@ export async function GET(request: NextRequest) {
       query: {
         startDate: searchParams.get('startDate') || undefined,
         endDate: searchParams.get('endDate') || undefined,
-        feature: searchParams.get('feature') as 'siterank' | 'batchopen' | 'changelink' | undefined,
+        feature: searchParams.get('feature') as 'siterank' | 'batchopen' | 'adscenter' | undefined,
         limit: Math.min(Math.max(parseInt(searchParams.get('limit') || '100'), 1), 1000),
         offset: Math.max(parseInt(searchParams.get('offset') || '0'), 0)
       }
     }
 
     // Validate feature enum
-    if (validatedData.query.feature && !['siterank', 'batchopen', 'changelink'].includes(validatedData.query.feature)) {
+    if (validatedData.query.feature && !['siterank', 'batchopen', 'adscenter'].includes(validatedData.query.feature)) {
       return NextResponse.json({ error: 'Invalid feature parameter' }, { status: 400 })
     }
 

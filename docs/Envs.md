@@ -103,7 +103,7 @@ AutoClick_Count_Variance_Hour=0.3
 
 1. **batchopen** - 批量URL检查功能
 2. **siterank** - 网站排名查询功能
-3. **changelink** - 广告链接管理功能
+3. **adscenter** - 广告链接管理功能
 
 ## 故障排查
 

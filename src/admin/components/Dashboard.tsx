@@ -43,12 +43,12 @@ interface DashboardStats {
       today: {
         siterank: number;
         batchopen: number;
-        changelink: number;
+        adscenter: number;
       };
       thisMonth: {
         siterank: number;
         batchopen: number;
-        changelink: number;
+        adscenter: number;
       };
     };
   };
@@ -77,7 +77,7 @@ interface DashboardStats {
   featureUsage: {
     siterank: number;
     batchopen: number;
-    changelink?: number;
+    adscenter?: number;
   };
   growth: {
     userGrowth: number;
@@ -549,13 +549,13 @@ const AdminDashboard: React.FC = () => {
                     {stats?.featureUsage?.batchopen || 0} 次
                   </Typography>
                 </Box>
-                {stats?.featureUsage?.changelink !== undefined && (
+                {stats?.featureUsage?.adscenter !== undefined && (
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="body2" color="text.secondary">
                       ChangeLink
                     </Typography>
                     <Typography variant="body2" fontWeight="bold">
-                      {stats.featureUsage.changelink} 次
+                      {stats.featureUsage.adscenter} 次
                     </Typography>
                   </Box>
                 )}
@@ -568,7 +568,7 @@ const AdminDashboard: React.FC = () => {
                     <Typography variant="body2" fontWeight="bold" color="primary">
                       {(stats?.featureUsage?.siterank || 0) + 
                        (stats?.featureUsage?.batchopen || 0) + 
-                       (stats?.featureUsage?.changelink || 0)} 次
+                       (stats?.featureUsage?.adscenter || 0)} 次
                     </Typography>
                   </Box>
                 </Box>
@@ -610,7 +610,7 @@ const AdminDashboard: React.FC = () => {
                       ChangeLink
                     </Typography>
                     <Typography variant="body2" fontWeight="bold">
-                      {stats.tokenConsumption.byFeature.today.changelink} tokens
+                      {stats.tokenConsumption.byFeature.today.adscenter} tokens
                     </Typography>
                   </Box>
                   
@@ -638,7 +638,7 @@ const AdminDashboard: React.FC = () => {
                       ChangeLink
                     </Typography>
                     <Typography variant="body2" fontWeight="bold">
-                      {stats.tokenConsumption.byFeature.thisMonth.changelink} tokens
+                      {stats.tokenConsumption.byFeature.thisMonth.adscenter} tokens
                     </Typography>
                   </Box>
                   

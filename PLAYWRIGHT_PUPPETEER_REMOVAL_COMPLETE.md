@@ -56,7 +56,7 @@
 ## ⚠️ 保留的功能
 
 ### AdsPower 连接 (Puppeteer)
-- ✅ 保留 `src/app/changelink/models/AdsPowerService.ts` 中的 Puppeteer 连接
+- ✅ 保留 `src/app/adscenter/models/AdsPowerService.ts` 中的 Puppeteer 连接
 - ✅ 这是唯一保留的 Puppeteer 使用，因为 AdsPower 官方只支持 Puppeteer
 
 ### 核心业务逻辑

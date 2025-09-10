@@ -12,7 +12,7 @@ const logger = createLogger('SubscriptionBasedAPIAccess');
 const API_FEATURE_MAPPING: Record<string, string> = {
   '/api/batchopen': 'batchopen_basic',
   '/api/siterank': 'siterank_basic',
-  '/api/changelink': 'changelink_pro',
+  '/api/adscenter': 'adscenter_pro',
   '/api/user/tokens': 'api_access',
   '/api/subscription': 'api_access',
   '/api/admin': 'api_access_max'
@@ -384,7 +384,7 @@ async function checkFeatureQuota(
       }
       break;
       
-    case 'changelink':
+    case 'adscenter':
       // 检查广告系列限制
       if (limits.maxCampaigns) {
         // TODO: 实现具体的配额检查逻辑

@@ -201,7 +201,7 @@ export const batchopenTokenMiddleware = createTokenMiddleware('batchopen', {
   consumeTokens: true
 })
 
-export const changelinkTokenMiddleware = createTokenMiddleware('changelink', {
+export const adscenterTokenMiddleware = createTokenMiddleware('adscenter', {
   tokenCost: 3,
   consumeTokens: true
 })

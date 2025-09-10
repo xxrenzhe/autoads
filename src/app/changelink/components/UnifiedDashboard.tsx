@@ -315,7 +315,7 @@ export default function SimpleUnifiedDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Link href="/changelink/accounts">
+                  <Link href="/adscenter/accounts">
                     <Button
                       variant="outline"
                       className="h-auto p-4 flex flex-col items-start space-y-2 w-full"
@@ -330,7 +330,7 @@ export default function SimpleUnifiedDashboard() {
                     </Button>
                   </Link>
                   
-                  <Link href="/changelink/configurations">
+                  <Link href="/adscenter/configurations">
                     <Button
                       variant="outline"
                       className="h-auto p-4 flex flex-col items-start space-y-2 w-full"
@@ -345,7 +345,7 @@ export default function SimpleUnifiedDashboard() {
                     </Button>
                   </Link>
                   
-                  <Link href="/changelink/reports">
+                  <Link href="/adscenter/reports">
                     <Button
                       variant="outline"
                       className="h-auto p-4 flex flex-col items-start space-y-2 w-full"
@@ -360,7 +360,7 @@ export default function SimpleUnifiedDashboard() {
                     </Button>
                   </Link>
                   
-                  <Link href="/changelink/settings">
+                  <Link href="/adscenter/settings">
                     <Button
                       variant="outline"
                       className="h-auto p-4 flex flex-col items-start space-y-2 w-full"
@@ -433,7 +433,7 @@ export default function SimpleUnifiedDashboard() {
               <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">报表功能</h3>
               <p className="text-gray-600 mb-4">查看详细的数据分析报表</p>
-              <Link href="/changelink/reports">
+              <Link href="/adscenter/reports">
                 <Button>查看报表</Button>
               </Link>
             </div>
@@ -445,7 +445,7 @@ export default function SimpleUnifiedDashboard() {
               <Activity className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">执行监控</h3>
               <p className="text-gray-600 mb-4">实时监控自动化执行状态</p>
-              <Link href="/changelink/executions">
+              <Link href="/adscenter/executions">
                 <Button>查看执行记录</Button>
               </Link>
             </div>
@@ -457,7 +457,7 @@ export default function SimpleUnifiedDashboard() {
               <Settings className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">系统设置</h3>
               <p className="text-gray-600 mb-4">配置系统参数和管理数据</p>
-              <Link href="/changelink/settings">
+              <Link href="/adscenter/settings">
                 <Button>系统设置</Button>
               </Link>
             </div>

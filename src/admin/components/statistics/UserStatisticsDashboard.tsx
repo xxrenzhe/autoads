@@ -428,7 +428,7 @@ export const UserStatisticsDashboard: React.FC = () => {
             <Box sx={{ mt: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>功能过滤器:</Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap">
-                {['siterank', 'batchopen', 'changelink'].map((feature) => (
+                {['siterank', 'batchopen', 'adscenter'].map((feature) => (
                   <Chip
                     key={feature}
                     label={feature.toUpperCase()}

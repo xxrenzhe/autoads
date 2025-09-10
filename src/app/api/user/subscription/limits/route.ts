@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const defaultLimits = {
       siterank: { batchLimit: 100 },
       batchopen: { versions: ['basic', 'silent'] },
-      changelink: { maxCampaigns: 0 },
+      adscenter: { maxCampaigns: 0 },
       api: { rateLimit: 30 }
     };
 
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
           ...(subscription.plan.planFeatures.find((f: any) => f.featureName === 'REAL_CLICK_AUTOMATED')?.enabled ? ['automated', 'autoclick'] : [])
         ].filter(Boolean)
       },
-      changelink: { 
+      adscenter: { 
         maxCampaigns: subscription.plan.planFeatures.find((f: any) => f.featureName === 'ADS_ACCOUNT_LIMIT')?.limit || 0 
       },
       api: { 

@@ -12,7 +12,7 @@ export const EventTypes = {
   // 业务功能事件
   SITERANK_USAGE: 'siterankUsage',
   BATCHOPEN_USAGE: 'batchopenUsage',
-  CHANGELINK_USAGE: 'changelinkUsage',
+  CHANGELINK_USAGE: 'adscenterUsage',
   
   // Token消耗事件
   TOKEN_CONSUMED: 'tokenConsumed',
@@ -29,19 +29,19 @@ export interface ApiCallEvent {
   statusCode: number;
   responseTime: number;
   userId?: string;
-  feature?: 'siterank' | 'batchopen' | 'changelink';
+  feature?: 'siterank' | 'batchopen' | 'adscenter';
 }
 
 export interface TokenConsumedEvent {
   userId: string;
   amount: number;
-  feature: 'siterank' | 'batchopen' | 'changelink';
+  feature: 'siterank' | 'batchopen' | 'adscenter';
   endpoint: string;
 }
 
 export interface FeatureUsageEvent {
   userId: string;
-  feature: 'siterank' | 'batchopen' | 'changelink';
+  feature: 'siterank' | 'batchopen' | 'adscenter';
   endpoint: string;
 }
 

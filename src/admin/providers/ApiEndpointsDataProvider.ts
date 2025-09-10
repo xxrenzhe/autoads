@@ -38,9 +38,9 @@ const apiEndpoints = [
     category: 'BatchOpen',
   },
   {
-    id: '/api/changelink/configurations',
+    id: '/api/adscenter/configurations',
     name: 'ChangeLink 配置管理',
-    endpoint: '/api/changelink/configurations',
+    endpoint: '/api/adscenter/configurations',
     method: 'GET',
     description: '管理链接修改任务的配置信息。包括目标URL、替换规则、执行计划等设置。',
     features: ['配置管理', '规则设置', '计划任务', '历史记录'],
@@ -50,9 +50,9 @@ const apiEndpoints = [
     category: 'ChangeLink',
   },
   {
-    id: '/api/changelink/execute',
+    id: '/api/adscenter/execute',
     name: 'ChangeLink 链接修改执行',
-    endpoint: '/api/changelink/execute',
+    endpoint: '/api/adscenter/execute',
     method: 'POST',
     description: '执行链接修改任务，根据配置规则批量替换或修改网页中的链接。支持多种匹配模式和替换策略。',
     features: ['批量链接修改', '智能匹配', '安全备份', '结果验证'],

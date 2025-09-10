@@ -3,7 +3,7 @@
 // 权限接口定义
 export interface Permission {
   id: string
-  resource: string // 资源类型：siterank, batchopen, changelink, admin
+  resource: string // 资源类型：siterank, batchopen, adscenter, admin
   action: string // 操作类型：create, read, update, delete, execute
   conditions?: Record<string, any> // 条件限制
 }
@@ -234,7 +234,7 @@ export const PREDEFINED_ROLES = {
       { id: '2', resource: 'users', action: '*' },
       { id: '3', resource: 'siterank', action: '*' },
       { id: '4', resource: 'batchopen', action: '*' },
-      { id: '5', resource: 'changelink', action: '*' },
+      { id: '5', resource: 'adscenter', action: '*' },
     ],
   },
   USER: {
@@ -245,7 +245,7 @@ export const PREDEFINED_ROLES = {
       { id: '7', resource: 'siterank', action: 'create' },
       { id: '8', resource: 'batchopen', action: 'read' },
       { id: '9', resource: 'batchopen', action: 'create' },
-      { id: '10', resource: 'changelink', action: 'read' },
+      { id: '10', resource: 'adscenter', action: 'read' },
     ],
   },
 } as const

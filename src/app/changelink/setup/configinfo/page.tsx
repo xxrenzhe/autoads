@@ -20,7 +20,7 @@ export default function ConfigInfoPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <Link href="/changelink/setup">
+            <Link href="/adscenter/setup">
               <Button variant="outline" className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 返回设置页面

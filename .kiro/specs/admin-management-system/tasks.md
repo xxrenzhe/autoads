@@ -26,7 +26,7 @@
   - 创建Token余额管理服务（检查、扣除、重置）
   - 实现Token消耗规则配置和记录
   - 创建TokenUsage模型记录消耗历史
-  - 集成Token检查到现有功能（siterank、batchopen、changelink）
+  - 集成Token检查到现有功能（siterank、batchopen、adscenter）
   - 实现Token不足时的提示和升级引导
   - _需求: 5.4, 5.5, 5.8, 16.1, 16.2, 16.3_
 
@@ -154,7 +154,7 @@
 
 - [x] 18. 兼容性测试和验证
   - 创建现有功能兼容性测试套件
-  - 实现核心功能回归测试（siterank/batchopen/changelink）
+  - 实现核心功能回归测试（siterank/batchopen/adscenter）
   - 创建配置变更影响验证系统
   - 实现数据库结构变更兼容性检查
   - 确保权限系统不影响现有功能访问
@@ -168,7 +168,7 @@
 1. **最小可行实现** - 每个功能先实现核心需求，避免过度设计
 2. **渐进式开发** - 按阶段实施，每个阶段都能独立运行和测试
 3. **现有技术栈** - 使用已有的Next.js、React、PostgreSQL、Redis技术
-4. **兼容性优先** - 确保不破坏现有siterank、batchopen、changelink功能
+4. **兼容性优先** - 确保不破坏现有siterank、batchopen、adscenter功能
 5. **测试驱动** - 每个任务都包含相应的测试实现
 
 ### 执行顺序说明

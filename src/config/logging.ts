@@ -3,7 +3,7 @@
  * 日志记录配置
  */
 
-import type { LogLevel } from "@/app/changelink/models/LoggingService";
+import type { LogLevel } from "@/app/adscenter/models/LoggingService";
 
 /**
  * 日志配置接口

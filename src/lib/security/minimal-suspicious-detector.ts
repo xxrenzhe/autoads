@@ -200,7 +200,7 @@ export class MinimalSuspiciousDetector {
         OR: [
           { endpoint: { contains: 'siterank' } },
           { endpoint: { contains: 'batchopen' } },
-          { endpoint: { contains: 'changelink' } }
+          { endpoint: { contains: 'adscenter' } }
         ]
       }
     });

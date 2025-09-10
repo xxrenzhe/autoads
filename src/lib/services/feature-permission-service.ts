@@ -88,11 +88,11 @@ export class FeaturePermissionService {
     
     // ChangeLink功能
     {
-      featureId: 'changelink_basic',
+      featureId: 'adscenter_basic',
       name: '自动化广告基础版',
       description: '基础广告自动化管理',
       requiredPlan: 'pro',
-      requiredPermissions: ['changelink:read'],
+      requiredPermissions: ['adscenter:read'],
       limits: {
         maxCampaigns: 5,
         maxAccounts: 5,
@@ -100,11 +100,11 @@ export class FeaturePermissionService {
       }
     },
     {
-      featureId: 'changelink_max',
+      featureId: 'adscenter_max',
       name: '自动化广告企业版',
       description: '企业级广告自动化管理',
       requiredPlan: 'max',
-      requiredPermissions: ['changelink:read'],
+      requiredPermissions: ['adscenter:read'],
       limits: {
         maxCampaigns: 20,
         maxAccounts: 20,
@@ -212,7 +212,7 @@ export class FeaturePermissionService {
       const planFeatures = subscription.plan.features as any || {};
 
       // 7. 检查功能是否在套餐中启用（使用 PlanFeature 表）
-      const featureCategory = featureId.split('_')[0]; // siterank, batchopen, changelink
+      const featureCategory = featureId.split('_')[0]; // siterank, batchopen, adscenter
       let featureEnabled = false;
       
       // 根据功能类别检查对应的 PlanFeature
@@ -227,7 +227,7 @@ export class FeaturePermissionService {
             f.featureName.startsWith('REAL_CLICK') && f.enabled
           ) || false;
           break;
-        case 'changelink':
+        case 'adscenter':
           featureEnabled = subscription.plan.planFeatures?.some((f: any) => 
             f.featureName.startsWith('AUTOMATED_ADS') && f.enabled
           ) || false;

@@ -182,7 +182,7 @@ export default function UserTokensPage() {
     const names: Record<string, string> = {
       'siterank': 'SiteRank 域名分析',
       'batchopen': 'BatchOpen 批量访问',
-      'changelink': 'ChangeLink 链接替换'
+      'adscenter': 'AdsCenter 自动化广告'
     }
     return names[feature] || feature
   }
@@ -193,7 +193,7 @@ export default function UserTokensPage() {
         return '🔍'
       case 'batchopen':
         return '🚀'
-      case 'changelink':
+      case 'adscenter':
         return '🔗'
       default:
         return '⚡'
@@ -414,7 +414,7 @@ export default function UserTokensPage() {
                   <SelectItem value="all">所有功能</SelectItem>
                   <SelectItem value="siterank">SiteRank</SelectItem>
                   <SelectItem value="batchopen">BatchOpen</SelectItem>
-                  <SelectItem value="changelink">ChangeLink</SelectItem>
+                  <SelectItem value="adscenter">AdsCenter</SelectItem>
                 </SelectContent>
               </Select>
 

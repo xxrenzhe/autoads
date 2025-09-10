@@ -50,8 +50,8 @@ interface ApiEndpoint {
  * 统一处理 SimilarWeb API 查询，包含缓存、批量操作和底层HTTP请求
  */
 export class SimilarWebService {
-  private baseUrl = (APP_CONFIG as any).external?.similarWeb?.apiUrl || "https://data.similarweb.com/api/v1/data";
-  private timeout = (APP_CONFIG as any).external?.similarWeb?.timeout || 30000;
+  private baseUrl = process.env.SIMILARWEB_API_URL || (APP_CONFIG as any).similarWeb?.apiUrl || "https://data.similarweb.com/api/v1/data";
+  private timeout = (APP_CONFIG as any).similarWeb?.timeout || 30000;
   private readonly REQUEST_DELAY = 2000; // 请求间隔
   private lastRequestTime = 0;
   
@@ -60,7 +60,7 @@ export class SimilarWebService {
   // SimilarWeb API 端点配置
   private readonly API_ENDPOINTS: ApiEndpoint[] = [
     {
-      url: 'https://data.similarweb.com/api/v1/data',
+      url: this.baseUrl,
       method: 'GET',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0',
@@ -74,7 +74,7 @@ export class SimilarWebService {
       weight: 15
     },
     {
-      url: 'https://data.similarweb.com/api/v1/data',
+      url: this.baseUrl,
       method: 'GET',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -88,7 +88,7 @@ export class SimilarWebService {
       weight: 10
     },
     {
-      url: 'https://data.similarweb.com/api/v1/data',
+      url: this.baseUrl,
       method: 'GET',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

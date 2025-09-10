@@ -65,7 +65,7 @@ const userNavigationItems: NavigationItem[] = [
       },
       {
         title: 'ChangeLink',
-        href: '/features/changelink',
+        href: '/features/adscenter',
         icon: FileText,
         description: 'Link management'
       }

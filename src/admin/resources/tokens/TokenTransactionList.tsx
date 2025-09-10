@@ -46,7 +46,7 @@ const TokenTransactionFilter = (props: any) => {
           { id: 'admin_grant', name: '管理员授予' },
           { id: 'siterank', name: '网站排名' },
           { id: 'batchopen', name: '批量打开' },
-          { id: 'changelink', name: '链接替换' }
+          { id: 'adscenter', name: '链接替换' }
         ]}
       />
       <DateInput source="createdAt_gte" label="开始日期" />

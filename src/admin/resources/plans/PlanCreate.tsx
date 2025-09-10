@@ -35,8 +35,8 @@ const featureChoices = [
   { id: 'siterank_basic', name: '网站排名-基础版' },
   { id: 'siterank_pro', name: '网站排名-专业版' },
   { id: 'siterank_max', name: '网站排名-企业版' },
-  { id: 'changelink_basic', name: '自动化广告-基础版' },
-  { id: 'changelink_pro', name: '自动化广告-高级版' },
+  { id: 'adscenter_basic', name: '自动化广告-基础版' },
+  { id: 'adscenter_pro', name: '自动化广告-高级版' },
   { id: 'api_advanced', name: '高级API访问' },
   { id: 'priority_support', name: '优先技术支持' },
 ];
@@ -68,7 +68,7 @@ const defaultPlans = {
     limits: {
       siterank: { dailyQueries: 100, batchLimit: 100 },
       batchopen: { dailyUrls: 100, versions: ['basic', 'silent'] },
-      changelink: { maxCampaigns: 0 },
+      adscenter: { maxCampaigns: 0 },
       api: { rateLimit: 30, dailyRequests: 1000 }
     },
     extraTokenOptions: [
@@ -91,7 +91,7 @@ const defaultPlans = {
     displayOrder: 2,
     stripePriceId: 'price_pro_monthly',
     stripeYearlyPriceId: 'price_pro_yearly',
-    features: ['batchopen_basic', 'batchopen_silent', 'batchopen_platinum', 'siterank_pro', 'changelink_basic'],
+    features: ['batchopen_basic', 'batchopen_silent', 'batchopen_platinum', 'siterank_pro', 'adscenter_basic'],
     metadata: {
       category: 'pro',
       yearlyDiscount: 0.5,
@@ -105,7 +105,7 @@ const defaultPlans = {
     limits: {
       siterank: { dailyQueries: 500, batchLimit: 500 },
       batchopen: { dailyUrls: 500, versions: ['basic', 'silent', 'platinum'] },
-      changelink: { maxCampaigns: 10, maxAccounts: 10 },
+      adscenter: { maxCampaigns: 10, maxAccounts: 10 },
       api: { rateLimit: 100, dailyRequests: 10000 }
     },
     extraTokenOptions: [
@@ -129,7 +129,7 @@ const defaultPlans = {
     displayOrder: 3,
     stripePriceId: 'price_max_monthly',
     stripeYearlyPriceId: 'price_max_yearly',
-    features: ['batchopen_basic', 'batchopen_silent', 'batchopen_platinum', 'siterank_max', 'changelink_pro', 'api_advanced', 'priority_support'],
+    features: ['batchopen_basic', 'batchopen_silent', 'batchopen_platinum', 'siterank_max', 'adscenter_pro', 'api_advanced', 'priority_support'],
     metadata: {
       category: 'max',
       yearlyDiscount: 0.5,
@@ -143,7 +143,7 @@ const defaultPlans = {
     limits: {
       siterank: { dailyQueries: 9999, batchLimit: 9999 },
       batchopen: { dailyUrls: 2000, versions: ['basic', 'silent', 'platinum'] },
-      changelink: { maxCampaigns: 100, maxAccounts: 100 },
+      adscenter: { maxCampaigns: 100, maxAccounts: 100 },
       api: { rateLimit: 500, dailyRequests: 100000 }
     },
     extraTokenOptions: [
@@ -473,7 +473,7 @@ export const PlanCreate: React.FC = () => {
           />
           
           <TextInput
-            source="limits.changelink.maxCampaigns"
+            source="limits.adscenter.maxCampaigns"
             label="ChangeLink最大活动数"
             type="number"
             defaultValue={0}

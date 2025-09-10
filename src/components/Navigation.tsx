@@ -85,7 +85,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
       color: "green",
     },
     {
-      href: "/changelink",
+      href: "/adscenter",
       label: "自动化广告", // 始终显示中文
       icon: FileText,
       color: "purple",
@@ -322,10 +322,10 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                       <div className="text-xs opacity-75">
                         {item.href === "/" && "URL分析与批量处理"}
                         {item.href === "/batchopen" && "云端真实点击工具"} {/* 始终显示中文 */}
-                        {item.href === "/changelink" && "智能广告管理平台"} {/* 始终显示中文 */}
+                        {item.href === "/adscenter" && "智能广告管理平台"} {/* 始终显示中文 */}
                         {item.href === "/siterank" && "网站排名分析与优先级计算"}
                         {item.href === "/pricing" && "订阅计划和价格信息"}
-                        {item.href === "/changelink/settings" && "系统配置和设置管理"} {/* 始终显示中文 */}
+                        {item.href === "/adscenter/settings" && "系统配置和设置管理"} {/* 始终显示中文 */}
                       </div>
                     </div>
                   </Link>

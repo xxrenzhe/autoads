@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         features: {
           siterank: features.siterank as boolean || false,
           batchopen: features.batchopen as boolean || false,
-          changelink: features.changelink as boolean || false,
+          adscenter: features.adscenter as boolean || false,
           analytics: features.analytics as boolean || false,
           support: features.support as string || 'none'
         },

@@ -59,7 +59,7 @@ export class SubscriptionInheritanceService {
         // Feature-specific Rate Limits
         siterankRateLimit: plan.siterankRateLimit,
         batchopenRateLimit: plan.batchopenRateLimit,
-        changelinkRateLimit: plan.changelinkRateLimit,
+        adscenterRateLimit: plan.adscenterRateLimit,
         
         // Advanced Features
         maxBatchSize: plan.maxBatchSize,
@@ -143,7 +143,7 @@ export class SubscriptionInheritanceService {
       updateData.requestTimeout = plan.requestTimeout;
       updateData.siterankRateLimit = plan.siterankRateLimit;
       updateData.batchopenRateLimit = plan.batchopenRateLimit;
-      updateData.changelinkRateLimit = plan.changelinkRateLimit;
+      updateData.adscenterRateLimit = plan.adscenterRateLimit;
     }
 
     if (!subscription.customTokenQuotas) {
@@ -210,7 +210,7 @@ export class SubscriptionInheritanceService {
       requestTimeout: customRateLimits.requestTimeout || plan.requestTimeout,
       siterankRateLimit: customRateLimits.siterankRateLimit || plan.siterankRateLimit,
       batchopenRateLimit: customRateLimits.batchopenRateLimit || plan.batchopenRateLimit,
-      changelinkRateLimit: customRateLimits.changelinkRateLimit || plan.changelinkRateLimit
+      adscenterRateLimit: customRateLimits.adscenterRateLimit || plan.adscenterRateLimit
     };
   }
 

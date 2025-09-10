@@ -79,7 +79,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
     setAuthStep('callback');
 
     try {
-      const response = await fetch('/api/changelink/oauth/callback', {
+      const response = await fetch('/api/adscenter/oauth/callback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -119,7 +119,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
     setError(null);
 
     try {
-      const response = await fetch('/api/changelink/oauth/auth-url', {
+      const response = await fetch('/api/adscenter/oauth/auth-url', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +148,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/changelink/oauth/validate', {
+      const response = await fetch('/api/adscenter/oauth/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -177,7 +177,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/changelink/oauth/refresh', {
+      const response = await fetch('/api/adscenter/oauth/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -205,7 +205,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/changelink/oauth/remove', {
+      const response = await fetch('/api/adscenter/oauth/remove', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -235,7 +235,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
   useEffect(() => {
     const loadAccounts = async () => {
       try {
-        const response = await fetch('/api/changelink/oauth/accounts');
+        const response = await fetch('/api/adscenter/oauth/accounts');
         const result = await response.json();
 
         if (result.success) {
@@ -311,7 +311,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
                   <Input
                     id="redirectUri"
                     type="text"
-                    placeholder="http://localhost:3000/changelink"
+                    placeholder="http://localhost:3000/adscenter"
                     value={oauthConfig.redirectUri}
                     onChange={(e) => setOauthConfig(prev => ({ ...prev, redirectUri: e.target.value }))}
                   />

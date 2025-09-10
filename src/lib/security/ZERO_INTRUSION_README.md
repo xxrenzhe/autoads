@@ -68,7 +68,7 @@ export const POST = withApiMonitoring(async function(request: NextRequest) {
 
 - `/api/siterank/*` - SiteRank相关功能
 - `/api/batchopen/*` - BatchOpen相关功能
-- `/api/changelink/*` - ChangeLink相关功能
+- `/api/adscenter/*` - AdsCenter相关功能
 - `/api/token/*` - Token相关功能
 - `/api/user/*` - 用户相关功能
 

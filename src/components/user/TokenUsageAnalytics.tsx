@@ -321,7 +321,7 @@ export default function TokenUsageAnalytics() {
             <option value="all">All features</option>
             <option value="siterank">SiteRank</option>
             <option value="batchopen">BatchOpen</option>
-            <option value="changelink">ChangeLink</option>
+            <option value="adscenter">ChangeLink</option>
           </select>
         </div>
       </div>

@@ -236,7 +236,7 @@ export const ConfigurationStep = memo(({
                 <p className="text-sm text-blue-700">您可以前往配置管理页面进行详细设置和执行</p>
               </div>
               <Button
-                onClick={() => window.location.href = '/changelink/configurations'}
+                onClick={() => window.location.href = '/adscenter/configurations'}
                 variant="outline"
                 className="text-blue-700 border-blue-300 hover:bg-blue-50"
               >

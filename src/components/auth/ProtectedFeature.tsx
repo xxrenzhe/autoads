@@ -94,7 +94,7 @@ function getFeatureIcon(feature: string) {
     '广告管理': <Users className="h-8 w-8 text-white" />,
     'batchopen': <Zap className="h-8 w-8 text-white" />,
     'siterank': <Shield className="h-8 w-8 text-white" />,
-    'changelink': <Users className="h-8 w-8 text-white" />
+    'adscenter': <Users className="h-8 w-8 text-white" />
   }
   
   return iconMap[feature] || <Shield className="h-8 w-8 text-white" />

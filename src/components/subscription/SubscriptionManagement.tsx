@@ -527,7 +527,7 @@ export default function SubscriptionManagement() {
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
           <a
-            href="mailto:support@changelink.com"
+            href="mailto:support@adscenter.com"
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
             📧 发送邮件

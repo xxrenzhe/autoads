@@ -1,7 +1,7 @@
 # Implementation Plan
 
 - [x] 1. Set up project structure and core interfaces
-  - Create /changelink page directory structure under src/app/changelink/
+  - Create /adscenter page directory structure under src/app/adscenter/
   - Define TypeScript interfaces for configuration, execution results, and link processing
   - Set up basic page layout with Next.js App Router structure
   - _Requirements: 1.1, 11.1_

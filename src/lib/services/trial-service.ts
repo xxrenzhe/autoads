@@ -21,7 +21,7 @@ export class TrialService {
         proxyRotation: true,
         automatedVersion: true
       },
-      changelink: {
+      adscenter: {
         enabled: true,
         maxAccountsManaged: 10
       }

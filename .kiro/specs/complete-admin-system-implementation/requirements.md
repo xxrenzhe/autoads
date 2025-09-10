@@ -72,7 +72,7 @@ This document outlines the requirements for completing the admin management syst
 1. WHEN an admin accesses the main dashboard THEN they SHALL see total user count with growth indicators
 2. WHEN subscription metrics are displayed THEN they SHALL show counts by plan type (Free, Pro, Max) with trial users highlighted
 3. WHEN revenue metrics are shown THEN they SHALL display current month revenue and comparison to previous month
-4. WHEN token consumption is displayed THEN it SHALL show system-wide token usage by feature (siterank, batchopen, changelink)
+4. WHEN token consumption is displayed THEN it SHALL show system-wide token usage by feature (siterank, batchopen, adscenter)
 5. WHEN API usage is shown THEN it SHALL display total API calls, success rate, and average response time
 6. WHEN quick actions are available THEN they SHALL provide shortcuts to user management, plan configuration, and system settings
 
@@ -187,7 +187,7 @@ This document outlines the requirements for completing the admin management syst
 1. WHEN an admin accesses token consumption rules THEN they SHALL see current consumption rules for all features
 2. WHEN siterank rules are displayed THEN they SHALL show 1 token per successful domain query (default)
 3. WHEN batchopen rules are displayed THEN they SHALL show 1 token per HTTP access and 2 tokens per Puppeteer access
-4. WHEN changelink rules are displayed THEN they SHALL show 2 tokens per link replacement operation
+4. WHEN adscenter rules are displayed THEN they SHALL show 2 tokens per link replacement operation
 5. WHEN consumption rules are modified THEN changes SHALL take effect immediately with hot-reload capability
 
 ### Requirement 13: System Configuration - System Settings

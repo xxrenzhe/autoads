@@ -104,8 +104,8 @@ export class ActivityTracker {
         return 'siterank_use'
       case 'batchopen':
         return 'batchopen_use'
-      case 'changelink':
-        return 'changelink_use'
+      case 'adscenter':
+        return 'adscenter_use'
       case 'pricing':
         return 'pricing_view'
       case 'account':

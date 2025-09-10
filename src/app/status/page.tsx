@@ -67,7 +67,7 @@ export default function StatusPage() {
     
     try {
       // 检查 API 状态
-      const apiResponse = await fetch('/api/changelink/system?action=health');
+      const apiResponse = await fetch('/api/adscenter/system?action=health');
       const apiStatus = apiResponse.ok ? 'online' : 'degraded';
 
       // 检查其他服务状态
@@ -120,7 +120,7 @@ export default function StatusPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold mb-2">系统状态</h1>
-          <p className="text-gray-600">ChangeLink 系统运行状态和构建信息</p>
+          <p className="text-gray-600">AdsCenter 系统运行状态和构建信息</p>
         </div>
         <Button onClick={checkSystemStatus} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -270,16 +270,16 @@ export default function StatusPage() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Button variant="outline" asChild>
-              <a href="/changelink">主页面</a>
+              <a href="/adscenter">主页面</a>
             </Button>
             <Button variant="outline" asChild>
-              <a href="/changelink/accounts">账号管理</a>
+              <a href="/adscenter/accounts">账号管理</a>
             </Button>
             <Button variant="outline" asChild>
-              <a href="/changelink/executions">执行监控</a>
+              <a href="/adscenter/executions">执行监控</a>
             </Button>
             <Button variant="outline" asChild>
-              <a href="/api/changelink/system?action=health">API 健康检查</a>
+              <a href="/api/adscenter/system?action=health">API 健康检查</a>
             </Button>
           </div>
         </CardContent>

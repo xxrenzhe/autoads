@@ -178,15 +178,15 @@
   - 测试批量访问的Token消耗记录
   - _需求: 4.2_
 
-### 任务10: 集成ChangeLink功能
-- [x] 10.1 修改ChangeLink批量替换逻辑
+### 任务10: 集成AdsCenter功能
+- [x] 10.1 修改AdsCenter批量替换逻辑
   - 识别批量链接替换操作
   - 集成批量操作记录功能
   - 确保单个链接替换正常工作
   - _需求: 2.3, 4.3_
 
-- [x] 10.2 更新ChangeLink Token消耗配置
-  - 确认ChangeLink功能的Token配置正确
+- [x] 10.2 更新AdsCenter Token消耗配置
+  - 确认AdsCenter功能的Token配置正确
   - 测试链接替换的Token消耗记录
   - _需求: 4.3_
 
@@ -310,7 +310,7 @@ graph TD
     L --> O[7.2 配置历史组件]
     M --> P[8.1 SiteRank集成]
     M --> Q[9.1 BatchOpen集成]
-    M --> R[10.1 ChangeLink集成]
+    M --> R[10.1 AdsCenter集成]
     N --> S[11.1 单元测试]
     P --> T[13.1 端到端测试]
     Q --> T

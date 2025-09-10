@@ -18,7 +18,7 @@
     },
     {
       "type": "breaking",
-      "component": "changelink",
+      "component": "adscenter",
       "description": "API端点文件不存在",
       "impact": "high",
       "solution": "检查文件路径或重新创建API端点"

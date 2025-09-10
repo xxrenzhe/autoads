@@ -1,4 +1,4 @@
-# ChangeLink 可扩展架构设计
+# AdsCenter 可扩展架构设计
 
 ## 架构概述
 
@@ -8,7 +8,7 @@
 
 ### 1. 表现层 (Presentation Layer)
 ```
-src/app/changelink/
+src/app/adscenter/
 ├── page.tsx                    # 主入口页面
 ├── components/                 # UI组件
 │   ├── SetupWizard.tsx        # 设置向导
@@ -20,7 +20,7 @@ src/app/changelink/
 
 ### 2. 应用层 (Application Layer)
 ```
-src/app/changelink/
+src/app/adscenter/
 ├── services/                   # 业务服务
 │   ├── AdsPowerService.ts     # AdsPower集成服务
 │   ├── GoogleAdsService.ts    # Google Ads服务
@@ -33,7 +33,7 @@ src/app/changelink/
 
 ### 3. 领域层 (Domain Layer)
 ```
-src/app/changelink/
+src/app/adscenter/
 ├── models/                    # 领域模型
 │   ├── Configuration.ts       # 配置模型
 │   ├── Execution.ts           # 执行模型
@@ -171,34 +171,34 @@ interface ExecutionResult {
 
 ### 1. 配置管理API
 ```typescript
-// POST /api/changelink/configurations/adspower
-// GET /api/changelink/configurations/adspower
-// PUT /api/changelink/configurations/adspower/:id
-// DELETE /api/changelink/configurations/adspower/:id
+// POST /api/adscenter/configurations/adspower
+// GET /api/adscenter/configurations/adspower
+// PUT /api/adscenter/configurations/adspower/:id
+// DELETE /api/adscenter/configurations/adspower/:id
 
-// POST /api/changelink/configurations/google-ads
-// GET /api/changelink/configurations/google-ads
-// PUT /api/changelink/configurations/google-ads/:id
-// DELETE /api/changelink/configurations/google-ads/:id
+// POST /api/adscenter/configurations/google-ads
+// GET /api/adscenter/configurations/google-ads
+// PUT /api/adscenter/configurations/google-ads/:id
+// DELETE /api/adscenter/configurations/google-ads/:id
 
-// POST /api/changelink/configurations/link-mappings
-// GET /api/changelink/configurations/link-mappings
+// POST /api/adscenter/configurations/link-mappings
+// GET /api/adscenter/configurations/link-mappings
 ```
 
 ### 2. 执行管理API
 ```typescript
-// POST /api/changelink/executions
-// GET /api/changelink/executions
-// GET /api/changelink/executions/:id
-// POST /api/changelink/executions/:id/cancel
-// GET /api/changelink/executions/:id/logs
+// POST /api/adscenter/executions
+// GET /api/adscenter/executions
+// GET /api/adscenter/executions/:id
+// POST /api/adscenter/executions/:id/cancel
+// GET /api/adscenter/executions/:id/logs
 ```
 
 ### 3. 数据报告API
 ```typescript
-// GET /api/changelink/reports/ads-performance
-// GET /api/changelink/reports/execution-history
-// GET /api/changelink/reports/system-health
+// GET /api/adscenter/reports/ads-performance
+// GET /api/adscenter/reports/execution-history
+// GET /api/adscenter/reports/system-health
 ```
 
 ## 安全设计

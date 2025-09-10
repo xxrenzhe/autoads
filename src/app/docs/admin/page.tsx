@@ -125,7 +125,7 @@ export default function AdminDocsPage() {
           <div className="py-8">
             <h1 className="text-3xl font-bold text-gray-900">管理员文档中心</h1>
             <p className="mt-2 text-lg text-gray-600">
-              ChangeLink AutoAds 系统管理指南和最佳实践
+              AdsCenter AutoAds 系统管理指南和最佳实践
             </p>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 /**
  * E2E用户流程验证脚本
- * 验证三个核心功能：batchopen、siterank、changelink
+ * 验证三个核心功能：batchopen、siterank、adscenter
  */
 
 import http from 'http';
@@ -154,11 +154,11 @@ async function runTests() {
     recordTest('SiteRank功能测试', false, error.message);
   }
 
-  console.log('\n=== 4. ChangeLink功能测试 ===');
+  console.log('\n=== 4. AdsCenter功能测试 ===');
   
   try {
-    // 测试增强示例API（代表ChangeLink功能）
-    const changelinkData = {
+    // 测试增强示例API（代表AdsCenter功能）
+    const adscenterData = {
       campaignId: 'test-campaign-' + Date.now(),
       urls: [
         { url: 'https://example.com/page1', anchor: 'Page 1' },
@@ -167,14 +167,14 @@ async function runTests() {
       keywords: ['example', 'test']
     };
 
-    const changeResponse = await makeRequest('/api/enhanced-example', 'POST', changelinkData);
+    const changeResponse = await makeRequest('/api/enhanced-example', 'POST', adscenterData);
     recordTest(
-      'ChangeLink链接管理',
+      'AdsCenter链接管理',
       changeResponse.status === 200,
       `状态码: ${changeResponse.status}`
     );
   } catch (error) {
-    recordTest('ChangeLink功能测试', false, error.message);
+    recordTest('AdsCenter功能测试', false, error.message);
   }
 
   console.log('\n=== 5. 管理员功能测试 ===');

@@ -78,7 +78,7 @@ sequenceDiagram
 model TokenUsage {
   id        String   @id @default(cuid())
   userId    String
-  feature   String   // 功能: siterank, batchopen, changelink
+  feature   String   // 功能: siterank, batchopen, adscenter
   action    String   // 操作: domain_analysis, url_access, link_replace
   amount    Int      // Token消耗数量
   balance   Int      // 操作后余额

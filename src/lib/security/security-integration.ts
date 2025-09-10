@@ -201,8 +201,8 @@ function determineAction(request: NextRequest): string {
     return `${method.toLowerCase()}_siterank`;
   } else if (pathname.startsWith('/api/batchopen')) {
     return `${method.toLowerCase()}_batchopen`;
-  } else if (pathname.startsWith('/api/changelink')) {
-    return `${method.toLowerCase()}_changelink`;
+  } else if (pathname.startsWith('/api/adscenter')) {
+    return `${method.toLowerCase()}_adscenter`;
   } else if (pathname.startsWith('/api/user/subscription')) {
     return `${method.toLowerCase()}_subscription`;
   } else if (pathname.startsWith('/api/auth')) {

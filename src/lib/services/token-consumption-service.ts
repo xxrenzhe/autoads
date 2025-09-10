@@ -534,7 +534,7 @@ export class TokenConsumptionService {
       const featureNames: Record<string, string> = {
         'siterank': 'SiteRank域名分析',
         'batchopen': 'BatchOpen批量访问',
-        'changelink': 'ChangeLink链接替换'
+        'adscenter': 'ChangeLink链接替换'
       }
       
       const featureName = featureNames[record.feature] || record.feature

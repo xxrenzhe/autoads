@@ -2,7 +2,7 @@
 
 ## 设计概述
 
-基于Clean Architecture原则和现代化前端架构模式，设计一个高内聚、低耦合的业务架构重构方案。该设计确保三大核心业务功能（siterank、batchopen、changelink）的稳定性，同时实现系统的模块化和组件化升级。
+基于Clean Architecture原则和现代化前端架构模式，设计一个高内聚、低耦合的业务架构重构方案。该设计确保三大核心业务功能（siterank、batchopen、adscenter）的稳定性，同时实现系统的模块化和组件化升级。
 
 ## 架构设计原则
 
@@ -42,7 +42,7 @@ interface ServiceContainer {
   // 业务服务
   siteRankService: ISiteRankService
   batchOpenService: IBatchOpenService
-  changeLinkService: IChangeLinkService
+  changeLinkService: IAdsCenterService
   
   // 基础设施服务
   databaseService: IDatabaseService
@@ -123,24 +123,24 @@ src/
 │   │   ├── module.types.ts
 │   │   └── README.md
 │   │
-│   └── changelink/                  # Google Ads链接管理模块
+│   └── adscenter/                  # Google Ads链接管理模块
 │       ├── domain/
 │       │   ├── entities/
 │       │   │   ├── AdsCampaign.ts
 │       │   │   └── LinkMapping.ts
 │       │   ├── repositories/
-│       │   │   └── IChangeLinkRepository.ts
+│       │   │   └── IAdsCenterRepository.ts
 │       │   └── services/
-│       │       └── IChangeLinkService.ts
+│       │       └── IAdsCenterService.ts
 │       ├── application/
 │       │   ├── use-cases/
 │       │   │   ├── UpdateAdLinks.ts
 │       │   │   └── ScheduleExecution.ts
 │       │   └── services/
-│       │       └── ChangeLinkService.ts
+│       │       └── AdsCenterService.ts
 │       ├── infrastructure/
 │       │   ├── repositories/
-│       │   │   └── PrismaChangeLinkRepository.ts
+│       │   │   └── PrismaAdsCenterRepository.ts
 │       │   └── external/
 │       │       ├── GoogleAdsApiClient.ts
 │       │       └── AdsPowerApiClient.ts
@@ -149,7 +149,7 @@ src/
 │       │   │   ├── LinkMappingForm.tsx
 │       │   │   └── ExecutionMonitor.tsx
 │       │   └── pages/
-│       │       └── ChangeLinkPage.tsx
+│       │       └── AdsCenterPage.tsx
 │       ├── tests/
 │       ├── module.config.ts
 │       ├── module.types.ts
@@ -263,10 +263,10 @@ export const AdminApp = () => (
       icon={PlayIcon}
     />
     <Resource 
-      name="changelink-configs" 
-      list={ChangeLinkConfigList} 
-      edit={ChangeLinkConfigEdit}
-      create={ChangeLinkConfigCreate}
+      name="adscenter-configs" 
+      list={AdsCenterConfigList} 
+      edit={AdsCenterConfigEdit}
+      create={AdsCenterConfigCreate}
       icon={LinkIcon}
     />
 
@@ -570,8 +570,8 @@ export const BatchTaskList = () => (
   </List>
 )
 
-// ChangeLink配置管理
-export const ChangeLinkConfigList = () => (
+// AdsCenter配置管理
+export const AdsCenterConfigList = () => (
   <List>
     <Datagrid>
       <TextField source="id" label="配置ID" />
@@ -585,7 +585,7 @@ export const ChangeLinkConfigList = () => (
   </List>
 )
 
-export const ChangeLinkConfigEdit = () => (
+export const AdsCenterConfigEdit = () => (
   <Edit>
     <SimpleForm>
       <TextInput source="name" label="配置名称" required />
@@ -707,7 +707,7 @@ const migrationPhases: MigrationPhase[] = [
     components: [
       'SiteRankTaskList', 'SiteRankTaskShow',
       'BatchTaskList', 'BatchTaskShow',
-      'ChangeLinkConfigList', 'ChangeLinkConfigEdit'
+      'AdsCenterConfigList', 'AdsCenterConfigEdit'
     ],
     estimatedDays: 10,
     dependencies: ['Phase 2']
@@ -1091,7 +1091,7 @@ interface IBatchOpenService {
 }
 
 // Google Ads链接管理服务
-interface IChangeLinkService {
+interface IAdsCenterService {
   createLinkMapping(mapping: LinkMappingData): Promise<LinkMapping>
   updateAdLinks(mappingId: string): Promise<UpdateResult>
   scheduleExecution(schedule: ScheduleConfig): Promise<ScheduledTask>
@@ -1952,7 +1952,7 @@ interface Role {
 
 interface Permission {
   id: string
-  resource: string      // 资源类型：siterank, batchopen, changelink, admin
+  resource: string      // 资源类型：siterank, batchopen, adscenter, admin
   action: string        // 操作类型：create, read, update, delete, execute
   conditions?: Record<string, any>  // 条件限制
 }
@@ -2164,9 +2164,9 @@ const cacheStrategies = {
     pattern: 'batchopen:*',
     invalidateOn: ['batch_complete', 'batch_cancel']
   },
-  changelink: {
+  adscenter: {
     ttl: 1800,        // 30分钟
-    pattern: 'changelink:*',
+    pattern: 'adscenter:*',
     invalidateOn: ['link_update', 'campaign_change']
   }
 }

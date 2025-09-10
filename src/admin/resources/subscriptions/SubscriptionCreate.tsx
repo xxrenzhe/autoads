@@ -34,7 +34,7 @@ const currencyChoices = [
 const defaultFeatures = [
   'siterank',
   'batchopen',
-  'changelink',
+  'adscenter',
   'api_access',
 ];
 

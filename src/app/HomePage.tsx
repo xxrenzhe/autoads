@@ -196,7 +196,7 @@ export default function HomePage() {
                   <div className="w-1.5 h-1.5 bg-purple-500 rounded-full mr-3"></div>自动化投放</li>
               </ul>
               <Link 
-                href="/changelink"
+                href="/adscenter"
                 className="inline-flex items-center justify-center w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-300 group-hover:shadow-lg"
                 onClick={() => handleCTAClick('automation')}
               >
@@ -249,7 +249,7 @@ export default function HomePage() {
             >分析网站排名<BarChart3 className="w-5 h-5 ml-2" />
             </Link>
             <Link 
-              href="/changelink"
+              href="/adscenter"
               className="inline-flex items-center justify-center border-2 border-white text-white font-semibold py-3 px-8 rounded-xl hover:bg-white hover:text-purple-600 transition-all duration-300"
               onClick={() => handleCTAClick('automation_cta')}
             >配置自动化广告<LinkIcon className="w-5 h-5 ml-2" />

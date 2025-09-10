@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document outlines the requirements for implementing a comprehensive admin management system for the ChangeLink project. The system will provide a complete backend administration interface with user management, role-based access control, configuration management, subscription management, payment integration, notification system, and API management. The system follows Clean Architecture principles with high cohesion, low coupling, and single responsibility design patterns.
+This document outlines the requirements for implementing a comprehensive admin management system for the AdsCenter project. The system will provide a complete backend administration interface with user management, role-based access control, configuration management, subscription management, payment integration, notification system, and API management. The system follows Clean Architecture principles with high cohesion, low coupling, and single responsibility design patterns.
 
 ## Requirements
 
@@ -99,7 +99,7 @@ This document outlines the requirements for implementing a comprehensive admin m
 
 #### Acceptance Criteria
 
-1. WHEN token costs are configured THEN the system SHALL allow per-feature token cost settings (default: siterank=1, batchopen=1, changelink=2)
+1. WHEN token costs are configured THEN the system SHALL allow per-feature token cost settings (default: siterank=1, batchopen=1, adscenter=2)
 2. WHEN users consume tokens THEN the system SHALL track usage with detailed operation metadata
 3. WHEN batch operations occur THEN the system SHALL record aggregate consumption to prevent excessive log entries
 4. WHEN administrators review usage THEN the system SHALL provide consumption analytics and reporting
@@ -160,7 +160,7 @@ This document outlines the requirements for implementing a comprehensive admin m
 #### Acceptance Criteria
 
 1. WHEN users access the website THEN they SHALL be able to view Free plan supported pages without authentication
-2. WHEN users attempt to use core features THEN the system SHALL require login for siterank, batchopen, and changelink functionality
+2. WHEN users attempt to use core features THEN the system SHALL require login for siterank, batchopen, and adscenter functionality
 3. WHEN free tier limits are reached THEN the system SHALL prompt users to upgrade their subscription
 4. WHEN feature access is controlled THEN the system SHALL clearly indicate which features require authentication
 5. WHEN users upgrade plans THEN they SHALL gain immediate access to premium features

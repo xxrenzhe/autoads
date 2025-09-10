@@ -278,7 +278,7 @@ const LegacyFeaturesPage = () => {
     {
       title: '⚙️ 系统设置',
       description: '管理Google Ads API配置、AdsPower环境设置、系统参数和数据管理',
-      href: '/changelink/settings',
+      href: '/adscenter/settings',
       icon: Settings,
       color: 'bg-gray-50 text-gray-600',
       features: ['API配置', '环境设置', '数据管理', '系统参数']
@@ -369,7 +369,7 @@ const LegacyFeaturesPage = () => {
               <p className="text-sm text-gray-600">
                 使用设置向导配置Google Ads账号、广告联盟链接和AdsPower环境
               </p>
-              <Link href="/changelink/setup">
+              <Link href="/adscenter/setup">
                 <Button variant="outline" size="sm">
                   开始设置
                 </Button>
@@ -384,7 +384,7 @@ const LegacyFeaturesPage = () => {
               <p className="text-sm text-gray-600">
                 实时监控自动化执行状态，查看详细的执行记录和日志
               </p>
-              <Link href="/changelink/executions">
+              <Link href="/adscenter/executions">
                 <Button variant="outline" size="sm">
                   执行监控
                 </Button>
@@ -399,7 +399,7 @@ const LegacyFeaturesPage = () => {
               <p className="text-sm text-gray-600">
                 查看Google Ads数据分析报表，了解广告性能和优化建议
               </p>
-              <Link href="/changelink/reports">
+              <Link href="/adscenter/reports">
                 <Button variant="outline" size="sm">
                   数据报表
                 </Button>

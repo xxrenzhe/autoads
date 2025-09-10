@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This project aims to complete the implementation of a comprehensive admin management system for the AutoAds platform, addressing all missing functionality while maintaining the existing Clean Architecture foundation. The system must include complete user management, subscription systems, payment integration, configuration management, and all other specified requirements while ensuring the stability of the three core business functions (siterank, batchopen, changelink).
+This project aims to complete the implementation of a comprehensive admin management system for the AutoAds platform, addressing all missing functionality while maintaining the existing Clean Architecture foundation. The system must include complete user management, subscription systems, payment integration, configuration management, and all other specified requirements while ensuring the stability of the three core business functions (siterank, batchopen, adscenter).
 
 ## Requirements
 
@@ -60,7 +60,7 @@ This project aims to complete the implementation of a comprehensive admin manage
 
 #### Acceptance Criteria
 
-1. WHEN configuring token costs THEN the system SHALL allow setting different token consumption rates for siterank (1 token per domain), batchopen (1 token per URL), and changelink (2 tokens per link change)
+1. WHEN configuring token costs THEN the system SHALL allow setting different token consumption rates for siterank (1 token per domain), batchopen (1 token per URL), and adscenter (2 tokens per link change)
 2. WHEN users perform operations THEN the system SHALL track token consumption with proper aggregation for batch operations
 3. WHEN displaying consumption records THEN the system SHALL show batch operations as single entries with total counts to avoid excessive record proliferation
 4. WHEN managing token configurations THEN the system SHALL provide admin interface for updating token costs and rules
@@ -121,7 +121,7 @@ This project aims to complete the implementation of a comprehensive admin manage
 #### Acceptance Criteria
 
 1. WHEN accessing the website THEN users SHALL be able to view free tier supported pages without authentication
-2. WHEN using core features THEN users SHALL be required to login to access siterank, batchopen, and changelink functionalities
+2. WHEN using core features THEN users SHALL be required to login to access siterank, batchopen, and adscenter functionalities
 3. WHEN managing access permissions THEN the system SHALL clearly distinguish between free and premium feature access
 4. WHEN users exceed free limits THEN the system SHALL prompt for authentication and subscription upgrade
 5. WHEN displaying feature availability THEN the system SHALL clearly indicate which features require login and subscription
@@ -181,7 +181,7 @@ The system must maintain and enhance the three core business functions:
 
 1. **SiteRank**: Website ranking analysis with global ranking queries, PageRank scoring, and priority calculations
 2. **BatchOpen**: Batch URL opening with proxy IP rotation and real visit simulation  
-3. **ChangeLink**: Google Ads automation management with automatic ad link updates
+3. **AdsCenter**: Google Ads automation management with automatic ad link updates
 
 ### Technology Stack Requirements
 - **Frontend**: React, TypeScript, Next.js 14 with App Router

@@ -48,42 +48,42 @@ const navigationItems: NavigationItem[] = [
     id: 'dashboard',
     label: '仪表板',
     icon: Home,
-    href: '/changelink',
+    href: '/adscenter',
     description: '系统概览和快速操作'
   },
   {
     id: 'configurations',
     label: '配置管理',
     icon: Settings,
-    href: '/changelink/configurations',
+    href: '/adscenter/configurations',
     description: '创建和管理跟踪配置'
   },
   {
     id: 'monitoring',
     label: '执行监控',
     icon: BarChart3,
-    href: '/changelink/executions',
+    href: '/adscenter/executions',
     description: '实时监控执行状态'
   },
   {
     id: 'scheduling',
     label: '定时任务',
     icon: Clock,
-    href: '/changelink/scheduling',
+    href: '/adscenter/scheduling',
     description: '管理定时执行任务'
   },
   {
     id: 'exports',
     label: '数据导出',
     icon: Download,
-    href: '/changelink/exports',
+    href: '/adscenter/exports',
     description: '导出执行结果和报告'
   },
   {
     id: 'notifications',
     label: '通知设置',
     icon: Bell,
-    href: '/changelink/notifications',
+    href: '/adscenter/notifications',
     description: '配置邮件通知和警报'
   }
 ];
@@ -127,7 +127,7 @@ export default function Layout({ children }: LayoutProps) {
   // 获取当前页面信息
   const getCurrentPage = () => {
     const currentItem = navigationItems.find(item => 
-      pathname === item.href || (item.href !== '/changelink' && pathname.startsWith(item.href))
+      pathname === item.href || (item.href !== '/adscenter' && pathname.startsWith(item.href))
     );
     return currentItem || navigationItems[0];
   };
@@ -136,10 +136,10 @@ export default function Layout({ children }: LayoutProps) {
   const getBreadcrumbs = () => {
     const currentPage = getCurrentPage();
     const breadcrumbs = [
-      { label: 'Google Ads自动化', href: '/changelink' }
+      { label: 'Google Ads自动化', href: '/adscenter' }
     ];
 
-    if (currentPage.href !== '/changelink') { breadcrumbs.push({ label: currentPage.label, href: currentPage.href });
+    if (currentPage.href !== '/adscenter') { breadcrumbs.push({ label: currentPage.label, href: currentPage.href });
     }
 
     return breadcrumbs;
@@ -249,7 +249,7 @@ export default function Layout({ children }: LayoutProps) {
             <nav className="flex-1 px-4 py-6 space-y-2">
               {navigationItems.map((item) => {
                 const isActive = pathname === item.href || 
-                  (item.href !== '/changelink' && pathname.startsWith(item.href));
+                  (item.href !== '/adscenter' && pathname.startsWith(item.href));
                 
                 return (
                   <Link

@@ -129,7 +129,7 @@ export default function ExecutionsPage() {
 
   const loadActiveExecutions = async () => {
     try {
-      const response = await fetch('/api/changelink/execute?action=list&userId=current_user');
+      const response = await fetch('/api/adscenter/execute?action=list&userId=current_user');
       const result = await response.json();
       
       if (result.success) {
@@ -142,7 +142,7 @@ export default function ExecutionsPage() {
 
   const loadHistoryExecutions = async () => {
     try {
-      const response = await fetch('/api/changelink/execute?action=history&userId=current_user&limit=20');
+      const response = await fetch('/api/adscenter/execute?action=history&userId=current_user&limit=20');
       const result = await response.json();
       
       if (result.success) {
@@ -157,7 +157,7 @@ export default function ExecutionsPage() {
     if (!confirm('确定要取消这个执行吗？')) return;
 
     try {
-      const response = await fetch('/api/changelink/execute', {
+      const response = await fetch('/api/adscenter/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -181,7 +181,7 @@ export default function ExecutionsPage() {
 
   const openDetailDialog = async (executionId: string) => {
     try {
-      const response = await fetch(`/api/changelink/execute?action=status&executionId=${executionId}`);
+      const response = await fetch(`/api/adscenter/execute?action=status&executionId=${executionId}`);
       const result = await response.json();
       
       if (result.success) {

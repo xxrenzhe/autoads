@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This project aims to refactor the existing AutoAds automated marketing platform through comprehensive business architecture restructuring, implementing componentized and modularized design principles. The refactoring must ensure the stability of three core business functions (siterank, batchopen, changelink) while building a modern, maintainable, and extensible business architecture with clear responsibilities.
+This project aims to refactor the existing AutoAds automated marketing platform through comprehensive business architecture restructuring, implementing componentized and modularized design principles. The refactoring must ensure the stability of three core business functions (siterank, batchopen, adscenter) while building a modern, maintainable, and extensible business architecture with clear responsibilities.
 
 ## Requirements
 
@@ -20,13 +20,13 @@ This project aims to refactor the existing AutoAds automated marketing platform 
 
 ### Requirement 2: Core Business Stability Assurance
 
-**User Story:** As a product owner, I want to ensure the stability of siterank, batchopen, and changelink core business functions during refactoring, so that existing users are not affected.
+**User Story:** As a product owner, I want to ensure the stability of siterank, batchopen, and adscenter core business functions during refactoring, so that existing users are not affected.
 
 #### Acceptance Criteria
 
 1. WHEN refactoring the siterank module THEN the system SHALL maintain the integrity and accuracy of website ranking analysis functionality
 2. WHEN refactoring the batchopen module THEN the system SHALL maintain the performance and stability of batch URL opening functionality
-3. WHEN refactoring the changelink module THEN the system SHALL maintain the reliability of Google Ads automation management functionality
+3. WHEN refactoring the adscenter module THEN the system SHALL maintain the reliability of Google Ads automation management functionality
 4. WHEN performing any refactoring operations THEN the system SHALL verify core functionality correctness through automated testing
 5. WHEN deploying refactored code THEN the system SHALL support progressive deployment and quick rollback mechanisms
 
@@ -126,7 +126,7 @@ This project aims to refactor the existing AutoAds automated marketing platform 
 - **Core Components:** UrlInput, ProgressDisplay, SettingsPanel, proxy management
 - **Technology Stack:** React, TypeScript, Playwright, proxy services
 
-### ChangeLink Module
+### AdsCenter Module
 - **Functionality:** Google Ads automation management platform supporting automatic ad link updates
 - **Core Components:** GoogleAdsConfigWizard, TaskScheduler, ExecutionMonitor, ReportGenerator
 - **Technology Stack:** React, TypeScript, Google Ads API, AdsPower integration

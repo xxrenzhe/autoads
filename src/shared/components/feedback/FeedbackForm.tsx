@@ -8,7 +8,7 @@ import { Modal } from '@/shared/components/ui/Modal';
 interface FeedbackFormProps {
   isOpen: boolean;
   onClose: () => void;
-  module?: 'siterank' | 'batchopen' | 'changelink' | 'general';
+  module?: 'siterank' | 'batchopen' | 'adscenter' | 'general';
 }
 
 interface FeedbackData {
@@ -151,7 +151,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
             <option value="general">General</option>
             <option value="siterank">SiteRank</option>
             <option value="batchopen">BatchOpen</option>
-            <option value="changelink">ChangeLink</option>
+            <option value="adscenter">ChangeLink</option>
           </select>
         </div>
 

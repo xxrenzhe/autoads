@@ -115,7 +115,7 @@ const TokenTransactionDashboard: React.FC = () => {
     admin_grant: '管理员授予',
     siterank: '网站排名',
     batchopen: '批量打开',
-    changelink: '链接替换'
+    adscenter: '链接替换'
   };
 
   useEffect(() => {

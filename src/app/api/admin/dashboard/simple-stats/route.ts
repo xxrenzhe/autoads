@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     // 计算功能使用统计
     const siterankUsage = stats.featureStats.siterank.requests;
     const batchopenUsage = stats.featureStats.batchopen.requests;
-    const changelinkUsage = stats.featureStats.changelink.requests;
+    const adscenterUsage = stats.featureStats.adscenter.requests;
 
     // 返回简化的数据结构
     return NextResponse.json({
@@ -62,14 +62,14 @@ export async function GET(request: NextRequest) {
       featureUsage: {
         siterank: siterankUsage,
         batchopen: batchopenUsage,
-        changelink: changelinkUsage
+        adscenter: adscenterUsage
       },
 
       // Token消耗统计（按功能）
       tokenConsumption: {
         siterank: stats.featureStats.siterank.tokens,
         batchopen: stats.featureStats.batchopen.tokens,
-        changelink: stats.featureStats.changelink.tokens,
+        adscenter: stats.featureStats.adscenter.tokens,
         total: Object.values(stats.featureStats).reduce((sum: number, f: any) => sum + f.tokens, 0)
       },
 

@@ -145,7 +145,7 @@ export function withChangeLinkTokenTracking(
 
         tokenResult = await TokenService.consumeBatchTokens(
           userId,
-          'changelink',
+          'adscenter',
           operationType,
           operations
         )
@@ -153,7 +153,7 @@ export function withChangeLinkTokenTracking(
         // 单个操作
         tokenResult = await TokenService.checkAndConsumeTokens(
           userId,
-          'changelink',
+          'adscenter',
           operationType,
           {
             metadata: {

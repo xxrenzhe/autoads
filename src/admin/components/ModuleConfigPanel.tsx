@@ -230,7 +230,7 @@ export const BusinessModuleConfig: React.FC = () => {
       debugMode: false,
       customSettings: {},
     },
-    changelink: {
+    adscenter: {
       enabled: true,
       maxConcurrentTasks: 3,
       rateLimitPerMinute: 20,
@@ -243,7 +243,7 @@ export const BusinessModuleConfig: React.FC = () => {
     },
   });
 
-  const modules = ['siterank', 'batchopen', 'changelink'];
+  const modules = ['siterank', 'batchopen', 'adscenter'];
 
   const handleConfigChange = (moduleName: string, config: ModuleConfig) => {
     setConfigs(prev => ({

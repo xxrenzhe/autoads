@@ -181,8 +181,8 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
         setupDate: new Date().toISOString()
       };
 
-      localStorage.setItem('changelink_secure_config', JSON.stringify(secureConfig));
-      localStorage.setItem('changelink_setup_completed', 'true');
+      localStorage.setItem('adscenter_secure_config', JSON.stringify(secureConfig));
+      localStorage.setItem('adscenter_setup_completed', 'true');
 
       // 标记最后一步完成
       const newSteps = [...steps];

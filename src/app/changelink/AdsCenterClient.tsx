@@ -81,21 +81,21 @@ export default function ChangeLinkClient() {
       setError(null);
 
       // Fetch accounts
-      const accountsResponse = await fetch('/api/changelink/accounts');
+      const accountsResponse = await fetch('/api/adscenter/accounts');
       if (accountsResponse.ok) {
         const accountsData = await accountsResponse.json();
         setAccounts(accountsData.accounts || []);
       }
 
       // Fetch configurations
-      const configsResponse = await fetch('/api/changelink/configurations');
+      const configsResponse = await fetch('/api/adscenter/configurations');
       if (configsResponse.ok) {
         const configsData = await configsResponse.json();
         setConfigurations(configsData.configurations || []);
       }
 
       // Fetch executions
-      const executionsResponse = await fetch('/api/changelink/executions');
+      const executionsResponse = await fetch('/api/adscenter/executions');
       if (executionsResponse.ok) {
         const executionsData = await executionsResponse.json();
         setExecutions(executionsData.executions || []);
@@ -111,7 +111,7 @@ export default function ChangeLinkClient() {
 
   const handleAddAccount = async () => {
     try {
-      const response = await fetch('/api/changelink/accounts', {
+      const response = await fetch('/api/adscenter/accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newAccount)
@@ -133,7 +133,7 @@ export default function ChangeLinkClient() {
 
   const handleAddConfiguration = async () => {
     try {
-      const response = await fetch('/api/changelink/configurations', {
+      const response = await fetch('/api/adscenter/configurations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -159,7 +159,7 @@ export default function ChangeLinkClient() {
 
   const handleStartExecution = async (configurationId: string) => {
     try {
-      const response = await fetch('/api/changelink/executions', {
+      const response = await fetch('/api/adscenter/executions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -267,7 +267,7 @@ export default function ChangeLinkClient() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Google Ads 账户管理</h2>
             <ProtectedButton 
-              featureName="changelink"
+              featureName="adscenter"
               onClick={() => setShowAddAccount(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -301,7 +301,7 @@ export default function ChangeLinkClient() {
                 </div>
                 <div className="flex gap-2">
                   <ProtectedButton 
-                    featureName="changelink"
+                    featureName="adscenter"
                     onClick={handleAddAccount}
                   >
                     保存
@@ -338,7 +338,7 @@ export default function ChangeLinkClient() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">配置管理</h2>
             <ProtectedButton 
-              featureName="changelink"
+              featureName="adscenter"
               onClick={() => setShowAddConfig(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -382,7 +382,7 @@ export default function ChangeLinkClient() {
                 </div>
                 <div className="flex gap-2">
                   <ProtectedButton 
-                    featureName="changelink"
+                    featureName="adscenter"
                     onClick={handleAddConfiguration}
                   >
                     保存
@@ -410,7 +410,7 @@ export default function ChangeLinkClient() {
                     创建时间: {new Date(config.created_at).toLocaleDateString()}
                   </p>
                   <ProtectedButton 
-                    featureName="changelink"
+                    featureName="adscenter"
                     size="sm" 
                     onClick={() => handleStartExecution(config.id)}
                     className="w-full"

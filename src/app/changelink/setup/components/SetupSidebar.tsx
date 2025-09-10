@@ -101,7 +101,7 @@ export const SetupSidebar = memo(({
             variant="outline"
             size="sm"
             className="w-full justify-start"
-            onClick={() => window.location.href = '/changelink/executions'}
+            onClick={() => window.location.href = '/adscenter/executions'}
           >
             <Eye className="h-4 w-4 mr-2" />
             查看执行记录
@@ -111,7 +111,7 @@ export const SetupSidebar = memo(({
             variant="outline"
             size="sm"
             className="w-full justify-start"
-            onClick={() => window.location.href = '/changelink/reports'}
+            onClick={() => window.location.href = '/adscenter/reports'}
           >
             <Database className="h-4 w-4 mr-2" />
             查看数据报表
@@ -121,7 +121,7 @@ export const SetupSidebar = memo(({
             variant="outline"
             size="sm"
             className="w-full justify-start"
-            onClick={() => window.location.href = '/changelink/settings'}
+            onClick={() => window.location.href = '/adscenter/settings'}
           >
             <Settings className="h-4 w-4 mr-2" />
             高级设置

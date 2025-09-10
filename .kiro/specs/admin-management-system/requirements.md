@@ -2,7 +2,7 @@
 
 ## 项目简介
 
-为AutoAds自动化营销平台设计并实现一个全面的后台管理系统，该系统将集成用户管理、角色权限、配置管理、套餐管理、支付系统、通知管理和API管理等核心功能。系统需要保持与现有siterank、batchopen、changelink三大核心功能的完全兼容，并提供统一的管理界面。
+为AutoAds自动化营销平台设计并实现一个全面的后台管理系统，该系统将集成用户管理、角色权限、配置管理、套餐管理、支付系统、通知管理和API管理等核心功能。系统需要保持与现有siterank、batchopen、adscenter三大核心功能的完全兼容，并提供统一的管理界面。
 
 ## 需求列表
 
@@ -39,7 +39,7 @@
 1. WHEN 未登录用户访问网站 THEN 系统 SHALL 允许访问免费套餐支持的页面
 2. WHEN 未登录用户尝试使用siterank功能 THEN 系统 SHALL 要求用户登录
 3. WHEN 未登录用户尝试使用batchopen功能 THEN 系统 SHALL 要求用户登录
-4. WHEN 未登录用户尝试使用changelink功能 THEN 系统 SHALL 要求用户登录
+4. WHEN 未登录用户尝试使用adscenter功能 THEN 系统 SHALL 要求用户登录
 5. WHEN 用户登录后 THEN 系统 SHALL 根据用户套餐显示可用功能
 
 ### 需求4：配置管理系统
@@ -199,13 +199,13 @@
 
 ### 需求16：核心功能兼容性保护
 
-**用户故事：** 作为产品负责人，我希望确保后台管理系统不会破坏现有的siterank、batchopen、changelink三大核心功能，以便保持系统稳定性。
+**用户故事：** 作为产品负责人，我希望确保后台管理系统不会破坏现有的siterank、batchopen、adscenter三大核心功能，以便保持系统稳定性。
 
 #### 验收标准
 
 1. WHEN 后台管理系统上线 THEN 系统 SHALL 确保siterank功能的所有现有API和界面正常工作
 2. WHEN 后台管理系统上线 THEN 系统 SHALL 确保batchopen功能的所有现有API和界面正常工作  
-3. WHEN 后台管理系统上线 THEN 系统 SHALL 确保changelink功能的所有现有API和界面正常工作
+3. WHEN 后台管理系统上线 THEN 系统 SHALL 确保adscenter功能的所有现有API和界面正常工作
 4. WHEN 管理员修改配置 THEN 系统 SHALL 验证配置变更不会影响核心功能的正常运行
 5. WHEN 系统升级 THEN 系统 SHALL 提供核心功能的回归测试和兼容性验证
 6. WHEN 数据库结构变更 THEN 系统 SHALL 确保现有功能的数据访问不受影响

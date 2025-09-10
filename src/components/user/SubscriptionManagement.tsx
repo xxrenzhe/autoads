@@ -107,12 +107,12 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
     }
 
     // ChangeLink features
-    if (features.changelink?.enabled) {
+    if (features.adscenter?.enabled) {
       featureList.push(
-        <ListItem key="changelink">
+        <ListItem key="adscenter">
           <ListItemText
             primary="自动化广告"
-            secondary={`管理账号上限: ${features.changelink.maxAccountsManaged || 5} 个`}
+            secondary={`管理账号上限: ${features.adscenter.maxAccountsManaged || 5} 个`}
           />
         </ListItem>
       );

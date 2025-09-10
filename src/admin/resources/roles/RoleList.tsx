@@ -71,7 +71,7 @@ const roleDescriptions = {
     defaultPermissions: [
       'siterank:access',
       'batchopen:access',
-      'changelink:access'
+      'adscenter:access'
     ]
   },
   ADMIN: {
@@ -86,7 +86,7 @@ const roleDescriptions = {
       'config:read',
       'siterank:access',
       'batchopen:access',
-      'changelink:access',
+      'adscenter:access',
       'admin:access'
     ]
   },
@@ -113,7 +113,7 @@ const roleDescriptions = {
       'tokens:edit',
       'siterank:access',
       'batchopen:access',
-      'changelink:access',
+      'adscenter:access',
       'admin:access'
     ]
   }

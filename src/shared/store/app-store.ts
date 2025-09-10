@@ -14,7 +14,7 @@ export interface AppConfig {
   features: {
     siterank: boolean;
     batchopen: boolean;
-    changelink: boolean;
+    adscenter: boolean;
     analytics: boolean;
   };
 }
@@ -60,7 +60,7 @@ const defaultConfig: AppConfig = {
   features: {
     siterank: true,
     batchopen: true,
-    changelink: true,
+    adscenter: true,
     analytics: true
   }
 };

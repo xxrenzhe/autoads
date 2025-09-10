@@ -54,7 +54,7 @@ export const userResource = {
 ### Business Resources
 - **SiteRank Tasks**: Manage website analysis tasks
 - **BatchOpen Tasks**: Monitor batch URL opening tasks
-- **ChangeLink Campaigns**: Manage ad campaign configurations
+- **AdsCenter Campaigns**: Manage ad campaign configurations
 - **Subscriptions**: User subscription management
 - **Plans**: Service plan configuration
 

@@ -32,7 +32,7 @@
 
 ### 保留的功能
 ```
-- src/app/changelink/models/AdsPowerService.ts (保留 Puppeteer 连接)
+- src/app/adscenter/models/AdsPowerService.ts (保留 Puppeteer 连接)
 - 所有核心业务逻辑
 - URL 批量检查功能
 - 代理管理功能

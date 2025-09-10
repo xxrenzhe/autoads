@@ -51,10 +51,10 @@ export interface ExecutionRecord {
 }
 
 class LocalStorageService {
-  private readonly CONFIGS_KEY = 'changelink_configs';
-  private readonly ACCOUNTS_KEY = 'changelink_accounts';
-  private readonly ENVIRONMENTS_KEY = 'changelink_environments';
-  private readonly EXECUTIONS_KEY = 'changelink_executions';
+  private readonly CONFIGS_KEY = 'adscenter_configs';
+  private readonly ACCOUNTS_KEY = 'adscenter_accounts';
+  private readonly ENVIRONMENTS_KEY = 'adscenter_environments';
+  private readonly EXECUTIONS_KEY = 'adscenter_executions';
 
   // 配置管理
   getConfigs(): SimpleConfig[] {

@@ -8,7 +8,7 @@ import { createSecureHandler } from '@/lib/utils/api-security'
 export const dynamic = 'force-dynamic'
 
 const CalculateSchema = z.object({
-  feature: z.enum(['siterank', 'batchopen', 'changelink']),
+  feature: z.enum(['siterank', 'batchopen', 'adscenter']),
   itemCount: z.number().min(1).max(10000),
   isBatch: z.boolean().default(false)
 })
@@ -80,7 +80,7 @@ export const POST = createSecureHandler({
   },
   validation: {
     body: [
-      { field: 'feature', type: 'string', required: true, enum: ['siterank', 'batchopen', 'changelink'] },
+      { field: 'feature', type: 'string', required: true, enum: ['siterank', 'batchopen', 'adscenter'] },
       { field: 'itemCount', type: 'number', required: true, min: 1, max: 10000 },
       { field: 'isBatch', type: 'boolean', required: false, default: false }
     ]

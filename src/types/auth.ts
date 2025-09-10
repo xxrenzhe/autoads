@@ -1,5 +1,5 @@
 /**
- * Authentication types and interfaces for the ChangeLink project
+ * Authentication types and interfaces for the AdsCenter project
  * JWT authentication system with role-based access control
  */
 

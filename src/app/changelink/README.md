@@ -33,9 +33,9 @@
 ## 文件结构
 
 ```
-src/app/changelink/
+src/app/adscenter/
 ├── page.tsx              # Next.js页面入口
-├── ChangeLinkClient.tsx  # 主要客户端组件
+├── AdsCenterClient.tsx  # 主要客户端组件
 ├── types.ts              # TypeScript类型定义
 ├── utils.ts              # 工具函数
 └── README.md             # 文档说明

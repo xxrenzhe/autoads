@@ -37,9 +37,9 @@ export async function GET(request: NextRequest) {
           requests: stats.featureStats.batchopen.requests,
           tokens: stats.featureStats.batchopen.tokens
         },
-        changelink: {
-          requests: stats.featureStats.changelink.requests,
-          tokens: stats.featureStats.changelink.tokens
+        adscenter: {
+          requests: stats.featureStats.adscenter.requests,
+          tokens: stats.featureStats.adscenter.tokens
         }
       },
       statusCodes: stats.statusCodes,

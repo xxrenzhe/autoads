@@ -133,7 +133,7 @@ export interface PermissionContext {
         { id: 'profile-write', name: 'profile:write', resource: 'profile', action: 'write' },
         { id: 'siterank-use', name: 'siterank:use', resource: 'siterank', action: 'use' },
         { id: 'batchopen-use', name: 'batchopen:use', resource: 'batchopen', action: 'use' },
-        { id: 'changelink-use', name: 'changelink:use', resource: 'changelink', action: 'use' }
+        { id: 'adscenter-use', name: 'adscenter:use', resource: 'adscenter', action: 'use' }
       ],
       ADMIN: [
         { id: 'users-read', name: 'users:read', resource: 'users', action: 'read' },

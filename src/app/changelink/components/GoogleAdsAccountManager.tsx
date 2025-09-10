@@ -72,7 +72,7 @@ const GoogleAdsAccountManager: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/changelink/oauth/accounts');
+      const response = await fetch('/api/adscenter/oauth/accounts');
       if (!response.ok) {
         throw new Error('Failed to load accounts');
       }
@@ -90,7 +90,7 @@ const GoogleAdsAccountManager: React.FC = () => {
     setIsAuthenticating(true);
     setError(null);
     try {
-      const response = await fetch('/api/changelink/oauth/auth-url', {
+      const response = await fetch('/api/adscenter/oauth/auth-url', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ const GoogleAdsAccountManager: React.FC = () => {
   const validateToken = useCallback(async (accountId: string) => {
     setError(null);
     try {
-      const response = await fetch('/api/changelink/oauth/validate', {
+      const response = await fetch('/api/adscenter/oauth/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -147,7 +147,7 @@ const GoogleAdsAccountManager: React.FC = () => {
   const refreshToken = useCallback(async (accountId: string) => {
     setError(null);
     try {
-      const response = await fetch('/api/changelink/oauth/refresh', {
+      const response = await fetch('/api/adscenter/oauth/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ const GoogleAdsAccountManager: React.FC = () => {
     setSyncProgress(0);
     
     try {
-      const response = await fetch('/api/changelink/oauth/accounts', {
+      const response = await fetch('/api/adscenter/oauth/accounts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -221,7 +221,7 @@ const GoogleAdsAccountManager: React.FC = () => {
 
     setError(null);
     try {
-      const response = await fetch('/api/changelink/oauth/accounts', {
+      const response = await fetch('/api/adscenter/oauth/accounts', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -504,7 +504,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                 <Input
                   value={oauthConfig.redirectUri}
                   onChange={(e) => setOauthConfig(prev => ({ ...prev, redirectUri: e.target.value }))}
-                  placeholder="https://your-domain.com/api/changelink/oauth/callback"
+                  placeholder="https://your-domain.com/api/adscenter/oauth/callback"
                 />
               </div>
               <div>

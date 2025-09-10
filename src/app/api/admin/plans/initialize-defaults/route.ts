@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         limits: {
           siterank: { batchLimit: 100 },
           batchopen: { versions: ['basic', 'silent'] },
-          changelink: { maxCampaigns: 0 },
+          adscenter: { maxCampaigns: 0 },
           api: { rateLimit: 30 }
         },
         extraTokenOptions: [
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
           'batchopen_silent',
           'batchopen_platinum',    // 白金版本（预留）
           'siterank_pro',
-          'changelink_basic'
+          'adscenter_basic'
         ],
         metadata: {
           category: 'pro',
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         limits: {
           siterank: { batchLimit: 500 },
           batchopen: { versions: ['basic', 'silent', 'platinum'] },
-          changelink: { maxCampaigns: 10, maxAccounts: 10 },
+          adscenter: { maxCampaigns: 10, maxAccounts: 10 },
           api: { rateLimit: 100 }
         },
         extraTokenOptions: [
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
           'batchopen_silent',
           'batchopen_platinum',
           'siterank_max',
-          'changelink_pro',
+          'adscenter_pro',
           'api_advanced',
           'priority_support'
         ],
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
         limits: {
           siterank: { batchLimit: 9999 },
           batchopen: { versions: ['basic', 'silent', 'platinum'] },
-          changelink: { maxCampaigns: 100, maxAccounts: 100 },
+          adscenter: { maxCampaigns: 100, maxAccounts: 100 },
           api: { rateLimit: 500 }
         },
         extraTokenOptions: [

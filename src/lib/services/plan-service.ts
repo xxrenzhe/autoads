@@ -17,7 +17,7 @@ export interface CreatePlanData {
   features: {
     siterank: boolean
     batchopen: boolean
-    changelink: boolean
+    adscenter: boolean
     analytics: boolean
     support: 'none' | 'email' | 'priority'
   }
@@ -37,7 +37,7 @@ export interface UpdatePlanData {
   features?: {
     siterank: boolean
     batchopen: boolean
-    changelink: boolean
+    adscenter: boolean
     analytics: boolean
     support: 'none' | 'email' | 'priority'
   }
@@ -381,7 +381,7 @@ export class PlanService {
           features: {
             siterank: true,
             batchopen: false,
-            changelink: false,
+            adscenter: false,
             analytics: false,
             support: 'none'
           },
@@ -399,7 +399,7 @@ export class PlanService {
           features: {
             siterank: true,
             batchopen: true,
-            changelink: true,
+            adscenter: true,
             analytics: true,
             support: 'email'
           },
@@ -417,7 +417,7 @@ export class PlanService {
           features: {
             siterank: true,
             batchopen: true,
-            changelink: true,
+            adscenter: true,
             analytics: true,
             support: 'priority'
           },

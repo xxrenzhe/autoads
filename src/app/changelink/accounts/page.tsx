@@ -26,7 +26,7 @@ import { CONFIG } from '../config/production';
 import { createClientLogger } from "@/lib/utils/security/client-secure-logger";
 import { EnhancedError } from '@/lib/utils/error-handling';
 
-const logger = createClientLogger('changelink-accounts');
+const logger = createClientLogger('adscenter-accounts');
 
 interface GoogleAdsAccount {
   id: string;

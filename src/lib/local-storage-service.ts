@@ -23,7 +23,7 @@ export interface StorageOptions {
 export class LocalStorageService {
   private namespace: string;
 
-  constructor(namespace: string = 'changelink') {
+  constructor(namespace: string = 'adscenter') {
     this.namespace = namespace;
   }
 

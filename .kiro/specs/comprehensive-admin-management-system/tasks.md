@@ -6,7 +6,7 @@ This implementation plan focuses on completing the remaining 20% of the admin ma
 
 ## Core Principle: Preserve Existing Functionality
 
-**Critical Requirement**: Before any implementation, verify that batchopen, siterank, and changelink core functions remain fully operational.
+**Critical Requirement**: Before any implementation, verify that batchopen, siterank, and adscenter core functions remain fully operational.
 
 ## Implementation Tasks
 
@@ -14,7 +14,7 @@ This implementation plan focuses on completing the remaining 20% of the admin ma
 
 - [x] 1. Enhance Token Configuration Interface
   - Create enhanced token configuration UI in existing admin panel
-  - Add real-time token cost editing for siterank (1 token), batchopen (1 token), changelink (2 tokens)
+  - Add real-time token cost editing for siterank (1 token), batchopen (1 token), adscenter (2 tokens)
   - Implement hot-reload for token configuration changes
   - Add token usage analytics dashboard
   - _Requirements: 8.1, 8.2, 8.3_
@@ -120,7 +120,7 @@ This implementation plan focuses on completing the remaining 20% of the admin ma
 ## Implementation Guidelines
 
 ### 1. Preserve Core Functionality
-- **Before each task**: Run tests for batchopen, siterank, changelink
+- **Before each task**: Run tests for batchopen, siterank, adscenter
 - **During implementation**: Use feature flags to isolate new functionality
 - **After each task**: Verify core functions still work correctly
 
@@ -180,7 +180,7 @@ This implementation plan focuses on completing the remaining 20% of the admin ma
 - [ ] Comprehensive documentation available
 
 ### Non-Functional Requirements
-- [ ] Core functions (batchopen, siterank, changelink) unaffected
+- [ ] Core functions (batchopen, siterank, adscenter) unaffected
 - [ ] Admin interface responsive and user-friendly
 - [ ] System performance maintained or improved
 - [ ] Security standards maintained

@@ -30,7 +30,7 @@ export interface UserPreferences {
   dashboard: {
     layout: 'grid' | 'list';
     density: 'compact' | 'comfortable' | 'spacious';
-    defaultModule: 'siterank' | 'batchopen' | 'changelink' | 'dashboard';
+    defaultModule: 'siterank' | 'batchopen' | 'adscenter' | 'dashboard';
   };
   privacy: {
     profileVisibility: 'public' | 'private';

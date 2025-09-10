@@ -81,7 +81,7 @@ interface TokenConfig {
     batchMultiplier: number;
     description?: string;
   };
-  changelink: {
+  adscenter: {
     costPerLinkChange: number;
     batchMultiplier: number;
     description?: string;

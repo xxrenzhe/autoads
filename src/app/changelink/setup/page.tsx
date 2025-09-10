@@ -306,7 +306,7 @@ export default function SetupPage() {
   // 加载保存的进度
   const loadSavedProgress = async () => {
     try {
-      const response = await fetch('/api/changelink/setup/progress?action=load', {
+      const response = await fetch('/api/adscenter/setup/progress?action=load', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -332,7 +332,7 @@ export default function SetupPage() {
     
     autoSaveTimeoutRef.current = setTimeout(async () => {
       try {
-        const response = await fetch('/api/changelink/setup/progress', {
+        const response = await fetch('/api/adscenter/setup/progress', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -393,7 +393,7 @@ export default function SetupPage() {
   const manualSave = useCallback(async () => {
     setAutoSaveStatus('saving');
     try {
-      const response = await fetch('/api/changelink/setup/progress', {
+      const response = await fetch('/api/adscenter/setup/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -440,7 +440,7 @@ export default function SetupPage() {
     setLoading(true);
     try {
       // 加载Google Ads账号
-      const googleAdsResponse = await fetch('/api/changelink/settings?type=google-ads-accounts');
+      const googleAdsResponse = await fetch('/api/adscenter/settings?type=google-ads-accounts');
       if (googleAdsResponse.ok) {
         const result = await googleAdsResponse.json();
         if (result.success) {
@@ -449,7 +449,7 @@ export default function SetupPage() {
       }
 
       // 加载广告联盟链接
-      const affiliateResponse = await fetch('/api/changelink/settings?type=affiliate-links');
+      const affiliateResponse = await fetch('/api/adscenter/settings?type=affiliate-links');
       if (affiliateResponse.ok) {
         const result = await affiliateResponse.json();
         if (result.success) {
@@ -458,7 +458,7 @@ export default function SetupPage() {
       }
 
       // 加载AdsPower环境
-      const adsPowerResponse = await fetch('/api/changelink/settings?type=adspower-environments');
+      const adsPowerResponse = await fetch('/api/adscenter/settings?type=adspower-environments');
       if (adsPowerResponse.ok) {
         const result = await adsPowerResponse.json();
         if (result.success) {
@@ -467,7 +467,7 @@ export default function SetupPage() {
       }
 
       // 加载配置
-      const configurationsResponse = await fetch('/api/changelink/settings?type=configurations');
+      const configurationsResponse = await fetch('/api/adscenter/settings?type=configurations');
       if (configurationsResponse.ok) {
         const result = await configurationsResponse.json();
         if (result.success) {
@@ -490,7 +490,7 @@ export default function SetupPage() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -530,7 +530,7 @@ export default function SetupPage() {
   const testGoogleAdsConnection = async (accountId: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -566,7 +566,7 @@ export default function SetupPage() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -603,7 +603,7 @@ export default function SetupPage() {
   const testAffiliateLink = async (linkId: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -639,7 +639,7 @@ export default function SetupPage() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -676,7 +676,7 @@ export default function SetupPage() {
   const testAdsPowerConnection = async (envId: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -712,7 +712,7 @@ export default function SetupPage() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -758,7 +758,7 @@ export default function SetupPage() {
   const runSystemVerification = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -790,7 +790,7 @@ export default function SetupPage() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/changelink/execution', {
+      const response = await fetch('/api/adscenter/execution', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -858,7 +858,7 @@ export default function SetupPage() {
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href="/changelink/setup/configinfo"
+              href="/adscenter/setup/configinfo"
               target="_blank"
               className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
             >

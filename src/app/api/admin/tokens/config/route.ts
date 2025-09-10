@@ -18,7 +18,7 @@ const TokenConfigSchema = z.object({
     batchMultiplier: z.number().min(0).max(1),
     description: z.string().optional()
   }),
-  changelink: z.object({
+  adscenter: z.object({
     costPerLinkChange: z.number().min(0),
     batchMultiplier: z.number().min(0).max(1),
     description: z.string().optional()
@@ -63,7 +63,7 @@ async function handleGET(request: NextRequest, { user }: any) {
       batchMultiplier: parseFloat(config.find(c => c.key === 'TOKEN_BATCH_MULTIPLIER_BATCHOPEN')?.value || '0.8'),
       description: 'Batch URL opening - cost per URL'
     },
-    changelink: {
+    adscenter: {
       costPerLinkChange: parseFloat(config.find(c => c.key === 'TOKEN_COST_CHANGELINK')?.value || '2'),
       batchMultiplier: parseFloat(config.find(c => c.key === 'TOKEN_BATCH_MULTIPLIER_CHANGELINK')?.value || '0.8'),
       description: 'Google Ads link changes - cost per link change'
@@ -85,7 +85,7 @@ async function handlePUT(request: NextRequest, { validatedData, user }: any) {
     )
   }
 
-  const { siterank, batchopen, changelink, reason } = validatedData.body
+  const { siterank, batchopen, adscenter, reason } = validatedData.body
 
   // Get current configuration for logging
   const currentConfig = await prisma.environmentVariable.findMany({
@@ -112,7 +112,7 @@ async function handlePUT(request: NextRequest, { validatedData, user }: any) {
       costPerUrl: parseFloat(currentConfig.find(c => c.key === 'TOKEN_COST_BATCHOPEN')?.value || '1'),
       batchMultiplier: parseFloat(currentConfig.find(c => c.key === 'TOKEN_BATCH_MULTIPLIER_BATCHOPEN')?.value || '0.8'),
     },
-    changelink: {
+    adscenter: {
       costPerLinkChange: parseFloat(currentConfig.find(c => c.key === 'TOKEN_COST_CHANGELINK')?.value || '2'),
       batchMultiplier: parseFloat(currentConfig.find(c => c.key === 'TOKEN_BATCH_MULTIPLIER_CHANGELINK')?.value || '0.8'),
     }
@@ -122,10 +122,10 @@ async function handlePUT(request: NextRequest, { validatedData, user }: any) {
   const updates = [
     { key: 'TOKEN_COST_SITERANK', value: siterank.costPerDomain.toString() },
     { key: 'TOKEN_COST_BATCHOPEN', value: batchopen.costPerUrl.toString() },
-    { key: 'TOKEN_COST_CHANGELINK', value: changelink.costPerLinkChange.toString() },
+    { key: 'TOKEN_COST_CHANGELINK', value: adscenter.costPerLinkChange.toString() },
     { key: 'TOKEN_BATCH_MULTIPLIER_SITERANK', value: siterank.batchMultiplier.toString() },
     { key: 'TOKEN_BATCH_MULTIPLIER_BATCHOPEN', value: batchopen.batchMultiplier.toString() },
-    { key: 'TOKEN_BATCH_MULTIPLIER_CHANGELINK', value: changelink.batchMultiplier.toString() }
+    { key: 'TOKEN_BATCH_MULTIPLIER_CHANGELINK', value: adscenter.batchMultiplier.toString() }
   ]
 
   // Use transaction to update all values atomically
@@ -150,8 +150,8 @@ async function handlePUT(request: NextRequest, { validatedData, user }: any) {
     await tx.config_change_history.create({
       data: {
         configKey: 'token-config',
-        oldValue: JSON.stringify({ siterank: oldConfig.siterank, batchopen: oldConfig.batchopen, changelink: oldConfig.changelink }),
-        newValue: JSON.stringify({ siterank, batchopen, changelink }),
+        oldValue: JSON.stringify({ siterank: oldConfig.siterank, batchopen: oldConfig.batchopen, adscenter: oldConfig.adscenter }),
+        newValue: JSON.stringify({ siterank, batchopen, adscenter }),
         changedBy: user.id,
         reason: 'Token configuration updated'
       }
@@ -170,10 +170,10 @@ async function handlePUT(request: NextRequest, { validatedData, user }: any) {
       batchMultiplier: batchopen.batchMultiplier,
       description: batchopen.description || 'Batch URL opening - cost per URL'
     },
-    changelink: {
-      costPerLinkChange: changelink.costPerLinkChange,
-      batchMultiplier: changelink.batchMultiplier,
-      description: changelink.description || 'Google Ads link changes - cost per link change'
+    adscenter: {
+      costPerLinkChange: adscenter.costPerLinkChange,
+      batchMultiplier: adscenter.batchMultiplier,
+      description: adscenter.description || 'Google Ads link changes - cost per link change'
     }
   }
 
@@ -211,7 +211,7 @@ export const PUT = createSecureHandler({
     body: [
       { field: 'siterank', type: 'object', required: true },
       { field: 'batchopen', type: 'object', required: true },
-      { field: 'changelink', type: 'object', required: true },
+      { field: 'adscenter', type: 'object', required: true },
       { field: 'reason', type: 'string', required: false }
     ]
   },

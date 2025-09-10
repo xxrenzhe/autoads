@@ -1,6 +1,6 @@
-# ChangeLink 系统配置文档
+# AdsCenter 系统配置文档
 
-本文档详细说明了 ChangeLink 系统设置页面中每个配置参数的含义、获取方式和使用注意事项。
+本文档详细说明了 AdsCenter 系统设置页面中每个配置参数的含义、获取方式和使用注意事项。
 
 ## 目录
 1. [Google Ads 账号配置](#google-ads-账号配置)

@@ -27,7 +27,7 @@
 
 1. WHEN 用户执行批量SiteRank查询 THEN 系统应创建一条包含所有域名的合并记录
 2. WHEN 用户执行批量BatchOpen操作 THEN 系统应创建一条包含所有URL的合并记录
-3. WHEN 用户执行批量ChangeLink操作 THEN 系统应创建一条包含所有链接的合并记录
+3. WHEN 用户执行批量AdsCenter操作 THEN 系统应创建一条包含所有链接的合并记录
 4. WHEN 显示批量记录 THEN 系统应显示格式："批量[功能名] - [数量]个操作，消耗[总数]个Token"
 5. WHEN 用户点击批量记录详情 THEN 系统应显示具体的操作列表和每个操作的详情
 
@@ -52,7 +52,7 @@
 
 1. WHEN 系统初始化 THEN 应设置SiteRank查询每个域名消耗1个Token
 2. WHEN 系统初始化 THEN 应设置BatchOpen访问每个URL消耗1个Token  
-3. WHEN 系统初始化 THEN 应设置ChangeLink更换每个链接消耗2个Token
+3. WHEN 系统初始化 THEN 应设置AdsCenter更换每个链接消耗2个Token
 4. WHEN 添加新功能 THEN 管理员应能够为新功能配置Token消耗规则
 5. WHEN 功能被禁用 THEN 对应的Token配置应能够被停用但保留历史记录
 

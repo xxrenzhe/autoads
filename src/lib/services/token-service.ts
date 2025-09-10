@@ -665,7 +665,7 @@ export class TokenService {
         return {
           siterank: { domain_analysis: 1 },
           batchopen: { url_access: 1 },
-          changelink: { link_replace: 2 }
+          adscenter: { link_replace: 2 }
         }
       }
 
@@ -676,7 +676,7 @@ export class TokenService {
       return {
         siterank: { domain_analysis: 1 },
         batchopen: { url_access: 1 },
-        changelink: { link_replace: 2 }
+        adscenter: { link_replace: 2 }
       }
     }
   }
@@ -697,7 +697,7 @@ export class TokenService {
     return {
       siterank: 1,
       batchopen: 2,
-      changelink: 1,
+      adscenter: 1,
       analytics: 1,
       monitoring: 1,
       backup: 5,

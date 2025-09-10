@@ -16,7 +16,7 @@ interface MonitorMetrics {
   featureStats: {
     siterank: { requests: number; tokens: number; };
     batchopen: { requests: number; tokens: number; };
-    changelink: { requests: number; tokens: number; };
+    adscenter: { requests: number; tokens: number; };
   };
   
   // 按状态码统计
@@ -35,7 +35,7 @@ export class SimpleMonitor {
     featureStats: {
       siterank: { requests: 0, tokens: 0 },
       batchopen: { requests: 0, tokens: 0 },
-      changelink: { requests: 0, tokens: 0 }
+      adscenter: { requests: 0, tokens: 0 }
     },
     statusCodes: {},
     lastUpdated: new Date()
@@ -51,7 +51,7 @@ export class SimpleMonitor {
     response: NextResponse,
     responseTime: number,
     userId?: string,
-    feature?: 'siterank' | 'batchopen' | 'changelink',
+    feature?: 'siterank' | 'batchopen' | 'adscenter',
     tokensUsed?: number
   ): void {
     const url = new URL(request.url);
@@ -125,7 +125,7 @@ export class SimpleMonitor {
   recordTokenConsumption(
     userId: string,
     amount: number,
-    feature: 'siterank' | 'batchopen' | 'changelink',
+    feature: 'siterank' | 'batchopen' | 'adscenter',
     endpoint: string
   ): void {
     this.metrics.featureStats[feature].tokens += amount;
@@ -168,7 +168,7 @@ export class SimpleMonitor {
       featureStats: {
         siterank: { requests: 0, tokens: 0 },
         batchopen: { requests: 0, tokens: 0 },
-        changelink: { requests: 0, tokens: 0 }
+        adscenter: { requests: 0, tokens: 0 }
       },
       statusCodes: {},
       lastUpdated: new Date()
@@ -184,7 +184,7 @@ export const simpleMonitor = new SimpleMonitor();
 export function withSimpleMonitoring(
   handler: (req: NextRequest, userId?: string) => Promise<NextResponse>,
   options: {
-    feature?: 'siterank' | 'batchopen' | 'changelink';
+    feature?: 'siterank' | 'batchopen' | 'adscenter';
     extractTokens?: (response: NextResponse) => number;
   } = {}
 ) {

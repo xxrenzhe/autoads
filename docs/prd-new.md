@@ -2,7 +2,7 @@
 
 ## 文档信息
 - **项目名称**: AutoAds 多用户 SaaS 系统
-- **版本**: v29.2
+- **版本**: v32.0
 - **创建日期**: 2025-01-09
 - **最后更新**: 2025-09-12
 - **负责人**: 产品团队
@@ -46,19 +46,21 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 ### 1.2 实际架构状态
 
 #### 当前实现状态
-- [x] 已完成多用户支持（Next.js + Prisma）
+- [x] 已完成多用户支持（Next.js + MySQL）
+- [x] 已实现基础认证系统（Google OAuth + 管理员密码）
+- [x] 已实现BatchOpen功能（三种模式）
+- [x] 已集成SiteRank SimilarWeb API
 - [ ] 未使用Go语言后端（仍使用Next.js API Routes）
-- [ ] 未集成GoFly框架（管理功能需要在GoFly Admin中实现）
-- [x] 已实现基础性能优化（并发处理基于Next.js）
+- [ ] 未集成GoFly框架（计划重构为GoFly架构）
 
 #### 当前架构
-基于Next.js的全栈应用，通过用户ID实现数据隔离，前端使用React组件，后端使用API Routes，数据库为MySQL。管理功能需要迁移至GoFly Admin实现。
+基于Next.js的全栈应用，通过用户ID实现数据隔离，前端使用React组件，后端使用API Routes，数据库为MySQL。计划重构为GoFly单体应用+模块化设计架构。
 
 #### 功能实现状态
 - [x] 用户认证系统（Google OAuth + 管理员密码）
 - [x] Token订阅系统（完整实现）
 - [x] BatchOpen功能（三种模式完整实现）
-- [ ] SiteRank功能（仅UI，使用模拟数据）
+- [x] SiteRank功能（已集成SimilarWeb API）
 - [ ] ChangeLink功能（仅UI，无后端）
 
 ### 1.3 目标和背景
@@ -108,8 +110,8 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 - **FR1.5**: 登录状态保持和自动续期
 
 #### FR2: 管理员系统
-- **FR2.1**: 初始化管理员账号（用户名: admin，密码可配置）
-- **FR2.2**: 管理员通过账号密码登录后台管理系统
+- **FR2.1**: 初始化管理员账号（用户名: admin，密码可配置），不提供注册功能
+- **FR2.2**: 管理员通过账号密码登录GoFly Admin后台管理系统
 - **FR2.3**: 管理员可管理所有用户账号
 - **FR2.4**: 管理员可查看系统运行状态和日志
 - **FR2.5**: 管理员可配置系统参数和权限
@@ -452,12 +454,12 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
 ### 3.1 整体架构
 
 #### 3.1.1 架构模式
-采用**全新架构实现**，无需迁移或共存：
+采用**Go单体应用+模块化设计**，全新架构实现：
 - **前端层**: Next.js 14 + TypeScript（保持现有前端）
-- **后端层**: GoFly Admin V3 框架作为主后端服务
+- **后端层**: GoFly Admin V3 框架作为唯一后端服务
 - **数据层**: 全新 MySQL 数据库（使用 MustKnow.md 配置）
 - **缓存层**: Redis（缓存和会话存储）
-- **ORM层**: GoFly gform + Prisma（混合使用）
+- **ORM层**: 统一使用 GoFly gform
 
 **重要说明**：
 1. **无需数据库迁移**：直接使用新数据库，避免迁移风险
@@ -637,13 +639,15 @@ modules:
 #### 3.3.1 数据库配置
 - **MySQL 8.0**: 使用环境变量DATABASE_URL连接（全新部署，无需数据迁移）
 - **Redis 7.0**: 用于缓存和会话存储
-- **ORM**: Prisma（类型安全的数据库访问）
+- **ORM**: GoFly gform（GoFly自研ORM，类型安全的数据库访问）
 - **配置详情**: 详见 [docs/MustKnow.md](../MustKnow.md) 中的环境变量配置
+- **新增环境变量**: 
+  - SIMILARWEB_API_URL: SimilarWeb API地址，默认值 https://data.similarweb.com/api/v1/data
 
 #### 3.3.2 实际数据隔离方案
 采用**用户ID字段**方案，所有业务表包含 user_id 字段：
 ```sql
--- 用户表（基于现有Prisma schema）
+-- 用户表
 CREATE TABLE users (
     id VARCHAR(191) PRIMARY KEY, -- CUID
     email VARCHAR(191) UNIQUE NOT NULL,
@@ -681,7 +685,7 @@ CREATE TABLE subscriptions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 套餐表（基于实际Prisma schema）
+-- 套餐表
 CREATE TABLE plans (
     id VARCHAR(191) PRIMARY KEY, -- CUID
     name VARCHAR(191) NOT NULL,
@@ -719,7 +723,7 @@ CREATE TABLE user_subscription (
     INDEX idx_status (status)
 );
 
--- Token交易表（基于实际Prisma schema）
+-- Token交易表
 CREATE TABLE token_transactions (
     id VARCHAR(191) PRIMARY KEY, -- CUID
     user_id VARCHAR(191) NOT NULL,
@@ -749,7 +753,7 @@ CREATE TABLE token_usage (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 邀请表（基于实际Prisma schema）
+-- 邀请表
 CREATE TABLE invitations (
     id VARCHAR(191) PRIMARY KEY, -- CUID
     inviter_id VARCHAR(191) NOT NULL,
@@ -764,7 +768,7 @@ CREATE TABLE invitations (
     expires_at TIMESTAMP
 );
 
--- 签到表（基于实际Prisma schema）
+-- 签到表
 CREATE TABLE check_ins (
     id VARCHAR(191) PRIMARY KEY, -- CUID
     user_id VARCHAR(191) NOT NULL,
@@ -964,7 +968,6 @@ groups:
 **通知渠道**:
 - 飞书Webhook: 实时告警通知
 - 邮件通知: 每日/周报
-- 短信告警: P0级故障
 
 #### 3.3.7 业务表结构示例
 ```sql
@@ -1299,26 +1302,19 @@ ws://localhost:8200/ws/notifications
 
 #### 3.5.1 认证授权流程
 ```go
-// 用户 JWT Token 结构
-type UserClaims struct {
-    UserID   int64  `json:"user_id"`
-    Username string `json:"username"`
-    PlanID   int    `json:"plan_id"`
-    Exp      int64  `json:"exp"`
+// 统一 JWT Token 结构
+type Claims struct {
+    ID       int64  `json:"id"`          // 用户ID或管理员ID
+    Username string `json:"username"`    // 用户名
+    Role     string `json:"role"`        // USER或ADMIN
+    Type     string `json:"type"`        // account类型：business或admin
+    Plan     string `json:"plan"`        // 用户套餐（仅用户需要）
+    Exp      int64  `json:"exp"`         // 过期时间
     jwt.StandardClaims
 }
 
-// 管理员 JWT Token 结构
-type AdminClaims struct {
-    AdminID  int64  `json:"admin_id"`
-    Username string `json:"username"`
-    RoleID   int64  `json:"role_id"`
-    Exp      int64  `json:"exp"`
-    jwt.StandardClaims
-}
-
-// 用户认证中间件
-func UserAuthMiddleware() gin.HandlerFunc {
+// 统一认证中间件
+func AuthMiddleware() gin.HandlerFunc {
     return func(c *gin.Context) {
         token := c.GetHeader("Authorization")
         if token == "" {
@@ -1327,69 +1323,75 @@ func UserAuthMiddleware() gin.HandlerFunc {
             return
         }
         
-        // 验证 Token 并提取用户信息
-        claims, err := ValidateUserToken(token)
+        // 验证 Token 并提取信息
+        claims, err := ValidateToken(token)
         if err != nil {
             c.JSON(401, gin.H{"code": 401, "message": "Token无效"})
             c.Abort()
             return
         }
         
-        // 检查用户状态和套餐权限
-        user, err := GetUserByID(claims.UserID)
-        if err != nil || user.Status != 1 {
-            c.JSON(403, gin.H{"code": 403, "message": "用户已被禁用"})
-            c.Abort()
-            return
+        // 根据账号类型验证
+        if claims.Type == "business" {
+            // 验证用户状态
+            user, err := GetUserByID(claims.ID)
+            if err != nil || user.Status != "ACTIVE" {
+                c.JSON(403, gin.H{"code": 403, "message": "用户已被禁用"})
+                c.Abort()
+                return
+            }
+            c.Set("user_id", claims.ID)
+            c.Set("plan", claims.Plan)
+        } else if claims.Type == "admin" {
+            // 验证管理员状态
+            admin, err := GetAdminByID(claims.ID)
+            if err != nil || admin.Status != 1 {
+                c.JSON(403, gin.H{"code": 403, "message": "管理员已被禁用"})
+                c.Abort()
+                return
+            }
+            c.Set("admin_id", claims.ID)
         }
         
-        // 设置上下文
-        c.Set("user_id", claims.UserID)
-        c.Set("plan_id", claims.PlanID)
+        // 设置通用上下文
+        c.Set("role", claims.Role)
+        c.Set("username", claims.Username)
         c.Next()
     }
 }
 
-// 管理员认证中间件
-func AdminAuthMiddleware() gin.HandlerFunc {
+// 角色权限中间件
+func RoleMiddleware(roles ...string) gin.HandlerFunc {
     return func(c *gin.Context) {
-        token := c.GetHeader("Authorization")
-        if token == "" {
-            c.JSON(401, gin.H{"code": 401, "message": "未授权"})
-            c.Abort()
-            return
+        role := c.GetString("role")
+        for _, r := range roles {
+            if role == r {
+                c.Next()
+                return
+            }
         }
-        
-        claims, err := ValidateAdminToken(token)
-        if err != nil {
-            c.JSON(401, gin.H{"code": 401, "message": "Token无效"})
-            c.Abort()
-            return
-        }
-        
-        c.Set("admin_id", claims.AdminID)
-        c.Set("role_id", claims.RoleID)
-        c.Next()
+        c.JSON(403, gin.H{"code": 403, "message": "权限不足"})
+        c.Abort()
     }
 }
 
 // 功能权限检查中间件（以 BatchGo 为例）
 func BatchGoPermissionMiddleware(mode string) gin.HandlerFunc {
     return func(c *gin.Context) {
-        planID := c.GetInt("plan_id")
+        plan := c.GetString("plan")
         
         // 检查套餐权限
         switch mode {
         case "basic":
             // 所有套餐都支持
         case "silent":
-            if planID < 2 { // Pro套餐
+            if plan != "PRO" && plan != "MAX" { // Pro套餐
                 c.JSON(403, gin.H{"code": 403, "message": "需要Pro套餐才能使用Silent模式"})
                 c.Abort()
                 return
             }
         case "automated":
-            if planID < 3 { // Max套餐
+            if plan != "MAX" { // Max套餐
                 c.JSON(403, gin.H{"code": 403, "message": "需要Max套餐才能使用Automated模式"})
                 c.Abort()
                 return
@@ -2886,52 +2888,25 @@ func AuthMiddleware(permissions ...string) gin.HandlerFunc {
 - **认证**: JWT + Redis Session
 - **部署**: Docker + 单一Go二进制文件
 
-### 6.5 GoFly管理系统与业务逻辑集成缺失分析
+### 6.5 GoFly管理系统与业务逻辑集成方案
 
-#### 6.5.1 关键缺失部分识别
+#### 6.5.1 集成架构总结
 
-经过全面审查，发现以下关键集成缺失：
+基于前期分析和设计，现已完成GoFly管理系统与业务逻辑的集成方案设计：
 
-**1. 管理后台架构不明确**
-- **现状描述模糊**: PRD中提到"管理功能需要迁移至GoFly Admin实现"，但未详细说明迁移方案
-- **权限边界不清**: 未明确定义用户前端和管理后台的功能边界
-- **API集成方案缺失**: Next.js前端如何调用GoFly后端API的详细设计未定义
+**已完成的设计方案**
+1. **统一后端架构**: 采用GoFly作为唯一后端服务，Next.js仅作为用户界面
+2. **认证系统**: 
+   - 普通用户：支持邮箱注册登录和Google OAuth登录（网站前端）
+   - 管理员：仅支持账号密码登录（GoFly Admin后台），不提供注册功能
+3. **API网关设计**: 统一的路由分发和认证中间件
+4. **管理界面集成**: 所有管理功能在GoFly Admin中实现
 
-**2. 双入口认证流程设计缺失**
-- **用户端认证未设计**: Next.js前端的用户认证流程（Google OAuth）
-- **管理员认证未设计**: GoFly Admin的管理员认证流程（用户名密码）
-- **统一认证系统缺失**: JWT + Redis Session的详细实现方案
-
-**3. 业务模块管理界面详细设计缺失**
-- **BatchGo管理界面**:
-  - 任务监控面板设计缺失
-  - 代理池管理界面未详细设计
-  - 执行日志查看功能未定义
-  - 性能指标展示缺失
-  
-- **SiteRankGo管理界面**:
-  - 查询队列管理界面缺失
-  - 缓存状态监控未设计
-  - API调用统计面板缺失
-  - 数据导出管理功能未定义
-  
-- **AdsCenterGo管理界面**:
-  - Google Ads账户连接管理流程未详细设计
-  - 自动化规则配置界面缺失
-  - 执行历史追溯功能未定义
-  - 错误告警配置未设计
-
-**4. 实时数据推送机制设计不完整**
-- **WebSocket连接管理**: 连接建立、保持、重连机制未详细设计
-- **事件订阅权限控制**: 不同用户能订阅哪些事件未定义
-- **消息推送限流**: 防止消息风暴的机制缺失
-- **离线消息处理**: 用户离线期间的missed events处理方案缺失
-
-**5. API网关详细设计缺失**
-- **路由规则未细化**: 具体的URL映射规则未详细定义
-- **负载均衡策略**: 多实例部署时的负载分配未设计
-- **熔断降级机制**: 服务不可用时的处理策略缺失
-- **API版本管理**: 多版本API共存的管理方案未定义
+**核心集成要点**
+- Next.js前端通过API调用GoFly后端服务
+- GoFly Admin提供内置的管理界面
+- 统一的数据库访问层
+- 共享的缓存和会话管理
 
 #### 6.5.2 GoFly Admin管理后台架构设计
 
@@ -3009,10 +2984,10 @@ func AuthMiddleware(permissions ...string) gin.HandlerFunc {
 
 **管理员认证（GoFly Admin后台）**
 ```
-1. 访问管理后台登录页面 (/admin/login)
+1. 访问GoFly Admin管理后台登录页面
 2. 输入管理员账号和密码
-   - 管理员账号由系统预设或现有管理员创建
-   - 不提供公开注册功能
+   - 管理员账号由系统预设（admin）或现有管理员创建
+   - 不提供任何注册功能，只能由其他管理员创建新账号
    - 账号信息存储在admin_account表
 3. GoFly Admin内置认证系统验证
 4. 登录成功后进入管理后台界面
@@ -3020,23 +2995,24 @@ func AuthMiddleware(permissions ...string) gin.HandlerFunc {
 ```
 
 **关键设计要点**
-- **完全隔离的认证系统**：
-  • 普通用户：邮箱注册/Google OAuth（网站前端）
-  • 管理员：账号密码登录（GoFly Admin后台）
-- **独立数据存储**：
-  • 普通用户：business_account表
+- **统一的JWT认证机制**：
+  • 用户和管理员都使用JWT Token进行身份验证
+  • Token中包含role字段区分用户类型（USER/ADMIN）
+  • 统一的Redis Session管理
+- **独立的数据存储**：
+  • 普通用户：users表
   • 管理员：admin_account表
-- **不同认证流程**：
-  • 用户支持注册和多种登录方式
-  • 管理员只有登录，无注册功能
+- **不同的认证流程**：
+  • 普通用户：支持邮箱注册和Google OAuth登录（网站页面）
+  • 管理员：仅支持账号密码登录（GoFly Admin后台），无注册功能
 - **完全独立的访问入口**：
-  • 用户访问：https://autoads.dev（网站前端）
-  • 管理员访问：https://autoads.dev/admin（独立登录页面）
+  • 普通用户：https://autoads.dev（网站页面）
+  • 管理员：https://autoads.dev/admin（GoFly Admin后台登录页面）
 - **安全隔离**：管理功能与用户功能完全独立
 
 **认证集成实现**
 
-**双认证系统实现**
+**统一JWT认证系统实现**
 
 **用户认证实现（网站前端API）**
 ```go
@@ -4918,6 +4894,7 @@ GoFly V3框架提供以下核心能力：
   
   - API配置
     * SimilarWeb API密钥管理
+    * SimilarWeb API URL配置（环境变量：SIMILARWEB_API_URL，默认值：https://data.similarweb.com/api/v1/data）
     * 请求频率限制
     * 错误重试策略
 ```
@@ -5151,6 +5128,7 @@ GoFly后端 → WebSocket → 前端组件
 | v30.0 | 2025-09-12 | 全面补充GoFly管理系统集成缺失：新增双管理后台架构设计、统一认证SSO、业务模块管理界面详细设计、实时数据推送增强、API网关详细设计、数据一致性管理、监控告警集成、部署运维增强，更新实施时间表为29周 | 产品团队 |
 | v30.1 | 2025-09-12 | 架构优化：移除不必要的双管理后台设计，简化为单一管理后台架构，明确所有管理功能在GoFly Admin中实现，Next.js仅作为用户前端，大幅降低系统复杂度和维护成本 | 产品团队 |
 | v31.0 | 2025-09-12 | 架构评估与优化：确认符合"Go单体应用+模块化设计"要求，简化认证系统为统一JWT认证，明确ORM策略为统一使用GoFly gform，优化部署架构为单一Go应用 | 产品团队 |
+| v32.0 | 2025-09-12 | 文档一致性优化：修正前后不一致的描述，整合重复内容；明确登录功能（普通用户邮箱/Google OAuth，管理员账号密码无注册）；统一架构描述为Go单体应用+模块化设计；移除所有Prisma引用，统一使用GoFly gform | 产品团队 |
 
 ## 7. 架构优化总结
 
@@ -5218,7 +5196,7 @@ GoFly后端 → WebSocket → 前端组件
    - 实现统一认证系统
 
 2. **中优先级**
-   - 迁移业务模块到GoFly
+   - 使用GoFly重新实现业务模块
    - 实现RBAC权限体系
    - 开发管理后台界面
 

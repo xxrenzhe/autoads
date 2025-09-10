@@ -26,7 +26,7 @@ const billingPeriodChoices = [
 const featureChoices = [
   { id: 'siterank', name: '网站排名查询' },
   { id: 'batchopen', name: '批量打开URL' },
-  { id: 'changelink', name: '自动化广告' },
+  { id: 'adscenter', name: '自动化广告' },
   { id: 'api_access', name: 'API访问' },
   { id: 'priority_support', name: '优先支持' },
   { id: 'custom_domain', name: '自定义域名' },
@@ -82,7 +82,7 @@ const PlanFeaturesEdit: React.FC = () => {
       />
       
       <TextInput
-        source="limits.changelink.maxCampaigns"
+        source="limits.adscenter.maxCampaigns"
         label="ChangeLink最大活动数"
         type="number"
         defaultValue={0}

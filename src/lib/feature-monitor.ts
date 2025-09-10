@@ -4,7 +4,7 @@ import { withSimpleMonitoring } from './simple-monitor';
 
 // 为核心功能创建便捷的监控中间件
 export function withFeatureMonitoring(
-  feature: 'siterank' | 'batchopen' | 'changelink',
+  feature: 'siterank' | 'batchopen' | 'adscenter',
   handler: (req: NextRequest, userId?: string) => Promise<NextResponse>
 ) {
   return withSimpleMonitoring(handler, {
@@ -29,7 +29,7 @@ export function withFeatureMonitoring(
 export function recordTokenConsumption(
   userId: string,
   amount: number,
-  feature: 'siterank' | 'batchopen' | 'changelink',
+  feature: 'siterank' | 'batchopen' | 'adscenter',
   endpoint: string
 ) {
   simpleMonitor.recordTokenConsumption(userId, amount, feature, endpoint);

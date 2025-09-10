@@ -168,7 +168,7 @@ export class PermissionManager {
         // Core features
         { resource: 'siterank', action: 'use' },
         { resource: 'batchopen', action: 'use' },
-        { resource: 'changelink', action: 'use' },
+        { resource: 'adscenter', action: 'use' },
         
         // Own subscription
         { resource: 'subscription', action: 'read', conditions: [

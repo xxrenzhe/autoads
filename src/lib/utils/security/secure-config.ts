@@ -74,7 +74,7 @@ function loadConfigFromEnv(): SecureConfig {
     oauth: {
       clientId: getRequiredEnvVar('GOOGLE_ADS_CLIENT_ID'),
       clientSecret: getRequiredEnvVar('GOOGLE_ADS_CLIENT_SECRET'),
-      redirectUri: `${getRequiredEnvVar('NEXT_PUBLIC_BASE_URL')}/api/changelink/oauth/callback`,
+      redirectUri: `${getRequiredEnvVar('NEXT_PUBLIC_BASE_URL')}/api/adscenter/oauth/callback`,
       scopes: [
         'https://www.googleapis.com/auth/adwords',
         'https://www.googleapis.com/auth/userinfo.email'

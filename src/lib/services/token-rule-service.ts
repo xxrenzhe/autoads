@@ -33,7 +33,7 @@ export class TokenRuleService {
         'siterank-default': parseInt(process.env.SITERANK_TOKEN_COST || '1'),
         'batchopen-http': parseInt(process.env.BATCHOPEN_HTTP_TOKEN_COST || '1'),
         'batchopen-puppeteer': parseInt(process.env.BATCHOPEN_PUPPETEER_TOKEN_COST || '2'),
-        'changelink-default': parseInt(process.env.CHANGELINK_TOKEN_COST || '1'),
+        'adscenter-default': parseInt(process.env.CHANGELINK_TOKEN_COST || '1'),
       };
 
       // Set default rules in cache
@@ -123,7 +123,7 @@ export class TokenRuleService {
       'siterank-default': 'SITERANK_TOKEN_COST',
       'batchopen-http': 'BATCHOPEN_HTTP_TOKEN_COST',
       'batchopen-puppeteer': 'BATCHOPEN_PUPPETEER_TOKEN_COST',
-      'changelink-default': 'CHANGELINK_TOKEN_COST',
+      'adscenter-default': 'CHANGELINK_TOKEN_COST',
     };
 
     const envVar = envVarMap[ruleId];
@@ -258,7 +258,7 @@ export class TokenRuleService {
       { id: 'siterank-default', feature: 'siterank', method: 'default' },
       { id: 'batchopen-http', feature: 'batchopen', method: 'http' },
       { id: 'batchopen-puppeteer', feature: 'batchopen', method: 'puppeteer' },
-      { id: 'changelink-default', feature: 'changelink', method: 'default' },
+      { id: 'adscenter-default', feature: 'adscenter', method: 'default' },
     ];
 
     envRules.forEach(rule => {

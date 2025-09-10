@@ -17,7 +17,7 @@ export interface TenantConfig {
     features?: {
       siterank?: boolean;
       batchopen?: boolean;
-      changelink?: boolean;
+      adscenter?: boolean;
       analytics?: boolean;
     };
     limits?: {

@@ -9,7 +9,7 @@ export interface SubscriptionLimits {
   batchopen: {
     versions: string[];
   };
-  changelink: {
+  adscenter: {
     maxCampaigns: number;
   };
   api: {

@@ -91,7 +91,7 @@ export default function ConfigurationsPage() {
   const loadConfigurations = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/changelink/settings?type=configurations');
+      const response = await fetch('/api/adscenter/settings?type=configurations');
       const result = await response.json();
       
       if (result.success) {
@@ -106,7 +106,7 @@ export default function ConfigurationsPage() {
 
   const handleCreateConfiguration = async () => {
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -143,7 +143,7 @@ export default function ConfigurationsPage() {
     if (!selectedConfig) return;
 
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -182,7 +182,7 @@ export default function ConfigurationsPage() {
     if (!confirm('确定要删除这个配置吗？')) return;
 
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -207,7 +207,7 @@ export default function ConfigurationsPage() {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      const response = await fetch('/api/changelink/settings', {
+      const response = await fetch('/api/adscenter/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -233,7 +233,7 @@ export default function ConfigurationsPage() {
 
   const handleExecuteConfiguration = async (id: string) => {
     try {
-      const response = await fetch('/api/changelink/execute', {
+      const response = await fetch('/api/adscenter/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -560,7 +560,7 @@ export default function ConfigurationsPage() {
                   创建配置
                 </Button>
                 <Button 
-                  onClick={() => window.location.href = '/changelink/setup'} 
+                  onClick={() => window.location.href = '/adscenter/setup'} 
                   variant="outline"
                 >
                   <Settings className="h-4 w-4 mr-2" />

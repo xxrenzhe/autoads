@@ -182,8 +182,8 @@ export default function TestIntegrationPage() {
     const startTime = Date.now();
     try {
       const [configResponse, executeResponse] = await Promise.all([
-        fetch('/api/changelink/configurations'),
-        fetch('/api/changelink/execute', {
+        fetch('/api/adscenter/configurations'),
+        fetch('/api/adscenter/execute', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ configurationId: 'test-config' })
@@ -463,8 +463,8 @@ export default function TestIntegrationPage() {
                   链接变更自动化管理
                 </p>
                 <div className="mt-2 space-y-1">
-                  <Badge>GET /api/changelink/configurations</Badge>
-                  <Badge>POST /api/changelink/execute</Badge>
+                  <Badge>GET /api/adscenter/configurations</Badge>
+                  <Badge>POST /api/adscenter/execute</Badge>
                 </div>
               </CardContent>
             </Card>
