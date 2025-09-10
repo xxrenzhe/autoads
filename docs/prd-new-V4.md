@@ -1288,6 +1288,756 @@ func (tm *TokenManager) handleExpiredTokens() error {
 }
 ```
 
+#### 4.6.5 Token 消费规则配置和执行
+
+Token 消费规则系统用于定义不同功能模块的 Token 消费策略，支持按功能、用户套餐、访问模式等维度配置不同的消费规则。
+
+**规则配置结构**:
+```go
+// app/autoads/token/rule.go
+package token
+
+import (
+    "database/sql/driver"
+    "encoding/json"
+    "errors"
+    "fmt"
+)
+
+// 消费规则定义
+type ConsumptionRule struct {
+    ID          string                 `json:"id" gorm:"primaryKey"`
+    Name        string                 `json:"name" gorm:"not null;size:100"`
+    Feature     string                 `json:"feature" gorm:"not null;size:50"`
+    Description string                 `json:"description" gorm:"size:500"`
+    
+    // 适用条件
+    UserPlan    string                 `json:"userPlan" gorm:"size:20"`        // FREE/PRO/MAX/ALL
+    AccessMode  string                 `json:"accessMode" gorm:"size:20"`      // BASIC/SILENT/AUTOMATED/ALL
+    
+    // 消费配置
+    UnitType    ConsumptionUnitType    `json:"unitType" gorm:"not null;size:20"`
+    UnitPrice   int                    `json:"unitPrice" gorm:"not null"`     // 每个 unit 消耗的 Token 数
+    MinUnits    int                    `json:"minUnits" gorm:"default:1"`      // 最小消费单位数
+    MaxUnits    int                    `json:"maxUnits"`                       // 最大消费单位数
+    
+    // 高级配置
+    Conditions  json.RawMessage         `json:"conditions" gorm:"type:jsonb"`  // 动态条件
+    Discounts   json.RawMessage         `json:"discounts" gorm:"type:jsonb"`   // 折扣策略
+    
+    // 状态控制
+    Enabled     bool                   `json:"enabled" gorm:"default:true"`
+    Priority    int                    `json:"priority" gorm:"default:0"`      // 规则优先级
+    
+    // 时间控制
+    StartTime   *time.Time             `json:"startTime"`
+    EndTime     *time.Time             `json:"endTime"`
+    
+    CreatedAt   time.Time              `json:"createdAt"`
+    UpdatedAt   time.Time              `json:"updatedAt"`
+}
+
+// 消费单位类型
+type ConsumptionUnitType string
+
+const (
+    UnitPerRequest      ConsumptionUnitType = "PER_REQUEST"     // 每次请求
+    UnitPerURL          ConsumptionUnitType = "PER_URL"         // 每个 URL
+    UnitPerCycle        ConsumptionUnitType = "PER_CYCLE"       // 每个循环
+    UnitPerDomain       ConsumptionUnitType = "PER_DOMAIN"      // 每个域名
+    UnitPerAccount      ConsumptionUnitType = "PER_ACCOUNT"     // 每个账户
+    UnitFixed           ConsumptionUnitType = "FIXED"           // 固定费用
+)
+
+// 动态条件
+type RuleConditions struct {
+    TimeRange     *TimeRangeCondition     `json:"timeRange,omitempty"`
+    VolumeRange   *VolumeRangeCondition   `json:"volumeRange,omitempty"`
+    UserTier      *UserTierCondition      `json:"userTier,omitempty"`
+    CustomFields  map[string]interface{} `json:"customFields,omitempty"`
+}
+
+type TimeRangeCondition struct {
+    StartHour int `json:"startHour"`  // 开始小时（0-23）
+    EndHour   int `json:"endHour"`    // 结束小时（0-23）
+    Days      []int `json:"days"`     // 星期几（1-7，1=周一）
+}
+
+type VolumeRangeCondition struct {
+    MinVolume int `json:"minVolume"`   // 最小数量
+    MaxVolume int `json:"maxVolume"`   // 最大数量
+}
+
+type UserTierCondition struct {
+    Tiers []string `json:"tiers"`      // 用户层级（如：VIP, PREMIUM）
+}
+
+// 折扣策略
+type DiscountStrategy struct {
+    Type        DiscountType `json:"type"`
+    Threshold   int          `json:"threshold"`  // 阈值
+    Value       float64      `json:"value"`      // 折扣值
+    MaxDiscount int          `json:"maxDiscount"` // 最大折扣金额
+}
+
+type DiscountType string
+
+const (
+    DiscountPercentage DiscountType = "PERCENTAGE"  // 百分比折扣
+    DiscountFixed     DiscountType = "FIXED"        // 固定折扣
+    DiscountTiered    DiscountType = "TIERED"       // 阶梯折扣
+)
+
+// JSON 序列化支持
+func (c RuleConditions) Value() (driver.Value, error) {
+    return json.Marshal(c)
+}
+
+func (c *RuleConditions) Scan(value interface{}) error {
+    bytes, ok := value.([]byte)
+    if !ok {
+        return errors.New("type assertion to []byte failed")
+    }
+    return json.Unmarshal(bytes, c)
+}
+
+func (d DiscountStrategy) Value() (driver.Value, error) {
+    return json.Marshal(d)
+}
+
+func (d *DiscountStrategy) Scan(value interface{}) error {
+    bytes, ok := value.([]byte)
+    if !ok {
+        return errors.New("type assertion to []byte failed")
+    }
+    return json.Unmarshal(bytes, d)
+}
+```
+
+**规则引擎实现**:
+```go
+// app/autoads/token/engine.go
+package token
+
+import (
+    "context"
+    "sort"
+    "strings"
+    "time"
+)
+
+type RuleEngine struct {
+    rules      []*ConsumptionRule
+    cache      RuleCache
+    repository RuleRepository
+}
+
+type ConsumptionContext struct {
+    UserID      string
+    Feature     string
+    UserPlan    string
+    AccessMode  string
+    Quantity    int
+    Volume      int
+    RequestTime time.Time
+    Metadata    map[string]interface{}
+}
+
+type ConsumptionResult struct {
+    TotalTokens    int                    `json:"totalTokens"`
+    AppliedRules   []*RuleApplication    `json:"appliedRules"`
+    DiscountAmount int                    `json:"discountAmount"`
+    Breakdown      map[string]int         `json:"breakdown"`
+}
+
+type RuleApplication struct {
+    RuleID      string  `json:"ruleId"`
+    RuleName    string  `json:"ruleName"`
+    Units       int     `json:"units"`
+    UnitPrice   int     `json:"unitPrice"`
+    Subtotal    int     `json:"subtotal"`
+    Discount    float64 `json:"discount"`
+    FinalAmount int     `json:"finalAmount"`
+}
+
+func NewRuleEngine(repo RuleRepository, cache RuleCache) *RuleEngine {
+    return &RuleEngine{
+        repository: repo,
+        cache:      cache,
+    }
+}
+
+// 计算消费金额
+func (re *RuleEngine) CalculateConsumption(ctx context.Context, context *ConsumptionContext) (*ConsumptionResult, error) {
+    // 1. 获取适用的规则
+    rules, err := re.getApplicableRules(ctx, context)
+    if err != nil {
+        return nil, err
+    }
+    
+    // 2. 应用规则计算消费
+    result := &ConsumptionResult{
+        Breakdown: make(map[string]int),
+    }
+    
+    for _, rule := range rules {
+        application, err := re.applyRule(rule, context)
+        if err != nil {
+            continue
+        }
+        
+        result.AppliedRules = append(result.AppliedRules, application)
+        result.TotalTokens += application.FinalAmount
+        result.Breakdown[rule.Feature] += application.FinalAmount
+    }
+    
+    // 3. 计算总折扣
+    result.DiscountAmount = re.calculateTotalDiscount(result.AppliedRules)
+    
+    return result, nil
+}
+
+// 获取适用的规则
+func (re *RuleEngine) getApplicableRules(ctx context.Context, context *ConsumptionContext) ([]*ConsumptionRule, error) {
+    // 尝试从缓存获取
+    cacheKey := fmt.Sprintf("rules:%s:%s:%s", context.Feature, context.UserPlan, context.AccessMode)
+    if cached, found := re.cache.Get(ctx, cacheKey); found {
+        return cached.([]*ConsumptionRule), nil
+    }
+    
+    // 从数据库查询
+    rules, err := re.repository.FindApplicableRules(ctx, &RuleQuery{
+        Feature:    context.Feature,
+        UserPlan:   context.UserPlan,
+        AccessMode: context.AccessMode,
+        Enabled:    true,
+    })
+    if err != nil {
+        return nil, err
+    }
+    
+    // 过滤时间和条件
+    var applicableRules []*ConsumptionRule
+    for _, rule := range rules {
+        if re.isRuleApplicable(rule, context) {
+            applicableRules = append(applicableRules, rule)
+        }
+    }
+    
+    // 按优先级排序
+    sort.Slice(applicableRules, func(i, j int) bool {
+        return applicableRules[i].Priority > applicableRules[j].Priority
+    })
+    
+    // 缓存结果
+    re.cache.Set(ctx, cacheKey, applicableRules, 5*time.Minute)
+    
+    return applicableRules, nil
+}
+
+// 检查规则是否适用
+func (re *RuleEngine) isRuleApplicable(rule *ConsumptionRule, context *ConsumptionContext) bool {
+    // 检查启用状态
+    if !rule.Enabled {
+        return false
+    }
+    
+    // 检查时间范围
+    now := context.RequestTime
+    if rule.StartTime != nil && now.Before(*rule.StartTime) {
+        return false
+    }
+    if rule.EndTime != nil && now.After(*rule.EndTime) {
+        return false
+    }
+    
+    // 检查套餐匹配
+    if rule.UserPlan != "ALL" && rule.UserPlan != context.UserPlan {
+        return false
+    }
+    
+    // 检查访问模式
+    if rule.AccessMode != "ALL" && rule.AccessMode != context.AccessMode {
+        return false
+    }
+    
+    // 检查动态条件
+    var conditions RuleConditions
+    if rule.Conditions != nil {
+        if err := json.Unmarshal(rule.Conditions, &conditions); err == nil {
+            if !re.checkConditions(&conditions, context) {
+                return false
+            }
+        }
+    }
+    
+    return true
+}
+
+// 检查动态条件
+func (re *RuleEngine) checkConditions(conditions *RuleConditions, context *ConsumptionContext) bool {
+    // 时间范围条件
+    if conditions.TimeRange != nil {
+        hour := context.RequestTime.Hour()
+        weekday := int(context.RequestTime.Weekday())
+        if weekday == 0 {
+            weekday = 7 // 周日
+        }
+        
+        // 检查小时范围
+        if conditions.TimeRange.StartHour <= conditions.TimeRange.EndHour {
+            if hour < conditions.TimeRange.StartHour || hour > conditions.TimeRange.EndHour {
+                return false
+            }
+        } else {
+            // 跨天范围（如 22:00 - 06:00）
+            if hour < conditions.TimeRange.StartHour && hour > conditions.TimeRange.EndHour {
+                return false
+            }
+        }
+        
+        // 检查星期
+        if len(conditions.TimeRange.Days) > 0 {
+            found := false
+            for _, day := range conditions.TimeRange.Days {
+                if day == weekday {
+                    found = true
+                    break
+                }
+            }
+            if !found {
+                return false
+            }
+        }
+    }
+    
+    // 数量范围条件
+    if conditions.VolumeRange != nil {
+        if context.Volume < conditions.VolumeRange.MinVolume {
+            return false
+        }
+        if conditions.VolumeRange.MaxVolume > 0 && context.Volume > conditions.VolumeRange.MaxVolume {
+            return false
+        }
+    }
+    
+    // 用户层级条件
+    if conditions.UserTier != nil && len(conditions.UserTier.Tiers) > 0 {
+        userTier := re.getUserTier(context.UserID)
+        found := false
+        for _, tier := range conditions.UserTier.Tiers {
+            if strings.EqualFold(userTier, tier) {
+                found = true
+                break
+            }
+        }
+        if !found {
+            return false
+        }
+    }
+    
+    return true
+}
+
+// 应用规则计算消费
+func (re *RuleEngine) applyRule(rule *ConsumptionRule, context *ConsumptionContext) (*RuleApplication, error) {
+    // 计算消费单位数
+    units := re.calculateUnits(rule, context)
+    if units < rule.MinUnits {
+        units = rule.MinUnits
+    }
+    if rule.MaxUnits > 0 && units > rule.MaxUnits {
+        units = rule.MaxUnits
+    }
+    
+    // 计算小计
+    subtotal := units * rule.UnitPrice
+    
+    // 计算折扣
+    discount := 0.0
+    if rule.Discounts != nil {
+        var discounts DiscountStrategy
+        if err := json.Unmarshal(rule.Discounts, &discounts); err == nil {
+            discount = re.calculateDiscount(&discounts, subtotal, context)
+        }
+    }
+    
+    // 计算最终金额
+    finalAmount := int(float64(subtotal) * (1 - discount))
+    
+    return &RuleApplication{
+        RuleID:      rule.ID,
+        RuleName:    rule.Name,
+        Units:       units,
+        UnitPrice:   rule.UnitPrice,
+        Subtotal:    subtotal,
+        Discount:    discount,
+        FinalAmount: finalAmount,
+    }, nil
+}
+
+// 计算消费单位数
+func (re *RuleEngine) calculateUnits(rule *ConsumptionRule, context *ConsumptionContext) int {
+    switch rule.UnitType {
+    case UnitPerRequest:
+        return 1
+    case UnitPerURL:
+        return context.Quantity
+    case UnitPerCycle:
+        return context.Quantity
+    case UnitPerDomain:
+        return context.Volume
+    case UnitPerAccount:
+        return context.Quantity
+    case UnitFixed:
+        return 1
+    default:
+        return 1
+    }
+}
+
+// 计算折扣
+func (re *RuleEngine) calculateDiscount(discount *DiscountStrategy, subtotal int, context *ConsumptionContext) float64 {
+    switch discount.Type {
+    case DiscountPercentage:
+        return discount.Value / 100.0
+        
+    case DiscountFixed:
+        discountAmount := float64(discount.Value)
+        maxDiscount := float64(discount.MaxDiscount)
+        if maxDiscount > 0 && discountAmount > maxDiscount {
+            return maxDiscount / float64(subtotal)
+        }
+        return discountAmount / float64(subtotal)
+        
+    case DiscountTiered:
+        // 阶梯折扣逻辑
+        if subtotal >= discount.Threshold {
+            return discount.Value / 100.0
+        }
+        return 0
+        
+    default:
+        return 0
+    }
+}
+
+// 计算总折扣
+func (re *RuleEngine) calculateTotalDiscount(applications []*RuleApplication) int {
+    totalDiscount := 0
+    for _, app := range applications {
+        totalDiscount += app.Subtotal - app.FinalAmount
+    }
+    return totalDiscount
+}
+
+// 获取用户层级（示例实现）
+func (re *RuleEngine) getUserTier(userID string) string {
+    // 实际实现中，这里可能需要查询用户数据库或缓存
+    return "STANDARD"
+}
+```
+
+**初始消费规则配置**:
+```go
+// app/autoads/token/rules_init.go
+package token
+
+import "time"
+
+// GetInitialRules 返回系统初始化时的默认消费规则
+func GetInitialRules() []*ConsumptionRule {
+    now := time.Now()
+    
+    return []*ConsumptionRule{
+        // SiteRank 查询规则
+        {
+            ID:          "rule-siterank-query",
+            Name:        "网站排名查询",
+            Feature:     "SITERANK_QUERY",
+            Description: "每次查询网站排名消耗的 Token",
+            UserPlan:    "ALL",
+            AccessMode:  "ALL",
+            UnitType:    UnitPerDomain,
+            UnitPrice:   1,  // 每个域名 1 Token
+            MinUnits:    1,
+            MaxUnits:    0,
+            Enabled:     true,
+            Priority:    100,
+            CreatedAt:   now,
+        },
+        
+        // BatchGo 执行规则
+        {
+            ID:          "rule-batchgo-basic",
+            Name:        "BatchGo 基础执行",
+            Feature:     "BATCHGO_EXECUTE",
+            Description: "BatchGo 基础模式执行的 Token 消费",
+            UserPlan:    "FREE",
+            AccessMode:  "BASIC",
+            UnitType:    UnitPerRequest,
+            UnitPrice:   10,  // 每次 10 Tokens
+            MinUnits:    1,
+            Enabled:     true,
+            Priority:    90,
+            CreatedAt:   now,
+        },
+        {
+            ID:          "rule-batchgo-silent",
+            Name:        "BatchGo 静默执行",
+            Feature:     "BATCHGO_EXECUTE",
+            Description: "BatchGo 静默模式执行的 Token 消费",
+            UserPlan:    "PRO",
+            AccessMode:  "SILENT",
+            UnitType:    UnitPerRequest,
+            UnitPrice:   20,  // 每次 20 Tokens
+            MinUnits:    1,
+            Enabled:     true,
+            Priority:    90,
+            CreatedAt:   now,
+        },
+        {
+            ID:          "rule-batchgo-automated",
+            Name:        "BatchGo 自动化执行",
+            Feature:     "BATCHGO_EXECUTE",
+            Description: "BatchGo 自动化模式执行的 Token 消费",
+            UserPlan:    "MAX",
+            AccessMode:  "AUTOMATED",
+            UnitType:    UnitPerRequest,
+            UnitPrice:   50,  // 每次 50 Tokens
+            MinUnits:    1,
+            Enabled:     true,
+            Priority:    90,
+            CreatedAt:   now,
+        },
+        
+        // AdsCenterGo 规则
+        {
+            ID:          "rule-adscenter-account",
+            Name:        "AdsCenter 账户管理",
+            Feature:     "ADSCENTER_ACCOUNT",
+            Description: "管理 Google Ads 账户的 Token 消费",
+            UserPlan:    "PRO",
+            AccessMode:  "ALL",
+            UnitType:    UnitPerAccount,
+            UnitPrice:   100,  // 每个账户 100 Tokens/月
+            MinUnits:    1,
+            Enabled:     true,
+            Priority:    80,
+            CreatedAt:   now,
+        },
+        {
+            ID:          "rule-adscenter-automation",
+            Name:        "AdsCenter 自动化执行",
+            Feature:     "ADSCENTER_AUTOMATION",
+            Description: "执行广告自动化任务的 Token 消费",
+            UserPlan:    "MAX",
+            AccessMode:  "ALL",
+            UnitType:    UnitPerRequest,
+            UnitPrice:   30,  // 每次 30 Tokens
+            MinUnits:    1,
+            Enabled:     true,
+            Priority:    80,
+            CreatedAt:   now,
+        },
+        
+        // API 调用规则
+        {
+            ID:          "rule-api-call",
+            Name:        "API 调用",
+            Feature:     "API_CALL",
+            Description: "通过 API 调用功能的 Token 消费",
+            UserPlan:    "ALL",
+            AccessMode:  "ALL",
+            UnitType:    UnitPerRequest,
+            UnitPrice:   1,  // 每次 1 Token
+            MinUnits:    1,
+            Enabled:     true,
+            Priority:    70,
+            CreatedAt:   now,
+        },
+        
+        // 高级功能折扣规则
+        {
+            ID:          "rule-volume-discount",
+            Name:        "批量查询折扣",
+            Feature:     "SITERANK_QUERY",
+            Description: "批量查询网站排名时的数量折扣",
+            UserPlan:    "PRO",
+            AccessMode:  "ALL",
+            UnitType:    UnitPerDomain,
+            UnitPrice:   1,
+            MinUnits:    1,
+            Conditions:  json.RawMessage(`{"volumeRange": {"minVolume": 100, "maxVolume": 0}}`),
+            Discounts:   json.RawMessage(`{"type": "PERCENTAGE", "value": 10, "threshold": 100}`),
+            Enabled:     true,
+            Priority:    60,
+            CreatedAt:   now,
+        },
+        {
+            ID:          "rule-vip-discount",
+            Name:        "VIP 用户折扣",
+            Feature:     "ALL",
+            Description: "VIP 用户享受的所有功能折扣",
+            UserPlan:    "MAX",
+            AccessMode:  "ALL",
+            UnitType:    UnitPerRequest,
+            UnitPrice:   1,
+            Conditions:  json.RawMessage(`{"userTier": {"tiers": ["VIP", "PREMIUM"]}}`),
+            Discounts:   json.RawMessage(`{"type": "PERCENTAGE", "value": 20, "threshold": 0}`),
+            Enabled:     true,
+            Priority:    50,
+            CreatedAt:   now,
+        },
+        
+        // 时间段优惠规则
+        {
+            ID:          "rule-night-discount",
+            Name:        "夜间优惠",
+            Feature:     "BATCHGO_EXECUTE",
+            Description: "夜间执行 BatchGo 任务的优惠",
+            UserPlan:    "ALL",
+            AccessMode:  "ALL",
+            UnitType:    UnitPerRequest,
+            UnitPrice:   1,
+            Conditions:  json.RawMessage(`{"timeRange": {"startHour": 22, "endHour": 6, "days": [1,2,3,4,5,6,7]}}`),
+            Discounts:   json.RawMessage(`{"type": "PERCENTAGE", "value": 15, "threshold": 0}`),
+            Enabled:     true,
+            Priority:    40,
+            CreatedAt:   now,
+        },
+    }
+}
+```
+
+**规则管理 API**:
+```go
+// app/autoads/token/api.go
+package token
+
+import (
+    "net/http"
+    
+    "github.com/gin-gonic/gin"
+)
+
+type RuleHandler struct {
+    engine     *RuleEngine
+    repository RuleRepository
+}
+
+func NewRuleHandler(engine *RuleEngine, repo RuleRepository) *RuleHandler {
+    return &RuleHandler{
+        engine:     engine,
+        repository: repo,
+    }
+}
+
+// 注册路由
+func (h *RuleHandler) RegisterRoutes(router *gin.RouterGroup) {
+    rules := router.Group("/token-rules")
+    {
+        rules.POST("", h.CreateRule)
+        rules.GET("", h.ListRules)
+        rules.GET("/:id", h.GetRule)
+        rules.PUT("/:id", h.UpdateRule)
+        rules.DELETE("/:id", h.DeleteRule)
+        rules.POST("/:id/enable", h.EnableRule)
+        rules.POST("/:id/disable", h.DisableRule)
+        rules.POST("/calculate", h.CalculateConsumption)
+        rules.POST("/test", h.TestRule)
+    }
+}
+
+// 创建规则
+func (h *RuleHandler) CreateRule(c *gin.Context) {
+    var rule ConsumptionRule
+    if err := c.ShouldBindJSON(&rule); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    if err := h.repository.Create(c.Request.Context(), &rule); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusCreated, rule)
+}
+
+// 计算消费
+func (h *RuleHandler) CalculateConsumption(c *gin.Context) {
+    var req CalculateConsumptionRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    context := &ConsumptionContext{
+        UserID:      req.UserID,
+        Feature:     req.Feature,
+        UserPlan:    req.UserPlan,
+        AccessMode:  req.AccessMode,
+        Quantity:    req.Quantity,
+        Volume:      req.Volume,
+        RequestTime: time.Now(),
+        Metadata:    req.Metadata,
+    }
+    
+    result, err := h.engine.CalculateConsumption(c.Request.Context(), context)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusOK, result)
+}
+
+// 测试规则
+func (h *RuleHandler) TestRule(c *gin.Context) {
+    var req TestRuleRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // 创建临时规则
+    rule := &ConsumptionRule{
+        ID:         "test-rule",
+        Name:       "Test Rule",
+        Feature:    req.Feature,
+        UserPlan:   req.UserPlan,
+        AccessMode: req.AccessMode,
+        UnitType:   req.UnitType,
+        UnitPrice:  req.UnitPrice,
+        Conditions: req.Conditions,
+        Discounts:  req.Discounts,
+    }
+    
+    context := &ConsumptionContext{
+        UserID:      req.UserID,
+        Feature:     req.Feature,
+        UserPlan:    req.UserPlan,
+        AccessMode:  req.AccessMode,
+        Quantity:    req.Quantity,
+        Volume:      req.Volume,
+        RequestTime: time.Now(),
+    }
+    
+    // 应用规则
+    application, err := h.engine.applyRule(rule, context)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "rule":        rule,
+        "application": application,
+    })
+}
+```
+
 ### 4.7 监控与运维
 
 #### 4.7.1 指标监控
@@ -2666,9 +3416,857 @@ func isRetryableError(err error) bool {
 }
 ```
 
-### 4.8 配置管理
+### 4.8 AdsCenterGo 实现详解
 
-#### 4.8.1 GoFly 配置文件
+AdsCenterGo 是 ChangeLink 功能的 Go 语言重构版本，提供 Google Ads 多账户管理和自动化广告投放功能。
+
+#### 4.8.1 核心架构设计
+
+**模块结构**:
+```
+app/autoads/adscentergo/
+├── account/          # Google Ads 账户管理
+├── campaign/         # 广告活动管理
+├── adgroup/          # 广告组管理
+├── ad/               # 广告创意管理
+├── keyword/          # 关键词管理
+├── automation/       # 自动化规则引擎
+├── monitoring/       # 执行监控
+├── rule/             # 链接替换规则
+└── client/           # API 客户端
+```
+
+**数据流设计**:
+1. **账户同步层**: 定期同步 Google Ads 账户数据
+2. **规则引擎层**: 处理链接替换和自动化规则
+3. **执行层**: 通过 AdsPower 执行实际操作
+4. **监控层**: 实时监控执行状态和结果
+
+#### 4.8.2 Google Ads API 集成实现
+
+**多账户管理器**:
+```go
+// app/autoads/adscentergo/account/manager.go
+package account
+
+import (
+    "context"
+    "sync"
+    
+    "google.golang.org/api/googleads/v16"
+)
+
+type AccountManager struct {
+    clients map[string]*googleads.Service
+    mutex   sync.RWMutex
+    config  *AccountConfig
+}
+
+type AccountConfig struct {
+    DeveloperToken   string
+    ClientID         string
+    ClientSecret     string
+    RefreshToken     string
+    LoginCustomerID  string
+}
+
+func NewAccountManager(config *AccountConfig) *AccountManager {
+    return &AccountManager{
+        clients: make(map[string]*googleads.Service),
+        config:  config,
+    }
+}
+
+// 添加 Google Ads 账户
+func (am *AccountManager) AddAccount(customerID string) error {
+    am.mutex.Lock()
+    defer am.mutex.Unlock()
+    
+    // 创建 Google Ads 客户端
+    client, err := googleads.NewService(
+        context.Background(),
+        am.config.DeveloperToken,
+        customerID,
+    )
+    if err != nil {
+        return err
+    }
+    
+    am.clients[customerID] = client
+    return nil
+}
+
+// 获取账户信息
+func (am *AccountManager) GetAccountInfo(customerID string) (*AccountInfo, error) {
+    am.mutex.RLock()
+    client, exists := am.clients[customerID]
+    am.mutex.RUnlock()
+    
+    if !exists {
+        return nil, fmt.Errorf("account not found: %s", customerID)
+    }
+    
+    // 查询账户信息
+    req := &googleads.GetCustomerRequest{
+        ResourceName: fmt.Sprintf("customers/%s", customerID),
+    }
+    
+    customer, err := client.GetCustomer(context.Background(), req)
+    if err != nil {
+        return nil, err
+    }
+    
+    return &AccountInfo{
+        ID:          customer.Id,
+        Name:        customer.DescriptiveName,
+        Currency:    customer.CurrencyCode,
+        TimeZone:    customer.TimeZone,
+        Status:      customer.Status,
+    }, nil
+}
+
+// 批量获取所有账户
+func (am *AccountManager) GetAllAccounts() ([]*AccountInfo, error) {
+    am.mutex.RLock()
+    defer am.mutex.RUnlock()
+    
+    var accounts []*AccountInfo
+    for customerID := range am.clients {
+        info, err := am.GetAccountInfo(customerID)
+        if err != nil {
+            continue
+        }
+        accounts = append(accounts, info)
+    }
+    
+    return accounts, nil
+}
+```
+
+**广告活动管理器**:
+```go
+// app/autoads/adscentergo/campaign/manager.go
+package campaign
+
+import (
+    "context"
+    "fmt"
+    
+    "google.golang.org/api/googleads/v16"
+)
+
+type CampaignManager struct {
+    accountManager *account.AccountManager
+}
+
+type Campaign struct {
+    ID             string
+    Name           string
+    Status         string
+    Budget         float64
+    BiddingStrategy string
+    StartDate      string
+    EndDate        string
+}
+
+func NewCampaignManager(am *account.AccountManager) *CampaignManager {
+    return &CampaignManager{
+        accountManager: am,
+    }
+}
+
+// 创建广告活动
+func (cm *CampaignManager) CreateCampaign(customerID string, campaign *Campaign) error {
+    client, err := cm.accountManager.GetClient(customerID)
+    if err != nil {
+        return err
+    }
+    
+    // 构建创建请求
+    req := &googleads.CreateCampaignRequest{
+        CustomerId: customerID,
+        Campaign: &googleads.Campaign{
+            Name:         campaign.Name,
+            Status:       campaign.Status,
+            AdvertisingChannelType: "SEARCH",
+            
+            // 预算设置
+            Budget: &googleads.CampaignBudget{
+                AmountMicros: int64(campaign.Budget * 1000000),
+            },
+            
+            // 出价策略
+            BiddingStrategyType: campaign.BiddingStrategy,
+            
+            // 日期设置
+            StartDate: campaign.StartDate,
+            EndDate:   campaign.EndDate,
+        },
+    }
+    
+    // 执行创建
+    resp, err := client.CreateCampaign(context.Background(), req)
+    if err != nil {
+        return err
+    }
+    
+    campaign.ID = resp.ResourceName
+    return nil
+}
+
+// 获取广告活动列表
+func (cm *CampaignManager) ListCampaigns(customerID string) ([]*Campaign, error) {
+    client, err := cm.accountManager.GetClient(customerID)
+    if err != nil {
+        return nil, err
+    }
+    
+    req := &googleads.ListCampaignsRequest{
+        CustomerId: customerID,
+    }
+    
+    resp, err := client.ListCampaigns(context.Background(), req)
+    if err != nil {
+        return nil, err
+    }
+    
+    var campaigns []*Campaign
+    for _, c := range resp.Campaigns {
+        campaigns = append(campaigns, &Campaign{
+            ID:             c.ResourceName,
+            Name:           c.Name,
+            Status:         c.Status,
+            Budget:         float64(c.Budget.AmountMicros) / 1000000,
+            BiddingStrategy: c.BiddingStrategyType,
+            StartDate:      c.StartDate,
+            EndDate:        c.EndDate,
+        })
+    }
+    
+    return campaigns, nil
+}
+```
+
+#### 4.8.3 链接替换规则引擎
+
+**规则定义**:
+```go
+// app/autoads/adscentergo/rule/engine.go
+package rule
+
+import (
+    "regexp"
+    "strings"
+)
+
+type ReplacementRule struct {
+    ID          string
+    Name        string
+    Pattern     string      // 匹配模式
+    Replacement string      // 替换内容
+    Type        RuleType    // 规则类型
+    Priority    int         // 优先级
+    Enabled     bool        // 是否启用
+}
+
+type RuleType int
+
+const (
+    RuleTypeRegex RuleType = iota // 正则表达式
+    RuleTypeString               // 字符串替换
+    RuleTypePrefix               // 前缀替换
+    RuleTypeSuffix               // 后缀替换
+)
+
+type RuleEngine struct {
+    rules    []*ReplacementRule
+    compiled map[string]*regexp.Regexp
+}
+
+func NewRuleEngine() *RuleEngine {
+    return &RuleEngine{
+        rules:    make([]*ReplacementRule, 0),
+        compiled: make(map[string]*regexp.Regexp),
+    }
+}
+
+// 添加规则
+func (re *RuleEngine) AddRule(rule *ReplacementRule) error {
+    // 如果是正则表达式规则，预编译
+    if rule.Type == RuleTypeRegex {
+        regex, err := regexp.Compile(rule.Pattern)
+        if err != nil {
+            return err
+        }
+        re.compiled[rule.ID] = regex
+    }
+    
+    re.rules = append(re.rules, rule)
+    
+    // 按优先级排序
+    sort.Slice(re.rules, func(i, j int) bool {
+        return re.rules[i].Priority > re.rules[j].Priority
+    })
+    
+    return nil
+}
+
+// 执行链接替换
+func (re *RuleEngine) ReplaceLink(originalURL string) (string, []*RuleLog) {
+    var logs []*RuleLog
+    result := originalURL
+    
+    for _, rule := range re.rules {
+        if !rule.Enabled {
+            continue
+        }
+        
+        var applied bool
+        var newResult string
+        
+        switch rule.Type {
+        case RuleTypeRegex:
+            if regex, exists := re.compiled[rule.ID]; exists {
+                newResult = regex.ReplaceAllString(result, rule.Replacement)
+                applied = newResult != result
+            }
+            
+        case RuleTypeString:
+            newResult = strings.ReplaceAll(result, rule.Pattern, rule.Replacement)
+            applied = newResult != result
+            
+        case RuleTypePrefix:
+            if strings.HasPrefix(result, rule.Pattern) {
+                newResult = rule.Replacement + strings.TrimPrefix(result, rule.Pattern)
+                applied = true
+            }
+            
+        case RuleTypeSuffix:
+            if strings.HasSuffix(result, rule.Pattern) {
+                newResult = strings.TrimSuffix(result, rule.Pattern) + rule.Replacement
+                applied = true
+            }
+        }
+        
+        if applied {
+            logs = append(logs, &RuleLog{
+                RuleID:       rule.ID,
+                RuleName:     rule.Name,
+                OriginalURL:  result,
+                ReplacedURL:  newResult,
+                AppliedAt:    time.Now(),
+            })
+            result = newResult
+        }
+    }
+    
+    return result, logs
+}
+
+// 批量处理链接
+func (re *RuleEngine) BatchReplaceLinks(urls []string) ([]string, []*RuleLog) {
+    var allLogs []*RuleLog
+    results := make([]string, len(urls))
+    
+    for i, url := range urls {
+        replaced, logs := re.ReplaceLink(url)
+        results[i] = replaced
+        allLogs = append(allLogs, logs...)
+    }
+    
+    return results, allLogs
+}
+```
+
+#### 4.8.4 AdsPower API 集成实现
+
+**AdsPower 客户端**:
+```go
+// app/autoads/adscentergo/client/adspower.go
+package client
+
+import (
+    "context"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "time"
+)
+
+type AdsPowerClient struct {
+    baseURL    string
+    httpClient *http.Client
+}
+
+type Profile struct {
+    ID       string `json:"group_id"`
+    Name     string `json:"group_name"`
+    Status   string `json:"status"`
+    Browser  string `json:"browser_type"`
+}
+
+func NewAdsPowerClient(baseURL string) *AdsPowerClient {
+    return &AdsPowerClient{
+        baseURL: baseURL,
+        httpClient: &http.Client{
+            Timeout: 30 * time.Second,
+        },
+    }
+}
+
+// 启动浏览器配置文件
+func (apc *AdsPowerClient) StartProfile(profileID string) (*ProfileSession, error) {
+    url := fmt.Sprintf("%s/api/v1/browser/start?group_id=%s", apc.baseURL, profileID)
+    
+    resp, err := apc.httpClient.Get(url)
+    if err != nil {
+        return nil, err
+    }
+    defer resp.Body.Close()
+    
+    var result struct {
+        Code    int             `json:"code"`
+        Msg     string          `json:"msg"`
+        Data    *ProfileSession `json:"data"`
+    }
+    
+    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+        return nil, err
+    }
+    
+    if result.Code != 0 {
+        return nil, fmt.Errorf("AdsPower API error: %s", result.Msg)
+    }
+    
+    return result.Data, nil
+}
+
+// 关闭浏览器配置文件
+func (apc *AdsPowerClient) CloseProfile(profileID string) error {
+    url := fmt.Sprintf("%s/api/v1/browser/stop?group_id=%s", apc.baseURL, profileID)
+    
+    resp, err := apc.httpClient.Get(url)
+    if err != nil {
+        return err
+    }
+    defer resp.Body.Close()
+    
+    var result struct {
+        Code int    `json:"code"`
+        Msg  string `json:"msg"`
+    }
+    
+    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+        return err
+    }
+    
+    if result.Code != 0 {
+        return fmt.Errorf("AdsPower API error: %s", result.Msg)
+    }
+    
+    return nil
+}
+
+// 执行浏览器自动化
+func (apc *AdsPowerClient) ExecuteAutomation(profileID string, automation *AutomationTask) error {
+    // 1. 启动浏览器
+    session, err := apc.StartProfile(profileID)
+    if err != nil {
+        return err
+    }
+    defer apc.CloseProfile(profileID)
+    
+    // 2. 连接到 Chrome DevTools Protocol
+    cdpClient := NewCDPClient(session.WsURL)
+    defer cdpClient.Close()
+    
+    // 3. 执行自动化任务
+    ctx := context.Background()
+    
+    // 导航到目标页面
+    if err := cdpClient.Navigate(ctx, automation.URL); err != nil {
+        return err
+    }
+    
+    // 等待页面加载
+    if err := cdpClient.WaitForLoad(ctx); err != nil {
+        return err
+    }
+    
+    // 执行链接替换
+    if automation.ReplaceLinks {
+        links, err := cdpClient.ExtractLinks(ctx)
+        if err != nil {
+            return err
+        }
+        
+        // 使用规则引擎替换链接
+        replacedLinks, logs := re.ReplaceLinks(links)
+        
+        // 更新页面中的链接
+        if err := cdpClient.ReplaceLinks(ctx, replacedLinks); err != nil {
+            return err
+        }
+    }
+    
+    // 执行其他自动化操作
+    for _, action := range automation.Actions {
+        if err := apc.executeAction(ctx, cdpClient, action); err != nil {
+            return err
+        }
+    }
+    
+    return nil
+}
+
+// 执行单个动作
+func (apc *AdsPowerClient) executeAction(ctx context.Context, cdpClient *CDPClient, action *AutomationAction) error {
+    switch action.Type {
+    case "click":
+        return cdpClient.Click(ctx, action.Selector)
+        
+    case "input":
+        return cdpClient.Input(ctx, action.Selector, action.Value)
+        
+    case "wait":
+        time.Sleep(time.Duration(action.Timeout) * time.Second)
+        return nil
+        
+    case "screenshot":
+        return cdpClient.Screenshot(ctx, action.Filename)
+        
+    default:
+        return fmt.Errorf("unknown action type: %s", action.Type)
+    }
+}
+```
+
+#### 4.8.5 执行监控实现
+
+**任务监控器**:
+```go
+// app/autoads/adscentergo/monitoring/monitor.go
+package monitoring
+
+import (
+    "context"
+    "sync"
+    "time"
+)
+
+type TaskMonitor struct {
+    tasks      map[string]*TaskStatus
+    mutex      sync.RWMutex
+    notifier   *Notifier
+    storage    TaskStorage
+}
+
+type TaskStatus struct {
+    ID          string
+    Type        string
+    Status      string // running, completed, failed
+    Progress    int    // 0-100
+    StartTime   time.Time
+    EndTime     *time.Time
+    Error       error
+    Metrics     *TaskMetrics
+    Logs        []*TaskLog
+}
+
+type TaskMetrics struct {
+    TotalActions    int
+    CompletedActions int
+    FailedActions   int
+    Duration        time.Duration
+    SuccessRate     float64
+}
+
+func NewTaskMonitor(notifier *Notifier, storage TaskStorage) *TaskMonitor {
+    return &TaskMonitor{
+        tasks:    make(map[string]*TaskStatus),
+        notifier: notifier,
+        storage:  storage,
+    }
+}
+
+// 开始监控任务
+func (tm *TaskMonitor) StartTask(ctx context.Context, taskID string, taskType string) {
+    tm.mutex.Lock()
+    defer tm.mutex.Unlock()
+    
+    status := &TaskStatus{
+        ID:        taskID,
+        Type:      taskType,
+        Status:    "running",
+        StartTime: time.Now(),
+        Metrics:   &TaskMetrics{},
+        Logs:      make([]*TaskLog, 0),
+    }
+    
+    tm.tasks[taskID] = status
+    
+    // 保存到存储
+    tm.storage.SaveTaskStatus(ctx, status)
+}
+
+// 更新任务进度
+func (tm *TaskMonitor) UpdateProgress(ctx context.Context, taskID string, progress int, message string) {
+    tm.mutex.Lock()
+    defer tm.mutex.Unlock()
+    
+    if task, exists := tm.tasks[taskID]; exists {
+        task.Progress = progress
+        task.Metrics.CompletedActions = progress
+        
+        // 添加日志
+        task.Logs = append(task.Logs, &TaskLog{
+            Timestamp: time.Now(),
+            Message:   message,
+            Level:     "info",
+        })
+        
+        // 检查是否完成
+        if progress >= 100 {
+            task.Status = "completed"
+            now := time.Now()
+            task.EndTime = &now
+            task.Metrics.Duration = now.Sub(task.StartTime)
+            task.Metrics.SuccessRate = float64(task.Metrics.CompletedActions) / float64(task.Metrics.TotalActions)
+        }
+        
+        // 保存更新
+        tm.storage.SaveTaskStatus(ctx, task)
+        
+        // 发送通知
+        if progress%10 == 0 { // 每10%发送一次进度通知
+            tm.notifier.SendProgressNotification(taskID, progress, message)
+        }
+    }
+}
+
+// 处理任务失败
+func (tm *TaskMonitor) HandleFailure(ctx context.Context, taskID string, err error) {
+    tm.mutex.Lock()
+    defer tm.mutex.Unlock()
+    
+    if task, exists := tm.tasks[taskID]; exists {
+        task.Status = "failed"
+        task.Error = err
+        now := time.Now()
+        task.EndTime = &now
+        task.Metrics.Duration = now.Sub(task.StartTime)
+        
+        // 添加错误日志
+        task.Logs = append(task.Logs, &TaskLog{
+            Timestamp: time.Now(),
+            Message:   err.Error(),
+            Level:     "error",
+        })
+        
+        // 保存状态
+        tm.storage.SaveTaskStatus(ctx, task)
+        
+        // 发送失败通知
+        tm.notifier.SendFailureNotification(taskID, err)
+    }
+}
+
+// 获取任务状态
+func (tm *TaskMonitor) GetTaskStatus(taskID string) (*TaskStatus, error) {
+    tm.mutex.RLock()
+    defer tm.mutex.RUnlock()
+    
+    if task, exists := tm.tasks[taskID]; exists {
+        return task, nil
+    }
+    
+    // 从存储中加载
+    return tm.storage.GetTaskStatus(context.Background(), taskID)
+}
+
+// 获取所有任务状态
+func (tm *TaskMonitor) GetAllTasks() ([]*TaskStatus, error) {
+    tm.mutex.RLock()
+    defer tm.mutex.RUnlock()
+    
+    tasks := make([]*TaskStatus, 0, len(tm.tasks))
+    for _, task := range tm.tasks {
+        tasks = append(tasks, task)
+    }
+    
+    return tasks, nil
+}
+```
+
+#### 4.8.6 API 端点设计
+
+**RESTful API 设计**:
+```go
+// app/autoads/adscentergo/api/handler.go
+package api
+
+import (
+    "net/http"
+    
+    "github.com/gin-gonic/gin"
+)
+
+type AdsCenterHandler struct {
+    accountManager  *account.AccountManager
+    campaignManager *campaign.CampaignManager
+    ruleEngine      *rule.RuleEngine
+    taskMonitor     *monitoring.TaskMonitor
+    adspowerClient  *client.AdsPowerClient
+}
+
+func NewAdsCenterHandler(
+    am *account.AccountManager,
+    cm *campaign.CampaignManager,
+    re *rule.RuleEngine,
+    tm *monitoring.TaskMonitor,
+    apc *client.AdsPowerClient,
+) *AdsCenterHandler {
+    return &AdsCenterHandler{
+        accountManager:  am,
+        campaignManager: cm,
+        ruleEngine:      re,
+        taskMonitor:     tm,
+        adspowerClient:  apc,
+    }
+}
+
+// 注册路由
+func (h *AdsCenterHandler) RegisterRoutes(router *gin.RouterGroup) {
+    // 账户管理
+    accounts := router.Group("/accounts")
+    {
+        accounts.POST("", h.CreateAccount)
+        accounts.GET("", h.ListAccounts)
+        accounts.GET("/:id", h.GetAccount)
+        accounts.PUT("/:id", h.UpdateAccount)
+        accounts.DELETE("/:id", h.DeleteAccount)
+        accounts.POST("/:id/sync", h.SyncAccount)
+    }
+    
+    // 广告活动管理
+    campaigns := router.Group("/campaigns")
+    {
+        campaigns.POST("", h.CreateCampaign)
+        campaigns.GET("", h.ListCampaigns)
+        campaigns.GET("/:id", h.GetCampaign)
+        campaigns.PUT("/:id", h.UpdateCampaign)
+        campaigns.DELETE("/:id", h.DeleteCampaign)
+        campaigns.POST("/:id/start", h.StartCampaign)
+        campaigns.POST("/:id/stop", h.StopCampaign)
+    }
+    
+    // 规则管理
+    rules := router.Group("/rules")
+    {
+        rules.POST("", h.CreateRule)
+        rules.GET("", h.ListRules)
+        rules.GET("/:id", h.GetRule)
+        rules.PUT("/:id", h.UpdateRule)
+        rules.DELETE("/:id", h.DeleteRule)
+        rules.POST("/test", h.TestRule)
+    }
+    
+    // 任务管理
+    tasks := router.Group("/tasks")
+    {
+        tasks.POST("", h.CreateTask)
+        tasks.GET("", h.ListTasks)
+        tasks.GET("/:id", h.GetTask)
+        tasks.GET("/:id/status", h.GetTaskStatus)
+        tasks.POST("/:id/stop", h.StopTask)
+        tasks.GET("/:id/logs", h.GetTaskLogs)
+    }
+    
+    // 自动化执行
+    automation := router.Group("/automation")
+    {
+        automation.POST("/execute", h.ExecuteAutomation)
+        automation.POST("/batch-execute", h.BatchExecuteAutomation)
+        automation.GET("/profiles", h.ListAdsPowerProfiles)
+        automation.POST("/profiles/:id/start", h.StartProfile)
+        automation.POST("/profiles/:id/stop", h.StopProfile)
+    }
+}
+
+// 创建账户
+func (h *AdsCenterHandler) CreateAccount(c *gin.Context) {
+    var req CreateAccountRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // 添加账户
+    err := h.accountManager.AddAccount(req.CustomerID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // 获取账户信息
+    info, err := h.accountManager.GetAccountInfo(req.CustomerID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusCreated, gin.H{
+        "message": "Account created successfully",
+        "account": info,
+    })
+}
+
+// 执行自动化任务
+func (h *AdsCenterHandler) ExecuteAutomation(c *gin.Context) {
+    var req ExecuteAutomationRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // 创建任务ID
+    taskID := generateTaskID()
+    
+    // 开始监控
+    h.taskMonitor.StartTask(c.Request.Context(), taskID, "automation")
+    
+    // 异步执行
+    go func() {
+        defer func() {
+            if r := recover(); r != nil {
+                h.taskMonitor.HandleFailure(c.Request.Context(), taskID, fmt.Errorf("panic: %v", r))
+            }
+        }()
+        
+        // 执行自动化
+        err := h.adspowerClient.ExecuteAutomation(req.ProfileID, &client.AutomationTask{
+            URL:          req.URL,
+            ReplaceLinks: req.ReplaceLinks,
+            Actions:      req.Actions,
+        })
+        
+        if err != nil {
+            h.taskMonitor.HandleFailure(c.Request.Context(), taskID, err)
+        } else {
+            h.taskMonitor.UpdateProgress(c.Request.Context(), taskID, 100, "Task completed successfully")
+        }
+    }()
+    
+    c.JSON(http.StatusAccepted, gin.H{
+        "task_id": taskID,
+        "message": "Automation task started",
+    })
+}
+```
+
+### 4.9 配置管理
+
+#### 4.9.1 GoFly 配置文件
 
 **主配置文件 (resource/config.yaml)**:
 ```yaml
@@ -2815,6 +4413,269 @@ DEBUG=false
 PORT=8080
 ```
 
+#### 4.8.3 生产环境完整变量文档
+
+**1. 核心应用配置**
+
+| 变量名 | 默认值 | 必需 | 说明 |
+|--------|--------|------|------|
+| `NODE_ENV` | `production` | ✅ | 应用运行环境 |
+| `NEXT_PUBLIC_DEPLOYMENT_ENV` | `production` | ✅ | 部署环境标识 |
+| `NEXT_PUBLIC_DOMAIN` | `autoads.dev` | ✅ | 应用域名 |
+| `PORT` | `3000` | ❌ | 应用端口 |
+
+**2. 数据库配置**
+
+| 变量名 | 默认值 | 必需 | 说明 |
+|--------|--------|------|------|
+| `DATABASE_URL` | - | ✅ | PostgreSQL 连接字符串 |
+| `DATABASE_SSL` | `false` | ❌ | 是否启用 SSL 连接 |
+| `DATABASE_POOL_SIZE` | `20` | ❌ | 数据库连接池大小 |
+
+示例：
+```bash
+# PostgreSQL 连接格式
+DATABASE_URL=postgresql://username:password@hostname:port/database?options
+
+# 完整示例
+DATABASE_URL=postgresql://postgres:w8mhnnqh@dbprovider.sg-members-1.clawcloudrun.com:32404/autoads?sslmode=prefer&connect_timeout=10
+```
+
+**3. Redis 配置**
+
+| 变量名 | 默认值 | 必需 | 说明 |
+|--------|--------|------|------|
+| `REDIS_URL` | - | ✅ | Redis 连接字符串 |
+| `REDIS_PASSWORD` | - | ❌ | Redis 密码 |
+| `REDIS_DB` | `0` | ❌ | Redis 数据库编号 |
+| `REDIS_PREFIX` | `autoads:` | ❌ | Redis 键前缀 |
+
+示例：
+```bash
+# Redis 连接格式
+REDIS_URL=redis://default:password@hostname:port/db
+
+# 完整示例
+REDIS_URL=redis://default:9xdjb8nf@dbprovider.sg-members-1.clawcloudrun.com:32284/0
+```
+
+**4. 认证授权配置**
+
+| 变量名 | 默认值 | 必需 | 说明 |
+|--------|--------|------|------|
+| `AUTH_SECRET` | - | ✅ | JWT 密钥（64位字符） |
+| `AUTH_URL` | - | ✅ | 认证服务 URL |
+| `AUTH_GOOGLE_ID` | - | ✅ | Google OAuth 客户端 ID |
+| `AUTH_GOOGLE_SECRET` | - | ✅ | Google OAuth 客户端密钥 |
+| `JWT_EXPIRES_IN` | `7d` | ❌ | JWT 过期时间 |
+| `NEXTAUTH_URL_INTERNAL` | `http://localhost:3000` | ❌ | 内部回调 URL |
+
+示例：
+```bash
+# 生成 AUTH_SECRET 的命令
+openssl rand -base64 64
+
+# 完整示例
+AUTH_SECRET=85674018a64071a1f65a376d45a522dec78495cae7f5f1516febf8a4d51ff834
+AUTH_URL=https://www.autoads.dev
+AUTH_GOOGLE_ID=1007142410985-4945m48srrp056kp0q5n0e5he8omrdol.apps.googleusercontent.com
+AUTH_GOOGLE_SECRET=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
+```
+
+**5. 第三方 API 配置**
+
+| 变量名 | 默认值 | 必需 | 说明 |
+|--------|--------|------|------|
+| `SIMILARWEB_API_KEY` | - | ❌ | SimilarWeb API 密钥 |
+| `SIMILARWEB_API_URL` | `https://data.similarweb.com/api/v1/data` | ❌ | SimilarWeb API 地址 |
+| `OPENPAGERANK_API_KEY` | - | ❌ | OpenPageRank API 密钥 |
+| `ADSPOWER_API_URL` | `http://local.adspower.net:50325` | ❌ | AdsPower API 地址 |
+| `GOOGLE_ADS_DEVELOPER_TOKEN` | - | ❌ | Google Ads 开发者令牌 |
+| `GOOGLE_ADS_CLIENT_ID` | - | ❌ | Google Ads 客户端 ID |
+| `GOOGLE_ADS_CLIENT_SECRET` | - | ❌ | Google Ads 客户端密钥 |
+| `GOOGLE_ADS_REFRESH_TOKEN` | - | ❌ | Google Ads 刷新令牌 |
+
+**6. 邮件服务配置**
+
+| 变量名 | 默认值 | 必需 | 说明 |
+|--------|--------|------|------|
+| `EMAIL_PROVIDER` | - | ❌ | 邮件服务提供商 |
+| `SMTP_HOST` | - | ❌ | SMTP 服务器地址 |
+| `SMTP_PORT` | `587` | ❌ | SMTP 端口 |
+| `SMTP_USER` | - | ❌ | SMTP 用户名 |
+| `SMTP_PASS` | - | ❌ | SMTP 密码 |
+| `EMAIL_FROM` | - | ❌ | 发件人邮箱 |
+
+示例：
+```bash
+# Gmail 配置示例
+EMAIL_PROVIDER=smtp
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+EMAIL_FROM=noreply@autoads.dev
+```
+
+**7. 监控和分析配置**
+
+| 变量名 | 默认值 | 必需 | 说明 |
+|--------|--------|------|------|
+| `NEXT_PUBLIC_GA_ID` | - | ❌ | Google Analytics ID |
+| `NEXT_PUBLIC_ENABLE_ANALYTICS` | `true` | ❌ | 是否启用分析 |
+| `SENTRY_DSN` | - | ❌ | Sentry 错误监控 DSN |
+| `LOG_LEVEL` | `info` | ❌ | 日志级别 |
+| `LOG_FORMAT` | `json` | ❌ | 日志格式 |
+
+**8. 文件存储配置**
+
+| 变量名 | 默认值 | 必需 | 说明 |
+|--------|--------|------|------|
+| `UPLOAD_DIR` | `./uploads` | ❌ | 上传文件目录 |
+| `MAX_FILE_SIZE` | `10485760` | ❌ | 最大文件大小（字节） |
+| `ALLOWED_FILE_TYPES` | `jpg,jpeg,png,gif,pdf,doc,docx` | ❌ | 允许的文件类型 |
+
+**9. 安全配置**
+
+| 变量名 | 默认值 | 必需 | 说明 |
+|--------|--------|------|------|
+| `CORS_ORIGIN` | `*` | ❌ | CORS 允许的源 |
+| `RATE_LIMIT_WINDOW` | `900000` | ❌ | 限流时间窗口（毫秒） |
+| `RATE_LIMIT_MAX` | `100` | ❌ | 限流最大请求数 |
+| `API_KEY_HEADER` | `X-API-Key` | ❌ | API 密钥请求头名称 |
+
+**10. 缓存配置**
+
+| 变量名 | 默认值 | 必需 | 说明 |
+|--------|--------|------|------|
+| `CACHE_TTL` | `3600` | ❌ | 缓存过期时间（秒） |
+| `CACHE_PREFIX` | `cache:` | ❌ | 缓存键前缀 |
+| `ENABLE_CACHE` | `true` | ❌ | 是否启用缓存 |
+
+**11. 功能开关**
+
+| 变量名 | 默认值 | 必需 | 说明 |
+|--------|--------|------|------|
+| `ENABLE_SIGNUP` | `true` | ❌ | 是否允许注册 |
+| `ENABLE_OAUTH` | `true` | ❌ | 是否启用 OAuth |
+| `ENABLE_API` | `true` | ❌ | 是否启用 API |
+| `ENABLE_DEMO_MODE` | `false` | ❌ | 是否启用演示模式 |
+
+**12. 预发环境示例 (.env.preview)**
+
+```bash
+# ===== 核心配置 =====
+NODE_ENV=production
+NEXT_PUBLIC_DEPLOYMENT_ENV=preview
+NEXT_PUBLIC_DOMAIN=urlchecker.dev
+
+# ===== 数据库配置 =====
+DATABASE_URL=postgresql://postgres:w8mhnnqh@dbprovider.sg-members-1.clawcloudrun.com:32404/autoads_preview?sslmode=prefer
+REDIS_URL=redis://default:9xdjb8nf@dbprovider.sg-members-1.clawcloudrun.com:32284/0
+
+# ===== 认证配置 =====
+AUTH_SECRET=85674018a64071a1f65a376d45a522dec78495cae7f5f1516febf8a4d51ff834
+AUTH_URL=https://www.urlchecker.dev
+AUTH_GOOGLE_ID=1007142410985-4945m48srrp056kp0q5n0e5he8omrdol.apps.googleusercontent.com
+AUTH_GOOGLE_SECRET=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
+
+# ===== 可选功能配置 =====
+# 第三方 API（如需要）
+SIMILARWEB_API_KEY=your-preview-key
+SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
+OPENPAGERANK_API_KEY=your-preview-key
+ADSPOWER_API_URL=http://local.adspower.net:50325
+
+# 监控配置
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_ENABLE_ANALYTICS=true
+LOG_LEVEL=debug
+```
+
+**13. 生产环境示例 (.env.production)**
+
+```bash
+# ===== 核心配置 =====
+NODE_ENV=production
+NEXT_PUBLIC_DEPLOYMENT_ENV=production
+NEXT_PUBLIC_DOMAIN=autoads.dev
+
+# ===== 数据库配置 =====
+DATABASE_URL=postgresql://postgres:w8mhnnqh@dbprovider.sg-members-1.clawcloudrun.com:32404/autoads_production?sslmode=require
+REDIS_URL=redis://default:9xdjb8nf@dbprovider.sg-members-1.clawcloudrun.com:32284/0
+DATABASE_POOL_SIZE=30
+
+# ===== 认证配置 =====
+AUTH_SECRET=your-production-secret-key-must-be-64-characters-long
+AUTH_URL=https://www.autoads.dev
+AUTH_GOOGLE_ID=your-production-google-client-id
+AUTH_GOOGLE_SECRET=your-production-google-client-secret
+JWT_EXPIRES_IN=7d
+
+# ===== 安全配置 =====
+CORS_ORIGIN=https://autoads.dev,https://www.autoads.dev
+RATE_LIMIT_WINDOW=900000
+RATE_LIMIT_MAX=100
+
+# ===== 邮件配置（如需要） =====
+EMAIL_PROVIDER=smtp
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=noreply@autoads.dev
+SMTP_PASS=your-app-password
+EMAIL_FROM=AutoAds <noreply@autoads.dev>
+
+# ===== 第三方 API 配置 =====
+SIMILARWEB_API_KEY=your-production-key
+SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
+OPENPAGERANK_API_KEY=your-production-key
+ADSPOWER_API_URL=http://local.adspower.net:50325
+GOOGLE_ADS_DEVELOPER_TOKEN=your-ads-dev-token
+GOOGLE_ADS_CLIENT_ID=your-ads-client-id
+GOOGLE_ADS_CLIENT_SECRET=your-ads-client-secret
+GOOGLE_ADS_REFRESH_TOKEN=your-ads-refresh-token
+
+# ===== 监控配置 =====
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_ENABLE_ANALYTICS=true
+SENTRY_DSN=https://your-sentry-dsn
+LOG_LEVEL=info
+LOG_FORMAT=json
+
+# ===== 文件存储配置 =====
+UPLOAD_DIR=/app/uploads
+MAX_FILE_SIZE=10485760
+ALLOWED_FILE_TYPES=jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx
+
+# ===== 缓存配置 =====
+CACHE_TTL=3600
+CACHE_PREFIX=autoads:prod:
+ENABLE_CACHE=true
+
+# ===== 功能开关 =====
+ENABLE_SIGNUP=true
+ENABLE_OAUTH=true
+ENABLE_API=true
+ENABLE_DEMO_MODE=false
+```
+
+**14. 环境变量管理最佳实践**
+
+1. **安全原则**
+   - 所有敏感信息必须通过环境变量传递
+   - 不要将 .env 文件提交到版本控制
+   - 定期轮换密钥和令牌
+
+2. **部署流程**
+   - 使用 ClawCloud 的环境变量管理功能
+   - 不同环境使用不同的变量值
+   - 敏感变量通过加密渠道传输
+
+3. **验证检查**
+   - 启动时验证必需的环境变量
+   - 提供友好的错误提示
+   - 记录环境变量配置状态
+
 ### 4.9 部署指南
 
 #### 4.9.1 开发环境部署
@@ -2873,6 +4734,527 @@ npm run dev
 ```
 
 #### 4.9.2 生产环境部署
+
+根据 docs/MustKnow.md 中的部署流程，采用 GitHub Actions + ClawCloud 两步部署策略：
+
+**1. 部署架构**:
+- **代码构建**: GitHub Actions 自动构建 Docker 镜像
+- **容器部署**: ClawCloud 平台托管容器服务
+- **环境隔离**: 预发环境（preview）和生产环境（production）完全隔离
+
+**2. GitHub Actions 自动构建**:
+
+镜像构建触发条件：
+- 代码推送到 `main` 分支 → 构建预发环境镜像（tag: preview-latest）
+- 代码推送到 `production` 分支 → 构建生产环境镜像（tag: prod-latest）
+- production 分支打 tag（如 v3.0.0）→ 构建版本镜像（tag: prod-v3.0.0）
+
+使用的 Dockerfile：`Dockerfile.gofly`（Go 架构专用）
+
+**3. Dockerfile.gofly 完整配置**:
+
+```dockerfile
+# AutoAds Go 架构专用 Dockerfile
+# 遵循简单实用原则，支持2C4G环境
+# 基于 GoFly Admin V3 框架构建
+
+# 构建阶段
+FROM golang:1.21-alpine AS builder
+
+# 安装必要的构建工具
+RUN apk add --no-cache \
+    git \
+    ca-certificates \
+    tzdata \
+    curl \
+    bash \
+    && update-ca-certificates \
+    && rm -rf /var/cache/apk/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制 go mod 文件
+COPY go.mod go.sum ./
+
+# 配置 Go 环境
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GO111MODULE=on
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
+
+# 下载依赖
+RUN go mod download
+
+# 复制源代码
+COPY . .
+
+# 构建应用（静态链接，优化大小）
+RUN go build \
+    -ldflags="-w -s -extldflags '-static' -X 'main.Version=$(git describe --tags --always)' -X 'main.BuildTime=$(date -u '+%Y-%m-%d %H:%M:%S UTC')'" \
+    -o autoads \
+    ./cmd/server.go
+
+# 运行阶段
+FROM alpine:3.19 AS runner
+
+# 安装必要的运行时依赖
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    curl \
+    bash \
+    && update-ca-certificates \
+    && rm -rf /var/cache/apk/*
+
+# 创建非root用户
+RUN addgroup -g 1001 -S appuser && \
+    adduser -u 1001 -S appuser -G appuser
+
+WORKDIR /app
+
+# 从构建阶段复制二进制文件
+COPY --from=builder /app/autoads .
+
+# 复制配置文件和资源
+COPY --from=builder /app/config ./config
+COPY --from=builder /app/docs ./docs
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/migrations ./migrations
+
+# 创建必要的目录
+RUN mkdir -p /app/logs /app/data /app/uploads /app/temp && \
+    chown -R appuser:appuser /app
+
+# 设置正确的权限
+RUN chmod +x ./scripts/*.sh 2>/dev/null || true
+
+# 切换到非root用户
+USER appuser
+
+# 设置时区
+ENV TZ=Asia/Shanghai
+
+# 应用环境变量
+ENV GIN_MODE=release
+ENV PORT=8080
+ENV HOST=0.0.0.0
+
+# 数据库连接池配置（2C4G优化）
+ENV DB_MAX_IDLE_CONNS=5
+ENV DB_MAX_OPEN_CONNS=20
+ENV DB_CONN_MAX_LIFETIME=300
+
+# Redis 配置
+ENV REDIS_POOL_SIZE=10
+ENV REDIS_MIN_IDLE_CONNS=3
+
+# 日志配置
+ENV LOG_LEVEL=info
+ENV LOG_OUTPUT=file
+ENV LOG_FILE=/app/logs/app.log
+
+# 暴露端口
+EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/api/health || exit 1
+
+# 启动脚本（支持多种启动模式）
+COPY --from=builder /app/scripts/docker-entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]
+```
+
+**4. docker-entrypoint.sh 启动脚本**:
+
+```bash
+#!/bin/bash
+set -e
+
+# 等待数据库就绪
+wait_for_db() {
+    echo "等待数据库连接..."
+    until nc -z -v -w30 ${DB_HOST:-localhost} ${DB_PORT:-3306}
+    do
+        echo "等待 MySQL..."
+        sleep 3
+    done
+    echo "数据库已就绪"
+}
+
+# 等待 Redis 就绪
+wait_for_redis() {
+    echo "等待 Redis 连接..."
+    until nc -z -v -w30 ${REDIS_HOST:-localhost} ${REDIS_PORT:-6379}
+    do
+        echo "等待 Redis..."
+        sleep 3
+    done
+    echo "Redis 已就绪"
+}
+
+# 运行数据库迁移
+run_migrations() {
+    if [ "$RUN_MIGRATIONS" = "true" ]; then
+        echo "运行数据库迁移..."
+        ./scripts/migrate.sh up
+    fi
+}
+
+# 初始化应用
+init_app() {
+    # 创建日志目录
+    mkdir -p /app/logs
+    
+    # 设置时区
+    if [ ! -z "$TZ" ]; then
+        ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+    fi
+    
+    # 打印启动信息
+    echo "====================================="
+    echo "AutoAds Go 版本: $(./autoads version)"
+    echo "启动时间: $(date)"
+    echo "环境: ${GIN_MODE:-release}"
+    echo "端口: ${PORT:-8080}"
+    echo "====================================="
+}
+
+# 主启动流程
+main() {
+    init_app
+    
+    # 根据环境决定是否等待依赖服务
+    if [ "$SKIP_DEPENDENCY_CHECK" != "true" ]; then
+        wait_for_db
+        wait_for_redis
+        run_migrations
+    fi
+    
+    # 启动应用
+    exec ./autoads "$@"
+}
+
+# 信号处理
+trap 'echo "收到停止信号，正在关闭..."; exit 0' SIGTERM SIGINT
+
+# 执行主函数
+main "$@"
+```
+
+**5. GitHub Actions 完整工作流** (.github/workflows/deploy.yml):
+
+```yaml
+name: Build and Deploy AutoAds Go
+
+on:
+  push:
+    branches: [ main, production ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: xxrenzhe/autoads
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        cache: true
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Run tests
+      run: |
+        go test -v ./...
+        go vet ./...
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.gofly
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          VERSION=${{ github.sha }}
+          BUILD_DATE=${{ github.event.created_at }}
+
+    - name: Generate deployment manifest
+      run: |
+        cat > deployment-manifest.yml << EOF
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: autoads-${{ github.ref_name }}
+          labels:
+            app: autoads
+            version: ${{ github.sha }}
+        spec:
+          replicas: 2
+          selector:
+            matchLabels:
+              app: autoads
+          template:
+            metadata:
+              labels:
+                app: autoads
+                version: ${{ github.sha }}
+            spec:
+              containers:
+              - name: autoads
+                image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+                ports:
+                - containerPort: 8080
+                env:
+                - name: GIN_MODE
+                  value: "release"
+                - name: PORT
+                  value: "8080"
+                resources:
+                  limits:
+                    cpu: "2"
+                    memory: "4Gi"
+                  requests:
+                    cpu: "500m"
+                    memory: "1Gi"
+                livenessProbe:
+                  httpGet:
+                    path: /api/health
+                    port: 8080
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                readinessProbe:
+                  httpGet:
+                    path: /api/ready
+                    port: 8080
+                  initialDelaySeconds: 5
+                  periodSeconds: 5
+        EOF
+
+    - name: Upload deployment manifest
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-manifest
+        path: deployment-manifest.yml
+
+  deploy-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+
+    steps:
+    - name: Download manifest
+      uses: actions/download-artifact@v3
+      with:
+        name: deployment-manifest
+
+    - name: Deploy to staging
+      run: |
+        echo "部署到预发环境..."
+        # 这里可以添加具体的部署命令，例如调用 ClawCloud API
+        # 或者使用 kubectl 部署到 K8s 集群
+
+  deploy-production:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/production' || startsWith(github.ref, 'refs/tags/v')
+    environment: production
+
+    steps:
+    - name: Download manifest
+      uses: actions/download-artifact@v3
+      with:
+        name: deployment-manifest
+
+    - name: Deploy to production
+      run: |
+        echo "部署到生产环境..."
+        # 生产环境部署逻辑
+```
+
+**6. ClawCloud 部署步骤**:
+
+1) **登录 ClawCloud 控制台**
+   - 访问 ClawCloud 管理平台
+   - 选择对应环境（预发/生产）
+
+2) **配置容器服务**
+   - 镜像地址：`ghcr.io/xxrenzhe/autoads:preview-latest`（预发环境）
+   - 镜像地址：`ghcr.io/xxrenzhe/autoads:prod-latest`（生产环境）
+   - 容器规格：2C4G（2核CPU、4GB内存）
+
+3) **配置环境变量**
+   
+   **预发环境核心变量**：
+   ```bash
+   # 应用配置
+   GIN_MODE=release
+   PORT=8080
+   HOST=0.0.0.0
+   DEPLOYMENT_ENV=preview
+   DOMAIN=urlchecker.dev
+   
+   # 数据库配置
+   DATABASE_URL=mysql://root:jtl85fn8@dbprovider.sg-members-1.clawcloudrun.com:30354/autoads?charset=utf8mb4&parseTime=True&loc=Local
+   DB_MAX_IDLE_CONNS=5
+   DB_MAX_OPEN_CONNS=20
+   DB_CONN_MAX_LIFETIME=300
+   
+   # Redis 配置
+   REDIS_URL=redis://default:9xdjb8nf@dbprovider.sg-members-1.clawcloudrun.com:32284/0
+   REDIS_POOL_SIZE=10
+   REDIS_MIN_IDLE_CONNS=3
+   
+   # JWT 认证配置
+   JWT_SECRET=85674018a64071a1f65a376d45a522dec78495cae7f5f1516febf8a4d51ff834
+   JWT_EXPIRE=168h
+   
+   # Google OAuth 配置
+   GOOGLE_CLIENT_ID=1007142410985-4945m48srrp056kp0q5n0e5he8omrdol.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=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
+   GOOGLE_CALLBACK_URL=https://www.urlchecker.dev/api/auth/google/callback
+   
+   # SimilarWeb 配置
+   SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
+   
+   # 日志配置
+   LOG_LEVEL=info
+   LOG_OUTPUT=file
+   LOG_FILE=/app/logs/app.log
+   ```
+   
+   **生产环境核心变量**：
+   ```bash
+   # 应用配置
+   GIN_MODE=release
+   PORT=8080
+   HOST=0.0.0.0
+   DEPLOYMENT_ENV=production
+   DOMAIN=autoads.dev
+   
+   # 数据库配置
+   DATABASE_URL=postgresql://postgres:w8mhnnqh@dbprovider.sg-members-1.clawcloudrun.com:32404/autoads?sslmode=require
+   DB_MAX_IDLE_CONNS=10
+   DB_MAX_OPEN_CONNS=50
+   DB_CONN_MAX_LIFETIME=600
+   
+   # Redis 配置
+   REDIS_URL=redis://default:9xdjb8nf@dbprovider.sg-members-1.clawcloudrun.com:32284/0
+   REDIS_POOL_SIZE=20
+   REDIS_MIN_IDLE_CONNS=5
+   
+   # JWT 认证配置
+   JWT_SECRET=your-production-jwt-secret-must-be-64-characters-long
+   JWT_EXPIRE=168h
+   JWT_REFRESH_EXPIRE=720h
+   
+   # Google OAuth 配置
+   GOOGLE_CLIENT_ID=your-production-google-client-id
+   GOOGLE_CLIENT_SECRET=your-production-google-client-secret
+   GOOGLE_CALLBACK_URL=https://www.autoads.dev/api/auth/google/callback
+   
+   # SimilarWeb 配置
+   SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
+   
+   # 邮件配置（可选）
+   EMAIL_ENABLED=false
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-password
+   
+   # 监控配置
+   SENTRY_DSN=your-sentry-dsn
+   ENABLE_METRICS=true
+   ```
+
+4) **网络配置**
+   - 预发环境域名：urlchecker.dev（自动301跳转到 www.urlchecker.dev）
+   - 生产环境域名：autoads.dev（自动301跳转到 www.autoads.dev）
+   - 容器内部端口：8080
+   - 健康检查路径：/api/health
+   - 就绪检查路径：/api/ready
+   
+   **5. 健康检查配置**
+   ```yaml
+   livenessProbe:
+     httpGet:
+       path: /api/health
+       port: 8080
+     initialDelaySeconds: 30
+     periodSeconds: 10
+     timeoutSeconds: 5
+     failureThreshold: 3
+   
+   readinessProbe:
+     httpGet:
+       path: /api/ready
+       port: 8080
+     initialDelaySeconds: 5
+     periodSeconds: 5
+     timeoutSeconds: 3
+     failureThreshold: 1
+   ```
+
+**4. 部署流程**:
+
+1. 开发者完成代码开发并推送到对应分支
+2. GitHub Actions 自动触发构建，生成 Docker 镜像
+3. 构建成功后，镜像推送到 GitHub Container Registry
+4. 运维人员在 ClawCloud 控制台更新镜像版本
+5. 配置环境变量（首次部署或配置变更时）
+6. 启动容器服务，验证部署状态
+7. 通过域名访问服务，确认功能正常
+
+**5. 回滚机制**:
+- 快速回滚：在 ClawCloud 控制台切换到上一个稳定版本的镜像
+- 数据保护：生产数据库定期自动备份
+- 监控告警：部署后自动监控系统健康状态
+
+**传统服务器部署（备选方案）**:
 
 **1. 服务器要求**:
 - CPU: 4 核以上

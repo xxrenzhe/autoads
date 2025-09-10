@@ -1,0 +1,112 @@
+# AutoAds Go 架构专用 Dockerfile
+# 遵循简单实用原则，支持2C4G环境
+# 基于 GoFly Admin V3 框架构建
+
+# 构建阶段
+FROM golang:1.21-alpine AS builder
+
+# 安装必要的构建工具
+RUN apk add --no-cache \
+    git \
+    ca-certificates \
+    tzdata \
+    curl \
+    bash \
+    && update-ca-certificates \
+    && rm -rf /var/cache/apk/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制 go mod 文件
+COPY go.mod go.sum ./
+
+# 配置 Go 环境
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GO111MODULE=on
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
+
+# 下载依赖
+RUN go mod download
+
+# 复制源代码
+COPY . .
+
+# 构建应用（静态链接，优化大小）
+RUN go build \
+    -ldflags="-w -s -extldflags '-static' -X 'main.Version=$(git describe --tags --always)' -X 'main.BuildTime=$(date -u '+%Y-%m-%d %H:%M:%S UTC')'" \
+    -o autoads \
+    ./cmd/server.go
+
+# 运行阶段
+FROM alpine:3.19 AS runner
+
+# 安装必要的运行时依赖
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    curl \
+    bash \
+    && update-ca-certificates \
+    && rm -rf /var/cache/apk/*
+
+# 创建非root用户
+RUN addgroup -g 1001 -S appuser && \
+    adduser -u 1001 -S appuser -G appuser
+
+WORKDIR /app
+
+# 从构建阶段复制二进制文件
+COPY --from=builder /app/autoads .
+
+# 复制配置文件和资源
+COPY --from=builder /app/config ./config
+COPY --from=builder /app/docs ./docs
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/migrations ./migrations
+
+# 创建必要的目录
+RUN mkdir -p /app/logs /app/data /app/uploads /app/temp && \
+    chown -R appuser:appuser /app
+
+# 设置正确的权限
+RUN chmod +x ./scripts/*.sh 2>/dev/null || true
+
+# 切换到非root用户
+USER appuser
+
+# 设置时区
+ENV TZ=Asia/Shanghai
+
+# 应用环境变量
+ENV GIN_MODE=release
+ENV PORT=8080
+ENV HOST=0.0.0.0
+
+# 数据库连接池配置（2C4G优化）
+ENV DB_MAX_IDLE_CONNS=5
+ENV DB_MAX_OPEN_CONNS=20
+ENV DB_CONN_MAX_LIFETIME=300
+
+# Redis 配置
+ENV REDIS_POOL_SIZE=10
+ENV REDIS_MIN_IDLE_CONNS=3
+
+# 日志配置
+ENV LOG_LEVEL=info
+ENV LOG_OUTPUT=file
+ENV LOG_FILE=/app/logs/app.log
+
+# 暴露端口
+EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/api/health || exit 1
+
+# 启动脚本（支持多种启动模式）
+COPY --from=builder /app/scripts/docker-entrypoint-go.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]
