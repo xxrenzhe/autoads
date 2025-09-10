@@ -2282,13 +2282,314 @@ services:
 - IV2: 奖励发放准确
 - IV3: 邀请记录完整
 
-## 6. GoFly集成架构
+## 6. 系统架构优化
 
-### 6.1 集成架构概述
+### 6.1 消息队列架构评估
+
+#### 6.1.1 技术选型分析
+
+**评估结论：使用Redis Pub/Sub，无需Kafka**
+
+基于系统需求和复杂度分析，选择Redis Pub/Sub作为消息队列解决方案：
+
+**系统特征分析**：
+- **消息量级**: 峰值100-200条/秒，日均5-10万条
+- **实时性要求**: 亚秒级延迟
+- **持久化需求**: 低（关键状态存在数据库）
+- **消费模式**: 单消费者模式，无需复杂的消费者组
+
+**Redis Pub/Sub优势**：
+1. **技术栈统一**: 已使用Redis做缓存和会话管理
+2. **集成成本低**: GoFly框架原生支持Redis Pub/Sub
+3. **运维简单**: 无需额外基础设施
+4. **性能满足**: 轻松处理当前消息量级
+5. **开发效率**: 2-3周即可完成集成
+
+#### 6.1.2 消息主题设计
+
+```yaml
+# 任务管理主题
+batch:task:created      # BatchGo任务创建
+batch:task:updated      # BatchGo任务进度更新
+batch:task:completed    # BatchGo任务完成
+
+# SiteRankGo主题
+siterank:query:started    # 查询开始
+siterank:query:completed  # 查询完成
+siterank:cache:invalidated # 缓存失效
+
+# ChangeLinkGo主题
+changelink:task:started   # 链接更新开始
+changelink:task:updated   # 链接更新进度
+changelink:task:completed # 链接更新完成
+
+# 用户通知主题
+user:notification         # 用户通知
+token:balance:updated     # Token余额更新
+
+# 系统事件主题
+system:health            # 系统健康状态
+system:metrics           # 系统指标
+```
+
+#### 6.1.3 实现架构
+
+```go
+// 消息结构
+type Message struct {
+    ID        string                 `json:"id"`
+    Type      string                 `json:"type"`
+    Timestamp int64                  `json:"timestamp"`
+    UserID    int64                  `json:"user_id,omitempty"`
+    Data      map[string]interface{} `json:"data"`
+    Metadata  map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// 消息代理接口
+type MessageBroker interface {
+    Publish(ctx context.Context, topic string, message interface{}) error
+    Subscribe(ctx context.Context, topic string, handler func(message interface{})) error
+}
+
+// Redis实现（使用GoFly封装）
+type RedisBroker struct {
+    redis *gredis.Redis
+}
+```
+
+#### 6.1.4 性能优化策略
+
+1. **连接池管理**: 复用Redis连接，避免频繁创建
+2. **消息批处理**: 小消息合并发送，减少网络开销
+3. **降级机制**: Pub/Sub不可用时自动降级为HTTP轮询
+4. **消息去重**: 处理网络重试导致的重复消息
+
+### 6.2 角色权限系统简化
+
+#### 6.2.1 角色体系重构
+
+**简化为两级角色体系**：
+
+```yaml
+USER (普通用户):
+  - 基础功能访问权限
+  - 个人数据查看权限
+  - 根据套餐获得不同功能权限
+  
+ADMIN (管理员):
+  - 所有业务模块管理权限
+  - 用户管理权限
+  - 系统配置权限
+  - 数据查看和分析权限
+```
+
+**移除的角色**：
+- SUPER_ADMIN: 功能合并到ADMIN
+- MANAGER: 功能下放到ADMIN或通过套餐权限控制
+
+#### 6.2.2 权限控制机制
+
+**基于套餐的功能权限**：
+```yaml
+Free套餐:
+  - BatchGo Basic: 100个URL/任务，串行执行
+  - SiteRankGo: 100个域名/次
+  - ChangeLinkGo: 不支持
+  
+Pro套餐:
+  - BatchGo Silent: 1,000个URL/任务，5并发
+  - SiteRankGo: 500个域名/次
+  - ChangeLinkGo: 10个Google Ads账户
+  
+Max套餐:
+  - BatchGo Automated: 5,000个URL/任务，50并发
+  - SiteRankGo: 5,000个域名/次
+  - ChangeLinkGo: 100个Google Ads账户
+```
+
+**管理员权限细分**：
+```yaml
+管理员权限模块:
+  - 用户管理: 查看、编辑、禁用用户
+  - 订单管理: 查看支付记录，手动调整套餐
+  - 系统监控: 查看系统状态、性能指标
+  - 任务管理: 查看所有用户任务，可干预执行
+  - 配置管理: 系统参数、API密钥配置
+```
+
+### 6.3 API限流与安全机制
+
+#### 6.3.1 多层限流策略
+
+**1. 网关层限流（GoFly）**
+```go
+// 令牌桶算法实现
+type RateLimiter struct {
+    tokens      int64
+    capacity    int64
+    refillRate  int64 // tokens/second
+    lastRefill  int64
+    mu          sync.Mutex
+}
+
+// 不同端点的限流配置
+rateLimitRules = map[string]RateLimitConfig{
+    "/api/v1/auth/login":     {capacity: 10, refillRate: 1},    // 10请求/分钟
+    "/api/v1/batchgo/tasks":  {capacity: 100, refillRate: 10},   // 100请求/分钟
+    "/api/v1/siterank/query": {capacity: 50, refillRate: 5},     // 50请求/分钟
+    "/admin/*":               {capacity: 1000, refillRate: 100}, // 管理员更高限制
+}
+```
+
+**2. 用户级限流**
+```yaml
+# 基于套餐的限流
+Free:
+  - API调用: 100次/小时
+  - 并发任务: 1个
+  
+Pro:
+  - API调用: 1000次/小时
+  - 并发任务: 5个
+  
+Max:
+  - API调用: 10000次/小时
+  - 并发任务: 50个
+```
+
+**3. IP级限流**
+```yaml
+# 防止恶意请求
+- 单IP: 1000请求/小时
+- 异常IP自动封禁: 5分钟内失败100次
+- CDN防护: 集成Cloudflare或类似服务
+```
+
+#### 6.3.2 安全机制设计
+
+**1. 认证机制**
+```go
+// JWT Token结构
+type Claims struct {
+    UserID      string `json:"user_id"`
+    Email       string `json:"email"`
+    Role        string `json:"role"`
+    Package     string `json:"package"`
+    Permissions []string `json:"permissions"`
+    Exp         int64  `json:"exp"`
+    Iat         int64  `json:"iat"`
+}
+
+// Token刷新机制
+func RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error) {
+    // 验证refresh token
+    // 生成新的access token
+    // 撤销旧token
+}
+```
+
+**2. 权限验证中间件**
+```go
+func AuthMiddleware(permissions ...string) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        token := extractToken(c)
+        claims, err := validateToken(token)
+        if err != nil {
+            c.JSON(401, gin.H{"error": "无效的访问令牌"})
+            c.Abort()
+            return
+        }
+        
+        // 检查权限
+        for _, perm := range permissions {
+            if !hasPermission(claims.Permissions, perm) {
+                c.JSON(403, gin.H{"error": "权限不足"})
+                c.Abort()
+                return
+            }
+        }
+        
+        c.Set("user_id", claims.UserID)
+        c.Set("user_role", claims.Role)
+        c.Set("user_package", claims.Package)
+        c.Next()
+    }
+}
+```
+
+**3. 数据安全**
+```yaml
+# 数据传输安全
+- HTTPS强制: 所有API必须使用HTTPS
+- 敏感数据加密: 用户密码、API密钥等加密存储
+- 请求签名: 重要操作需要签名验证
+
+# 数据存储安全
+- 数据库加密: 敏感字段加密存储
+- 访问控制: 基于角色的数据访问
+- 审计日志: 记录所有敏感操作
+```
+
+**4. 防攻击措施**
+```yaml
+# SQL注入防护
+- 使用参数化查询
+- ORM自动转义
+- 输入验证和过滤
+
+# XSS防护
+- 输出转义
+- CSP头部设置
+- 输入内容过滤
+
+# CSRF防护
+- SameSite Cookie
+- CSRF Token验证
+- Origin头部验证
+
+# 速率限制
+- 登录失败限制: 5次/分钟
+- 短信发送限制: 10次/小时
+- 邮件发送限制: 50次/小时
+```
+
+#### 6.3.3 监控和告警
+
+**1. 安全事件监控**
+```yaml
+监控指标:
+  - 异常登录: 多地区、短时间多次登录
+  - API异常: 大量403、404、500错误
+  - 资源异常: 突然的Token消耗激增
+  - 任务异常: 大量任务失败
+  
+告警规则:
+  - 5分钟内登录失败超过100次
+  - 单用户API调用超过套餐限制200%
+  - 系统错误率超过5%
+  - 单IP请求超过阈值
+```
+
+**2. 性能监控**
+```yaml
+# API性能指标
+- 响应时间: P95 < 200ms
+- 错误率: < 1%
+- 吞吐量: 峰值1000 QPS
+- 可用性: > 99.9%
+
+# 系统资源监控
+- CPU使用率: < 80%
+- 内存使用率: < 85%
+- 磁盘使用率: < 80%
+- 数据库连接: < 最大连接数80%
+```
+
+### 6.4 GoFly集成架构
 
 基于对现有PRD、GoFly框架和代码库的深入分析，发现以下关键集成缺失：
 
-#### 6.1.1 GoFly框架能力映射
+#### 6.4.1 GoFly框架能力映射
 GoFly V3框架提供以下核心能力：
 - **RBAC权限系统**：基于角色的访问控制
 - **动态菜单管理**：可配置的菜单结构
@@ -2299,7 +2600,7 @@ GoFly V3框架提供以下核心能力：
 - **文件管理**：统一的文件存储
 - **系统配置**：全局配置管理
 
-#### 6.1.2 当前集成缺失
+#### 6.4.2 当前集成缺失
 
 1. **业务模块管理界面缺失**
    - 缺少BatchGo任务管理界面
@@ -2317,9 +2618,9 @@ GoFly V3框架提供以下核心能力：
    - 任务状态更新机制不明确
    - 缺少WebSocket通信设计
 
-### 6.2 详细集成方案
+### 6.5 详细集成方案
 
-#### 6.2.1 业务模块管理
+#### 6.5.1 业务模块管理
 
 **BatchGo模块管理**
 ```yaml
@@ -2386,7 +2687,7 @@ GoFly V3框架提供以下核心能力：
     * API配额使用监控
 ```
 
-#### 6.2.2 前端交互集成
+#### 6.5.2 前端交互集成
 
 **实时通信机制**
 ```typescript
@@ -2454,51 +2755,40 @@ const apiClient = {
 };
 ```
 
-#### 6.2.3 权限系统集成
+#### 6.5.3 权限系统集成
 
-**角色权限映射**
+**简化后的权限映射**
 ```yaml
-系统角色:
-  SUPER_ADMIN:
+系统角色（仅两级）:
+  USER (普通用户):
+    - 基础功能访问权限
+    - 个人数据查看权限
+    - 根据套餐获得不同功能权限
+  
+  ADMIN (管理员):
     - 所有业务模块管理权限
-    - 系统配置权限
     - 用户管理权限
-    - 数据查看权限
-  
-  ADMIN:
-    - 业务模块操作权限
-    - 用户查看权限
-    - 基础配置权限
-  
-  MANAGER:
-    - 指定业务模块管理
-    - 团队用户管理
-    - 数据查看权限
-  
-  USER:
-    - 个人业务功能使用
-    - 个人数据查看
+    - 系统配置权限
+    - 数据查看和分析权限
 
-业务权限:
-  batchgo:
-    basic_create: [USER, MANAGER, ADMIN, SUPER_ADMIN]
-    silent_create: [PRO, MAX]
-    automated_create: [MAX]
-    task_view: [USER, MANAGER, ADMIN, SUPER_ADMIN]
-    task_manage: [MANAGER, ADMIN, SUPER_ADMIN]
+套餐功能权限:
+  Free套餐:
+    - BatchGo Basic: 100个URL/任务，串行执行
+    - SiteRankGo: 100个域名/次
+    - ChangeLinkGo: 不支持
   
-  siterank:
-    query_create: [USER, MANAGER, ADMIN, SUPER_ADMIN]
-    bulk_query: [PRO, MAX]
-    export_data: [PRO, MAX]
+  Pro套餐:
+    - BatchGo Silent: 1,000个URL/任务，5并发
+    - SiteRankGo: 500个域名/次
+    - ChangeLinkGo: 10个Google Ads账户
   
-  changelink:
-    account_connect: [PRO, MAX]
-    link_update: [PRO, MAX]
-    bulk_update: [MAX]
+  Max套餐:
+    - BatchGo Automated: 5,000个URL/任务，50并发
+    - SiteRankGo: 5,000个域名/次
+    - ChangeLinkGo: 100个Google Ads账户
 ```
 
-#### 6.2.4 数据流设计
+#### 6.5.4 数据流设计
 
 **请求流程**
 ```
@@ -2514,9 +2804,9 @@ GoFly后端 → WebSocket → 前端组件
   事件发布 → 消息队列 → 状态更新
 ```
 
-### 6.3 实施计划
+### 6.6 实施计划
 
-#### 6.3.1 第一阶段：基础集成
+#### 6.6.1 第一阶段：基础集成
 1. **GoFly后端部署**
    - 配置数据库连接
    - 初始化系统数据
@@ -2532,7 +2822,7 @@ GoFly后端 → WebSocket → 前端组件
    - 角色权限管理
    - 系统配置界面
 
-#### 6.3.2 第二阶段：业务集成
+#### 6.6.2 第二阶段：业务集成
 1. **BatchGo集成**
    - 开发任务管理API
    - 实现实时监控
@@ -2548,7 +2838,7 @@ GoFly后端 → WebSocket → 前端组件
    - 链接更新功能
    - 监控告警系统
 
-#### 6.3.3 第三阶段：优化完善
+#### 6.6.3 第三阶段：优化完善
 1. **性能优化**
    - 缓存策略优化
    - 数据库查询优化
@@ -2581,6 +2871,7 @@ GoFly后端 → WebSocket → 前端组件
 | v11.0 | 2025-01-10 | 进一步优化PRD：合并飞书Webhook到消息通知中心；定价页面增加Token购买选项；添加现有业务逻辑保护章节，确保重构不破坏核心功能 | 产品团队 |
 | v12.0 | 2025-01-10 | 更新Token充值价格：小包¥99=10,000 tokens，提高大包折扣力度（中包40% off，大包67% off，超大包80% off） | 产品团队 |
 | v13.0 | 2025-01-10 | 全面补充GoFly集成架构：添加业务模块管理界面、前端交互集成、权限系统集成、数据流设计和详细实施计划 | 产品团队 |
+| v14.0 | 2025-01-10 | 优化系统架构：评估并选择Redis Pub/Sub替代Kafka；简化角色系统为USER和ADMIN两级；设计完整的API限流和安全机制 | 产品团队 |
 
 ## 8. 附录
 
