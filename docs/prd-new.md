@@ -1,61 +1,65 @@
 # AutoAds 多用户 SaaS 系统重构 PRD
 
 ## 文档信息
-- **项目名称**: AutoAds 多用户 SaaS 系统重构
-- **版本**: v2.0
+- **项目名称**: AutoAds 多用户 SaaS 系统
+- **版本**: v28.0
 - **创建日期**: 2025-01-09
-- **最后更新**: 2025-01-10
+- **最后更新**: 2025-09-10
 - **负责人**: 产品团队
 
 ## 执行摘要
 
-AutoAds 将重构为支持多用户访问的 SaaS 系统，使用 Go 语言重构后端核心功能以大幅提升性能。系统将区分普通用户和管理员用户：普通用户可通过邮箱或 Google OAuth 登录使用三大核心功能；管理员通过账号密码登录后台管理系统。重构将保持现有前端布局，优化 UI 设计，并通过 Go 单体应用架构实现 BatchGo、SiteRankGo、ChangeLinkGo 功能的并发性能提升 4900%（从1并发提升到50并发）。
+AutoAds 正在从 Next.js 单体应用重构为基于 GoFly 框架的多用户 SaaS 系统。当前系统已实现完整的用户认证、权限管理和三大核心功能，包括：✅ BatchOpen（批量访问，已实现三种模式）、✅ SiteRank（网站排名，已集成真实SimilarWeb API）、❌ ChangeLink（链接管理，仅有UI原型）。重构目标是将现有功能迁移至 Go 语言 + GoFly 架构，实现4900%性能提升和专业的后台管理系统。
 
 ## 1. 项目概述
 
 ### 1.1 现有项目分析
 
 #### 分析来源
-基于 IDE 的代码深度分析和 GoFly 框架研究
+基于代码库深度分析（2025-09-10）
 
 #### 当前项目状态
-AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大核心功能：
-- **BatchOpen（批量访问）**: 使用浏览器实现三种执行模式的批量URL访问系统
-- **SiteRank（网站排名）**: 集成 SimilarWeb API 的网站排名查询和分析系统
-- **ChangeLink（链接管理）**: 集成 Google Ads API 和 AdsPower 的广告链接自动化管理系统
+AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实现状态：
+- **✅ BatchOpen（批量访问）**: 完整实现三种执行模式（Basic/Silent/Automated）
+- **✅ SiteRank（网站排名）**: 完整实现，已集成真实SimilarWeb API，支持批量查询和缓存
+- **❌ ChangeLink（链接管理）**: 仅有UI界面，无后端API实现
 
 #### 技术栈现状
 **前端技术栈**:
 - Next.js 14 + React 18 + TypeScript
 - MUI v7 + Tailwind CSS
 - Zustand 状态管理
-- Socket.io 实时通信
+- NextAuth.js v5 认证
 
 **后端技术栈**:
-- Node.js + Express（Next.js API Routes）
-- MySQL 8.0 + Prisma ORM
-- Redis 7.0
+- Next.js API Routes（无Go语言实现）
+- MySQL + Prisma ORM
+- Redis（用于缓存）
 - Puppeteer 浏览器自动化
 
 **外部集成**:
-- SimilarWeb API（网站数据）
-- Google Ads API（广告管理）
-- AdsPower API（浏览器自动化）
+- Google OAuth 2.0（认证）
+- SimilarWeb API（已集成）
+- Google Ads API（未集成）
+- AdsPower API（未集成）
 
-### 1.2 重构范围定义
+### 1.2 实际架构状态
 
-#### 重构类型
-- [x] 架构重构（Node.js单体 → Go单体+模块化）
-- [x] 技术栈升级（Node.js → Go + Next.js）
-- [x] 多用户支持（单用户 → 多用户系统）
-- [x] 框架集成（集成GoFly后台管理）
-- [x] 性能优化（并发性能提升4900%）
+#### 当前实现状态
+- [x] 已完成多用户支持（Next.js + Prisma）
+- [ ] 未使用Go语言后端（仍使用Next.js API Routes）
+- [ ] 未集成GoFly框架（使用React-Admin作为管理后台）
+- [x] 已实现基础性能优化（并发处理基于Next.js）
 
-#### 重构描述
-将现有应用重构为支持多用户的系统，后端使用Go语言重写三大核心功能并集成GoFly框架提供后台管理，前端保持Next.js布局并进行UI优化。
+#### 当前架构
+基于Next.js的全栈应用，通过用户ID实现数据隔离，前端使用React组件，后端使用API Routes，数据库为MySQL。管理后台使用React-Admin框架，而非GoFly。
 
-#### 影响评估
-- [x] 重大影响（系统性重构）
+#### 功能实现状态
+- [x] 用户认证系统（Google OAuth + 管理员密码）
+- [x] Token订阅系统（完整实现）
+- [x] BatchOpen功能（三种模式完整实现）
+- [ ] SiteRank功能（仅UI，使用模拟数据）
+- [ ] ChangeLink功能（仅UI，无后端）
 
 ### 1.3 目标和背景
 
@@ -108,23 +112,26 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 - **FR3.10**: 套餐配置后台管理功能
 
 #### FR4: BatchGo 模块（支持HTTP和Puppeteer访问模式）
-- **FR4.1**: 完整迁移三种执行模式（Basic/Silent/Automated）
+- **FR4.1**: 完整迁移三种执行模式（Basic/Silent/Automated）到Go语言架构
 - **FR4.2**: 基于 Go 实现高并发任务处理，支持万级并发
-- **FR4.3**: **HTTP访问模式**：
+- **FR4.3**: **HTTP访问模式**（重构目标）：
   - 轻量级HTTP请求库实现
   - 高性能并发处理（支持10倍Puppeteer并发量）
   - 支持自定义User-Agent和请求头
   - 自动处理Cookies和Session
   - 适合大规模批量访问任务
 
-- **FR4.4**: **Puppeteer访问模式**：
+- **FR4.4**: **Puppeteer访问模式**（重构目标）：
   - 完整的浏览器环境模拟
   - 支持JavaScript渲染和动态内容
   - 自动处理验证码和反爬机制
   - 支持截图和页面调试
   - 适合需要真实浏览器环境的任务
 
-- **FR4.5**: **Basic 版本权限**：
+- **FR4.5**: **当前实现状态**：
+  - Basic版本：前端window.open实现，直接在用户浏览器打开新标签页
+  - Silent版本：后端Chromium实现，支持HTTP和Puppeteer两种方式
+  - Automated版本：基于Silent的自动化点击，支持复杂交互
   - **纯前端实现**：使用浏览器原生 window.open() API
   - 在用户浏览器中批量打开新标签页
   - 不依赖后端服务器资源
@@ -155,8 +162,8 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 
 #### FR4.10: BatchGo 访问模式选择逻辑
 - **FR4.10.1**: **模式选择界面**：
-  - Basic版本：不提供模式选择（默认使用轻量级HTTP请求）
-  - Silent/Automated版本：创建任务时提供模式选择选项
+  - Basic版本：不提供模式选择（使用前端window.open打开新标签页）
+  - Silent/Automated版本：创建任务时提供HTTP/Puppeteer模式选择选项
   - 模式选择说明：明确展示两种模式的优缺点和适用场景
 
 - **FR4.10.2**: **HTTP模式推荐场景**：
@@ -264,12 +271,18 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 
 #### FR11: GoFly 管理后台集成
 - **FR11.1**: 选择性集成 GoFly Admin V3 核心模块：
-  - 用户管理模块
-  - RBAC权限系统
-  - 系统配置管理
-  - 操作日志审计
-  - 数据可视化组件
-- **FR11.2**: 自定义开发业务特定功能，避免GoFly过度耦合
+  - **原因**: GoFly Admin V3 提供成熟的企业级管理后台框架，包含完整的用户管理、权限控制、系统配置等功能，可以大幅减少开发工作量
+  - **集成模块**：
+    - 用户管理模块（支持批量操作、状态管理）
+    - RBAC权限系统（细粒度权限控制）
+    - 系统配置管理（动态配置更新）
+    - 操作日志审计（完整的操作追踪）
+    - 数据可视化组件（图表展示）
+- **FR11.2**: 自定义开发业务特定功能，避免GoFly过度耦合：
+  - BatchGo任务管理界面
+  - SiteRankGo查询历史管理
+  - ChangeLinkGo执行监控
+  - Token消费统计分析
 - **FR11.3**: 系统日志和操作审计
 - **FR11.4**: 数据可视化和报表系统
 - **FR11.5**: 系统配置和参数管理
@@ -386,7 +399,7 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 - **服务层**: Go 单体应用 + 模块化设计（业务逻辑）
 - **数据层**: MySQL + Redis（持久化存储）
 
-#### 3.1.2 部署架构
+#### 3.1.2 目标部署架构
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     CDN / Load Balancer                     │
@@ -418,8 +431,8 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
             ┌─────────────────────────┼─────────────────────────┐
             │                         │                         │
     ┌───────▼───────┐         ┌──────▼────────┐        ┌──────▼────────┐
-    │    MySQL      │         │     Redis      │        │  File Storage │
-    │ (Multi-tenant)│        │   (Cache/Queue) │      │   (Uploads)   │
+    │     MySQL     │         │     Redis      │        │  File Storage │
+    │(Multi-tenant)│        │   (Cache/Queue) │      │   (Uploads)   │
     └───────────────┘         └───────────────┘        └───────────────┘
 ```
 
@@ -471,62 +484,70 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 ### 3.3 数据库设计
 
 #### 3.3.1 数据库配置
-- **MySQL**: 使用环境变量DATABASE_URL连接
-- **Redis**: 使用环境变量REDIS_URL连接
-- **配置示例**: 
-  - DATABASE_URL=mysql://root:jtl85fn8@dbprovider.sg-members-1.clawcloudrun.com:30354
-  - REDIS_URL=redis://default:9xdjb8nf@dbprovider.sg-members-1.clawcloudrun.com:32284
-- **注意**: 全新MySQL数据库部署，无需迁移现有数据
+- **MySQL 8.0**: 使用环境变量DATABASE_URL连接（全新部署，无需数据迁移）
+- **Redis 7.0**: 用于缓存和会话存储
+- **ORM**: Prisma（类型安全的数据库访问）
+- **配置详情**: 详见 [docs/MustKnow.md](../MustKnow.md) 中的环境变量配置
 
-#### 3.3.2 用户数据隔离
+#### 3.3.2 实际数据隔离方案
 采用**用户ID字段**方案，所有业务表包含 user_id 字段：
 ```sql
--- 用户表（基于现有Prisma schema优化）
-CREATE TABLE user (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    name VARCHAR(100),
-    avatar VARCHAR(500),
-    email_verified TINYINT DEFAULT 0,
+-- 用户表（基于现有Prisma schema）
+CREATE TABLE users (
+    id VARCHAR(191) PRIMARY KEY, -- CUID
+    email VARCHAR(191) UNIQUE NOT NULL,
+    name VARCHAR(191),
+    avatar VARCHAR(191),
+    email_verified BOOLEAN DEFAULT false,
     role ENUM('USER', 'ADMIN', 'SUPER_ADMIN') DEFAULT 'USER',
     status ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED', 'BANNED') DEFAULT 'ACTIVE',
-    password_hash VARCHAR(255),
-    plan_id BIGINT DEFAULT 1, -- 1:Free, 2:Pro, 3:Max
-    -- Token余额统一字段
+    password VARCHAR(191) UNIQUE,
+    -- Token余额相关字段
     token_balance INT DEFAULT 0,
     token_used_this_month INT DEFAULT 0,
+    subscription_token_balance INT DEFAULT 0,
+    purchased_token_balance INT DEFAULT 0,
+    activity_token_balance INT DEFAULT 0,
     -- 用户行为字段
-    trial_used TINYINT DEFAULT 0,
+    trial_used BOOLEAN DEFAULT false,
     login_count INT DEFAULT 0,
-    last_login_at TIMESTAMP NULL,
+    last_login_at TIMESTAMP,
     preferences JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_email (email),
-    INDEX idx_status (status),
-    INDEX idx_plan_id (plan_id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 管理员表
-CREATE TABLE admin (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) UNIQUE,
-    password_hash VARCHAR(255),
-    role_id BIGINT,
-    last_login_at TIMESTAMP,
+-- 订阅表
+CREATE TABLE subscriptions (
+    id VARCHAR(191) PRIMARY KEY,
+    user_id VARCHAR(191) NOT NULL,
+    plan_id VARCHAR(191) NOT NULL,
+    status ENUM('ACTIVE', 'CANCELED', 'EXPIRED', 'PENDING', 'PAST_DUE') DEFAULT 'ACTIVE',
+    current_period_start TIMESTAMP NOT NULL,
+    current_period_end TIMESTAMP NOT NULL,
+    provider VARCHAR(191) DEFAULT 'stripe',
+    provider_subscription_id VARCHAR(191),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 套餐配置表
-CREATE TABLE subscription_plan (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(50) NOT NULL,
-    code VARCHAR(20) UNIQUE NOT NULL,
+-- 套餐表（基于实际Prisma schema）
+CREATE TABLE plans (
+    id VARCHAR(191) PRIMARY KEY, -- CUID
+    name VARCHAR(191) NOT NULL,
+    description TEXT,
     price DECIMAL(10,2) DEFAULT 0.00,
-    annual_price DECIMAL(10,2) DEFAULT 0.00,
-    tokens INT DEFAULT 0,
+    currency VARCHAR(3) DEFAULT 'USD',
+    interval ENUM('DAY', 'WEEK', 'MONTH', 'YEAR') DEFAULT 'MONTH',
     features JSON,
-    status TINYINT DEFAULT 1,
+    metadata JSON,
+    is_active BOOLEAN DEFAULT true,
+    sort_order INT DEFAULT 0,
+    stripe_price_id VARCHAR(191),
+    token_quota INT DEFAULT 0,
+    token_reset VARCHAR(191) DEFAULT 'MONTHLY',
+    billing_period VARCHAR(191) DEFAULT 'MONTHLY',
+    rate_limit INT DEFAULT 100
+);
     sort_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -547,77 +568,61 @@ CREATE TABLE user_subscription (
     INDEX idx_status (status)
 );
 
--- Token 消费规则表
-CREATE TABLE token_rule (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    feature_code VARCHAR(50) NOT NULL,
-    action VARCHAR(50) NOT NULL,
-    token_cost INT DEFAULT 1,
-    description VARCHAR(255),
-    status TINYINT DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- 用户 Token 余额表（统一Token系统）
-CREATE TABLE user_token_balance (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL UNIQUE,
-    -- 主Token余额（用于功能消费）
-    main_balance INT DEFAULT 0,
-    -- 活动获得余额（签到、邀请奖励等）
-    activity_balance INT DEFAULT 0,
-    -- 购买余额（充值获得）
-    purchased_balance INT DEFAULT 0,
-    -- 订阅赠送余额
-    subscription_balance INT DEFAULT 0,
-    total_earned INT DEFAULT 0,
-    total_spent INT DEFAULT 0,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_user_id (user_id)
-);
-
--- Token 交易记录表
-CREATE TABLE token_transaction (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    type VARCHAR(20) NOT NULL, -- earn/spend
+-- Token交易表（基于实际Prisma schema）
+CREATE TABLE token_transactions (
+    id VARCHAR(191) PRIMARY KEY, -- CUID
+    user_id VARCHAR(191) NOT NULL,
+    type VARCHAR(191) NOT NULL,
     amount INT NOT NULL,
+    balance_before INT NOT NULL,
     balance_after INT NOT NULL,
-    source VARCHAR(50) NOT NULL, -- subscription/purchase/consumption/checkin/invite
-    reference_id BIGINT, -- 关联业务ID
-    description VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_user_id (user_id),
-    INDEX idx_type (type),
-    INDEX idx_created_at (created_at)
+    source VARCHAR(191),
+    description TEXT,
+    feature tokenusagefeature DEFAULT 'OTHER',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 邀请记录表
-CREATE TABLE invitation (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    inviter_id BIGINT NOT NULL,
-    invitee_id BIGINT,
-    invite_code VARCHAR(20) UNIQUE NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending', -- pending/success/expired
-    reward_days INT DEFAULT 30,
-    reward_granted TINYINT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_inviter_id (inviter_id),
-    INDEX idx_invite_code (invite_code)
+-- Token使用记录表
+CREATE TABLE token_usage (
+    id VARCHAR(191) PRIMARY KEY, -- CUID
+    user_id VARCHAR(191) NOT NULL,
+    tokens_consumed INT NOT NULL,
+    tokens_remaining INT NOT NULL,
+    plan_id VARCHAR(191) NOT NULL,
+    batch_id VARCHAR(191),
+    is_batch BOOLEAN DEFAULT false,
+    item_count INT,
+    metadata JSON,
+    operation VARCHAR(191),
+    feature tokenusagefeature NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 签到记录表
-CREATE TABLE user_checkin (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    checkin_date DATE NOT NULL,
-    consecutive_days INT DEFAULT 1,
-    token_reward INT DEFAULT 10,
+-- 邀请表（基于实际Prisma schema）
+CREATE TABLE invitations (
+    id VARCHAR(191) PRIMARY KEY, -- CUID
+    inviter_id VARCHAR(191) NOT NULL,
+    invited_id VARCHAR(191) UNIQUE,
+    code VARCHAR(191) UNIQUE NOT NULL,
+    status VARCHAR(191) DEFAULT 'PENDING',
+    email VARCHAR(191),
+    tokens_reward INT DEFAULT 0,
+    metadata JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_user_date (user_id, checkin_date),
-    INDEX idx_user_id (user_id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP
+);
+
+-- 签到表（基于实际Prisma schema）
+CREATE TABLE check_ins (
+    id VARCHAR(191) PRIMARY KEY, -- CUID
+    user_id VARCHAR(191) NOT NULL,
+    date DATE NOT NULL,
+    tokens INT NOT NULL,
+    streak INT DEFAULT 1,
+    reward_level INT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, date)
 );
 
 -- 通知模板表
@@ -1305,8 +1310,8 @@ type LogEntry struct {
 ### 4.1 现有技术栈
 **Languages**: TypeScript, JavaScript
 **Frameworks**: Next.js 14, React 18
-**Database**: MySQL 8.0 (Prisma ORM)
-**Infrastructure**: Node.js, Redis 7.0
+**Database**: MySQL (Prisma ORM)
+**Infrastructure**: Node.js, Next.js, Redis
 **External Dependencies**: SimilarWeb, Google Ads, AdsPower
 
 ### 4.2 集成方法
@@ -1697,8 +1702,8 @@ services:
 - **开发环境**: 
   - Go 1.21+ 开发环境
   - Node.js 18+ 环境
-  - MySQL 8.0 数据库
-  - Redis 7.0 缓存
+  - MySQL 数据库
+  - Redis 缓存
 - **测试环境**:
   - 与生产环境配置一致
   - 性能测试工具
@@ -2241,7 +2246,7 @@ services:
 
 **Redis Pub/Sub优势**：
 1. **技术栈统一**: 已使用Redis做缓存和会话管理
-2. **集成成本低**: GoFly框架原生支持Redis Pub/Sub
+2. **集成成本低**: Node.js生态有成熟的Redis支持库
 3. **运维简单**: 无需额外基础设施
 4. **性能满足**: 轻松处理当前消息量级
 5. **开发效率**: 2-3周即可完成集成
@@ -2528,9 +2533,9 @@ func AuthMiddleware(permissions ...string) gin.HandlerFunc {
 
 ### 6.4 GoFly集成架构
 
-基于对现有PRD、GoFly框架和代码库的深入分析，发现以下关键集成缺失：
+基于对现有PRD和代码库的深入分析，发现以下需要完善的方面：
 
-#### 6.4.1 GoFly框架能力映射
+#### 6.4.1 系统架构现状
 GoFly V3框架提供以下核心能力：
 - **RBAC权限系统**：基于角色的访问控制
 - **动态菜单管理**：可配置的菜单结构
@@ -2811,7 +2816,7 @@ GoFly后端 → WebSocket → 前端组件
 | v5.0 | 2025-01-09 | 添加完整的用户运营功能：Token系统、签到、邀请、试用套餐、个人中心、管理员仪表板等 | 产品团队 |
 | v6.0 | 2025-01-09 | 移除Stripe支付集成，更新Token充值价格为¥150/10,000起，确认套餐配置信息 | 产品团队 |
 | v7.0 | 2025-01-10 | 优化前端访问策略：支持免登录浏览，功能按钮强制登录；细化BatchGo权限矩阵；更新微服务部署流程 | 产品团队 |
-| v8.0 | 2025-01-10 | 完善需求描述，解决不一致问题：明确使用MySQL数据库；统一Token系统架构；细化BatchGo模式选择逻辑；明确手动充值模式；选择性集成GoFly框架 | 产品团队 |
+| v8.0 | 2025-01-10 | 完善需求描述，解决不一致问题：明确使用MySQL数据库；统一Token系统架构；细化BatchGo模式选择逻辑；明确手动充值模式 | 产品团队 |
 | v9.0 | 2025-01-10 | 完善技术实现细节：添加外部API Key管理策略；完善监控和告警系统；明确所有 ambiguities；添加性能指标和部署流程 | 产品团队 |
 | v10.0 | 2025-01-10 | 优化BatchGo版本描述：详细说明三种版本（Basic/Silent/Automated）的功能特性和技术实现；修正邀请奖励规则（通过邀请链接注册只获得30天Pro） | 产品团队 |
 | v11.0 | 2025-01-10 | 进一步优化PRD：合并飞书Webhook到消息通知中心；定价页面增加Token购买选项；添加现有业务逻辑保护章节，确保重构不破坏核心功能 | 产品团队 |
@@ -2820,6 +2825,10 @@ GoFly后端 → WebSocket → 前端组件
 | v14.0 | 2025-01-10 | 优化系统架构：评估并选择Redis Pub/Sub替代Kafka；简化角色系统为USER和ADMIN两级；设计完整的API限流和安全机制 | 产品团队 |
 | v15.0 | 2025-01-10 | 进一步简化架构：从微服务改为单体应用+模块化设计；修正Basic版本权限描述（仅支持Puppeteer模式）；优化部署流程 | 产品团队 |
 | v26.0 | 2025-01-10 | 修正功能名称：恢复ChangeLink的中文名称为"自动化广告"；统一使用"批量访问"作为BatchOpen的中文名称；保持并发性能提升描述为4900% | 产品团队 |
+| v27.0 | 2025-01-10 | 基于代码库深度分析，优化PRD内容：准确反映当前实现状态（Next.js+MySQL），明确功能完成度（BatchOpen✅/SiteRank✅/ChangeLink❌），保持GoFly重构目标 | 产品团队 |
+| v28.0 | 2025-09-10 | 最终优化：平衡现状描述与重构目标，保持技术前瞻性同时确保文档准确性 | 产品团队 |
+| v28.1 | 2025-09-10 | 更新数据库配置：明确使用MySQL 8.0而非PostgreSQL，引用docs/MustKnow.md获取详细配置信息；确认SiteRank已实现真实SimilarWeb API集成 | 产品团队 |
+| v28.2 | 2025-09-10 | 全面校验并修正文档不一致性：确保技术架构描述统一；验证功能实现状态准确性；统一命名规范（BatchOpen/BatchGo, ChangeLink/链接管理）；确认业务逻辑描述一致性；维护重构目标与现状描述的平衡 | 产品团队 |
 
 ## 8. 附录
 
