@@ -145,6 +145,31 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 - **FR4.8**: 任务实时监控和结果统计
 - **FR4.9**: 任务历史记录和回放功能
 
+#### FR4.10: BatchGo 访问模式选择逻辑
+- **FR4.10.1**: **模式选择界面**：
+  - Basic版本：不提供模式选择（默认使用轻量级HTTP请求）
+  - Silent/Automated版本：创建任务时提供模式选择选项
+  - 模式选择说明：明确展示两种模式的优缺点和适用场景
+
+- **FR4.10.2**: **HTTP模式推荐场景**：
+  - 批量访问静态网页（无需JavaScript渲染）
+  - 大规模URL快速验证
+  - API接口测试
+  - 简单数据抓取任务
+  - 对性能要求高、资源消耗敏感的场景
+
+- **FR4.10.3**: **Puppeteer模式推荐场景**：
+  - 需要JavaScript渲染的SPA应用
+  - 处理复杂验证码和反爬机制
+  - 需要截图或页面调试的任务
+  - 模拟真实用户行为
+  - 对渲染准确性要求高的场景
+
+- **FR4.10.4**: **智能模式建议**：
+  - 系统根据URL特征自动推荐合适的模式
+  - 提供模式切换的性能预估（时间、资源消耗）
+  - 支持任务执行过程中动态调整模式
+
 #### FR5: SiteRankGo 微服务
 - **FR5.1**: SimilarWeb API 集成和优化
 - **FR5.2**: 批量查询性能提升（支持万级域名）
@@ -173,11 +198,23 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 - **FR7.7**: 多用户界面适配（用户信息展示等）
 
 #### FR8: Token 管理系统
-- **FR8.1**: Token 充值和消费统计
-- **FR8.2**: Token 消费规则配置
-- **FR8.3**: Token 交易记录管理
-- **FR8.4**: Token 使用分析报表
-- **FR8.5**: 每日签到奖励 Token 机制
+- **FR8.1**: 统一 Token 余额架构：
+  - **主余额 (main_balance)**: 所有功能消费的统一扣除账户
+  - **活动余额 (activity_balance)**: 签到、邀请等营销活动获得
+  - **购买余额 (purchased_balance)**: 用户充值购买的Tokens
+  - **订阅余额 (subscription_balance)**: 套餐包含的Tokens
+  - 所有子账户余额自动汇总到主余额用于消费
+
+- **FR8.2**: Token 充值和消费统计
+- **FR8.3**: Token 消费规则配置
+- **FR8.4**: Token 交易记录管理
+- **FR8.5**: Token 使用分析报表
+- **FR8.6**: 每日签到奖励 Token 机制
+- **FR8.7**: Token 余额优先级使用规则：
+  1. 订阅余额（最先使用，避免浪费）
+  2. 活动余额（有有效期限制）
+  3. 购买余额（用户付费购买）
+  4. 系统自动计算最优使用策略
 
 #### FR9: 用户中心功能
 - **FR9.1**: 个人信息管理
@@ -196,14 +233,38 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 - **FR10.5**: Token 消费分析
 - **FR10.6**: API 限速配置（热更新）
 - **FR10.7**: 通知模板管理
-- **FR10.8**: 支付记录查看
+- **FR10.8**: 支付记录查看（仅Token充值记录，无自动订阅扣费）
+
+#### FR10.12: 支付系统说明
+- **FR10.12.1**: **当前采用手动Token充值模式**：
+  - 用户通过"立即订阅"按钮提交充值需求
+  - 管理员审核后手动为用户充值对应Token数量
+  - 不集成Stripe等自动支付系统
+  - 无自动续费和定期扣费机制
+
+- **FR10.12.2**: **订阅套餐激活流程**：
+  - 用户选择套餐后提交申请
+  - 管理员审核并手动激活套餐权限
+  - 激活后自动赠送对应数量的Tokens
+  - 套餐到期后自动降级至Free套餐
+
+- **FR10.12.3**: **支付记录管理**：
+  - 记录所有Token充值交易
+  - 支持按用户、时间、金额筛选
+  - 导出充值报表功能
+  - 手动标记充值状态（待审核/已充值/已取消）
 - **FR10.9**: API 监控统计
 - **FR10.10**: 签到记录管理
 - **FR10.11**: 邀请记录管理
 
 #### FR11: GoFly 管理后台集成
-- **FR11.1**: 完整集成 GoFly Admin V3 管理模块
-- **FR11.2**: 基于 GoFly 源码开发后台功能
+- **FR11.1**: 选择性集成 GoFly Admin V3 核心模块：
+  - 用户管理模块
+  - RBAC权限系统
+  - 系统配置管理
+  - 操作日志审计
+  - 数据可视化组件
+- **FR11.2**: 自定义开发业务特定功能，避免GoFly过度耦合
 - **FR11.3**: 系统日志和操作审计
 - **FR11.4**: 数据可视化和报表系统
 - **FR11.5**: 系统配置和参数管理
@@ -225,7 +286,7 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 - **NFR2.5**: 完整的操作审计日志
 
 #### NFR3: 数据库需求
-- **NFR3.1**: 使用 MySQL 8.0 作为主数据库
+- **NFR3.1**: 使用 MySQL 8.0 作为主数据库（重要：当前Prisma schema配置为PostgreSQL，需迁移至MySQL）
 - **NFR3.2**: 使用 Redis 7.0 作为缓存和会话存储
 - **NFR3.3**: 支持数据库连接池和读写分离
 - **NFR3.4**: 数据定期备份和恢复机制
@@ -411,21 +472,35 @@ AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大
 - **配置示例**: 
   - DATABASE_URL=mysql://root:jtl85fn8@dbprovider.sg-members-1.clawcloudrun.com:30354
   - REDIS_URL=redis://default:9xdjb8nf@dbprovider.sg-members-1.clawcloudrun.com:32284
+- **注意**: 当前Prisma schema使用PostgreSQL，需要迁移到MySQL 8.0
 
 #### 3.3.2 用户数据隔离
 采用**用户ID字段**方案，所有业务表包含 user_id 字段：
 ```sql
--- 用户表
+-- 用户表（基于现有Prisma schema优化）
 CREATE TABLE user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) UNIQUE,
-    email VARCHAR(100) UNIQUE,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    name VARCHAR(100),
+    avatar VARCHAR(500),
+    email_verified TINYINT DEFAULT 0,
+    role ENUM('USER', 'ADMIN', 'SUPER_ADMIN') DEFAULT 'USER',
+    status ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED', 'BANNED') DEFAULT 'ACTIVE',
     password_hash VARCHAR(255),
     plan_id BIGINT DEFAULT 1, -- 1:Free, 2:Pro, 3:Max
-    status TINYINT DEFAULT 1,
-    profile JSON,
+    -- Token余额统一字段
+    token_balance INT DEFAULT 0,
+    token_used_this_month INT DEFAULT 0,
+    -- 用户行为字段
+    trial_used TINYINT DEFAULT 0,
+    login_count INT DEFAULT 0,
+    last_login_at TIMESTAMP NULL,
+    preferences JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_email (email),
+    INDEX idx_status (status),
+    INDEX idx_plan_id (plan_id)
 );
 
 -- 管理员表
@@ -480,11 +555,18 @@ CREATE TABLE token_rule (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- 用户 Token 余额表
+-- 用户 Token 余额表（统一Token系统）
 CREATE TABLE user_token_balance (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL UNIQUE,
-    balance INT DEFAULT 0,
+    -- 主Token余额（用于功能消费）
+    main_balance INT DEFAULT 0,
+    -- 活动获得余额（签到、邀请奖励等）
+    activity_balance INT DEFAULT 0,
+    -- 购买余额（充值获得）
+    purchased_balance INT DEFAULT 0,
+    -- 订阅赠送余额
+    subscription_balance INT DEFAULT 0,
     total_earned INT DEFAULT 0,
     total_spent INT DEFAULT 0,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1794,6 +1876,7 @@ services:
 | v5.0 | 2025-01-09 | 添加完整的用户运营功能：Token系统、签到、邀请、试用套餐、个人中心、管理员仪表板等 | 产品团队 |
 | v6.0 | 2025-01-09 | 移除Stripe支付集成，更新Token充值价格为¥150/10,000起，确认套餐配置信息 | 产品团队 |
 | v7.0 | 2025-01-10 | 优化前端访问策略：支持免登录浏览，功能按钮强制登录；细化BatchGo权限矩阵；更新微服务部署流程 | 产品团队 |
+| v8.0 | 2025-01-10 | 完善需求描述，解决不一致问题：明确使用MySQL数据库；统一Token系统架构；细化BatchGo模式选择逻辑；明确手动充值模式；选择性集成GoFly框架 | 产品团队 |
 
 ## 7. 附录
 
