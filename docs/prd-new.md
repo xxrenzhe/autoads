@@ -180,7 +180,31 @@ AutoAds 是一个基于 Next.js 的自动化营销平台，三大核心功能实
   - 模拟真实用户行为
   - 对渲染准确性要求高的场景
 
-- **FR4.10.4**: **智能模式建议**：
+- **FR4.10.4**: **代理配置要求**：
+  - **HTTP模式代理配置**：
+    - 支持HTTP/HTTPS/SOCKS5代理协议
+    - 自动代理IP轮换和故障转移
+    - 支持自定义Referer（社交媒体、搜索引擎、自定义来源）
+    - 代理IP健康检测和自动剔除无效IP
+  - **Puppeteer模式代理配置**：
+    - 支持HTTP/HTTPS/SOCKS5代理协议
+    - 浏览器级别的代理配置
+    - 支持自定义Referer和User-Agent
+    - 自动代理轮换和会话隔离
+
+- **FR4.10.5**: **URL访问轮转机制**：
+  - **每个代理IP完成一轮URL访问**：系统必须确保每个代理IP按顺序完成所有URL的访问后，才切换到下一个代理IP
+  - **轮转策略**：
+    - 代理IP队列管理（FIFO先进先出）
+    - 每个代理IP访问完所有URL后标记为已完成
+    - 自动切换到下一个可用代理IP
+    - 支持代理IP重用和循环使用
+  - **容错机制**：
+    - 代理IP失败时自动跳过并记录
+    - 支持失败URL的重试机制
+    - 实时监控代理IP成功率和响应时间
+
+- **FR4.10.6**: **智能模式建议**：
   - 系统根据URL特征自动推荐合适的模式
   - 提供模式切换的性能预估（时间、资源消耗）
   - 支持任务执行过程中动态调整模式
@@ -1091,6 +1115,14 @@ POST   /api/v1/batch/tasks/:id/start  # 启动任务
 POST   /api/v1/batch/tasks/:id/stop   # 停止任务
 GET    /api/v1/batch/tasks/:id/result # 获取任务结果
 
+# 代理管理相关
+POST   /api/v1/proxy/pools             # 创建代理池
+GET    /api/v1/proxy/pools             # 获取代理池列表
+PUT    /api/v1/proxy/pools/:id         # 更新代理池
+DELETE /api/v1/proxy/pools/:id         # 删除代理池
+POST   /api/v1/proxy/validate          # 验证代理IP
+GET    /api/v1/proxy/stats             # 获取代理统计信息
+
 # SiteRankGo 相关
 POST   /api/v1/siterank/queries       # 创建查询
 GET    /api/v1/siterank/queries       # 查询历史
@@ -1346,6 +1378,14 @@ type LogEntry struct {
 - Token消耗：Basic(1 token/URL)、Silent(1 token/URL)、Automated(按成功点击数)
 - 代理管理：验证、轮换、故障转移机制
 - 任务状态追踪：实时进度更新和错误处理
+- **代理配置要求**（HTTP和Puppeteer模式）：
+  - 支持HTTP/HTTPS/SOCKS5代理协议
+  - 自定义Referer配置（社交媒体、搜索引擎、自定义）
+  - 自动代理IP健康检测和失效剔除
+- **URL访问轮转机制**：
+  - 每个代理IP必须完成所有URL的访问后才切换到下一个IP
+  - 代理IP队列FIFO管理，支持循环使用
+  - 失败代理自动跳过，支持URL重试
 
 **技术实现要点**:
 - 保持现有API端点兼容性
@@ -1894,6 +1934,10 @@ services:
 - [ ] Basic版本保持现有浏览器标签页打开方式
 - [ ] Silent版本支持代理自动轮换和验证
 - [ ] Automated版本支持定时任务和智能调度
+- [ ] HTTP和Puppeteer模式都支持代理IP配置（HTTP/HTTPS/SOCKS5）
+- [ ] 支持自定义Referer配置（社交媒体、搜索引擎、自定义来源）
+- [ ] 每个代理IP完成一轮所有URL访问后才切换到下一个IP
+- [ ] 代理IP失败时自动跳过并支持重试机制
 - [ ] 套餐升级后权限立即生效
 - [ ] 超出限制时友好提示
 
@@ -2830,6 +2874,7 @@ GoFly后端 → WebSocket → 前端组件
 | v28.1 | 2025-09-10 | 更新数据库配置：明确使用MySQL 8.0而非PostgreSQL，引用docs/MustKnow.md获取详细配置信息；确认SiteRank已实现真实SimilarWeb API集成 | 产品团队 |
 | v28.2 | 2025-09-10 | 全面校验并修正文档不一致性：确保技术架构描述统一；验证功能实现状态准确性；统一命名规范（BatchOpen/BatchGo, ChangeLink/链接管理）；确认业务逻辑描述一致性；维护重构目标与现状描述的平衡 | 产品团队 |
 | v28.3 | 2025-09-10 | 修正具体数值不一致：统一各版本URL限制（Basic:100/Silent:1,000/Automated:5,000）和并发数（Basic:1/Silent:5/Automated:50）；修正v15.0历史记录中Basic版本描述错误 | 产品团队 |
+| v28.4 | 2025-09-10 | 明确HTTP和Puppeteer模式的代理配置要求：两种模式都必须支持代理IP和referer配置；实现每个代理IP完成一轮URL访问的轮转机制；添加代理管理相关API设计 | 产品团队 |
 
 ## 8. 附录
 
