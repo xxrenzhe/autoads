@@ -4316,10 +4316,10 @@ oauth:
 # 第三方 API 配置
 apis:
   similarweb:
-    apiKey: ${SIMILARWEB_API_KEY}
     apiUrl: ${SIMILARWEB_API_URL:-https://data.similarweb.com/api/v1/data}
-    baseUrl: https://api.similarweb.com
+    baseUrl: https://data.similarweb.com
     rateLimit: 1000  # 每月调用限制
+    # 注意：SimilarWeb 服务通过模拟浏览器请求获取公开数据，无需 API 密钥
     
   googleAds:
     developerToken: ${GOOGLE_ADS_DEVELOPER_TOKEN}
@@ -4377,7 +4377,6 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 GOOGLE_REDIRECT_URL=http://localhost:3000/auth/google/callback
 
 # 第三方 API
-SIMILARWEB_API_KEY=your-similarweb-api-key
 SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
 GOOGLE_ADS_DEVELOPER_TOKEN=your-ads-dev-token
 
@@ -4486,9 +4485,7 @@ AUTH_GOOGLE_SECRET=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
 
 | 变量名 | 默认值 | 必需 | 说明 |
 |--------|--------|------|------|
-| `SIMILARWEB_API_KEY` | - | ❌ | SimilarWeb API 密钥 |
-| `SIMILARWEB_API_URL` | `https://data.similarweb.com/api/v1/data` | ❌ | SimilarWeb API 地址 |
-| `OPENPAGERANK_API_KEY` | - | ❌ | OpenPageRank API 密钥 |
+| `SIMILARWEB_API_URL` | `https://data.similarweb.com/api/v1/data` | ✅ | SimilarWeb API 地址 |
 | `ADSPOWER_API_URL` | `http://local.adspower.net:50325` | ❌ | AdsPower API 地址 |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | - | ❌ | Google Ads 开发者令牌 |
 | `GOOGLE_ADS_CLIENT_ID` | - | ❌ | Google Ads 客户端 ID |
@@ -4581,9 +4578,7 @@ AUTH_GOOGLE_SECRET=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
 
 # ===== 可选功能配置 =====
 # 第三方 API（如需要）
-SIMILARWEB_API_KEY=your-preview-key
 SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
-OPENPAGERANK_API_KEY=your-preview-key
 ADSPOWER_API_URL=http://local.adspower.net:50325
 
 # 监控配置
@@ -4626,9 +4621,7 @@ SMTP_PASS=your-app-password
 EMAIL_FROM=AutoAds <noreply@autoads.dev>
 
 # ===== 第三方 API 配置 =====
-SIMILARWEB_API_KEY=your-production-key
 SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
-OPENPAGERANK_API_KEY=your-production-key
 ADSPOWER_API_URL=http://local.adspower.net:50325
 GOOGLE_ADS_DEVELOPER_TOKEN=your-ads-dev-token
 GOOGLE_ADS_CLIENT_ID=your-ads-client-id
@@ -6299,8 +6292,8 @@ JWT_EXPIRES_IN=24h
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
-# API 密钥
-SIMILARWEB_API_KEY=your-similarweb-key
+# API 配置
+# SimilarWeb 服务通过模拟浏览器请求获取公开数据，无需 API 密钥
 SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
 GOOGLE_ADS_DEVELOPER_TOKEN=your-google-ads-token
 ADSPOWER_API_KEY=your-adspower-key
