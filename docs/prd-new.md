@@ -2282,7 +2282,289 @@ services:
 - IV2: 奖励发放准确
 - IV3: 邀请记录完整
 
-## 6. 变更日志
+## 6. GoFly集成架构
+
+### 6.1 集成架构概述
+
+基于对现有PRD、GoFly框架和代码库的深入分析，发现以下关键集成缺失：
+
+#### 6.1.1 GoFly框架能力映射
+GoFly V3框架提供以下核心能力：
+- **RBAC权限系统**：基于角色的访问控制
+- **动态菜单管理**：可配置的菜单结构
+- **数据字典**：统一的数据管理
+- **操作日志**：完整的审计追踪
+- **代码生成器**：快速CRUD生成
+- **API管理**：RESTful API框架
+- **文件管理**：统一的文件存储
+- **系统配置**：全局配置管理
+
+#### 6.1.2 当前集成缺失
+
+1. **业务模块管理界面缺失**
+   - 缺少BatchGo任务管理界面
+   - 缺少SiteRankGo查询管理界面
+   - 缺少ChangeLinkGo账户管理界面
+   - 缺少模块配置和参数管理
+
+2. **权限系统集成不完整**
+   - 业务模块权限未与GoFly RBAC集成
+   - 缺少细粒度的功能权限控制
+   - 套餐权限与系统权限未统一
+
+3. **数据同步机制缺失**
+   - 前端与GoFly后端缺少实时数据同步
+   - 任务状态更新机制不明确
+   - 缺少WebSocket通信设计
+
+### 6.2 详细集成方案
+
+#### 6.2.1 业务模块管理
+
+**BatchGo模块管理**
+```yaml
+管理功能:
+  - 任务创建与配置
+    * URL列表管理
+    * 执行模式选择（HTTP/Puppeteer）
+    * 代理配置
+    * 并发设置
+    * 定时任务设置
+  
+  - 任务监控
+    * 实时执行状态
+    * 成功率统计
+    * 错误日志查看
+    * 性能分析
+  
+  - 历史记录
+    * 任务执行历史
+    * 结果导出
+    * 统计报表
+  
+  - 配置管理
+    * 代理池管理
+    * User-Agent配置
+    * 请求头模板
+    * 超时设置
+```
+
+**SiteRankGo模块管理**
+```yaml
+管理功能:
+  - 查询任务管理
+    * 批量域名查询
+    * 查询调度
+    * 结果缓存
+  
+  - 数据管理
+    * 历史查询记录
+    * 趋势分析
+    * 数据导出
+  
+  - API配置
+    * SimilarWeb API密钥管理
+    * 请求频率限制
+    * 错误重试策略
+```
+
+**ChangeLinkGo模块管理**
+```yaml
+管理功能:
+  - 账户管理
+    * Google Ads账户连接
+    * 账户权限验证
+    * 账户状态监控
+  
+  - 链接管理
+    * 链接批量更新
+    * 更新历史记录
+    * 失败重试机制
+  
+  - 监控告警
+    * 链接状态异常告警
+    * API配额使用监控
+```
+
+#### 6.2.2 前端交互集成
+
+**实时通信机制**
+```typescript
+// WebSocket连接配置
+const wsConfig = {
+  url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8200/ws',
+  reconnectInterval: 3000,
+  maxReconnectAttempts: 5,
+};
+
+// 事件订阅
+const eventSubscriptions = {
+  // BatchGo事件
+  'batchgo:task_created': handleTaskCreated,
+  'batchgo:task_updated': handleTaskUpdated,
+  'batchgo:task_completed': handleTaskCompleted,
+  
+  // SiteRankGo事件
+  'siterank:query_started': handleQueryStarted,
+  'siterank:query_completed': handleQueryCompleted,
+  
+  // ChangeLinkGo事件
+  'changelink:account_connected': handleAccountConnected,
+  'changelink:link_updated': handleLinkUpdated,
+  
+  // 系统事件
+  'system:notification': handleSystemNotification,
+  'user:token_updated': handleTokenUpdated,
+};
+```
+
+**API集成层**
+```typescript
+// API客户端配置
+const apiClient = {
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8200',
+  
+  // 业务模块API
+  batchgo: {
+    createTask: '/api/v1/batchgo/tasks',
+    getTasks: '/api/v1/batchgo/tasks',
+    getTaskStatus: '/api/v1/batchgo/tasks/:id/status',
+    cancelTask: '/api/v1/batchgo/tasks/:id/cancel',
+  },
+  
+  siterank: {
+    createQuery: '/api/v1/siterank/queries',
+    getResults: '/api/v1/siterank/results',
+    exportData: '/api/v1/siterank/export',
+  },
+  
+  changelink: {
+    connectAccount: '/api/v1/changelink/accounts/connect',
+    updateLinks: '/api/v1/changelink/links/update',
+    getAccounts: '/api/v1/changelink/accounts',
+  },
+  
+  // GoFly集成API
+  admin: {
+    getUsers: '/admin/v1/users',
+    getRoles: '/admin/v1/roles',
+    getPermissions: '/admin/v1/permissions',
+    getSystemConfig: '/admin/v1/config',
+  },
+};
+```
+
+#### 6.2.3 权限系统集成
+
+**角色权限映射**
+```yaml
+系统角色:
+  SUPER_ADMIN:
+    - 所有业务模块管理权限
+    - 系统配置权限
+    - 用户管理权限
+    - 数据查看权限
+  
+  ADMIN:
+    - 业务模块操作权限
+    - 用户查看权限
+    - 基础配置权限
+  
+  MANAGER:
+    - 指定业务模块管理
+    - 团队用户管理
+    - 数据查看权限
+  
+  USER:
+    - 个人业务功能使用
+    - 个人数据查看
+
+业务权限:
+  batchgo:
+    basic_create: [USER, MANAGER, ADMIN, SUPER_ADMIN]
+    silent_create: [PRO, MAX]
+    automated_create: [MAX]
+    task_view: [USER, MANAGER, ADMIN, SUPER_ADMIN]
+    task_manage: [MANAGER, ADMIN, SUPER_ADMIN]
+  
+  siterank:
+    query_create: [USER, MANAGER, ADMIN, SUPER_ADMIN]
+    bulk_query: [PRO, MAX]
+    export_data: [PRO, MAX]
+  
+  changelink:
+    account_connect: [PRO, MAX]
+    link_update: [PRO, MAX]
+    bulk_update: [MAX]
+```
+
+#### 6.2.4 数据流设计
+
+**请求流程**
+```
+前端请求 → Next.js API路由 → GoFly后端 → 业务微服务 → 数据库
+     ↓                    ↓           ↓            ↓
+  权限验证 → 路由分发 → 业务逻辑 → 数据处理 → 返回结果
+```
+
+**实时数据流**
+```
+GoFly后端 → WebSocket → 前端组件
+     ↓            ↓          ↓
+  事件发布 → 消息队列 → 状态更新
+```
+
+### 6.3 实施计划
+
+#### 6.3.1 第一阶段：基础集成
+1. **GoFly后端部署**
+   - 配置数据库连接
+   - 初始化系统数据
+   - 创建基础权限结构
+
+2. **API网关开发**
+   - 实现统一入口
+   - 配置路由转发
+   - 实现认证中间件
+
+3. **基础管理界面**
+   - 用户管理界面
+   - 角色权限管理
+   - 系统配置界面
+
+#### 6.3.2 第二阶段：业务集成
+1. **BatchGo集成**
+   - 开发任务管理API
+   - 实现实时监控
+   - 创建管理界面
+
+2. **SiteRankGo集成**
+   - 集成查询管理
+   - 实现结果缓存
+   - 开发数据导出
+
+3. **ChangeLinkGo集成**
+   - 账户管理集成
+   - 链接更新功能
+   - 监控告警系统
+
+#### 6.3.3 第三阶段：优化完善
+1. **性能优化**
+   - 缓存策略优化
+   - 数据库查询优化
+   - 并发处理优化
+
+2. **用户体验优化**
+   - 界面交互优化
+   - 响应速度优化
+   - 错误处理优化
+
+3. **监控运维**
+   - 系统监控集成
+   - 日志分析系统
+   - 告警机制完善
+
+## 7. 变更日志
 
 | 版本 | 日期 | 变更内容 | 作者 |
 |------|------|----------|------|
@@ -2298,10 +2580,11 @@ services:
 | v10.0 | 2025-01-10 | 优化BatchGo版本描述：详细说明三种版本（Basic/Silent/Automated）的功能特性和技术实现；修正邀请奖励规则（通过邀请链接注册只获得30天Pro） | 产品团队 |
 | v11.0 | 2025-01-10 | 进一步优化PRD：合并飞书Webhook到消息通知中心；定价页面增加Token购买选项；添加现有业务逻辑保护章节，确保重构不破坏核心功能 | 产品团队 |
 | v12.0 | 2025-01-10 | 更新Token充值价格：小包¥99=10,000 tokens，提高大包折扣力度（中包40% off，大包67% off，超大包80% off） | 产品团队 |
+| v13.0 | 2025-01-10 | 全面补充GoFly集成架构：添加业务模块管理界面、前端交互集成、权限系统集成、数据流设计和详细实施计划 | 产品团队 |
 
-## 7. 附录
+## 8. 附录
 
-### 7.1 术语表
+### 8.1 术语表
 - **SaaS**: Software as a Service，软件即服务
 - **RBAC**: Role-Based Access Control，基于角色的访问控制
 - **OAuth2**: 开放授权标准
@@ -2315,7 +2598,7 @@ services:
 - **签到**: 每日登录获得Token奖励的机制
 - **邀请机制**: 用户邀请好友注册获得奖励的机制
 
-### 7.2 参考资料
+### 8.2 参考资料
 - GoFly Admin V3 文档
 - AutoAds 现有系统架构文档
 - 微服务架构设计模式
