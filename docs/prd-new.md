@@ -1,0 +1,1637 @@
+# AutoAds 多用户 SaaS 系统重构 PRD
+
+## 文档信息
+- **项目名称**: AutoAds 多用户 SaaS 系统重构
+- **版本**: v2.0
+- **创建日期**: 2025-01-09
+- **最后更新**: 2025-01-09
+- **负责人**: 产品团队
+
+## 执行摘要
+
+AutoAds 将重构为支持多用户访问的 SaaS 系统，使用 Go 语言重构后端核心功能以大幅提升性能。系统将区分普通用户和管理员用户：普通用户可通过邮箱或 Google OAuth 登录使用三大核心功能；管理员通过账号密码登录后台管理系统。重构将保持现有前端布局，优化 UI 设计，并通过 Go 微服务架构实现 BatchGo、SiteRankGo、ChangeLinkGo 功能的并发性能提升 500% 以上。
+
+## 1. 项目概述
+
+### 1.1 现有项目分析
+
+#### 分析来源
+基于 IDE 的代码深度分析和 GoFly 框架研究
+
+#### 当前项目状态
+AutoAds 是一个成熟的自动化营销平台，已稳定运行并提供三大核心功能：
+- **BatchOpen（批量访问）**: 使用 Puppeteer 实现三种执行模式的批量URL访问系统
+- **SiteRank（网站排名）**: 集成 SimilarWeb API 的网站排名查询和分析系统
+- **ChangeLink（链接管理）**: 集成 Google Ads API 和 AdsPower 的广告链接自动化管理系统
+
+#### 技术栈现状
+**前端技术栈**:
+- Next.js 14 + React 18 + TypeScript
+- MUI v7 + Tailwind CSS
+- Zustand 状态管理
+- Socket.io 实时通信
+
+**后端技术栈**:
+- Node.js + Express（Next.js API Routes）
+- MySQL 8.0 + Prisma ORM
+- Redis 7.0
+- Puppeteer 浏览器自动化
+
+**外部集成**:
+- SimilarWeb API（网站数据）
+- Google Ads API（广告管理）
+- AdsPower API（浏览器自动化）
+
+### 1.2 重构范围定义
+
+#### 重构类型
+- [x] 架构重构（单体 → 微服务）
+- [x] 技术栈升级（Node.js → Go + Next.js）
+- [x] 多用户支持（单用户 → 多用户系统）
+- [x] 框架集成（集成GoFly后台管理）
+- [x] 性能优化（并发性能提升500%+）
+
+#### 重构描述
+将现有应用重构为支持多用户的系统，后端使用Go语言重写三大核心功能并集成GoFly框架提供后台管理，前端保持Next.js布局并进行UI优化。
+
+#### 影响评估
+- [x] 重大影响（系统性重构）
+
+### 1.3 目标和背景
+
+#### 核心目标
+1. **架构升级**: 从单体应用演进为微服务架构，提升系统可扩展性
+2. **性能提升**: 利用Go语言并发优势，实现核心功能性能提升500%以上
+3. **多用户支持**: 实现用户注册登录和多用户数据隔离
+4. **后台管理**: 集成GoFly框架，提供专业的后台管理系统
+5. **业务连续性**: 保持所有现有功能的完整性和前端布局
+
+#### 背景上下文
+随着 AutoAds 用户规模增长和业务复杂度提升，现有架构面临以下挑战：
+1. **扩展性瓶颈**: Node.js单进程架构难以支持高并发
+2. **多用户需求**: 需要支持多个用户独立使用系统
+3. **管理复杂度**: 缺乏统一的后台管理系统
+4. **性能限制**: 大批量任务处理效率有待提升
+5. **权限控制**: 需要细化不同版本功能的权限控制
+
+## 2. 需求分析
+
+### 2.1 功能需求（Functional Requirements）
+
+#### FR1: 用户认证系统
+- **FR1.1**: 实现普通用户邮箱注册流程，包括邮箱验证
+- **FR1.2**: 集成 Google OAuth2.0 一键登录功能
+- **FR1.3**: 用户资料管理（头像、昵称、联系方式等）
+- **FR1.4**: 用户密码重置和账号安全设置
+- **FR1.5**: 登录状态保持和自动续期
+
+#### FR2: 管理员系统
+- **FR2.1**: 初始化超级管理员账号（用户名: admin，密码可配置）
+- **FR2.2**: 管理员通过账号密码登录后台管理系统
+- **FR2.3**: 管理员可管理所有用户账号
+- **FR2.4**: 管理员可查看系统运行状态和日志
+- **FR2.5**: 管理员可配置系统参数和权限
+
+#### FR3: 用户权限与套餐管理
+- **FR3.1**: 三级用户套餐体系（Free/Pro/Max）
+- **FR3.2**: 不同套餐对应不同的功能权限和使用限制
+- **FR3.3**: 管理员可手动调整用户套餐
+- **FR3.4**: 用户可查看当前套餐和使用情况
+- **FR3.5**: 套餐权限实时生效机制
+- **FR3.6**: 新用户注册自动获得14天Pro套餐
+- **FR3.7**: 邀请注册机制（邀请者和被邀请者各得30天Pro）
+- **FR3.8**: 套餐到期自动降级机制
+- **FR3.9**: 套餐配置后台管理功能
+
+#### FR4: BatchGo 微服务（支持HTTP和Puppeteer访问模式）
+- **FR4.1**: 完整迁移三种执行模式（Basic/Silent/Automated）
+- **FR4.2**: 基于 Go 实现高并发任务处理，支持万级并发
+- **FR4.3**: **HTTP访问模式**：
+  - 轻量级HTTP请求库实现
+  - 高性能并发处理（支持10倍Puppeteer并发量）
+  - 支持自定义User-Agent和请求头
+  - 自动处理Cookies和Session
+  - 适合大规模批量访问任务
+
+- **FR4.4**: **Puppeteer访问模式**：
+  - 完整的浏览器环境模拟
+  - 支持JavaScript渲染和动态内容
+  - 自动处理验证码和反爬机制
+  - 支持截图和页面调试
+  - 适合需要真实浏览器环境的任务
+
+- **FR4.5**: **Basic 版本权限**：
+  - 支持单线程串行执行
+  - 可选择HTTP或Puppeteer模式
+  - 基础代理轮换功能
+  - 简单的任务结果统计
+  - 最大支持 100 个 URL/任务
+
+- **FR4.6**: **Silent 版本权限**：
+  - 支持多线程并发执行（最多 5 线程）
+  - 高级代理池管理（自动检测和切换）
+  - 智能重试机制和错误恢复
+  - 支持自定义执行间隔
+  - 最大支持 1000 个 URL/任务
+
+- **FR4.7**: **Automated 版本权限**：
+  - 支持大规模并发执行（最多 50 线程）
+  - 企业级代理池（多地区、自动负载均衡）
+  - 智能调度和优先级队列
+  - 实时监控和性能分析
+  - 支持定时任务和批量导入
+  - 最大支持 5000 个 URL/任务
+
+- **FR4.8**: 任务实时监控和结果统计
+- **FR4.9**: 任务历史记录和回放功能
+
+#### FR5: SiteRankGo 微服务
+- **FR5.1**: SimilarWeb API 集成和优化
+- **FR5.2**: 批量查询性能提升（支持万级域名）
+- **FR5.3**: 多层缓存策略（Redis + 本地缓存）
+- **FR5.4**: 历史数据存储和趋势分析
+- **FR5.5**: 自定义查询规则和报表
+
+#### FR6: ChangeLinkGo 微服务
+- **FR6.1**: Google Ads API 多账户管理
+- **FR6.2**: AdsPower 自动化流程优化
+- **FR6.3**: 复杂链接替换规则引擎
+- **FR6.4**: 执行状态实时监控
+- **FR6.5**: 失败回滚和错误恢复机制
+
+#### FR7: 前端界面优化
+- **FR7.1**: 保持现有页面布局和导航结构
+- **FR7.2**: 优化 UI 设计，提升视觉体验
+- **FR7.3**: 响应式设计，支持移动端访问
+- **FR7.4**: 实时数据展示和交互优化
+- **FR7.5**: 多用户界面适配（用户信息展示等）
+
+#### FR8: Token 管理系统
+- **FR8.1**: Token 充值和消费统计
+- **FR8.2**: Token 消费规则配置
+- **FR8.3**: Token 交易记录管理
+- **FR8.4**: Token 使用分析报表
+- **FR8.5**: 每日签到奖励 Token 机制
+
+#### FR9: 用户中心功能
+- **FR9.1**: 个人信息管理
+- **FR9.2**: 订阅管理（查看套餐信息）
+- **FR9.3**: Token 消费记录
+- **FR9.4**: 每日签到功能
+- **FR9.5**: 邀请好友功能
+- **FR9.6**: 消息通知中心
+- **FR9.7**: 飞书 Webhook 配置
+
+#### FR10: 管理员仪表板
+- **FR10.1**: 关键指标趋势图（注册用户、日活、订阅数、收入等）
+- **FR10.2**: 用户列表管理（禁用、充值、改套餐等）
+- **FR10.3**: 角色管理（普通用户/管理员）
+- **FR10.4**: 套餐配置管理
+- **FR10.5**: Token 消费分析
+- **FR10.6**: API 限速配置（热更新）
+- **FR10.7**: 通知模板管理
+- **FR10.8**: 支付记录查看
+- **FR10.9**: API 监控统计
+- **FR10.10**: 签到记录管理
+- **FR10.11**: 邀请记录管理
+
+#### FR11: GoFly 管理后台集成
+- **FR11.1**: 完整集成 GoFly Admin V3 管理模块
+- **FR11.2**: 基于 GoFly 源码开发后台功能
+- **FR11.3**: 系统日志和操作审计
+- **FR11.4**: 数据可视化和报表系统
+- **FR11.5**: 系统配置和参数管理
+
+### 2.2 非功能需求（Non-Functional Requirements）
+
+#### NFR1: 性能需求
+- **NFR1.1**: 系统响应时间降低 50%（P95 < 200ms）
+- **NFR1.2**: 支持 5,000+ 用户并发在线
+- **NFR1.3**: BatchGo 并发处理能力提升 500%（支持 1000+ 并发）
+- **NFR1.4**: SiteRankGo 查询响应时间 < 500ms
+- **NFR1.5**: 系统可用性 99.9%
+
+#### NFR2: 安全需求
+- **NFR2.1**: 用户数据完全隔离，防止数据泄露
+- **NFR2.2**: JWT + OAuth2.0 认证机制
+- **NFR2.3**: 管理员后台独立登录入口
+- **NFR2.4**: 敏感数据加密存储
+- **NFR2.5**: 完整的操作审计日志
+
+#### NFR3: 数据库需求
+- **NFR3.1**: 使用 MySQL 8.0 作为主数据库
+- **NFR3.2**: 使用 Redis 7.0 作为缓存和会话存储
+- **NFR3.3**: 支持数据库连接池和读写分离
+- **NFR3.4**: 数据定期备份和恢复机制
+
+#### NFR4: 可扩展性需求
+- **NFR4.1**: 微服务架构支持水平扩展
+- **NFR4.2**: 支持动态服务发现和负载均衡
+- **NFR4.3**: 配置支持热更新
+- **NFR4.4**: 支持功能模块的动态加载
+
+#### NFR5: 可维护性需求
+- **NFR5.1**: 完整的技术文档和 API 文档
+- **NFR5.2**: 代码覆盖率 > 80%
+- **NFR5.3**: 自动化测试和 CI/CD 流程
+- **NFR5.4**: 完善的监控和告警系统
+
+### 2.3 兼容性需求（Compatibility Requirements）
+
+#### CR1: 数据配置
+- **CR1.1**: 使用新的MySQL数据库，无需数据迁移
+- **CR1.2**: 数据库连接使用环境变量DATABASE_URL
+- **CR1.3**: Redis连接使用环境变量REDIS_URL
+- **CR1.4**: 遵循docs/MustKnow.md中的配置信息，包含默认的DATABASE_URL和REDIS_URL值
+
+#### CR2: 功能兼容性
+- **CR2.1**: 三大核心功能 100% 兼容
+- **CR2.2**: BatchGo支持HTTP和Puppeteer两种访问模式
+- **CR2.3**: 用户体验保持一致
+
+#### CR3: 界面兼容性
+- **CR3.1**: 保持现有页面布局结构
+- **CR3.2**: 优化 UI 但不改变核心交互
+- **CR3.3**: 支持现有快捷键和操作习惯
+
+### 2.4 用户套餐权限矩阵
+
+#### 套餐配置详情
+
+**免费套餐（Free）**:
+- "真实点击"功能，包括"初级版本"和"静默版本"
+- "网站排名"功能，批量查询域名上限 100 个/次
+- 包含 1,000 tokens
+
+**高级套餐（Pro）**:
+- ¥298/月（年付优惠 50%）
+- 支持所有免费套餐的功能
+- "真实点击"功能，新增"自动化版本"
+- "网站排名"功能，批量查询域名上限 500 个/次
+- "自动化广告"功能，批量管理 ads 账号（上限 10 个）
+- 包含 10,000 tokens
+
+**白金套餐（Max）**:
+- ¥998/月（年付优惠 50%）
+- 支持所有高级套餐的功能
+- "网站排名"功能，批量查询域名上限 5,000 个/次
+- "自动化广告"功能，批量管理 ads 账号（上限 100 个）
+- 包含 100,000 tokens
+
+#### 详细权限矩阵
+
+| 功能模块 | Free 套餐 | Pro 套餐 | Max 套餐 |
+|---------|-----------|----------|----------|
+| **BatchGo Basic** | ✓ | ✓ | ✓ |
+| **BatchGo Silent** | ✓ | ✓ | ✓ |
+| **BatchGo Automated** | ✗ | ✓ | ✓ |
+| **HTTP访问模式** | ✓ | ✓ | ✓ |
+| **Puppeteer访问模式** | ✓ | ✓ | ✓ |
+| **单次任务URL数量** | 100 | 1,000 | 5,000 |
+| **并发任务数** | 1 | 5 | 50 |
+| **HTTP模式并发倍数** | 10x | 10x | 10x |
+| **SiteRankGo 查询限制** | 100/次 | 500/次 | 5,000/次 |
+| **SiteRankGo 查询频率** | 100/天 | 1,000/天 | 无限制 |
+| **ChangeLinkGo 账户数** | 不支持 | 10个 | 100个 |
+| **包含Token数量** | 1,000 | 10,000 | 100,000 |
+| **API 调用频率** | 100/小时 | 1,000/小时 | 10,000/小时 |
+
+### 2.5 Token 充值价格
+
+**Token 充值包**（充值越多，折扣越大）:
+- 小包: ¥150 = 10,000 tokens
+- 中包: ¥299 = 50,000 tokens (约 20% off)
+- 大包: ¥599 = 200,000 tokens (约 33% off)
+- 超大包: ¥999 = 500,000 tokens (约 50% off)
+
+## 3. 技术架构设计
+
+### 3.1 整体架构
+
+#### 3.1.1 架构模式
+采用**前后端分离 + 微服务**的混合架构：
+- **前端层**: Next.js 14 + TypeScript（保持现有）
+- **网关层**: GoFly Router（统一入口）
+- **服务层**: Go 微服务（业务逻辑）
+- **数据层**: MySQL + Redis（持久化存储）
+
+#### 3.1.2 部署架构
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     CDN / Load Balancer                     │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+        ┌─────────────┴──────────────┐
+        │                            │
+┌───────▼────────┐            ┌──────▼──────────┐
+│  Next.js      │            │   GoFly API    │
+│  Frontend     │◄──────────►│   Gateway      │
+│  (现有)       │            │   (GoFly)      │
+└───────────────┘            └───────┬──────────┘
+                                      │
+            ┌─────────────────────────┼─────────────────────────┐
+            │                         │                         │
+    ┌───────▼───────┐         ┌──────▼────────┐        ┌──────▼────────┐
+    │   BatchGo    │         │  SiteRankGo   │        │  ChangeLinkGo │
+    │   Service    │         │    Service    │        │    Service    │
+    │    (Go)      │         │     (Go)       │        │     (Go)      │
+    └───────────────┘         └───────────────┘        └───────────────┘
+            │                         │                         │
+            └─────────────────────────┼─────────────────────────┘
+                                      │
+                    ┌─────────────────▼─────────────────┐
+                    │        GoFly Admin System       │
+                    │   (User/Tenant/Permission Mgmt)  │
+                    └─────────────────┬─────────────────┘
+                                      │
+            ┌─────────────────────────┼─────────────────────────┐
+            │                         │                         │
+    ┌───────▼───────┐         ┌──────▼────────┐        ┌──────▼────────┐
+    │    MySQL      │         │     Redis      │        │  File Storage │
+    │ (Multi-tenant)│        │   (Cache/Queue) │      │   (Uploads)   │
+    └───────────────┘         └───────────────┘        └───────────────┘
+```
+
+### 3.2 微服务设计
+
+#### 3.2.1 服务拆分原则
+- **单一职责**: 每个服务专注特定业务领域
+- **高内聚低耦合**: 服务间通过 API 通信
+- **无状态设计**: 服务自身不保存状态
+- **独立部署**: 每个服务可独立构建和部署
+
+#### 3.2.2 服务列表
+1. **API Gateway** (GoFly Router)
+   - 路由转发
+   - 认证授权
+   - 限流熔断
+   - 日志监控
+
+2. **User Service** (基于 GoFly)
+   - 用户注册登录
+   - 个人资料管理
+   - OAuth2 集成
+   - 权限验证
+
+3. **Tenant Service**
+   - 租户管理
+   - 套餐订阅
+   - 资源配额
+   - 域名配置
+
+4. **BatchGo Service**
+   - 任务管理
+   - URL 批量处理
+   - 代理管理
+   - 结果统计
+
+5. **SiteRankGo Service**
+   - 排名查询
+   - 数据缓存
+   - 报表生成
+   - 历史分析
+
+6. **ChangeLinkGo Service**
+   - 链接管理
+   - 自动化执行
+   - 账户管理
+   - 监控回滚
+
+### 3.3 数据库设计
+
+#### 3.3.1 数据库配置
+- **MySQL**: 使用环境变量DATABASE_URL连接
+- **Redis**: 使用环境变量REDIS_URL连接
+- **配置示例**: 
+  - DATABASE_URL=mysql://root:jtl85fn8@dbprovider.sg-members-1.clawcloudrun.com:30354
+  - REDIS_URL=redis://default:9xdjb8nf@dbprovider.sg-members-1.clawcloudrun.com:32284
+
+#### 3.3.2 用户数据隔离
+采用**用户ID字段**方案，所有业务表包含 user_id 字段：
+```sql
+-- 用户表
+CREATE TABLE user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE,
+    email VARCHAR(100) UNIQUE,
+    password_hash VARCHAR(255),
+    plan_id BIGINT DEFAULT 1, -- 1:Free, 2:Pro, 3:Max
+    status TINYINT DEFAULT 1,
+    profile JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 管理员表
+CREATE TABLE admin (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE,
+    password_hash VARCHAR(255),
+    role_id BIGINT,
+    last_login_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 套餐配置表
+CREATE TABLE subscription_plan (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    code VARCHAR(20) UNIQUE NOT NULL,
+    price DECIMAL(10,2) DEFAULT 0.00,
+    annual_price DECIMAL(10,2) DEFAULT 0.00,
+    tokens INT DEFAULT 0,
+    features JSON,
+    status TINYINT DEFAULT 1,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 用户订阅表
+CREATE TABLE user_subscription (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    plan_id BIGINT NOT NULL,
+    status VARCHAR(20) DEFAULT 'active', -- active/expired/cancelled
+    start_date DATETIME NOT NULL,
+    end_date DATETIME,
+    auto_renew TINYINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status)
+);
+
+-- Token 消费规则表
+CREATE TABLE token_rule (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    feature_code VARCHAR(50) NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    token_cost INT DEFAULT 1,
+    description VARCHAR(255),
+    status TINYINT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 用户 Token 余额表
+CREATE TABLE user_token_balance (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL UNIQUE,
+    balance INT DEFAULT 0,
+    total_earned INT DEFAULT 0,
+    total_spent INT DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id)
+);
+
+-- Token 交易记录表
+CREATE TABLE token_transaction (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    type VARCHAR(20) NOT NULL, -- earn/spend
+    amount INT NOT NULL,
+    balance_after INT NOT NULL,
+    source VARCHAR(50) NOT NULL, -- subscription/purchase/consumption/checkin/invite
+    reference_id BIGINT, -- 关联业务ID
+    description VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_type (type),
+    INDEX idx_created_at (created_at)
+);
+
+-- 邀请记录表
+CREATE TABLE invitation (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    inviter_id BIGINT NOT NULL,
+    invitee_id BIGINT,
+    invite_code VARCHAR(20) UNIQUE NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending', -- pending/success/expired
+    reward_days INT DEFAULT 30,
+    reward_granted TINYINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_inviter_id (inviter_id),
+    INDEX idx_invite_code (invite_code)
+);
+
+-- 签到记录表
+CREATE TABLE user_checkin (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    checkin_date DATE NOT NULL,
+    consecutive_days INT DEFAULT 1,
+    token_reward INT DEFAULT 10,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_date (user_id, checkin_date),
+    INDEX idx_user_id (user_id)
+);
+
+-- 通知模板表
+CREATE TABLE notification_template (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    content TEXT NOT NULL,
+    type VARCHAR(20) DEFAULT 'system', -- system/email/webhook
+    trigger_condition JSON,
+    status TINYINT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 用户通知表
+CREATE TABLE user_notification (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    type VARCHAR(20) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    status VARCHAR(20) DEFAULT 'unread', -- unread/read
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    read_at TIMESTAMP NULL,
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status)
+);
+
+-- 用户飞书配置表
+CREATE TABLE user_feishu_config (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL UNIQUE,
+    webhook_url VARCHAR(500),
+    status TINYINT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- API 限速配置表
+CREATE TABLE api_rate_limit (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    api_path VARCHAR(100) NOT NULL,
+    plan_id BIGINT NOT NULL,
+    requests_per_minute INT DEFAULT 60,
+    requests_per_hour INT DEFAULT 3600,
+    requests_per_day INT DEFAULT 86400,
+    status TINYINT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_api_plan (api_path, plan_id)
+);
+```
+
+#### 3.3.2 业务表结构示例
+```sql
+-- BatchGo 任务表
+CREATE TABLE batch_task (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    mode VARCHAR(20) DEFAULT 'basic', -- basic/silent/automated
+    access_mode VARCHAR(20) DEFAULT 'http', -- http/puppeteer
+    status VARCHAR(20) DEFAULT 'pending',
+    total_urls INT DEFAULT 0,
+    success_urls INT DEFAULT 0,
+    failed_urls INT DEFAULT 0,
+    config JSON,
+    result JSON,
+    start_time DATETIME,
+    end_time DATETIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (user_id, status)
+);
+
+-- SiteRankGo 查询表
+CREATE TABLE siterank_query (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    domain VARCHAR(255) NOT NULL,
+    query_data JSON,
+    result_data JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_domain (domain)
+);
+
+#### 3.3.3 Token 消费规则配置
+
+初始 Token 消费规则：
+```sql
+-- SiteRankGo 查询消耗
+INSERT INTO token_rule (feature_code, action, token_cost, description) VALUES
+('siterank', 'query', 1, '成功查询1个域名消耗1个token');
+
+-- BatchGo HTTP 模式消耗
+INSERT INTO token_rule (feature_code, action, token_cost, description) VALUES
+('batchgo', 'http_access', 1, 'HTTP模式成功访问1个URL消耗1个token');
+
+-- BatchGo Puppeteer 模式消耗
+INSERT INTO token_rule (feature_code, action, token_cost, description) VALUES
+('batchgo', 'puppeteer_access', 2, 'Puppeteer模式成功访问1个URL消耗2个token');
+```
+
+#### 3.3.4 初始套餐配置
+
+```sql
+-- Free 套餐
+INSERT INTO subscription_plan (name, code, price, tokens, features, sort_order) VALUES
+('免费套餐', 'free', 0.00, 1000, '{"batchgo_versions": ["basic", "silent"], "siterank_limit": 100, "changelink_accounts": 0}', 1);
+
+-- Pro 套餐
+INSERT INTO subscription_plan (name, code, price, annual_price, tokens, features, sort_order) VALUES
+('高级套餐', 'pro', 298.00, 1490.00, 10000, '{"batchgo_versions": ["basic", "silent", "automated"], "siterank_limit": 500, "changelink_accounts": 10}', 2);
+
+-- Max 套餐
+INSERT INTO subscription_plan (name, code, price, annual_price, tokens, features, sort_order) VALUES
+('白金套餐', 'max', 998.00, 4990.00, 100000, '{"batchgo_versions": ["basic", "silent", "automated"], "siterank_limit": 5000, "changelink_accounts": 100}', 3);
+```
+```
+
+### 3.4 API 设计
+
+#### 3.4.1 RESTful API 规范
+```
+# 用户认证相关
+POST   /api/v1/auth/register          # 用户注册
+POST   /api/v1/auth/login             # 用户登录
+POST   /api/v1/auth/oauth/google      # Google 登录
+POST   /api/v1/auth/logout            # 用户登出
+POST   /api/v1/auth/refresh           # 刷新 Token
+GET    /api/v1/auth/me                # 获取当前用户信息
+
+# 用户管理相关
+GET    /api/v1/user/profile           # 获取用户资料
+PUT    /api/v1/user/profile           # 更新用户资料
+POST   /api/v1/user/password/reset    # 重置密码
+GET    /api/v1/user/plan              # 获取用户套餐信息
+
+# 管理员相关（独立入口）
+POST   /admin/api/login               # 管理员登录
+
+# 仪表板相关
+GET    /admin/api/dashboard/stats      # 关键指标统计
+GET    /admin/api/dashboard/charts    # 趋势图表数据
+
+# 用户管理相关
+GET    /admin/api/users               # 获取用户列表
+GET    /admin/api/users/:id           # 获取用户详情
+PUT    /admin/api/users/:id/status    # 禁用/启用用户
+POST   /admin/api/users/:id/tokens    # 给用户充值Token
+PUT    /admin/api/users/:id/plan      # 修改用户套餐
+GET    /admin/api/users/:id/subscriptions # 用户订阅历史
+
+# 角色管理相关
+GET    /admin/api/roles               # 角色列表
+PUT    /admin/api/users/:id/role      # 修改用户角色
+
+# 套餐管理相关
+GET    /admin/api/plans               # 套餐列表
+POST   /admin/api/plans               # 创建套餐
+PUT    /admin/api/plans/:id           # 更新套餐
+DELETE /admin/api/plans/:id           # 删除套餐
+
+# Token管理相关
+GET    /admin/api/token/rules         # Token消费规则
+PUT    /admin/api/token/rules/:id     # 修改Token规则
+GET    /admin/api/token/analysis      # Token使用分析
+GET    /admin/api/token/transactions  # Token交易记录
+
+# API限速相关
+GET    /admin/api/rate-limits         # API限速配置
+PUT    /admin/api/rate-limits/:id     # 修改限速配置
+POST   /admin/api/rate-limits/reload  # 热更新限速配置
+
+# 通知管理相关
+GET    /admin/api/notification/templates # 通知模板
+PUT    /admin/api/notification/templates/:id # 修改通知模板
+
+# 支付相关
+GET    /admin/api/payments/records    # 支付记录
+
+# API监控相关
+GET    /admin/api/api/stats            # API统计信息
+GET    /admin/api/api/logs             # API访问日志
+
+# 签到相关
+GET    /admin/api/checkin/records      # 签到记录
+
+# 邀请相关
+GET    /admin/api/invitation/records  # 邀请记录
+
+# 系统相关
+GET    /admin/api/system/status       # 系统状态
+GET    /admin/api/logs                # 系统日志
+
+# BatchGo 相关
+POST   /api/v1/batch/tasks            # 创建任务
+GET    /api/v1/batch/tasks            # 获取任务列表
+GET    /api/v1/batch/tasks/:id        # 获取任务详情
+PUT    /api/v1/batch/tasks/:id        # 更新任务
+DELETE /api/v1/batch/tasks/:id        # 删除任务
+POST   /api/v1/batch/tasks/:id/start  # 启动任务
+POST   /api/v1/batch/tasks/:id/stop   # 停止任务
+GET    /api/v1/batch/tasks/:id/result # 获取任务结果
+
+# SiteRankGo 相关
+POST   /api/v1/siterank/queries       # 创建查询
+GET    /api/v1/siterank/queries       # 查询历史
+GET    /api/v1/siterank/domains/:id   # 获取域名排名
+GET    /api/v1/siterank/report        # 生成报告
+
+# ChangeLinkGo 相关
+POST   /api/v1/changelink/tasks       # 创建任务
+GET    /api/v1/changelink/accounts    # 账户列表
+POST   /api/v1/changelink/execute     # 执行替换
+GET    /api/v1/changelink/logs        # 执行日志
+
+# 用户中心相关
+GET    /api/v1/user/profile           # 获取用户资料
+PUT    /api/v1/user/profile           # 更新用户资料
+GET    /api/v1/user/subscription      # 获取订阅信息
+GET    /api/v1/user/tokens            # 获取Token余额
+GET    /api/v1/user/token/transactions # Token交易记录
+POST   /api/v1/user/checkin           # 每日签到
+GET    /api/v1/user/checkin/history   # 签到历史
+GET    /api/v1/user/invitation        # 获取邀请信息
+POST   /api/v1/user/invitation/generate # 生成邀请链接
+GET    /api/v1/user/invitation/records # 邀请记录
+GET    /api/v1/user/notifications     # 通知列表
+PUT    /api/v1/user/notifications/:id/read # 标记通知已读
+POST   /api/v1/user/feishu/config     # 配置飞书Webhook
+
+# 套餐相关
+GET    /api/v1/plans                  # 获取套餐列表
+GET    /api/v1/plans/:id              # 获取套餐详情
+
+# 定价页面
+GET    /api/v1/pricing/info            # 获取定价信息
+POST   /api/v1/pricing/inquiry        # 提交咨询
+```
+
+#### 3.4.2 WebSocket 实时通信
+```javascript
+// 任务进度推送
+ws://localhost:8200/ws/batch/task/{taskId}
+
+// 系统通知
+ws://localhost:8200/ws/notifications
+```
+
+### 3.5 安全设计
+
+#### 3.5.1 认证授权流程
+```go
+// 用户 JWT Token 结构
+type UserClaims struct {
+    UserID   int64  `json:"user_id"`
+    Username string `json:"username"`
+    PlanID   int    `json:"plan_id"`
+    Exp      int64  `json:"exp"`
+    jwt.StandardClaims
+}
+
+// 管理员 JWT Token 结构
+type AdminClaims struct {
+    AdminID  int64  `json:"admin_id"`
+    Username string `json:"username"`
+    RoleID   int64  `json:"role_id"`
+    Exp      int64  `json:"exp"`
+    jwt.StandardClaims
+}
+
+// 用户认证中间件
+func UserAuthMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        token := c.GetHeader("Authorization")
+        if token == "" {
+            c.JSON(401, gin.H{"code": 401, "message": "未授权"})
+            c.Abort()
+            return
+        }
+        
+        // 验证 Token 并提取用户信息
+        claims, err := ValidateUserToken(token)
+        if err != nil {
+            c.JSON(401, gin.H{"code": 401, "message": "Token无效"})
+            c.Abort()
+            return
+        }
+        
+        // 检查用户状态和套餐权限
+        user, err := GetUserByID(claims.UserID)
+        if err != nil || user.Status != 1 {
+            c.JSON(403, gin.H{"code": 403, "message": "用户已被禁用"})
+            c.Abort()
+            return
+        }
+        
+        // 设置上下文
+        c.Set("user_id", claims.UserID)
+        c.Set("plan_id", claims.PlanID)
+        c.Next()
+    }
+}
+
+// 管理员认证中间件
+func AdminAuthMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        token := c.GetHeader("Authorization")
+        if token == "" {
+            c.JSON(401, gin.H{"code": 401, "message": "未授权"})
+            c.Abort()
+            return
+        }
+        
+        claims, err := ValidateAdminToken(token)
+        if err != nil {
+            c.JSON(401, gin.H{"code": 401, "message": "Token无效"})
+            c.Abort()
+            return
+        }
+        
+        c.Set("admin_id", claims.AdminID)
+        c.Set("role_id", claims.RoleID)
+        c.Next()
+    }
+}
+
+// 功能权限检查中间件（以 BatchGo 为例）
+func BatchGoPermissionMiddleware(mode string) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        planID := c.GetInt("plan_id")
+        
+        // 检查套餐权限
+        switch mode {
+        case "basic":
+            // 所有套餐都支持
+        case "silent":
+            if planID < 2 { // Pro套餐
+                c.JSON(403, gin.H{"code": 403, "message": "需要Pro套餐才能使用Silent模式"})
+                c.Abort()
+                return
+            }
+        case "automated":
+            if planID < 3 { // Max套餐
+                c.JSON(403, gin.H{"code": 403, "message": "需要Max套餐才能使用Automated模式"})
+                c.Abort()
+                return
+            }
+        }
+        
+        c.Next()
+    }
+}
+```
+
+#### 3.5.2 数据安全
+- HTTPS 全链路加密
+- 密码 BCrypt 加密存储
+- JWT Token 黑名单机制
+- API 请求频率限制
+- SQL 注入防护
+- XSS/CSRF 防护
+- 敏感数据脱敏显示
+
+### 3.6 性能优化策略
+
+#### 3.6.1 缓存策略
+- **Redis 缓存**: 热点数据、Session、Token
+- **本地缓存**: 配置信息、字典数据
+- **CDN 缓存**: 静态资源
+- **查询缓存**: 数据库查询结果
+
+#### 3.6.2 并发处理
+- **连接池**: 数据库、Redis 连接池
+- **协程池**: Go 协程池管理
+- **限流算法**: 令牌桶、漏桶算法
+- **熔断降级**: Hystrix 模式
+
+### 3.7 监控与运维
+
+#### 3.7.1 日志系统
+```go
+// 结构化日志
+type LogEntry struct {
+    Timestamp   time.Time              `json:"timestamp"`
+    Level       string                 `json:"level"`
+    Service     string                 `json:"service"`
+    TenantID    string                 `json:"tenant_id,omitempty"`
+    UserID      string                 `json:"user_id,omitempty"`
+    Action      string                 `json:"action"`
+    RequestID   string                 `json:"request_id"`
+    Duration    int64                  `json:"duration,omitempty"`
+    Error       string                 `json:"error,omitempty"`
+    Metadata    map[string]interface{} `json:"metadata"`
+}
+```
+
+#### 3.7.2 监控指标
+- **系统指标**: CPU、内存、磁盘、网络
+- **应用指标**: QPS、响应时间、错误率
+- **业务指标**: 用户数、任务数、Token 消费
+- **数据库指标**: 连接数、慢查询、锁等待
+
+## 3. 用户界面增强目标
+
+### 3.1 集成与现有 UI
+- 保持现有页面结构和导航逻辑
+- 优化设计风格，提升用户体验
+- 新增多用户管理界面
+- 集成 GoFly 后台管理界面
+
+### 3.2 修改/新增的界面
+- 用户注册和登录页面
+- 用户中心和个人设置
+- 订阅管理和充值页面
+- GoFly 后台管理界面
+- 租户管理控制台
+
+## 4. 技术约束和集成需求
+
+### 4.1 现有技术栈
+**Languages**: TypeScript, JavaScript
+**Frameworks**: Next.js 14, React 18
+**Database**: MySQL 8.0 (Prisma ORM)
+**Infrastructure**: Node.js, Redis 7.0
+**External Dependencies**: SimilarWeb, Google Ads, AdsPower
+
+### 4.2 集成方法
+
+#### 数据库集成策略
+- 使用环境变量 DATABASE_URL 访问 MySQL
+- 遵循 GoFly 的表命名规范（business_*、admin_*）
+- 实现多租户数据隔离
+
+#### API 集成策略
+- 保持 Next.js 前端 API 兼容
+- 新增 Go 微服务 API 网关
+- 实现服务间通信（gRPC）
+
+#### 前端集成策略
+- 保持现有 Next.js 前端框架
+- 优化组件架构和状态管理
+- 集成 WebSocket 实时通信
+
+### 4.3 代码组织和标准
+
+#### 文件结构方法
+- 前端：保持现有 src 目录结构
+- 后端：Go 服务按功能模块划分
+- 共享：定义 API 接口和数据模型
+
+#### 命名规范
+- 数据库表：遵循 GoFly 规范
+- API 路由：RESTful 设计
+- 代码：Go 官方规范 + 项目约定
+
+### 4.4 部署和运维
+
+#### 构建过程集成
+- 前端：Next.js 构建
+- 后端：Go 二进制文件
+- Docker 容器化部署
+
+#### 部署策略
+- 使用 GitHub Actions 构建 Docker 镜像
+- ClawCloud 容器平台部署
+- 支持预发和生产环境
+
+#### 监控和日志
+- 集成 Prometheus + Grafana
+- 结构化日志输出
+- 告警和通知机制
+
+### 4.5 风险评估和缓解
+
+#### 技术风险
+- **技术风险**: Go 开发经验不足可能影响开发进度
+- **集成风险**: GoFly 框架集成可能存在兼容性问题
+- **数据迁移风险**: 重构过程中数据可能丢失或损坏
+
+#### 集成风险
+- **API 兼容性**: 新旧系统 API 兼容性维护
+- **性能风险**: 微服务架构可能引入新的性能瓶颈
+
+#### 部署风险
+- **部署复杂度**: 多服务部署增加复杂度
+- **回滚难度**: 微服务架构回滚更复杂
+
+#### 缓解策略
+- 提前进行技术培训和原型验证
+- 分阶段迁移，确保平滑过渡
+- 完善的备份和回滚机制
+- 充分的测试和性能优化
+
+## 4. 实施计划
+
+### 4.1 项目阶段划分
+
+#### Phase 1: 基础设施搭建（2周）
+**目标**: 搭建开发环境，完成基础架构设计
+
+**主要任务**:
+1. 搭建 GoFly 开发环境
+2. 设计简化版多用户架构
+3. 创建项目代码仓库
+4. 建立 CI/CD 流程
+5. 完成技术方案评审
+
+**交付物**:
+- 架构设计文档
+- 开发环境配置
+- 代码仓库结构
+- CI/CD 配置文件
+
+#### Phase 2: 用户和管理员系统（3周）
+**目标**: 实现多用户认证和管理员后台
+
+**主要任务**:
+1. 集成 GoFly 管理员模块
+2. 实现用户注册登录系统
+3. 设计用户数据隔离方案
+4. 实现 OAuth2 登录集成
+5. 初始化管理员账号
+
+**交付物**:
+- 用户认证服务
+- 管理员后台系统
+- 权限管理模块
+- 数据库迁移脚本
+
+#### Phase 3: BatchGo 微服务开发（4周）
+**目标**: 完成 BatchGo 功能的 Go 语言重构
+
+**主要任务**:
+1. 分析现有 BatchOpen 功能
+2. 设计 BatchGo 微服务架构
+3. 实现三种版本的任务管理系统
+4. 集成代理池管理
+5. 实现版本权限控制
+6. 性能优化和测试
+
+**交付物**:
+- BatchGo 微服务
+- 任务调度系统
+- 代理管理模块
+- 版本权限控制
+- API 接口文档
+
+#### Phase 4: SiteRankGo 微服务开发（3周）
+**目标**: 完成 SiteRankGo 功能的 Go 语言重构
+
+**主要任务**:
+1. 集成 SimilarWeb API
+2. 实现查询缓存机制
+3. 开发批量查询功能
+4. 实现历史数据分析
+5. 报表生成功能
+
+**交付物**:
+- SiteRankGo 微服务
+- 缓存管理系统
+- 数据分析模块
+- 报表生成器
+
+#### Phase 5: ChangeLinkGo 微服务开发（4周）
+**目标**: 完成 ChangeLinkGo 功能的 Go 语言重构
+
+**主要任务**:
+1. 集成 Google Ads API
+2. 集成 AdsPower 自动化
+3. 实现链接管理引擎
+4. 开发监控系统
+5. 实现回滚机制
+
+**交付物**:
+- ChangeLinkGo 微服务
+- 自动化执行引擎
+- 监控告警系统
+- API 文档
+
+#### Phase 6: 前端适配和优化（2周）
+**目标**: 适配前端界面，集成新的后端 API
+
+**主要任务**:
+1. API 接口适配
+2. 多用户界面支持
+3. 实时通信功能
+4. UI 设计优化
+5. 兼容性测试
+
+**交付物**:
+- 更新后的前端代码
+- API 适配层
+- 用户操作手册
+
+#### Phase 7: 系统测试和部署（2周）
+**目标**: 完成系统测试，部署到生产环境
+
+**主要任务**:
+1. 集成测试
+2. 性能压力测试
+3. 安全测试
+4. 数据库初始化
+5. 生产环境部署
+6. 监控系统配置
+
+**交付物**:
+- 测试报告
+- 部署文档
+- 运维手册
+- 监控大屏
+
+### 4.2 资源需求
+
+#### 4.2.1 人力资源
+- **架构师**: 1人（全程参与）
+- **后端开发**: 3人（Go 开发经验）
+- **前端开发**: 2人（React/Next.js）
+- **测试工程师**: 1人
+- **DevOps 工程师**: 1人
+- **产品经理**: 1人
+
+#### 4.2.2 技术资源
+- **开发环境**: 
+  - Go 1.21+ 开发环境
+  - Node.js 18+ 环境
+  - MySQL 8.0 数据库
+  - Redis 7.0 缓存
+- **测试环境**:
+  - 与生产环境配置一致
+  - 性能测试工具
+- **生产环境**:
+  - 云服务器配置
+  - CDN 服务
+  - 监控系统
+
+#### 4.2.3 预算估算
+- **人力成本**: 根据团队规模和周期计算
+- **基础设施**: 云服务器、数据库、CDN 等
+- **第三方服务**: SimilarWeb API、Google Ads API 等
+- **培训成本**: Go 语言培训、框架使用培训
+
+### 4.3 风险管理
+
+#### 4.3.1 技术风险
+| 风险项 | 影响程度 | 发生概率 | 缓解措施 |
+|--------|----------|----------|----------|
+| Go 开发经验不足 | 高 | 中 | 提前培训，引入专家指导 |
+| 微服务架构复杂度 | 中 | 高 | 分步实施，充分设计 |
+| 性能不达预期 | 高 | 中 | 性能测试，持续优化 |
+| 数据隔离安全性 | 高 | 低 | 严格权限控制，数据验证 |
+
+#### 4.3.2 项目风险
+| 风险项 | 影响程度 | 发生概率 | 缓解措施 |
+|--------|----------|----------|----------|
+| 进度延期 | 中 | 高 | 合理排期，预留缓冲 |
+| 需求变更 | 高 | 中 | 变更控制流程 |
+| 质量问题 | 高 | 低 | 代码审查，自动化测试 |
+
+#### 4.3.3 业务风险
+| 风险项 | 影响程度 | 发生概率 | 缓解措施 |
+|--------|----------|----------|----------|
+| 用户体验下降 | 中 | 低 | 保持现有布局，优化交互 |
+| 权限控制失效 | 极高 | 低 | 多层验证，日志审计 |
+| 并发性能瓶颈 | 高 | 中 | 压力测试，优化算法 |
+| HTTP/Puppeteer模式选择不当 | 中 | 中 | 提供模式选择指南，性能对比 |
+
+### 4.4 成功指标
+
+#### 4.4.1 技术指标
+- 系统响应时间降低 50%（P95 < 200ms）
+- 支持 5,000+ 并发用户
+- BatchGo 并发能力提升 500%（Max套餐50并发）
+- 系统可用性 99.9%
+- 代码覆盖率 > 80%
+
+#### 4.4.2 业务指标
+- 用户注册转化率 > 30%
+- 付费转化率 > 10%
+- 用户留存率 > 80%
+- 三大核心功能使用率 > 90%
+
+#### 4.4.3 运维指标
+- 部署自动化率 100%
+- 监控覆盖率 100%
+- 故障恢复时间 < 5 分钟
+- 资源利用率 > 70%
+
+## 5. 用户故事和验收标准
+
+### 5.1 Epic: AutoAds 多用户系统重构
+
+**Epic 目标**: 将 AutoAds 重构为支持多用户的简化 SaaS 平台，集成 GoFly 管理系统，使用 Go 语言提升性能。
+
+**业务价值**: 
+- 支持多用户独立使用，扩大用户规模
+- 提升系统性能，改善用户体验
+- 专业后台管理功能，提高运维效率
+- 微服务架构，支持快速迭代
+
+### 5.2 核心用户故事
+
+#### Story 5.2.1: 用户注册和登录
+**As a** 新用户,
+**I want to** 通过邮箱注册或 Google OAuth 快速登录,
+**so that** 我可以开始使用 AutoAds 的各项功能。
+
+**验收标准**:
+- [ ] 支持邮箱注册和邮箱验证
+- [ ] 集成 Google OAuth2.0 一键登录
+- [ ] 自动分配 Free 套餐权限
+- [ ] 支持密码重置功能
+- [ ] 登录状态持久化
+
+**集成验证**:
+- IV1: 注册流程完整且无错误
+- IV2: OAuth 登录功能正常
+- IV3: 用户数据正确隔离
+
+#### Story 5.2.2: 管理员后台登录
+**As a** 系统管理员,
+**I want to** 通过预设的账号密码登录后台管理系统,
+**so that** 我可以管理用户和系统配置。
+
+**验收标准**:
+- [ ] 初始化超级管理员账号（admin）
+- [ ] 独立的后台登录入口
+- [ ] 管理员密码可修改
+- [ ] 登录失败次数限制
+- [ ] 管理员操作日志记录
+
+**集成验证**:
+- IV1: 管理员登录功能正常
+- IV2: 后台权限控制生效
+- IV3: 操作日志完整记录
+
+#### Story 5.2.3: BatchGo 版本权限和访问模式
+**As a** 不同套餐的用户,
+**I want to** 使用对应我套餐等级的 BatchGo 功能，并选择合适的访问模式,
+**so that** 我可以高效完成适合我需求的批量任务。
+
+**验收标准**:
+- [ ] Free 用户可使用 Basic 模式（100 URL/任务）
+- [ ] Pro 用户可使用 Silent 模式（1000 URL/任务，5并发）
+- [ ] Max 用户可使用 Automated 模式（5000 URL/任务，50并发）
+- [ ] 支持HTTP和Puppeteer两种访问模式选择
+- [ ] HTTP模式支持10倍于Puppeteer的并发量
+- [ ] 套餐升级后权限立即生效
+- [ ] 超出限制时友好提示
+
+**集成验证**:
+- IV1: 权限控制准确无误
+- IV2: HTTP模式性能达到预期（10倍并发）
+- IV3: Puppeteer模式功能完整
+- IV4: 模式切换功能正常
+
+#### Story 5.2.3.1: HTTP访问模式高性能处理
+**As a** BatchGo 用户,
+**I want to** 使用HTTP模式进行大规模批量访问,
+**so that** 我可以获得更高的并发性能和效率。
+
+**验收标准**:
+- [ ] HTTP模式支持轻量级请求
+- [ ] 并发性能达到Puppeteer模式的10倍
+- [ ] 支持自定义User-Agent和请求头
+- [ ] 自动处理Cookies和Session保持
+- [ ] 适合不需要JavaScript渲染的简单页面
+
+**集成验证**:
+- IV1: HTTP并发性能达标
+- IV2: 请求功能完整
+- IV3: 资源占用合理
+
+#### Story 5.2.3.2: Puppeteer访问模式完整渲染
+**As a** BatchGo 用户,
+**I want to** 使用Puppeteer模式处理复杂页面,
+**so that** 我可以正确访问需要JavaScript渲染的内容。
+
+**验收标准**:
+- [ ] Puppeteer模式支持完整浏览器环境
+- [ ] 正确处理JavaScript动态内容
+- [ ] 支持验证码和反爬虫机制
+- [ ] 提供页面截图和调试功能
+- [ ] 适合复杂网站和SPA应用
+
+**集成验证**:
+- IV1: 渲染功能正常
+- IV2: 反爬机制有效
+- IV3: 调试功能完整
+
+#### Story 5.2.4: SiteRankGo 高效查询
+**As a** 网站运营者,
+**I want to** 快速查询和分析网站排名数据,
+**so that** 我可以及时了解网站表现。
+
+**验收标准**:
+- [ ] 查询响应时间 < 500ms
+- [ ] 支持批量域名查询
+- [ ] 查询结果缓存机制
+- [ ] 历史数据对比分析
+- [ ] 导出报表功能
+
+**集成验证**:
+- IV1: 查询性能达标
+- IV2: 数据准确可靠
+- IV3: API 调用成本可控
+
+#### Story 5.2.5: ChangeLinkGo 自动化管理
+**As a** 广告优化师,
+**I want to** 自动化管理 Google Ads 链接,
+**so that** 我可以提高工作效率减少错误。
+
+**验收标准**:
+- [ ] 多 Google Ads 账户管理
+- [ ] 复杂链接替换规则
+- [ ] AdsPower 自动化执行
+- [ ] 执行状态实时监控
+- [ ] 失败自动回滚机制
+
+**集成验证**:
+- IV1: 自动化流程稳定
+- IV2: Google Ads API 集成正常
+- IV3: 错误处理机制有效
+
+#### Story 5.2.6: 前端界面优化
+**As a** 用户,
+**I want to** 在保持熟悉布局的同时享受更好的视觉体验,
+**so that** 我可以更高效地使用系统功能。
+
+**验收标准**:
+- [ ] 保持现有页面布局结构
+- [ ] 优化视觉设计和交互
+- [ ] 响应式设计支持移动端
+- [ ] 实时数据展示优化
+- [ ] 加载速度提升
+
+**集成验证**:
+- IV1: 用户操作习惯无需改变
+- IV2: 视觉体验明显提升
+- IV3: 页面性能优化
+
+#### Story 5.2.7: 管理员仪表板
+**As a** 系统管理员,
+**I want to** 在GoFly后台查看系统的关键指标和趋势图,
+**so that** 我可以了解系统运营状况。
+
+**验收标准**:
+- [ ] 查看天维度的注册用户数趋势
+- [ ] 查看每日登录用户数统计
+- [ ] 查看不同套餐的订阅数量
+- [ ] 查看月度收入（基于年付折扣计算）
+- [ ] 查看Token消耗量统计
+- [ ] 查看API使用情况
+- [ ] 支持日期时间段选择
+
+**集成验证**:
+- IV1: 数据统计准确无误
+- IV2: 图表展示清晰
+- IV3: 时间筛选功能正常
+
+#### Story 5.2.8: 管理员用户管理
+**As a** 系统管理员,
+**I want to** 在GoFly后台管理所有用户信息,
+**so that** 我可以控制用户访问和权限。
+
+**验收标准**:
+- [ ] 查看所有用户列表和档案信息
+- [ ] 查看用户的订阅信息
+- [ ] 禁用/启用用户账号
+- [ ] 给用户充值Token
+- [ ] 更改用户的订阅套餐
+- [ ] 查看用户详细操作日志
+
+**集成验证**:
+- IV1: 用户管理功能完整
+- IV2: 权限控制严格
+- IV3: 操作日志完整
+
+#### Story 5.2.9: 管理员角色管理
+**As a** 系统管理员,
+**I want to** 在GoFly后台管理用户角色,
+**so that** 我可以控制系统的访问权限。
+
+**验收标准**:
+- [ ] 查看所有角色列表
+- [ ] 区分普通用户和管理员角色
+- [ ] 修改用户的角色分配
+- [ ] 角色权限实时生效
+
+**集成验证**:
+- IV1: 角色管理功能正常
+- IV2: 权限控制准确
+- IV3: 角色切换即时生效
+
+#### Story 5.2.10: 管理员套餐管理
+**As a** 系统管理员,
+**I want to** 在GoFly后台管理套餐配置,
+**so that** 我可以灵活调整产品定价和功能。
+
+**验收标准**:
+- [ ] 查看所有套餐列表
+- [ ] 修改套餐的功能权限
+- [ ] 修改套餐的参数限制
+- [ ] 调整套餐价格和包含Token数
+- [ ] 套餐变更立即生效
+
+**集成验证**:
+- IV1: 套餐配置功能完整
+- IV2: 前端定价页面同步更新
+- IV3: 权限限制准确生效
+
+#### Story 5.2.11: 用户注册和试用机制
+**As a** 新用户,
+**I want to** 注册后自动获得高级套餐试用,
+**so that** 我可以体验完整功能。
+
+**验收标准**:
+- [ ] 邮箱注册成功后自动获得14天Pro套餐
+- [ ] Google OAuth登录同样获得14天Pro套餐
+- [ ] 通过邀请链接注册获得30天Pro套餐
+- [ ] 邀请者成功邀请后获得30天Pro套餐
+- [ ] 多次邀请奖励可累加
+- [ ] 套餐到期自动降级到Free套餐
+- [ ] 个人中心显示准确的套餐信息
+
+**集成验证**:
+- IV1: 注册流程正常
+- IV2: 套餐分配准确
+- IV3: 邀请机制有效
+
+#### Story 5.2.12: Token管理系统
+**As a** 系统管理员,
+**I want to** 管理Token的消耗规则和使用分析,
+**so that** 我可以控制资源使用和成本。
+
+**验收标准**:
+- [ ] 查看多维度的Token使用分析
+- [ ] 修改不同功能的Token消耗规则
+- [ ] 查看Token购买交易记录
+- [ ] 查看API限速配置并支持热更新
+- [ ] 初始规则：SiteRank查询1个域名消耗1 token
+- [ ] 初始规则：BatchGo HTTP模式消耗1 token/URL
+- [ ] 初始规则：BatchGo Puppeteer模式消耗2 token/URL
+
+**集成验证**:
+- IV1: Token统计准确
+- IV2: 规则修改即时生效
+- IV3: 热更新功能正常
+
+#### Story 5.2.13: 通知管理系统
+**As a** 系统管理员,
+**I want to** 管理系统通知的发送,
+**so that** 我可以及时告知用户重要信息。
+
+**验收标准**:
+- [ ] 配置通知模板
+- [ ] 设置触发条件
+- [ ] 配置发送方式（飞书webhook、应用内通知）
+- [ ] 查看通知发送历史
+
+**集成验证**:
+- IV1: 通知模板配置灵活
+- IV2: 发送机制可靠
+- IV3: 飞书集成正常
+
+#### Story 5.2.14: 用户个人中心
+**As a** 普通用户,
+**I want to** 在个人中心管理我的账户信息,
+**so that** 我可以了解使用情况和获得奖励。
+
+**验收标准**:
+- [ ] 查看和编辑个人信息
+- [ ] 查看订阅管理信息
+- [ ] 查看Token消耗记录
+- [ ] 每日签到功能（10/20/40/80 token递增）
+- [ ] 查看邀请记录和奖励
+- [ ] 配置飞书webhook地址
+- [ ] 查看应用内消息通知
+- [ ] 所有信息持久化存储并支持异步更新
+
+**集成验证**:
+- IV1: 个人中心功能完整
+- IV2: 数据展示准确
+- IV3: 签到奖励机制正常
+
+#### Story 5.2.15: 定价页面
+**As a** 潜在用户,
+**I want to** 查看套餐信息和对比,
+**so that** 我可以选择适合的套餐。
+
+**验收标准**:
+- [ ] 展示支持的套餐信息
+- [ ] 显示不同套餐的功能权限对比
+- [ ] 显示参数限制对比
+- [ ] 提供FAQ信息
+- [ ] 点击"立即订阅"弹出咨询窗口
+- [ ] 套餐信息与后台配置保持一致
+
+**集成验证**:
+- IV1: 套餐信息同步准确
+- IV2: 对比表格清晰
+- IV3: 咨询功能正常
+
+#### Story 5.2.16: 支付记录管理
+**As a** 系统管理员,
+**I want to** 查看所有支付记录,
+**so that** 我可以跟踪收入情况。
+
+**验收标准**:
+- [ ] 查看订阅支付记录
+- [ ] 查看Token购买记录
+- [ ] 按时间筛选记录
+- [ ] 导出支付报表
+
+**集成验证**:
+- IV1: 支付记录完整
+- IV2: 金额计算准确
+- IV3: 筛选功能正常
+
+#### Story 5.2.17: API监控统计
+**As a** 系统管理员,
+**I want to** 监控API的使用情况,
+**so that** 我可以了解系统负载。
+
+**验收标准**:
+- [ ] 查看所有API列表
+- [ ] 显示AI功能说明
+- [ ] 统计每日API访问次数
+- [ ] 监控响应耗时
+- [ ] 计算成功率
+- [ ] 异常告警
+
+**集成验证**:
+- IV1: API统计准确
+- IV2: 性能监控实时
+- IV3: 告警机制有效
+
+#### Story 5.2.18: 签到系统
+**As a** 普通用户,
+**I want to** 每日签到获得Token奖励,
+**so that** 我可以获得更多使用额度。
+
+**验收标准**:
+- [ ] 个人中心显示签到模块
+- [ ] 连续签到奖励递增（10/20/40/80）
+- [ ] 中断后重新从10开始
+- [ ] 管理员可查看所有签到记录
+- [ ] 签到记录表格展现
+
+**集成验证**:
+- IV1: 签到功能正常
+- IV2: 奖励计算准确
+- IV3: 连续天数判断正确
+
+#### Story 5.2.19: 邀请系统
+**As a** 普通用户,
+**I want to** 邀请好友获得奖励,
+**so that** 我可以通过分享获得更多权益。
+
+**验收标准**:
+- [ ] 个人中心显示邀请好友模块
+- [ ] 生成独一无二的邀请链接
+- [ ] 查看历史邀请记录
+- [ ] 查看获得的奖励
+- [ ] 管理员可查看所有邀请记录
+- [ ] 成功邀请双方各得30天Pro套餐
+
+**集成验证**:
+- IV1: 邀请链接生成正确
+- IV2: 奖励发放准确
+- IV3: 邀请记录完整
+
+## 6. 变更日志
+
+| 版本 | 日期 | 变更内容 | 作者 |
+|------|------|----------|------|
+| v1.0 | 2025-01-09 | 初始 PRD 创建 | 产品团队 |
+| v2.0 | 2025-01-09 | 集成 GoFly 框架，完善技术架构 | 产品团队 |
+| v3.0 | 2025-01-09 | 优化为简化版多用户系统，移除租户管理，细化BatchGo权限 | 产品团队 |
+| v4.0 | 2025-01-09 | 更新为使用新数据库无需迁移，添加HTTP/Puppeteer双模式支持 | 产品团队 |
+| v5.0 | 2025-01-09 | 添加完整的用户运营功能：Token系统、签到、邀请、试用套餐、个人中心、管理员仪表板等 | 产品团队 |
+| v6.0 | 2025-01-09 | 移除Stripe支付集成，更新Token充值价格为¥150/10,000起，确认套餐配置信息 | 产品团队 |
+
+## 7. 附录
+
+### 7.1 术语表
+- **SaaS**: Software as a Service，软件即服务
+- **RBAC**: Role-Based Access Control，基于角色的访问控制
+- **OAuth2**: 开放授权标准
+- **JWT**: JSON Web Token
+- **CRUD**: Create, Read, Update, Delete
+- **Token**: 系统内使用的虚拟货币，用于功能消费
+- **Pro套餐**: 高级付费套餐，¥298/月（年付50%优惠）
+- **Max套餐**: 白金付费套餐，¥998/月（年付50%优惠）
+- **HTTP模式**: BatchGo的轻量级访问模式，高性能
+- **Puppeteer模式**: BatchGo的完整浏览器模拟模式
+- **签到**: 每日登录获得Token奖励的机制
+- **邀请机制**: 用户邀请好友注册获得奖励的机制
+
+### 7.2 参考资料
+- GoFly Admin V3 文档
+- AutoAds 现有系统架构文档
+- 微服务架构设计模式
+- 多用户 SaaS 架构最佳实践
+
