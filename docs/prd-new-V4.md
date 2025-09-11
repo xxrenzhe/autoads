@@ -8,10 +8,11 @@
 - **负责人**: 产品团队
 - **优化说明**: 
   - V4.0：全面修复文档不一致性和歧义问题，统一技术规格，优化文档结构
+  - V4.1：开始清理过度详细的实现代码，将 PRD 专注在需求层面
 
 ## 执行摘要
 
-AutoAds 是一个基于 Next.js 的自动化营销平台，正在重构为基于 GoFly 框架的多用户 SaaS 系统。当前系统已实现用户认证、权限管理和三大核心功能中的两个：✅ BatchOpen（批量访问，三种模式完整实现）、✅ SiteRank（网站排名，已集成 SimilarWeb API）、❌ ChangeLink（链接管理，仅 UI 原型）。重构目标是将现有功能迁移至 Go 语言 + GoFly 架构，实现性能提升和专业的后台管理系统。
+AutoAds 是一个成熟的多用户 SaaS 自动化营销平台，当前基于 Next.js 架构运行，正计划迁移至 GoFly 框架以获得更好的性能和管理能力。**当前生产环境已完整实现**用户认证、权限管理和三大核心功能中的两个：✅ BatchOpen（批量访问，三种模式完整实现）、✅ SiteRank（网站排名，已集成 SimilarWeb API）、❌ ChangeLink（链接管理，仅 UI 原型）。本文档描述当前系统架构和功能规格，Go 迁移计划详见单独的迁移方案文档。
 
 ## 1. 项目概述
 
@@ -45,18 +46,27 @@ AutoAds 是一个基于 Next.js 14 的自动化营销平台，三大核心功能
 - Google Ads API（未集成）
 - AdsPower API（未集成）
 
-### 1.2 重构目标
+### 1.2 系统架构目标
 
-#### 核心目标
-1. **架构升级**: 从 Node.js 单体应用演进为 Go 单体应用+模块化设计
-2. **性能提升**: 利用 Go 语言并发优势，提升系统性能
-3. **管理后台**: 集成 GoFly 框架，提供专业的后台管理系统
-4. **业务连续性**: 保持所有现有功能的完整性和前端布局
+#### 当前架构（生产环境）
+- **单体应用**: Next.js 14 全栈应用
+- **认证系统**: NextAuth.js v5 + Google OAuth
+- **数据库**: MySQL 8.0 + Prisma ORM
+- **缓存**: Redis 7.0
+- **部署**: GitHub Actions + ClawCloud 容器化
 
-#### 预期收益
-- 更高的并发处理能力
-- 更好的系统可维护性
-- 专业的后台管理功能
+#### 未来架构目标（规划中）
+1. **后端迁移**: Next.js API Routes → Go + GoFly Admin V3
+2. **前端保留**: 保持 Next.js 前端不变，仅调整 API 调用
+3. **性能优化**: 利用 Go 并发特性提升批量处理能力
+4. **管理增强**: 集成 GoFly 专业后台管理系统
+5. **平滑过渡**: 保持 API 兼容性，确保业务连续性
+
+#### 迁移预期收益
+- **性能**: 批量处理速度提升 5-10 倍
+- **资源**: 内存使用降低 50%
+- **维护**: 统一技术栈，降低复杂度
+- **扩展**: 更容易添加新功能和集成第三方服务
 - 统一的技术栈
 
 ## 2. 命名说明
@@ -363,15 +373,24 @@ AutoAds 是一个基于 Next.js 14 的自动化营销平台，三大核心功能
 
 ### 4.1 整体架构
 
-#### 4.1.1 架构模式
-采用 **Go 单体应用+模块化设计**：
-- **前端层**: Next.js 14 + TypeScript（保持现有前端）
-- **后端层**: GoFly Admin V3 框架作为唯一后端服务
-- **数据层**: 全新 MySQL 数据库
-- **缓存层**: Redis（缓存和会话存储）
-- **ORM层**: 统一使用 GoFly gform
+#### 4.1.1 当前架构模式（生产环境）
+采用 **Next.js 全栈应用架构**：
+- **前端层**: Next.js 14 + React 18 + TypeScript
+- **后端层**: Next.js API Routes + Server Actions
+- **数据层**: MySQL 8.0 + Prisma ORM
+- **缓存层**: Redis 7.0（缓存和会话存储）
+- **认证层**: NextAuth.js v5 + JWT
 
-#### 4.1.2 目标部署架构
+#### 4.1.2 未来架构目标（规划中）
+
+**目标架构模式**：
+- **前端层**: Next.js 14 + TypeScript（保持现有）
+- **后端层**: Go + GoFly Admin V3 框架
+- **数据层**: MySQL 8.0（迁移数据结构）
+- **缓存层**: Redis 7.0（保持现有）
+- **ORM层**: GoFly gform
+
+#### 4.1.3 当前部署架构
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Load Balancer                            │
@@ -784,162 +803,131 @@ func HandleGoogleCallback(code string) (*User, error) {
 }
 ```
 
-#### 4.6.2 数据库操作集成
+#### 4.6.2 数据模型设计
 
-**使用 GoFly gform ORM**:
-```go
-// app/autoads/models/user.go
-package models
+**核心数据表结构**:
 
-import (
-    "gofly/app/admin"
-    "gofly/utils/gf"
-)
-
-type User struct {
-    gf.Model `json:"-" gorm:"table:users"`
-    
-    ID             string `json:"id" gorm:"primary_key"`
-    Email          string `json:"email" gorm:"unique;not null"`
-    Username       string `json:"username"`
-    PasswordHash   string `json:"-" gorm:"column:password_hash"`
-    AvatarURL      string `json:"avatar_url" gorm:"column:avatar_url"`
-    Role           string `json:"role" gorm:"default:USER"`
-    Status         string `json:"status" gorm:"default:ACTIVE"`
-    TokenBalance   int    `json:"token_balance" gorm:"default:0"`
-    PlanID         string `json:"plan_id"`
-    OAuthType      string `json:"oauth_type" gorm:"column:oauth_type"`
-    OAuthID        string `json:"oauth_id" gorm:"column:oauth_id"`
-    EmailVerified  bool   `json:"email_verified" gorm:"column:email_verified"`
-    TrialStartAt   *time.Time `json:"trial_start_at" gorm:"column:trial_start_at"`
-    TrialEndAt     *time.Time `json:"trial_end_at" gorm:"column:trial_end_at"`
-    TrialSource    string `json:"trial_source" gorm:"column:trial_source"`
-    CreatedAt      time.Time `json:"created_at"`
-    UpdatedAt      time.Time `json:"updated_at"`
-    DeletedAt      *time.Time `json:"-" gorm:"column:deleted_at"`
-}
-
-// 创建用户
-func CreateUser(user *User) error {
-    user.ID = gf.GenerateUUID()
-    user.CreatedAt = time.Now()
-    user.UpdatedAt = time.Now()
-    
-    result := gf.DB.Create(user)
-    return result.Error
-}
-
-// 根据邮箱查找用户
-func FindUserByEmail(email string) (*User, error) {
-    var user User
-    result := gf.DB.Where("email = ?", email).First(&user)
-    if result.Error != nil {
-        return nil, result.Error
-    }
-    return &user, nil
-}
-
-// 更新 Token 余额
-func UpdateTokenBalance(userID string, amount int, transactionType string) error {
-    return gf.DB.Transaction(func(tx *gorm.DB) error {
-        // 1. 获取当前余额
-        var user User
-        if err := tx.Where("id = ?", userID).First(&user).Error; err != nil {
-            return err
-        }
-        
-        // 2. 创建交易记录
-        transaction := &TokenTransaction{
-            UserID:         userID,
-            Type:           transactionType,
-            Amount:         amount,
-            BalanceBefore:  user.TokenBalance,
-            BalanceAfter:   user.TokenBalance + amount,
-            CreatedAt:      time.Now(),
-        }
-        
-        if err := tx.Create(transaction).Error; err != nil {
-            return err
-        }
-        
-        // 3. 更新用户余额
-        return tx.Model(&user).Update("token_balance", user.TokenBalance+amount).Error
-    })
-}
+**users 表**:
+```sql
+CREATE TABLE users (
+    id VARCHAR(36) PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(100),
+    password_hash VARCHAR(255),
+    avatar_url TEXT,
+    role ENUM('USER', 'ADMIN') DEFAULT 'USER',
+    status ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED') DEFAULT 'ACTIVE',
+    token_balance INT DEFAULT 0,
+    plan_id VARCHAR(36),
+    oauth_type ENUM('GOOGLE', 'GITHUB'),
+    oauth_id VARCHAR(100),
+    email_verified BOOLEAN DEFAULT FALSE,
+    trial_start_at DATETIME,
+    trial_end_at DATETIME,
+    trial_source VARCHAR(50),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME NULL
+);
 ```
 
-#### 4.6.3 BatchGo 模式选择和代理轮转实现
+**token_transactions 表**:
+```sql
+CREATE TABLE token_transactions (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    type ENUM('RECHARGE', 'CONSUME', 'REFUND', 'BONUS', 'TRIAL') NOT NULL,
+    amount INT NOT NULL,
+    balance_after INT NOT NULL,
+    description TEXT,
+    related_id VARCHAR(36),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
 
-**访问模式智能选择**:
-```go
-// app/autoads/batchgo/mode_selector.go
-package batchgo
+**batch_executions 表**:
+```sql
+CREATE TABLE batch_executions (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    task_name VARCHAR(255) NOT NULL,
+    execution_mode ENUM('BASIC', 'SILENT', 'AUTOMATED') NOT NULL,
+    status ENUM('PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED') DEFAULT 'PENDING',
+    total_count INT DEFAULT 0,
+    success_count INT DEFAULT 0,
+    failed_count INT DEFAULT 0,
+    token_cost INT DEFAULT 0,
+    start_time DATETIME,
+    end_time DATETIME,
+    error_message TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
 
-import (
-    "regexp"
-    "strings"
-)
+**API 设计原则**:
+- RESTful API 设计
+- 统一响应格式
+- JWT 认证
+- 请求频率限制
+- 详细的错误信息
 
-type AccessMode string
-const (
-    HTTPMode      AccessMode = "HTTP"
-    PuppeteerMode AccessMode = "PUPPETEER"
-)
+#### 4.6.3 BatchGo 执行模式设计
 
-type ModeSelector struct {
-    rules []ModeRule
-}
+**三种执行模式**:
 
-type ModeRule struct {
-    Pattern     string
-    Mode        AccessMode
-    Description string
-    Confidence  float64
-}
+1. **Basic 模式**
+   - 实现方式：window.open 批量打开
+   - 适用场景：简单批量访问
+   - 最大支持：100 URLs/任务
 
-func NewModeSelector() *ModeSelector {
-    return &ModeSelector{
-        rules: []ModeRule{
-            {
-                Pattern:     `(spa|react|vue|angular|next\.js)`,
-                Mode:        PuppeteerMode,
-                Description: "检测到 SPA 框架，需要 JavaScript 渲染",
-                Confidence:  0.9,
-            },
-            {
-                Pattern:     `(captcha|recaptcha|hcaptcha)`,
-                Mode:        PuppeteerMode,
-                Description: "检测到验证码，需要浏览器环境",
-                Confidence:  1.0,
-            },
-            {
-                Pattern:     `(api|rest|graphql)`,
-                Mode:        HTTPMode,
-                Description: "检测到 API 接口，适合 HTTP 模式",
-                Confidence:  0.8,
-            },
-        },
-    }
-}
+2. **Silent 模式**
+   - 实现方式：后台 HTTP 请求
+   - 适用场景：无需渲染的 API 调用
+   - 性能：最快，资源消耗最少
 
-func (s *ModeSelector) RecommendMode(urls []string) (map[AccessMode][]string, string) {
-    recommendations := make(map[AccessMode][]string)
-    reasons := make([]string, 0)
-    
-    for _, url := range urls {
-        score := make(map[AccessMode]float64)
-        
-        // 分析每个规则
-        for _, rule := range s.rules {
-            if matched, _ := regexp.MatchString(rule.Pattern, url); matched {
-                score[rule.Mode] += rule.Confidence
-                reasons = append(reasons, rule.Description)
-            }
-        }
-        
-        // 默认使用 HTTP 模式
-        if len(score) == 0 {
-            recommendations[HTTPMode] = append(recommendations[HTTPMode], url)
+3. **Automated 模式**
+   - 实现方式：Puppeteer 无头浏览器
+   - 适用场景：需要页面渲染的复杂操作
+   - 功能：支持截图、DOM 操作
+
+**模式自动选择规则**:
+- 检测目标 URL 类型
+- 分析任务需求
+- 根据用户权限选择可用模式
+- 考虑系统资源状况
+
+#### 4.6.4 代理管理策略
+
+**代理池设计**:
+- 支持多种代理类型（HTTP/HTTPS/SOCKS5）
+- 自动检测代理可用性
+- 智能代理轮换避免被封
+- 代理性能监控和评分
+
+**代理获取策略**:
+- 免费代理列表（自动抓取）
+- 付费代理服务集成
+- 自建代理服务器支持
+
+#### 4.6.5 任务执行引擎
+
+**核心功能**:
+- 任务队列管理
+- 并发控制
+- 失败重试机制
+- 实时进度反馈
+- 结果统计分析
+
+#### 4.6.6 执行监控实现
+
+**监控指标**:
+- 任务成功率
+- 平均执行时间
+- 代理响应时间
+- 错误率统计
+- 资源使用情况
         } else {
             // 选择得分最高的模式
             bestMode := HTTPMode
