@@ -39,6 +39,8 @@ docs/Envs.md
 # Next.js build cache and large files
 .next/
 node_modules/@next/swc-*
+node_modules/.prisma/
+node_modules/@prisma/engines/
 
 # Additional build artifacts
 dist/
