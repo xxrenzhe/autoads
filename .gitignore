@@ -35,3 +35,16 @@ go.work.sum
 # Sensitive documents
 docs/MustKnow.md
 docs/Envs.md
+
+# Next.js build cache and large files
+.next/
+node_modules/@next/swc-*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
