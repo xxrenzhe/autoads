@@ -40,6 +40,11 @@ docs/Envs.md
 .next/
 node_modules/@next/swc-*
 
+# Additional build artifacts
+dist/
+build/
+out/
+
 # OS generated files
 .DS_Store
 .DS_Store?

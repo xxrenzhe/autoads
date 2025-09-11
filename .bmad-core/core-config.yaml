@@ -2,16 +2,18 @@ markdownExploder: true
 qa:
   qaLocation: docs/qa
 prd:
-  prdFile: docs/prd.md
+  prdFile: docs/prd-new-V5.md
   prdVersion: v4
   prdSharded: true
   prdShardedLocation: docs/prd
   epicFilePattern: epic-{n}*.md
+  brownfieldPrdFile: docs/prd-brownfield-gofly-migration.md
+  brownfieldPrdVersion: v1
 architecture:
-  architectureFile: docs/architecture.md
+  architectureFile: docs/architecture-gofly-v5.1.md
   architectureVersion: v4
   architectureSharded: true
-  architectureShardedLocation: docs/architecture
+  architectureShardedLocation: docs/architecture-gofly-v5.1
 customTechnicalDocuments: null
 devLoadAlwaysFiles:
   - docs/architecture/coding-standards.md

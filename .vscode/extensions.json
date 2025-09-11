@@ -1,5 +1,6 @@
 {
     "recommendations": [
-        "dwtexe.cursor-stats"
+        "dwtexe.cursor-stats",
+        "pimzino.spec-workflow-mcp"
     ]
 }
