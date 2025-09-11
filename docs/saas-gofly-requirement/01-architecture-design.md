@@ -1,5 +1,9 @@
 # 架构设计文档
 
+**文档版本**: v1.0  
+**最后更新**: 2025-09-11  
+**文档状态**: 已标准化
+
 ## 1. 概述
 
 ### 1.1 设计原则
@@ -26,15 +30,17 @@
 
 **当前问题**
 - Next.js单体架构，并发处理能力差（仅支持1个并发用户）
-- 缺少多租户支持，无法扩展为SaaS平台
+- 缺少多用户支持，无法扩展为SaaS平台
 - 需要增加邀请、签到、Token等新功能
 - 性能瓶颈明显，响应时间长
+- Chengelink功能的自动化流程需要稳定的高并发支持（详见[Chengelink功能规格说明书](./11-chengelink-specification.md)）
 
 **解决方案**
 - 采用GoFly框架重构后端，利用其高并发特性
-- 设计多租户数据隔离机制
+- 设计多用户数据模型
 - 集成框架现有组件，快速实现新功能
 - 通过Go内置反向代理，保持前端不变
+- 优化Chengelink的自动化流程，支持并发执行（详见[Chengelink功能规格说明书](./11-chengelink-specification.md)）
 
 ## 2. 系统架构
 
@@ -44,18 +50,18 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                        用户访问层                           │
 ├─────────────────────────────────────────────────────────────┤
-│  Web前端(Next.js)  │  API接口 (3000端口)                   │
+│              统一入口 (8888端口)                            │
 ├─────────────────────────────────────────────────────────────┤
-│              Go HTTP Server (单进程双端口)                  │
-│     ├── Next.js反向代理 (端口3000)                          │
-│     └── SaaS API服务 (端口8888)                             │
-├─────────────────────────────────────────────────────────────┤
-│                    SaaS服务层                               │
-│  - 用户认证  -  BatchGo  -  SiteRankGo  - Token系统        │
-│  - 订阅管理  -  邀请系统  -  签到系统    - 数据统计        │
-├─────────────────────────────────────────────────────────────┤
-│                    GoFly工具层                              │
-│  CRUD生成器  缓存系统  定时任务  Excel导出  日志系统       │
+│                   扩展的GoFly框架                          │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
+│  │   SaaS模块      │  │   Admin模块     │  │  核心框架   │ │
+│  │                 │  │                 │  │             │ │
+│  │ - 用户认证      │  │ - 用户管理      │  │ - 路由      │ │
+│  │ - BatchOpen     │  │ - 系统配置      │  │ - 中间件   │ │
+│  │ - SiteRank      │  │ - 数据统计      │  │ - ORM       │ │
+│  │ - Token系统     │  │ - 用户管理      │  │ - 缓存      │ │
+│  │ - 邀请/签到     │  │                 │  │ - 日志      │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
 │                    基础设施层                               │
 │  MySQL 8.0  │  Redis  │  监控  │  日志收集  │  告警系统    │
@@ -65,81 +71,130 @@
 ### 2.2 架构设计决策
 
 #### 2.2.1 GoFly框架集成方式
-**决策：将GoFly作为库使用，而非修改源码**
+**决策：直接fork GoFly并扩展为SaaS平台**
 
 **理由：**
-- **解耦合**：避免SaaS业务逻辑与Admin管理功能强耦合
-- **易于维护**：GoFly可独立升级，不影响SaaS业务
-- **代码清晰**：避免在同一个文件中混用两套用户系统
-- **高复用度**：只复用GoFly的工具类（CRUD生成器、缓存、Excel导出等）
+- **数据结构优先**：扩展GoFly的用户模型，而不是创建两套系统
+- **消除复杂性**：避免wrapper层，直接在核心中实现多用户
+- **充分利用**：GoFly已经有完整的Admin、权限、CRUD系统
+- **实用主义**：用最直接的方式解决问题，而不是追求理论完美
 
 **项目结构：**
 ```
-autoads-go/
-├── cmd/
-│   ├── saas/main.go          # SaaS服务入口
-│   └── admin/main.go         # Admin服务入口（可选）
+gofly-admin-v3/                 # 基于GoFly fork
 ├── internal/
-│   ├── saas/                 # SaaS业务逻辑
-│   ├── models/               # 数据模型（全新设计）
-│   └── gofly/                # GoFly集成层
-└── vendor/gofly-admin-v3     # GoFly作为vendored库
+│   ├── models/                 # 扩展的数据模型
+│   │   ├── user.go             # 扩展用户模型
+│   │   └── subscription.go     # 新增订阅模型
+│   ├── auth/                   # 扩展JWT认证
+│   ├── crud/                   # 复用CRUD生成器
+│   ├── middleware/             # 添加用户中间件
+│   └── modules/                # 新增业务模块
+│       ├── batchgo/           # BatchOpen功能
+│       ├── siterankgo/        # SiteRank功能
+│       ├── token/             # Token系统
+│       ├── invitation/         # 邀请系统
+│       └── checkin/           # 签到系统
+├── web/
+│   └── admin/                  # 复用GoFly Admin界面
+└── cmd/
+    └── server.go               # 统一服务入口
 ```
 
-#### 2.2.2 数据隔离策略
-**决策：创建全新的SaaS表结构，只复用GoFly工具**
+#### 2.2.2 数据模型设计
+**决策：直接扩展GoFly的User模型，实现多用户系统**
 
 **理由：**
-- **数据干净**：SaaS和Admin数据模型差异大，分开更清晰
-- **扩展性好**：SaaS表完全按业务需求设计
-- **迁移简单**：从Next.js迁移时映射关系清晰
-- **避免冲突**：不会与GoFly未来更新冲突
+- **数据结构优先**：在GoFly User模型基础上添加必要字段
+- **消除特殊情况**：每个用户独立，无需复杂的租户隔离逻辑
+- **简洁性**：最简单的用户-服务关系
+- **实用主义**：满足AutoAds的实际需求
 
-**基础模型设计：**
+**数据模型设计：**
 ```go
-// 所有SaaS表都嵌入这个基础结构
-type SaaSBaseModel struct {
-    ID        string    `gorm:"primary_key;type:varchar(36)"`
-    TenantID  string    `gorm:"type:varchar(36);not null;index"`
-    CreatedAt time.Time 
-    UpdatedAt time.Time
-    DeletedAt time.Time `gorm:"index"`
+// 统一用户模型，与API契约一致
+type User struct {
+    gorm.Model               // 使用GORM基础模型 (ID, CreatedAt, UpdatedAt, DeletedAt)
+    Email         string    `gorm:"type:varchar(100);unique;not null"`
+    Password      string    `json:"-" gorm:"size:255"`                    // 管理员密码
+    GoogleID      string    `gorm:"type:varchar(255);unique"`             // Google OAuth
+    Role          string    `gorm:"type:varchar(20);default:'user'"`      // 'user' or 'admin'
+    TokenBalance  int       `gorm:"default:0"`
+    Plan          string    `gorm:"type:varchar(20);default:'free'"`       // free, pro
+    PlanExpires   *time.Time
+    InviteCode    string    `gorm:"type:varchar(20);unique"`
+    InvitedBy     *string   `gorm:"type:varchar(36)"`
+    Name          string    `gorm:"type:varchar(100)"`
+    Avatar        string    `gorm:"type:varchar(255)"`
+    LastLogin     *time.Time
+    Status        int       `gorm:"default:1"` // 1: active, 0: inactive
+}
+
+// Token交易记录
+type TokenTransaction struct {
+    gorm.Model
+    UserID      string    `gorm:"type:varchar(36);not null;index"`
+    Amount      int       `gorm:"not null"`          // 正数增加，负数消费
+    Balance     int       `gorm:"not null"`          // 变动后余额
+    Type        string    `gorm:"type:varchar(20)"`   // purchase, checkin, invite, consume
+    Description string    `gorm:"type:varchar(100)"`
+}
+
+// 业务模型示例
+type BatchTask struct {
+    gorm.Model
+    UserID       string    `gorm:"type:varchar(36);not null;index"`
+    Name         string    `gorm:"type:varchar(100);not null"`
+    Type         string    `gorm:"type:varchar(20);not null"`      // silent, autoclick
+    Status       string    `gorm:"type:varchar(20);default:'pending'"`
+    URLs         []string  `gorm:"type:json"`
+    TotalURLs    int       `gorm:"not null;default:0"`
+    SuccessCount int       `gorm:"default:0"`
+    FailCount    int       `gorm:"default:0"`
+    // 其他业务字段...
 }
 ```
 
+**优势：**
+- 完全复用GoFly的CRUD生成器
+- 自动获得软删除、时间戳等功能
+- 统一的API接口格式
+- 简单的用户数据关联，通过user_id即可
+
 #### 2.2.3 部署架构
-**决策：单进程双端口，使用Go的http.ServeMux做路由分发**
+**决策：直接使用GoFly的单进程部署**
 
 **理由：**
-- **简单可靠**：单进程避免进程间通信复杂性
-- **资源高效**：2C4G容器配置下，单进程更节省资源
-- **部署简单**：符合现有ClawCloud单容器部署模式
-- **调试方便**：日志统一，问题排查简单
+- **极致简单**：GoFly本身就是完整的Web框架，无需额外代理
+- **资源高效**：单进程处理所有请求，符合Go的并发设计
+- **部署简单**：一个二进制文件，一个进程，零配置
+- **调试方便**：统一的日志、监控、错误处理
 
 **实现方案：**
 ```go
 func main() {
-    // 启动Next.js（子进程）
-    cmd := exec.Command("npm", "start")
-    cmd.Dir = "./frontend"
-    cmd.Start()
+    // 初始化GoFly应用
+    app := gofly.NewApp()
     
-    // 端口3000：反向代理Next.js
-    go func() {
-        router := gin.New()
-        // 静态资源代理
-        router.Static("/", "./frontend/.next/static")
-        // API请求转发到8888
-        router.Any("/api/*path", proxyHandler)
-        router.Run(":3000")
-    }()
+    // 配置数据库和Redis
+    app.SetDB(config.GetDB())
+    app.SetCache(config.GetRedis())
     
-    // 端口8888：SaaS API服务
-    saasRouter := gin.Default()
-    setupSaaSRoutes(saasRouter)
-    saasRouter.Run(":8888")
+    // 注册SaaS模块
+    app.RegisterModule(&modules.SaaS{})
+    app.RegisterModule(&modules.BatchGo{})
+    app.RegisterModule(&modules.SiteRankGo{})
+    
+    // 启动服务
+    app.Run(":8888")
 }
 ```
+
+**前端集成方案：**
+- 将Next.js构建的静态文件放到GoFly的static目录
+- GoFly直接服务静态文件
+- API路由完全由GoFly处理
+- 无需反向代理，架构更简单
 
 ### 2.3 技术栈
 
@@ -153,21 +208,21 @@ func main() {
 
 ## 3. 核心模块设计
 
-### 3.1 多租户架构
+### 3.1 多用户架构
 
-**租户隔离策略**
-- 数据隔离：通过`tenant_id`字段隔离所有业务数据
-- 缓存隔离：Redis key使用`tenant:{tenant_id}:{data_key}`格式
-- 会话隔离：JWT Token包含tenant_id信息
+**用户数据隔离**
+- 数据隔离：通过`user_id`字段关联所有业务数据
+- 缓存隔离：Redis key使用`user:{user_id}:{data_key}`格式
+- 会话隔离：JWT Token包含user_id信息
 
 **数据模型**
 ```sql
--- 所有业务表都包含tenant_id
+-- 所有业务表都包含user_id
 CREATE TABLE batch_tasks (
     id VARCHAR(36) PRIMARY KEY,
-    tenant_id VARCHAR(36) NOT NULL,
+    user_id VARCHAR(36) NOT NULL,
     -- 其他字段...
-    INDEX idx_tenant (tenant_id)
+    INDEX idx_user (user_id)
 );
 ```
 
@@ -199,74 +254,86 @@ type APIResponse struct {
 
 ### 3.3 认证系统设计
 
-**SaaS用户认证**
-- JWT Token认证（RS256签名）
-- 支持Bearer Token和Cookie两种方式
-- Token包含：user_id, tenant_id, role, exp
-- 访问令牌2小时，刷新令牌7天
+采用简化的双重认证体系：
+- **网站用户**：Google OAuth + JWT Token（详见[安全设计文档](./13-security-design.md)）
+- **管理员**：账号密码 + Session认证（复用GoFly现有系统）
 
-**密码安全**
-- 使用bcrypt哈希，强度12
-- 登录限制：连续失败5次锁定30分钟
+详细实现见[13-security-design.md](./13-security-design.md)。
+### 3.4 模块划分
 
-### 3.3 模块划分
+**用户服务模块**
+1. **Google登录** - OAuth回调、自动注册
+2. **订阅管理** - 套餐购买、升级、过期检查
+3. **Token系统** - 余额查询、消耗记录、充值
+4. **业务模块** - BatchOpen、SiteRank、Chengelink（详见[Chengelink功能规格说明书](./11-chengelink-specification.md)）
 
-**SaaS服务模块**
-1. **用户管理** - 注册、登录、个人信息
-2. **订阅管理** - 套餐购买、过期检查、权限控制
-3. **Token系统** - 余额查询、消耗记录、购买充值
-4. **邀请系统** - 邀请链接生成、奖励发放
-5. **签到系统** - 每日签到、连续签到奖励
-6. **业务模块** - BatchGo、SiteRankGo、AdsCenterGo
-
-**Admin管理模块**
-1. **租户管理** - SaaS租户的CRUD管理
-2. **用户管理** - 查看所有SaaS用户
-3. **系统配置** - 套餐配置、Token规则等
-4. **数据统计** - 用户活跃度、收入统计
-5. **运营工具** - 邀请排行、签到统计
+**系统管理模块**
+1. **用户管理** - 查看所有用户、状态管理
+2. **系统配置** - 套餐价格、Token规则
+3. **数据统计** - 用户活跃、收入统计
 
 ## 4. 数据库设计
 
 ### 4.1 核心表结构
 
-**租户表（tenants）**
+**用户表（users）**
 ```sql
-CREATE TABLE tenants (
-    id VARCHAR(36) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    domain VARCHAR(100) UNIQUE,
-    status TINYINT DEFAULT 1 COMMENT '1:正常 0:禁用',
-    plan_id VARCHAR(36),
-    expired_at DATETIME,
+-- 统一用户表，支持所有必要字段
+CREATE TABLE users (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME NULL,
+    
+    email VARCHAR(100) UNIQUE NOT NULL COMMENT '邮箱',
+    password VARCHAR(255) COMMENT '密码（仅管理员）',
+    google_id VARCHAR(255) UNIQUE COMMENT 'Google ID',
+    role ENUM('user', 'admin') DEFAULT 'user' COMMENT '角色',
+    token_balance INT DEFAULT 0 COMMENT 'Token余额',
+    plan ENUM('free', 'pro') DEFAULT 'free' COMMENT '套餐',
+    plan_expires DATETIME COMMENT '套餐到期时间',
+    invite_code VARCHAR(20) UNIQUE COMMENT '邀请码（注册时自动生成）',
+    invited_by VARCHAR(36) COMMENT '邀请人ID',
+    name VARCHAR(100) COMMENT '用户名',
+    avatar VARCHAR(255) COMMENT '头像URL',
+    last_login DATETIME COMMENT '最后登录时间',
+    status TINYINT DEFAULT 1 COMMENT '状态：1-正常，0-禁用',
+    
+    INDEX idx_role (role),
+    INDEX idx_plan (plan),
+    INDEX idx_status (status),
+    INDEX idx_email (email),
+    INDEX idx_google_id (google_id)
 );
 ```
 
-**SaaS用户表（saas_users）**
+**Token交易记录表（token_transactions）**
 ```sql
-CREATE TABLE saas_users (
-    id VARCHAR(36) PRIMARY KEY,
-    tenant_id VARCHAR(36) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    name VARCHAR(50),
-    role ENUM('user', 'admin') DEFAULT 'user',
-    status TINYINT DEFAULT 1,
-    last_login_at DATETIME,
+CREATE TABLE token_transactions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_tenant_email (tenant_id, email)
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    user_id BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
+    amount INT NOT NULL COMMENT '变动数量',
+    balance INT NOT NULL COMMENT '变动后余额',
+    type ENUM('purchase', 'checkin', 'invite', 'consume') NOT NULL COMMENT '类型',
+    description VARCHAR(100) COMMENT '描述',
+    
+    INDEX idx_user_created (user_id, created_at),
+    INDEX idx_type (type)
 );
 ```
 
-**用户订阅表（user_subscriptions）**
+**用户套餐记录表（user_subscriptions）**
 ```sql
 CREATE TABLE user_subscriptions (
     id VARCHAR(36) PRIMARY KEY,
     user_id VARCHAR(36) NOT NULL,
-    plan_id VARCHAR(36) NOT NULL,
-    status ENUM('active', 'expired', 'cancelled') DEFAULT 'active',
+    plan_type VARCHAR(20) NOT NULL,
+    amount DECIMAL(10,2),
+    payment_method VARCHAR(20),
+    status ENUM('pending', 'active', 'expired', 'cancelled') DEFAULT 'active',
     started_at DATETIME,
     expired_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -276,34 +343,119 @@ CREATE TABLE user_subscriptions (
 
 ### 4.2 新功能表结构
 
-**邀请记录表（invitations）**
+**BatchGo任务表**
+```sql
+CREATE TABLE batch_tasks (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    type ENUM('silent', 'autoclick') NOT NULL,
+    status ENUM('pending', 'running', 'completed', 'failed', 'terminated') DEFAULT 'pending',
+    urls JSON NOT NULL,
+    total_urls INT NOT NULL DEFAULT 0,
+    success_count INT NOT NULL DEFAULT 0,
+    fail_count INT NOT NULL DEFAULT 0,
+    pending_count INT NOT NULL DEFAULT 0,
+    
+    -- 执行配置
+    cycle_count INT DEFAULT 1,
+    proxy_url TEXT,
+    access_mode ENUM('http', 'puppeteer') DEFAULT 'http',
+    concurrency_limit INT DEFAULT 3,
+    
+    -- AutoClick特有
+    schedule VARCHAR(100),
+    daily_target INT,
+    current_progress INT DEFAULT 0,
+    
+    -- 时间信息
+    start_time DATETIME,
+    end_time DATETIME,
+    duration_ms BIGINT,
+    
+    -- 结果数据
+    results JSON,
+    error_summary JSON,
+    proxy_stats JSON,
+    
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_user_status (user_id, status),
+    INDEX idx_type_status (type, status),
+    INDEX idx_created_at (created_at)
+);
+```
+
+**SiteRank查询表**
+```sql
+CREATE TABLE site_rank_queries (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    domain VARCHAR(255) NOT NULL,
+    status ENUM('pending', 'running', 'completed', 'failed') NOT NULL DEFAULT 'pending',
+    source ENUM('similarweb') NOT NULL,
+    
+    -- SimilarWeb数据
+    global_rank INT,
+    category_rank INT,
+    category VARCHAR(100),
+    country VARCHAR(2),
+    visits DECIMAL(10,2),
+    bounce_rate DECIMAL(5,2),
+    pages_per_visit DECIMAL(5,2),
+    avg_duration DECIMAL(8,2),
+    
+    -- API相关
+    api_response TEXT,
+    api_error TEXT,
+    cache_until DATETIME,
+    
+    -- 统计
+    request_count INT DEFAULT 1,
+    last_queried DATETIME,
+    
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    UNIQUE KEY uk_domain_source (domain, source),
+    INDEX idx_user_status (user_id, status),
+    INDEX idx_domain (domain),
+    INDEX idx_cache_until (cache_until)
+);
+```
+
+**签到记录表**
+```sql
+CREATE TABLE checkin_records (
+    user_id VARCHAR(36) NOT NULL,
+    checkin_date DATE NOT NULL,
+    token_reward INT DEFAULT 10,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    PRIMARY KEY (user_id, checkin_date)
+);
+```
+
+**邀请记录表**
 ```sql
 CREATE TABLE invitations (
     id VARCHAR(36) PRIMARY KEY,
     inviter_id VARCHAR(36) NOT NULL,
-    invitee_id VARCHAR(36),
-    code VARCHAR(20) UNIQUE NOT NULL,
-    status ENUM('pending', 'accepted', 'expired') DEFAULT 'pending',
+    invitee_id VARCHAR(36) NOT NULL,
+    invite_code VARCHAR(20) NOT NULL,
+    status ENUM('pending', 'completed') DEFAULT 'pending',
+    inviter_reward_given BOOLEAN DEFAULT FALSE,
+    invitee_reward_given BOOLEAN DEFAULT FALSE,
+    invitee_is_new_user BOOLEAN DEFAULT TRUE,
     reward_days INT DEFAULT 30,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expired_at DATETIME,
-    INDEX inviter_idx (inviter_id),
-    INDEX code_idx (code)
+    
+    INDEX idx_inviter (inviter_id),
+    UNIQUE KEY uk_invitee (invitee_id)
 );
 ```
 
-**签到记录表（checkin_records）**
-```sql
-CREATE TABLE checkin_records (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,
-    checkin_date DATE NOT NULL,
-    continuous_days INT DEFAULT 1,
-    token_reward INT DEFAULT 10,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_user_date (user_id, checkin_date)
-);
-```
 
 ## 5. API设计
 
@@ -332,31 +484,83 @@ CREATE TABLE checkin_records (
 
 ### 5.2 核心API列表
 
-**认证相关**
-- `POST /api/auth/register` - 用户注册
-- `POST /api/auth/login` - 用户登录
-- `POST /api/auth/refresh` - 刷新Token
-- `POST /api/auth/logout` - 用户登出
+#### 认证相关
+- `POST /api/auth/google` - Google OAuth登录
+- `POST /api/admin/login` - 管理员账号密码登录
+- `POST /api/admin/logout` - 管理员登出
 
-**订阅相关**
+#### 用户相关
+- `GET /api/user/profile` - 获取用户信息
+- `PUT /api/user/profile` - 更新用户信息
+- `GET /api/user/stats` - 获取用户统计数据
+
+#### 订阅相关
 - `GET /api/subscription/current` - 获取当前订阅
 - `POST /api/subscription/upgrade` - 升级套餐
 - `GET /api/subscription/plans` - 获取套餐列表
+- `POST /api/subscription/webhook` - 支付回调处理
 
-**Token相关**
+#### Token相关
 - `GET /api/tokens/balance` - 获取Token余额
-- `GET /api/tokens/consumption` - 获取消费记录
+- `GET /api/tokens/transactions` - 获取交易记录
 - `POST /api/tokens/purchase` - 购买Token
 
-**邀请相关**
-- `POST /api/invitations/generate` - 生成邀请链接
-- `GET /api/invitations/my-code` - 获取我的邀请码
-- `GET /api/invitations/records` - 邀请记录
+#### BatchGo相关
+- `POST /api/batchopen/silent-start` - 启动Silent任务（兼容旧路径）
+- `GET /api/batchopen/silent-progress` - 查询任务进度（兼容旧路径）
+- `POST /api/batchopen/silent-terminate` - 终止任务（兼容旧路径）
+- `POST /api/v1/batchgo/tasks/silent/start` - 启动Silent任务（新路径）
+- `GET /api/v1/batchgo/tasks/silent/progress` - 查询任务进度（新路径）
+- `POST /api/v1/batchgo/tasks/silent/terminate` - 终止任务（新路径）
+- `POST /api/autoclick/tasks` - 创建AutoClick任务（兼容旧路径）
+- `GET /api/autoclick/tasks/{id}/progress` - 查询AutoClick进度（兼容旧路径）
+- `POST /api/autoclick/tasks/{id}/{action}` - AutoClick任务操作（兼容旧路径）
+- `POST /api/v1/batchgo/tasks/autoclick` - 创建AutoClick任务（新路径）
+- `GET /api/v1/batchgo/tasks/autoclick/{id}/progress` - 查询AutoClick进度（新路径）
+- `POST /api/v1/batchgo/tasks/autoclick/{id}/{action}` - AutoClick任务操作（新路径）
 
-**签到相关**
-- `POST /api/checkin/today` - 今日签到
-- `GET /api/checkin/records` - 签到历史
-- `GET /api/checkin/calendar` - 签到日历
+#### SiteRank相关
+- `GET /api/siterank/rank` - 查询网站排名（兼容旧路径）
+- `POST /api/v1/siterankgo/traffic/batch` - 批量查询（新路径）
+- `GET /api/v1/siterankgo/traffic/priorities` - 获取优先级（新路径）
+- `GET /api/v1/siterankgo/traffic/{domain}` - 查询网站排名（新路径）
+
+#### 邀请相关
+- `GET /api/invitation/info` - 获取邀请信息
+- `POST /api/invitation/generate-link` - 生成邀请链接
+- `GET /api/invitation/history` - 获取邀请历史
+
+#### 签到相关
+- `GET /api/checkin/info` - 获取签到信息
+- `POST /api/checkin/perform` - 执行签到
+- `GET /api/checkin/history` - 获取签到历史
+
+#### Chengelink相关
+- `GET /api/chengelink/status` - 获取链接状态（兼容旧路径）
+- `POST /api/chengelink/create` - 创建链接任务（兼容旧路径）
+- `GET /api/chengelink/tasks` - 获取任务列表（兼容旧路径）
+- `POST /api/chengelink/tasks/{id}/execute` - 执行任务（兼容旧路径）
+- `GET /api/v1/chengelink/links/{id}/status` - 获取链接状态（新路径）
+- `POST /api/v1/chengelink/links` - 创建链接任务（新路径）
+- `GET /api/v1/chengelink/tasks` - 获取任务列表（新路径）
+- `POST /api/v1/chengelink/tasks/{id}/execute` - 执行任务（新路径）
+
+### 5.3 API安全规范
+
+#### 认证方式
+- **网站用户**：JWT Bearer Token
+- **管理员**：Session Cookie
+
+#### 权限控制
+- RBAC（基于角色的访问控制）
+- API级别的权限验证
+- 数据级别的权限验证（用户数据隔离）
+
+#### 安全限制
+- 请求频率限制：100次/分钟
+- 请求大小限制：10MB
+- Token消耗验证
+- IP白名单（管理后台）
 
 ## 6. 性能设计
 
@@ -371,7 +575,7 @@ CREATE TABLE checkin_records (
 
 **数据库优化**
 - 读写分离：主库写，从库读
-- 分库分表：按租户ID水平拆分
+- 分库分表：按用户ID水平拆分（未来扩展）
 - 索引优化：为常用查询字段建立索引
 - 连接池：配置合适的连接池大小
 
@@ -391,10 +595,10 @@ CREATE TABLE checkin_records (
 
 ### 7.1 认证安全
 
-- JWT Token使用RS256签名
-- Token有效期：访问令牌2小时，刷新令牌7天
-- 密码存储：使用bcrypt哈希，强度12
+- Google OAuth使用官方库，确保安全性
+- 管理员密码使用bcrypt哈希，强度12
 - 登录限制：连续失败5次锁定30分钟
+- Session有效期：管理员后台8小时
 
 ### 7.2 数据安全
 
@@ -406,7 +610,7 @@ CREATE TABLE checkin_records (
 ### 7.3 访问控制
 
 - 基于角色的访问控制（RBAC）
-- 租户数据隔离验证
+- 用户数据隔离验证
 - API权限验证
 - 操作日志记录
 
@@ -448,7 +652,6 @@ CREATE TABLE checkin_records (
     "service": "saas-api",
     "trace_id": "abc123",
     "user_id": "user123",
-    "tenant_id": "tenant123",
     "message": "User login success",
     "data": {}
 }
