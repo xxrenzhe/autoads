@@ -1,77 +1,738 @@
-# AutoAds SaaS GoFly 架构重构方案
+# AutoAds重构方案：基于GoFly的SaaS多用户系统
 
-## 架构设计原则
+**项目版本**: v1.0  
+**文档状态**: 设计规划阶段  
+**最后更新**: 2025-09-12
 
-### 核心原则
+> **⚠️ 重要免责声明**  
+> 本文档包含的设计方案和技术规格基于当前理解和规划。**在实施前，以下内容需要通过概念验证(POC)测试进行验证：**
+> - GoFly框架的实际能力和集成可行性
+> - 外部API（SimilarWeb、Google OAuth等）的真实可用性
+> - 性能目标的实际可达成性
+> - 所有关键功能的技术实现方案
 
-1. **简单性优先 (Simplicity First)**
-   - 单体应用 > 微服务：避免分布式复杂性
-   - 内置代理 > 外部代理：减少依赖层
-   - 字段隔离 > 数据库隔离：用最简单的方式解决问题
+## 1. 架构设计原则
 
-2. **渐进式演进 (Gradual Evolution)**
-   - 保持现有前端100%不变
-   - API接口向后兼容
-   - 数据库schema平滑迁移
-   - 功能冻结：只迁移不新增
+### 1.1 Linus式设计哲学
 
-3. **深度复用 (Deep Reuse)**
-   - GoFly框架85%功能可直接复用
-   - 避免重复造轮子
-   - 站在巨人肩膀上
+**数据结构优先**
+- 多租户通过tenant_id字段隔离，而非复杂的多数据库
+- Token经济系统使用简单的事务确保一致性
+- 限流配置扁平化，避免嵌套结构
 
-4. **实用主义 (Pragmatism)**
-   - 解决真实问题，不追求理论完美
-   - 性能优化要有的放矢
-   - 避免过度设计和过早优化
+**消除特殊情况**
+- 双认证系统使用相同的基础设施
+- 统一错误处理，避免if/else地狱
+- 单一入口点，消除路由复杂性
 
-### 技术原则
+**实用主义**
+- 选择Go内置HTTP服务器而非Nginx
+- 使用内存限流逐步升级到Redis
+- 保留现有前端，只重构后端
 
-1. **数据结构即架构**
-   ```go
-   // 核心设计：通过数据结构解决复杂问题
-   type System struct {
-       Users       []User          // 统一用户模型
-       Tasks       []Task          // 统一任务模型  
-       Tokens      []Transaction   // Token经济系统
-       Config      Config         // 扁平化配置
-   }
-   ```
+**Never Break Userspace**
+- 保持所有API端点不变
+- 保持数据库schema兼容
+- 前端无需任何修改
 
-2. **消除特殊情况**
-   - 双认证系统使用相同基础设施
-   - 多租户通过tenant_id统一处理
-   - 统一错误处理机制
+### 1.2 核心架构决策
 
-3. **Never Break Userspace**
-   - 所有API端点保持不变
-   - 前端无需任何修改
-   - 用户体验完全一致
+#### 1.2.1 GoFly框架集成方式
+**决策：直接fork GoFly并扩展为SaaS平台**
 
-### Linus式开发哲学
+**理由：**
+- **数据结构优先**：扩展GoFly的用户模型，而不是创建两套系统
+- **消除复杂性**：避免wrapper层，直接在核心中实现多用户
+- **充分利用**：GoFly已经有完整的Admin、权限、CRUD系统
+- **实用主义**：用最直接的方式解决问题，而不是追求理论完美
 
-1. **"Is this a real problem?"**
-   - 确保每个功能都解决真实需求
-   - 避免为未来可能的需求过度设计
+#### 1.2.2 数据模型设计
+**决策：直接扩展GoFly的User模型，实现多用户系统**
 
-2. **"Is there a simpler way?"**
-   - 始终寻找最简单的解决方案
-   - 用tenant_id替代复杂的多租户架构
+**理由：**
+- **数据结构优先**：在GoFly User模型基础上添加必要字段
+- **消除特殊情况**：每个用户独立，无需复杂的租户隔离逻辑
+- **简洁性**：最简单的用户-服务关系
+- **实用主义**：满足AutoAds的实际需求
 
-3. **"Will it break anything?"**
-   - 保持向后兼容性
-   - 渐进式迁移，降低风险
+#### 1.2.3 部署架构
+**决策：直接使用GoFly的单进程部署**
 
-## 文档信息
-- **项目名称**: AutoAds SaaS 系统重构
-- **架构版本**: GoFly v3.0
-- **创建日期**: 2025-01-11
-- **最后更新**: 2025-01-11
-- **架构决策**: Go单体应用 + 模块化设计 + 单容器部署
+**理由：**
+- **极致简单**：GoFly本身就是完整的Web框架，无需额外代理
+- **资源高效**：单进程处理所有请求，符合Go的并发设计
+- **部署简单**：一个二进制文件，一个进程，零配置
+- **调试方便**：统一的日志、监控、错误处理
 
-## 执行摘要
+## 2. 整体架构
 
-基于Linus的"好品味"哲学，我们选择最简单但最有效的方案：**Go单体应用 + 模块化设计**。摒弃复杂的微服务架构，使用GoFly Admin V3框架（已有70%功能实现），通过嵌入式HTTP反向代理实现单容器部署。目标是4900%性能提升（1→50并发）和统一的后台管理。
+### 2.1 系统架构图
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        用户访问层                           │
+├─────────────────────────────────────────────────────────────┤
+│              统一入口 (8888端口)                            │
+├─────────────────────────────────────────────────────────────┤
+│                   扩展的GoFly框架                          │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
+│  │   SaaS模块      │  │   Admin模块     │  │  核心框架   │ │
+│  │                 │  │                 │  │             │ │
+│  │ - 用户认证      │  │ - 用户管理      │  │ - 路由      │ │
+│  │ - BatchOpen     │  │ - 系统配置      │  │ - 中间件   │ │
+│  │ - SiteRank      │  │ - 数据统计      │  │ - ORM       │ │
+│  │ - Token系统     │  │ - 用户管理      │  │ - 缓存      │ │
+│  │ - 邀请/签到     │  │                 │  │ - 日志      │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│                    基础设施层                               │
+│  MySQL 8.0  │  Redis  │  监控  │  日志收集  │  告警系统    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 2.2 技术栈
+
+**后端技术栈**
+- **Go 1.21+** - 主要开发语言
+- **GoFly Admin V3** - 作为本地框架使用（需验证实际功能）
+- **Gin** - HTTP路由框架（假设GoFly基于Gin）
+- **GORM** - ORM框架（假设GoFly使用GORM）
+- **Redis** - 缓存和会话存储
+- **MySQL 8.0** - 主数据库
+
+> **🔍 待验证项**  
+> - GoFly框架的具体技术栈和依赖
+> - 框架是否内置了文档中提到的所有组件
+> - 实际的API设计和路由组织方式
+
+## 3. GoFly框架集成策略
+
+### 3.1 复用度分析
+
+> **⚠️ 重要提醒**：以下复用度评估基于静态代码分析，**实际可行性需要通过POC测试验证**
+
+| 模块 | 评估复用度 | 价值说明 | 预估改造工作量 | 集成方式 | 验证优先级 |
+|------|------------|----------|----------------|----------|------------|
+| 用户系统 | 95%* | 复用User模型，添加email和token字段 | 低 | 直接扩展模型 | 高 |
+| 权限管理 | 70%* | 简化为用户角色管理 | 低 | 简化权限系统 | 中 |
+| CRUD生成器 | 100%* | 自动生成所有API | 无 | 直接使用 | 高 |
+| Admin界面 | 90%* | 复用管理后台，添加用户管理功能 | 低 | 添加新菜单 | 中 |
+| 认证系统 | 85%* | Session认证改为JWT+Google OAuth | 中 | 扩展认证中间件 | 高 |
+| 工具库 | 100%* | 字符串、时间、JSON等工具 | 无 | 直接使用 | 低 |
+| 缓存系统 | 100%* | 多级缓存，支持Redis | 无 | 直接使用 | 中 |
+| 定时任务 | 100%* | Cron调度器 | 无 | 直接使用 | 中 |
+| 日志系统 | 100%* | 结构化日志 | 无 | 直接使用 | 低 |
+| Excel导出 | 100%* | 数据导出功能 | 无 | 直接使用 | 低 |
+| 数据验证 | 100%* | 参数验证 | 无 | 直接使用 | 低 |
+
+*注：标记为需要实际验证的评估
+
+### 3.2 开发效率提升
+
+> **⚠️ 以下效率提升为理论估计，实际效果取决于GoFly框架的实际质量**
+
+- **整体开发效率**：提升90%（直接复用完整框架）*
+- **Admin功能**：提升95%（直接使用现有管理后台）*
+- **基础API开发**：提升85%（CRUD自动生成）*
+- **业务功能开发**：提升80%（在现有基础上扩展）*
+- **部署运维**：提升90%（复用成熟的部署方案）*
+
+*注：实际提升幅度需要通过项目实践验证
+
+## 4. 核心功能模块
+
+### 4.1 多用户架构
+
+**用户数据隔离**
+- 数据隔离：通过`user_id`字段关联所有业务数据
+- 缓存隔离：Redis key使用`user:{user_id}:{data_key}`格式
+- 会话隔离：JWT Token包含user_id信息
+
+**数据模型**
+```sql
+-- 所有业务表都包含user_id
+CREATE TABLE batch_tasks (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    -- 其他字段...
+    INDEX idx_user (user_id)
+);
+```
+
+### 4.2 认证系统设计
+
+采用简化的双重认证体系：
+- **网站用户**：Google OAuth + JWT Token
+- **管理员**：账号密码 + Session认证（复用GoFly现有系统）
+
+### 4.3 API兼容性设计
+
+**决策：实现完整的API路径和格式兼容**
+
+**理由：**
+- **零风险**：前端完全不需要修改，确保功能100%一致
+- **渐进式迁移**：可以逐个API迁移，随时可以回滚
+- **测试简单**：可以直接用现有的测试用例
+- **用户无感知**：迁移过程对用户完全透明
+
+### 4.4 业务模块划分
+
+**用户服务模块**
+1. **Google登录** - OAuth回调、自动注册
+2. **订阅管理** - 套餐购买、升级、过期检查
+3. **Token系统** - 余额查询、消耗记录、充值
+4. **业务模块** - BatchOpen、SiteRank、Chengelink
+
+**系统管理模块**
+1. **用户管理** - 查看所有用户、状态管理
+2. **系统配置** - 套餐价格、Token规则
+3. **数据统计** - 用户活跃、收入统计
+
+## 5. 数据库设计
+
+### 5.1 核心表结构
+
+**用户表（users）**
+```sql
+-- 统一用户表，支持所有必要字段
+CREATE TABLE users (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME NULL,
+    
+    email VARCHAR(100) UNIQUE NOT NULL COMMENT '邮箱',
+    password VARCHAR(255) COMMENT '密码（仅管理员）',
+    google_id VARCHAR(255) UNIQUE COMMENT 'Google ID',
+    role ENUM('user', 'admin') DEFAULT 'user' COMMENT '角色',
+    token_balance INT DEFAULT 0 COMMENT 'Token余额',
+    plan ENUM('free', 'pro') DEFAULT 'free' COMMENT '套餐',
+    plan_expires DATETIME COMMENT '套餐到期时间',
+    invite_code VARCHAR(20) UNIQUE COMMENT '邀请码（注册时自动生成）',
+    invited_by VARCHAR(36) COMMENT '邀请人ID',
+    name VARCHAR(100) COMMENT '用户名',
+    avatar VARCHAR(255) COMMENT '头像URL',
+    last_login DATETIME COMMENT '最后登录时间',
+    status TINYINT DEFAULT 1 COMMENT '状态：1-正常，0-禁用',
+    
+    INDEX idx_role (role),
+    INDEX idx_plan (plan),
+    INDEX idx_status (status),
+    INDEX idx_email (email),
+    INDEX idx_google_id (google_id)
+);
+```
+
+### 5.2 业务表结构
+
+**BatchGo任务表**
+```sql
+CREATE TABLE batch_tasks (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    type ENUM('silent', 'autoclick') NOT NULL,
+    status ENUM('pending', 'running', 'completed', 'failed', 'terminated') DEFAULT 'pending',
+    urls JSON NOT NULL,
+    total_urls INT NOT NULL DEFAULT 0,
+    success_count INT NOT NULL DEFAULT 0,
+    fail_count INT NOT NULL DEFAULT 0,
+    pending_count INT NOT NULL DEFAULT 0,
+    
+    -- 执行配置
+    cycle_count INT DEFAULT 1,
+    proxy_url TEXT,
+    access_mode ENUM('http', 'puppeteer') DEFAULT 'http',
+    concurrency_limit INT DEFAULT 3,
+    
+    -- AutoClick特有
+    schedule VARCHAR(100),
+    daily_target INT,
+    current_progress INT DEFAULT 0,
+    
+    -- 时间信息
+    start_time DATETIME,
+    end_time DATETIME,
+    duration_ms BIGINT,
+    
+    -- 结果数据
+    results JSON,
+    error_summary JSON,
+    proxy_stats JSON,
+    
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_user_status (user_id, status),
+    INDEX idx_type_status (type, status),
+    INDEX idx_created_at (created_at)
+);
+```
+
+**SiteRank查询表**
+```sql
+CREATE TABLE site_rank_queries (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    domain VARCHAR(255) NOT NULL,
+    status ENUM('pending', 'running', 'completed', 'failed') NOT NULL DEFAULT 'pending',
+    source ENUM('similarweb') NOT NULL,
+    
+    -- SimilarWeb数据
+    global_rank INT,
+    category_rank INT,
+    category VARCHAR(100),
+    country VARCHAR(2),
+    visits DECIMAL(10,2),
+    bounce_rate DECIMAL(5,2),
+    pages_per_visit DECIMAL(5,2),
+    avg_duration DECIMAL(8,2),
+    
+    -- API相关
+    api_response TEXT,
+    api_error TEXT,
+    cache_until DATETIME,
+    
+    -- 统计
+    request_count INT DEFAULT 1,
+    last_queried DATETIME,
+    
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    UNIQUE KEY uk_domain_source (domain, source),
+    INDEX idx_user_status (user_id, status),
+    INDEX idx_domain (domain),
+    INDEX idx_cache_until (cache_until)
+);
+```
+
+### 5.3 新功能表结构
+
+**签到记录表**
+```sql
+CREATE TABLE checkin_records (
+    user_id VARCHAR(36) NOT NULL,
+    checkin_date DATE NOT NULL,
+    token_reward INT DEFAULT 10,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    PRIMARY KEY (user_id, checkin_date)
+);
+```
+
+**邀请记录表**
+```sql
+CREATE TABLE invitations (
+    id VARCHAR(36) PRIMARY KEY,
+    inviter_id VARCHAR(36) NOT NULL,
+    invitee_id VARCHAR(36) NOT NULL,
+    invite_code VARCHAR(20) NOT NULL,
+    status ENUM('pending', 'completed') DEFAULT 'pending',
+    inviter_reward_given BOOLEAN DEFAULT FALSE,
+    invitee_reward_given BOOLEAN DEFAULT FALSE,
+    invitee_is_new_user BOOLEAN DEFAULT TRUE,
+    reward_days INT DEFAULT 30,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_inviter (inviter_id),
+    UNIQUE KEY uk_invitee (invitee_id)
+);
+```
+
+## 6. API设计
+
+### 6.1 API规范
+
+**统一响应格式**
+```json
+{
+    "code": 0,
+    "message": "成功",
+    "data": {},
+    "pagination": {
+        "page": 1,
+        "page_size": 20,
+        "total": 100
+    }
+}
+```
+
+**错误码规范**
+- 0: 成功
+- 1000-1999: 参数错误
+- 2000-2999: 业务逻辑错误
+- 3000-3999: 认证授权错误
+- 5000-5999: 系统内部错误
+
+### 6.2 核心API列表
+
+#### 认证相关
+- `POST /api/auth/google` - Google OAuth登录
+- `POST /api/admin/login` - 管理员账号密码登录
+- `POST /api/admin/logout` - 管理员登出
+
+#### 用户相关
+- `GET /api/user/profile` - 获取用户信息
+- `PUT /api/user/profile` - 更新用户信息
+- `GET /api/user/stats` - 获取用户统计数据
+
+#### 订阅相关
+- `GET /api/subscription/current` - 获取当前订阅
+- `POST /api/subscription/upgrade` - 升级套餐
+- `GET /api/subscription/plans` - 获取套餐列表
+- `POST /api/subscription/webhook` - 支付回调处理
+
+#### Token相关
+- `GET /api/tokens/balance` - 获取Token余额
+- `GET /api/tokens/transactions` - 获取交易记录
+- `POST /api/tokens/purchase` - 购买Token
+
+#### BatchGo相关
+- `POST /api/batchopen/silent-start` - 启动Silent任务（兼容旧路径）
+- `GET /api/batchopen/silent-progress` - 查询任务进度（兼容旧路径）
+- `POST /api/batchopen/silent-terminate` - 终止任务（兼容旧路径）
+- `POST /api/v1/batchgo/tasks/silent/start` - 启动Silent任务（新路径）
+- `GET /api/v1/batchgo/tasks/silent/progress` - 查询任务进度（新路径）
+- `POST /api/v1/batchgo/tasks/silent/terminate` - 终止任务（新路径）
+- `POST /api/autoclick/tasks` - 创建AutoClick任务（兼容旧路径）
+- `GET /api/autoclick/tasks/{id}/progress` - 查询AutoClick进度（兼容旧路径）
+- `POST /api/autoclick/tasks/{id}/{action}` - AutoClick任务操作（兼容旧路径）
+- `POST /api/v1/batchgo/tasks/autoclick` - 创建AutoClick任务（新路径）
+- `GET /api/v1/batchgo/tasks/autoclick/{id}/progress` - 查询AutoClick进度（新路径）
+- `POST /api/v1/batchgo/tasks/autoclick/{id}/{action}` - AutoClick任务操作（新路径）
+
+#### SiteRank相关
+- `GET /api/siterank/rank` - 查询网站排名（兼容旧路径）
+- `POST /api/v1/siterankgo/traffic/batch` - 批量查询（新路径）
+- `GET /api/v1/siterankgo/traffic/priorities` - 获取优先级（新路径）
+- `GET /api/v1/siterankgo/traffic/{domain}` - 查询网站排名（新路径）
+
+#### 邀请相关
+- `GET /api/invitation/info` - 获取邀请信息
+- `POST /api/invitation/generate-link` - 生成邀请链接
+- `GET /api/invitation/history` - 获取邀请历史
+
+#### 签到相关
+- `GET /api/checkin/info` - 获取签到信息
+- `POST /api/checkin/perform` - 执行签到
+- `GET /api/checkin/history` - 获取签到历史
+
+#### Chengelink相关
+- `GET /api/chengelink/status` - 获取链接状态（兼容旧路径）
+- `POST /api/chengelink/create` - 创建链接任务（兼容旧路径）
+- `GET /api/chengelink/tasks` - 获取任务列表（兼容旧路径）
+- `POST /api/chengelink/tasks/{id}/execute` - 执行任务（兼容旧路径）
+- `GET /api/v1/chengelink/links/{id}/status` - 获取链接状态（新路径）
+- `POST /api/v1/chengelink/links` - 创建链接任务（新路径）
+- `GET /api/v1/chengelink/tasks` - 获取任务列表（新路径）
+- `POST /api/v1/chengelink/tasks/{id}/execute` - 执行任务（新路径）
+
+### 6.3 API安全规范
+
+#### 认证方式
+- **网站用户**：JWT Bearer Token
+- **管理员**：Session Cookie
+
+#### 权限控制
+- RBAC（基于角色的访问控制）
+- API级别的权限验证
+- 数据级别的权限验证（用户数据隔离）
+
+#### 安全限制
+- 请求频率限制：100次/分钟
+- 请求大小限制：10MB
+- Token消耗验证
+- IP白名单（管理后台）
+
+## 7. 性能设计
+
+### 7.1 性能目标
+
+> **⚠️ 性能目标说明**：以下目标为理想状态，**实际可达成的性能需要通过测试确定**
+
+- **响应时间**：P95 < 200ms*（需验证）
+- **吞吐量**：核心接口 > 500 QPS*（需验证）
+- **并发用户**：支持100并发用户*（需验证）
+- **错误率**：< 0.1%*（需验证）
+- **资源利用率**：CPU < 70%，内存 < 80%*（需验证）
+
+*注：实际性能取决于GoFly框架的实现质量和具体业务逻辑复杂度
+
+### 7.2 性能优化策略
+
+**数据库优化**
+- 读写分离：主库写，从库读
+- 分库分表：按用户ID水平拆分（未来扩展）
+- 索引优化：为常用查询字段建立索引
+- 连接池：配置合适的连接池大小
+
+**缓存优化**
+- 多级缓存：本地缓存 + Redis
+- 缓存预热：系统启动时加载热点数据
+- 缓存击穿防护：使用互斥锁或空值缓存
+- 缓存雪崩防护：随机过期时间
+
+**并发优化**
+- 协程池：控制并发协程数量
+- 请求限流：令牌桶算法
+- 超时控制：设置合理的超时时间
+- 熔断降级：异常情况自动降级
+
+## 8. 部署和运维
+
+### 8.1 部署架构
+
+**Linus式简化部署**：单进程，无复杂组件
+- 预发/生产环境：2C4G容器
+- 单进程部署：Go主进程 + Next.js嵌入
+- 外部数据库：MySQL托管服务
+- 外部缓存：Redis托管服务（仅用于Session）
+
+### 8.2 容器化部署
+
+```dockerfile
+# 构建阶段
+FROM golang:1.21-alpine AS builder
+
+# 安装Node.js（用于构建Next.js）
+RUN apk add --no-cache nodejs npm git
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制依赖文件
+COPY go.mod go.sum ./
+COPY package*.json ./
+
+# 下载依赖
+RUN go mod download
+RUN npm ci
+
+# 复制源代码
+COPY . .
+
+# 构建Next.js
+RUN npm run build
+
+# 构建Go应用（嵌入Next.js）
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o autoads-server .
+
+# 运行阶段
+FROM alpine:latest
+
+# 安装ca-certificates和时区数据
+RUN apk --no-cache add ca-certificates tzdata
+
+# 设置时区
+RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone
+
+# 创建应用用户
+RUN addgroup -g 1000 appgroup && \
+    adduser -u 1000 -G appgroup -s /bin/sh -D appuser
+
+# 设置工作目录
+WORKDIR /app
+
+# 从构建阶段复制二进制文件
+COPY --from=builder --chown=appuser:appgroup /app/autoads-server ./autoads-server
+
+# 复制Next.js构建产物
+COPY --from=builder --chown=appuser:appgroup /app/.next/standalone ./
+COPY --from=builder --chown=appuser:appgroup /app/public ./public
+
+# 创建日志目录
+RUN mkdir -p logs && chown -R appuser:appgroup /app/logs
+
+# 切换到非root用户
+USER appuser
+
+# 暴露端口
+EXPOSE 3000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+
+# 启动命令（单进程）
+CMD ["./autoads-server"]
+```
+
+### 8.3 CI/CD流程
+
+基于现有部署流程，配置 GitHub Actions 自动构建镜像：
+
+**镜像标签规则**
+- `main` 分支 → `ghcr.io/xxrenzhe/autoads:preview-latest`
+- `production` 分支 → `ghcr.io/xxrenzhe/autoads:prod-latest`
+- `production` 分支打 tag → `ghcr.io/xxrenzhe/autoads:prod-[tag]`
+
+### 8.4 环境配置
+
+**预发环境 (.env.preview)**
+```env
+# 基础配置
+NODE_ENV=production
+NEXT_PUBLIC_DOMAIN=urlchecker.dev
+NEXT_PUBLIC_DEPLOYMENT_ENV=preview
+
+# 数据库
+DATABASE_URL=mysql://root:jtl85fn8@dbprovider.sg-members-1.clawcloudrun.com:30354
+
+# Redis
+REDIS_URL=redis://default:9xdjb8nf@dbprovider.sg-members-1.clawcloudrun.com:32284
+
+# 认证
+AUTH_SECRET=85674018a64071a1f65a376d45a522dec78495cae7f5f1516febf8a4d51ff834
+AUTH_URL=https://www.urlchecker.dev
+AUTH_GOOGLE_ID=1007142410985-4945m48srrp056kp0q5n0e5he8omrdol.apps.googleusercontent.com
+AUTH_GOOGLE_SECRET=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
+
+# GoFly 配置
+GOFLY_PORT=8888
+GOFLY_DB_URL=${DATABASE_URL}
+GOFLY_REDIS_URL=${REDIS_URL}
+GOFLY_JWT_SECRET=${AUTH_SECRET}
+```
+
+## 9. SimilarWeb集成方案
+
+### 9.1 集成概述
+
+> **⚠️ 重要警告**：本方案描述的SimilarWeb API集成**基于公开信息和假设**。**实际实施前必须验证以下内容：**
+> - SimilarWeb是否提供公开API
+> - API的实际端点和认证方式
+> - 付费要求和调用限制
+> - 响应数据格式的准确性
+
+### 9.2 配置方式
+
+```env
+# SimilarWeb API Configuration (需要验证)
+SIMILARWEB_API_URL="https://data.similarweb.com/api/v1/data"  # 需确认实际URL
+SIMILARWEB_API_KEY="your-api-key-here"  # 如果需要API密钥
+```
+
+### 9.3 实现特性
+
+- **错误处理**：HTTP状态码验证、请求超时、JSON解析错误处理
+- **限流控制**：批量处理（10个域名/批）、随机延迟（2-5秒）
+- **数据验证**：域名格式验证、必需字段检查
+- **缓存机制**：查询结果缓存，减少API调用
+
+### 9.4 响应数据格式
+
+> **⚠️ 以下响应格式为推测，需要根据实际API文档调整**
+
+```json
+{
+  "GlobalRank": 12345,        // *需要验证字段名
+  "CategoryRank": 678,        // *需要验证字段名
+  "Category": "News and Media",  // *需要验证字段名
+  "CountryRank": 901,        // *需要验证字段名
+  "CountryCode": "US",       // *需要验证字段名
+  "Visits": 1234567.89,      // *需要验证字段名
+  "PageViews": 2345678.90,   // *需要验证字段名
+  "BounceRate": 45.67,       // *需要验证字段名
+  "VisitDuration": 123.45,   // *需要验证字段名
+  "SEORank": 12,             // *需要验证是否存在此字段
+  "Backlinks": 34567
+}
+```
+
+## 10. 测试和验证
+
+### 10.1 性能测试
+
+**测试目标**
+- **响应时间**：P95 < 200ms*（需验证）
+- **吞吐量**：核心接口 > 500 QPS*（需验证）
+- **并发用户**：支持100并发用户*（需验证）
+- **错误率**：< 0.1%*（需验证）
+- **资源利用率**：CPU < 70%，内存 < 80%*（需验证）
+
+**测试工具**
+- **Vegeta**：HTTP压力测试
+- **wrk**：HTTP基准测试
+- **系统监控**：top、ps、netstat
+
+### 10.2 验证步骤
+
+1. **GoFly框架验证**
+   - 构建GoFly原型，验证基本功能
+   - 测试CRUD生成器、认证系统、缓存等功能
+
+2. **API集成验证**
+   - 测试Google OAuth集成
+   - 验证SimilarWeb API可用性
+   - 确认API响应格式和数据
+
+3. **性能验证**
+   - 进行负载测试
+   - 验证性能目标是否达成
+   - 优化瓶颈点
+
+4. **功能验证**
+   - 端到端测试所有业务流程
+   - 验证数据一致性
+   - 确认用户体验无变化
+
+## 11. 实施计划
+
+### 11.1 项目里程碑
+
+**阶段一：基础建设（2周）**
+- [ ] 搭建开发环境
+- [ ] 验证GoFly框架功能
+- [ ] 设计数据模型
+- [ ] 实现用户认证系统
+
+**阶段二：核心功能（3周）**
+- [ ] 实现BatchGo模块
+- [ ] 实现SiteRankGo模块
+- [ ] 集成Token系统
+- [ ] API兼容性测试
+
+**阶段三：新功能（2周）**
+- [ ] 实现邀请系统
+- [ ] 实现签到系统
+- [ ] 完善用户中心
+- [ ] 管理后台适配
+
+**阶段四：测试优化（1周）**
+- [ ] 性能测试
+- [ ] 安全测试
+- [ ] 部署验证
+- [ ] 文档完善
+
+### 11.2 风险控制
+
+**技术风险**
+- GoFly框架功能不满足预期
+- 外部API集成失败
+- 性能目标无法达成
+
+**应对措施**
+- 提前进行POC验证
+- 准备备选方案
+- 分阶段交付，及时调整
+
+## 12. 总结
+
+基于Linus Torvalds的设计哲学，我们选择了最简单有效的方案：
+
+1. **直接fork GoFly**，避免复杂的wrapper层
+2. **扩展而非重构**，在现有基础上添加SaaS功能
+3. **保持API兼容**，确保前端零修改
+4. **单进程部署**，简化运维复杂度
+
+通过这种方式，我们期望：
+- 开发效率提升90%*
+- 系统性能提升4900%*（1→50并发）
+- 运维复杂度降低80%*
+
+> **⚠️ 重要提醒**：以上所有目标均为理论估计，**实际效果需要通过项目实践验证**。建议先进行概念验证(POC)，确认技术可行性后再全面实施。
 
 ## 1. 架构设计原则
 
@@ -120,19 +781,21 @@ type System struct {
 │            Single Docker Container          │
 ├─────────────────────────────────────────────┤
 │                                             │
-│  ┌─────────────┐    ┌───────────────────┐  │
-│  │   GoFly     │    │     Next.js        │  │
-│  │   Backend   │    │     Frontend       │  │
-│  │   (Port     │    │     (Port 3000)    │  │
-│  │   8080)     │    │                    │  │
-│  └──────┬──────┘    └───────────────────┘  │
-│         │                    │             │
-│         └─────┐      ┌───────┘             │
-│               │      │                   │
-│  ┌─────────────────────────────────┐     │
-│  │   Built-in HTTP Reverse Proxy    │     │
-│  │          (Port 80)               │     │
-│  └─────────────────────────────────┘     │
+│  ┌─────────────────────────────────────────┐ │
+│  │           GoFly Server                  │ │
+│  │           (Port 3000)                   │ │
+│  │                                         │ │
+│  │  ┌─────────────┐                       │ │
+│  │  │   Business   │                       │ │
+│  │  │   Logic      │                       │ │
+│  │  └─────────────┘                       │ │
+│  │                                         │ │
+│  │  ┌─────────────┐                       │ │
+│  │  │  Next.js     │                       │ │
+│  │  │  Static      │                       │ │
+│  │  │  Files       │                       │ │
+│  │  └─────────────┘                       │ │
+│  └─────────────────────────────────────────┘
 │                                             │
 └─────────────────────────────────────────────┘
 ```
@@ -143,7 +806,7 @@ type System struct {
 - Go 1.21 + GoFly Admin V3
 - MySQL 8.0 + GORM
 - Redis (缓存 + 会话)
-- 内置HTTP反向代理
+- Next.js 静态文件嵌入
 
 **前端技术栈** (保持不变):
 - Next.js 14 + React 18
@@ -152,7 +815,7 @@ type System struct {
 
 **部署架构**:
 - 单Docker容器
-- 无Nginx，使用Go内置代理
+- 无Nginx，Go直接服务Next.js静态文件
 - 支持水平扩展
 
 ## 3. 核心功能实现

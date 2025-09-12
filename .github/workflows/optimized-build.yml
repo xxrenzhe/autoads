@@ -117,7 +117,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: .
-        file: ./Dockerfile.standalone
+        file: ./Dockerfile.gofly
         push: true
         platforms: linux/amd64
         tags: ${{ steps.meta.outputs.tags }}
@@ -241,7 +241,7 @@ jobs:
         echo "- **构建时间**: ~4-5分钟 (优化前: ~15分钟)" >> $GITHUB_STEP_SUMMARY
         echo "- **缓存策略**: 无缓存构建 (避免缓存服务故障)" >> $GITHUB_STEP_SUMMARY
         echo "- **平台**: linux/amd64 (单平台优化)" >> $GITHUB_STEP_SUMMARY
-        echo "- **Dockerfile**: Dockerfile.standalone (统一)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Dockerfile**: Dockerfile.gofly (Go 后端 + Next.js 静态)" >> $GITHUB_STEP_SUMMARY
         echo "- **安全扫描**: 仅关键漏洞 (快速)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         

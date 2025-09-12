@@ -2,57 +2,54 @@
 
 ## 1. 概述
 
-GoFly Admin V3是一个成熟的后台管理系统框架，经过评估，**95%的功能可以直接复用**到AutoAds重构项目中。核心策略：**直接fork GoFly并扩展为SaaS平台**，而不是创建复杂的wrapper层。
+GoFly Admin V3是一个后台管理系统框架。**注：本文档中关于功能复用度的评估（95%）是基于代码审查的估计，实际复用度需要通过集成测试验证。**
+
+**核心策略**：基于GoFly源码扩展为SaaS平台，而不是创建复杂的wrapper层。
 
 ## 2. 框架价值评估
 
 ### 2.1 复用度分析
 
-| 模块 | 复用度 | 价值说明 | 改造工作量 | 集成方式 |
-|------|--------|----------|------------|----------|
-| 用户系统 | 95% | 复用User模型，添加email和token字段 | 低 | 直接扩展模型 |
-| 权限管理 | 70% | 简化为用户角色管理 | 低 | 简化权限系统 |
-| CRUD生成器 | 100% | 自动生成所有API | 无 | 直接使用 |
-| Admin界面 | 90% | 复用管理后台，添加用户管理功能 | 低 | 添加新菜单 |
-| 认证系统 | 85% | Session认证改为JWT+Google OAuth | 中 | 扩展认证中间件 |
-| 工具库 | 100% | 字符串、时间、JSON等工具 | 无 | 直接使用 |
-| 缓存系统 | 100% | 多级缓存，支持Redis | 无 | 直接使用 |
-| 定时任务 | 100% | Cron调度器 | 无 | 直接使用 |
-| 日志系统 | 100% | 结构化日志 | 无 | 直接使用 |
-| Excel导出 | 100% | 数据导出功能 | 无 | 直接使用 |
-| 数据验证 | 100% | 参数验证 | 无 | 直接使用 |
+> **⚠️ 重要提醒**：以下复用度评估基于静态代码分析，**实际可行性需要通过POC测试验证**
+
+| 模块 | 评估复用度 | 价值说明 | 预估改造工作量 | 集成方式 | 验证优先级 |
+|------|------------|----------|----------------|----------|------------|
+| 用户系统 | 95%* | 复用User模型，添加email和token字段 | 低 | 直接扩展模型 | 高 |
+| 权限管理 | 70%* | 简化为用户角色管理 | 低 | 简化权限系统 | 中 |
+| CRUD生成器 | 100%* | 自动生成所有API | 无 | 直接使用 | 高 |
+| Admin界面 | 90%* | 复用管理后台，添加用户管理功能 | 低 | 添加新菜单 | 中 |
+| 认证系统 | 85%* | Session认证改为JWT+Google OAuth | 中 | 扩展认证中间件 | 高 |
+| 工具库 | 100%* | 字符串、时间、JSON等工具 | 无 | 直接使用 | 低 |
+| 缓存系统 | 100%* | 多级缓存，支持Redis | 无 | 直接使用 | 中 |
+| 定时任务 | 100%* | Cron调度器 | 无 | 直接使用 | 中 |
+| 日志系统 | 100%* | 结构化日志 | 无 | 直接使用 | 低 |
+| Excel导出 | 100%* | 数据导出功能 | 无 | 直接使用 | 低 |
+| 数据验证 | 100%* | 参数验证 | 无 | 直接使用 | 低 |
+
+*注：标记为需要实际验证的评估
 
 ### 2.2 开发效率提升
 
-- **整体开发效率**：提升90%（直接复用完整框架）
-- **Admin功能**：提升95%（直接使用现有管理后台）
-- **基础API开发**：提升85%（CRUD自动生成）
-- **业务功能开发**：提升80%（在现有基础上扩展）
-- **部署运维**：提升90%（复用成熟的部署方案）
+> **⚠️ 以下效率提升为理论估计，实际效果取决于GoFly框架的实际质量**
+
+- **整体开发效率**：提升90%（直接复用完整框架）*
+- **Admin功能**：提升95%（直接使用现有管理后台）*
+- **基础API开发**：提升85%（CRUD自动生成）*
+- **业务功能开发**：提升80%（在现有基础上扩展）*
+- **部署运维**：提升90%（复用成熟的部署方案）*
+
+*注：实际提升幅度需要通过项目实践验证
 
 ## 3. Fork扩展策略
 
-### 3.1 Fork和分支策略
+### 3.1 GoFly源码集成
 
-```bash
-# 1. Fork GoFly官方仓库
-git clone https://github.com/gofly/gofly-admin-v3.git
-cd gofly-admin-v3
-
-# 2. 创建autoads分支
-git checkout -b autoads-saas
-
-# 3. 添加remote指向我们的仓库
-git remote add autoads https://github.com/your-org/autoads-gofly.git
-
-# 4. 推送分支
-git push autoads autoads-saas
-```
+GoFly的源码已经存在于本地目录 `gofly_admin_v3/` 中，无需从GitHub克隆。直接基于本地源码进行扩展开发。
 
 ### 3.2 代码组织方式
 
 ```
-gofly-admin-v3/                  # 基于GoFly fork
+gofly_admin_v3/                  # GoFly源码目录
 ├── internal/
 │   ├── models/                   # 扩展数据模型
 │   │   ├── user.go               # 扩展用户模型
@@ -87,7 +84,7 @@ gofly-admin-v3/                  # 基于GoFly fork
 // internal/models/user_ext.go
 package models
 
-import "gofly-admin-v3/internal/models"
+import "./internal/models"
 
 // 扩展原有User模型，统一认证体系
 type User struct {
@@ -180,7 +177,7 @@ func (m *AppModule) Init(app *gofly.App) {
 **集成方式**
 ```go
 // 引入CRUD生成器
-import "gofly-admin-v3/internal/crud"
+import "./internal/crud"
 
 // 创建生成器实例
 generator := crud.NewGoFlyCRUDGenerator(db)
@@ -211,7 +208,7 @@ generator.GenerateCRUDRoute(
 **集成方式**
 ```go
 // 引入调度器
-import "gofly-admin-v3/internal/scheduler"
+import "./internal/scheduler"
 
 // 调度器实例
 sched := scheduler.GetScheduler()
@@ -285,7 +282,7 @@ func (j *SubscriptionCheckJob) Run(ctx context.Context) error {
 **集成方式**
 ```go
 // 引入Excel导出
-import "gofly-admin-v3/utils/extend/excelexport"
+import "./utils/extend/excelexport"
 
 // API接口中使用
 func ExportUserTasks(c *gin.Context) {
@@ -347,7 +344,7 @@ func ExportUserTasks(c *gin.Context) {
 **集成方式**
 ```go
 // 引入缓存
-import "gofly-admin-v3/internal/cache"
+import "./internal/cache"
 
 // 获取缓存实例
 cache := cache.GetCache()
@@ -385,7 +382,7 @@ GoFly提供了丰富的工具库，可以直接复用：
 
 **字符串工具（gstr）**
 ```go
-import "gofly-admin-v3/utils/tools/gstr"
+import "./utils/tools/gstr"
 
 // URL编码
 encoded := gstr.UrlEncode("hello world")
@@ -399,7 +396,7 @@ snake := gstr.CaseSnake("HelloWorld")
 
 **时间工具（gtime）**
 ```go
-import "gofly-admin-v3/utils/tools/gtime"
+import "./utils/tools/gtime"
 
 // 获取当前时间
 now := gtime.Now()
@@ -416,7 +413,7 @@ duration := gtime.Diff(now, t)
 
 **JSON工具（gjson）**
 ```go
-import "gofly-admin-v3/utils/tools/gjson"
+import "./utils/tools/gjson"
 
 // JSON编码
 jsonStr := gjson.Encode(data)
@@ -431,7 +428,7 @@ value := gjson.Get(jsonStr, "user.name")
 
 **文件工具（gfile）**
 ```go
-import "gofly-admin-v3/utils/tools/gfile"
+import "./utils/tools/gfile"
 
 // 判断文件是否存在
 exists := gfile.Exists("/path/to/file")
@@ -454,7 +451,7 @@ err := gfile.PutContents("/path/to/file", "content")
 
 ```go
 // 引入认证模块
-import "gofly-admin-v3/internal/auth"
+import "./internal/auth"
 
 // JWT配置
 jwtConfig := auth.JWTConfig{
@@ -615,7 +612,7 @@ GoFly使用GORM作为ORM框架：
 
 ```go
 // 引入GORM
-import "gofly-admin-v3/utils/gform"
+import "./utils/gform"
 
 // 数据库连接
 db := gform.Instance()
@@ -677,7 +674,7 @@ err := db.AutoMigrate(
 
 ```go
 // 引入日志
-import "gofly-admin-v3/utils/tools/glog"
+import "./utils/tools/glog"
 
 // 记录日志
 glog.Info(c, "user_login", gform.Map{
@@ -728,7 +725,7 @@ glog.Init(logConfig)
 
 ```go
 // 引入监控
-import "gofly-admin-v3/internal/metrics"
+import "./internal/metrics"
 
 // 性能监控中间件
 router.Use(metrics.PrometheusMiddleware())
