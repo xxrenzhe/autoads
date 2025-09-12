@@ -1,0 +1,54 @@
+# 通用消息
+"success" = "操作成功"
+"failed" = "操作失败"
+"invalid_parameters" = "参数错误"
+"unsupported_language" = "不支持的语言"
+"language_updated_successfully" = "语言设置更新成功"
+
+# 用户相关
+"user_not_found" = "用户不存在"
+"user_data_exported" = "用户数据导出成功"
+"insufficient_tokens" = "Token余额不足"
+"token_consumed" = "Token消费成功"
+
+# 任务相关
+"task_created" = "任务创建成功"
+"task_started" = "任务启动成功"
+"task_completed" = "任务完成"
+"task_failed" = "任务失败"
+"task_not_found" = "任务不存在"
+
+# 文件上传
+"file_uploaded" = "文件上传成功"
+"file_too_large" = "文件过大"
+"file_type_not_allowed" = "文件类型不支持"
+"upload_failed" = "上传失败"
+
+# 验证码
+"captcha_required" = "请输入验证码"
+"captcha_invalid" = "验证码错误"
+"captcha_expired" = "验证码已过期"
+"email_sent" = "邮件发送成功"
+
+# 导出功能
+"export_user_data" = "导出用户数据"
+"export_task_records" = "导出任务记录"
+"export_token_transactions" = "导出Token交易记录"
+"export_siterank_queries" = "导出SiteRank查询记录"
+"export_failed" = "导出失败"
+
+# 套餐相关
+"plan_free" = "免费版"
+"plan_pro" = "专业版"
+"plan_expired" = "套餐已过期"
+"plan_upgraded" = "套餐升级成功"
+
+# 邀请相关
+"invitation_sent" = "邀请发送成功"
+"invitation_accepted" = "邀请接受成功"
+"invite_code_invalid" = "邀请码无效"
+
+# 签到相关
+"checkin_success" = "签到成功"
+"already_checked_in" = "今日已签到"
+"checkin_reward" = "签到奖励"

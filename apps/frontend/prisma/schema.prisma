@@ -1,0 +1,799 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                                             String                  @id @default(cuid())
+  email                                          String                  @unique
+  name                                           String?
+  avatar                                         String?
+  emailVerified                                  Boolean                 @default(false)
+  role                                           UserRole                @default(USER)
+  status                                         UserStatus              @default(ACTIVE) // 账户状态: ACTIVE(正常), INACTIVE(未激活), SUSPENDED(暂停), BANNED(封禁)
+  createdAt                                      DateTime                @default(now())
+  updatedAt                                      DateTime                @updatedAt
+  lastLoginAt                                    DateTime?
+  loginCount                                     Int                     @default(0)
+  preferences                                    Json?
+  stripeCustomerId                               String?                 @unique
+  tokenBalance                                   Int                     @default(0)
+  tokenUsedThisMonth                             Int                     @default(0)
+  invitedById                                    String?
+  activityTokenBalance                           Int                     @default(0)
+  password                                       String?                 @unique
+  purchasedTokenBalance                          Int                     @default(0)
+  subscriptionTokenBalance                       Int                     @default(0)
+  trialUsed                                      Boolean                 @default(false)
+  accounts                                       Account[]
+  adminLogs                                      AdminLog[]              @relation("AdminLogs")
+  api_access_logs                                ApiAccessLog[]
+  apiUsages                                      ApiUsage[]              @relation("ApiUsages")
+  audit_logs                                     AuditLog[]
+  autoClickTasks                                 AutoClickTask[]
+  checkIns                                       CheckIn[]
+  config_change_history                          config_change_history[]
+  configuration_history                          configuration_history[]
+  createdEnvVars                                 EnvironmentVariable[]   @relation("CreatedByUser")
+  updatedEnvVars                                 EnvironmentVariable[]   @relation("UpdatedByUser")
+  invitedBy                                      Invitation?             @relation("InvitedUser")
+  invitations                                    Invitation[]            @relation("InviterUser")
+  notification_logs                              notification_logs[]
+  payments                                       Payment[]
+  sessions                                       Session[]
+  subscriptions                                  Subscription[]
+  system_configs_system_configs_createdByTousers SystemConfig[]          @relation("system_configs_createdByTousers")
+  systemConfigs                                  SystemConfig[]          @relation("SystemConfigs")
+  tokenPurchases                                 TokenPurchase[]
+  tokenTransactions                              TokenTransaction[]
+  token_usage                                    token_usage[]
+  usageLogs                                      UsageLog[]
+  userActivities                                 UserActivity[]          @relation("UserActivities")
+  behaviorAnalytics                              UserBehaviorAnalytics[]
+  devices                                        UserDevice[]
+  userRestrictions                               UserRestriction[]
+  users                                          User?                   @relation("usersTousers", fields: [invitedById], references: [id])
+  other_users                                    User[]                  @relation("usersTousers")
+  changedSubscriptions                           SubscriptionHistory[]   @relation("ChangedSubscriptions")
+  queuedInvitationRewards                        QueuedInvitationReward[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model UserRestriction {
+  id        String          @id @default(cuid()) @db.VarChar(191)
+  userId    String          @db.VarChar(191)
+  type      RestrictionType
+  reason    String          @db.VarChar(191)
+  expiresAt DateTime
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @default(now()) @updatedAt
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([expiresAt])
+  @@index([isActive])
+  @@map("user_restrictions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Plan {
+  id                  String         @id @default(cuid())
+  name                String
+  description         String?
+  price               Float
+  currency            String         @default("USD")
+  interval            Interval       @default(MONTH)
+  features            Json
+  metadata            Json?
+  isActive            Boolean        @default(true)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  limits              Json?
+  sortOrder           Int            @default(0)
+  stripePriceId       String?
+  stripeYearlyPriceId String?
+  tokenQuota          Int            @default(0)
+  tokenReset          String         @default("MONTHLY")
+  billingPeriod       String         @default("MONTHLY")
+  rateLimit           Int            @default(100)
+  extraTokenOptions   Json?
+  allowExtraTokens    Boolean?       @default(true)
+  subscriptions       Subscription[]
+  token_usage         token_usage[]
+  planFeatures        PlanFeature[]
+  previousPlans       SubscriptionHistory[] @relation("PreviousPlan")
+  newPlans            SubscriptionHistory[] @relation("NewPlan")
+  queuedInvitationRewards QueuedInvitationReward[]
+
+  @@map("plans")
+}
+
+model PlanFeature {
+  id          String   @id @default(cuid())
+  planId      String
+  featureName String
+  enabled     Boolean  @default(true)
+  limit       Int?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  plan        Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, featureName])
+  @@map("plan_features")
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  userId                 String
+  planId                 String
+  status                 SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  provider               String             @default("stripe")
+  providerSubscriptionId String?
+  metadata               Json?
+  source                 SubscriptionSource @default(MANUAL)
+  payments               Payment[]
+  plan                   Plan               @relation(fields: [planId], references: [id])
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionHistory    SubscriptionHistory[]
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  userId         String
+  subscriptionId String?
+  amount         Float
+  currency       String        @default("USD")
+  status         PaymentStatus @default(PENDING)
+  provider       String        @default("stripe")
+  providerId     String?
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model UsageLog {
+  id       String   @id @default(cuid())
+  userId   String
+  feature  String
+  usage    Int
+  date     DateTime @default(now())
+  metadata Json?
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("usage_logs")
+}
+
+model UserDevice {
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  userId       String
+  fingerprint  String
+  userAgent    String?
+  firstIP      String?
+  lastIP       String?
+  firstSeenAt  DateTime @default(now()) @db.Timestamp(6)
+  lastSeenAt   DateTime @default(now()) @db.Timestamp(6)
+  isSuspicious Boolean  @default(false)
+  createdAt    DateTime @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime @default(now()) @updatedAt @db.Timestamp(6)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, fingerprint])
+  @@index([fingerprint])
+  @@index([lastSeenAt], map: "user_devices_last_seen_at_idx")
+  @@map("user_devices")
+}
+
+model EnvironmentVariable {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  isSecret  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
+  creator   User     @relation("CreatedByUser", fields: [createdBy], references: [id])
+  updater   User?    @relation("UpdatedByUser", fields: [updatedBy], references: [id])
+
+  @@map("environment_variables")
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  action    String
+  details   Json?
+  userId    String
+  createdAt DateTime @default(now())
+  user      User     @relation("AdminLogs", fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@map("admin_logs")
+}
+
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  resource  String
+  metadata  Json?
+  timestamp DateTime @default(now())
+  user      User     @relation("UserActivities", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+  @@index([action, timestamp])
+  @@map("user_activities")
+}
+
+model ApiUsage {
+  id            String   @id @default(cuid())
+  userId        String
+  endpoint      String
+  method        String
+  statusCode    Int
+  responseTime  Int
+  tokenConsumed Int      @default(0)
+  timestamp     DateTime @default(now())
+  user          User     @relation("ApiUsages", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([endpoint, timestamp])
+  @@index([userId, timestamp])
+  @@map("api_usages")
+}
+
+model ServiceConfig {
+  id          String    @id @default(cuid())
+  serviceName String    @unique
+  config      Json
+  status      String    @default("inactive")
+  lastChecked DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("service_configs")
+}
+
+model SystemConfig {
+  id                                    String   @id @default(cuid())
+  key                                   String   @unique
+  value                                 String
+  category                              String
+  description                           String?
+  isSecret                              Boolean  @default(false)
+  validation                            String?
+  createdAt                             DateTime @default(now())
+  updatedAt                             DateTime @updatedAt
+  createdBy                             String
+  updatedBy                             String?
+  users_system_configs_createdByTousers User     @relation("system_configs_createdByTousers", fields: [createdBy], references: [id])
+  user                                  User?    @relation("SystemConfigs", fields: [updatedBy], references: [id])
+
+  @@index([category])
+  @@index([createdAt], map: "system_configs_created_at_idx")
+  @@index([isSecret], map: "system_configs_is_secret_idx")
+  @@map("system_configs")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  sessionId  String?
+  severity   String
+  category   String
+  outcome    String
+  metadata   Json?
+  timestamp  DateTime @default(now())
+  users      User?    @relation(fields: [userId], references: [id])
+
+  @@index([category, timestamp])
+  @@index([ipAddress, timestamp])
+  @@index([severity, timestamp])
+  @@index([userId, timestamp])
+  @@map("audit_logs")
+}
+
+model SecurityThreat {
+  id                 String    @id @default(cuid())
+  type               String
+  severity           String
+  description        String
+  indicators         String[]
+  affectedResources  String[]
+  recommendedActions String[]
+  triggeringEventId  String?
+  status             String    @default("detected")
+  notes              String?
+  detectedAt         DateTime  @default(now())
+  resolvedAt         DateTime?
+
+  @@index([severity, detectedAt])
+  @@index([status, detectedAt])
+  @@index([type, status])
+  @@map("security_threats")
+}
+
+model ApiPerformanceLog {
+  id              String   @id @default(cuid())
+  requestId       String   @unique
+  method          String
+  url             String
+  userAgent       String?
+  clientIp        String?
+  statusCode      Int
+  responseTime    Int
+  responseSize    Int      @default(0)
+  memoryHeapUsed  BigInt?
+  memoryHeapTotal BigInt?
+  memoryRss       BigInt?
+  cpuUser         BigInt?
+  cpuSystem       BigInt?
+  error           String?
+  timestamp       DateTime @default(now())
+
+  @@index([responseTime])
+  @@index([timestamp])
+  @@index([method, url])
+  @@map("api_performance_logs")
+}
+
+model ApiAccessLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  endpoint   String
+  method     String
+  statusCode Int
+  duration   Int
+  ipAddress  String
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  users      User?    @relation(fields: [userId], references: [id])
+
+  @@index([endpoint, createdAt])
+  @@index([userId, createdAt])
+  @@map("api_access_logs")
+}
+
+model NotificationTemplate {
+  id                String              @id @default(cuid())
+  name              String              @unique
+  type              NotificationType
+  subject           String?
+  content           String
+  variables         Json?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  notification_logs notification_logs[]
+
+  @@map("notification_templates")
+}
+
+model UserBehaviorAnalytics {
+  id             String   @id @default(cuid())
+  userId         String
+  feature        String
+  action         String
+  tokensConsumed Int      @default(0)
+  duration       Int
+  success        Boolean  @default(true)
+  errorMessage   String?
+  metadata       Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([feature, createdAt])
+  @@index([userId, createdAt])
+  @@map("user_behavior_analytics")
+}
+
+model config_change_history {
+  id        String   @id @default(cuid())
+  configKey String
+  oldValue  String?
+  newValue  String
+  changedBy String
+  reason    String?
+  createdAt DateTime @default(now())
+  users     User     @relation(fields: [changedBy], references: [id])
+
+  @@index([configKey, createdAt])
+}
+
+model notification_logs {
+  id                     String               @id
+  userId                 String
+  templateId             String
+  type                   NotificationType
+  recipient              String
+  status                 NotificationStatus   @default(PENDING)
+  errorMessage           String?
+  sentAt                 DateTime?
+  deliveredAt            DateTime?
+  createdAt              DateTime             @default(now())
+  notification_templates NotificationTemplate @relation(fields: [templateId], references: [id])
+  users                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
+model performance_alerts {
+  id         String    @id
+  type       String
+  severity   String
+  message    String
+  endpoint   String?
+  requestId  String?
+  metadata   Json?
+  resolved   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([resolved, severity, createdAt])
+  @@index([type, createdAt])
+}
+
+model TokenPurchase {
+  id         String   @id @default(cuid())
+  userId     String
+  tokens     Int
+  amount     Float
+  currency   String   @default("USD")
+  status     String   @default("PENDING")
+  provider   String   @default("stripe")
+  providerId String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("token_purchases")
+}
+
+model TokenTransaction {
+  id            String             @id @default(cuid())
+  userId        String
+  type          String
+  amount        Int
+  balanceBefore Int
+  balanceAfter  Int
+  source        String?
+  description   String?
+  metadata      Json?
+  createdAt     DateTime           @default(now())
+  feature       tokenusagefeature? @default(OTHER)
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("token_transactions")
+}
+
+model CheckIn {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime @default(now())
+  tokens      Int
+  streak      Int
+  rewardLevel Int      @default(1)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("check_ins")
+}
+
+model Invitation {
+  id           String    @id @default(cuid())
+  inviterId    String
+  invitedId    String?   @unique
+  code         String    @unique
+  status       String    @default("PENDING")
+  email        String?
+  tokensReward Int       @default(0)
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+  expiresAt    DateTime?
+  acceptedAt   DateTime?
+  invited      User?     @relation("InvitedUser", fields: [invitedId], references: [id])
+  inviter      User      @relation("InviterUser", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([inviterId, createdAt])
+  @@map("invitations")
+}
+
+model token_usage {
+  id              String            @id @default(cuid())
+  userId          String
+  tokensConsumed  Int
+  tokensRemaining Int
+  planId          String
+  createdAt       DateTime          @default(now())
+  batchId         String?
+  isBatch         Boolean           @default(false)
+  itemCount       Int?
+  metadata        Json?
+  operation       String?
+  feature         tokenusagefeature
+  plans           Plan              @relation(fields: [planId], references: [id])
+  users           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([batchId])
+}
+
+model configuration_history {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  configKey String
+  oldValue  String?
+  newValue  String?
+  changedBy String
+  reason    String?
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  users     User     @relation(fields: [changedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([changedBy], map: "configuration_history_changed_by_idx")
+  @@index([configKey], map: "configuration_history_config_key_idx")
+  @@index([createdAt], map: "configuration_history_created_at_idx")
+}
+
+model AutoClickTask {
+  id          String               @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  url         String
+  selector    String
+  country     String?
+  status      String               @default("pending")
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyPlans  DailyExecutionPlan[]
+
+  @@map("auto_click_tasks")
+}
+
+model DailyExecutionPlan {
+  id               String                  @id @default(cuid())
+  taskId           String
+  executionDate    DateTime                @default(now())
+  status           String                  @default("pending")
+  task             AutoClickTask           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  dailySummaries   DailyExecutionSummary[]
+  hourlyExecutions HourlyExecutionDetail[]
+
+  @@unique([taskId, executionDate])
+  @@map("daily_execution_plans")
+}
+
+model DailyExecutionSummary {
+  id               String             @id @default(cuid())
+  planId           String
+  totalClicks      Int                @default(0)
+  successfulClicks Int                @default(0)
+  failedClicks     Int                @default(0)
+  executionDate    DateTime           @default(now())
+  plan             DailyExecutionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@map("daily_execution_summaries")
+}
+
+model HourlyExecutionDetail {
+  id       String             @id @default(cuid())
+  planId   String
+  hour     Int
+  clicks   Int                @default(0)
+  success  Int                @default(0)
+  failed   Int                @default(0)
+  metadata Json?
+  plan     DailyExecutionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, hour])
+  @@map("hourly_execution_details")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum RestrictionType {
+  API_LIMIT
+  BATCH_LIMIT
+  ACCOUNT_SUSPEND
+  LOGIN_BLOCK
+  FEATURE_ACCESS
+}
+
+enum Interval {
+  DAY
+  WEEK
+  MONTH
+  YEAR
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  PENDING
+  PAST_DUE
+}
+
+enum SubscriptionSource {
+  STRIPE
+  MANUAL
+  SYSTEM
+  INVITATION
+}
+
+enum SubscriptionChangeReason {
+  UPGRADE
+  DOWNGRADE
+  CANCELLATION
+  EXPIRATION
+  RENEWAL
+  SYSTEM_CHANGE
+  MANUAL_CHANGE
+}
+
+enum SubscriptionChangeType {
+  PLAN_CHANGE
+  STATUS_CHANGE
+  CANCELLATION
+  REACTIVATION
+  TRIAL_START
+  TRIAL_END
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  DELIVERED
+}
+
+enum NotificationType {
+  EMAIL
+  SMS
+  SYSTEM
+}
+
+enum tokenusagefeature {
+  SITERANK
+  BATCHOPEN
+  CHANGELINK
+  AUTOCLICK
+  API
+  WEBHOOK
+  NOTIFICATION
+  REPORT
+  EXPORT
+  OTHER
+  ADMIN
+}
+
+enum TokenType {
+  FREE
+  SUBSCRIPTION
+  ACTIVITY
+  PURCHASED
+  BONUS
+}
+
+model SubscriptionHistory {
+  id          String                   @id @default(cuid())
+  subscriptionId String
+  previousPlanId String?
+  newPlanId     String?
+  changeType    SubscriptionChangeType
+  changeReason  SubscriptionChangeReason
+  changedBy     String
+  metadata      Json?
+  createdAt     DateTime                 @default(now())
+  subscription  Subscription             @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  previousPlan  Plan?                    @relation("PreviousPlan", fields: [previousPlanId], references: [id])
+  newPlan       Plan?                    @relation("NewPlan", fields: [newPlanId], references: [id])
+  changedByUser User                     @relation("ChangedSubscriptions", fields: [changedBy], references: [id])
+
+  @@map("subscription_history")
+}
+
+model QueuedInvitationReward {
+  id          String   @id @default(cuid())
+  userId      String
+  planId      String
+  daysToAdd   Int      @default(30)
+  invitationId String
+  status      String   @default("PENDING") // PENDING, PROCESSED, CANCELED
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        Plan     @relation(fields: [planId], references: [id])
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@map("queued_invitation_rewards")
+}

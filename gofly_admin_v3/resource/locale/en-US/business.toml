@@ -1,0 +1,54 @@
+# General Messages
+"success" = "Operation successful"
+"failed" = "Operation failed"
+"invalid_parameters" = "Invalid parameters"
+"unsupported_language" = "Unsupported language"
+"language_updated_successfully" = "Language setting updated successfully"
+
+# User Related
+"user_not_found" = "User not found"
+"user_data_exported" = "User data exported successfully"
+"insufficient_tokens" = "Insufficient token balance"
+"token_consumed" = "Token consumed successfully"
+
+# Task Related
+"task_created" = "Task created successfully"
+"task_started" = "Task started successfully"
+"task_completed" = "Task completed"
+"task_failed" = "Task failed"
+"task_not_found" = "Task not found"
+
+# File Upload
+"file_uploaded" = "File uploaded successfully"
+"file_too_large" = "File too large"
+"file_type_not_allowed" = "File type not allowed"
+"upload_failed" = "Upload failed"
+
+# Captcha
+"captcha_required" = "Please enter captcha"
+"captcha_invalid" = "Invalid captcha"
+"captcha_expired" = "Captcha expired"
+"email_sent" = "Email sent successfully"
+
+# Export Functions
+"export_user_data" = "Export User Data"
+"export_task_records" = "Export Task Records"
+"export_token_transactions" = "Export Token Transactions"
+"export_siterank_queries" = "Export SiteRank Queries"
+"export_failed" = "Export failed"
+
+# Plan Related
+"plan_free" = "Free Plan"
+"plan_pro" = "Pro Plan"
+"plan_expired" = "Plan expired"
+"plan_upgraded" = "Plan upgraded successfully"
+
+# Invitation Related
+"invitation_sent" = "Invitation sent successfully"
+"invitation_accepted" = "Invitation accepted successfully"
+"invite_code_invalid" = "Invalid invite code"
+
+# Check-in Related
+"checkin_success" = "Check-in successful"
+"already_checked_in" = "Already checked in today"
+"checkin_reward" = "Check-in reward"

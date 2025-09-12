@@ -1,0 +1,68 @@
+# 应用配置
+app:
+  name: "autoads-v3"
+  debug: true
+  port: 8080
+  version: "3.0.0"
+
+# 数据库配置
+database:
+  type: "mysql"
+  host: "${DB_HOST}"
+  port: "${DB_PORT}"
+  username: "${DB_USER}"
+  password: "${DB_PASSWORD}"
+  database: "${DB_NAME}"
+  charset: "utf8mb4"
+  timezone: "Local"
+  pool:
+    max_idle: 10
+    max_open: 100
+    max_lifetime: 3600
+
+# Redis配置
+redis:
+  enable: true
+  host: "${REDIS_HOST}"
+  port: "${REDIS_PORT}"
+  password: "${REDIS_PASSWORD}"
+  db: 1
+  pool_size: 100
+  prefix: "autoads:"
+
+# JWT配置
+jwt:
+  secret: "${JWT_SECRET}"
+  expires_in: 7200  # 2小时
+  refresh_expires_in: 604800  # 7天
+
+# 日志配置
+log:
+  level: "info"  # debug, info, warn, error
+  format: "json"  # json, text
+  output: "stdout"  # stdout, file
+  file:
+    filename: "logs/autoads.log"
+    max_size: 100  # MB
+    max_backups: 10
+    max_age: 30  # days
+    compress: true
+
+# SimilarWeb API配置
+similarweb:
+  api_key: "${SIMILARWEB_API_KEY}"
+  base_url: "https://data.similarweb.com/api/v1/data"
+
+# Google Ads配置
+google_ads:
+  developer_token: "${GOOGLE_ADS_DEVELOPER_TOKEN}"
+  client_id: "${GOOGLE_ADS_CLIENT_ID}"
+  client_secret: "${GOOGLE_ADS_CLIENT_SECRET}"
+
+# 邮件配置
+email:
+  smtp_host: "${SMTP_HOST}"
+  smtp_port: "${SMTP_PORT}"
+  smtp_username: "${SMTP_USERNAME}"
+  smtp_password: "${SMTP_PASSWORD}"
+  from: "${EMAIL_FROM}"

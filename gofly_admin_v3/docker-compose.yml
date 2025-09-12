@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # AutoAds SaaS 主应用
+  autoads-saas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autoads-saas
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - GIN_MODE=release
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=autoads
+      - DB_PASSWORD=autoads_password_2024
+      - DB_DATABASE=autoads_saas
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis_password_2024
+      - JWT_SECRET=jwt_secret_key_2024_autoads_saas
+      - ENCRYPTION_KEY=encryption_key_2024_autoads_saas_32chars
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - SIMILARWEB_API_KEY=${SIMILARWEB_API_KEY}
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    networks:
+      - autoads-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: autoads-mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password_2024
+      - MYSQL_DATABASE=autoads_saas
+      - MYSQL_USER=autoads
+      - MYSQL_PASSWORD=autoads_password_2024
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./scripts/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    networks:
+      - autoads-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "autoads", "-pautoads_password_2024"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: autoads-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./scripts/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - autoads-network
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass redis_password_2024
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis_password_2024", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: autoads-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./scripts/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./scripts/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - autoads-saas
+    networks:
+      - autoads-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  autoads-network:
+    driver: bridge

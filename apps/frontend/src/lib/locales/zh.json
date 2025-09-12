@@ -1,0 +1,399 @@
+{
+  "title": "一站式自动化营销平台",
+  "subtitle": "",
+  "logo": {
+    "brandName": "AutoAds",
+    "tagline": "一站式自动化营销平台"
+  },
+  "inputPlaceholder": "输入URL（每行一个）\n示例：\nhttps://example.com\nhttps://bit.ly/abc123\nhttps://t.co/xyz789",
+  "batchDetectButton": "自动检测",
+  "showManualInput": "手动输入",
+  "hideManualInput": "隐藏手动输入",
+  "manualInputTitle": "手动输入最终URL",
+  "manualInputSubtitle": "自动检测失败时，可手动输入最终URL（每行一个，顺序对应）",
+  "manualInputPlaceholder": "输入最终URL（每行一个）\n示例：\nhttps://example.com/final\nhttps://target-site.com\nhttps://destination.com",
+  "applyManualUrls": "应用手动URL",
+  "mergeWithAutoDetection": "与自动检测结果合并",
+  "results": "结果",
+  "url": "URL",
+  "status": "状态",
+  "finalUrl": "最终URL",
+  "actions": "操作",
+  "editFinalUrl": "编辑最终URL",
+  "success": "成功",
+  "failed": "失败",
+  "opened": "已在新标签页打开",
+  "blocked": "被弹窗拦截器阻止",
+  "invalidUrl": "URL格式无效",
+  "waitingDetection": "等待处理...",
+  "detectingRedirect": "正在处理URL...",
+  "redirectDetected": "URL已处理",
+  "noRedirect": "处理完成",
+  "detectionFailed": "处理失败，请手动检查",
+  "totalUrls": "总URL数",
+  "successfulUrls": "成功数",
+  "redirectedUrls": "已处理数",
+  "exportText": "导出为TXT",
+  "exportCsv": "导出为CSV",
+  "copyFinalUrls": "复制最终URL",
+  "copySuccess": "已复制到剪贴板！",
+  "copyFailed": "复制失败",
+  "features": {
+    "title": "核心功能",
+    "batchProcessing": {
+      "title": "真实点击",
+      "description": "零插件实现云端真实访问，支持代理IP轮换，真实模拟用户请求"
+    },
+    "siteRanking": {
+      "title": "网站排名分析",
+      "description": "分析网站排名并计算优先级"
+    },
+    "multipleApis": {
+      "title": "多API集成",
+      "description": "集成多种专业API服务，确保检测准确性"
+    },
+    "dataExport": {
+      "title": "数据导出",
+      "description": "支持TXT、CSV格式导出，便于后续分析"
+    }
+  },
+  "nav": {
+    "home": "首页",
+    "homeDescription": "URL分析与真实点击",
+    "batchProcessing": "真实点击",
+    "batchProcessingDescription": "真实点击与分析",
+    "siterank": "网站排名",
+    "siterankDescription": "网站排名分析与优先级计算",
+    "autoAds": "自动化广告",
+    "autoAdsDescription": "智能广告投放与管理",
+    "adReports": "广告报告",
+    "adReportsDescription": "广告数据分析与报告",
+    "settings": "系统设置",
+    "settingsDescription": "系统配置与管理",
+    "changelog": "更新日志",
+    "changelogDescription": "最新功能与版本发布",
+    "monitoring": "系统监控",
+    "monitoringDescription": "系统性能监控与分析",
+    "manual": "使用手册",
+    "manualDescription": "完整用户指南与说明"
+  },
+  "language": "语言",
+  "switchToEnglish": "English",
+  "switchToChinese": "中文",
+  "footer": {
+    "about": "关于我们",
+    "contact": "联系我们",
+    "privacy": "隐私政策",
+    "terms": "服务条款"
+  },
+  "pasteFromClipboard": "从剪贴板粘贴",
+  "clear": "清空",
+  "userManual": "使用手册",
+  "promotional": {
+    "flikiDescription": "用Fliki创建AI视频 - 让文本变成有趣视频"
+  },
+  "changelog": {
+    "title": "更新日志",
+    "subtitle": "追踪AutoAds的演进历程，从最初发布到最新功能",
+    "latest": "最新",
+    "previous": "历史",
+    "released": "已发布",
+    "january2025": "2025年1月",
+    "newFeatures": "新功能",
+    "coreFeatures": "核心功能",
+    "v1_2": {
+      "title": "批量打开URL功能重构",
+      "description": "全新重构的批量打开URL功能，支持初级版本和高级版本",
+      "batchOpenFeature": {
+        "title": "批量打开URL功能",
+        "description": "支持初级版本（纯前端）和高级版本（需要Background Open插件）"
+      },
+      "basicVersion": {
+        "title": "初级版本",
+        "description": "无需安装插件，简单批量打开URL，支持手动清空已打开标签页"
+      },
+      "advancedVersion": {
+        "title": "高级版本",
+        "description": "需要Background Open插件，支持多URL模式、单URL模式、循环次数、打开间隔等参数"
+      },
+      "pluginEnhancement": {
+        "title": "Background Open插件增强",
+        "description": "更新插件支持新的batchOpen功能，支持最多10个标签页限制"
+      }
+    },
+    "v1_1": {
+      "title": "批量处理增强与Background Open扩展",
+      "description": "重大更新，支持双批量模式、Background Open扩展和统一导航",
+      "siteRankIntegration": {
+        "title": "SiteRank集成",
+        "description": "集成Open PageRank API，支持网站排名分析与优先级计算"
+      },
+      "enhancedUI": {
+        "title": "UI/UX增强",
+        "description": "统一导航、响应式设计和无障碍优化"
+      }
+    },
+    "v1_0": {
+      "title": "初始发布",
+      "description": "AutoAds首个公开版本，具备核心URL处理能力",
+      "simpleWorkflow": {
+        "title": "简单三步流程",
+        "description": "输入URL → 自动分析 → 查看结果"
+      },
+      "dataExport": {
+        "title": "数据导出",
+        "description": "支持TXT、CSV格式导出，便于后续分析"
+      },
+      "privacyFirst": {
+        "title": "隐私优先设计",
+        "description": "纯前端实现，不存储任何数据"
+      }
+    }
+  },
+  "siterank": {
+    "title": "网站排名分析",
+    "subtitle": "分析网站排名并计算测试优先级，助力决策",
+    "slogan": "了解网站流量和排名是品牌投放的第一步，也是关键一步！",
+    "inputTitle": "输入数据",
+    "urlInput": "URL输入",
+    "urlPlaceholder": "输入URL（每行一个）\n示例：\nhttps://www.example.com\nhttps://bit.ly/abc123\nhttps://t.co/xyz789",
+    "inputPlaceholder": "输入URL（每行一个）\n示例：\nhttps://www.example.com\nhttps://bit.ly/abc123\nhttps://t.co/xyz789",
+    "fileUpload": {
+      "dragOrClick": "拖拽文件到此或点击选择",
+      "supported": "支持CSV、XLSX、XLS格式",
+      "processing": "正在处理文件..."
+    },
+    "or": "或",
+    "startAnalysis": "开始分析",
+    "analyzing": "分析中...",
+    "progress": "进度",
+    "resultsTitle": "分析结果",
+    "filterPlaceholder": "按域名筛选..."
+  },
+  "batchOpen": {
+    "title": "批量打开URL",
+    "subtitle": "支持初级版本（纯前端）和高级版本（需要插件）",
+    "basicVersion": {
+      "title": "初级版本",
+      "description": "无需安装插件，简单批量打开URL",
+      "tip": "每次检测前建议手动刷新IP地址以获得最佳检测效果",
+      "suggestion": "建议：确保同批次URL来源于相同地理区域以提高检测准确性",
+      "privacy": "🔒 纯前端实现，不存储任何数据，请放心使用～",
+      "note": "注意：只支持多URL批量打开模式，无循环次数、打开间隔等参数设置"
+    },
+    "advancedVersion": {
+      "title": "高级版本",
+      "description": "需要安装Background Open插件，支持丰富的后台循环打开功能",
+      "tip": "必须安装Auto Refresh Plus插件，配置代理IP地址页面定时刷新（如5s）",
+      "multiUrlMode": "多URL模式",
+      "singleUrlMode": "单URL模式",
+      "cycleCount": "每个URL打开次数",
+      "cycleCountPlaceholder": "1-60，默认1",
+      "openInterval": "打开间隔（秒）",
+      "openIntervalPlaceholder": "1-60，默认5",
+      "openCount": "打开次数",
+      "openCountPlaceholder": "1-1000，默认5",
+      "maxTabs": "最多10个标签页"
+    },
+    "common": {
+      "batchOpen": "批量打开",
+      "clearOpenedTabs": "手动清空已打开标签页",
+      "urlInput": "URL输入",
+      "urlPlaceholder": "输入URL（每行一个）",
+      "progress": "进度",
+      "opening": "正在打开...",
+      "completed": "完成",
+      "error": "错误",
+      "popupBlocked": "弹窗被阻止",
+      "installPlugin": "安装插件",
+      "pluginRequired": "需要Background Open插件",
+      "switchToBasic": "切换到初级版本",
+      "switchToAdvanced": "切换到高级版本"
+    }
+  },
+  "batchopen": {
+    "title": "真实点击",
+    "desc": "零插件实现云端真实访问，支持代理IP轮换，Referer随心设置，真实模拟用户请求",
+    "input": {
+      "title": "输入URL",
+      "description": "请输入要打开的URL，每行一个",
+      "placeholder": "请输入要真实点击的URL，每行一个...",
+      "count": "{count} 个URL",
+      "urlCount": "已解析 {count} 个有效URL"
+    },
+    "btn": {
+      "open": "开始点击",
+      "opening": "点击中...",
+      "clear": "清空",
+      "terminate": "终止",
+      "tip": "提示：真实点击前会自动关闭上次打开的所有标签页",
+      "install_plugin": "安装插件"
+    },
+    "error": {
+      "no_urls": "请输入至少一个URL",
+      "too_many_urls": "最多{max}个URL",
+      "plugin_required": "请先安装并启用 Background Open 插件后再使用高级功能。",
+      "invalid_cycle_count": "循环次数必须在1-60之间",
+      "invalid_open_count": "打开次数必须在1-1000之间",
+      "invalid_interval": "打开间隔必须在1-60秒之间"
+    },
+    "status": {
+      "opening": "正在真实点击...",
+      "completed": "真实点击完成",
+      "terminated": "已终止真实点击",
+      "popup_blocked_tip": "部分浏览器可能会拦截弹窗，请允许弹窗或使用高级版插件。"
+    },
+    "tip": {
+      "limit": "最多{max}个标签页"
+    },
+    "basicVersion": {
+      "title": "初级版本",
+      "description": "无需安装插件，简单真实点击URL"
+    },
+    "advancedVersion": {
+      "title": "高级版本",
+      "description": "需要Background Open插件，支持丰富的后台循环点击功能",
+      "multiUrlMode": "多URL模式",
+      "singleUrlMode": "单URL模式",
+      "cycleCount": "每个URL打开次数",
+      "cycleCountPlaceholder": "1-60，默认1",
+      "openInterval": "打开间隔（秒）",
+      "openIntervalPlaceholder": "1-60，默认5",
+      "openCount": "打开次数",
+      "openCountPlaceholder": "1-1000，默认5",
+      "maxTabs": "最多10个标签页"
+    },
+    "silentVersion": {
+      "title": "静默版本"
+    },
+    "autoclickVersion": {
+      "title": "自动化版本"
+    }
+  },
+  "noValidUrls": "未找到有效URL",
+  "finalUrls": "最终URL",
+  "manual": {
+    "overview": {
+      "title": "使用手册概览",
+      "description": "AutoAds 批量URL分析与网站排名完整指南"
+    },
+    "quickStart": {
+      "title": "快速开始指南",
+      "step1": "在文本区域输入URL（每行一个）或上传CSV/Excel文件",
+      "step2": "点击\"自动检测\"开始自动处理URL",
+      "step3": "查看结果并以您偏好的格式导出数据"
+    },
+    "features": {
+      "title": "核心功能",
+      "batchProcessing": {
+        "title": "批量处理",
+        "description": "同时处理多个URL，智能并发控制"
+      },
+      "siteRanking": {
+        "title": "网站排名分析",
+        "description": "分析网站排名并计算优先级"
+      },
+      "manualOverride": {
+        "title": "手动覆盖",
+        "description": "自动检测失败时手动输入最终URL"
+      },
+      "dataExport": {
+        "title": "数据导出",
+        "description": "支持TXT、CSV格式导出，便于后续分析"
+      }
+    },
+    "useCases": {
+      "title": "使用场景",
+      "developers": {
+        "title": "开发者",
+        "items": [
+          "验证链接结构和SEO优化",
+          "批量处理API端点和webhook",
+          "调试URL路由和导航问题"
+        ]
+      },
+      "marketers": {
+        "title": "营销人员",
+        "items": [
+          "监控竞争对手URL策略",
+          "验证活动落地页和CTA",
+          "分析社交媒体链接效果"
+        ]
+      },
+      "security": {
+        "title": "安全专业人员",
+        "items": [
+          "监控可疑URL模式和域名",
+          "验证安全头和SSL证书",
+          "跟踪威胁情报和IOC"
+        ]
+      }
+    },
+    "tips": {
+      "title": "技巧与最佳实践",
+      "items": [
+        "使用HTTPS URL以获得更好的安全性和可靠性",
+        "包含短链接和长链接进行全面分析",
+        "定期导出结果进行备份和分析",
+        "对需要验证的关键URL使用手动输入"
+      ]
+    },
+    "troubleshooting": {
+      "title": "故障排除",
+      "items": [
+        "如果URL处理失败，请检查其格式和可访问性",
+        "对于大批量，考虑分成更小的组",
+        "确保处理期间网络连接稳定",
+        "如果遇到持续问题请联系支持"
+      ]
+    }
+  },
+  "batchOpenSection": {
+    "basicVersion": {
+      "title": "初级版本说明",
+      "tip": "无需安装单独的 Background Open 插件，但只能实现简单的真实点击URL功能，且需要手动刷新代理IP地址。",
+      "steps": {
+        "title": "操作步骤：",
+        "step1": "手动刷新代理IP地址",
+        "step2": "输入需要打开的多个URL",
+        "step3": "点击\"开始点击\"，实现真实点击URL"
+      }
+    },
+    "advancedVersion": {
+      "title": "高级版本说明",
+      "tip": "必须安装单独的 <a href=\"/background-open-install\" class=\"text-blue-700 underline mx-1\" target=\"_blank\" rel=\"noopener noreferrer\">Background Open</a> 插件，可以实现更丰富的后台循环点击URL的功能，包括多URL模式、单URL模式、循环次数、间隔参数等。",
+      "stepsTitle": "操作步骤：",
+      "steps": [
+        "安装 <a href=\"https://chromewebstore.google.com/detail/auto-refresh-plus-page-mo/hgeljhfekpckiiplhkigfehkdpldcggm\" class=\"text-blue-700 underline mx-1\" target=\"_blank\" rel=\"noopener noreferrer\">Auto Refresh Plus</a> 插件，配置代理IP地址页面定时刷新（如5s）",
+        "多URL模式或单URL模式下，输入URL和对应的参数",
+        "点击\"开始点击\"，实现后台真实点击URL"
+      ],
+      "scenariosTitle": "使用场景：",
+      "scenarios": [
+        "多URL: 所有在跑offer日常补点击，灵活设定循环次数，慢慢补",
+        "单URL: 针对出单的offer快速补点击，最大支持一次补1000个，狠狠补"
+      ]
+    },
+    "silentVersion": {
+      "title": "静默版本说明",
+      "tip": "无需安装任何插件，通过后端Chromium浏览器实现真实的浏览器访问，支持代理IP轮换、自定义Referer等功能"
+    },
+    "autoclickVersion": {
+      "title": "自动化版本说明"
+    },
+    "featureDescription": {
+      "featuresTitle": "功能说明",
+      "technicalTitle": "技术特点",
+      "notesTitle": "注意事项",
+      "technicalFeatures": [
+        "支持代理IP轮换，真实模拟用户访问",
+        "随机社交媒体 Referer，提高访问真实性",
+        "智能 User-agent 轮换，避免被识别为自动化访问"
+      ],
+      "notes": [
+        "需要配置有效的代理IP服务",
+        "功能消耗服务器资源，请按需使用"
+      ]
+    }
+  }
+}
