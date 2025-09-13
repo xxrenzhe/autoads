@@ -15,7 +15,7 @@ import (
 // TestAPICompatibility API兼容性专项测试
 func TestAPICompatibility(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	app := NewAutoAdsSaaSApp()
+	app := NewTestAutoAdsSaaSApp()
 	server := httptest.NewServer(app.Router)
 	defer server.Close()
 

@@ -220,7 +220,7 @@ const UserBulkActions: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = [
 const BulkRoleButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = [] }) => {
   const notify = useNotify();
   const refresh = useRefresh();
-  const unselectAll = useUnselectAll();
+  const unselectAll = useUnselectAll('users');
   const [open, setOpen] = React.useState(false);
   const [selectedRole, setSelectedRole] = React.useState('USER');
   
@@ -286,7 +286,7 @@ const BulkRoleButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = []
 const BulkStatusButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = [] }) => {
   const notify = useNotify();
   const refresh = useRefresh();
-  const unselectAll = useUnselectAll();
+  const unselectAll = useUnselectAll('users');
   const [open, setOpen] = React.useState(false);
   const [selectedStatus, setSelectedStatus] = React.useState('ACTIVE');
   
@@ -356,7 +356,7 @@ const BulkStatusButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = 
 const BulkTokenRechargeButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = [] }) => {
   const notify = useNotify();
   const refresh = useRefresh();
-  const unselectAll = useUnselectAll();
+  const unselectAll = useUnselectAll('users');
   const [open, setOpen] = React.useState(false);
   const [amount, setAmount] = React.useState(100);
   
@@ -424,7 +424,7 @@ const BulkTokenRechargeButton: React.FC<{ selectedIds?: string[] }> = ({ selecte
 const BulkSubscriptionButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = [] }) => {
   const notify = useNotify();
   const refresh = useRefresh();
-  const unselectAll = useUnselectAll();
+  const unselectAll = useUnselectAll('users');
   const [open, setOpen] = React.useState(false);
   const [selectedPlan, setSelectedPlan] = React.useState('');
   const [duration, setDuration] = React.useState(1);

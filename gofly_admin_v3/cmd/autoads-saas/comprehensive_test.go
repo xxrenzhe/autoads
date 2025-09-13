@@ -23,7 +23,7 @@ func TestComprehensiveValidation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	// 创建测试应用
-	app := NewAutoAdsSaaSApp()
+	app := NewTestAutoAdsSaaSApp()
 	server := httptest.NewServer(app.Router)
 	defer server.Close()
 
@@ -1057,7 +1057,7 @@ func testEndToEnd(t *testing.T, baseURL string) {
 // BenchmarkComprehensivePerformance 性能基准测试
 func BenchmarkComprehensivePerformance(b *testing.B) {
 	gin.SetMode(gin.TestMode)
-	app := NewAutoAdsSaaSApp()
+	app := NewTestAutoAdsSaaSApp()
 	server := httptest.NewServer(app.Router)
 	defer server.Close()
 

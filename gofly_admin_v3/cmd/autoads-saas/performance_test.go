@@ -22,7 +22,7 @@ import (
 // TestPerformanceValidation 性能测试专项
 func TestPerformanceValidation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	app := NewAutoAdsSaaSApp()
+	app := NewTestAutoAdsSaaSApp()
 	server := httptest.NewServer(app.Router)
 	defer server.Close()
 
@@ -755,7 +755,7 @@ func testLoadTesting(t *testing.T, baseURL string) {
 // BenchmarkAPIPerformance API性能基准测试
 func BenchmarkAPIPerformance(b *testing.B) {
 	gin.SetMode(gin.TestMode)
-	app := NewAutoAdsSaaSApp()
+	app := NewTestAutoAdsSaaSApp()
 	server := httptest.NewServer(app.Router)
 	defer server.Close()
 

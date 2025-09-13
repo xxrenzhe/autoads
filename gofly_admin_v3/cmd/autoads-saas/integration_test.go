@@ -20,7 +20,7 @@ import (
 // TestAutoAdsSaaSIntegration 集成测试 - 测试所有GoFly成熟功能模块
 func TestAutoAdsSaaSIntegration(t *testing.T) {
 	// 创建测试应用
-	app := NewAutoAdsSaaSApp()
+	app := NewTestAutoAdsSaaSApp()
 
 	// 创建测试服务器
 	server := httptest.NewServer(app.Router)
@@ -551,7 +551,7 @@ func testAdminFunctions(t *testing.T, baseURL string) {
 
 // TestModuleIntegration 测试模块间集成
 func TestModuleIntegration(t *testing.T) {
-	app := NewAutoAdsSaaSApp()
+	app := NewTestAutoAdsSaaSApp()
 	server := httptest.NewServer(app.Router)
 	defer server.Close()
 
@@ -632,7 +632,7 @@ func TestModuleIntegration(t *testing.T) {
 
 // BenchmarkAutoAdsSaaSPerformance 性能基准测试
 func BenchmarkAutoAdsSaaSPerformance(b *testing.B) {
-	app := NewAutoAdsSaaSApp()
+	app := NewTestAutoAdsSaaSApp()
 	server := httptest.NewServer(app.Router)
 	defer server.Close()
 

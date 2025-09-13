@@ -17,7 +17,7 @@ import (
 // TestSimpleValidation 简单验证测试 - 验证核心测试功能
 func TestSimpleValidation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	app := NewAutoAdsSaaSApp()
+	app := NewTestAutoAdsSaaSApp()
 	server := httptest.NewServer(app.Router)
 	defer server.Close()
 

@@ -351,8 +351,7 @@ export default function SubscriptionPermissionsPage() {
                 })}
                 columns={planFeatureColumns}
                 pagination
-                pageSizeOptions={[10, 25, 50]}
-                disableRowSelectionOnClick
+                disableSelectionOnClick
               />
             </Box>
           </CardContent>
@@ -370,8 +369,7 @@ export default function SubscriptionPermissionsPage() {
               rows={features}
               columns={featureColumns}
               pagination
-                pageSizeOptions={[10, 25, 50]}
-              disableRowSelectionOnClick
+              disableSelectionOnClick
             />
           </Box>
         </CardContent>

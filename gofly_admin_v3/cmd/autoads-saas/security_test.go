@@ -19,7 +19,7 @@ import (
 // TestSecurityValidation 安全测试专项
 func TestSecurityValidation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	app := NewAutoAdsSaaSApp()
+	app := NewTestAutoAdsSaaSApp()
 	server := httptest.NewServer(app.Router)
 	defer server.Close()
 
