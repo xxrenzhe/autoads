@@ -300,3 +300,5 @@ gofly_admin_v3/config.yaml
 gofly_admin_v3/resource/config.yaml
 gofly_admin_v3/resource/config/confdemo.yaml
 gofly_admin_v3/internal/advanced/config.yaml
+# Backup files created during TypeScript fixes
+*.bak
