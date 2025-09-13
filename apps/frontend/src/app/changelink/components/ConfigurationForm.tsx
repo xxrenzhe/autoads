@@ -270,7 +270,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
                 </div>
                 <Switch
                   checked={formData.schedulingEnabled}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, schedulingEnabled: checked }))}
+                  onCheckedChange={(checked: boolean) => setFormData(prev => ({ ...prev, schedulingEnabled: checked }))}
                 />
               </div>
 

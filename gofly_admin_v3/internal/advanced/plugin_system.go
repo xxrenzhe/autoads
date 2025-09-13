@@ -14,6 +14,84 @@ import (
 	"gorm.io/gorm"
 )
 
+// Plugin 插件接口
+type Plugin interface {
+	GetName() string
+	GetVersion() string
+	GetDescription() string
+	Enable() error
+	Disable() error
+	IsEnabled() bool
+}
+
+// PluginManager 插件管理器
+type PluginManager struct {
+	plugins map[string]Plugin
+	mu      sync.RWMutex
+}
+
+// NewPluginManager 创建插件管理器
+func NewPluginManager() *PluginManager {
+	return &PluginManager{
+		plugins: make(map[string]Plugin),
+	}
+}
+
+// RegisterPlugin 注册插件
+func (pm *PluginManager) RegisterPlugin(plugin Plugin) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+	pm.plugins[plugin.GetName()] = plugin
+}
+
+// EnablePlugin 启用插件
+func (pm *PluginManager) EnablePlugin(name string) error {
+	pm.mu.RLock()
+	plugin, exists := pm.plugins[name]
+	pm.mu.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("plugin not found: %s", name)
+	}
+
+	return plugin.Enable()
+}
+
+// DisablePlugin 禁用插件
+func (pm *PluginManager) DisablePlugin(name string) error {
+	pm.mu.RLock()
+	plugin, exists := pm.plugins[name]
+	pm.mu.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("plugin not found: %s", name)
+	}
+
+	return plugin.Disable()
+}
+
+// ListPlugins 列出所有插件
+func (pm *PluginManager) ListPlugins() []map[string]interface{} {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	var result []map[string]interface{}
+	for name, plugin := range pm.plugins {
+		result = append(result, map[string]interface{}{
+			"name":        name,
+			"version":     plugin.GetVersion(),
+			"description": plugin.GetDescription(),
+			"enabled":     plugin.IsEnabled(),
+		})
+	}
+	return result
+}
+
+// GetPluginManager 获取插件管理器实例
+func GetPluginManager() *PluginManager {
+	return NewPluginManager()
+}
+
 // AdvancedPluginSystem 高级插件系统
 type AdvancedPluginSystem struct {
 	plugins      map[string]Plugin
@@ -45,7 +123,7 @@ type Event struct {
 // NewAdvancedPluginSystem 创建高级插件系统
 func NewAdvancedPluginSystem(db *gorm.DB, auditService *audit.AuditService) *AdvancedPluginSystem {
 	return &AdvancedPluginSystem{
-		pluginManager: plugins.GetPluginManager(),
+		pluginManager: GetPluginManager(),
 		auditService:  auditService,
 		db:            db,
 		eventBus:      NewEventBus(),
@@ -157,7 +235,7 @@ type AutoAdsPlugin struct {
 	description string
 	author      string
 	config      map[string]interface{}
-	status      plugins.PluginStatus
+	status      string
 	system      *AdvancedPluginSystem
 }
 
@@ -169,23 +247,23 @@ func NewAutoAdsPlugin(name, version, description, author string, system *Advance
 		description: description,
 		author:      author,
 		config:      make(map[string]interface{}),
-		status:      plugins.StatusDisabled,
+		status:      "disabled",
 		system:      system,
 	}
 }
 
-// Name 插件名称
-func (p *AutoAdsPlugin) Name() string {
+// GetName 插件名称
+func (p *AutoAdsPlugin) GetName() string {
 	return p.name
 }
 
-// Version 插件版本
-func (p *AutoAdsPlugin) Version() string {
+// GetVersion 插件版本
+func (p *AutoAdsPlugin) GetVersion() string {
 	return p.version
 }
 
-// Description 插件描述
-func (p *AutoAdsPlugin) Description() string {
+// GetDescription 插件描述
+func (p *AutoAdsPlugin) GetDescription() string {
 	return p.description
 }
 
@@ -195,7 +273,7 @@ func (p *AutoAdsPlugin) Author() string {
 }
 
 // Status 插件状态
-func (p *AutoAdsPlugin) Status() plugins.PluginStatus {
+func (p *AutoAdsPlugin) Status() string {
 	return p.status
 }
 
@@ -220,19 +298,19 @@ func (p *AutoAdsPlugin) Dependencies() []string {
 
 // Initialize 初始化
 func (p *AutoAdsPlugin) Initialize() error {
-	p.status = plugins.StatusEnabled
+	p.status = "enabled"
 	return nil
 }
 
 // Start 启动
 func (p *AutoAdsPlugin) Start() error {
-	p.status = plugins.StatusRunning
+	p.status = "running"
 	return nil
 }
 
 // Stop 停止
 func (p *AutoAdsPlugin) Stop() error {
-	p.status = plugins.StatusStopped
+	p.status = "stopped"
 	return nil
 }
 
@@ -244,6 +322,24 @@ func (p *AutoAdsPlugin) RegisterRoutes() error {
 // RegisterMiddleware 注册中间件
 func (p *AutoAdsPlugin) RegisterMiddleware() error {
 	return nil
+}
+
+// Enable 启用插件
+func (p *AutoAdsPlugin) Enable() error {
+	if err := p.Initialize(); err != nil {
+		return err
+	}
+	return p.Start()
+}
+
+// Disable 禁用插件
+func (p *AutoAdsPlugin) Disable() error {
+	return p.Stop()
+}
+
+// IsEnabled 检查插件是否已启用
+func (p *AutoAdsPlugin) IsEnabled() bool {
+	return p.status == "enabled" || p.status == "running"
 }
 
 // TokenConsumptionPlugin Token消费监控插件

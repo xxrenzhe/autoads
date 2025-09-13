@@ -43,20 +43,6 @@ type PostmanCollection struct {
 	} `json:"variable"`
 }
 
-// GetSwaggerSpec 获取Swagger规范
-func GetSwaggerSpec() *SwaggerSpec {
-	return &SwaggerSpec{
-		OpenAPI: "3.0.0",
-		Servers: []Server{},
-		Info: map[string]interface{}{
-			"title":       "GoFly Admin V3 API",
-			"description": "GoFly Admin V3 API Documentation",
-			"version":     "1.0.0",
-		},
-		Paths: make(map[string]interface{}),
-	}
-}
-
 // GetPostmanCollection 获取Postman集合
 func GetPostmanCollection() *PostmanCollection {
 	return &PostmanCollection{
@@ -261,7 +247,7 @@ func (c *DocsController) PostmanCollection(ctx *gf.GinCtx) {
 		baseURL = "http://localhost:8080"
 	}
 	if len(collection.Variable) > 0 {
-		collection.Variable[0].Default = baseURL.(string)
+		collection.Variable[0].Value = baseURL.(string)
 	}
 
 	ctx.JSON(200, collection)
@@ -598,7 +584,7 @@ func (c *DocsController) APIReference(ctx *gf.GinCtx) {
 func (c *DocsController) GenerateDocs(ctx *gf.GinCtx) {
 	// 重新生成文档
 	if err := GenerateAPIDocs(); err != nil {
-		gf.Error().SetMsg("生成文档失败: " + err.Error()).Regin(ctx)
+		gf.Failed().SetMsg("生成文档失败: " + err.Error()).Regin(ctx)
 		return
 	}
 

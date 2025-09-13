@@ -303,7 +303,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                         <Switch
                           id="isSecret"
                           checked={formData.isSecret}
-                          onCheckedChange={(checked) => setFormData({ ...formData, isSecret: checked })}
+                          onCheckedChange={(checked: boolean) => setFormData({ ...formData, isSecret: checked })}
                         />
                         <Label className="text-sm text-muted-foreground">
                           Encrypt this value
@@ -319,7 +319,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                           <Switch
                             id="isHotReload"
                             checked={formData.isHotReload}
-                            onCheckedChange={(checked) => setFormData({ ...formData, isHotReload: checked })}
+                            onCheckedChange={(checked: boolean) => setFormData({ ...formData, isHotReload: checked })}
                           />
                           <Label className="text-sm text-muted-foreground">
                             Apply changes without restart

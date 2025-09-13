@@ -1,14 +1,22 @@
 package business
 
 import (
+	"gofly-admin-v3/internal/batchgo"
 	"gofly-admin-v3/internal/crud"
+	"gofly-admin-v3/internal/siterank"
 	"gofly-admin-v3/internal/store"
-	"gofly-admin-v3/service/user"
+	"gofly-admin-v3/internal/subscription"
+	internaluser "gofly-admin-v3/internal/user"
 	"gofly-admin-v3/utils/gf"
 )
 
-// Type alias for User model
-type User = user.Model
+// Type alias for models
+type User = internaluser.Model
+type BatchTask = batchgo.BatchTask
+type SiteRankQuery = siterank.SiteRankQuery
+type AdsAccount = crud.AdsAccount
+type TokenTransaction = user.TokenTransaction
+type Subscription = subscription.Subscription
 
 // GoFlyCRUDController 使用GoFly自动生成的CRUD控制器
 type GoFlyCRUDController struct{}
@@ -39,7 +47,7 @@ func (c *GoFlyCRUDController) GetList(ctx *gf.GinCtx) {
 		return
 	}
 
-	gf.Success().SetData(result).Regin(ctx)
+	gf.Success().SetData(result).JSON(ctx)
 }
 
 // @Router /business/gofly-crud/user/:id [get]
@@ -47,7 +55,7 @@ func (c *GoFlyCRUDController) GetDetail(ctx *gf.GinCtx) {
 	id := ctx.Param("id")
 
 	var user User
-	err := gf.DB().Where("id = ?", id).First(&user)
+	_, err := gf.DB().Model(&User{}).Where("id = ?", id).Find(&user)
 	if err != nil {
 		gf.Failed().SetMsg("用户不存在").Regin(ctx)
 		return
@@ -70,7 +78,7 @@ func (c *GoFlyCRUDController) Create(ctx *gf.GinCtx) {
 	user.ID = gf.UUID()
 
 	// 自动创建
-	err := gf.DB().Create(&user)
+	_, err := gf.DB().Model(&User{}).Insert(&user)
 	if err != nil {
 		gf.Failed().SetMsg("创建失败").Regin(ctx)
 		return
@@ -86,18 +94,18 @@ func (c *GoFlyCRUDController) Update(ctx *gf.GinCtx) {
 
 	// GoFly自动绑定
 	if err := ctx.ShouldBind(&user); err != nil {
-		gf.Error().SetMsg(err.Error()).Regin(ctx)
+		gf.Error(err.Error()).JSON(ctx)
 		return
 	}
 
 	// 自动更新
-	err := gf.DB().Model(&User{}).Where("id = ?", id).Updates(user).Error
+	_, err := gf.DB().Model(&User{}).Where("id = ?", id).Update(&user)
 	if err != nil {
-		gf.Error().SetMsg("更新失败").Regin(ctx)
+		gf.Error("更新失败").JSON(ctx)
 		return
 	}
 
-	gf.Success().SetMsg("更新成功").Regin(ctx)
+	gf.Success().SetMsg("更新成功").JSON(ctx)
 }
 
 // @Router /business/gofly-crud/user/:id [delete]
@@ -105,13 +113,13 @@ func (c *GoFlyCRUDController) Delete(ctx *gf.GinCtx) {
 	id := ctx.Param("id")
 
 	// 软删除
-	err := gf.DB().Model(&User{}).Where("id = ?", id).Update("deleted_at", gf.Now()).Error
+	_, err := gf.DB().Model(&User{}).Where("id = ?", id).Update(gf.Map{"deleted_at": gf.Now()})
 	if err != nil {
-		gf.Error().SetMsg("删除失败").Regin(ctx)
+		gf.Error("删除失败").JSON(ctx)
 		return
 	}
 
-	gf.Success().SetMsg("删除成功").Regin(ctx)
+	gf.Success().SetMsg("删除成功").JSON(ctx)
 }
 
 // BatchGo CRUD operations
@@ -132,11 +140,11 @@ func (c *GoFlyCRUDController) GetBatchTaskList(ctx *gf.GinCtx) {
 
 	result, err := paginator.Paginate(query)
 	if err != nil {
-		gf.Error().SetMsg("查询失败").Regin(ctx)
+		gf.Error("查询失败").JSON(ctx)
 		return
 	}
 
-	gf.Success().SetData(result).Regin(ctx)
+	gf.Success().SetData(result).JSON(ctx)
 }
 
 // @Router /business/gofly-crud/batch-task [post]
@@ -144,19 +152,19 @@ func (c *GoFlyCRUDController) CreateBatchTask(ctx *gf.GinCtx) {
 	var task BatchTask
 
 	if err := ctx.ShouldBind(&task); err != nil {
-		gf.Error().SetMsg(err.Error()).Regin(ctx)
+		gf.Error(err.Error()).JSON(ctx)
 		return
 	}
 
 	task.ID = gf.UUID()
 
-	err := gf.DB().Create(&task).Error
+	_, err := gf.DB().Model(&BatchTask{}).Insert(&task)
 	if err != nil {
-		gf.Error().SetMsg("创建失败").Regin(ctx)
+		gf.Error("创建失败").JSON(ctx)
 		return
 	}
 
-	gf.Success().SetData(task).Regin(ctx)
+	gf.Success().SetData(task).JSON(ctx)
 }
 
 // SiteRankGo CRUD operations
@@ -169,11 +177,11 @@ func (c *GoFlyCRUDController) GetSiteRankQueryList(ctx *gf.GinCtx) {
 
 	result, err := paginator.Paginate(query)
 	if err != nil {
-		gf.Error().SetMsg("查询失败").Regin(ctx)
+		gf.Error("查询失败").JSON(ctx)
 		return
 	}
 
-	gf.Success().SetData(result).Regin(ctx)
+	gf.Success().SetData(result).JSON(ctx)
 }
 
 // AdsCenterGo CRUD operations
@@ -186,11 +194,11 @@ func (c *GoFlyCRUDController) GetAdsAccountList(ctx *gf.GinCtx) {
 
 	result, err := paginator.Paginate(query)
 	if err != nil {
-		gf.Error().SetMsg("查询失败").Regin(ctx)
+		gf.Error("查询失败").JSON(ctx)
 		return
 	}
 
-	gf.Success().SetData(result).Regin(ctx)
+	gf.Success().SetData(result).JSON(ctx)
 }
 
 // RegisterAutoCRUD 注册自动CRUD路由

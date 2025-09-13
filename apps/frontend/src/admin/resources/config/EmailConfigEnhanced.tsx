@@ -392,7 +392,7 @@ export function EmailConfigEnhanced() {
                         <Switch
                           id="secure"
                           checked={config.smtp.secure}
-                          onCheckedChange={(checked) => updateConfig('smtp.secure', checked)}
+                          onCheckedChange={(checked: boolean) => updateConfig('smtp.secure', checked)}
                         />
                         <Label htmlFor="secure">Use SSL/TLS</Label>
                       </div>
@@ -415,7 +415,7 @@ export function EmailConfigEnhanced() {
                     <Switch
                       id="enabled"
                       checked={config.enabled}
-                      onCheckedChange={(checked) => updateConfig('enabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('enabled', checked)}
                     />
                     <Label htmlFor="enabled">Enable email notifications</Label>
                   </div>
@@ -452,7 +452,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="userRegistration"
                             checked={config.events.userRegistration}
-                            onCheckedChange={(checked) => updateConfig('events.userRegistration', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.userRegistration', checked)}
                           />
                         </div>
                         
@@ -461,7 +461,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="passwordReset"
                             checked={config.events.passwordReset}
-                            onCheckedChange={(checked) => updateConfig('events.passwordReset', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.passwordReset', checked)}
                           />
                         </div>
                         
@@ -470,7 +470,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="subscriptionCreated"
                             checked={config.events.subscriptionCreated}
-                            onCheckedChange={(checked) => updateConfig('events.subscriptionCreated', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.subscriptionCreated', checked)}
                           />
                         </div>
                         
@@ -479,7 +479,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="subscriptionExpired"
                             checked={config.events.subscriptionExpired}
-                            onCheckedChange={(checked) => updateConfig('events.subscriptionExpired', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.subscriptionExpired', checked)}
                           />
                         </div>
                         
@@ -488,7 +488,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="paymentFailed"
                             checked={config.events.paymentFailed}
-                            onCheckedChange={(checked) => updateConfig('events.paymentFailed', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.paymentFailed', checked)}
                           />
                         </div>
                         
@@ -497,7 +497,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="tokenLow"
                             checked={config.events.tokenLow}
-                            onCheckedChange={(checked) => updateConfig('events.tokenLow', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.tokenLow', checked)}
                           />
                         </div>
                       </div>

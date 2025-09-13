@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"reflect"
 	"runtime"
 	"sync"
 	"time"
@@ -168,7 +167,7 @@ func (s *Scheduler) RemoveJob(jobName string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	job, exists := s.jobs[jobName]
+	_, exists := s.jobs[jobName]
 	if !exists {
 		return fmt.Errorf("job not found: %s", jobName)
 	}
@@ -315,11 +314,15 @@ func (s *Scheduler) executeJob(cronJob *CronJob, execution *JobExecution) {
 	// 记录审计日志
 	audit.LogUserAction(
 		"system",
-		"scheduler",
 		audit.ActionExecute,
 		audit.ResourceTask,
 		execution.JobName,
 		fmt.Sprintf("Executing job: %s", cronJob.Job.GetName()),
+		"",
+		"",
+		true,
+		"",
+		0,
 	)
 
 	// 执行任务（带重试）
@@ -359,13 +362,15 @@ func (s *Scheduler) executeJob(cronJob *CronJob, execution *JobExecution) {
 
 		// 记录错误日志
 		audit.LogError(
-			"system",
+			s.ctx,
 			"scheduler",
-			audit.ActionExecute,
-			audit.ResourceTask,
-			execution.JobName,
-			fmt.Sprintf("Job execution failed: %s", cronJob.Job.GetName()),
 			err,
+			gf.Map{
+				"job_name": cronJob.Job.GetName(),
+				"job_id":   execution.JobName,
+				"action":  audit.ActionExecute,
+				"resource": audit.ResourceTask,
+			},
 		)
 	} else {
 		execution.Status = StatusCompleted

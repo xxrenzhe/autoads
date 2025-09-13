@@ -1,12 +1,71 @@
 package audit
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	"gorm.io/gorm"
+	"gofly-admin-v3/utils/gf"
 )
+
+// Audit actions
+const (
+	ActionExecute   = "execute"
+	ActionCreate    = "create"
+	ActionUpdate    = "update"
+	ActionDelete    = "delete"
+	ActionRead      = "read"
+	ActionLogin     = "login"
+	ActionLogout    = "logout"
+)
+
+// Audit resources
+const (
+	ResourceTask     = "task"
+	ResourceUser     = "user"
+	ResourceSystem   = "system"
+	ResourceConfig   = "config"
+	ResourceAPI      = "api"
+)
+
+var defaultAuditService *AuditService
+
+// InitDefaultAuditService 初始化默认审计服务
+func InitDefaultAuditService(db *gorm.DB) {
+	defaultAuditService = NewAuditService(db)
+}
+
+// LogUserAction 记录用户操作
+func LogUserAction(userID, action, resource, resourceID string, details interface{}, ipAddress, userAgent string, success bool, errorMsg string, duration time.Duration) {
+	if defaultAuditService != nil {
+		defaultAuditService.LogUserAction(userID, action, resource, resourceID, details, ipAddress, userAgent, success, errorMsg, duration)
+	}
+}
+
+// LogError 记录错误
+func LogError(ctx context.Context, component string, err error, details gf.Map) {
+	if defaultAuditService != nil {
+		errorDetails := gf.Map{
+			"error":     err.Error(),
+			"component": component,
+			"details":   details,
+		}
+		defaultAuditService.LogUserAction(
+			"system",
+			"error",
+			component,
+			"",
+			errorDetails,
+			"",
+			"",
+			false,
+			err.Error(),
+			0,
+		)
+	}
+}
 
 // AuditEvent 审计事件
 type AuditEvent struct {
@@ -288,8 +347,6 @@ func (a *AuditService) CleanupOldEvents(auditDays, securityDays int) error {
 
 // 预定义的操作类型
 const (
-	ActionLogin          = "login"
-	ActionLogout         = "logout"
 	ActionCreateTask     = "create_task"
 	ActionUpdateTask     = "update_task"
 	ActionDeleteTask     = "delete_task"

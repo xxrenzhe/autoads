@@ -185,11 +185,76 @@ func (s *Service) UpdateTokenBalance(userID string, amount int64) error {
 	return err
 }
 
-// RegisterRequest 注册请求
-type RegisterRequest struct {
-	Email    string `v:"required|email"`
-	Password string `v:"required|length:6,20"`
-	Username string `v:"required|min:2"`
+// UpdateProfile 更新用户资料
+func (s *Service) UpdateProfile(userID string, req *UpdateProfileRequest) (*Model, error) {
+	updates := gform.Map{}
+	if req.Username != "" {
+		updates["username"] = req.Username
+	}
+	if req.AvatarURL != "" {
+		updates["avatar_url"] = req.AvatarURL
+	}
+	
+	if len(updates) == 0 {
+		return s.GetUserByID(userID)
+	}
+	
+	_, err := s.db.Model(&Model{}).Where("id = ?", userID).Update(updates)
+	if err != nil {
+		return nil, err
+	}
+	
+	return s.GetUserByID(userID)
+}
+
+// ChangePassword 修改密码
+func (s *Service) ChangePassword(userID, oldPassword, newPassword string) error {
+	// 获取用户
+	user, err := s.GetUserByID(userID)
+	if err != nil {
+		return err
+	}
+	
+	// 验证旧密码
+	if !verifyPassword(user.PasswordHash, oldPassword) {
+		return errors.New("原密码错误")
+	}
+	
+	// 更新密码
+	_, err = s.db.Model(&Model{}).
+		Where("id = ?", userID).
+		Update(gform.Map{"password_hash": hashPassword(newPassword)})
+	
+	return err
+}
+
+// StartTrial 开始试用
+func (s *Service) StartTrial(userID string) error {
+	// 给用户添加试用Token
+	_, err := s.db.Model(&Model{}).
+		Where("id = ?", userID).
+		Update(gform.Map{"token_balance": gf.Raw("token_balance + ?", 1000)})
+	return err
+}
+
+// RefreshToken 刷新令牌
+func (s *Service) RefreshToken(userID string) (string, error) {
+	// 检查用户是否存在
+	_, err := s.GetUserByID(userID)
+	if err != nil {
+		return "", err
+	}
+	
+	// 生成新的JWT token
+	user, _ := s.GetUserByID(userID)
+	return generateJWTToken(user.ID, user.Role), nil
+}
+
+// Logout 登出
+func (s *Service) Logout(userID string) error {
+	// 在实际应用中，可能需要将token加入黑名单
+	// 这里暂时只是一个空实现
+	return nil
 }
 
 // 辅助函数

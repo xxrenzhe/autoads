@@ -240,3 +240,79 @@ func getStatusText(status string) string {
 		return status
 	}
 }
+
+// ExportUsers 导出用户数据
+func (s *ExcelService) ExportUsers(c *gin.Context) {
+	var users []user.Model
+	if err := s.db.Model(&user.Model{}).Find(&users).Error; err != nil {
+		response.Error(c, 5001, "查询用户失败")
+		return
+	}
+
+	// 创建CSV内容
+	var csvContent strings.Builder
+	csvContent.WriteString("ID,邮箱,用户名,角色,状态,Token余额,邮箱验证,创建时间\n")
+
+	// 填充数据
+	for _, user := range users {
+		row := fmt.Sprintf("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",%d,%t,\"%s\"\n",
+			user.ID,
+			user.Email,
+			user.Username,
+			user.Role,
+			user.Status,
+			user.TokenBalance,
+			user.EmailVerified,
+			user.CreatedAt.Format("2006-01-02 15:04:05"))
+		csvContent.WriteString(row)
+	}
+
+	// 设置响应头
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", "attachment; filename=\"users.csv\"")
+	c.String(200, csvContent.String())
+}
+
+// ExportBatchTasks 导出批量任务
+func (s *ExcelService) ExportBatchTasks(c *gin.Context) {
+	var tasks []BatchTask
+	if err := s.db.Model(&BatchTask{}).Find(&tasks).Error; err != nil {
+		response.Error(c, 5001, "查询任务失败")
+		return
+	}
+
+	// 创建CSV内容
+	var csvContent strings.Builder
+	csvContent.WriteString("ID,任务名称,模式,状态,URL数量,创建时间,完成时间\n")
+
+	// 填充数据
+	for _, task := range tasks {
+		row := fmt.Sprintf("\"%s\",\"%s\",\"%s\",\"%s\",%d,\"%s\",\"%s\"\n",
+			task.ID,
+			task.Name,
+			task.Mode,
+			task.Status,
+			task.URLCount,
+			formatTime(&task.CreatedAt),
+			formatTime(nil))
+		csvContent.WriteString(row)
+	}
+
+	// 设置响应头
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", "attachment; filename=\"batch_tasks.csv\"")
+	c.String(200, csvContent.String())
+}
+
+// RegisterExportRoutes 注册导出相关路由
+func RegisterExportRoutes(r *gin.RouterGroup, db *gorm.DB) {
+	exportService := NewExcelService(db)
+	
+	export := r.Group("/export")
+	{
+		export.GET("/users", exportService.ExportUsers)
+		export.GET("/batch-tasks", exportService.ExportBatchTasks)
+		export.GET("/token-transactions", exportService.ExportTokenTransactions)
+		export.GET("/siterank-queries", exportService.ExportSiteRankQueries)
+	}
+}

@@ -332,9 +332,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                     label="开始日期"
                     value={filters.customStartDate}
                     onChange={(e) => handleFilterChange('customStartDate', e.target.value)}
-                    slotProps={{
-                      inputLabel: { shrink: true }
-                    }}
+                    InputLabelProps={{ shrink: true }}
                     aria-describedby="start-date-help"
                     helperText="选择统计开始日期"
                     id="start-date-help"
@@ -345,9 +343,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                     label="结束日期"
                     value={filters.customEndDate}
                     onChange={(e) => handleFilterChange('customEndDate', e.target.value)}
-                    slotProps={{
-                      inputLabel: { shrink: true }
-                    }}
+                    InputLabelProps={{ shrink: true }}
                     aria-describedby="end-date-help"
                     helperText="选择统计结束日期"
                     id="end-date-help"
@@ -395,11 +391,9 @@ export const UserStatisticsDashboard: React.FC = () => {
                 label="最小Token使用量"
                 value={filters.minTokenUsage}
                 onChange={(e) => handleFilterChange('minTokenUsage', parseInt(e.target.value) || 0)}
-                slotProps={{
-                  htmlInput: { 
-                    min: 0,
-                    'aria-describedby': 'min-token-help'
-                  }
+                inputProps={{ 
+                  min: 0,
+                  'aria-describedby': 'min-token-help'
                 }}
                 helperText="设置最小Token使用量过滤条件"
                 id="min-token-help"
@@ -412,11 +406,9 @@ export const UserStatisticsDashboard: React.FC = () => {
                 label="最大Token使用量"
                 value={filters.maxTokenUsage}
                 onChange={(e) => handleFilterChange('maxTokenUsage', parseInt(e.target.value) || 0)}
-                slotProps={{
-                  htmlInput: { 
-                    min: 0,
-                    'aria-describedby': 'max-token-help'
-                  }
+                inputProps={{ 
+                  min: 0,
+                  'aria-describedby': 'max-token-help'
                 }}
                 helperText="设置最大Token使用量过滤条件"
                 id="max-token-help"

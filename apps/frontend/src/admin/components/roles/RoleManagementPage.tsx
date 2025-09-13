@@ -85,7 +85,8 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
       const [rolesResponse, permissionsResponse] = await Promise.all([
         dataProvider.getList('roles', { 
           pagination: { page: 1, perPage: 100 },
-          sort: { field: 'createdAt', order: 'ASC' }
+          sort: { field: 'createdAt', order: 'ASC' },
+          filter: {}
         }),
         fetch('/api/admin/permissions').then(res => res.json())
       ]);

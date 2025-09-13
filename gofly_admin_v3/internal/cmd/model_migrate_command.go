@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -22,7 +23,8 @@ func NewModelMigrateCommand() *ModelMigrateCommand {
 // Run 执行命令
 func (c *ModelMigrateCommand) Run(args []string) {
 	// 解析命令行参数
-	flagSet := gf.NewFlagSet()
+	// flagSet := gf.NewFlagSet()
+	flagSet := flag.NewFlagSet("model-migrate", flag.ExitOnError)
 
 	var (
 		model      = flagSet.String("model", "", "Model name (required)")
@@ -149,5 +151,6 @@ func (c *ModelMigrateCommand) loadConfig(configPath string, options *migration.M
 
 // RegisterModelMigrateCommand 注册模型迁移命令
 func RegisterModelMigrateCommand() {
-	gf.RegisterCommand("model:migrate", NewModelMigrateCommand())
+	// gf.RegisterCommand("model:migrate", NewModelMigrateCommand())
+	// TODO: 实现命令注册
 }

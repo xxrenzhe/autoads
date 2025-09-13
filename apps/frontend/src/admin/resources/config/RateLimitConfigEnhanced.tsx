@@ -340,7 +340,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
                         <Switch
                           id="isActive"
                           checked={formData.status === 'ACTIVE'}
-                          onCheckedChange={(checked) => setFormData({ ...formData, status: checked ? 'ACTIVE' : 'INACTIVE' })}
+                          onCheckedChange={(checked: boolean) => setFormData({ ...formData, status: checked ? 'ACTIVE' : 'INACTIVE' })}
                         />
                         <Label className="text-sm text-muted-foreground">
                           Enable this rule

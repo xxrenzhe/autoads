@@ -844,7 +844,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <Switch
                         id="is-default"
                         checked={currentRole.isDefault}
-                        onCheckedChange={(checked) => setCurrentRole(prev => prev ? { ...prev, isDefault: checked } : null)}
+                        onCheckedChange={(checked: boolean) => setCurrentRole(prev => prev ? { ...prev, isDefault: checked } : null)}
                       />
                       <Label htmlFor="is-default">Default role for new users</Label>
                     </div>

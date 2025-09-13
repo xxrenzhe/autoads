@@ -3,8 +3,8 @@ import { vi } from 'vitest';
 
 // 模拟浏览器环境
 global.fetch = vi.fn();
-global.Request = vi.fn();
-global.Response = vi.fn();
+global.Request = vi.fn() as any;
+global.Response = vi.fn() as any;
 
 // 模拟 Playwright
 vi.mock('playwright', () => ({

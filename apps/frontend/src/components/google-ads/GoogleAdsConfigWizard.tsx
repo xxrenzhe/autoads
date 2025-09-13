@@ -521,7 +521,7 @@ export function GoogleAdsConfigWizard({
                   <Switch
                     id="isActive"
                     checked={newLink.isActive}
-                    onCheckedChange={(checked) => setNewLink(prev => ({
+                    onCheckedChange={(checked: boolean) => setNewLink(prev => ({
                       ...prev,
                       isActive: checked
                     }))}
@@ -586,7 +586,7 @@ export function GoogleAdsConfigWizard({
                   <Switch
                     id="scheduleEnabled"
                     checked={config.updateSchedule.enabled}
-                    onCheckedChange={(checked) => setConfig(prev => ({
+                    onCheckedChange={(checked: boolean) => setConfig(prev => ({
                       ...prev,
                       updateSchedule: {
                         ...prev.updateSchedule,

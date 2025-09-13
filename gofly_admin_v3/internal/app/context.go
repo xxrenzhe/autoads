@@ -10,7 +10,7 @@ import (
 	"gofly-admin-v3/internal/config"
 	"gofly-admin-v3/internal/oauth"
 	"gofly-admin-v3/internal/ratelimit"
-	"gofly-admin-v3/internal/siterankgo"
+	// "gofly-admin-v3/internal/siterankgo"
 	"gofly-admin-v3/internal/store"
 	"gofly-admin-v3/internal/subscription"
 	"gofly-admin-v3/service/user"
@@ -32,7 +32,7 @@ type Context struct {
 
 	// 业务模块
 	BatchGoService    *batchgo.Service
-	SiteRankGoService *siterankgo.Service
+	// SiteRankGoService *siterankgo.Service
 }
 
 // NewContext 创建应用上下文
@@ -69,6 +69,14 @@ func NewContext(cfg *Config) (*Context, error) {
 	log.Println("数据库和Redis连接成功")
 
 	// 创建服务实例
+	// Convert app.Config to config.Config for services that need it
+	configCfg := &config.Config{
+		Redis: *redisConfig, // Copy the Redis config we created
+		// TODO: Map other config fields as needed
+	}
+	
+	rateLimitManager := ratelimit.NewRateLimitManager(configCfg, db, nil) // userService still needed
+	
 	ctx := &Context{
 		Config: cfg,
 		DB:     db,
@@ -76,11 +84,11 @@ func NewContext(cfg *Config) (*Context, error) {
 
 		// TODO: Fix user service to work with gorm.DB or create adapter
 		UserService:      nil, // user.NewService expects gform.DB, not *gorm.DB
-		SubService:       subscription.NewService(db.DB),
-		RateLimitManager: ratelimit.NewRateLimitManager(cfg, db, nil), // Missing userService
+		SubService:       subscription.NewService(db),
+		RateLimitManager: rateLimitManager,
 
-		BatchGoService:    batchgo.NewService(db.DB.DB(), nil, nil),
-		SiteRankGoService: siterankgo.NewService(db, redis, nil),
+		BatchGoService:    batchgo.NewService(db.DB, nil, nil),
+		// SiteRankGoService: siterankgo.NewService(db, redis, rateLimitManager),
 	}
 
 	log.Println("所有服务初始化完成")
@@ -90,7 +98,7 @@ func NewContext(cfg *Config) (*Context, error) {
 // Close 关闭所有连接
 func (ctx *Context) Close() error {
 	if ctx.DB != nil {
-		sqlDB, err := ctx.DB.DB.DB()
+		sqlDB, err := ctx.DB.DB()
 		if err != nil {
 			return err
 		}

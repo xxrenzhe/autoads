@@ -509,7 +509,7 @@ export function PermissionMatrix({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              {React.createElement(getPermissionIcon(selectedCategory), { className: "h-5 w-5 mr-2" })}
+              {React.createElement(getPermissionIcon(selectedCategory) as React.ComponentType<any>, { className: "h-5 w-5 mr-2" })}
               {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Permissions
             </CardTitle>
           </CardHeader>

@@ -30,7 +30,7 @@ func (c *MigrateCommand) Run(args []string) {
 		dryRun      = fs.Bool("dry-run", false, "Dry run mode")
 		force       = fs.Bool("force", false, "Force migration")
 		verbose     = fs.Bool("verbose", false, "Verbose output")
-		environment = fs.String("env", gf.GetConfig("app.env"), "Environment (development/staging/production)")
+		environment = fs.String("env", gf.GetConfig("app.env").(string), "Environment (development/staging/production)")
 		create      = fs.String("create", "", "Create new migration")
 		type_       = fs.String("type", "generic", "Migration type (create_table/add_column/drop_table/raw_sql/generic)")
 		status      = fs.Bool("status", false, "Show migration status")
@@ -154,5 +154,6 @@ func (c *MigrateCommand) printStatus(status gf.Map) {
 
 // RegisterMigrationCommand 注册迁移命令
 func RegisterMigrationCommand() {
-	gf.RegisterCommand("migrate", NewMigrateCommand())
+	// gf.RegisterCommand("migrate", NewMigrateCommand())
+	// TODO: 实现命令注册
 }

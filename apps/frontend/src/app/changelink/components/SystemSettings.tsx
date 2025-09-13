@@ -451,7 +451,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="auto-save"
                       checked={config.general.autoSave}
-                      onCheckedChange={(checked) => updateConfig('general', 'autoSave', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('general', 'autoSave', checked)}
                     />
                     <Label htmlFor="auto-save">Auto-save changes</Label>
                   </div>
@@ -459,7 +459,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="debug-mode"
                       checked={config.general.debugMode}
-                      onCheckedChange={(checked) => updateConfig('general', 'debugMode', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('general', 'debugMode', checked)}
                     />
                     <Label htmlFor="debug-mode">Debug mode</Label>
                   </div>
@@ -525,7 +525,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       <Switch
                         id="require-uppercase"
                         checked={config.security.passwordPolicy.requireUppercase}
-                        onCheckedChange={(checked) => updateNestedConfig('security', 'passwordPolicy', 'requireUppercase', checked)}
+                        onCheckedChange={(checked: boolean) => updateNestedConfig('security', 'passwordPolicy', 'requireUppercase', checked)}
                       />
                       <Label htmlFor="require-uppercase">Require uppercase letters</Label>
                     </div>
@@ -533,7 +533,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       <Switch
                         id="require-lowercase"
                         checked={config.security.passwordPolicy.requireLowercase}
-                        onCheckedChange={(checked) => updateNestedConfig('security', 'passwordPolicy', 'requireLowercase', checked)}
+                        onCheckedChange={(checked: boolean) => updateNestedConfig('security', 'passwordPolicy', 'requireLowercase', checked)}
                       />
                       <Label htmlFor="require-lowercase">Require lowercase letters</Label>
                     </div>
@@ -541,7 +541,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       <Switch
                         id="require-numbers"
                         checked={config.security.passwordPolicy.requireNumbers}
-                        onCheckedChange={(checked) => updateNestedConfig('security', 'passwordPolicy', 'requireNumbers', checked)}
+                        onCheckedChange={(checked: boolean) => updateNestedConfig('security', 'passwordPolicy', 'requireNumbers', checked)}
                       />
                       <Label htmlFor="require-numbers">Require numbers</Label>
                     </div>
@@ -549,7 +549,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       <Switch
                         id="require-special"
                         checked={config.security.passwordPolicy.requireSpecialChars}
-                        onCheckedChange={(checked) => updateNestedConfig('security', 'passwordPolicy', 'requireSpecialChars', checked)}
+                        onCheckedChange={(checked: boolean) => updateNestedConfig('security', 'passwordPolicy', 'requireSpecialChars', checked)}
                       />
                       <Label htmlFor="require-special">Require special characters</Label>
                     </div>
@@ -564,7 +564,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="two-factor"
                       checked={config.security.twoFactorAuth}
-                      onCheckedChange={(checked) => updateConfig('security', 'twoFactorAuth', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('security', 'twoFactorAuth', checked)}
                     />
                     <Label htmlFor="two-factor">Enable two-factor authentication</Label>
                   </div>
@@ -656,7 +656,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="cache-enabled"
                       checked={config.performance.cacheEnabled}
-                      onCheckedChange={(checked) => updateConfig('performance', 'cacheEnabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('performance', 'cacheEnabled', checked)}
                     />
                     <Label htmlFor="cache-enabled">Enable caching</Label>
                   </div>
@@ -698,7 +698,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="auto-cleanup"
                       checked={config.performance.autoCleanup}
-                      onCheckedChange={(checked) => updateConfig('performance', 'autoCleanup', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('performance', 'autoCleanup', checked)}
                     />
                     <Label htmlFor="auto-cleanup">Auto cleanup old data</Label>
                   </div>
@@ -763,7 +763,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="backup-enabled"
                       checked={config.database.backupEnabled}
-                      onCheckedChange={(checked) => updateConfig('database', 'backupEnabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('database', 'backupEnabled', checked)}
                     />
                     <Label htmlFor="backup-enabled">Enable automatic backups</Label>
                   </div>
@@ -803,7 +803,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                   <Switch
                     id="auto-optimize"
                     checked={config.database.autoOptimize}
-                    onCheckedChange={(checked) => updateConfig('database', 'autoOptimize', checked)}
+                    onCheckedChange={(checked: boolean) => updateConfig('database', 'autoOptimize', checked)}
                   />
                   <Label htmlFor="auto-optimize">Auto-optimize database</Label>
                 </div>
@@ -851,7 +851,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="email-enabled"
                       checked={config.notifications.emailEnabled}
-                      onCheckedChange={(checked) => updateConfig('notifications', 'emailEnabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('notifications', 'emailEnabled', checked)}
                     />
                     <Label htmlFor="email-enabled">Email notifications</Label>
                   </div>
@@ -859,7 +859,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="slack-enabled"
                       checked={config.notifications.slackEnabled}
-                      onCheckedChange={(checked) => updateConfig('notifications', 'slackEnabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('notifications', 'slackEnabled', checked)}
                     />
                     <Label htmlFor="slack-enabled">Slack notifications</Label>
                   </div>
@@ -867,7 +867,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="webhook-enabled"
                       checked={config.notifications.webhookEnabled}
-                      onCheckedChange={(checked) => updateConfig('notifications', 'webhookEnabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('notifications', 'webhookEnabled', checked)}
                     />
                     <Label htmlFor="webhook-enabled">Webhook notifications</Label>
                   </div>
@@ -905,7 +905,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="quiet-hours-enabled"
                       checked={config.notifications.quietHours.enabled}
-                      onCheckedChange={(checked) => updateNestedConfig('notifications', 'quietHours', 'enabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateNestedConfig('notifications', 'quietHours', 'enabled', checked)}
                     />
                     <Label htmlFor="quiet-hours-enabled">Enable quiet hours</Label>
                   </div>

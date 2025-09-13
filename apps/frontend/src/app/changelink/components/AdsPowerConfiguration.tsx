@@ -452,7 +452,7 @@ export default function AdsPowerConfiguration() {
                             <Label>无头模式</Label>
                             <Switch
                               checked={environment.browserSettings?.headless || false}
-                              onCheckedChange={(checked) => 
+                              onCheckedChange={(checked: boolean) => 
                                 updateEnvironment(environment.id, {
                                   browserSettings: { 
                                     headless: checked,
@@ -505,7 +505,7 @@ export default function AdsPowerConfiguration() {
                             <Label>自动恢复</Label>
                             <Switch
                               checked={environment.browserSettings?.autoRecover || false}
-                              onCheckedChange={(checked) => 
+                              onCheckedChange={(checked: boolean) => 
                                 updateEnvironment(environment.id, {
                                   browserSettings: { 
                                     headless: environment.browserSettings?.headless || false,
@@ -526,7 +526,7 @@ export default function AdsPowerConfiguration() {
                             <Label>启用代理</Label>
                             <Switch
                               checked={environment.proxyConfig?.enabled || false}
-                              onCheckedChange={(checked) => 
+                              onCheckedChange={(checked: boolean) => 
                                 updateEnvironment(environment.id, {
                                   proxyConfig: { 
                                     enabled: checked,

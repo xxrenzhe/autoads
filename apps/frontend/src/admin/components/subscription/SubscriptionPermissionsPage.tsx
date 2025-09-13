@@ -350,6 +350,7 @@ export default function SubscriptionPermissionsPage() {
                   }
                 })}
                 columns={planFeatureColumns}
+                pagination
                 pageSizeOptions={[10, 25, 50]}
                 disableRowSelectionOnClick
               />
@@ -368,7 +369,8 @@ export default function SubscriptionPermissionsPage() {
             <DataGrid
               rows={features}
               columns={featureColumns}
-              pageSizeOptions={[10, 25, 50]}
+              pagination
+                pageSizeOptions={[10, 25, 50]}
               disableRowSelectionOnClick
             />
           </Box>

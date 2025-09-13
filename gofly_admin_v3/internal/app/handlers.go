@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gofly-admin-v3/internal/batchgo"
-	"gofly-admin-v3/internal/siterankgo"
+	// "gofly-admin-v3/internal/siterankgo"
 	"gofly-admin-v3/service/user"
 	"gofly-admin-v3/utils/gf"
 )
@@ -100,9 +100,9 @@ func ListUsers(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
 
 	// 获取用户列表
-	users, total, err := userService.ListUsers(page, pageSize)
+	users, total, err := userService.GetUserList(page, pageSize, "")
 	if err != nil {
-		gf.Error().SetMsg("获取用户列表失败").Regin(c)
+		gf.Error("获取用户列表失败").Regin(c)
 		return
 	}
 
@@ -124,45 +124,50 @@ func SystemStats(c *gin.Context) {
 // BatchGo 模块handler函数
 func CreateBatchGoTask(c *gin.Context) {
 	batchGoService := c.MustGet("batchGoService").(*batchgo.Service)
-	controller := batchgo.NewController(batchGoService)
+	db := c.MustGet("db").(*gorm.DB)
+	controller := batchgo.NewController(batchGoService, db)
 	controller.CreateTask(c)
 }
 
 func ListBatchGoTasks(c *gin.Context) {
 	batchGoService := c.MustGet("batchGoService").(*batchgo.Service)
-	controller := batchgo.NewController(batchGoService)
+	db := c.MustGet("db").(*gorm.DB)
+	controller := batchgo.NewController(batchGoService, db)
 	controller.ListTasks(c)
 }
 
 func GetBatchGoTask(c *gin.Context) {
 	batchGoService := c.MustGet("batchGoService").(*batchgo.Service)
-	controller := batchgo.NewController(batchGoService)
+	db := c.MustGet("db").(*gorm.DB)
+	controller := batchgo.NewController(batchGoService, db)
 	controller.GetTask(c)
 }
 
 func UpdateBatchGoTask(c *gin.Context) {
 	batchGoService := c.MustGet("batchGoService").(*batchgo.Service)
-	controller := batchgo.NewController(batchGoService)
+	db := c.MustGet("db").(*gorm.DB)
+	controller := batchgo.NewController(batchGoService, db)
 	controller.UpdateTask(c)
 }
 
 func DeleteBatchGoTask(c *gin.Context) {
 	batchGoService := c.MustGet("batchGoService").(*batchgo.Service)
-	controller := batchgo.NewController(batchGoService)
+	db := c.MustGet("db").(*gorm.DB)
+	controller := batchgo.NewController(batchGoService, db)
 	controller.DeleteTask(c)
 }
 
 // SiteRankGo 模块handler函数
-func QuerySiteRank(c *gin.Context) {
-	siteRankGoService := c.MustGet("siteRankGoService").(*siterankgo.Service)
-	controller := siterankgo.NewController(siteRankGoService)
-	controller.CreateQuery(c)
-}
+// func QuerySiteRank(c *gin.Context) {
+// 	siteRankGoService := c.MustGet("siteRankGoService").(*siterankgo.Service)
+// 	controller := siterankgo.NewController(siteRankGoService)
+// 	controller.CreateQuery(c)
+// }
 
-func BatchQuerySiteRank(c *gin.Context) {
-	siteRankGoService := c.MustGet("siteRankGoService").(*siterankgo.Service)
-	controller := siterankgo.NewController(siteRankGoService)
-	controller.BatchQuery(c)
+// // func BatchQuerySiteRank(c *gin.Context) {
+// 	siteRankGoService := c.MustGet("siteRankGoService").(*siterankgo.Service)
+// 	controller := siterankgo.NewController(siteRankGoService)
+// 	controller.BatchQuery(c)
 }
 
 func HandleOAuthCallback(c *gin.Context) {
