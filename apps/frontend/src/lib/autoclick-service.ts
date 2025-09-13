@@ -348,7 +348,7 @@ export class AutoClickService {
       
       // 计算已完成数量
       for (let i = 0; i <= currentHour; i++) {
-        const execution = todayPlan.hourlyExecutions.find(((e: any) => e.hour === i);
+        const execution = todayPlan.hourlyExecutions.find((e: any: any) => e.hour === i);
         const target = todayPlan.hourlyClicks[i] || 0;
         
         hourlyProgress.push({

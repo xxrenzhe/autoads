@@ -93,13 +93,13 @@ const InvitationModule: React.FC = () => {
 
     try {
       const response = await fetch('/api/user/invitation/create');
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Failed to fetch invitation data');
       }
       const data = await response.json();
       setCurrentInvitation(data.data.currentInvitation);
       setStats(data.data.stats);
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
@@ -117,13 +117,13 @@ const InvitationModule: React.FC = () => {
 
       const data = await response.json();
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error(data.error || 'Failed to create invitation');
       }
 
       setSuccess('Invitation code created successfully');
       await fetchInvitationData();
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create invitation');
     } finally {
       setCreating(false);
@@ -131,7 +131,7 @@ const InvitationModule: React.FC = () => {
   };
 
   const handleAcceptInvitation = async () => {
-    if (!invitationCode.trim()) => {
+    if (!invitationCode.trim()) {
       setError('Please enter an invitation code');
       return;
     }
@@ -148,7 +148,7 @@ const InvitationModule: React.FC = () => {
 
       const data = await response.json();
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error(data.error || 'Failed to accept invitation');
       }
 
@@ -156,7 +156,7 @@ const InvitationModule: React.FC = () => {
       setShowSuccessDialog(true);
       setInvitationCode('');
       await fetchInvitationData();
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to accept invitation');
     } finally {
       setAccepting(false);
@@ -168,13 +168,13 @@ const InvitationModule: React.FC = () => {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) => {
+    } catch (err) {
       console.error('Failed to copy:', err);
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'ACCEPTED': return 'success';
       case 'PENDING': return 'warning';
       case 'EXPIRED': return 'error';
@@ -183,7 +183,7 @@ const InvitationModule: React.FC = () => {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'ACCEPTED': return <CheckCircle />;
       case 'PENDING': return <Pending />;
       case 'EXPIRED': return <EventBusy />;
@@ -191,7 +191,7 @@ const InvitationModule: React.FC = () => {
     }
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <Card>
         <CardContent>
@@ -310,7 +310,7 @@ const InvitationModule: React.FC = () => {
                   <Box>
                     <Tooltip title={copied ? '已复制' : '复制邀请码'}>
                       <IconButton 
-                        onClick={() => copyToClipboard(currentInvitation.code!)}
+                        onClick={((: any): any) => copyToClipboard(currentInvitation.code!)}
                         color={copied ? 'success' : 'primary'}
                       >
                         <CopyAll />
@@ -353,7 +353,7 @@ const InvitationModule: React.FC = () => {
                 fullWidth
                 label="邀请码"
                 value={invitationCode}
-                onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
+                onChange={((e: any): any) => setInvitationCode(e.target.value.toUpperCase())}
                 placeholder="请输入8位邀请码"
                 inputProps={{ maxLength: 8, style: { textTransform: 'uppercase' } }}
               />
@@ -462,7 +462,7 @@ const InvitationModule: React.FC = () => {
             </Typography>
           </DialogContent>
           <DialogActions sx={{ justifyContent: 'center' }}>
-            <Button onClick={() => setShowSuccessDialog(false)} variant="contained">
+            <Button onClick={((: any): any) => setShowSuccessDialog(false)} variant="contained">
               确定
             </Button>
           </DialogActions>

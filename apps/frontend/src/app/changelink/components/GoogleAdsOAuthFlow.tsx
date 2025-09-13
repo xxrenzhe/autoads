@@ -30,7 +30,7 @@ interface GoogleAdsOAuthFlowProps {
   onAuthError?: (error: string) => void;
 }
 
-export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
+export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAuthFlowProps) {
   const [authStep, setAuthStep] = useState<'config' | 'auth' | 'callback' | 'success' | 'error'>('config');
   const [oauthConfig, setOauthConfig] = useState({
     clientId: '',
@@ -68,7 +68,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
     const state = urlParams.get('state');
     const error = urlParams.get('error');
 
-    if (code && state) => {
+    if (code && state) {
       handleOAuthCallback(code, state, error || undefined);
     }
   }, []);
@@ -89,7 +89,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
 
       const result = await response.json();
 
-      if (result.success) => {
+      if (result.success) {
         setAuthStep('success');
         setAccounts(result.accounts || []);
         onAuthSuccess?.(result.credentials);
@@ -110,7 +110,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
 
   // 生成OAuth授权URL
   const generateAuthUrl = useCallback(async () => {
-    if (!oauthConfig.clientId || !oauthConfig.clientSecret || !oauthConfig.developerToken) => {
+    if (!oauthConfig.clientId || !oauthConfig.clientSecret || !oauthConfig.developerToken) {
       setError('Please fill in all required fields');
       return;
     }
@@ -129,7 +129,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
 
       const result = await response.json();
 
-      if (result.success) => {
+      if (result.success) {
         setAuthUrl(result.authUrl);
         setAuthStep('auth');
       } else {
@@ -158,7 +158,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
 
       const result = await response.json();
 
-      if (result.success) => {
+      if (result.success) {
         setSelectedAccount(customerId);
         onAuthSuccess?.(result.credentials);
       } else {
@@ -187,7 +187,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
 
       const result = await response.json();
 
-      if (result.success) => {
+      if (result.success) {
         onAuthSuccess?.(result.credentials);
       } else {
         setError(result.error || 'Token refresh failed');
@@ -215,9 +215,9 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
 
       const result = await response.json();
 
-      if (result.success) => {
+      if (result.success) {
         setAccounts(prev => prev.filter((account: any) => (account as any).customerId !== customerId));
-        if (selectedAccount === customerId) => {
+        if (selectedAccount === customerId) {
           setSelectedAccount(null);
         }
       } else {
@@ -238,7 +238,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
         const response = await fetch('/api/adscenter/oauth/accounts');
         const result = await response.json();
 
-        if (result.success) => {
+        if (result.success) {
           setAccounts(result.accounts || []);
         }
       } catch (error) {
@@ -353,7 +353,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
               </Alert>
 
               <Button 
-                onClick={() => window.open(authUrl, '_blank')}
+                onClick={((: any): any) => window.open(authUrl, '_blank')}
                 className="w-full"
                 size="lg"
               >
@@ -398,7 +398,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
                             </Badge>
                             <Button
                               size="sm"
-                              onClick={() => validateAccount(acc.customerId)}
+                              onClick={((: any): any) => validateAccount(acc.customerId)}
                               disabled={isLoading}
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />
@@ -407,7 +407,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => refreshToken(acc.customerId)}
+                              onClick={((: any): any) => refreshToken(acc.customerId)}
                               disabled={isLoading}
                             >
                               <RefreshCw className="w-4 h-4 mr-1" />
@@ -416,7 +416,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => removeAccount(acc.customerId)}
+                              onClick={((: any): any) => removeAccount(acc.customerId)}
                               disabled={isLoading}
                             >
                               <XCircle className="w-4 h-4 mr-1" />
@@ -441,7 +441,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: .*Props) {
               </Alert>
 
               <Button 
-                onClick={() => setAuthStep('config')}
+                onClick={((: any): any) => setAuthStep('config')}
                 className="w-full"
               >
                 <Settings className="w-4 h-4 mr-2" />

@@ -181,10 +181,10 @@ export default function PricingComparison() {
   ]
 
   const renderFeatureValue = (value: boolean | string | undefined) => {
-    if (value === undefined) => {
+    if (value === undefined) {
       return <span className="text-sm text-gray-400">-</span>
     }
-    if (typeof value === 'boolean') => {
+    if (typeof value === 'boolean') {
       return value ? (
         <CheckIcon className="h-5 w-5 text-green-500 mx-auto" />
       ) : (

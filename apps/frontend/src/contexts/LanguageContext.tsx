@@ -25,7 +25,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
   undefined,
 );
 
-export function LanguageProvider({ children }: { children: ReactNode }) => {
+export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("en");
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
@@ -47,9 +47,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) => {
     if (!isClient) return;
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "language" && e.newValue) => {
+      if (e.key === "language" && e.newValue) {
         const newLocale = e.newValue as Locale;
-        if (["en", "zh"].includes(newLocale)) => {
+        if (["en", "zh"].includes(newLocale)) {
           setLocaleState(newLocale);
         }
       }
@@ -70,7 +70,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) => {
         const stored = localStorage.getItem("language") as Locale;
         let detectedLocale: Locale = "en";
 
-        if (stored && ["en", "zh"].includes(stored)) => {
+        if (stored && ["en", "zh"].includes(stored)) {
           detectedLocale = stored;
         } else {
           // 如果没有存储的语言设置，先使用浏览器语言检测
@@ -79,7 +79,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) => {
           // 异步进行IP检测，不阻塞初始化
           detectLanguageByIP()
             .then((ipDetected) => {
-              if (ipDetected !== detectedLocale && !localStorage.getItem("language")) => {
+              if (ipDetected !== detectedLocale && !localStorage.getItem("language")) {
                 // 只有在用户没有手动设置语言时才使用IP检测结果
                 setLocaleState(ipDetected);
                 localStorage.setItem("language", ipDetected);
@@ -127,7 +127,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) => {
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
-    if (isClient) => {
+    if (isClient) {
       localStorage.setItem("language", newLocale);
       window.dispatchEvent(
         new CustomEvent("languageChanged", { detail: { locale: newLocale } }),
@@ -140,14 +140,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) => {
     try {
       const keys = key.split(".");
       let value: unknown = translations;
-      for (const k of keys) => {
-        if (value && typeof value === "object" && k in value) => {
+      for (const k of keys) {
+        if (value && typeof value === "object" && k in value) {
           value = (value as Record<string, unknown>)[k];
         } else {
           return key;
         }
       }
-      if (typeof value === "string" || Array.isArray(value)) => {
+      if (typeof value === "string" || Array.isArray(value)) {
         return value;
       }
       return key;
@@ -165,7 +165,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) => {
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
-  if (context === undefined) => {
+  if (context === undefined) {
     throw new Error("useLanguage must be used within a LanguageProvider");
   }
   return context;

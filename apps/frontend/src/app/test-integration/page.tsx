@@ -42,7 +42,7 @@ export default function TestIntegrationPage() {
         { name: 'Deploy Status API', fn: testDeployStatusAPI }
       ];
 
-      for (const test of tests) => {
+      for (const test of tests) {
         const result = await test.fn();
         setTestResults(prev => [...prev, result]);
       }
@@ -61,7 +61,7 @@ export default function TestIntegrationPage() {
       const data = await response.json();
       const duration = Date.now() - startTime;
 
-      if (response.ok && data.status) => {
+      if (response.ok && data.status) {
         return {
           name: 'Health Check API',
           status: 'success',
@@ -102,7 +102,7 @@ export default function TestIntegrationPage() {
       const alertsData = await alertsResponse.json();
       const duration = Date.now() - startTime;
 
-      if (metricsResponse.ok && alertsResponse.ok) => {
+      if (metricsResponse.ok && alertsResponse.ok) {
         return {
           name: 'Monitoring APIs',
           status: 'success',
@@ -146,7 +146,7 @@ export default function TestIntegrationPage() {
       const campaignsData = await campaignsResponse.json();
       const duration = Date.now() - startTime;
 
-      if (accountsResponse.ok && campaignsResponse.ok) => {
+      if (accountsResponse.ok && campaignsResponse.ok) {
         return {
           name: 'Google Ads APIs',
           status: 'success',
@@ -194,7 +194,7 @@ export default function TestIntegrationPage() {
       const executeData = await executeResponse.json();
       const duration = Date.now() - startTime;
 
-      if (configResponse.ok && executeResponse.ok) => {
+      if (configResponse.ok && executeResponse.ok) {
         return {
           name: 'ChangeLink APIs',
           status: 'success',
@@ -240,7 +240,7 @@ export default function TestIntegrationPage() {
       const pluginsData = await pluginsResponse.json();
       const duration = Date.now() - startTime;
 
-      if (statusResponse.ok && servicesResponse.ok && pluginsResponse.ok) => {
+      if (statusResponse.ok && servicesResponse.ok && pluginsResponse.ok) {
         return {
           name: 'Architecture APIs',
           status: 'success',
@@ -280,7 +280,7 @@ export default function TestIntegrationPage() {
       const data = await response.json();
       const duration = Date.now() - startTime;
 
-      if (response.ok && data.environment) => {
+      if (response.ok && data.environment) {
         return {
           name: 'Deploy Status API',
           status: 'success',
@@ -314,7 +314,7 @@ export default function TestIntegrationPage() {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'success':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'error':

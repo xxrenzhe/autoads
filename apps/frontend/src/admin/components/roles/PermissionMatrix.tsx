@@ -50,7 +50,7 @@ export function PermissionMatrix({
   onPermissionChange,
   readOnly = false,
   showInherited = true
-}: .*Props) {
+}: PermissionMatrixProps) {
   const {
     roles,
     permissions,
@@ -75,7 +75,7 @@ export function PermissionMatrix({
 
   // Initialize selected permissions when role changes
   React.useEffect(() => {
-    if (currentRole) => {
+    if (currentRole) {
       setSelectedPermissions(new Set(currentRole.permissions))
     }
   }, [currentRole])
@@ -90,7 +90,7 @@ export function PermissionMatrix({
     let filtered = permissions
 
     // Filter by search term
-    if (searchTerm) => {
+    if (searchTerm) {
       const lowercaseSearch = searchTerm.toLowerCase()
       filtered = filtered.filter((permission: any) =>
         permission.name.toLowerCase().includes(lowercaseSearch) ||
@@ -102,7 +102,7 @@ export function PermissionMatrix({
     }
 
     // Filter by category
-    if (selectedCategory !== 'all') => {
+    if (selectedCategory !== 'all') {
       filtered = filtered.filter((permission: any) => permission.category === selectedCategory)
     }
 
@@ -110,7 +110,7 @@ export function PermissionMatrix({
   }, [permissions, searchTerm, selectedCategory])
 
   const getPermissionIcon = (category: string) => {
-    switch (category.toLowerCase()) => {
+    switch (category.toLowerCase()) {
       case 'users': return Users
       case 'roles': return Shield
       case 'content': return FileText
@@ -124,7 +124,7 @@ export function PermissionMatrix({
   }
 
   const getActionIcon = (action: string) => {
-    switch (action.toLowerCase()) => {
+    switch (action.toLowerCase()) {
       case 'read': case 'view': return Eye
       case 'create': case 'add': return Plus
       case 'update': case 'edit': return Edit
@@ -149,7 +149,7 @@ export function PermissionMatrix({
     if (readOnly || !currentRole) return
 
     const newPermissions = new Set(selectedPermissions)
-    if (newPermissions.has(permissionId)) => {
+    if (newPermissions.has(permissionId)) {
       newPermissions.delete(permissionId)
     } else {
       newPermissions.add(permissionId)
@@ -201,7 +201,7 @@ export function PermissionMatrix({
 
   const toggleDetails = (permissionId: string) => {
     const newShowDetails = new Set(showDetails)
-    if (newShowDetails.has(permissionId)) => {
+    if (newShowDetails.has(permissionId)) {
       newShowDetails.delete(permissionId)
     } else {
       newShowDetails.add(permissionId)

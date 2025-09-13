@@ -835,7 +835,7 @@ export class AdsPowerService {
       }
 
       // 转换为标准格式
-      return ((data.data?.list || []).map((env: any) => ({
+      return (data.data?.list || []).map((env: any: any) => ({
         id: env.user_id,
         name: env.user_name || env.user_id,
         status: env.status || 'unknown',

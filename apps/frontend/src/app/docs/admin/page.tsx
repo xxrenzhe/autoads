@@ -90,7 +90,7 @@ export default function AdminDocsPage() {
     let filtered = DOCUMENT_SECTIONS;
 
     // 文本搜索
-    if (searchQuery) => {
+    if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((section: any) =>
         section.title.toLowerCase().includes(query) ||
@@ -100,7 +100,7 @@ export default function AdminDocsPage() {
     }
 
     // 标签筛选
-    if (selectedTags.length > 0) => {
+    if (selectedTags.length > 0) {
       filtered = filtered.filter((section: any) =>
         selectedTags.every(tag => section.tags.includes(tag))
       );
@@ -142,7 +142,7 @@ export default function AdminDocsPage() {
                 type="text"
                 placeholder="搜索文档内容..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={((e: any): any) => setSearchQuery(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -154,7 +154,7 @@ export default function AdminDocsPage() {
                 {allTags?.filter(Boolean)?.map((tag: any) => (
                   <button
                     key={tag}
-                    onClick={() => toggleTag(tag)}
+                    onClick={((: any): any) => toggleTag(tag)}
                     className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                       selectedTags.includes(tag)
                         ? 'bg-blue-100 text-blue-800 border border-blue-200'
@@ -167,7 +167,7 @@ export default function AdminDocsPage() {
               </div>
               {selectedTags.length > 0 && (
                 <button
-                  onClick={() => setSelectedTags([])}
+                  onClick={((: any): any) => setSelectedTags([])}
                   className="mt-3 text-sm text-blue-600 hover:text-blue-800"
                 >
                   清除筛选
@@ -264,7 +264,7 @@ export default function AdminDocsPage() {
                   尝试调整搜索关键词或清除筛选条件
                 </p>
                 <button
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     setSearchQuery('');
                     setSelectedTags([]);
                   }}

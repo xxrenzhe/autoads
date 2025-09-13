@@ -8,7 +8,7 @@ interface KeyboardHelpModalProps {
   onClose: () => void;
 }
 
-export const KeyboardHelpModal = memo(({ isOpen, onClose }: .*Props) {
+export const KeyboardHelpModal = memo(({ isOpen, onClose }: KeyboardHelpModalProps) => {
   if (!isOpen) return null as any;
 
   return (

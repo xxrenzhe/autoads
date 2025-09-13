@@ -83,7 +83,7 @@ export const DefaultErrorFallback: React.FC<ErrorBoundaryFallbackProps> = ({
  * Error boundary class component
  */
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) => {
+  constructor(props: ErrorBoundaryProps) {
     super(props)
     this.state = { hasError: false }
   }
@@ -92,14 +92,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return { hasError: true, error }
   }
 
-  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) => {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     this.setState({
       error,
       errorInfo,
       errorId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     })
 
-    if (this.props.onError) => {
+    if (this.props.onError) {
       this.props.onError(error, errorInfo)
     }
   }
@@ -113,9 +113,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     })
   }
 
-  override render() => {
-    if (this.state.hasError) => {
-      if (this.props.fallback) => {
+  override render() {
+    if (this.state.hasError) {
+      if (this.props.fallback) {
         return this.props.fallback
       }
       
@@ -139,7 +139,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 export function useErrorHandler(boundaryId?: string): (error: Error) => void {
   const [error, setError] = React.useState<Error | null>(null)
 
-  if (error) => {
+  if (error) {
     throw error
   }
 
@@ -172,7 +172,7 @@ export const ErrorBoundaryProvider: React.FC<{
     setError(error)
   }, [])
 
-  if (error) => {
+  if (error) {
     return (
       <DefaultErrorFallback
         error={error}
@@ -195,8 +195,8 @@ export const ErrorBoundaryProvider: React.FC<{
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
   errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>
-) => {
-  return function WithErrorBoundary(props: P) => {
+) {
+  return function WithErrorBoundary(props: P) {
     return (
       <ErrorBoundary {...errorBoundaryProps}>
         <Component {...props} />

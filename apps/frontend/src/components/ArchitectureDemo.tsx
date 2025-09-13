@@ -92,7 +92,7 @@ export function ArchitectureDemo() {
     return () => clearTimeout(timer);
   }, []);
 
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

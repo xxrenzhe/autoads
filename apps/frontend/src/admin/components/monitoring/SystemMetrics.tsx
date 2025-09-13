@@ -41,7 +41,7 @@ export function SystemMetrics({
   refreshInterval = 30000, 
   showCharts = true,
   compactView = false 
-}: .*Props) {
+}: SystemMetricsProps) {
   const {
     systemMetrics,
     metricsHistory,
@@ -83,7 +83,7 @@ export function SystemMetrics({
   }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) => {
+    if (active && payload && payload.length) {
       return (
         <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
@@ -106,7 +106,7 @@ export function SystemMetrics({
     return null
   }
 
-  if (error) => {
+  if (error) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -125,7 +125,7 @@ export function SystemMetrics({
     )
   }
 
-  if (!systemMetrics) => {
+  if (!systemMetrics) {
     return (
       <Card>
         <CardContent className="p-6">

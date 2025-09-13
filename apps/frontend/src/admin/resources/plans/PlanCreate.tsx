@@ -175,7 +175,7 @@ const PlanTemplateSelector: React.FC<{ onSelect: (template: any) => void }> = ({
                   boxShadow: 2
                 }
               }}
-              onClick={() => onSelect(plan)}
+              onClick={((: any): any) => onSelect(plan)}
             >
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography variant="h5" component="div" gutterBottom>
@@ -226,7 +226,7 @@ const PlanCreateToolbar = (props: any) => {
       {selectedTemplate && (
         <Button
           color="secondary"
-          onClick={() => setSelectedTemplate(null)}
+          onClick={((: any): any) => setSelectedTemplate(null)}
           sx={{ ml: 2 }}
         >
           清除模板

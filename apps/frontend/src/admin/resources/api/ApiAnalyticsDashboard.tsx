@@ -76,7 +76,7 @@ const ApiAnalyticsDashboard: React.FC = () => {
     setTabValue(newValue);
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <Box sx={{ p: 3 }}>
         <LinearProgress />

@@ -52,7 +52,7 @@ export function UserList({
   onUserEdit,
   onUserDelete,
   onBulkAction
-}: .*Props) {
+}: UserListProps) {
   const {
     users,
     totalUsers,
@@ -90,7 +90,7 @@ export function UserList({
       let aValue: any = a[sortBy]
       let bValue: any = b[sortBy]
       
-      if (sortBy === 'createdAt' || sortBy === 'lastLoginAt') => {
+      if (sortBy === 'createdAt' || sortBy === 'lastLoginAt') {
         aValue = new Date(aValue || 0).getTime()
         bValue = new Date(bValue || 0).getTime()
       } else {
@@ -98,7 +98,7 @@ export function UserList({
         bValue = bValue?.toLowerCase() || ''
       }
       
-      if (sortOrder === 'asc') => {
+      if (sortOrder === 'asc') {
         return aValue > bValue ? 1 : -1
       } else {
         return aValue < bValue ? 1 : -1
@@ -110,7 +110,7 @@ export function UserList({
 
   const handleSelectUser = (userId: string) => {
     const newSelected = new Set(selectedUsers)
-    if (newSelected.has(userId)) => {
+    if (newSelected.has(userId)) {
       newSelected.delete(userId)
     } else {
       newSelected.add(userId)
@@ -119,7 +119,7 @@ export function UserList({
   }
 
   const handleSelectAll = () => {
-    if (selectedUsers.size === filteredAndSortedUsers.length) => {
+    if (selectedUsers.size === filteredAndSortedUsers.length) {
       setSelectedUsers(new Set())
     } else {
       setSelectedUsers(new Set(filteredAndSortedUsers.map((user: User: any) => user.id)))
@@ -127,14 +127,14 @@ export function UserList({
   }
 
   const handleBulkAction = (action: string) => {
-    if (onBulkAction && selectedUsers.size > 0) => {
+    if (onBulkAction && selectedUsers.size > 0) {
       onBulkAction(action, Array.from(selectedUsers))
       setSelectedUsers(new Set())
     }
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'active': return 'success'
       case 'inactive': return 'secondary'
       case 'suspended': return 'destructive'
@@ -155,7 +155,7 @@ export function UserList({
   const uniqueRoles = Array.from(new Set(users.map((user: User: any) => user.role)))
   const uniqueStatuses = Array.from(new Set(users.map((user: User: any) => user.status)))
 
-  if (error) => {
+  if (error) {
     return (
       <Card>
         <CardContent className="p-6">

@@ -98,7 +98,7 @@ const SimpleAdminDashboard: React.FC = () => {
     </Card>
   );
 
-  if (loading) => {
+  if (loading) {
     return (
       <Box sx={{ p: 3 }}>
         <Typography>加载中...</Typography>

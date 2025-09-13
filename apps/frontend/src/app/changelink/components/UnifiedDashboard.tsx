@@ -107,7 +107,7 @@ export default function SimpleUnifiedDashboard() {
       ]);
       
       setError(null);
-    } catch (err) => {
+    } catch (err) {
       setError('加载仪表板数据失败');
       console.error('Dashboard data loading error:', err);
     } finally {
@@ -116,7 +116,7 @@ export default function SimpleUnifiedDashboard() {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'success':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'warning':
@@ -129,7 +129,7 @@ export default function SimpleUnifiedDashboard() {
   };
 
   const getHealthColor = (health: string) => {
-    switch (health) => {
+    switch (health) {
       case 'excellent':
         return 'text-green-600 bg-green-100';
       case 'good':
@@ -144,7 +144,7 @@ export default function SimpleUnifiedDashboard() {
   };
 
   const formatTime = (minutes: number) => {
-    if (minutes < 60) => {
+    if (minutes < 60) {
       return `${minutes}分钟`;
     }
     const hours = Math.floor(minutes / 60);
@@ -152,7 +152,7 @@ export default function SimpleUnifiedDashboard() {
     return `${hours}小时${mins}分钟`;
   };
 
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -163,7 +163,7 @@ export default function SimpleUnifiedDashboard() {
     );
   }
 
-  if (error) => {
+  if (error) {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">

@@ -125,7 +125,7 @@ export default function TokenAnalyticsDashboard() {
   }, [page, pageSize])
 
   useEffect(() => {
-    if (analytics) => {
+    if (analytics) {
       generateInsights()
       analyzeFeatureConsumption()
       analyzeUserPatterns()
@@ -149,9 +149,9 @@ export default function TokenAnalyticsDashboard() {
       const response = await fetch(`/api/admin/tokens/analytics?${params}`)
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         setAnalytics(data.data)
-        if (data.cached) => {
+        if (data.cached) {
           toast.info('Showing cached data')
         }
       } else {
@@ -184,7 +184,7 @@ export default function TokenAnalyticsDashboard() {
       const response = await fetch(`/api/admin/tokens/analytics?${params}`)
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         const csv = convertToCSV(data.data.records)
         downloadCSV(csv, `token-analytics-${new Date().toISOString().split('T')[0]}.csv`)
         toast.success('Analytics data exported successfully')
@@ -227,7 +227,7 @@ export default function TokenAnalyticsDashboard() {
     const insights: UsageInsight[] = []
 
     // Efficiency insight
-    if (analytics.summary.efficiency > 0) => {
+    if (analytics.summary.efficiency > 0) {
       const efficiencyRating = analytics.summary.efficiency < 1.5 ? 'excellent' : 
                               analytics.summary.efficiency < 2.5 ? 'good' : 'needs improvement'
       insights.push({
@@ -253,7 +253,7 @@ export default function TokenAnalyticsDashboard() {
     // Top feature insight
     const topFeature = Object.entries(analytics.breakdown.byFeature)
       .sort(([,a], [,b]) => b - a)[0]
-    if (topFeature) => {
+    if (topFeature) {
       const percentage = (topFeature[1] / analytics.summary.totalTokens * 100).toFixed(1)
       insights.push({
         type: 'trend',
@@ -265,7 +265,7 @@ export default function TokenAnalyticsDashboard() {
     }
 
     // User activity insight
-    if (analytics.breakdown.topUsers.length > 0) => {
+    if (analytics.breakdown.topUsers.length > 0) {
       const activeUsers = analytics.breakdown.topUsers.length
       const topUser = analytics.breakdown.topUsers[0]
       const topUserPercentageNum = (topUser.totalTokens / analytics.summary.totalTokens * 100)
@@ -361,7 +361,7 @@ export default function TokenAnalyticsDashboard() {
     let aValue: number
     let bValue: number
     
-    switch (sortBy) => {
+    switch (sortBy) {
       case 'operations':
         aValue = a.operations
         bValue = b.operations
@@ -380,7 +380,7 @@ export default function TokenAnalyticsDashboard() {
     return (aValue - bValue) * multiplier
   })
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin" />
@@ -388,7 +388,7 @@ export default function TokenAnalyticsDashboard() {
     )
   }
 
-  if (!analytics) => {
+  if (!analytics) {
     return (
       <Alert>
         <AlertDescription>

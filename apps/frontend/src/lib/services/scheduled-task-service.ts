@@ -172,8 +172,8 @@ export class ScheduledTaskService {
             timestamp: new Date().toISOString(),
             tasksCount: this.tasks.size,
             enabledTasks: Array.from(this.tasks.entries())
-              .filter(([_, task]: any) => task.enabled)
-              .map(([id, _]: any) => id)
+              .filter(([_, task]) => task.enabled)
+              .map(([id, _]) => id)
           }
         }
       })
@@ -181,7 +181,7 @@ export class ScheduledTaskService {
       console.error('[ScheduledTaskService] Failed to log service start:', error)
     }
     
-    this.tasks.forEach((task, id: any) => {
+    this.tasks.forEach((task, id) => {
       if (task.enabled) {
         this.scheduleTask(id)
       }
@@ -199,7 +199,7 @@ export class ScheduledTaskService {
 
     console.log('[ScheduledTaskService] Stopping scheduled task service...')
     
-    this.cronJobs.forEach((cronJob: any) => {
+    this.cronJobs.forEach((cronJob) => {
       cronJob.stop()
     })
     

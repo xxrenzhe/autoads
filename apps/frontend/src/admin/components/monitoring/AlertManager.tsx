@@ -59,7 +59,7 @@ export interface AlertManagerProps {
   maxAlerts?: number
 }
 
-export function AlertManager({ showRules = true, maxAlerts = 50 }: .*Props) {
+export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerProps) {
   const {
     alerts,
     isAlertsLoading,
@@ -93,7 +93,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: .*Props) {
   }).slice(0, maxAlerts)
 
   const getAlertIcon = (type: string) => {
-    switch (type) => {
+    switch (type) {
       case 'cpu': return Cpu
       case 'memory': return MemoryStick
       case 'disk': return HardDrive
@@ -105,7 +105,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: .*Props) {
   }
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) => {
+    switch (severity) {
       case 'critical': return 'destructive'
       case 'high': return 'destructive'
       case 'medium': return 'warning'
@@ -145,7 +145,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: .*Props) {
   const highAlerts = alerts.filter((a: any) => a.severity === 'high' && !a.resolved)
   const activeAlerts = alerts.filter((a: any) => !a.resolved)
 
-  if (alertsError) => {
+  if (alertsError) {
     return (
       <Card>
         <CardContent className="p-6">

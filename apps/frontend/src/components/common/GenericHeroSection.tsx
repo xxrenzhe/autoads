@@ -18,7 +18,7 @@ const GenericHeroSection = ({
   titleClassName = "text-3xl font-bold text-gray-900 mb-4",
   descriptionClassName = "text-lg text-gray-600 max-w-3xl mx-auto",
   titleTag = "h2"
-}: .*Props) {
+}: GenericHeroSectionProps) => {
   const TitleTag = titleTag;
   
   return (

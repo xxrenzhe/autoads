@@ -51,13 +51,13 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
   const isTrialExpiring = isTrial && daysRemaining <= 3 && daysRemaining > 0;
 
   const getSubscriptionStatus = () => {
-    if (!subscription) => {
+    if (!subscription) {
       return { label: '无订阅', color: 'default' as const, icon: <CancelIcon /> };
     }
-    if (isExpired) => {
+    if (isExpired) {
       return { label: '已过期', color: 'error' as const, icon: <CancelIcon /> };
     }
-    if (isTrial) => {
+    if (isTrial) {
       return { label: '试用中', color: 'info' as const, icon: <CheckCircleIcon /> };
     }
     return { label: '订阅中', color: 'success' as const, icon: <CheckCircleIcon /> };
@@ -72,7 +72,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
     const featureList = [];
 
     // SiteRank features
-    if (features.siterank?.enabled) => {
+    if (features.siterank?.enabled) {
       featureList.push(
         <ListItem key="siterank">
           <ListItemText
@@ -84,7 +84,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
     }
 
     // BatchOpen features
-    if (features.batchopen?.enabled) => {
+    if (features.batchopen?.enabled) {
       featureList.push(
         <ListItem key="batchopen">
           <ListItemText
@@ -94,7 +94,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
         </ListItem>
       );
       
-      if (features.batchopen?.proxyRotation) => {
+      if (features.batchopen?.proxyRotation) {
         featureList.push(
           <ListItem key="proxy">
             <ListItemText
@@ -107,7 +107,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
     }
 
     // ChangeLink features
-    if (features.adscenter?.enabled) => {
+    if (features.adscenter?.enabled) {
       featureList.push(
         <ListItem key="adscenter">
           <ListItemText
@@ -257,7 +257,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
               <Button
                 variant="contained"
                 startIcon={<UpgradeIcon />}
-                onClick={() => {
+                onClick={((: any): any) => {
                   // Navigate to pricing page
                   window.location.href = '/pricing';
                 }}
@@ -271,7 +271,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
               {!isTrial && (
                 <Button
                   variant="outlined"
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     // Navigate to subscription management
                     window.location.href = '/subscription/manage';
                   }}
@@ -284,7 +284,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
               {isTrial && (
                 <Button
                   variant="outlined"
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     // Show trial benefits or FAQ
                     window.open('/pricing#faq', '_blank');
                   }}
@@ -304,7 +304,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
             <Button
               variant="contained"
               size="large"
-              onClick={() => {
+              onClick={((: any): any) => {
                 window.location.href = '/pricing';
               }}
               sx={{ width: '100%' }}

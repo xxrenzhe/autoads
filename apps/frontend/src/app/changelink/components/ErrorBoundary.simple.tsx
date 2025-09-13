@@ -13,7 +13,7 @@ interface ErrorBoundaryProps {
 }
 
 class SimpleErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) => {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
@@ -22,13 +22,13 @@ class SimpleErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBound
     return { hasError: true, error };
   }
 
-  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) => {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('SimpleErrorBoundary caught an error:', error, errorInfo);
   }
 
-  override render() => {
-    if (this.state.hasError) => {
-      if (this.props.fallback) => {
+  override render() {
+    if (this.state.hasError) {
+      if (this.props.fallback) {
         const FallbackComponent = this.props.fallback;
         return <FallbackComponent error={this.state.error} />;
       }
@@ -63,7 +63,7 @@ export function useSimpleErrorBoundary() {
     setError(null);
   }, []);
 
-  if (error) => {
+  if (error) {
     throw error;
   }
 

@@ -98,16 +98,16 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
     // 更新步骤状态
     const newStatuses = { ...stepStatuses };
     
-    if (clientId && clientSecret) => {
+    if (clientId && clientSecret) {
       newStatuses.setup = 'completed';
       if (currentStep === 0) setCurrentStep(1);
     }
     
-    if (authCode) => {
+    if (authCode) {
       newStatuses.authorize = 'completed';
     }
     
-    if (refreshToken) => {
+    if (refreshToken) {
       newStatuses.exchange = 'completed';
       newStatuses.complete = 'completed';
     }
@@ -126,7 +126,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
   };
 
   const handleExchangeToken = async () => {
-    if (!authCode.trim()) => {
+    if (!authCode.trim()) {
       setError('请输入授权码');
       return;
     }
@@ -149,14 +149,14 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
         })
       });
 
-      if (!response.ok) => {
+      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error_description || '令牌交换失败');
       }
 
       const tokenData = await response.json();
       
-      if (tokenData.refresh_token) => {
+      if (tokenData.refresh_token) {
         setRefreshToken(tokenData.refresh_token);
         setCurrentStep(3);
       } else {
@@ -175,7 +175,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
   };
 
   const getStepIcon = (status: OAuthStep['status']) => {
-    switch (status) => {
+    switch (status) {
       case 'completed':
         return <CheckCircle className="h-5 w-5 text-green-600" />;
       case 'in_progress':
@@ -188,7 +188,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
   };
 
   const renderStepContent = () => {
-    switch (currentStep) => {
+    switch (currentStep) {
       case 0:
         return (
           <div className="space-y-4">
@@ -247,7 +247,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
 
             {clientId && clientSecret && (
               <div className="flex justify-end">
-                <Button onClick={() => setCurrentStep(1)}>
+                <Button onClick={((: any): any) => setCurrentStep(1)}>
                   开始授权流程
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
@@ -278,7 +278,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
                 </label>
                 <div className="flex items-center gap-2">
                   <Button
-                    onClick={() => window.open(authUrl, '_blank')}
+                    onClick={((: any): any) => window.open(authUrl, '_blank')}
                     className="flex items-center gap-2"
                   >
                     <ExternalLink className="h-4 w-4" />
@@ -287,7 +287,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleCopyToClipboard(authUrl, 'authUrl')}
+                    onClick={((: any): any) => handleCopyToClipboard(authUrl, 'authUrl')}
                   >
                     {copiedText === 'authUrl' ? (
                       <CheckCircle className="h-4 w-4" />
@@ -306,7 +306,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
                   id="authCode"
                   type="text"
                   value={authCode}
-                  onChange={(e) => setAuthCode(e.target.value)}
+                  onChange={((e: any): any) => setAuthCode(e.target.value)}
                   placeholder="粘贴从Google获取的授权码"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -317,7 +317,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
 
             {authCode && (
               <div className="flex justify-end">
-                <Button onClick={() => setCurrentStep(2)}>
+                <Button onClick={((: any): any) => setCurrentStep(2)}>
                   下一步：交换令牌
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
@@ -349,7 +349,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
                 <Input
                   type="text"
                   value={authCode}
-                  onChange={(e) => setAuthCode(e.target.value)}
+                  onChange={((e: any): any) => setAuthCode(e.target.value)}
                   placeholder="请输入授权码"
                 />
               </div>
@@ -414,7 +414,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleCopyToClipboard(refreshToken, 'refreshToken')}
+                  onClick={((: any): any) => handleCopyToClipboard(refreshToken, 'refreshToken')}
                 >
                   {copiedText === 'refreshToken' ? (
                     <CheckCircle className="h-4 w-4" />

@@ -21,7 +21,7 @@ export default function CustomerServiceDialog({
   open, 
   onOpenChange, 
   planName 
-}: .*Props) {
+}: CustomerServiceDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -66,7 +66,7 @@ export default function CustomerServiceDialog({
         
         <div className="flex justify-center">
           <Button 
-            onClick={() => onOpenChange(false)}
+            onClick={((: any): any) => onOpenChange(false)}
             variant="outline"
           >
             我知道了

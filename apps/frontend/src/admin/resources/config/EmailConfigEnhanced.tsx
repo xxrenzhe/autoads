@@ -101,7 +101,7 @@ export function EmailConfigEnhanced() {
     setLoading(true)
     try {
       const response = await fetch('/api/admin/email-config')
-      if (response.ok) => {
+      if (response.ok) {
         const data = await response.json()
         setConfig(data.emailConfig)
       }
@@ -125,7 +125,7 @@ export function EmailConfigEnhanced() {
         body: JSON.stringify({ emailConfig: config }),
       })
 
-      if (response.ok) => {
+      if (response.ok) {
         toast.success('Email configuration saved')
         setReloadStatus('pending')
         
@@ -145,7 +145,7 @@ export function EmailConfigEnhanced() {
   }
 
   const handleTestEmail = async () => {
-    if (!testData.to || !testData.subject) => {
+    if (!testData.to || !testData.subject) {
       toast.error('Recipient and subject are required')
       return
     }
@@ -159,7 +159,7 @@ export function EmailConfigEnhanced() {
         body: JSON.stringify(testData),
       })
 
-      if (response.ok) => {
+      if (response.ok) {
         toast.success('Test email sent successfully')
         setTestDialogOpen(false)
       } else {
@@ -179,7 +179,7 @@ export function EmailConfigEnhanced() {
       const keys = path.split('.')
       let current: any = newConfig
       
-      for (let i = 0; i < keys.length - 1; i++) => {
+      for (let i = 0; i < keys.length - 1; i++) {
         current[keys[i]] = { ...current[keys[i]] }
         current = current[keys[i]]
       }
@@ -189,7 +189,7 @@ export function EmailConfigEnhanced() {
     })
   }
 
-  if (!config) => {
+  if (!config) {
     return <div>Loading...</div>
   }
 
@@ -262,7 +262,7 @@ export function EmailConfigEnhanced() {
                         id="to"
                         type="email"
                         value={testData.to}
-                        onChange={(e) => setTestData({ ...testData, to: e.target.value })}
+                        onChange={((e: any): any) => setTestData({ ...testData, to: e.target.value })}
                         className="col-span-3"
                         placeholder="test@example.com"
                       />
@@ -274,13 +274,13 @@ export function EmailConfigEnhanced() {
                       <Input
                         id="subject"
                         value={testData.subject}
-                        onChange={(e) => setTestData({ ...testData, subject: e.target.value })}
+                        onChange={((e: any): any) => setTestData({ ...testData, subject: e.target.value })}
                         className="col-span-3"
                       />
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setTestDialogOpen(false)}>
+                    <Button variant="outline" onClick={((: any): any) => setTestDialogOpen(false)}>
                       Cancel
                     </Button>
                     <Button onClick={handleTestEmail}>
@@ -337,7 +337,7 @@ export function EmailConfigEnhanced() {
                         id="from"
                         type="email"
                         value={config.from}
-                        onChange={(e) => updateConfig('from', e.target.value)}
+                        onChange={((e: any): any) => updateConfig('from', e.target.value)}
                         placeholder="noreply@example.com"
                       />
                     </div>
@@ -351,7 +351,7 @@ export function EmailConfigEnhanced() {
                           <Input
                             id="host"
                             value={config.smtp.host}
-                            onChange={(e) => updateConfig('smtp.host', e.target.value)}
+                            onChange={((e: any): any) => updateConfig('smtp.host', e.target.value)}
                             placeholder="smtp.example.com"
                           />
                         </div>
@@ -362,7 +362,7 @@ export function EmailConfigEnhanced() {
                             id="port"
                             type="number"
                             value={config.smtp.port}
-                            onChange={(e) => updateConfig('smtp.port', parseInt(e.target.value))}
+                            onChange={((e: any): any) => updateConfig('smtp.port', parseInt(e.target.value))}
                           />
                         </div>
                       </div>
@@ -373,7 +373,7 @@ export function EmailConfigEnhanced() {
                           <Input
                             id="user"
                             value={config.smtp.user}
-                            onChange={(e) => updateConfig('smtp.user', e.target.value)}
+                            onChange={((e: any): any) => updateConfig('smtp.user', e.target.value)}
                           />
                         </div>
                         
@@ -383,7 +383,7 @@ export function EmailConfigEnhanced() {
                             id="pass"
                             type="password"
                             value={config.smtp.pass}
-                            onChange={(e) => updateConfig('smtp.pass', e.target.value)}
+                            onChange={((e: any): any) => updateConfig('smtp.pass', e.target.value)}
                           />
                         </div>
                       </div>
@@ -429,7 +429,7 @@ export function EmailConfigEnhanced() {
                             id="rateLimit"
                             type="number"
                             value={config.rateLimit}
-                            onChange={(e) => updateConfig('rateLimit', parseInt(e.target.value))}
+                            onChange={((e: any): any) => updateConfig('rateLimit', parseInt(e.target.value))}
                           />
                         </div>
                         
@@ -439,7 +439,7 @@ export function EmailConfigEnhanced() {
                             id="maxRetries"
                             type="number"
                             value={config.maxRetries}
-                            onChange={(e) => updateConfig('maxRetries', parseInt(e.target.value))}
+                            onChange={((e: any): any) => updateConfig('maxRetries', parseInt(e.target.value))}
                           />
                         </div>
                       </div>
@@ -530,7 +530,7 @@ export function EmailConfigEnhanced() {
                       <Input
                         id="domain"
                         value={config.dkim.domain}
-                        onChange={(e) => updateConfig('dkim.domain', e.target.value)}
+                        onChange={((e: any): any) => updateConfig('dkim.domain', e.target.value)}
                         placeholder="example.com"
                       />
                     </div>
@@ -540,7 +540,7 @@ export function EmailConfigEnhanced() {
                       <Input
                         id="selector"
                         value={config.dkim.selector}
-                        onChange={(e) => updateConfig('dkim.selector', e.target.value)}
+                        onChange={((e: any): any) => updateConfig('dkim.selector', e.target.value)}
                         placeholder="default"
                       />
                     </div>

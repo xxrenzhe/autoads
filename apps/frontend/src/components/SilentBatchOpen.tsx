@@ -245,7 +245,7 @@ const initialState: SilentBatchOpenState = {
 
 // 状态reducer
 function stateReducer(state: SilentBatchOpenState, action: SilentBatchOpenAction): SilentBatchOpenState {
-  switch (action.type) => {
+  switch (action.type) {
     case 'SET_INPUT':
       return { ...state, input: action.payload };
     case 'SET_URLS':
@@ -373,13 +373,13 @@ function stateReducer(state: SilentBatchOpenState, action: SilentBatchOpenAction
         
         // 提取代理数量 (例如: "5个代理")
         const proxyCountMatch = msg.match(/(\d+)\s*个?\s*代理/);
-        if (proxyCountMatch) => {
+        if (proxyCountMatch) {
           stats.currentProxyCount = parseInt(proxyCountMatch[1]);
         }
         
         // 提取获取进度 (例如: "(5/10)")
         const progressMatch = msg.match(/\((\d+)\/(\d+)\)/);
-        if (progressMatch) => {
+        if (progressMatch) {
           stats.currentCount = parseInt(progressMatch[1]);
           stats.targetCount = parseInt(progressMatch[2]);
           stats.acquisitionProgress = Math.round((stats.currentCount / stats.targetCount) * 100);
@@ -568,24 +568,24 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
     const errors: typeof paramErrors = {};
     const currentCycleCount = parseInt(cycleCountInput) || 5;
         
-    if (currentCycleCount < 1 || currentCycleCount > 1000) => {
+    if (currentCycleCount < 1 || currentCycleCount > 1000) {
       errors.cycleCount = "每个URL打开次数必须在1-1000之间";
     }
 
     
-    if (!proxyUrl.trim()) => {
+    if (!proxyUrl.trim()) {
       // 移除"代理API地址不能为空"的提示文案
       // errors.proxyUrl = "代理API地址不能为空";
-    } else if (!proxyUrl.startsWith('http')) => {
+    } else if (!proxyUrl.startsWith('http')) {
       errors.proxyUrl = "代理API地址必须以http开头";
     }
 
-    if (refererOption === "custom") => {
+    if (refererOption === "custom") {
       // 自定义模式下，允许空referer（不发送Referer头）
-      if (customReferer.trim()) => {
-        if (!customReferer.trim().startsWith('http://') && !customReferer.trim().startsWith('https://')) => {
+      if (customReferer.trim()) {
+        if (!customReferer.trim().startsWith('http://') && !customReferer.trim().startsWith('https://')) {
           errors.customReferer = "自定义Referer必须以http://或https://开头";
-        } else if (!customReferer.trim().match(/^https?:\/\/[^\s/$.?#].[^\s]*$/i)) => {
+        } else if (!customReferer.trim().match(/^https?:\/\/[^\s/$.?#].[^\s]*$/i)) {
           errors.customReferer = "请输入有效的URL格式";
         }
       }
@@ -632,7 +632,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
     });
     
     // 检查是否提供了代理URL
-    if (!url || !url.trim()) => {
+    if (!url || !url.trim()) {
       dispatch({ type: 'SET_ERROR', payload: "" });
       dispatch({ type: 'SET_PROXY_VALIDATION_SUCCESS', payload: false });
       dispatch({ type: 'SET_LAST_VALIDATED_PROXY_URL', payload: null });
@@ -640,7 +640,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
     }
     
     // 检查验证是否已禁用
-    if (validationConfig && !validationConfig.enabled) => {
+    if (validationConfig && !validationConfig.enabled) {
       logger.info('代理验证已禁用，跳过验证');
       dispatch({ type: 'SET_PROXY_VALIDATION_SUCCESS', payload: true });
       dispatch({ type: 'SET_LAST_VALIDATED_PROXY_URL', payload: url.trim() });
@@ -649,7 +649,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
     }
     
     // 检查是否已经验证过相同的URL
-    if (proxyValidationSuccess && lastValidatedProxyUrl === url.trim()) => {
+    if (proxyValidationSuccess && lastValidatedProxyUrl === url.trim()) {
       logger.info('URL已验证过，跳过重复验证');
       return true;
     }
@@ -677,7 +677,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
 
       const result = await response.json();
       
-      if (result.success) => {
+      if (result.success) {
         logger.info('代理URL验证成功:', result.proxy);
         dispatch({ type: 'SET_STATUS', payload: "代理URL格式正确，成功获取代理IP！" });
         dispatch({ type: 'SET_PROXY_VALIDATION_SUCCESS', payload: true });
@@ -694,7 +694,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
     } catch (error) {
       logger.error('验证代理URL时发生错误:', new EnhancedError('验证代理URL时发生错误:', { error: error instanceof Error ? error.message : String(error)  }));
       
-      if (error instanceof Error && error.name === 'AbortError') => {
+      if (error instanceof Error && error.name === 'AbortError') {
         dispatch({ type: 'SET_ERROR', payload: '代理URL验证超时，请检查网络连接或稍后重试' });
       } else {
         dispatch({ type: 'SET_ERROR', payload: '代理URL验证网络错误，请检查网络连接' });
@@ -711,7 +711,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
   // 开始批量打开
   const startBatchOpen = useCallback(async () => {
     // 如果已经有任务运行过，重置所有状态（除了 hasTaskRun 和 showProgress）
-    if (hasTaskRun) => {
+    if (hasTaskRun) {
       dispatch({ type: 'SET_PROGRESS', payload: 0 });
       dispatch({ type: 'SET_SUCCESS_COUNT', payload: 0 });
       dispatch({ type: 'SET_FAIL_COUNT', payload: 0 });
@@ -751,12 +751,12 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
     });
     
         
-    if (!validateParams()) => {
+    if (!validateParams()) {
       return;
     }
 
     const parsedUrls = parseUrls(input);
-    if (parsedUrls.length === 0) => {
+    if (parsedUrls.length === 0) {
       dispatch({ type: 'SET_ERROR', payload: "请输入至少一个URL" });
       return;
     }
@@ -769,13 +769,13 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
     });
 
     // 检查代理验证状态
-    if (!proxyValidationSuccess) => {
+    if (!proxyValidationSuccess) {
       // 如果验证已禁用，直接允许启动
-      if (validationConfig && !validationConfig.enabled) => {
+      if (validationConfig && !validationConfig.enabled) {
         logger.info('代理验证已禁用，允许启动任务');
       } else {
         // 验证启用但未通过验证
-        if (!proxyUrl.trim()) => {
+        if (!proxyUrl.trim()) {
           dispatch({ type: 'SET_ERROR', payload: "请先配置代理API地址并验证" });
         } else {
           dispatch({ type: 'SET_ERROR', payload: "代理验证失败，请先验证代理配置" });
@@ -829,18 +829,18 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
         }
       );
       
-      if (!tokenResult.success) => {
+      if (!tokenResult.success) {
         return;
       }
       
       // 计算需要的代理数量（与后端保持一致）
       const calculateRequiredProxyCount = (totalVisits: number): number => {
         // 使用当前策略
-        if (totalVisits < 20) => {
+        if (totalVisits < 20) {
           return totalVisits + 5;
-        } else if (totalVisits < 50) => {
+        } else if (totalVisits < 50) {
           return Math.ceil(totalVisits * 1.3);
-        } else if (totalVisits < 100) => {
+        } else if (totalVisits < 100) {
           return Math.ceil(totalVisits * 1.2);
         } else {
           return Math.ceil(totalVisits * 1.1);
@@ -886,32 +886,32 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
         body: JSON.stringify(requestData),
       });
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error(`启动失败: ${response.status}`);
       }
 
       const result = await response.json();
-      if (!result.success) => {
+      if (!result.success) {
         throw new Error(result.message || '启动失败');
       }
 
       logger.info('任务启动成功，开始轮询进度:', { taskId: newTaskId });
 
-    } catch (err) => {
+    } catch (err) {
       logger.error('启动失败:', new EnhancedError('启动失败:', { error: err instanceof Error ? err.message : String(err)  }));
       
       let errorMessage = err instanceof Error ? err.message : '未知错误';
       
       // 针对代理相关错误提供更友好的提示
-      if (errorMessage.includes('代理验证失败')) => {
+      if (errorMessage.includes('代理验证失败')) {
         errorMessage = '代理验证失败，请检查代理配置后重试';
-      } else if (errorMessage.includes('代理API返回了无效的代理配置')) => {
+      } else if (errorMessage.includes('代理API返回了无效的代理配置')) {
         errorMessage = '用户提供的代理API无法提供可用的代理IP！\n\n可能的原因：\n1. 代理API地址不正确\n2. 代理API服务不可用\n3. 代理账号余额不足\n\n请检查代理配置后，点击"验证代理"按钮重新验证。';
-      } else if (errorMessage.includes('代理URL验证失败')) => {
+      } else if (errorMessage.includes('代理URL验证失败')) {
         errorMessage = '代理URL验证失败！\n\n请检查代理API地址是否正确，然后点击"验证代理"按钮重新验证。';
-      } else if (errorMessage.includes('未能获取到任何有效的代理配置')) => {
+      } else if (errorMessage.includes('未能获取到任何有效的代理配置')) {
         errorMessage = '用户提供的代理API未能返回任何有效的代理配置！\n\n请检查您的代理API地址和服务状态，然后重新验证。';
-      } else if (errorMessage.includes('代理')) => {
+      } else if (errorMessage.includes('代理')) {
         errorMessage = `代理服务异常：${errorMessage}\n\n请检查代理配置或尝试稍后重试。`;
       }
       
@@ -936,7 +936,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
       let terminateSuccess = false;
       let lastError: string | null = null;
       
-      for (let attempt = 1; attempt <= 3; attempt++) => {
+      for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           logger.info(`终止请求尝试 ${attempt}/3`);
           
@@ -949,7 +949,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
             body: JSON.stringify({ taskId })
           });
 
-          if (response.ok) => {
+          if (response.ok) {
             const result = await response.json();
             logger.info('终止请求成功:', result);
             terminateSuccess = true;
@@ -959,19 +959,19 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
             lastError = errorResult.message || '未知错误';
             logger.error(`终止请求失败 (尝试 ${attempt}):`, errorResult);
           }
-        } catch (attemptError) => {
+        } catch (attemptError) {
           // 忽略网络错误，直接记录并继续重试
           lastError = attemptError instanceof Error ? attemptError.message : String(attemptError);
           logger.warn(`终止请求异常 (尝试 ${attempt}):`, { error: lastError });
         }
         
         // 如果不是最后一次尝试，等待一段时间再重试
-        if (attempt < 3) => {
+        if (attempt < 3) {
           await new Promise(resolve => setTimeout(resolve, 500)); // 缩短重试间隔
         }
       }
 
-      if (terminateSuccess) => {
+      if (terminateSuccess) {
         // 设置状态为已终止，但保持轮询以获取最终状态
         dispatch({ type: 'SET_STATUS', payload: "任务已终止" });
         dispatch({ type: 'SET_ERROR', payload: "" });
@@ -993,15 +993,15 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
           dispatch({ type: 'SET_IS_OPENING', payload: false });
           dispatch({ type: 'SET_IS_TASK_RUNNING', payload: false }); // 重置任务运行状态
           // 注意：不在这里设置setIsFetchingProxies(false)
-          if (pollIntervalRef.current) => {
+          if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
           }
         }, 2000);
       }
-    } catch (err) => {
+    } catch (err) {
       // 特殊处理：如果是超时导致的abort，显示更友好的错误信息
-      if (err instanceof Error && err.name === 'AbortError' && err.message === 'signal is aborted without reason') => {
+      if (err instanceof Error && err.name === 'AbortError' && err.message === 'signal is aborted without reason') {
         logger.warn('终止请求超时');
         dispatch({ type: 'SET_ERROR', payload: '终止请求超时，请重试' });
       } else {
@@ -1014,7 +1014,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
         dispatch({ type: 'SET_IS_OPENING', payload: false });
         dispatch({ type: 'SET_IS_TASK_RUNNING', payload: false }); // 重置任务运行状态
         // 注意：不在这里设置setIsFetchingProxies(false)
-        if (pollIntervalRef.current) => {
+        if (pollIntervalRef.current) {
           clearInterval(pollIntervalRef.current);
           pollIntervalRef.current = null;
         }
@@ -1041,21 +1041,21 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
     dispatch({ type: 'SET_STATUS', payload: data.message || '正在处理...' });
     
     // 更新阶段相关信息
-    if (data.proxyPhase) => {
+    if (data.proxyPhase) {
       dispatch({ type: 'SET_PROXY_PHASE', payload: data.proxyPhase });
     }
-    if (data.phaseStatus) => {
+    if (data.phaseStatus) {
       dispatch({ type: 'SET_PHASE_STATUS', payload: data.phaseStatus });
     }
-    if (data.completedPhases) => {
+    if (data.completedPhases) {
       dispatch({ type: 'SET_COMPLETED_PHASES', payload: data.completedPhases });
     }
-    if (data.phaseProgress) => {
+    if (data.phaseProgress) {
       dispatch({ type: 'SET_PHASE_PROGRESS', payload: data.phaseProgress });
     }
     
     // 如果后端提供了pendingCount，使用它；否则计算
-    if (data.pendingCount !== undefined) => {
+    if (data.pendingCount !== undefined) {
       dispatch({ type: 'SET_PENDING_COUNT', payload: data.pendingCount });
     } else {
       // 计算pendingCount
@@ -1064,16 +1064,16 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
     }
     
     // 检查是否正在获取代理
-    if (data.message && (data.message.includes('正在获取代理IP') || data.message.includes('正在准备获取代理IP'))) => {
+    if (data.message && (data.message.includes('正在获取代理IP') || data.message.includes('正在准备获取代理IP'))) {
       dispatch({ type: 'SET_IS_FETCHING_PROXIES', payload: true });
     } else if (data.message && (data.message.includes('代理获取完成') || 
               data.message.includes('开始批量访问') ||
-              data.message.includes('正在处理'))) => {
+              data.message.includes('正在处理'))) {
       dispatch({ type: 'SET_IS_FETCHING_PROXIES', payload: false });
     }
     
     // 处理任务状态
-    if (data.status === 'completed') => {
+    if (data.status === 'completed') {
       // 记录任务结束时间
       const endTime = Date.now();
       console.log('SilentBatchOpen Debug - Task Completed:', {
@@ -1090,7 +1090,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
       
       // 优先使用后端计算的耗时（如果提供）
       const backendDuration = data.duration || data.elapsedTime;
-      if (backendDuration) => {
+      if (backendDuration) {
         // 后端提供了耗时信息（毫秒），转换为秒
         const durationInSeconds = Math.floor(backendDuration / 1000);
         const minutes = Math.floor(durationInSeconds / 60);
@@ -1121,7 +1121,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
       dispatch({ type: 'SET_PROGRESS', payload: 100 });
       dispatch({ type: 'SET_SHOW_PROGRESS', payload: true });
       dispatch({ type: 'SET_HAS_TASK_RUN', payload: true });
-    } else if (data.status === 'error') => {
+    } else if (data.status === 'error') {
       dispatch({ type: 'SET_ERROR', payload: data.message });
       dispatch({ type: 'SET_IS_POLLING', payload: false });
       dispatch({ type: 'SET_IS_OPENING', payload: false });
@@ -1133,7 +1133,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
       }, 1000);
       dispatch({ type: 'SET_SHOW_PROGRESS', payload: true });
       dispatch({ type: 'SET_HAS_TASK_RUN', payload: true });
-    } else if (data.status === 'terminated') => {
+    } else if (data.status === 'terminated') {
       dispatch({ type: 'SET_STATUS', payload: "任务已终止" });
       dispatch({ type: 'SET_IS_POLLING', payload: false });
       dispatch({ type: 'SET_IS_OPENING', payload: false });
@@ -1175,17 +1175,17 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
         const response = await fetch(`/api/batchopen/silent-progress?taskId=${taskId}&t=${Date.now()}`);
         const data = await response.json();
         
-        if (data.success) => {
+        if (data.success) {
           handleProgressUpdate(data);
           
           // 检查任务是否已完成，如果是则立即停止轮询
-          if (data.status === 'completed' || data.status === 'error' || data.status === 'terminated') => {
+          if (data.status === 'completed' || data.status === 'error' || data.status === 'terminated') {
             // 等待一小段时间后再次查询，确保获取最终状态
             setTimeout(async () => {
               try {
                 const finalResponse = await fetch(`/api/batchopen/silent-progress?taskId=${taskId}&t=${Date.now()}`);
                 const finalData = await finalResponse.json();
-                if (finalData.success) => {
+                if (finalData.success) {
                   handleProgressUpdate(finalData);
                 }
               } catch (error) {
@@ -1200,7 +1200,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
             dispatch({ type: 'SET_IS_FETCHING_PROXIES', payload: false });
             
             // 立即清除轮询定时器
-            if (intervalId) => {
+            if (intervalId) {
               clearInterval(intervalId);
               intervalId = null;
             }
@@ -1220,7 +1220,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
     intervalId = setInterval(pollProgress, 2000);
     
     return () => {
-      if (intervalId) => {
+      if (intervalId) {
         clearInterval(intervalId);
       }
     };
@@ -1233,7 +1233,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
         const response = await fetch('/api/batchopen/validation-config');
         const data = await response.json();
         
-        if (data.success) => {
+        if (data.success) {
           dispatch({ type: 'SET_VALIDATION_CONFIG', payload: data.config });
           logger.info('验证配置加载成功', { config: data.config });
         } else {

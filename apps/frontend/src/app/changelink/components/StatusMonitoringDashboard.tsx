@@ -47,7 +47,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
   }, []);
 
   const getStatusColor = useCallback((status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'running':
         return 'bg-green-500';
       case 'paused':
@@ -62,7 +62,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
   }, []);
 
   const getStatusIcon = useCallback((status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'running':
         return <Activity className="h-4 w-4" />;
       case 'paused':
@@ -221,7 +221,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onNavigateToDetails(exec.executionId)}
+                          onClick={((: any): any) => onNavigateToDetails(exec.executionId)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Details
@@ -257,7 +257,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                              <Button
                                size="sm"
                                variant="outline"
-                               onClick={() => onPauseExecution(exec.executionId)}
+                               onClick={((: any): any) => onPauseExecution(exec.executionId)}
                              >
                                <Pause className="h-4 w-4 mr-1" />
                                Pause
@@ -265,7 +265,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                              <Button
                                size="sm"
                                variant="destructive"
-                               onClick={() => onStopExecution(exec.executionId)}
+                               onClick={((: any): any) => onStopExecution(exec.executionId)}
                              >
                                <Square className="h-4 w-4 mr-1" />
                                Stop
@@ -276,7 +276,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                            <>
                              <Button
                                size="sm"
-                               onClick={() => onResumeExecution(exec.executionId)}
+                               onClick={((: any): any) => onResumeExecution(exec.executionId)}
                              >
                                <Play className="h-4 w-4 mr-1" />
                                Resume
@@ -284,7 +284,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                              <Button
                                size="sm"
                                variant="destructive"
-                               onClick={() => onStopExecution(exec.executionId)}
+                               onClick={((: any): any) => onStopExecution(exec.executionId)}
                              >
                                <Square className="h-4 w-4 mr-1" />
                                Stop

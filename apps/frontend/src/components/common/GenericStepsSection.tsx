@@ -66,7 +66,7 @@ const GenericStepsSection = ({
   colorTheme = "blue",
   layout = "horizontal",
   showStepNumbers = true,
-}: .*Props) {
+}: GenericStepsSectionProps) => {
   const theme = colorThemes[colorTheme];
   const isHorizontal = layout === "horizontal";
 

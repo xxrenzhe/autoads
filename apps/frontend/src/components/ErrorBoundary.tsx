@@ -34,7 +34,7 @@ interface ErrorBoundaryState {
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) => {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
@@ -47,19 +47,19 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     };
   }
 
-  override componentDidCatch(error: Error, errorInfo: ErrorInfo) => {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({
       error,
       errorInfo
     });
 
     // 调用自定义错误处理器
-    if (this.props.onError) => {
+    if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
 
     // 记录错误到控制台（开发环境）
-    if (process.env.NODE_ENV === 'development') => {
+    if (process.env.NODE_ENV === 'development') {
       console.error(`ErrorBoundary [${this.props.context || 'global'}] caught an error:`, error, errorInfo);
     }
 
@@ -88,18 +88,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       };
 
       // 存储到localStorage用于调试
-      if (typeof localStorage !== 'undefined') => {
+      if (typeof localStorage !== 'undefined') {
         const existingErrors = JSON.parse(localStorage.getItem('app_errors') || '[]');
         existingErrors.push(errorReport);
         
         // 只保留最近的20个错误
-        if (existingErrors.length > 20) => {
+        if (existingErrors.length > 20) {
           existingErrors.splice(0, existingErrors.length - 20);
         }
         
         localStorage.setItem('app_errors', JSON.stringify(existingErrors));
       }
-    } catch (reportingError) => { 
+    } catch (reportingError) { 
       logger.error('Failed to report error:', new EnhancedError('Failed to report error:', { error: reportingError instanceof Error ? reportingError.message : String(reportingError) 
        }));
     }
@@ -111,15 +111,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   goHome = () => {
     const homeUrl = this.props.homeUrl || '/';
-    if (typeof window !== 'undefined') => {
+    if (typeof window !== 'undefined') {
       window.location.href = homeUrl;
     }
   };
 
-  override render() => {
-    if (this.state.hasError) => {
+  override render() {
+    if (this.state.hasError) {
       // 如果提供了自定义fallback组件，使用它
-      if (this.props.fallbackComponent) => {
+      if (this.props.fallbackComponent) {
         const FallbackComponent = this.props.fallbackComponent;
         return (
           <FallbackComponent 
@@ -132,7 +132,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       // 如果提供了自定义fallback JSX，使用它
-      if (this.props.fallback) => {
+      if (this.props.fallback) {
         return this.props.fallback;
       }
 
@@ -215,7 +215,7 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError,
             
             <Button 
               variant="outline" 
-              onClick={() => typeof window !== 'undefined' && window.location.reload()}
+              onClick={((: any): any) => typeof window !== 'undefined' && window.location.reload()}
               className="flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
@@ -282,8 +282,8 @@ export function withErrorBoundary<P extends object>(
     showHomeButton?: boolean;
     homeUrl?: string;
   }
-) => {
-  return function WrappedComponent(props: P) => {
+) {
+  return function WrappedComponent(props: P) {
     return (
       <ErrorBoundary {...options}>
         <Component {...props} />

@@ -133,12 +133,12 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
     const amount = parseFloat(customAmount);
     const tokens = parseInt(customTokens);
     
-    if (!amount || amount < 1) => {
+    if (!amount || amount < 1) {
       setError('请输入有效的充值金额');
       return;
     }
     
-    if (!tokens || tokens < 100) => {
+    if (!tokens || tokens < 100) {
       setError('最少充值100个Token');
       return;
     }
@@ -178,10 +178,10 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
 
       const data = await response.json();
 
-      if (data.success) => {
-        if (paymentMethod === 'stripe') => {
+      if (data.success) {
+        if (paymentMethod === 'stripe') {
           const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-          if (stripe) => {
+          if (stripe) {
             await stripe.redirectToCheckout({ sessionId: data.sessionId });
           }
         } else {
@@ -191,7 +191,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
       } else {
         setError(data.error || '创建支付订单失败');
       }
-    } catch (err) => {
+    } catch (err) {
       console.error('Payment error:', err);
       setError('支付系统暂时不可用，请稍后重试');
     } finally {
@@ -201,13 +201,13 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
 
   const simulatePaymentSuccess = () => {
     setActiveStep(3);
-    if (onRechargeSuccess && selectedPackage) => {
+    if (onRechargeSuccess && selectedPackage) {
       onRechargeSuccess(selectedPackage.tokens + selectedPackage.bonus);
     }
   };
 
   const getStepContent = (step: number) => {
-    switch (step) => {
+    switch (step) {
       case 0:
         return (
           <Box>
@@ -228,7 +228,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
                         boxShadow: 2
                       }
                     }}
-                    onClick={() => handlePackageSelect(pkg)}
+                    onClick={((: any): any) => handlePackageSelect(pkg)}
                   >
                     {pkg.popular && (
                       <Chip
@@ -272,7 +272,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
                   label="充值金额 (¥)"
                   type="number"
                   value={customAmount}
-                  onChange={(e) => setCustomAmount(e.target.value)}
+                  onChange={((e: any): any) => setCustomAmount(e.target.value)}
                   inputProps={{ min: 1, step: 0.1 }}
                 />
               </Grid>
@@ -282,7 +282,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
                   label="Token数量"
                   type="number"
                   value={customTokens}
-                  onChange={(e) => setCustomTokens(e.target.value)}
+                  onChange={((e: any): any) => setCustomTokens(e.target.value)}
                   inputProps={{ min: 100 }}
                 />
               </Grid>
@@ -323,7 +323,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
             <FormControl component="fieldset" fullWidth>
               <RadioGroup
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
+                onChange={((e: any): any) => setPaymentMethod(e.target.value)}
               >
                 <Card variant="outlined" sx={{ mb: 2, cursor: 'pointer' }}>
                   <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -509,7 +509,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
         </DialogContent>
         <DialogActions>
           {activeStep > 0 && activeStep < 3 && (
-            <Button onClick={() => setActiveStep(activeStep - 1)}>
+            <Button onClick={((: any): any) => setActiveStep(activeStep - 1)}>
               上一步
             </Button>
           )}

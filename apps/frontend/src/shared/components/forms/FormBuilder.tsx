@@ -126,12 +126,12 @@ function FieldRenderer<T extends FieldValues>({
   control: any;
   errors: any;
   layout?: 'vertical' | 'horizontal';
-}) => {
+}) {
   const error = errors[field.name];
   const fieldId = `field-${field.name}`;
 
   const renderField = () => {
-    switch (field.type) => {
+    switch (field.type) {
       case 'text':
       case 'email':
       case 'password':
@@ -169,7 +169,7 @@ function FieldRenderer<T extends FieldValues>({
                 max={numberField.max}
                 step={numberField.step}
                 className={clsx(error && "border-red-500", field.className)}
-                onChange={(e) => controllerField.onChange(Number(e.target.value))}
+                onChange={((e: any): any) => controllerField.onChange(Number(e.target.value))}
               />
             )}
           />
@@ -235,7 +235,7 @@ function FieldRenderer<T extends FieldValues>({
 
       case 'checkbox':
         const checkboxField = field as CheckboxFieldConfig;
-        if (checkboxField.options) => {
+        if (checkboxField.options) {
           // Multiple checkboxes
           return (
             <Controller
@@ -249,9 +249,9 @@ function FieldRenderer<T extends FieldValues>({
                         type="checkbox"
                         value={option.value}
                         checked={controllerField.value?.includes(option.value)}
-                        onChange={(e) => {
+                        onChange={((e: any): any) => {
                           const currentValue = controllerField.value || [];
-                          if (e.target.checked) => {
+                          if (e.target.checked) {
                             controllerField.onChange([...currentValue, option.value]);
                           } else {
                             controllerField.onChange(
@@ -280,7 +280,7 @@ function FieldRenderer<T extends FieldValues>({
                   <input
                     type="checkbox"
                     checked={controllerField.value || false}
-                    onChange={(e) => controllerField.onChange(e.target.checked)}
+                    onChange={((e: any): any) => controllerField.onChange(e.target.checked)}
                     disabled={field.disabled}
                     className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
@@ -305,7 +305,7 @@ function FieldRenderer<T extends FieldValues>({
                       type="radio"
                       value={option.value}
                       checked={controllerField.value === option.value}
-                      onChange={() => controllerField.onChange(option.value)}
+                      onChange={((: any): any) => controllerField.onChange(option.value)}
                       disabled={field.disabled || option.disabled}
                       className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                     />
@@ -349,7 +349,7 @@ function FieldRenderer<T extends FieldValues>({
                 accept={fileField.accept}
                 multiple={fileField.multiple}
                 disabled={field.disabled}
-                onChange={(e) => {
+                onChange={((e: any): any) => {
                   const files = e.target.files;
                   controllerField.onChange(fileField.multiple ? files : files?.[0]);
                 }}
@@ -371,7 +371,7 @@ function FieldRenderer<T extends FieldValues>({
 
   const isCheckboxOnly = field.type === 'checkbox' && !(field as CheckboxFieldConfig).options;
 
-  if (isCheckboxOnly) => {
+  if (isCheckboxOnly) {
     return (
       <div className={clsx("space-y-1", field.className)}>
         {renderField()}
@@ -426,7 +426,7 @@ export function FormBuilder<T extends FieldValues = FieldValues>({
   loading = false,
   className,
   layout = 'vertical'
-}: FormBuilderProps<T>) => {
+}: FormBuilderProps<T>) {
   const {
     control,
     handleSubmit,
@@ -482,7 +482,7 @@ export function FormBuilder<T extends FieldValues = FieldValues>({
           <Button
             type="button"
             variant="outline"
-            onClick={() => reset()}
+            onClick={((: any): any) => reset()}
             disabled={loading || isSubmitting}
           >
             {resetLabel}

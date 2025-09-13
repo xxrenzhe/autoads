@@ -110,7 +110,7 @@ interface PaymentStats {
 
 const PaymentStatusChip: React.FC<{ status: string }> = ({ status }) => {
   const getStatusProps = () => {
-    switch (status) => {
+    switch (status) {
       case 'SUCCEEDED':
         return {
           icon: <CheckCircle />,
@@ -197,7 +197,7 @@ const PaymentActions = () => {
   return (
     <TopToolbar>
       <Button
-        onClick={() => refresh()}
+        onClick={((: any): any) => refresh()}
         label="刷新"
         startIcon={<Refresh />}
       />
@@ -224,7 +224,7 @@ const PaymentStatsDashboard: React.FC = () => {
       const endDate = endOfDay(new Date());
       let startDate;
       
-      switch (timeRange) => {
+      switch (timeRange) {
         case '7d':
           startDate = startOfDay(subDays(endDate, 7));
           break;
@@ -238,7 +238,7 @@ const PaymentStatsDashboard: React.FC = () => {
       }
 
       const response = await fetch(`/api/admin/payments/stats?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
-      if (response.ok) => {
+      if (response.ok) {
         const data = await response.json();
         setStats(data);
       }
@@ -249,11 +249,11 @@ const PaymentStatsDashboard: React.FC = () => {
     }
   };
 
-  if (loading) => {
+  if (loading) {
     return <Loading />;
   }
 
-  if (!stats) => {
+  if (!stats) {
     return <Alert severity="error">无法加载统计数据</Alert>;
   }
 
@@ -266,7 +266,7 @@ const PaymentStatsDashboard: React.FC = () => {
         <SelectInput
           source="timeRange"
           value={timeRange}
-          onChange={(e) => setTimeRange(e.target.value as any)}
+          onChange={((e: any): any) => setTimeRange(e.target.value as any)}
           choices={[
             { id: '7d', name: '最近7天' },
             { id: '30d', name: '最近30天' },

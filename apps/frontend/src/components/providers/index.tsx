@@ -18,7 +18,7 @@ interface ProvidersProps {
   children: React.ReactNode
 }
 
-export function Providers({ children }: .*Props) {
+export function Providers({ children }: ProvidersProps) {
   return (
     <SessionProvider>
       <QueryClientProvider client={queryClient}>

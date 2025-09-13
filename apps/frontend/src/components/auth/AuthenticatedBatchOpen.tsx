@@ -10,7 +10,7 @@ interface AuthenticatedBatchOpenProps {
   t: (key: string) => string | string[]
 }
 
-export function AuthenticatedBatchOpen({ locale, t }: .*Props) {
+export function AuthenticatedBatchOpen({ locale, t }: AuthenticatedBatchOpenProps) {
   return (
     <ProtectedFeature
       feature="批量打开URL"
@@ -26,7 +26,7 @@ export function AuthenticatedBatchOpen({ locale, t }: .*Props) {
 }
 
 // 可选：创建一个不需要认证的版本（用于演示或公开访问）
-export function PublicBatchOpen({ locale, t }: .*Props) {
+export function PublicBatchOpen({ locale, t }: AuthenticatedBatchOpenProps) {
   return (
     <ProtectedFeature
       feature="批量打开URL"

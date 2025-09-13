@@ -23,10 +23,10 @@ interface AutoClickProgressMonitorProps {
 export default function AutoClickProgressMonitor({ 
   taskId, 
   className = "" 
-}: .*Props) {
+}: AutoClickProgressMonitorProps) {
   const { data, isConnected, error, lastUpdate } = useAutoClickLiveProgress(taskId);
 
-  if (!data) => {
+  if (!data) {
     return (
       <div className={`p-6 bg-gray-50 rounded-lg ${className}`}>
         <div className="flex items-center gap-2 text-gray-500">
@@ -38,7 +38,7 @@ export default function AutoClickProgressMonitor({
   }
 
   const getStatusInfo = () => {
-    switch (data.status) => {
+    switch (data.status) {
       case 'running':
         return {
           icon: <Zap className="w-5 h-5 text-green-600" />,

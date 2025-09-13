@@ -32,7 +32,7 @@ export interface SubscriptionReportsProps {
   className?: string
 }
 
-export function SubscriptionReports({ className }: .*Props) {
+export function SubscriptionReports({ className }: SubscriptionReportsProps) {
   const [selectedPeriod, setSelectedPeriod] = useState('30')
   const [selectedType, setSelectedType] = useState('all')
   const [generatingReports, setGeneratingReports] = useState<Set<string>>(new Set())
@@ -50,7 +50,7 @@ export function SubscriptionReports({ className }: .*Props) {
       if (selectedType !== 'all') params.append('type', selectedType)
 
       const response = await fetch(`/api/admin/subscription/reports?${params}`)
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Failed to fetch reports')
       }
       const result = await response.json()
@@ -71,7 +71,7 @@ export function SubscriptionReports({ className }: .*Props) {
         body: JSON.stringify({ type, period }),
       })
 
-      if (response.ok) => {
+      if (response.ok) {
         refetch()
       }
     } catch (error) {
@@ -88,7 +88,7 @@ export function SubscriptionReports({ className }: .*Props) {
   const downloadReport = async (reportId: string) => {
     try {
       const response = await fetch(`/api/admin/subscription/reports/${reportId}/download`)
-      if (response.ok) => {
+      if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -105,7 +105,7 @@ export function SubscriptionReports({ className }: .*Props) {
   }
 
   const getReportIcon = (type: string) => {
-    switch (type) => {
+    switch (type) {
       case 'revenue': return <DollarSign className="h-4 w-4 text-green-500" />
       case 'subscriptions': return <Users className="h-4 w-4 text-blue-500" />
       case 'churn': return <TrendingUp className="h-4 w-4 text-red-500" />
@@ -115,7 +115,7 @@ export function SubscriptionReports({ className }: .*Props) {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'ready': return 'success'
       case 'generating': return 'warning'
       case 'failed': return 'destructive'
@@ -130,7 +130,7 @@ export function SubscriptionReports({ className }: .*Props) {
     { id: 'growth', name: 'Growth Report', description: 'User acquisition and growth metrics' }
   ]
 
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <div className={`space-y-6 ${className}`}>
         <div className="flex items-center justify-between">
@@ -170,7 +170,7 @@ export function SubscriptionReports({ className }: .*Props) {
           </p>
         </div>
         
-        <Button onClick={() => refetch()} variant="outline" size="sm">
+        <Button onClick={((: any): any) => refetch()} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
@@ -189,7 +189,7 @@ export function SubscriptionReports({ className }: .*Props) {
             
             <select
               value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
+              onChange={((e: any): any) => setSelectedPeriod(e.target.value)}
               className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="7">Last 7 days</option>
@@ -201,7 +201,7 @@ export function SubscriptionReports({ className }: .*Props) {
             
             <select
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+              onChange={((e: any): any) => setSelectedType(e.target.value)}
               className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Types</option>
@@ -234,7 +234,7 @@ export function SubscriptionReports({ className }: .*Props) {
                 </p>
                 <Button
                   size="sm"
-                  onClick={() => generateReport(type.id, selectedPeriod)}
+                  onClick={((: any): any) => generateReport(type.id, selectedPeriod)}
                   disabled={generatingReports.has(`${type.id}-${selectedPeriod}`)}
                   className="w-full"
                 >
@@ -292,7 +292,7 @@ export function SubscriptionReports({ className }: .*Props) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => downloadReport(report.id)}
+                        onClick={((: any): any) => downloadReport(report.id)}
                       >
                         <Download className="h-3 w-3 mr-2" />
                         Download

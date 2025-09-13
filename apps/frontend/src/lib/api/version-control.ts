@@ -243,7 +243,7 @@ export class ApiVersionManager {
     Object.keys(transformed).forEach((key: any) => {
       if (typeof transformed[key] === 'object' && transformed[key] !== null) {
         if (Array.isArray(transformed[key])) {
-          transformed[key] = transformed[key].map(((item: any) => this.transformToV1(item));
+          transformed[key] = transformed[key].map((item: any: any) => this.transformToV1(item));
         } else {
           transformed[key] = this.transformToV1(transformed[key]);
         }

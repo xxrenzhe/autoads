@@ -114,7 +114,7 @@ const SubscriptionStatus: React.FC = () => {
   if (!record) return null as any;
   
   const getStatusColor = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'active': return 'success';
       case 'trial': return 'info';
       case 'cancelled': return 'warning';
@@ -124,7 +124,7 @@ const SubscriptionStatus: React.FC = () => {
   };
   
   const getStatusLabel = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'active': return '激活';
       case 'trial': return '试用';
       case 'cancelled': return '已取消';

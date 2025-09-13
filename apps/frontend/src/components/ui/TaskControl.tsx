@@ -44,7 +44,7 @@ export function TaskControl({
   disabled = false,
   showStats = false,
   className = ''
-}: .*Props) {
+}: TaskControlProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [stats, setStats] = useState<TaskStats>({
     completed: 0,
@@ -54,7 +54,7 @@ export function TaskControl({
 
   // 计算任务统计信息
   React.useEffect(() => {
-    if (taskStatus) => {
+    if (taskStatus) {
       const completed = taskStatus.successCount || 0;
       const failed = taskStatus.failCount || 0;
       const total = taskStatus.total || 0;
@@ -66,11 +66,11 @@ export function TaskControl({
       };
       
       // 计算运行时间和速度
-      if (taskStatus.startTime) => {
+      if (taskStatus.startTime) {
         const duration = Date.now() - taskStatus.startTime;
         newStats.duration = duration;
         
-        if (completed > 0 && duration > 0) => {
+        if (completed > 0 && duration > 0) {
           const speed = (completed / duration) * 1000 * 60; // per minute
           newStats.speed = speed;
         }
@@ -87,7 +87,7 @@ export function TaskControl({
     setActionLoading('terminate');
     try {
       const success = await silentBatchTaskManager.terminateTask(taskId);
-      if (success) => {
+      if (success) {
         onStop?.();
       }
     } catch (error) {
@@ -99,7 +99,7 @@ export function TaskControl({
 
   // 获取状态显示信息
   const getStatusInfo = useCallback(() => {
-    switch (taskStatus?.status) => {
+    switch (taskStatus?.status) {
       case 'running':
         return {
           label: '运行中',

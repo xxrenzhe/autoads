@@ -25,13 +25,13 @@ export default function OAuthCallbackPage() {
       const state = searchParams.get('state'); // 账户ID
       const error = searchParams.get('error');
 
-      if (error) => {
+      if (error) {
         setStatus('error');
         setMessage(`授权失败: ${error}`);
         return;
       }
 
-      if (!code || !state) => {
+      if (!code || !state) {
         setStatus('error');
         setMessage('缺少必要的授权参数');
         return;
@@ -40,7 +40,7 @@ export default function OAuthCallbackPage() {
       // 获取账户信息以获取 client_id 和 client_secret
       const accounts = await globalConfigurationManager.getGoogleAdsAccounts();
       const account = accounts.find((acc: any) => acc.id === state);
-      if (!account || !account.clientId || !account.clientSecret) => {
+      if (!account || !account.clientId || !account.clientSecret) {
         setStatus('error');
         setMessage('无法获取账户配置信息');
         return;
@@ -61,7 +61,7 @@ export default function OAuthCallbackPage() {
         }),
       });
 
-      if (!tokenResponse.ok) => {
+      if (!tokenResponse.ok) {
         throw new Error('获取访问令牌失败');
       }
 

@@ -82,7 +82,7 @@ interface StripeConfig {
 
 const ProviderStatusChip: React.FC<{ status: string }> = ({ status }) => {
   const getStatusProps = () => {
-    switch (status) => {
+    switch (status) {
       case 'HEALTHY':
         return {
           icon: <CheckCircle />,
@@ -139,7 +139,7 @@ const StripeConfigForm: React.FC<{
   });
 
   useEffect(() => {
-    if (provider?.config) => {
+    if (provider?.config) {
       setConfig({
         ...config,
         ...provider.config,
@@ -176,7 +176,7 @@ const StripeConfigForm: React.FC<{
             <Select
               value={config.currency}
               label="币种"
-              onChange={(e) => setConfig({ ...config, currency: e.target.value })}
+              onChange={((e: any): any) => setConfig({ ...config, currency: e.target.value })}
             >
               <MenuItem value="USD">美元 (USD)</MenuItem>
               <MenuItem value="CNY">人民币 (CNY)</MenuItem>
@@ -232,7 +232,7 @@ const StripeConfigForm: React.FC<{
           <Select
             multiple
             value={config.supportedPaymentMethods}
-            onChange={(e) => setConfig({ ...config, supportedPaymentMethods: e.target.value as string[] })}
+            onChange={((e: any): any) => setConfig({ ...config, supportedPaymentMethods: e.target.value as string[] })}
           >
             <MenuItem value="card">银行卡</MenuItem>
             <MenuItem value="alipay">支付宝</MenuItem>
@@ -361,7 +361,7 @@ const PaymentProviderListActions = () => {
   return (
     <TopToolbar>
       <Button
-        onClick={() => setStripeDialogOpen(true)}
+        onClick={((: any): any) => setStripeDialogOpen(true)}
         variant="contained"
         startIcon={<Add />}
         sx={{ mr: 2 }}
@@ -423,7 +423,7 @@ export const PaymentProviderListEnhanced: React.FC = () => {
         body: JSON.stringify({ providerId: provider.id }),
       });
 
-      if (response.ok) => {
+      if (response.ok) {
         notify('健康检查完成', { type: 'success' });
         refresh();
       } else {

@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/v5-config';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
-import { NotificationService } from '@/lib/services/notification-service';
-import { StripeService } from '@/lib/services/stripe-service';
 
 // Action validation schema
 const actionSchema = z.object({
@@ -112,28 +110,8 @@ async function cancelSubscription(subscription: any, data: any) {
     },
   });
 
-  // 发送取消通知
-  try {
-    await NotificationService.sendNotification({
-      userId: updated.user.id,
-      type: 'SYSTEM',
-      template: 'SUBSCRIPTION_CANCELED',
-      data: {
-        planName: updated.plan.name,
-        immediate,
-        reason
-      }
-    })
-  } catch {}
-
-  // 同步到Stripe（若存在）
-  try {
-    if (subscription.provider === 'stripe' && subscription.providerSubscriptionId) {
-      await StripeService.cancelSubscription(subscription.id, !immediate)
-    }
-  } catch (e) {
-    console.warn('Stripe cancel failed (non-fatal):', e)
-  }
+  // TODO: Send cancellation notification to user
+  // TODO: Cancel Stripe subscription if exists
 
   return {
     success: true,
@@ -166,19 +144,8 @@ async function renewSubscription(subscription: any, data: any) {
     },
   });
 
-  // 通知续订
-  try {
-    await NotificationService.sendNotification({
-      userId: updated.user.id,
-      type: 'SYSTEM',
-      template: 'SUBSCRIPTION_RENEWED',
-      data: {
-        planName: updated.plan.name,
-        extendCurrent,
-        duration
-      }
-    })
-  } catch {}
+  // TODO: Send renewal notification to user
+  // TODO: Create Stripe invoice if needed
 
   return {
     success: true,
@@ -219,19 +186,8 @@ async function upgradeSubscription(subscription: any, data: any) {
     },
   });
 
-  // 通知升级
-  try {
-    await NotificationService.sendNotification({
-      userId: updated.user.id,
-      type: 'SYSTEM',
-      template: 'SUBSCRIPTION_UPGRADED',
-      data: {
-        oldPlan: subscription.plan.name,
-        newPlan: updated.plan.name,
-        prorate
-      }
-    })
-  } catch {}
+  // TODO: Handle proration billing
+  // TODO: Send upgrade notification to user
 
   return {
     success: true,
@@ -244,34 +200,13 @@ async function upgradeSubscription(subscription: any, data: any) {
 async function refundSubscription(subscription: any, data: any) {
   const { amount, reason = 'Admin refund' } = data || {};
 
-  // 记录退款（本地记录，Stripe退款需另行实现）
-  if (amount && amount > 0) {
-    await prisma.payment.create({
-      data: {
-        userId: subscription.userId,
-        subscriptionId: subscription.id,
-        amount: -Math.abs(amount),
-        currency: subscription.plan?.currency || 'USD',
-        status: 'REFUNDED',
-        provider: subscription.provider,
-        metadata: { reason }
-      }
-    })
-  }
+  // TODO: Process refund through Stripe
+  // TODO: Create refund record
 
   const updated = await prisma.subscription.update({
     where: { id: subscription.id },
     data: {},
   });
-
-  try {
-    await NotificationService.sendNotification({
-      userId: subscription.userId,
-      type: 'SYSTEM',
-      template: 'SUBSCRIPTION_REFUNDED',
-      data: { amount: amount ?? null, reason }
-    })
-  } catch {}
 
   return {
     success: true,
@@ -295,16 +230,8 @@ async function pauseSubscription(subscription: any, data: any) {
     },
   });
 
-  // 发送暂停通知并记录计划恢复时间
-  const resumeDate = new Date(Date.now() + pauseDuration * 24 * 60 * 60 * 1000)
-  try {
-    await NotificationService.sendNotification({
-      userId: subscription.userId,
-      type: 'SYSTEM',
-      template: 'SUBSCRIPTION_PAUSED',
-      data: { pauseDuration, resumeDate: resumeDate.toISOString() }
-    })
-  } catch {}
+  // TODO: Schedule automatic resumption
+  // TODO: Send pause notification to user
 
   return {
     success: true,
@@ -323,14 +250,8 @@ async function resumeSubscription(subscription: any, data: any) {
       cancelAtPeriodEnd: false,
     },
   });
-  try {
-    await NotificationService.sendNotification({
-      userId: subscription.userId,
-      type: 'SYSTEM',
-      template: 'SUBSCRIPTION_RESUMED',
-      data: { planName: updated.plan?.name }
-    })
-  } catch {}
+
+  // TODO: Send resume notification to user
 
   return {
     success: true,

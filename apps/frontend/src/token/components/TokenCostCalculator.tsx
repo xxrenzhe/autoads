@@ -17,7 +17,7 @@ export interface TokenCostCalculatorProps {
   className?: string
 }
 
-export function TokenCostCalculator({ className }: .*Props) {
+export function TokenCostCalculator({ className }: TokenCostCalculatorProps) {
   const [selectedFeature, setSelectedFeature] = useState('')
   const [tokenAmount, setTokenAmount] = useState(100)
   const [calculationResults, setCalculationResults] = useState<any>(null)
@@ -29,7 +29,7 @@ export function TokenCostCalculator({ className }: .*Props) {
     queryKey: ['token-configs'],
     queryFn: async () => {
       const response = await fetch('/api/admin/token-config')
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Failed to fetch token configurations')
       }
       const result = await response.json()
@@ -38,9 +38,9 @@ export function TokenCostCalculator({ className }: .*Props) {
   })
 
   useEffect(() => {
-    if (selectedFeature && tokenAmount && tokenConfigs) => {
-      const config = tokenConfigs.find(((c: any) => c.id === selectedFeature)
-      if (config) => {
+    if (selectedFeature && tokenAmount && tokenConfigs) {
+      const config = tokenConfigs.find((c: any: any) => c.id === selectedFeature)
+      if (config) {
         const totalCost = tokenAmount * config.costPerToken
         const isWithinLimits = tokenAmount >= config.minimumTokens && tokenAmount <= config.maximumTokens
         
@@ -101,11 +101,11 @@ export function TokenCostCalculator({ className }: .*Props) {
               </label>
               <select
                 value={selectedFeature}
-                onChange={(e) => setSelectedFeature(e.target.value)}
+                onChange={((e: any): any) => setSelectedFeature(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Choose a feature...</option>
-                {tokenConfigs?.filter(((config: any) => config.isActive).map(((config: any) => (
+                {tokenConfigs?.filter((config: any: any) => config.isActive).map((config: any: any) => (
                   <option key={config.id} value={config.id}>
                     {config.feature} (${config.costPerToken.toFixed(4)}/token)
                   </option>
@@ -121,7 +121,7 @@ export function TokenCostCalculator({ className }: .*Props) {
                 type="number"
                 min="1"
                 value={tokenAmount}
-                onChange={(e) => setTokenAmount(parseInt(e.target.value) || 0)}
+                onChange={((e: any): any) => setTokenAmount(parseInt(e.target.value) || 0)}
                 placeholder="Enter token amount"
               />
             </div>
@@ -132,7 +132,7 @@ export function TokenCostCalculator({ className }: .*Props) {
                   Quick Recommendations
                 </h4>
                 {(() => {
-                  const config = tokenConfigs.find(((c: any) => c.id === selectedFeature)
+                  const config = tokenConfigs.find((c: any: any) => c.id === selectedFeature)
                   if (!config) return null
                   
                   const recommended = getRecommendedTokens(config)
@@ -141,7 +141,7 @@ export function TokenCostCalculator({ className }: .*Props) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setTokenAmount(config.minimumTokens)}
+                        onClick={((: any): any) => setTokenAmount(config.minimumTokens)}
                         className="mr-2"
                       >
                         Min ({config.minimumTokens})
@@ -149,7 +149,7 @@ export function TokenCostCalculator({ className }: .*Props) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setTokenAmount(recommended)}
+                        onClick={((: any): any) => setTokenAmount(recommended)}
                         className="mr-2"
                       >
                         Recommended ({recommended})
@@ -157,7 +157,7 @@ export function TokenCostCalculator({ className }: .*Props) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setTokenAmount(config.maximumTokens)}
+                        onClick={((: any): any) => setTokenAmount(config.maximumTokens)}
                       >
                         Max ({config.maximumTokens})
                       </Button>
@@ -293,7 +293,7 @@ export function TokenCostCalculator({ className }: .*Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {tokenConfigs.map(((config: any) => (
+                  {tokenConfigs.map((config: any: any) => (
                     <tr key={config.id} className="border-b">
                       <td className="py-2 font-medium">{config.feature}</td>
                       <td className="text-center py-2">{formatCurrency(config.costPerToken)}</td>

@@ -92,7 +92,7 @@ const CheckInModule: React.FC = () => {
 
     try {
       const response = await fetch('/api/user/check-in');
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Failed to fetch check-in data');
       }
       const data = await response.json();
@@ -100,7 +100,7 @@ const CheckInModule: React.FC = () => {
       
       // Check if user has shared today
       await checkShareStatus();
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
@@ -114,7 +114,7 @@ const CheckInModule: React.FC = () => {
       const todayEnd = endOfDay(today).toISOString();
       
       const response = await fetch(`/api/user/check-in/share-rewards?startDate=${todayStart}&endDate=${todayEnd}`);
-      if (response.ok) => {
+      if (response.ok) {
         const data = await response.json();
         setHasSharedToday(data.hasSharedToday);
       }
@@ -134,14 +134,14 @@ const CheckInModule: React.FC = () => {
 
       const data = await response.json();
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error(data.error || 'Check-in failed');
       }
 
       setCheckInResult(data);
       setSuccessDialog(true);
       await fetchCheckInData();
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Check-in failed');
     } finally {
       setCheckingIn(false);
@@ -149,7 +149,7 @@ const CheckInModule: React.FC = () => {
   };
 
   const handleShare = async (platform: string) => {
-    if (!checkInResult?.checkIn?.id) => {
+    if (!checkInResult?.checkIn?.id) {
       setSnackbar({
         open: true,
         message: '请先完成签到',
@@ -179,7 +179,7 @@ const CheckInModule: React.FC = () => {
 
       const data = await response.json();
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error(data.error || 'Share reward failed');
       }
 
@@ -197,14 +197,14 @@ const CheckInModule: React.FC = () => {
       await fetchCheckInData();
 
       // Open share dialog (this would be platform-specific)
-      if (platform === 'weixin') => {
+      if (platform === 'weixin') {
         // WeChat sharing logic
         console.log('Sharing to WeChat:', shareText, shareUrl);
-      } else if (platform === 'weibo') => {
+      } else if (platform === 'weibo') {
         // Weibo sharing logic
         const weiboUrl = `https://service.weibo.com/share/share.php?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(shareText)}`;
         window.open(weiboUrl, '_blank');
-      } else if (platform === 'qq') => {
+      } else if (platform === 'qq') {
         // QQ sharing logic
         const qqUrl = `https://connect.qq.com/widget/shareqq/index.html?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(shareText)}`;
         window.open(qqUrl, '_blank');
@@ -240,7 +240,7 @@ const CheckInModule: React.FC = () => {
     }> = [];
     
     // Show last 30 days
-    for (let i = 29; i >= 0; i--) => {
+    for (let i = 29; i >= 0; i--) {
       const date = subDays(today, i);
       const dateStr = format(date, 'yyyy-MM-dd');
       const checkIn = checkInData.history.find((h: any) => 
@@ -301,7 +301,7 @@ const CheckInModule: React.FC = () => {
     );
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <Card>
         <CardContent>
@@ -311,7 +311,7 @@ const CheckInModule: React.FC = () => {
     );
   }
 
-  if (error) => {
+  if (error) {
     return (
       <Card>
         <CardContent>
@@ -321,7 +321,7 @@ const CheckInModule: React.FC = () => {
     );
   }
 
-  if (!checkInData) => {
+  if (!checkInData) {
     return null as any;
   }
 

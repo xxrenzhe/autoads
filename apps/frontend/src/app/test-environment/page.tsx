@@ -159,7 +159,7 @@ export default function EnvironmentTestPage() {
   };
 
   const copyToClipboard = async (text: string) => {
-    if (!text) => {
+    if (!text) {
       console.warn('No text provided to copy');
       return;
     }
@@ -169,7 +169,7 @@ export default function EnvironmentTestPage() {
 
     try {
       // Check if navigator.clipboard is available
-      if (!navigator.clipboard) => {
+      if (!navigator.clipboard) {
         // Fallback for older browsers
         const textArea = document.createElement('textarea');
         textArea.value = text;
@@ -186,7 +186,7 @@ export default function EnvironmentTestPage() {
           setCopyStatus('success');
           // Reset status after 2 seconds
           setTimeout(() => setCopyStatus('idle'), 2000);
-        } catch (fallbackErr) => {
+        } catch (fallbackErr) {
           console.error('复制失败 (fallback):', fallbackErr);
           setCopyStatus('error');
           throw new Error('复制失败，请手动复制');
@@ -201,7 +201,7 @@ export default function EnvironmentTestPage() {
         // Reset status after 2 seconds
         setTimeout(() => setCopyStatus('idle'), 2000);
       }
-    } catch (err) => {
+    } catch (err) {
       console.error('复制失败:', err);
       setCopyStatus('error');
       throw err;
@@ -215,7 +215,7 @@ export default function EnvironmentTestPage() {
   }, []);
 
   const getStatusIcon = (status: TestResult['status']) => {
-    switch (status) => {
+    switch (status) {
       case 'success':
         return <CheckCircle className="h-5 w-5 text-green-600" />;
       case 'error':
@@ -226,7 +226,7 @@ export default function EnvironmentTestPage() {
   };
 
   const getStatusBadge = (status: TestResult['status']) => {
-    switch (status) => {
+    switch (status) {
       case 'success':
         return <Badge variant="default" className="bg-green-100 text-green-800">通过</Badge>;
       case 'error':
@@ -328,7 +328,7 @@ export default function EnvironmentTestPage() {
               onClick={(async (): any) => {
                 try {
                   await copyToClipboard(envInfo?.baseUrl || '');
-                } catch (err) => {
+                } catch (err) {
                   console.error('复制失败:', err);
                 }
               }}
@@ -348,7 +348,7 @@ export default function EnvironmentTestPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => window.open('/api/health', '_blank')}
+              onClick={((: any): any) => window.open('/api/health', '_blank')}
               className="justify-start"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
@@ -356,7 +356,7 @@ export default function EnvironmentTestPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => window.open('https://console.cloud.google.com/', '_blank')}
+              onClick={((: any): any) => window.open('https://console.cloud.google.com/', '_blank')}
               className="justify-start"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
@@ -364,7 +364,7 @@ export default function EnvironmentTestPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => window.open('https://vercel.com/dashboard', '_blank')}
+              onClick={((: any): any) => window.open('https://vercel.com/dashboard', '_blank')}
               className="justify-start"
             >
               <ExternalLink className="h-4 w-4 mr-2" />

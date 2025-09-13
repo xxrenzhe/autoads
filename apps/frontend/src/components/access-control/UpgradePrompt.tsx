@@ -37,14 +37,14 @@ export default function UpgradePrompt({
   feature,
   onDismiss,
   className 
-}: .*Props) {
+}: UpgradePromptProps) {
   const { data: session } = useSession()
   const [suggestion, setSuggestion] = useState<UpgradeSuggestion | null>(null)
   const [loading, setLoading] = useState(true)
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    if (session?.user) => {
+    if (session?.user) {
       fetchUpgradeSuggestion()
     } else {
       setLoading(false)
@@ -56,7 +56,7 @@ export default function UpgradePrompt({
       const response = await fetch('/api/user/access-control/upgrade-suggestions')
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         setSuggestion(data.data)
       }
     } catch (error) {
@@ -71,12 +71,12 @@ export default function UpgradePrompt({
     onDismiss?.()
   }
 
-  if (loading || dismissed || !suggestion?.shouldUpgrade) => {
+  if (loading || dismissed || !suggestion?.shouldUpgrade) {
     return null
   }
 
   const getPromptContent = () => {
-    switch (trigger) => {
+    switch (trigger) {
       case 'usage_limit':
         return {
           title: 'Usage Limit Reached',
@@ -195,8 +195,8 @@ export default function UpgradePrompt({
   )
 }
 
-function getVariantStyles(variant: 'warning' | 'premium' | 'suggestion') => {
-  switch (variant) => {
+function getVariantStyles(variant: 'warning' | 'premium' | 'suggestion') {
+  switch (variant) {
     case 'warning':
       return 'border-yellow-200 bg-yellow-50'
     case 'premium':
@@ -215,7 +215,7 @@ export function CompactUpgradePrompt({
 }: { 
   feature?: string
   className?: string 
-}) => {
+}) {
   return (
     <div className={`flex items-center justify-between p-3 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20 ${className}`}>
       <div className="flex items-center gap-2">
@@ -244,7 +244,7 @@ export function UsageProgress({
   limit: number
   feature: string
   className?: string 
-}) => {
+}) {
   const percentage = (current / limit) * 100
   const isNearLimit = percentage >= 80
 

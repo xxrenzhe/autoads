@@ -75,7 +75,7 @@ interface TokenUsageStatsProps {
   className?: string
 }
 
-export default function TokenUsageStats({ userId, className }: .*Props) {
+export default function TokenUsageStats({ userId, className }: TokenUsageStatsProps) {
   const [statsData, setStatsData] = useState<TokenUsageStatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('30d')
@@ -96,7 +96,7 @@ export default function TokenUsageStats({ userId, className }: .*Props) {
       })
       
       const response = await fetch(`/api/user/tokens/stats?${params}`)
-      if (response.ok) => {
+      if (response.ok) {
         const data = await response.json()
         setStatsData(data.data)
       } else {
@@ -184,7 +184,7 @@ export default function TokenUsageStats({ userId, className }: .*Props) {
   }
 
   const getFeatureIcon = (feature: string) => {
-    switch (feature) => {
+    switch (feature) {
       case 'siterank':
         return '🔍'
       case 'batchopen':
@@ -196,7 +196,7 @@ export default function TokenUsageStats({ userId, className }: .*Props) {
     }
   }
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className={`space-y-6 ${className}`}>
         <div className="flex items-center justify-center py-8">
@@ -207,7 +207,7 @@ export default function TokenUsageStats({ userId, className }: .*Props) {
     )
   }
 
-  if (error) => {
+  if (error) {
     return (
       <div className={`space-y-6 ${className}`}>
         <Card>
@@ -225,7 +225,7 @@ export default function TokenUsageStats({ userId, className }: .*Props) {
     )
   }
 
-  if (!statsData) => {
+  if (!statsData) {
     return (
       <div className={`space-y-6 ${className}`}>
         <Card>

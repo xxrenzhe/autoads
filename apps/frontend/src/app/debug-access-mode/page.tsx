@@ -65,7 +65,7 @@ export default function DebugAccessModePage() {
                   ? "bg-blue-50 border-blue-500 text-blue-700"
                   : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
-              onClick={() => handleAccessModeChange("http")}
+              onClick={((: any): any) => handleAccessModeChange("http")}
             >
               HTTP 访问
             </button>
@@ -75,7 +75,7 @@ export default function DebugAccessModePage() {
                   ? "bg-purple-50 border-purple-500 text-purple-700"
                   : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
-              onClick={() => handleAccessModeChange("puppeteer")}
+              onClick={((: any): any) => handleAccessModeChange("puppeteer")}
             >
               Puppeteer 访问
             </button>

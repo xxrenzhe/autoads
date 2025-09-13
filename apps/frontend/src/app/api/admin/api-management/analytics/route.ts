@@ -172,7 +172,7 @@ async function handleGET(request: NextRequest, { validatedData, user }: { valida
 
   // Format hourly data
   const requestsByHour = Array.from({ length: 24 }, (_, i) => {
-    const hourData = hourlyData.find(((h: any) => parseInt(h.hour) === i)
+    const hourData = hourlyData.find((h: any: any) => parseInt(h.hour) === i)
     return {
       hour: `${i}:00`,
       requests: hourData?.requests || 0,
@@ -198,7 +198,7 @@ async function handleGET(request: NextRequest, { validatedData, user }: { valida
   ` as unknown as Array<{ userAgent: string; requests: number; percentage: number }>
 
   // Process top endpoints with error rates
-  const processedTopEndpoints = topEndpoints.map(((ep: any) => {
+  const processedTopEndpoints = topEndpoints.map((ep: any: any) => {
     const endpointRecords = usageRecords.filter((r: any) => r.endpoint === ep.endpoint)
     const errors = endpointRecords.filter((r: any) => r.statusCode >= 400).length
     return {

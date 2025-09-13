@@ -104,7 +104,7 @@ export default function PlanManager() {
       const response = await fetch('/api/admin/plans')
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         setPlans(data.data.plans)
         setPlanComparison(data.data.comparison || [])
       } else {
@@ -123,7 +123,7 @@ export default function PlanManager() {
       const response = await fetch('/api/admin/subscriptions/analytics')
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         setAnalytics(data.data)
       } else {
         toast.error('Failed to fetch subscription analytics')
@@ -150,7 +150,7 @@ export default function PlanManager() {
 
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         await fetchPlans()
         await fetchAnalytics()
         setSelectedPlan(null)
@@ -168,7 +168,7 @@ export default function PlanManager() {
   }
 
   const deletePlan = async (planId: string) => {
-    if (!confirm('Are you sure you want to delete this plan? This action cannot be undone.')) => {
+    if (!confirm('Are you sure you want to delete this plan? This action cannot be undone.')) {
       return
     }
 
@@ -179,7 +179,7 @@ export default function PlanManager() {
 
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         await fetchPlans()
         await fetchAnalytics()
         toast.success('Plan deleted successfully')
@@ -204,7 +204,7 @@ export default function PlanManager() {
 
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         await fetchPlans()
         toast.success(`Plan ${status === 'ACTIVE' ? 'activated' : 'deactivated'} successfully`)
       } else {
@@ -228,7 +228,7 @@ export default function PlanManager() {
     .sort((a, b) => {
       let aValue: any, bValue: any
       
-      switch (sortBy) => {
+      switch (sortBy) {
         case 'name':
           aValue = a.name
           bValue = b.name
@@ -251,7 +251,7 @@ export default function PlanManager() {
       return (aValue > bValue ? 1 : -1) * multiplier
     })
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin" />
@@ -628,7 +628,7 @@ interface PlanEditModalProps {
   saving: boolean
 }
 
-function PlanEditModal({ plan, onSave, onClose, saving }: .*Props) {
+function PlanEditModal({ plan, onSave, onClose, saving }: PlanEditModalProps) {
   const [formData, setFormData] = useState<Partial<SubscriptionPlan>>(
     plan || {
       name: '',

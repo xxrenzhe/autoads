@@ -245,7 +245,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
     if (!currentIntegration) return;
 
     try {
-      if (isCreating) => {
+      if (isCreating) {
         const newIntegration = {
           ...currentIntegration,
           id: `int_${Date.now()}`,
@@ -280,7 +280,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
   }, [currentIntegration, isCreating, onIntegrationCreated, onIntegrationUpdated]);
   
   const handleDeleteIntegration = useCallback((integrationId: string) => {
-    if (confirm('Are you sure you want to delete this integration? This action cannot be undone.')) => {
+    if (confirm('Are you sure you want to delete this integration? This action cannot be undone.')) {
       setIntegrations(prev => prev.filter((int: any) => int.id !== integrationId));
       onIntegrationDeleted?.(integrationId);
       setOperationResult({
@@ -317,7 +317,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
 
     try {
       const success = await onSyncData?.(integrationId) ?? true;
-      if (success) => {
+      if (success) {
         setIntegrations(prev => prev?.filter(Boolean)?.map((int: any) => 
           int.id === integrationId 
             ? { ...int, lastSync: new Date(), status: 'active' as const }
@@ -353,7 +353,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
     return matchesType && matchesStatus;
   });
   const getTypeIcon = (type: string) => {
-    switch (type) => {
+    switch (type) {
       case 'api': return <Globe className="h-4 w-4" />;
       case 'webhook': return <Link className="h-4 w-4" />;
       case 'database': return <Database className="h-4 w-4" />;
@@ -366,7 +366,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'active': return 'text-green-600 bg-green-50';
       case 'inactive': return 'text-gray-600 bg-gray-50';
       case 'error': return 'text-red-600 bg-red-50';
@@ -376,7 +376,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
   };
 
   const getSyncFrequencyColor = (frequency: string) => {
-    switch (frequency) => {
+    switch (frequency) {
       case 'realtime': return 'text-blue-600 bg-blue-50';
       case 'hourly': return 'text-green-600 bg-green-50';
       case 'daily': return 'text-orange-600 bg-orange-50';
@@ -493,7 +493,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                               ? 'border-primary bg-primary/5'
                               : 'border-border hover:border-primary/50'
                           }`}
-                          onClick={() => setCurrentIntegration(integration)}
+                          onClick={((: any): any) => setCurrentIntegration(integration)}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
@@ -679,7 +679,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setShowSecrets(!showSecrets)}
+                          onClick={((: any): any) => setShowSecrets(!showSecrets)}
                         >
                           {showSecrets ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
@@ -822,7 +822,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleTestConnection(integration)}
+                          onClick={((: any): any) => handleTestConnection(integration)}
                           disabled={isTesting}
                         >
                           {isTesting ? (
@@ -835,7 +835,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleSyncData(integration.id)}
+                          onClick={((: any): any) => handleSyncData(integration.id)}
                           disabled={isSyncing}
                         >
                           {isSyncing ? (

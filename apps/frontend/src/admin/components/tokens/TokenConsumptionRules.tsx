@@ -42,7 +42,7 @@ interface TabPanelProps {
   value: number;
 }
 
-function TabPanel(props: TabPanelProps) => {
+function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
   return (
     <div
@@ -109,14 +109,14 @@ const TokenConsumptionRules: React.FC = () => {
     try {
       // Fetch token rules
       const rulesResponse = await fetch('/api/admin/tokens/rules');
-      if (rulesResponse.ok) => {
+      if (rulesResponse.ok) {
         const rulesData = await rulesResponse.json();
         setRules(rulesData);
       }
 
       // Fetch token config
       const configResponse = await fetch('/api/admin/tokens/config');
-      if (configResponse.ok) => {
+      if (configResponse.ok) {
         const configData = await configResponse.json();
         setConfig(configData);
       }
@@ -150,7 +150,7 @@ const TokenConsumptionRules: React.FC = () => {
         body: JSON.stringify(editForm),
       });
 
-      if (response.ok) => {
+      if (response.ok) {
         notify('规则更新成功', { type: 'success' });
         setEditDialogOpen(false);
         fetchData();
@@ -172,7 +172,7 @@ const TokenConsumptionRules: React.FC = () => {
         body: JSON.stringify(config),
       });
 
-      if (response.ok) => {
+      if (response.ok) {
         notify('配置保存成功', { type: 'success' });
         fetchData();
       } else {
@@ -194,7 +194,7 @@ const TokenConsumptionRules: React.FC = () => {
     });
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />

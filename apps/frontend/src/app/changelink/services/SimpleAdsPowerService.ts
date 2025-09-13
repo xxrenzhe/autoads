@@ -291,7 +291,7 @@ class SimpleAdsPowerService {
       if (result.code === 0 && result.data?.list) {
         return { 
           success: true, 
-          environments: result.data.list.map(((env: any) => ({
+          environments: result.data.list.map((env: any: any) => ({
             id: env.user_id,
             name: env.user_name || env.user_id,
             group: env.group_name || 'default'

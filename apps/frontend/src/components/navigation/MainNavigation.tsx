@@ -118,7 +118,7 @@ export default function MainNavigation() {
 
   // Handle keyboard events for mobile menu
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Escape' && mobileMenuOpen) => {
+    if (event.key === 'Escape' && mobileMenuOpen) {
       setMobileMenuOpen(false)
       mobileMenuButtonRef.current?.focus()
     }
@@ -126,7 +126,7 @@ export default function MainNavigation() {
 
   // Focus management for mobile menu
   useEffect(() => {
-    if (mobileMenuOpen) => {
+    if (mobileMenuOpen) {
       // Focus first link in mobile menu
       const firstLink = mobileMenuRef.current?.querySelector('a')
       firstLink?.focus()
@@ -139,7 +139,7 @@ export default function MainNavigation() {
   }
 
   const isActive = (href: string) => {
-    if (href === '/') => {
+    if (href === '/') {
       return pathname === '/'
     }
     return pathname.startsWith(href)
@@ -188,7 +188,7 @@ export default function MainNavigation() {
           ref={mobileMenuButtonRef}
           variant="ghost"
           className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onClick={((: any): any) => setMobileMenuOpen(!mobileMenuOpen)}
           aria-expanded={mobileMenuOpen}
           aria-controls="mobile-navigation-menu"
           aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
@@ -389,7 +389,7 @@ export default function MainNavigation() {
                       "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
                       isActive(item.href) && "bg-accent text-accent-foreground"
                     )}
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={((: any): any) => setMobileMenuOpen(false)}
                     role="menuitem"
                     aria-current={isActive(item.href) ? "page" : undefined}
                   >
@@ -417,7 +417,7 @@ export default function MainNavigation() {
                             "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
                             isActive(item.href) && "bg-accent text-accent-foreground"
                           )}
-                          onClick={() => setMobileMenuOpen(false)}
+                          onClick={((: any): any) => setMobileMenuOpen(false)}
                           role="menuitem"
                           aria-current={isActive(item.href) ? "page" : undefined}
                         >

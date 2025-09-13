@@ -128,7 +128,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
 
   // Initialize form data when rule changes
   useEffect(() => {
-    if (rule) => {
+    if (rule) {
       setFormData({
         feature: rule.feature,
         method: rule.method,
@@ -155,7 +155,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Clear validation error for this field
-    if (validationErrors[field]) => {
+    if (validationErrors[field]) {
       setValidationErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[field];
@@ -167,27 +167,27 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
   const validateForm = (): boolean => {
     const errors: { [key: string]: string } = {};
 
-    if (!formData.feature) => {
+    if (!formData.feature) {
       errors.feature = '请选择功能类型';
     }
 
-    if (!formData.method) => {
+    if (!formData.method) {
       errors.method = '请选择方法类型';
     }
 
-    if (formData.cost < 0) => {
+    if (formData.cost < 0) {
       errors.cost = 'Token成本不能为负数';
     }
 
-    if (formData.cost > 100) => {
+    if (formData.cost > 100) {
       errors.cost = 'Token成本不能超过100';
     }
 
-    if (!formData.description.trim()) => {
+    if (!formData.description.trim()) {
       errors.description = '请输入规则描述';
     }
 
-    if (rule && !formData.reason.trim()) => {
+    if (rule && !formData.reason.trim()) {
       errors.reason = '请输入修改原因';
     }
 
@@ -196,7 +196,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
   };
 
   const handleSave = async () => {
-    if (!validateForm()) => {
+    if (!validateForm()) {
       return;
     }
 
@@ -222,7 +222,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
         }),
       });
 
-      if (!response.ok) => {
+      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to save token rule');
       }
@@ -232,7 +232,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
       // Call parent callback with updated rule
       onSave(data.data);
       onClose();
-    } catch (err: any) => {
+    } catch (err: any) {
       setError(err.message || 'Failed to save token rule');
     } finally {
       setLoading(false);
@@ -256,7 +256,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
     };
 
     const featureRec = recommendations[formData.feature];
-    if (featureRec && featureRec[formData.method]) => {
+    if (featureRec && featureRec[formData.method]) {
       return featureRec[formData.method];
     }
     return 1;
@@ -391,7 +391,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
           <Button
             variant={previewMode ? 'outlined' : 'contained'}
             startIcon={<Edit />}
-            onClick={() => setPreviewMode(false)}
+            onClick={((: any): any) => setPreviewMode(false)}
             size="small"
           >
             编辑
@@ -399,7 +399,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
           <Button
             variant={previewMode ? 'contained' : 'outlined'}
             startIcon={<Preview />}
-            onClick={() => setPreviewMode(true)}
+            onClick={((: any): any) => setPreviewMode(true)}
             size="small"
             disabled={!formData.feature}
           >
@@ -424,7 +424,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
                     <Select
                       value={formData.feature}
                       label="功能类型"
-                      onChange={(e) => {
+                      onChange={((e: any): any) => {
                         handleInputChange('feature', e.target.value);
                         // Reset method when feature changes
                         handleInputChange('method', 'default');
@@ -456,7 +456,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
                     <Select
                       value={formData.method}
                       label="方法类型"
-                      onChange={(e) => handleInputChange('method', e.target.value)}
+                      onChange={((e: any): any) => handleInputChange('method', e.target.value)}
                       disabled={loading || !formData.feature}
                     >
                       {getAvailableMethods().map((option: any) => (
@@ -478,7 +478,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
                     fullWidth
                     label="规则描述"
                     value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    onChange={((e: any): any) => handleInputChange('description', e.target.value)}
                     error={!!validationErrors.description}
                     helperText={validationErrors.description}
                     disabled={loading}
@@ -504,7 +504,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
                     label="Token成本"
                     type="number"
                     value={formData.cost}
-                    onChange={(e) => handleInputChange('cost', parseInt(e.target.value) || 0)}
+                    onChange={((e: any): any) => handleInputChange('cost', parseInt(e.target.value) || 0)}
                     error={!!validationErrors.cost}
                     helperText={validationErrors.cost}
                     disabled={loading}
@@ -521,7 +521,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
                     {formData.cost !== getCostRecommendation() && (
                       <Button
                         size="small"
-                        onClick={() => handleInputChange('cost', getCostRecommendation())}
+                        onClick={((: any): any) => handleInputChange('cost', getCostRecommendation())}
                       >
                         使用推荐值
                       </Button>
@@ -534,7 +534,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
                     control={
                       <Switch
                         checked={formData.isActive}
-                        onChange={(e) => handleInputChange('isActive', e.target.checked)}
+                        onChange={((e: any): any) => handleInputChange('isActive', e.target.checked)}
                         disabled={loading}
                       />
                     }
@@ -558,7 +558,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
                     fullWidth
                     label="修改原因"
                     value={formData.reason}
-                    onChange={(e) => handleInputChange('reason', e.target.value)}
+                    onChange={((e: any): any) => handleInputChange('reason', e.target.value)}
                     error={!!validationErrors.reason}
                     helperText={validationErrors.reason || '请说明此次修改的原因，这将记录在审计日志中'}
                     disabled={loading}

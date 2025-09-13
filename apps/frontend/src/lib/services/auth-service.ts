@@ -440,7 +440,7 @@ export class AuthService {
         take: limit,
       })
       
-      const users = usersRaw.map((user: any) => ({ ...user, isActive: user.status === 'ACTIVE' }))
+      const users = usersRaw.map(user => ({ ...user, isActive: user.status === 'ACTIVE' }))
 
       return {
         users,
@@ -500,12 +500,12 @@ export class AuthService {
       ])
 
       // Convert arrays to objects
-      const byRole = roleStats.reduce((acc: any, item: any: any) => {
+      const byRole = roleStats.reduce((acc: any, item: any) => {
         acc[item.role] = item._count.role
         return acc
       }, {} as Record<UserRole, number>)
 
-      const byStatus = statusStats.reduce((acc: any, item: any: any) => {
+      const byStatus = statusStats.reduce((acc: any, item: any) => {
         acc[item.status] = item._count.status
         return acc
       }, {} as Record<UserStatus, number>)

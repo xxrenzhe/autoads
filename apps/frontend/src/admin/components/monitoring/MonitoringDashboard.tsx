@@ -119,15 +119,15 @@ export default function MonitoringDashboard() {
         metricsRes.json()
       ])
 
-      if (healthData.success) => {
+      if (healthData.success) {
         setSystemHealth(healthData.data)
       }
 
-      if (alertsData.success) => {
+      if (alertsData.success) {
         setAlerts(alertsData.data.alerts)
       }
 
-      if (metricsData.success) => {
+      if (metricsData.success) {
         setAlertMetrics(metricsData.data.metrics)
       }
     } catch (error) {
@@ -158,7 +158,7 @@ export default function MonitoringDashboard() {
 
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         toast.success('Alert acknowledged')
         await fetchMonitoringData()
       } else {
@@ -184,7 +184,7 @@ export default function MonitoringDashboard() {
 
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         toast.success('Alert resolved')
         await fetchMonitoringData()
       } else {
@@ -197,7 +197,7 @@ export default function MonitoringDashboard() {
   }
 
   const getStatusIcon = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'healthy': return <CheckCircle className="h-4 w-4 text-green-500" />
       case 'unhealthy': return <XCircle className="h-4 w-4 text-red-500" />
       case 'degraded': return <AlertTriangle className="h-4 w-4 text-yellow-500" />
@@ -206,7 +206,7 @@ export default function MonitoringDashboard() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'healthy': return 'text-green-600 bg-green-50'
       case 'unhealthy': return 'text-red-600 bg-red-50'
       case 'degraded': return 'text-yellow-600 bg-yellow-50'
@@ -215,7 +215,7 @@ export default function MonitoringDashboard() {
   }
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) => {
+    switch (severity) {
       case 'critical': return 'destructive'
       case 'high': return 'destructive'
       case 'medium': return 'secondary'
@@ -225,7 +225,7 @@ export default function MonitoringDashboard() {
   }
 
   const getServiceIcon = (service: string) => {
-    switch (service) => {
+    switch (service) {
       case 'database': return <Database className="h-5 w-5" />
       case 'redis': return <Server className="h-5 w-5" />
       case 'cpu': return <Cpu className="h-5 w-5" />
@@ -236,7 +236,7 @@ export default function MonitoringDashboard() {
     }
   }
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin" />
@@ -475,13 +475,13 @@ export default function MonitoringDashboard() {
                 {systemHealth && (
                   <div className="space-y-4">
                     {systemHealth.services.map((service: any) => {
-                      if (['cpu', 'memory', 'filesystem'].includes(service.service)) => {
+                      if (['cpu', 'memory', 'filesystem'].includes(service.service)) {
                         const check = service.checks.find((c: any) => c.name.includes('usage'))
-                        if (check && check.metadata) => {
+                        if (check && check.metadata) {
                           let percentage = 0
-                          if (service.service === 'cpu' && check.metadata.loadAverage) => {
+                          if (service.service === 'cpu' && check.metadata.loadAverage) {
                             percentage = (check.metadata.loadAverage[0] / check.metadata.cpuCount) * 100
-                          } else if (service.service === 'memory' && check.metadata.heapUsed) => {
+                          } else if (service.service === 'memory' && check.metadata.heapUsed) {
                             percentage = (check.metadata.heapUsed / check.metadata.heapTotal) * 100
                           }
 

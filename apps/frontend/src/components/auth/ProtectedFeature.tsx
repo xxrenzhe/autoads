@@ -23,21 +23,21 @@ export function ProtectedFeature({
   icon,
   requireAuth = true,
   showFallback = true
-}: .*Props) {
+}: ProtectedFeatureProps) {
   const { data: session, status } = useSession()
 
   // 如果不需要认证，直接显示内容
-  if (!requireAuth) => {
+  if (!requireAuth) {
     return <>{children}</>
   }
 
   // 如果已登录，显示内容
-  if (session) => {
+  if (session) {
     return <>{children}</>
   }
 
   // 如果不显示fallback，使用AuthGuard
-  if (!showFallback) => {
+  if (!showFallback) {
     return (
       <AuthGuard
         feature={feature}
@@ -87,7 +87,7 @@ export function ProtectedFeature({
 }
 
 // 根据功能名称获取对应图标
-function getFeatureIcon(feature: string) => {
+function getFeatureIcon(feature: string) {
   const iconMap: Record<string, React.ReactNode> = {
     '批量打开': <Zap className="h-8 w-8 text-white" />,
     '网站排名': <Shield className="h-8 w-8 text-white" />,
@@ -111,7 +111,7 @@ export function ProtectedPage({
   feature?: string
   title?: string
   description?: string
-}) => {
+}) {
   return (
     <AuthGuard
       feature={feature}

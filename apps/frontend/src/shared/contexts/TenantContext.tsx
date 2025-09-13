@@ -23,7 +23,7 @@ interface TenantProviderProps {
 }
 
 // Tenant provider component
-export function TenantProvider({ children, initialTenantId }: .*Props) {
+export function TenantProvider({ children, initialTenantId }: TenantProviderProps) {
   const [tenantId, setTenantId] = useState<string | null>(initialTenantId || null);
   const [tenant, setTenant] = useState<any | null>(null);
   const [user, setUser] = useState<any | null>(null);
@@ -43,7 +43,7 @@ export function TenantProvider({ children, initialTenantId }: .*Props) {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to switch tenant');
       throw err;
     } finally {
@@ -53,7 +53,7 @@ export function TenantProvider({ children, initialTenantId }: .*Props) {
 
   // Load tenant data when tenantId changes
   useEffect(() => {
-    if (tenantId) => {
+    if (tenantId) {
       // Load tenant data, user data, permissions, etc.
       // This would typically be API calls
       setTenant({ id: tenantId, name: `Tenant ${tenantId}` });
@@ -82,7 +82,7 @@ export function TenantProvider({ children, initialTenantId }: .*Props) {
 // Hook to use tenant context
 export function useTenantContext(): TenantContextType {
   const context = useContext(TenantContext);
-  if (!context) => {
+  if (!context) {
     throw new Error('useTenantContext must be used within a TenantProvider');
   }
   return context;

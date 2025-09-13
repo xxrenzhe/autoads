@@ -44,13 +44,13 @@ export function LoginModal({
   isOpen, 
   onClose, 
   redirectUrl = "/"
-}: .*Props) {
+}: LoginModalProps) {
   const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(false)
 
   // 如果用户已登录，自动关闭弹窗
   useEffect(() => {
-    if (session && isOpen) => {
+    if (session && isOpen) {
       onClose()
     }
   }, [session, isOpen, onClose])

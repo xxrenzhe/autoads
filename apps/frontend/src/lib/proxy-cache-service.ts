@@ -152,7 +152,7 @@ export class ProxyCacheService {
   async preloadProxies(proxyUrls: string[]): Promise<void> {
     logger.info('开始预加载代理:', { count: proxyUrls.length });
     
-    const promises = proxyUrls?.filter((url: any) => url)?.map(async (proxyUrl) => {
+    const promises = proxyUrls?.filter(url => url)?.map(async (proxyUrl) => {
       if (this.hasValidProxy(proxyUrl)) {
         return; // 跳过已缓存的代理
       }

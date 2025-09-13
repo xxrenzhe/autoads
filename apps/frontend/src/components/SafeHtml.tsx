@@ -39,11 +39,11 @@ export const SafeHtml: React.FC<SafeHtmlProps> = ({
 }) => {
   // 根据模式选择合适的清理函数
   const getSanitizedHtml = () => {
-    if (!html || typeof html !== 'string') => {
+    if (!html || typeof html !== 'string') {
       return '';
     }
 
-    switch (mode) => {
+    switch (mode) {
       case 'i18n':
         return sanitizeI18nContent(html);
       case 'user-input':

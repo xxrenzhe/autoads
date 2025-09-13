@@ -25,7 +25,7 @@ interface ConfigurationManagerProps {
   onConfigurationSelect?: (config: TrackingConfiguration) => void;
 }
 
-export default function ConfigurationManager({ onConfigurationSelect }: .*Props) {
+export default function ConfigurationManager({ onConfigurationSelect }: ConfigurationManagerProps) {
   const [configurations, setConfigurations] = useState<TrackingConfiguration[]>([]);
   const [executionResults, setExecutionResults] = useState<ExecutionResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +55,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: .*Props)
       setError(null);
       const configs = await configStorage.getAllConfigurations();
       setConfigurations(configs);
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : '加载配置失败');
     } finally {
       setIsLoading(false);
@@ -97,7 +97,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: .*Props)
 
       await configStorage.saveConfiguration(duplicatedConfig);
       await loadConfigurations();
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : '复制配置失败');
     }
   };
@@ -111,7 +111,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: .*Props)
 
   // 处理执行配置
   const handleExecute = (config: TrackingConfiguration) => {
-    if (onConfigurationSelect) => {
+    if (onConfigurationSelect) {
       onConfigurationSelect(config);
     }
   };
@@ -139,7 +139,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: .*Props)
       
       setShowForm(false);
       setEditingConfig(null);
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : '保存配置失败');
     } finally {
       setIsSubmitting(false);
@@ -203,7 +203,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: .*Props)
 
   // 处理从预览保存
   const handlePreviewSubmit = async () => {
-    if (previewConfig) => {
+    if (previewConfig) {
       await handleFormSubmit(previewConfig as TrackingConfiguration);
       setShowPreview(false);
       setPreviewConfig(null);
@@ -220,7 +220,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: .*Props)
     try {
       // 更新配置状态为运行中
       const config = configurations.find((c: any) => c.id === configId);
-      if (config) => {
+      if (config) {
         const updatedConfig = { ...config, status: 'active' as const };
         await configStorage.saveConfiguration(updatedConfig);
         await loadConfigurations();
@@ -233,7 +233,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: .*Props)
   const handlePauseExecution = async (configId: string) => {
     try {
       const config = configurations.find((c: any) => c.id === configId);
-      if (config) => {
+      if (config) {
         const updatedConfig = { ...config, status: 'stopped' as const };
         await configStorage.saveConfiguration(updatedConfig);
         await loadConfigurations();
@@ -246,7 +246,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: .*Props)
   const handleStopExecution = async (configId: string) => {
     try {
       const config = configurations.find((c: any) => c.id === configId);
-      if (config) => {
+      if (config) {
         const updatedConfig = { ...config, status: 'stopped' as const };
         await configStorage.saveConfiguration(updatedConfig);
         await loadConfigurations();
@@ -260,7 +260,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: .*Props)
   const handleUpdateScheduling = async (configId: string, scheduling: ScheduleConfig) => {
     try {
       const config = configurations.find((c: any) => c.id === configId);
-      if (config) => {
+      if (config) {
         const updatedConfig = { 
           ...config, 
           schedulingConfig: {
@@ -284,7 +284,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: .*Props)
     try {
       // 手动执行配置
       const config = configurations.find((c: any) => c.id === configId);
-      if (config) => {
+      if (config) {
         const updatedConfig = { 
           ...config, 
           status: 'active' as const,
@@ -295,7 +295,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: .*Props)
         await loadConfigurations();
         
         // 如果有回调函数，也调用它
-        if (onConfigurationSelect) => {
+        if (onConfigurationSelect) {
           onConfigurationSelect(config);
         }
       }

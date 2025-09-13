@@ -12,15 +12,15 @@ interface TableCellProps {
 export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysisResults }) => {
   const value = row[col];
 
-  if (col === "全球排名" || col === "rank" || col === "GlobalRank") => {
-    if (value === "loading") => {
+  if (col === "全球排名" || col === "rank" || col === "GlobalRank") {
+    if (value === "loading") {
       return (
         <div className="flex items-center justify-center">
           <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
         </div>
       );
     }
-    if (value === null || value === undefined) => {
+    if (value === null || value === undefined) {
       return (
         <span
           className="text-gray-500"
@@ -30,7 +30,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
         </span>
       );
     }
-    if (typeof value === "number") => {
+    if (typeof value === "number") {
       return (
         <a
           href={`https://data.similarweb.com/api/v1/data?domain=${encodeURIComponent(row.domain ?? "")}`}
@@ -45,15 +45,15 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     return value;
   }
 
-  if (col === "相对排名" || col === "pageRank") => {
-    if (value === "loading") => {
+  if (col === "相对排名" || col === "pageRank") {
+    if (value === "loading") {
       return (
         <div className="flex items-center justify-center">
           <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
         </div>
       );
     }
-    if (value === null || value === undefined) => {
+    if (value === null || value === undefined) {
       return (
         <span
           className="text-red-500"
@@ -63,7 +63,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
         </span>
       );
     }
-    if (typeof value === "number") => {
+    if (typeof value === "number") {
       return (
         <a
           href={`https://www.domcop.com/openpagerank/?domain=${encodeURIComponent(row.domain ?? "")}`}
@@ -78,15 +78,15 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     return value;
   }
 
-  if (col === "测试优先级" || col === "priority") => {
-    if (value === "loading") => {
+  if (col === "测试优先级" || col === "priority") {
+    if (value === "loading") {
       return (
         <div className="flex items-center justify-center">
           <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
         </div>
       );
     }
-    if (value === null || value === undefined) => {
+    if (value === null || value === undefined) {
       return (
         <span
           className="text-gray-500"
@@ -96,7 +96,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
         </span>
       );
     }
-    if (typeof value === "number") => {
+    if (typeof value === "number") {
       const allPriorities = analysisResults
         .map((r: any) => r.测试优先级)
         .filter((p): p is number => typeof p === "number");
@@ -120,15 +120,15 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
   }
 
   // MonthlyVisits 列
-  if (col === "MonthlyVisits") => {
-    if (value === "loading") => {
+  if (col === "MonthlyVisits") {
+    if (value === "loading") {
       return (
         <div className="flex items-center justify-center">
           <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
         </div>
       );
     }
-    if (value === null || value === undefined) => {
+    if (value === null || value === undefined) {
       return (
         <span
           className="text-gray-500"
@@ -138,7 +138,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
         </span>
       );
     }
-    if (typeof value === "string") => {
+    if (typeof value === "string") {
       return (
         <a
           href={`https://data.similarweb.com/api/v1/data?domain=${encodeURIComponent(row.domain ?? "")}`}
@@ -154,8 +154,8 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
   }
 
   // 网站流量列（兼容旧版本）
-  if (col === 'traffic') => {
-    if (value === "loading") => {
+  if (col === 'traffic') {
+    if (value === "loading") {
       return (
         <div className="flex items-center justify-center">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -164,7 +164,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     }
 
     const trafficValue = value as string;
-    if (!trafficValue || trafficValue === 'N/A') => {
+    if (!trafficValue || trafficValue === 'N/A') {
       return <span className="text-gray-400">-</span>;
     }
 
@@ -189,9 +189,9 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
 
     // 格式化流量显示
     const formatTrafficDisplay = (traffic: string) => {
-      if (traffic.includes('K')) => {
+      if (traffic.includes('K')) {
         const num = parseFloat(traffic.replace('K', ''));
-        if (num >= 1000) => {
+        if (num >= 1000) {
           return `${(num / 1000).toFixed(1)}M`;
         }
       }
@@ -225,7 +225,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     );
   }
 
-  if (col === "domain" || col === "域名") => {
+  if (col === "domain" || col === "域名") {
     return (
       <a
         href={`https://${value}`}
@@ -239,7 +239,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     );
   }
 
-  if (col === "Advert Url") => {
+  if (col === "Advert Url") {
     const str = value == null ? "" : String(value);
     const truncatedStr = str.length > 12 ? `${str.slice(0, 12)}...` : str;
     return (
@@ -252,8 +252,8 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     );
   }
 
-  if (col === "Link") => {
-    if (typeof value === "string") => {
+  if (col === "Link") {
+    if (typeof value === "string") {
       const displayText = value.length > 12 ? `${value.substring(0, 12)}...` : value;
       return (
         <a
@@ -270,7 +270,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     return value;
   }
 
-  if (col === "申请时间" || col === "Application time") => {
+  if (col === "申请时间" || col === "Application time") {
     const str = value == null ? "" : String(value);
     const dateOnly = str.split(' ')[0] || str;
     return (
@@ -283,7 +283,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     );
   }
 
-  if (col === "MID") => {
+  if (col === "MID") {
     return (
       <span className="whitespace-nowrap text-sm font-mono">
         {value}
@@ -291,7 +291,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     );
   }
 
-  if (col === "RD") => {
+  if (col === "RD") {
     return (
       <span className="whitespace-nowrap text-sm text-center">
         {value}
@@ -299,7 +299,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     );
   }
 
-  if (col === "Commission" || col === "佣金") => {
+  if (col === "Commission" || col === "佣金") {
     return (
       <span className="whitespace-nowrap text-sm font-semibold text-green-600">
         {value}
@@ -308,7 +308,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
   }
 
   // 特殊处理需要字符限制的列
-  if (col === "Merchant Name" || col === "商家名称") => {
+  if (col === "Merchant Name" || col === "商家名称") {
     const str = value == null ? "" : String(value);
     const truncatedStr = str.length > 20 ? `${str.slice(0, 20)}...` : str;
     return (
@@ -321,7 +321,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     );
   }
 
-  if (col === "Country" || col === "国家") => {
+  if (col === "Country" || col === "国家") {
     const str = value == null ? "" : String(value);
     const truncatedStr = str.length > 8 ? `${str.slice(0, 8)}...` : str;
     return (
@@ -334,7 +334,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     );
   }
 
-  if (col === "Category" || col === "类别") => {
+  if (col === "Category" || col === "类别") {
     const str = value == null ? "" : String(value);
     const truncatedStr = str.length > 12 ? `${str.slice(0, 12)}...` : str;
     return (
@@ -354,7 +354,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     "佣金",
     "MID",
   ];
-  if (singleLineCols.includes(col)) => {
+  if (singleLineCols.includes(col)) {
     return <span className="whitespace-nowrap">{value}</span>;
   }
 
@@ -385,7 +385,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     "Commission",
     "佣金",
   ];
-  if (!skipTruncateCols.includes(col)) => {
+  if (!skipTruncateCols.includes(col)) {
     const str = value == null ? "" : String(value);
     return (
       <span

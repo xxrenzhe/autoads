@@ -14,7 +14,7 @@ export default function RuntimeConfigInit() {
         initRuntimeConfig(config);
         
         // 将配置暴露到全局变量供调试使用
-        if (typeof window !== 'undefined') => {
+        if (typeof window !== 'undefined') {
           (window as any).__RUNTIME_CONFIG__ = config;
           (window as any).RUNTIME_CONFIG_DEBUG = {
             timestamp: new Date().toISOString(),

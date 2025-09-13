@@ -16,7 +16,7 @@ export const StepNavigation = memo(({
   totalSteps, 
   onPrev, 
   onNext 
-}: .*Props) {
+}: StepNavigationProps) => {
   return (
     <div className="flex justify-between" role="navigation" aria-label="页面导航">
       <Button

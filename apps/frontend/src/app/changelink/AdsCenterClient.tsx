@@ -82,26 +82,26 @@ export default function ChangeLinkClient() {
 
       // Fetch accounts
       const accountsResponse = await fetch('/api/adscenter/accounts');
-      if (accountsResponse.ok) => {
+      if (accountsResponse.ok) {
         const accountsData = await accountsResponse.json();
         setAccounts(accountsData.accounts || []);
       }
 
       // Fetch configurations
       const configsResponse = await fetch('/api/adscenter/configurations');
-      if (configsResponse.ok) => {
+      if (configsResponse.ok) {
         const configsData = await configsResponse.json();
         setConfigurations(configsData.configurations || []);
       }
 
       // Fetch executions
       const executionsResponse = await fetch('/api/adscenter/executions');
-      if (executionsResponse.ok) => {
+      if (executionsResponse.ok) {
         const executionsData = await executionsResponse.json();
         setExecutions(executionsData.executions || []);
       }
 
-    } catch (err) => {
+    } catch (err) {
       setError('Failed to fetch data');
       logger.error('Error fetching data:', new EnhancedError('Error fetching data:', { error: err instanceof Error ? err.message : String(err)  }));
     } finally {
@@ -117,7 +117,7 @@ export default function ChangeLinkClient() {
         body: JSON.stringify(newAccount)
       });
 
-      if (response.ok) => {
+      if (response.ok) {
         setSuccessMessage('Account added successfully');
         setShowAddAccount(false);
         setNewAccount({ accountId: '', accountName: '' });
@@ -126,7 +126,7 @@ export default function ChangeLinkClient() {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to add account');
       }
-    } catch (err) => {
+    } catch (err) {
       setError('Failed to add account');
     }
   };
@@ -143,7 +143,7 @@ export default function ChangeLinkClient() {
         })
       });
 
-      if (response.ok) => {
+      if (response.ok) {
         setSuccessMessage('Configuration added successfully');
         setShowAddConfig(false);
         setNewConfig({ name: '', description: '', configData: '' });
@@ -152,7 +152,7 @@ export default function ChangeLinkClient() {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to add configuration');
       }
-    } catch (err) => {
+    } catch (err) {
       setError('Failed to add configuration');
     }
   };
@@ -168,20 +168,20 @@ export default function ChangeLinkClient() {
         })
       });
 
-      if (response.ok) => {
+      if (response.ok) {
         setSuccessMessage('Execution started successfully');
         fetchData();
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to start execution');
       }
-    } catch (err) => {
+    } catch (err) {
       setError('Failed to start execution');
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'active':
       case 'running':
       case 'completed':
@@ -198,7 +198,7 @@ export default function ChangeLinkClient() {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'active':
         return 'Active';
       case 'running':
@@ -218,7 +218,7 @@ export default function ChangeLinkClient() {
     }
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-lg">Loading...</div>
@@ -268,7 +268,7 @@ export default function ChangeLinkClient() {
             <h2 className="text-xl font-semibold">Google Ads 账户管理</h2>
             <ProtectedButton 
               featureName="adscenter"
-              onClick={() => setShowAddAccount(true)}
+              onClick={((: any): any) => setShowAddAccount(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
               添加账户
@@ -286,7 +286,7 @@ export default function ChangeLinkClient() {
                   <Input
                     id="accountId"
                     value={newAccount.accountId}
-                    onChange={(e) => setNewAccount({ ...newAccount, accountId: e.target.value })}
+                    onChange={((e: any): any) => setNewAccount({ ...newAccount, accountId: e.target.value })}
                     placeholder="输入 Google Ads 账户 ID"
                   />
                 </div>
@@ -295,7 +295,7 @@ export default function ChangeLinkClient() {
                   <Input
                     id="accountName"
                     value={newAccount.accountName}
-                    onChange={(e) => setNewAccount({ ...newAccount, accountName: e.target.value })}
+                    onChange={((e: any): any) => setNewAccount({ ...newAccount, accountName: e.target.value })}
                     placeholder="输入账户名称"
                   />
                 </div>
@@ -306,7 +306,7 @@ export default function ChangeLinkClient() {
                   >
                     保存
                   </ProtectedButton>
-                  <Button variant="outline" onClick={() => setShowAddAccount(false)}>取消</Button>
+                  <Button variant="outline" onClick={((: any): any) => setShowAddAccount(false)}>取消</Button>
                 </div>
               </CardContent>
             </Card>
@@ -339,7 +339,7 @@ export default function ChangeLinkClient() {
             <h2 className="text-xl font-semibold">配置管理</h2>
             <ProtectedButton 
               featureName="adscenter"
-              onClick={() => setShowAddConfig(true)}
+              onClick={((: any): any) => setShowAddConfig(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
               添加配置
@@ -357,7 +357,7 @@ export default function ChangeLinkClient() {
                   <Input
                     id="configName"
                     value={newConfig.name}
-                    onChange={(e) => setNewConfig({ ...newConfig, name: e.target.value })}
+                    onChange={((e: any): any) => setNewConfig({ ...newConfig, name: e.target.value })}
                     placeholder="输入配置名称"
                   />
                 </div>
@@ -366,7 +366,7 @@ export default function ChangeLinkClient() {
                   <Textarea
                     id="configDescription"
                     value={newConfig.description}
-                    onChange={(e) => setNewConfig({ ...newConfig, description: e.target.value })}
+                    onChange={((e: any): any) => setNewConfig({ ...newConfig, description: e.target.value })}
                     placeholder="输入配置描述"
                   />
                 </div>
@@ -375,7 +375,7 @@ export default function ChangeLinkClient() {
                   <Textarea
                     id="configData"
                     value={newConfig.configData}
-                    onChange={(e) => setNewConfig({ ...newConfig, configData: e.target.value })}
+                    onChange={((e: any): any) => setNewConfig({ ...newConfig, configData: e.target.value })}
                     placeholder='{"key": "value"}'
                     rows={5}
                   />
@@ -387,7 +387,7 @@ export default function ChangeLinkClient() {
                   >
                     保存
                   </ProtectedButton>
-                  <Button variant="outline" onClick={() => setShowAddConfig(false)}>取消</Button>
+                  <Button variant="outline" onClick={((: any): any) => setShowAddConfig(false)}>取消</Button>
                 </div>
               </CardContent>
             </Card>
@@ -412,7 +412,7 @@ export default function ChangeLinkClient() {
                   <ProtectedButton 
                     featureName="adscenter"
                     size="sm" 
-                    onClick={() => handleStartExecution(config.id)}
+                    onClick={((: any): any) => handleStartExecution(config.id)}
                     className="w-full"
                   >
                     <Play className="h-4 w-4 mr-2" />

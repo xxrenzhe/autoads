@@ -474,6 +474,6 @@ export const TaskHandlers = {
 };
 
 // Register default handlers
-Object.values(TaskHandlers).forEach((handler: any) => {
+Object.values(TaskHandlers).forEach(handler => {
   taskQueue.registerHandler(handler);
 });

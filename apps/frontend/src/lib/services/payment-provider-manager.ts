@@ -136,7 +136,7 @@ export class PaymentProviderManager {
     this.initialize()
     const status = this.getProviderStatus()
     const available = Object.keys(status)
-    const configured = available.filter((name: any) => status[name].configured)
+    const configured = available.filter(name => status[name].configured)
     const issues: string[] = []
 
     // Check for common configuration issues
@@ -177,7 +177,7 @@ export class PaymentProviderManager {
 
     // Check if at least one provider is configured
     const status = this.getProviderStatus()
-    const configured = Object.keys(status).filter((name: any) => status[name].configured)
+    const configured = Object.keys(status).filter(name => status[name].configured)
 
     if (configured.length === 0) {
       errors.push('No payment providers are configured')

@@ -59,7 +59,7 @@ export default function TokenBalanceManager() {
       const response = await fetch('/api/user/tokens/balance')
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         setBalance(data.data)
       } else {
         toast.error('Failed to fetch token balance')
@@ -73,7 +73,7 @@ export default function TokenBalanceManager() {
   }
 
   const handleTopUp = async () => {
-    if (topUpAmount < 1 || topUpAmount > 10000) => {
+    if (topUpAmount < 1 || topUpAmount > 10000) {
       toast.error('Top-up amount must be between 1 and 10,000 tokens')
       return
     }
@@ -93,7 +93,7 @@ export default function TokenBalanceManager() {
 
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         setBalance(prev => prev ? { ...prev, currentBalance: data.data.newBalance } : null)
         setShowTopUpForm(false)
         setTopUpAmount(100)
@@ -112,11 +112,11 @@ export default function TokenBalanceManager() {
   const getBalanceStatus = () => {
     if (!balance) return { color: 'gray', text: 'Unknown' }
     
-    if (balance.currentBalance < 10) => {
+    if (balance.currentBalance < 10) {
       return { color: 'red', text: 'Critical' }
-    } else if (balance.currentBalance < 50) => {
+    } else if (balance.currentBalance < 50) {
       return { color: 'yellow', text: 'Low' }
-    } else if (balance.currentBalance < 200) => {
+    } else if (balance.currentBalance < 200) {
       return { color: 'blue', text: 'Moderate' }
     } else {
       return { color: 'green', text: 'Healthy' }
@@ -126,16 +126,16 @@ export default function TokenBalanceManager() {
   const getUsageStatus = () => {
     if (!balance) return { color: 'gray', text: 'Unknown' }
     
-    if (balance.usagePercentage >= 90) => {
+    if (balance.usagePercentage >= 90) {
       return { color: 'red', text: 'High Usage' }
-    } else if (balance.usagePercentage >= 70) => {
+    } else if (balance.usagePercentage >= 70) {
       return { color: 'yellow', text: 'Moderate Usage' }
     } else {
       return { color: 'green', text: 'Normal Usage' }
     }
   }
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin" />
@@ -143,7 +143,7 @@ export default function TokenBalanceManager() {
     )
   }
 
-  if (!balance) => {
+  if (!balance) {
     return (
       <Alert>
         <AlertTriangle className="h-4 w-4" />
@@ -176,7 +176,7 @@ export default function TokenBalanceManager() {
             Refresh
           </Button>
           <Button
-            onClick={() => setShowTopUpForm(true)}
+            onClick={((: any): any) => setShowTopUpForm(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Top Up
@@ -365,7 +365,7 @@ export default function TokenBalanceManager() {
                   min="1"
                   max="10000"
                   value={topUpAmount}
-                  onChange={(e) => setTopUpAmount(parseInt(e.target.value) || 0)}
+                  onChange={((e: any): any) => setTopUpAmount(parseInt(e.target.value) || 0)}
                   placeholder="Enter token amount"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -388,7 +388,7 @@ export default function TokenBalanceManager() {
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => setShowTopUpForm(false)}
+                  onClick={((: any): any) => setShowTopUpForm(false)}
                   className="flex-1"
                 >
                   Cancel

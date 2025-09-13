@@ -50,7 +50,7 @@ export interface PlanManagerProps {
   adminMode?: boolean
 }
 
-export function PlanManager({ onPlanSelect, adminMode = false }: .*Props) {
+export function PlanManager({ onPlanSelect, adminMode = false }: PlanManagerProps) {
   const {
     plans,
     isLoading,
@@ -78,20 +78,20 @@ export function PlanManager({ onPlanSelect, adminMode = false }: .*Props) {
 
   // Effect to announce loading state changes
   useEffect(() => {
-    if (isLoading) => {
+    if (isLoading) {
       announceToScreenReader('Loading subscription plans')
-    } else if (plans.length > 0) => {
+    } else if (plans.length > 0) {
       announceToScreenReader(`${plans.length} subscription plans loaded`)
     }
   }, [isLoading, plans.length])
 
   // Focus management for dynamic content
   useEffect(() => {
-    if (plans.length > 0 && !isLoading) => {
+    if (plans.length > 0 && !isLoading) {
       // Focus first plan card when plans load
       const firstPlan = plans[0]
       const firstPlanRef = planCardRefs.current.get(firstPlan.id)
-      if (firstPlanRef && document.activeElement === document.body) => {
+      if (firstPlanRef && document.activeElement === document.body) {
         firstPlanRef.focus()
       }
     }
@@ -116,7 +116,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: .*Props) {
     const plan = plans.find((p: any) => p.id === planId)
     const planName = plan?.name || 'plan'
     
-    if (newSelected.has(planId)) => {
+    if (newSelected.has(planId)) {
       newSelected.delete(planId)
       announceToScreenReader(`${planName} deselected`)
     } else {
@@ -128,9 +128,9 @@ export function PlanManager({ onPlanSelect, adminMode = false }: .*Props) {
 
   // Handle keyboard navigation for plan cards
   const handlePlanCardKeyDown = (event: React.KeyboardEvent, plan: SubscriptionPlan) => {
-    if (event.key === 'Enter' || event.key === ' ') => {
+    if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
-      if (adminMode) => {
+      if (adminMode) {
         handlePlanSelect(plan.id)
       } else {
         onPlanSelect?.(plan)
@@ -152,7 +152,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: .*Props) {
     const plan = plans.find((p: any) => p.id === planId)
     const planName = plan?.name || 'plan'
     
-    if (window.confirm(`Are you sure you want to delete the ${planName} plan? This action cannot be undone.`)) => {
+    if (window.confirm(`Are you sure you want to delete the ${planName} plan? This action cannot be undone.`)) {
       try {
         await deletePlan(planId)
         announceToScreenReader(`${planName} plan deleted successfully`)
@@ -171,7 +171,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: .*Props) {
     }
   }
 
-  if (error) => {
+  if (error) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -277,7 +277,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: .*Props) {
             <Card 
               key={plan.id}
               ref={(el) => {
-                if (el) => {
+                if (el) {
                   planCardRefs.current.set(plan.id, el)
                 } else {
                   planCardRefs.current.delete(plan.id)
@@ -292,7 +292,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: .*Props) {
               aria-pressed={adminMode ? selectedPlans.has(plan.id) : undefined}
               aria-selected={selectedPlans.has(plan.id)}
               onKeyDown={(e) => handlePlanCardKeyDown(e, plan)}
-              onClick={() => adminMode ? handlePlanSelect(plan.id) : onPlanSelect?.(plan)}
+              onClick={((: any): any) => adminMode ? handlePlanSelect(plan.id) : onPlanSelect?.(plan)}
             >
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -396,7 +396,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: .*Props) {
                       <input
                         type="checkbox"
                         checked={selectedPlans.has(plan.id)}
-                        onChange={(e) => {
+                        onChange={((e: any): any) => {
                           e.stopPropagation()
                           handlePlanSelect(plan.id)
                         }}
@@ -492,7 +492,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: .*Props) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     selectedPlans.forEach((planId: any) => {
                       handleToggleStatus(planId)
                     })
@@ -506,8 +506,8 @@ export function PlanManager({ onPlanSelect, adminMode = false }: .*Props) {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => {
-                    if (window.confirm(`Are you sure you want to delete ${selectedPlans.size} plan(s)?`)) => {
+                  onClick={((: any): any) => {
+                    if (window.confirm(`Are you sure you want to delete ${selectedPlans.size} plan(s)?`)) {
                       selectedPlans.forEach((planId: any) => handleDeletePlan(planId))
                       setSelectedPlans(new Set())
                     }

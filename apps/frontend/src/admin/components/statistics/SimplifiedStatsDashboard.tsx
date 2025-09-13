@@ -47,7 +47,7 @@ interface TabPanelProps {
   value: number;
 }
 
-function TabPanel(props: TabPanelProps) => {
+function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
 
   return (
@@ -106,22 +106,22 @@ export const SimplifiedStatsDashboard: React.FC = () => {
       params.append('simplified', 'true');
       
       // Other filters
-      if (filters.userSegment !== 'all') => {
+      if (filters.userSegment !== 'all') {
         params.append('userSegment', filters.userSegment);
       }
-      if (filters.features.length > 0) => {
+      if (filters.features.length > 0) {
         params.append('features', filters.features.join(','));
       }
 
       const response = await fetch(`/api/admin/statistics/${endpoint}?${params.toString()}`);
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Failed to fetch statistics');
       }
 
       const data = await response.json();
       setStatistics(data.data);
-    } catch (err: any) => {
+    } catch (err: any) {
       setError(err.message || 'An error occurred');
     } finally {
       setLoading(false);
@@ -145,7 +145,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
     setTabValue(newValue);
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
@@ -153,7 +153,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
     );
   }
 
-  if (error) => {
+  if (error) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">{error}</Alert>

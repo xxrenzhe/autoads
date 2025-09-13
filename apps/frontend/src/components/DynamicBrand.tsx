@@ -21,7 +21,7 @@ export const DynamicBrand: React.FC<DynamicBrandProps> = ({ children }) => {
   });
 
   useEffect(() => {
-    if (typeof window !== 'undefined') => {
+    if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
       
       const isLegacy = DOMAIN_CONFIG.isLegacyDomain(hostname);
@@ -53,10 +53,10 @@ export const useBrandInfo = () => {
   });
 
   useEffect(() => {
-    if (typeof window !== 'undefined') => {
+    if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
       
-      if (DOMAIN_CONFIG.isSupportedDomain(hostname)) => {
+      if (DOMAIN_CONFIG.isSupportedDomain(hostname)) {
         setBrandInfo({
           name: DOMAIN_CONFIG.getBrandName(hostname),
           emailDomain: DOMAIN_CONFIG.getEmailDomain(hostname),

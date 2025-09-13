@@ -94,11 +94,11 @@ export default function APIRateLimitManager() {
 
   // Function to announce status changes to screen readers
   const announceToScreenReader = (message: string) => {
-    if (statusAnnouncementRef.current) => {
+    if (statusAnnouncementRef.current) {
       statusAnnouncementRef.current.textContent = message
       // Clear after a delay to allow for re-announcements
       setTimeout(() => {
-        if (statusAnnouncementRef.current) => {
+        if (statusAnnouncementRef.current) {
           statusAnnouncementRef.current.textContent = ''
         }
       }, 1000)
@@ -114,12 +114,12 @@ export default function APIRateLimitManager() {
         fetch('/api/admin/api-management/rate-limit-stats')
       ])
 
-      if (rulesResponse.ok) => {
+      if (rulesResponse.ok) {
         const data = await rulesResponse.json()
         setRules(data.data || [])
       }
 
-      if (statsResponse.ok) => {
+      if (statsResponse.ok) {
         const data = await statsResponse.json()
         setStats(data.data)
       }
@@ -147,7 +147,7 @@ export default function APIRateLimitManager() {
 
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         await fetchRateLimitData()
         setSelectedRule(null)
         setShowCreateForm(false)
@@ -168,7 +168,7 @@ export default function APIRateLimitManager() {
   }
 
   const deleteRule = async (ruleId: string) => {
-    if (!confirm('Are you sure you want to delete this rate limit rule?')) => {
+    if (!confirm('Are you sure you want to delete this rate limit rule?')) {
       return
     }
 
@@ -179,7 +179,7 @@ export default function APIRateLimitManager() {
 
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         await fetchRateLimitData()
         const successMessage = 'Rate limit rule deleted successfully'
         toast.success(successMessage)
@@ -207,7 +207,7 @@ export default function APIRateLimitManager() {
 
       const data = await response.json()
       
-      if (data.success) => {
+      if (data.success) {
         await fetchRateLimitData()
         const successMessage = `Rate limit rule ${isActive ? 'activated' : 'deactivated'} successfully`
         toast.success(successMessage)
@@ -233,7 +233,7 @@ export default function APIRateLimitManager() {
     return matchesSearch && matchesRole && matchesStatus
   })
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="flex items-center justify-center p-8" role="status" aria-live="polite">
         <RefreshCw className="h-8 w-8 animate-spin" aria-hidden="true" />
@@ -619,7 +619,7 @@ interface RateLimitRuleModalProps {
   saving: boolean
 }
 
-function RateLimitRuleModal({ rule, onSave, onClose, saving }: .*Props) {
+function RateLimitRuleModal({ rule, onSave, onClose, saving }: RateLimitRuleModalProps) {
   const [formData, setFormData] = useState<Partial<RateLimitRule>>(
     rule || {
       name: '',
@@ -643,30 +643,30 @@ function RateLimitRuleModal({ rule, onSave, onClose, saving }: .*Props) {
 
   useEffect(() => {
     // Focus the first input when modal opens
-    if (firstFocusableRef.current) => {
+    if (firstFocusableRef.current) {
       firstFocusableRef.current.focus()
     }
 
     // Handle escape key
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') => {
+      if (e.key === 'Escape') {
         onClose()
       }
     }
 
     // Trap focus within modal
     const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key === 'Tab') => {
+      if (e.key === 'Tab') {
         const focusableElements = document.querySelectorAll(
           'input:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
         )
         const firstElement = focusableElements[0] as HTMLElement
         const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement
 
-        if (e.shiftKey && document.activeElement === firstElement) => {
+        if (e.shiftKey && document.activeElement === firstElement) {
           e.preventDefault()
           lastElement.focus()
-        } else if (!e.shiftKey && document.activeElement === lastElement) => {
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
           e.preventDefault()
           firstElement.focus()
         }

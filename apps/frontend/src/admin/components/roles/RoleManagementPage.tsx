@@ -143,7 +143,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
         body: JSON.stringify({ permissions: selectedPermissions }),
       });
 
-      if (response.ok) => {
+      if (response.ok) {
         notify('权限更新成功', { type: 'success' });
         setPermissionDialogOpen(false);
         refresh();
@@ -167,7 +167,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
   const togglePermission = (permissionName: string) => {
     setSelectedPermissions(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(permissionName)) => {
+      if (newSet.has(permissionName)) {
         newSet.delete(permissionName);
       } else {
         newSet.add(permissionName);
@@ -176,7 +176,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
     });
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />

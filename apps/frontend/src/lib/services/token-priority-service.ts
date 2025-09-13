@@ -156,7 +156,7 @@ export class TokenPriorityService {
     ]);
 
     // Aggregate consumption by type
-    const consumptionByType = recentTransactions.reduce((acc: Record<string, { count: number; totalAmount: number }>, tx: { type: TokenType; amount: number }: any) => {
+    const consumptionByType = recentTransactions.reduce((acc: Record<string, { count: number; totalAmount: number }>, tx: { type: TokenType; amount: number }) => {
       const type = tx.type;
       if (!acc[type]) {
         acc[type] = { count: 0, totalAmount: 0 };
@@ -172,7 +172,7 @@ export class TokenPriorityService {
         total: effectiveBalance.total
       },
       recentConsumption: consumptionByType,
-      recentTransactions: recentTransactions.map((tx: { type: TokenType; amount: number; source: string; createdAt: Date }: any) => ({
+      recentTransactions: recentTransactions.map((tx: { type: TokenType; amount: number; source: string; createdAt: Date }) => ({
         type: tx.type,
         amount: Math.abs(tx.amount),
         source: tx.source,

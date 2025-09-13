@@ -37,7 +37,7 @@ export function ProgressTracker({
   showDetailedStats = false,
   height = 8,
   className = ''
-}: .*Props) {
+}: ProgressTrackerProps) {
   const [stats, setStats] = useState<ProgressStats>({
     completed: 0,
     failed: 0,
@@ -67,9 +67,9 @@ export function ProgressTracker({
     };
     
     // 计算速度和预估时间
-    if (connectionInfo.lastUpdate > 0 && completed > 0) => {
+    if (connectionInfo.lastUpdate > 0 && completed > 0) {
       const timeDiff = (Date.now() - connectionInfo.lastUpdate) / 1000 / 60; // 分钟
-      if (timeDiff > 0) => {
+      if (timeDiff > 0) {
         const speed = completed / timeDiff;
         const remaining = total - completed;
         const estimatedTime = remaining / speed;
@@ -86,7 +86,7 @@ export function ProgressTracker({
     }));
     
     // 调用外部回调
-    if (onProgress) => {
+    if (onProgress) {
       onProgress({
         taskId,
         status: data.status,
@@ -107,14 +107,14 @@ export function ProgressTracker({
       errorCount: prev.errorCount + 1
     }));
     
-    if (onError) => {
+    if (onError) {
       onError(new Error(error.message || 'Progress tracking error'));
     }
   }, [onError]);
 
   // 处理完成
   const handleComplete = useCallback(() => {
-    if (onComplete) => {
+    if (onComplete) {
       onComplete();
     }
   }, [onComplete]);
@@ -134,10 +134,10 @@ export function ProgressTracker({
 
   // 进度条颜色计算
   const getProgressColor = useCallback(() => {
-    if (stats.failed > stats.completed * 0.5) => {
+    if (stats.failed > stats.completed * 0.5) {
       return 'bg-red-500';
     }
-    if (stats.failed > stats.completed * 0.2) => {
+    if (stats.failed > stats.completed * 0.2) {
       return 'bg-yellow-500';
     }
     return 'bg-green-500';
@@ -145,10 +145,10 @@ export function ProgressTracker({
 
   // 格式化时间
   const formatTime = useCallback((minutes: number) => {
-    if (minutes < 1) => {
+    if (minutes < 1) {
       return `${Math.round(minutes * 60)}秒`;
     }
-    if (minutes < 60) => {
+    if (minutes < 60) {
       return `${Math.round(minutes)}分钟`;
     }
     const hours = Math.floor(minutes / 60);
@@ -156,7 +156,7 @@ export function ProgressTracker({
     return `${hours}小时${remainingMinutes}分钟`;
   }, []);
 
-  if (!enabled || !taskId) => {
+  if (!enabled || !taskId) {
     return null as any;
   }
 

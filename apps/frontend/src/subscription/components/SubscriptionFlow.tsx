@@ -32,7 +32,7 @@ export function SubscriptionFlow({
   onComplete, 
   onCancel,
   className 
-}: .*Props) {
+}: SubscriptionFlowProps) {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState<FlowStep>('plan-selection')
   const [selectedPlan, setSelectedPlan] = useState<PricingPlan | null>(null)
@@ -70,7 +70,7 @@ export function SubscriptionFlow({
     setSelectedPlan(mockPlan)
     setBillingCycle(billing)
     
-    if (planId === 'free') => {
+    if (planId === 'free') {
       // Handle free plan signup
       handleFreeSignup()
     } else {
@@ -90,7 +90,7 @@ export function SubscriptionFlow({
 
       const result = await response.json()
 
-      if (result.success) => {
+      if (result.success) {
         setSubscriptionId(result.data.subscriptionId)
         setCurrentStep('confirmation')
       }
@@ -110,16 +110,16 @@ export function SubscriptionFlow({
   }
 
   const handleComplete = () => {
-    if (subscriptionId) => {
+    if (subscriptionId) {
       onComplete?.(subscriptionId)
     }
     router.push('/dashboard')
   }
 
   const handleBack = () => {
-    if (currentStep === 'payment') => {
+    if (currentStep === 'payment') {
       setCurrentStep('plan-selection')
-    } else if (currentStep === 'confirmation') => {
+    } else if (currentStep === 'confirmation') {
       setCurrentStep('payment')
     }
   }

@@ -130,7 +130,7 @@ export default function SubscriptionPermissionsPage() {
         }
       ]
       setPlans(mockPlans)
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : '加载失败')
     } finally {
       setLoading(false)
@@ -141,19 +141,19 @@ export default function SubscriptionPermissionsPage() {
     try {
       // In production, this would be an API call
       setPlans(prev => prev.map((plan: any) => {
-        if (plan.id === planId) => {
+        if (plan.id === planId) {
           const existingFeature = plan.features.find((f: any) => f.featureId === featureId)
-          if (existingFeature) => {
+          if (existingFeature) {
             return {
               ...plan,
               features: plan.features.map((f: any) => 
                 f.featureId === featureId ? { ...f, enabled } : f
               )
             }
-          } else if (enabled) => {
+          } else if (enabled) {
             // Add new feature
             const featureDef = features.find((f: any) => f.featureId === featureId)
-            if (featureDef) => {
+            if (featureDef) {
               return {
                 ...plan,
                 features: [...plan.features, {
@@ -171,7 +171,7 @@ export default function SubscriptionPermissionsPage() {
         }
         return plan
       }))
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : '更新失败')
     }
   }
@@ -184,11 +184,11 @@ export default function SubscriptionPermissionsPage() {
   ) => {
     try {
       setPlans(prev => prev.map((plan: any) => {
-        if (plan.id === planId) => {
+        if (plan.id === planId) {
           return {
             ...plan,
             features: plan.features.map((feature: any) => {
-              if (feature.featureId === featureId) => {
+              if (feature.featureId === featureId) {
                 return {
                   ...feature,
                   config: {
@@ -203,7 +203,7 @@ export default function SubscriptionPermissionsPage() {
         }
         return plan
       }))
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : '更新失败')
     }
   }
@@ -230,7 +230,7 @@ export default function SubscriptionPermissionsPage() {
       width: 300,
       renderCell: (params: GridRenderCellParams) => {
         const limits = params.value as Record<string, any>
-        if (!limits || Object.keys(limits).length === 0) => {
+        if (!limits || Object.keys(limits).length === 0) {
           return <span>无限制</span>
         }
         
@@ -259,7 +259,7 @@ export default function SubscriptionPermissionsPage() {
           checked={params.value}
           onChange={((e: any): any) => {
             const planId = plans[selectedTab]?.id
-            if (planId && params.row.featureId) => {
+            if (planId && params.row.featureId) {
               handleFeatureToggle(planId, params.row.featureId, e.target.checked)
             }
           }}
@@ -298,7 +298,7 @@ export default function SubscriptionPermissionsPage() {
     }
   ]
 
-  if (loading) => {
+  if (loading) {
     return <div>加载中...</div>
   }
 

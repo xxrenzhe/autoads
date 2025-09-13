@@ -44,7 +44,7 @@ function PaymentForm({
   onSuccess, 
   onError, 
   onCancel 
-}: .*Props) {
+}: PaymentFormProps) {
   const stripe = useStripe()
   const elements = useElements()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -61,7 +61,7 @@ function PaymentForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
 
-    if (!stripe || !elements) => {
+    if (!stripe || !elements) {
       return
     }
 
@@ -70,14 +70,14 @@ function PaymentForm({
 
     const cardElement = elements.getElement(CardElement)
 
-    if (!cardElement) => {
+    if (!cardElement) {
       setPaymentError('Card element not found')
       setIsProcessing(false)
       return
     }
 
     try {
-      if (clientSecret) => {
+      if (clientSecret) {
         // Confirm payment for subscription
         const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
           payment_method: {
@@ -85,10 +85,10 @@ function PaymentForm({
           }
         })
 
-        if (error) => {
+        if (error) {
           setPaymentError(error.message || 'Payment failed')
           onError?.(error.message || 'Payment failed')
-        } else if (paymentIntent && paymentIntent.status === 'succeeded') => {
+        } else if (paymentIntent && paymentIntent.status === 'succeeded') {
           setPaymentSuccess(true)
           onSuccess?.(paymentIntent.id)
         }
@@ -104,23 +104,23 @@ function PaymentForm({
 
         const result = await response.json()
 
-        if (!result.success) => {
+        if (!result.success) {
           setPaymentError(result.error)
           onError?.(result.error)
           return
         }
 
-        if (result.data.clientSecret) => {
+        if (result.data.clientSecret) {
           const { error, paymentIntent } = await stripe.confirmCardPayment(result.data.clientSecret, {
             payment_method: {
               card: cardElement,
             }
           })
 
-          if (error) => {
+          if (error) {
             setPaymentError(error.message || 'Payment failed')
             onError?.(error.message || 'Payment failed')
-          } else if (paymentIntent && paymentIntent.status === 'succeeded') => {
+          } else if (paymentIntent && paymentIntent.status === 'succeeded') {
             setPaymentSuccess(true)
             onSuccess?.(result.data.subscription.id)
           }
@@ -135,7 +135,7 @@ function PaymentForm({
     }
   }
 
-  if (paymentSuccess) => {
+  if (paymentSuccess) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
@@ -255,7 +255,7 @@ function PaymentForm({
   )
 }
 
-export function PaymentProcessor(props: PaymentProcessorProps) => {
+export function PaymentProcessor(props: PaymentProcessorProps) {
   const [clientSecret, setClientSecret] = useState<string>()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -278,7 +278,7 @@ export function PaymentProcessor(props: PaymentProcessorProps) => {
     // initializePayment()
   }, [props.planId])
 
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
@@ -291,7 +291,7 @@ export function PaymentProcessor(props: PaymentProcessorProps) => {
     )
   }
 
-  if (error) => {
+  if (error) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
@@ -302,7 +302,7 @@ export function PaymentProcessor(props: PaymentProcessorProps) => {
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             {error}
           </p>
-          <Button onClick={() => setError(null)} variant="outline">
+          <Button onClick={((: any): any) => setError(null)} variant="outline">
             Try Again
           </Button>
         </CardContent>

@@ -51,7 +51,7 @@ export default function ConfigurationList({
   onDelete,
   onExecute,
   onRefresh
-}: .*Props) {
+}: ConfigurationListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedConfigs, setSelectedConfigs] = useState<string[]>([]);
@@ -72,7 +72,7 @@ export default function ConfigurationList({
   // 处理选择配置
   const handleSelectConfig = (configId: string) => {
     setSelectedConfigs(prev => {
-      if (prev.includes(configId)) => {
+      if (prev.includes(configId)) {
         return prev.filter((id: any) => id !== configId);
       } else {
         return [...prev, configId];
@@ -82,7 +82,7 @@ export default function ConfigurationList({
 
   // 处理全选
   const handleSelectAll = () => {
-    if (selectedConfigs.length === filteredConfigurations.length) => {
+    if (selectedConfigs.length === filteredConfigurations.length) {
       setSelectedConfigs([]);
     } else {
       setSelectedConfigs(filteredConfigurations?.filter(Boolean)?.map((config: any) => config.id));
@@ -102,7 +102,7 @@ export default function ConfigurationList({
 
   // 渲染网格视图
   const renderGridView = () => {
-    if (filteredConfigurations.length === 0) => {
+    if (filteredConfigurations.length === 0) {
       return (
         <EmptyState
           icon={Filter}
@@ -131,7 +131,7 @@ export default function ConfigurationList({
                 <div className="flex items-start space-x-2">
                   <Checkbox
                     checked={selectedConfigs.includes(config.id)}
-                    onCheckedChange={() => handleSelectConfig(config.id)}
+                    onCheckedChange={((: any): any) => handleSelectConfig(config.id)}
                     className="mt-1"
                   />
                   <div>
@@ -194,7 +194,7 @@ export default function ConfigurationList({
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => onEdit(config)}
+                      onClick={((: any): any) => onEdit(config)}
                     >
                       <Edit className="h-3 w-3 mr-1" />
                       编辑
@@ -207,16 +207,16 @@ export default function ConfigurationList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onExecute(config)}>
+                        <DropdownMenuItem onClick={((: any): any) => onExecute(config)}>
                           <Play className="h-4 w-4 mr-2" />
                           执行
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDuplicate(config)}>
+                        <DropdownMenuItem onClick={((: any): any) => onDuplicate(config)}>
                           <Copy className="h-4 w-4 mr-2" />
                           复制
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => onDelete(config)}
+                          onClick={((: any): any) => onDelete(config)}
                           className="text-red-600"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
@@ -236,7 +236,7 @@ export default function ConfigurationList({
 
   // 渲染表格视图
   const renderTableView = () => {
-    if (filteredConfigurations.length === 0) => {
+    if (filteredConfigurations.length === 0) {
       return (
         <EmptyState
           icon={Filter}
@@ -282,7 +282,7 @@ export default function ConfigurationList({
                 <td className="p-2">
                   <Checkbox
                     checked={selectedConfigs.includes(config.id)}
-                    onCheckedChange={() => handleSelectConfig(config.id)}
+                    onCheckedChange={((: any): any) => handleSelectConfig(config.id)}
                   />
                 </td>
                 <td className="p-2">
@@ -325,7 +325,7 @@ export default function ConfigurationList({
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => onEdit(config)}
+                      onClick={((: any): any) => onEdit(config)}
                     >
                       <Edit className="h-3 w-3" />
                     </Button>
@@ -337,16 +337,16 @@ export default function ConfigurationList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onExecute(config)}>
+                        <DropdownMenuItem onClick={((: any): any) => onExecute(config)}>
                           <Play className="h-4 w-4 mr-2" />
                           执行
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDuplicate(config)}>
+                        <DropdownMenuItem onClick={((: any): any) => onDuplicate(config)}>
                           <Copy className="h-4 w-4 mr-2" />
                           复制
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => onDelete(config)}
+                          onClick={((: any): any) => onDelete(config)}
                           className="text-red-600"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
@@ -364,7 +364,7 @@ export default function ConfigurationList({
     );
   };
 
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -373,7 +373,7 @@ export default function ConfigurationList({
     );
   }
 
-  if (configurations.length === 0) => {
+  if (configurations.length === 0) {
     return (
       <EmptyState
         icon={Settings}
@@ -397,7 +397,7 @@ export default function ConfigurationList({
             <Input
               placeholder="搜索配置名称或环境ID..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={((e: any): any) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>

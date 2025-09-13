@@ -29,7 +29,7 @@ export function BatchOpenVersionShowcase() {
   const router = useRouter()
   const { data: permissions, isLoading, error } = useBatchOpenPermissions()
 
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -38,7 +38,7 @@ export function BatchOpenVersionShowcase() {
     )
   }
 
-  if (error) => {
+  if (error) {
     return (
       <div className="text-center p-8 text-red-600">
         加载版本信息失败，请刷新页面重试
@@ -46,7 +46,7 @@ export function BatchOpenVersionShowcase() {
     )
   }
 
-  if (!permissions) => {
+  if (!permissions) {
     return null
   }
 
@@ -124,7 +124,7 @@ export function BatchOpenVersionShowcase() {
                 <div className="pt-4">
                   {hasAccess ? (
                     <Button 
-                      onClick={() => handleUseVersion(config.id)}
+                      onClick={((: any): any) => handleUseVersion(config.id)}
                       className="w-full"
                     >
                       使用 {version.name}

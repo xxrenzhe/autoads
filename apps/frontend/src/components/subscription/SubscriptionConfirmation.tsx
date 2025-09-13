@@ -45,7 +45,7 @@ interface SubscriptionDetails {
 export default function SubscriptionConfirmation({ 
   plan, 
   subscriptionId 
-}: .*Props) {
+}: SubscriptionConfirmationProps) {
   const router = useRouter()
   const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -57,7 +57,7 @@ export default function SubscriptionConfirmation({
   const loadSubscriptionDetails = async () => {
     try {
       const response = await fetch(`/api/subscriptions/${subscriptionId}`)
-      if (response.ok) => {
+      if (response.ok) {
         const data = await response.json()
         setSubscriptionDetails(data)
       }
@@ -85,12 +85,12 @@ export default function SubscriptionConfirmation({
   }
 
   const handleDownloadInvoice = () => {
-    if (subscriptionDetails?.invoice?.url) => {
+    if (subscriptionDetails?.invoice?.url) {
       window.open(subscriptionDetails.invoice.url, '_blank')
     }
   }
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-4">

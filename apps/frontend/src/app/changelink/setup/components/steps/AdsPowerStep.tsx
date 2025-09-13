@@ -32,7 +32,7 @@ export const AdsPowerStep = memo(({
   onEnvironmentChange, 
   onAddEnvironment, 
   onTestConnection 
-}: .*Props) {
+}: AdsPowerStepProps) => {
   const handleInputChange = useCallback((field: keyof AdsPowerEnvironment, value: string) => {
     onEnvironmentChange({ ...newEnvironment, [field]: value });
   }, [newEnvironment, onEnvironmentChange]);
@@ -64,7 +64,7 @@ export const AdsPowerStep = memo(({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => onTestConnection(env.id)}
+                      onClick={((: any): any) => onTestConnection(env.id)}
                       disabled={loading}
                     >
                       <TestTube className="h-4 w-4 mr-1" />
@@ -87,7 +87,7 @@ export const AdsPowerStep = memo(({
                 <input
                   type="text"
                   value={newEnvironment.name || ''}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onChange={((e: any): any) => handleInputChange('name', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md"
                   placeholder="主要浏览器环境"
                 />
@@ -98,7 +98,7 @@ export const AdsPowerStep = memo(({
                 <input
                   type="text"
                   value={newEnvironment.environmentId || ''}
-                  onChange={(e) => handleInputChange('environmentId', e.target.value)}
+                  onChange={((e: any): any) => handleInputChange('environmentId', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md"
                   placeholder="j1nqjy0"
                 />
@@ -109,7 +109,7 @@ export const AdsPowerStep = memo(({
                 <input
                   type="text"
                   value={newEnvironment.apiEndpoint || ''}
-                  onChange={(e) => handleInputChange('apiEndpoint', e.target.value)}
+                  onChange={((e: any): any) => handleInputChange('apiEndpoint', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md"
                   placeholder="http://local.adspower.net:50325"
                 />
@@ -120,7 +120,7 @@ export const AdsPowerStep = memo(({
                 <input
                   type="password"
                   value={newEnvironment.apiKey || ''}
-                  onChange={(e) => handleInputChange('apiKey', e.target.value)}
+                  onChange={((e: any): any) => handleInputChange('apiKey', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md"
                   placeholder="可选，如果需要认证"
                 />

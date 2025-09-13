@@ -48,7 +48,7 @@ export default function ApiDocsPage() {
     setIsClient(true);
     // 从localStorage获取保存的token
     const savedToken = localStorage.getItem('api-docs-token');
-    if (savedToken) => {
+    if (savedToken) {
       setAuthToken(savedToken);
     }
   }, []);
@@ -71,7 +71,7 @@ export default function ApiDocsPage() {
     ],
     layout: 'StandaloneLayout',
     requestInterceptor: (request: any) => {
-      if (authToken) => {
+      if (authToken) {
         request.headers.Authorization = `Bearer ${authToken}`;
       }
       return request;
@@ -81,7 +81,7 @@ export default function ApiDocsPage() {
     }
   };
 
-  if (!isClient) => {
+  if (!isClient) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -111,7 +111,7 @@ export default function ApiDocsPage() {
                 </label>
                 <select
                   value={selectedVersion.version}
-                  onChange={(e) => {
+                  onChange={((e: any): any) => {
                     const version = API_VERSIONS.find((v: any) => v.version === e.target.value);
                     if (version) setSelectedVersion(version);
                   }}
@@ -133,7 +133,7 @@ export default function ApiDocsPage() {
                 <input
                   type="password"
                   value={authToken}
-                  onChange={(e) => handleTokenChange(e.target.value)}
+                  onChange={((e: any): any) => handleTokenChange(e.target.value)}
                   placeholder="输入您的API Token"
                   className="block w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />

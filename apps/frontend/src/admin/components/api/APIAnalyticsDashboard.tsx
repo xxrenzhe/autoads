@@ -286,7 +286,7 @@ export default function APIAnalyticsDashboard() {
         <div className="flex items-center gap-2">
           <select
             value={timeRange}
-            onChange={(e: any) => setTimeRange(e.target.value)}
+            onChange={((e: any): any) => setTimeRange(e.target.value)}
             className="px-3 py-1 border rounded-md text-sm"
           >
             <option value="1h">Last Hour</option>
@@ -296,7 +296,7 @@ export default function APIAnalyticsDashboard() {
           </select>
           <select
             value={selectedEndpoint}
-            onChange={(e: any) => setSelectedEndpoint(e.target.value)}
+            onChange={((e: any): any) => setSelectedEndpoint(e.target.value)}
             className="px-3 py-1 border rounded-md text-sm"
           >
             <option value="all">All Endpoints</option>
@@ -310,7 +310,7 @@ export default function APIAnalyticsDashboard() {
           {/* Pagination Controls */}
           <select
             value={pageSize}
-            onChange={(e: any) => {
+            onChange={((e: any): any) => {
               setPageSize(Number(e.target.value))
               setPage(1)
             }}
@@ -326,7 +326,7 @@ export default function APIAnalyticsDashboard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={((: any) => setPage(p: any) => Math.max(1, p - 1))}
               disabled={page === 1}
             >
               Previous
@@ -337,7 +337,7 @@ export default function APIAnalyticsDashboard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(p => p + 1)}
+              onClick={((: any) => setPage(p: any) => p + 1)}
               disabled={!analytics?.pagination?.hasMore}
             >
               Next
@@ -756,7 +756,7 @@ export default function APIAnalyticsDashboard() {
                   <div className="space-y-3">
                     <h4 className="font-medium">Recent Endpoint Activity</h4>
                     <div className="space-y-2">
-                      {displayMetrics.topEndpoints?.slice(0, 5).map((endpoint: any, index: number) => (
+                      {displayMetrics.topEndpoints?.slice(0, 5).map((endpoint: any, index: number: any) => (
                         <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                           <span className="text-sm font-medium truncate flex-1">
                             {endpoint.endpoint}

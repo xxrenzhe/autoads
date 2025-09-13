@@ -92,8 +92,8 @@ const UserStatisticsDashboard: React.FC = () => {
       let startDate: string;
       let endDate: string;
 
-      if (dateRange === 'custom') => {
-        if (!customStartDate || !customEndDate) => {
+      if (dateRange === 'custom') {
+        if (!customStartDate || !customEndDate) {
           setError('请选择开始和结束日期');
           setLoading(false);
           return;
@@ -113,13 +113,13 @@ const UserStatisticsDashboard: React.FC = () => {
         `/api/admin/user-statistics?startDate=${startDate}&endDate=${endDate}&groupBy=${groupBy}`
       );
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('获取统计数据失败');
       }
 
       const result = await response.json();
       setData(result);
-    } catch (err: any) => {
+    } catch (err: any) {
       setError(err.message || '发生错误');
     } finally {
       setLoading(false);
@@ -146,7 +146,7 @@ const UserStatisticsDashboard: React.FC = () => {
     link.click();
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
@@ -154,7 +154,7 @@ const UserStatisticsDashboard: React.FC = () => {
     );
   }
 
-  if (error) => {
+  if (error) {
     return (
       <Alert severity="error" sx={{ m: 3 }}>
         {error}

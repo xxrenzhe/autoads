@@ -41,12 +41,12 @@ export function AlertsPanel({
   onResolveAlert, 
   onDismissAlert,
   maxDisplayed = 5 
-}: .*Props) {
+}: AlertsPanelProps) {
   const [filter, setFilter] = useState<'all' | 'critical' | 'high' | 'medium' | 'low'>('all')
   const [resolving, setResolving] = useState<Set<string>>(new Set())
 
   const getSeverityIcon = (severity: string) => {
-    switch (severity) => {
+    switch (severity) {
       case 'critical':
         return AlertTriangle
       case 'high':
@@ -61,7 +61,7 @@ export function AlertsPanel({
   }
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) => {
+    switch (severity) {
       case 'critical':
         return {
           badge: 'destructive',
@@ -140,7 +140,7 @@ export function AlertsPanel({
     return acc
   }, {} as Record<string, number>)
 
-  if (alerts.length === 0) => {
+  if (alerts.length === 0) {
     return (
       <Card>
         <CardHeader>

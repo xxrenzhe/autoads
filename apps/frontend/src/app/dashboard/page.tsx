@@ -28,7 +28,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (session?.user) => {
+    if (session?.user) {
       fetchUserStats()
     }
   }, [session])
@@ -37,7 +37,7 @@ export default function DashboardPage() {
     try {
       setLoading(true)
       const response = await fetch('/api/user/tokens?timeRange=7d')
-      if (response.ok) => {
+      if (response.ok) {
         const data = await response.json()
         setUserStats({
           tokenBalance: data.currentBalance || 0,
@@ -52,7 +52,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (!session) => {
+  if (!session) {
     return (
       <div className="container mx-auto py-8">
         <Card>

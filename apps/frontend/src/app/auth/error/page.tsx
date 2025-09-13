@@ -13,13 +13,13 @@ export default function AuthError() {
 
   useEffect(() => {
     // Log error for debugging
-    if (error) => {
+    if (error) {
       console.error('Authentication error:', error)
     }
   }, [error])
 
   const getErrorMessage = (error: string | null) => {
-    switch (error) => {
+    switch (error) {
       case 'Configuration':
         return '服务器配置错误，请联系管理员'
       case 'AccessDenied':
@@ -65,7 +65,7 @@ export default function AuthError() {
           
           <div className="space-y-2">
             <Button
-              onClick={() => router.push('/auth/signin')}
+              onClick={((: any): any) => router.push('/auth/signin')}
               className="w-full"
               variant="outline"
             >
@@ -74,7 +74,7 @@ export default function AuthError() {
             </Button>
             
             <Button
-              onClick={() => router.push('/')}
+              onClick={((: any): any) => router.push('/')}
               className="w-full"
             >
               返回首页

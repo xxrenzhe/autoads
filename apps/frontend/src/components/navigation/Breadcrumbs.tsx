@@ -40,7 +40,7 @@ function generateBreadcrumbsFromPath(pathname: string): BreadcrumbItem[] {
   ]
 
   let currentPath = ''
-  for (const segment of segments) => {
+  for (const segment of segments) {
     currentPath += `/${segment}`
     const title = pathToTitleMap[currentPath] || segment.charAt(0).toUpperCase() + segment.slice(1)
     
@@ -53,14 +53,14 @@ function generateBreadcrumbsFromPath(pathname: string): BreadcrumbItem[] {
   return breadcrumbs
 }
 
-export default function Breadcrumbs({ items, className }: .*Props) {
+export default function Breadcrumbs({ items, className }: BreadcrumbsProps) {
   const pathname = usePathname()
   
   // Use provided items or generate from pathname
   const breadcrumbItems = items || generateBreadcrumbsFromPath(pathname)
   
   // Don't show breadcrumbs on home page
-  if (pathname === '/' && !items) => {
+  if (pathname === '/' && !items) {
     return null
   }
 

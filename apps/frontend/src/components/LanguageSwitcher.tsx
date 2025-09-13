@@ -12,7 +12,7 @@ export default function LanguageSwitcher() {
 
   // 动态设置html lang属性
   useEffect(() => {
-    if (typeof document !== "undefined") => {
+    if (typeof document !== "undefined") {
       document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
     }
   }, [locale]);
@@ -22,7 +22,7 @@ export default function LanguageSwitcher() {
   };
 
   // 如果语言还在加载中，显示加载状态
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <div className="flex rounded-lg border border-gray-200 bg-white">
         <div className="h-8 w-8 bg-gray-200 rounded-l-md animate-pulse" />
@@ -36,7 +36,7 @@ export default function LanguageSwitcher() {
         <Button
           variant={locale === "en" ? "default" : "ghost"}
           size="sm"
-          onClick={() => handleLanguageChange("en")}
+          onClick={((: any): any) => handleLanguageChange("en")}
           className="rounded-r-none text-xs px-3 py-1"
         >
           EN
@@ -44,7 +44,7 @@ export default function LanguageSwitcher() {
         <Button
           variant={locale === "zh" ? "default" : "ghost"}
           size="sm"
-          onClick={() => handleLanguageChange("zh")}
+          onClick={((: any): any) => handleLanguageChange("zh")}
           className="rounded-l-none text-xs px-3 py-1"
         >
           中文

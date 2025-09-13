@@ -67,7 +67,7 @@ export default function MonitoringDashboard() {
       const metricsResponse = await fetch('/api/monitoring/metrics');
       const metricsData = await metricsResponse.json();
       
-      if (metricsData.success) => {
+      if (metricsData.success) {
         setMetrics(metricsData.data.aggregated);
         setHealth(metricsData.data.health);
       }
@@ -76,11 +76,11 @@ export default function MonitoringDashboard() {
       const alertsResponse = await fetch('/api/monitoring/alerts');
       const alertsData = await alertsResponse.json();
       
-      if (alertsData.success) => {
+      if (alertsData.success) {
         setAlerts(alertsData.data.alerts);
         setAlertStats(alertsData.data.stats);
       }
-    } catch (err) => {
+    } catch (err) {
       setError('Failed to fetch monitoring data');
       console.error('Error fetching monitoring data:', err);
     } finally {
@@ -99,12 +99,12 @@ export default function MonitoringDashboard() {
         })
       });
 
-      if (response.ok) => {
+      if (response.ok) {
         setAlerts(prev => prev?.filter(Boolean)?.map((alert: any) => 
           alert.id === alertId ? { ...alert, acknowledged: true } : alert
         ));
       }
-    } catch (err) => {
+    } catch (err) {
       console.error('Error acknowledging alert:', err);
     }
   };
@@ -119,7 +119,7 @@ export default function MonitoringDashboard() {
     return `${(value / 60000).toFixed(1)}m`;
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -130,7 +130,7 @@ export default function MonitoringDashboard() {
     );
   }
 
-  if (error) => {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="max-w-md w-full">
@@ -376,7 +376,7 @@ export default function MonitoringDashboard() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => acknowledgeAlert(alert.id)}
+                          onClick={((: any): any) => acknowledgeAlert(alert.id)}
                         >
                           确认
                         </Button>

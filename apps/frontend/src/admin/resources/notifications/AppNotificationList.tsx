@@ -76,7 +76,7 @@ const NotificationTypeField: React.FC = () => {
   if (!record) return null;
 
   const getIcon = (type: string) => {
-    switch (type) => {
+    switch (type) {
       case 'INFO':
         return <NotificationsIcon fontSize="small" />;
       case 'WARNING':
@@ -91,7 +91,7 @@ const NotificationTypeField: React.FC = () => {
   };
 
   const getColor = (type: string) => {
-    switch (type) => {
+    switch (type) {
       case 'INFO':
         return 'info';
       case 'WARNING':
@@ -120,7 +120,7 @@ const PriorityField: React.FC = () => {
   if (!record) return null;
 
   const getColor = (priority: string) => {
-    switch (priority) => {
+    switch (priority) {
       case 'LOW':
         return 'default';
       case 'MEDIUM':
@@ -149,7 +149,7 @@ const AppNotificationListActions = () => {
   return (
     <TopToolbar>
       <Button
-        onClick={() => setOpenBulkModal(true)}
+        onClick={((: any): any) => setOpenBulkModal(true)}
         startIcon={<PushPin />}
         sx={{ mr: 1 }}
       >

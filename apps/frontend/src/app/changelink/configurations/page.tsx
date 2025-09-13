@@ -94,7 +94,7 @@ export default function ConfigurationsPage() {
       const response = await fetch('/api/adscenter/settings?type=configurations');
       const result = await response.json();
       
-      if (result.success) => {
+      if (result.success) {
         setConfigurations(result.data.configurations);
       }
     } catch (error) {
@@ -126,7 +126,7 @@ export default function ConfigurationsPage() {
 
       const result = await response.json();
       
-      if (result.success) => {
+      if (result.success) {
         setShowCreateDialog(false);
         resetForm();
         loadConfigurations();
@@ -164,7 +164,7 @@ export default function ConfigurationsPage() {
 
       const result = await response.json();
       
-      if (result.success) => {
+      if (result.success) {
         setShowEditDialog(false);
         setSelectedConfig(null);
         resetForm();
@@ -194,7 +194,7 @@ export default function ConfigurationsPage() {
 
       const result = await response.json();
       
-      if (result.success) => {
+      if (result.success) {
         loadConfigurations();
       } else {
         alert('删除配置失败: ' + result.error);
@@ -220,7 +220,7 @@ export default function ConfigurationsPage() {
 
       const result = await response.json();
       
-      if (result.success) => {
+      if (result.success) {
         loadConfigurations();
       } else {
         alert('更新状态失败: ' + result.error);
@@ -245,7 +245,7 @@ export default function ConfigurationsPage() {
 
       const result = await response.json();
       
-      if (result.success) => {
+      if (result.success) {
         alert(`执行已启动，执行ID: ${result.data.executionId}`);
       } else {
         alert('启动执行失败: ' + result.error);
@@ -419,7 +419,7 @@ export default function ConfigurationsPage() {
             <div key={index} className="flex gap-2">
               <Input
                 value={link}
-                onChange={(e) => updateOriginalLink(index, e.target.value)}
+                onChange={((e: any): any) => updateOriginalLink(index, e.target.value)}
                 placeholder="输入广告联盟链接"
               />
               {formData.originalLinks.length > 1 && (
@@ -427,7 +427,7 @@ export default function ConfigurationsPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => removeOriginalLink(index)}
+                  onClick={((: any): any) => removeOriginalLink(index)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -450,14 +450,14 @@ export default function ConfigurationsPage() {
             <div key={index} className="grid grid-cols-2 gap-2">
               <Input
                 value={account.accountId}
-                onChange={(e) => updateGoogleAdsAccount(index, 'accountId', e.target.value)}
+                onChange={((e: any): any) => updateGoogleAdsAccount(index, 'accountId', e.target.value)}
                 placeholder="账户ID"
               />
               <div className="flex gap-2">
                 <div className="flex-1">
                   <Input
                     value={account.accountName}
-                    onChange={(e) => updateGoogleAdsAccount(index, 'accountName', e.target.value)}
+                    onChange={((e: any): any) => updateGoogleAdsAccount(index, 'accountName', e.target.value)}
                     placeholder="账户名称"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -472,7 +472,7 @@ export default function ConfigurationsPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => removeGoogleAdsAccount(index)}
+                    onClick={((: any): any) => removeGoogleAdsAccount(index)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -485,7 +485,7 @@ export default function ConfigurationsPage() {
     </Tabs>
   );
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
@@ -519,7 +519,7 @@ export default function ConfigurationsPage() {
               </Button>
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => { resetForm(); setShowCreateDialog(true); }}>
+                  <Button onClick={((: any): any) => { resetForm(); setShowCreateDialog(true); }}>
                     <Plus className="h-4 w-4 mr-2" />
                     新建配置
                   </Button>
@@ -533,7 +533,7 @@ export default function ConfigurationsPage() {
                   </DialogHeader>
                   <ConfigurationForm />
                   <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                    <Button variant="outline" onClick={((: any): any) => setShowCreateDialog(false)}>
                       取消
                     </Button>
                     <Button onClick={handleCreateConfiguration}>
@@ -555,12 +555,12 @@ export default function ConfigurationsPage() {
               <h3 className="text-lg font-medium mb-2">暂无配置</h3>
               <p className="text-gray-600 mb-4">创建您的第一个配置来开始自动化流程</p>
               <div className="flex gap-2">
-                <Button onClick={() => setShowCreateDialog(true)}>
+                <Button onClick={((: any): any) => setShowCreateDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   创建配置
                 </Button>
                 <Button 
-                  onClick={() => window.location.href = '/adscenter/setup'} 
+                  onClick={((: any): any) => window.location.href = '/adscenter/setup'} 
                   variant="outline"
                 >
                   <Settings className="h-4 w-4 mr-2" />
@@ -610,21 +610,21 @@ export default function ConfigurationsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => openViewDialog(config)}
+                      onClick={((: any): any) => openViewDialog(config)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => openEditDialog(config)}
+                      onClick={((: any): any) => openEditDialog(config)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleExecuteConfiguration(config.id)}
+                      onClick={((: any): any) => handleExecuteConfiguration(config.id)}
                       disabled={config.status !== 'active'}
                     >
                       <Play className="h-4 w-4" />
@@ -633,7 +633,7 @@ export default function ConfigurationsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleUpdateStatus(config.id, 'paused')}
+                        onClick={((: any): any) => handleUpdateStatus(config.id, 'paused')}
                       >
                         <Pause className="h-4 w-4" />
                       </Button>
@@ -641,7 +641,7 @@ export default function ConfigurationsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleUpdateStatus(config.id, 'active')}
+                        onClick={((: any): any) => handleUpdateStatus(config.id, 'active')}
                       >
                         <Play className="h-4 w-4" />
                       </Button>
@@ -649,7 +649,7 @@ export default function ConfigurationsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDeleteConfiguration(config.id)}
+                      onClick={((: any): any) => handleDeleteConfiguration(config.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -673,7 +673,7 @@ export default function ConfigurationsPage() {
           </DialogHeader>
           <ConfigurationForm isEdit={true} />
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+            <Button variant="outline" onClick={((: any): any) => setShowEditDialog(false)}>
               取消
             </Button>
             <Button onClick={handleUpdateConfiguration}>

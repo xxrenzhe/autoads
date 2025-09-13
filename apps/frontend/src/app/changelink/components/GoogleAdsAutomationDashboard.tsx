@@ -55,7 +55,7 @@ interface GoogleAdsAutomationDashboardProps {
 export default function GoogleAdsAutomationDashboard({
   onExportData,
   onRefresh
-}: .*Props) {
+}: GoogleAdsAutomationDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [systemOverview, setSystemOverview] = useState<SystemOverview>({
@@ -99,7 +99,7 @@ export default function GoogleAdsAutomationDashboard({
   }, [onExportData]);
 
   const getSystemHealthColor = (health: string) => {
-    switch (health) => {
+    switch (health) {
       case 'healthy': return 'text-green-600 bg-green-50';
       case 'warning': return 'text-yellow-600 bg-yellow-50';
       case 'critical': return 'text-red-600 bg-red-50';
@@ -108,7 +108,7 @@ export default function GoogleAdsAutomationDashboard({
   };
 
   const getSystemHealthIcon = (health: string) => {
-    switch (health) => {
+    switch (health) {
       case 'healthy': return <CheckCircle className="h-4 w-4" />;
       case 'warning': return <AlertTriangle className="h-4 w-4" />;
       case 'critical': return <XCircle className="h-4 w-4" />;
@@ -219,7 +219,7 @@ export default function GoogleAdsAutomationDashboard({
                 <Button 
                   variant="outline" 
                   className="h-auto p-4 flex flex-col items-start space-y-2"
-                  onClick={() => setActiveTab('configurations')}
+                  onClick={((: any): any) => setActiveTab('configurations')}
                 >
                   <Settings className="h-4 w-4" />
                   <span className="font-medium">管理配置</span>
@@ -244,7 +244,7 @@ export default function GoogleAdsAutomationDashboard({
                 <Button 
                   variant="outline" 
                   className="h-auto p-4 flex flex-col items-start space-y-2"
-                  onClick={() => {}}
+                  onClick={((: any): any) => {}}
                 >
                   <Play className="h-4 w-4" />
                   <span className="font-medium">执行任务</span>
@@ -256,7 +256,7 @@ export default function GoogleAdsAutomationDashboard({
                 <Button 
                   variant="outline" 
                   className="h-auto p-4 flex flex-col items-start space-y-2"
-                  onClick={() => handleExportData(systemOverview)}
+                  onClick={((: any): any) => handleExportData(systemOverview)}
                 >
                   <Database className="h-4 w-4" />
                   <span className="font-medium">导出数据</span>

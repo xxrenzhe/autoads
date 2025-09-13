@@ -157,13 +157,13 @@ const SubscriptionField: React.FC<{ label?: string }> = ({ label }) => {
   
   // Check if user has active subscription
   const hasActiveSubscription = record.subscriptions?.length > 0;
-  const activeSubscription = record.subscriptions?.find(((sub: any) => sub.status === 'ACTIVE');
+  const activeSubscription = record.subscriptions?.find((sub: any: any) => sub.status === 'ACTIVE');
   
-  if (!hasActiveSubscription) => {
+  if (!hasActiveSubscription) {
     return <Chip label="无订阅" size="small" color="default" />;
   }
   
-  if (activeSubscription) => {
+  if (activeSubscription) {
     return (
       <Box>
         <Chip 
@@ -254,7 +254,7 @@ const BulkRoleButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = []
     <>
       <Button 
         label="更改角色" 
-        onClick={() => setOpen(true)}
+        onClick={((: any): any) => setOpen(true)}
         disabled={!selectedIds.length}
       >
         <TrendingUp />
@@ -273,7 +273,7 @@ const BulkRoleButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = []
             { id: 'ADMIN', name: '管理员' },
           ]}
           value={selectedRole}
-          onChange={(e) => setSelectedRole(e.target.value)}
+          onChange={((e: any): any) => setSelectedRole(e.target.value)}
         />
       </Confirm>
     </>
@@ -323,7 +323,7 @@ const BulkStatusButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = 
     <>
       <Button 
         label="更改状态" 
-        onClick={() => setOpen(true)}
+        onClick={((: any): any) => setOpen(true)}
         disabled={!selectedIds.length}
       >
         {selectedStatus === 'ACTIVE' ? <CheckCircle /> : <Block />}
@@ -343,7 +343,7 @@ const BulkStatusButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = 
             { id: 'BANNED', name: '封禁' },
           ]}
           value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
+          onChange={((e: any): any) => setSelectedStatus(e.target.value)}
         />
       </Confirm>
     </>
@@ -393,7 +393,7 @@ const BulkTokenRechargeButton: React.FC<{ selectedIds?: string[] }> = ({ selecte
     <>
       <Button 
         label="Token充值" 
-        onClick={() => setOpen(true)}
+        onClick={((: any): any) => setOpen(true)}
         disabled={!selectedIds.length}
       >
         <Add />
@@ -435,7 +435,7 @@ const BulkSubscriptionButton: React.FC<{ selectedIds?: string[] }> = ({ selected
     const loadPlans = async () => {
       try {
         const response = await fetch('/api/admin/plans/available');
-        if (response.ok) => {
+        if (response.ok) {
           const data = await response.json();
           setPlans(data.plans);
         }
@@ -481,7 +481,7 @@ const BulkSubscriptionButton: React.FC<{ selectedIds?: string[] }> = ({ selected
     <>
       <Button 
         label="分配套餐" 
-        onClick={() => setOpen(true)}
+        onClick={((: any): any) => setOpen(true)}
         disabled={!selectedIds.length}
       >
         <Subscriptions />
@@ -497,7 +497,7 @@ const BulkSubscriptionButton: React.FC<{ selectedIds?: string[] }> = ({ selected
           source="plan"
           choices={plans.map((p: any) => ({ id: p.id, name: `${p.name} (¥${p.price}/${p.interval})` }))}
           value={selectedPlan}
-          onChange={(e) => setSelectedPlan(e.target.value)}
+          onChange={((e: any): any) => setSelectedPlan(e.target.value)}
           label="选择套餐"
           fullWidth
         />

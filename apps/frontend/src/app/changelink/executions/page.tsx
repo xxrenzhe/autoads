@@ -80,7 +80,7 @@ export default function ExecutionsPage() {
     setRefreshInterval(interval);
 
     return () => {
-      if (refreshInterval) => {
+      if (refreshInterval) {
         clearInterval(refreshInterval);
       }
     };
@@ -89,9 +89,9 @@ export default function ExecutionsPage() {
   // 页面不可见时暂停轮询，可见时恢复
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden) => {
+      if (document.hidden) {
         // 页面隐藏时暂停轮询
-        if (refreshInterval) => {
+        if (refreshInterval) {
           clearInterval(refreshInterval);
           setRefreshInterval(null);
         }
@@ -132,7 +132,7 @@ export default function ExecutionsPage() {
       const response = await fetch('/api/adscenter/execute?action=list&userId=current_user');
       const result = await response.json();
       
-      if (result.success) => {
+      if (result.success) {
         setActiveExecutions(result.data.executions);
       }
     } catch (error) {
@@ -145,7 +145,7 @@ export default function ExecutionsPage() {
       const response = await fetch('/api/adscenter/execute?action=history&userId=current_user&limit=20');
       const result = await response.json();
       
-      if (result.success) => {
+      if (result.success) {
         setHistoryExecutions(result.data.executions);
       }
     } catch (error) {
@@ -168,7 +168,7 @@ export default function ExecutionsPage() {
 
       const result = await response.json();
       
-      if (result.success) => {
+      if (result.success) {
         loadActiveExecutions();
       } else {
         alert('取消执行失败: ' + result.error);
@@ -184,7 +184,7 @@ export default function ExecutionsPage() {
       const response = await fetch(`/api/adscenter/execute?action=status&executionId=${executionId}`);
       const result = await response.json();
       
-      if (result.success) => {
+      if (result.success) {
         setSelectedExecution(result.data);
         setShowDetailDialog(true);
       } else {
@@ -240,9 +240,9 @@ export default function ExecutionsPage() {
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
 
-    if (hours > 0) => {
+    if (hours > 0) {
       return `${hours}小时${minutes % 60}分钟`;
-    } else if (minutes > 0) => {
+    } else if (minutes > 0) {
       return `${minutes}分钟${seconds % 60}秒`;
     } else {
       return `${seconds}秒`;
@@ -315,7 +315,7 @@ export default function ExecutionsPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => openDetailDialog(execution.id)}
+              onClick={((: any): any) => openDetailDialog(execution.id)}
             >
               <Eye className="h-4 w-4 mr-1" />
               详情
@@ -324,7 +324,7 @@ export default function ExecutionsPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleCancelExecution(execution.id)}
+                onClick={((: any): any) => handleCancelExecution(execution.id)}
               >
                 <Square className="h-4 w-4 mr-1" />
                 取消
@@ -483,7 +483,7 @@ export default function ExecutionsPage() {
     </Tabs>
   );
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">

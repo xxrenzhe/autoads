@@ -51,17 +51,17 @@ export async function GET(request: NextRequest) {
     // Build limits from plan features
     const limits = {
       siterank: { 
-        batchLimit: subscription.plan.planFeatures.find(((f: any) => f.featureName === 'WEBSITE_RANKING_BATCH_LIMIT')?.limit || 100 
+        batchLimit: subscription.plan.planFeatures.find((f: any: any) => f.featureName === 'WEBSITE_RANKING_BATCH_LIMIT')?.limit || 100 
       },
       batchopen: { 
         versions: [
-          ...((subscription.plan.planFeatures.find((f: any) => f.featureName === 'REAL_CLICK_BASIC')?.enabled ? ['basic'] : []),
-          ...((subscription.plan.planFeatures.find((f: any) => f.featureName === 'REAL_CLICK_SILENT')?.enabled ? ['silent'] : []),
-          ...((subscription.plan.planFeatures.find((f: any) => f.featureName === 'REAL_CLICK_AUTOMATED')?.enabled ? ['automated', 'autoclick'] : [])
+          ...(subscription.plan.planFeatures.find((f: any: any) => f.featureName === 'REAL_CLICK_BASIC')?.enabled ? ['basic'] : []),
+          ...(subscription.plan.planFeatures.find((f: any: any) => f.featureName === 'REAL_CLICK_SILENT')?.enabled ? ['silent'] : []),
+          ...(subscription.plan.planFeatures.find((f: any: any) => f.featureName === 'REAL_CLICK_AUTOMATED')?.enabled ? ['automated', 'autoclick'] : [])
         ].filter(Boolean)
       },
       adscenter: { 
-        maxCampaigns: subscription.plan.planFeatures.find(((f: any) => f.featureName === 'ADS_ACCOUNT_LIMIT')?.limit || 0 
+        maxCampaigns: subscription.plan.planFeatures.find((f: any: any) => f.featureName === 'ADS_ACCOUNT_LIMIT')?.limit || 0 
       },
       api: { 
         rateLimit: subscription.plan.rateLimit || 30 

@@ -47,11 +47,11 @@ const StatusField: React.FC = () => {
   const statusCode = record.statusCode || 0;
   let color = 'default';
   
-  if (statusCode >= 200 && statusCode < 300) => {
+  if (statusCode >= 200 && statusCode < 300) {
     color = 'success';
-  } else if (statusCode >= 400 && statusCode < 500) => {
+  } else if (statusCode >= 400 && statusCode < 500) {
     color = 'warning';
-  } else if (statusCode >= 500) => {
+  } else if (statusCode >= 500) {
     color = 'error';
   }
   
@@ -71,9 +71,9 @@ const ResponseTimeField: React.FC = () => {
   const responseTime = record.responseTime || 0;
   let color = 'default';
   
-  if (responseTime < 500) => {
+  if (responseTime < 500) {
     color = 'success';
-  } else if (responseTime < 2000) => {
+  } else if (responseTime < 2000) {
     color = 'warning';
   } else {
     color = 'error';

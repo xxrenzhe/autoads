@@ -32,7 +32,7 @@ export const CompactProgressBar: React.FC<CompactProgressBarProps> = ({
 }) => {
 
 
-  if (!showProgress) => {
+  if (!showProgress) {
     return null as any;
   }
 
@@ -52,18 +52,18 @@ export const CompactProgressBar: React.FC<CompactProgressBarProps> = ({
     
     // 优先从状态消息中提取耗时
     const durationFromMessage = extractDurationFromMessage(message);
-    if (durationFromMessage) => {
+    if (durationFromMessage) {
       return durationFromMessage;
     }
     
     // 如果消息中没有，则根据时间戳计算
-    if (status === 'completed' && taskStartTime && taskEndTime) => {
+    if (status === 'completed' && taskStartTime && taskEndTime) {
       // 任务完成时，使用固定的开始和结束时间
       const duration = Math.floor((taskEndTime - taskStartTime) / 1000);
       const minutes = Math.floor(duration / 60);
       const seconds = duration % 60;
       return minutes > 0 ? `${minutes}m${seconds}s` : `${seconds}s`;
-    } else if (taskStartTime) => {
+    } else if (taskStartTime) {
       // 任务进行中，实时计算耗时
       const duration = Math.floor((Date.now() - taskStartTime) / 1000);
       const minutes = Math.floor(duration / 60);

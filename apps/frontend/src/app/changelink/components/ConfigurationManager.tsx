@@ -89,23 +89,23 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
   const validateConfiguration = useCallback((config: TrackingConfiguration): string[] => {
     const errors: string[] = [];
 
-    if (!config.name.trim()) => {
+    if (!config.name.trim()) {
       errors.push('Configuration name is required');
     }
 
-    if (!config.adsPowerConfigId.trim()) => {
+    if (!config.adsPowerConfigId.trim()) {
       errors.push('AdsPower configuration is required');
     }
 
-    if (!config.googleAdsConfigId.trim()) => {
+    if (!config.googleAdsConfigId.trim()) {
       errors.push('Google Ads configuration is required');
     }
 
-    if (config.originalLinks.length === 0) => {
+    if (config.originalLinks.length === 0) {
       errors.push('At least one original link is required');
     }
 
-    if (config.repeatCount && (config.repeatCount < 1 || config.repeatCount > 100)) => {
+    if (config.repeatCount && (config.repeatCount < 1 || config.repeatCount > 100)) {
       errors.push('Repeat count must be between 1 and 100');
     }
 
@@ -118,7 +118,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
     const errors = validateConfiguration(currentConfig);
     setValidationErrors(errors);
 
-    if (errors.length > 0) => {
+    if (errors.length > 0) {
       return;
     }
 
@@ -181,7 +181,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
   }, [currentConfig, onTest]);
 
   // const handleDeleteConfiguration = useCallback(async (configId: string) => {
-  //   if (confirm('Are you sure you want to delete this configuration? This action cannot be undone.')) => {
+  //   if (confirm('Are you sure you want to delete this configuration? This action cannot be undone.')) {
   //     try {
   //       await onDelete(configId);
   //     } catch (error) {
@@ -262,7 +262,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
-            onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+            onClick={((: any): any) => setShowAdvancedSettings(!showAdvancedSettings)}
           >
             <Settings className="h-4 w-4 mr-2" />
             Advanced
@@ -328,7 +328,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
-                      onClick={() => onConfigurationSelect(config)}
+                      onClick={((: any): any) => onConfigurationSelect(config)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
@@ -398,7 +398,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditConfiguration(currentConfig)}
+                          onClick={((: any): any) => handleEditConfiguration(currentConfig)}
                         >
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
@@ -406,7 +406,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDuplicateConfiguration(currentConfig)}
+                          onClick={((: any): any) => handleDuplicateConfiguration(currentConfig)}
                         >
                           <Copy className="h-4 w-4 mr-1" />
                           Duplicate
@@ -414,7 +414,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleExportConfiguration(currentConfig)}
+                          onClick={((: any): any) => handleExportConfiguration(currentConfig)}
                         >
                           <Download className="h-4 w-4 mr-1" />
                           Export
@@ -422,7 +422,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleTestConfiguration()}
+                          onClick={((: any): any) => handleTestConfiguration()}
                           disabled={isTesting}
                         >
                           <TestTube className="h-4 w-4 mr-1" />
@@ -435,7 +435,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
+                          onClick={((: any): any) => {
                             setCurrentConfig(null);
                             setIsEditing(false);
                           }}
@@ -601,7 +601,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
               <div className="flex items-end">
                 <Button
                   variant="outline"
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     const dataStr = JSON.stringify(configurations, null, 2);
                     const dataBlob = new Blob([dataStr], { type: 'application/json' });
                     const url = URL.createObjectURL(dataBlob);

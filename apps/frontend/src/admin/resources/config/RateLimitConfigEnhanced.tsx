@@ -70,7 +70,7 @@ interface RateLimitConfigProps {
   initialRules?: RateLimitRule[]
 }
 
-export default function RateLimitConfig({ initialRules = [] }: .*Props) {
+export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigProps) {
   const [rules, setRules] = useState<RateLimitRule[]>(initialRules)
   const [loading, setLoading] = useState(false)
   const [editingRule, setEditingRule] = useState<RateLimitRule | null>(null)
@@ -92,7 +92,7 @@ export default function RateLimitConfig({ initialRules = [] }: .*Props) {
     setLoading(true)
     try {
       const response = await fetch('/api/admin/api-management/rate-limits')
-      if (response.ok) => {
+      if (response.ok) {
         const data = await response.json()
         setRules(data.data || [])
       }
@@ -104,7 +104,7 @@ export default function RateLimitConfig({ initialRules = [] }: .*Props) {
   }
 
   const handleSave = async () => {
-    if (!formData.endpoint) => {
+    if (!formData.endpoint) {
       toast.error('Endpoint is required')
       return
     }
@@ -122,7 +122,7 @@ export default function RateLimitConfig({ initialRules = [] }: .*Props) {
         }),
       })
 
-      if (response.ok) => {
+      if (response.ok) {
         toast.success('Rate limit rule saved')
         setDialogOpen(false)
         setEditingRule(null)
@@ -165,7 +165,7 @@ export default function RateLimitConfig({ initialRules = [] }: .*Props) {
   }
 
   const handleDelete = async (id: string, rule: RateLimitRule) => {
-    if (!confirm(`Are you sure you want to delete this rate limit rule?`)) => {
+    if (!confirm(`Are you sure you want to delete this rate limit rule?`)) {
       return
     }
 
@@ -174,7 +174,7 @@ export default function RateLimitConfig({ initialRules = [] }: .*Props) {
         method: 'DELETE',
       })
 
-      if (response.ok) => {
+      if (response.ok) {
         toast.success('Rate limit rule deleted')
         fetchRules()
         
@@ -207,7 +207,7 @@ export default function RateLimitConfig({ initialRules = [] }: .*Props) {
   }
 
   const getStatusIcon = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'pending':
         return <RefreshCw className="h-4 w-4 animate-spin text-yellow-500" />
       case 'success':
@@ -274,7 +274,7 @@ export default function RateLimitConfig({ initialRules = [] }: .*Props) {
                       <Input
                         id="endpoint"
                         value={formData.endpoint}
-                        onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
+                        onChange={((e: any): any) => setFormData({ ...formData, endpoint: e.target.value })}
                         className="col-span-3"
                         placeholder="/api/*"
                       />
@@ -328,7 +328,7 @@ export default function RateLimitConfig({ initialRules = [] }: .*Props) {
                         type="number"
                         min="1"
                         value={formData.requestsPerMinute}
-                        onChange={(e) => setFormData({ ...formData, requestsPerMinute: parseInt(e.target.value) })}
+                        onChange={((e: any): any) => setFormData({ ...formData, requestsPerMinute: parseInt(e.target.value) })}
                         className="col-span-3"
                       />
                     </div>
@@ -349,7 +349,7 @@ export default function RateLimitConfig({ initialRules = [] }: .*Props) {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                    <Button variant="outline" onClick={((: any): any) => setDialogOpen(false)}>
                       Cancel
                     </Button>
                     <Button onClick={handleSave}>
@@ -428,7 +428,7 @@ export default function RateLimitConfig({ initialRules = [] }: .*Props) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
+                          onClick={((: any): any) => {
                             setEditingRule(rule)
                             setFormData({
                               endpoint: rule.endpoint,
@@ -445,7 +445,7 @@ export default function RateLimitConfig({ initialRules = [] }: .*Props) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(rule.id, rule)}
+                          onClick={((: any): any) => handleDelete(rule.id, rule)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

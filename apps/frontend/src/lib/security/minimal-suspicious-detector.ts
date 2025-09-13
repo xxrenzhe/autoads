@@ -228,7 +228,7 @@ export class MinimalSuspiciousDetector {
       select: { ip: true }
     });
 
-    const uniqueIPs = new Set((events.map((e: any) => e.ip).filter(Boolean));
+    const uniqueIPs = new Set(events.map((e: any: any) => e.ip).filter(Boolean));
     
     return uniqueIPs.size >= this.config.ipRotation.maxIPs;
   }
@@ -308,7 +308,7 @@ export class MinimalSuspiciousDetector {
         take: limit
       });
 
-      return events.map(((event: any) => ({
+      return events.map((event: any: any) => ({
         id: event.id,
         userId: event.userId,
         type: event.type,
@@ -340,7 +340,7 @@ export class MinimalSuspiciousDetector {
         }
       });
 
-      return events.map(((event: any) => ({
+      return events.map((event: any: any) => ({
         id: event.id,
         userId: event.userId,
         type: event.type,

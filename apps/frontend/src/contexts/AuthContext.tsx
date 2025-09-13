@@ -24,7 +24,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) => {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const session = useSession()
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showUserCenterModal, setShowUserCenterModal] = useState(false)
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) => {
   }, [])
 
   const requireAuth = useCallback((featureName?: string): boolean => {
-    if (isAuthenticated) => {
+    if (isAuthenticated) {
       return true
     }
     
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) => {
 
   // Close login modal when user becomes authenticated
   React.useEffect(() => {
-    if (status === 'authenticated' && showLoginModal) => {
+    if (status === 'authenticated' && showLoginModal) {
       closeLoginModal()
     }
   }, [status, showLoginModal, closeLoginModal])
@@ -74,14 +74,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) => {
   // Handle OAuth user subscription creation and invitation code
   React.useEffect(() => {
     const handleOAuthUserSetup = async () => {
-      if (status === 'authenticated' && user?.id) => {
+      if (status === 'authenticated' && user?.id) {
         // Check if this is a new OAuth user that needs subscription
         // For new users: check sessionStorage flag
         const isNewOAuthUser = sessionStorage.getItem('newOAuthUser') === 'true'
         const pendingCode = localStorage.getItem('pendingInvitationCode')
         
         // Only create subscription for new OAuth users
-        if (isNewOAuthUser) => {
+        if (isNewOAuthUser) {
           try {
             // Create subscription for the new OAuth user
             const response = await fetch('/api/auth/oauth-subscription', {
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) => {
               })
             })
             
-            if (response.ok) => {
+            if (response.ok) {
               const result = await response.json()
               console.log('OAuth subscription created:', result.message)
               
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) => {
               sessionStorage.removeItem('newOAuthUser')
               
               // If invitation was applied successfully, clear the code
-              if (pendingCode && result.success) => {
+              if (pendingCode && result.success) {
                 localStorage.removeItem('pendingInvitationCode')
               }
             } else {
@@ -114,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) => {
           }
         } else {
           // For existing users, clear any pending invitation code silently
-          if (pendingCode) => {
+          if (pendingCode) {
             console.log('Existing user logged in, clearing pending invitation code')
             localStorage.removeItem('pendingInvitationCode')
           }
@@ -164,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) => {
 
 export function useAuthContext() {
   const context = useContext(AuthContext)
-  if (context === undefined) => {
+  if (context === undefined) {
     throw new Error('useAuthContext must be used within an AuthProvider')
   }
   return context

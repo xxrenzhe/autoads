@@ -220,7 +220,7 @@ export class TokenExpirationService {
       }
     });
 
-    const breakdown = tokensBySource.reduce((acc: Record<string, number>, item: any: any) => {
+    const breakdown = tokensBySource.reduce((acc: Record<string, number>, item: any) => {
       acc[item.type.toLowerCase()] = item._sum.amount || 0;
       return acc;
     }, {} as Record<string, number>);
@@ -228,7 +228,7 @@ export class TokenExpirationService {
     return {
       total: user.tokenBalance,
       breakdown,
-      upcomingExpirations: upcomingExpirations.map(((exp: any) => ({
+      upcomingExpirations: upcomingExpirations.map((exp: any) => ({
         amount: exp.amount,
         expiresAt: exp.metadata?.expiresAt
       }))
@@ -256,7 +256,7 @@ export class TokenExpirationService {
       return;
     }
 
-    const totalToRemove = subscriptionTokens.reduce((sum: number, token: any: any) => sum + token.amount, 0);
+    const totalToRemove = subscriptionTokens.reduce((sum: number, token: any) => sum + token.amount, 0);
     
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -330,7 +330,7 @@ export class TokenExpirationService {
 
     return {
       days,
-      expiringSoon: expiringSoon.map(((token: any) => ({
+      expiringSoon: expiringSoon.map((token: any) => ({
         userId: token.userId,
         userEmail: token.user.email,
         amount: token.amount,

@@ -64,10 +64,10 @@ interface ModuleStats {
  */
 const SystemHealthCard: React.FC<{ metrics: SystemMetrics }> = ({ metrics }) => {
   const getHealthStatus = () => {
-    if (metrics.cpu > 80 || metrics.memory > 85 || metrics.errorRate > 5) => {
+    if (metrics.cpu > 80 || metrics.memory > 85 || metrics.errorRate > 5) {
       return { status: 'critical', color: 'error' as const };
     }
-    if (metrics.cpu > 60 || metrics.memory > 70 || metrics.errorRate > 2) => {
+    if (metrics.cpu > 60 || metrics.memory > 70 || metrics.errorRate > 2) {
       return { status: 'warning', color: 'warning' as const };
     }
     return { status: 'healthy', color: 'success' as const };
@@ -274,7 +274,7 @@ export const SystemMonitoringDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) => {
+  if (loading) {
     return <LinearProgress />;
   }
 

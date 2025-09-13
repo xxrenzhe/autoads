@@ -177,8 +177,8 @@ export class SessionSecurityManager {
       // Check for IP address changes - DISABLED (securityEvent table not in schema)
       // if (ipAddress) {
       //   const recentIPs = recentEvents
-      //     .filter(((event: any) => event.ipAddress && event.ipAddress !== ipAddress)
-      //     ?.filter((Boolean)?.map((event: any) => event.ipAddress)
+      //     .filter((event: any: any) => event.ipAddress && event.ipAddress !== ipAddress)
+      //     ?.filter(Boolean)?.map((event: any: any) => event.ipAddress)
       //     .filter((ip: any, index: number, arr: any[]: any) => arr.indexOf(ip) === index)
 
       //   if (recentIPs.length > 3) {
@@ -190,8 +190,8 @@ export class SessionSecurityManager {
       // Check for user agent changes - DISABLED (securityEvent table not in schema)
       // if (userAgent) {
       //   const recentUserAgents = recentEvents
-      //     .filter(((event: any) => event.userAgent && event.userAgent !== userAgent)
-      //     ?.filter((Boolean)?.map((event: any) => event.userAgent)
+      //     .filter((event: any: any) => event.userAgent && event.userAgent !== userAgent)
+      //     ?.filter(Boolean)?.map((event: any: any) => event.userAgent)
       //     .filter((ua: any, index: number, arr: any[]: any) => arr.indexOf(ua) === index)
 
       //   if (recentUserAgents.length > 2) {
@@ -383,7 +383,7 @@ export class SessionSecurityManager {
     //     take: limit
     //   })
 
-    //   return events?.filter((Boolean)?.map((event: any) => ({
+    //   return events?.filter(Boolean)?.map((event: any: any) => ({
     //     id: event.id,
     //     userId: event.userId,
     //     type: event.type as SecurityEvent['type'],
@@ -496,7 +496,7 @@ export class SessionSecurityManager {
         criticalEvents,
         suspiciousActivities,
         activeSessions,
-        recentEvents: [] // recentEvents?.filter((Boolean)?.map((event: any) => ({ // Disabled - table not in schema
+        recentEvents: [] // recentEvents?.filter(Boolean)?.map((event: any: any) => ({ // Disabled - table not in schema
         //   id: event.id,
         //   userId: event.userId,
         //   type: event.type as SecurityEvent['type'],

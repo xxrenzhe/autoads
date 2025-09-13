@@ -37,7 +37,7 @@ export default function PricingPlans() {
     setLoading(true)
     try {
       const response = await fetch('/api/plans')
-      if (response.ok) => {
+      if (response.ok) {
         const data = await response.json()
         setPlans(data.plans || [])
       } else {
@@ -121,12 +121,12 @@ export default function PricingPlans() {
   }
 
   const handleSubscribe = async (plan: Plan) => {
-    if (!session) => {
+    if (!session) {
       router.push('/auth/signin?callbackUrl=/pricing')
       return
     }
 
-    if (plan.price === 0) => {
+    if (plan.price === 0) {
       // Free plan - redirect to dashboard
       router.push('/dashboard')
       return
@@ -150,7 +150,7 @@ export default function PricingPlans() {
         })
       })
 
-      if (response.ok) => {
+      if (response.ok) {
         const { url } = await response.json()
         window.location.href = url
       } else {
@@ -170,9 +170,9 @@ export default function PricingPlans() {
   }
 
   const formatTokens = (tokens: number) => {
-    if (tokens >= 1000000) => {
+    if (tokens >= 1000000) {
       return `${(tokens / 1000000).toFixed(1)}M`
-    } else if (tokens >= 1000) => {
+    } else if (tokens >= 1000) {
       return `${(tokens / 1000).toFixed(0)}K`
     }
     return tokens.toString()
@@ -184,7 +184,7 @@ export default function PricingPlans() {
     return Math.round(((monthlyCost - yearlyPrice) / monthlyCost) * 100)
   }
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {[...Array(3)].map((_, i: any) => (
@@ -202,7 +202,7 @@ export default function PricingPlans() {
       <div className="flex items-center justify-center">
         <div className="flex items-center bg-gray-100 rounded-lg p-1">
           <button
-            onClick={() => setIsYearly(false)}
+            onClick={((: any): any) => setIsYearly(false)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               !isYearly
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -212,7 +212,7 @@ export default function PricingPlans() {
             月付
           </button>
           <button
-            onClick={() => setIsYearly(true)}
+            onClick={((: any): any) => setIsYearly(true)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               isYearly
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -298,7 +298,7 @@ export default function PricingPlans() {
 
                 {/* CTA Button */}
                 <button
-                  onClick={() => handleSubscribe(plan)}
+                  onClick={((: any): any) => handleSubscribe(plan)}
                   disabled={subscribingPlan === plan.id}
                   className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
                     plan.isPopular

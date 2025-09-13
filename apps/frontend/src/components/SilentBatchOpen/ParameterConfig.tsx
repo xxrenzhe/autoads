@@ -44,11 +44,11 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
   // 处理循环次数输入变化
   const handleCycleCountInputChange = useCallback((value: string) => {
     // 只允许输入数字
-    if (value === '' || /^\d+$/.test(value)) => {
+    if (value === '' || /^\d+$/.test(value)) {
       onCycleCountInputChange(value);
       
       // 如果输入不为空，更新实际值
-      if (value.trim() !== '') => {
+      if (value.trim() !== '') {
         const val = parseInt(value) || 5;
         onCycleCountChange(Math.min(1000, Math.max(1, val)));
       }
@@ -57,7 +57,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
 
   // 处理循环次数失去焦点
   const handleCycleCountBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
-    if (e.target.value.trim() === '') => {
+    if (e.target.value.trim() === '') {
       onCycleCountInputChange('5');
       onCycleCountChange(5);
     } else {
@@ -84,7 +84,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
               name="accessMode"
               value="http"
               checked={accessMode === "http"}
-              onChange={(e) => onAccessModeChange(e.target.value as "http" | "puppeteer")}
+              onChange={((e: any): any) => onAccessModeChange(e.target.value as "http" | "puppeteer")}
               disabled={isOpening}
               className="mr-2"
             />
@@ -96,7 +96,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
               name="accessMode"
               value="puppeteer"
               checked={accessMode === "puppeteer"}
-              onChange={(e) => onAccessModeChange(e.target.value as "http" | "puppeteer")}
+              onChange={((e: any): any) => onAccessModeChange(e.target.value as "http" | "puppeteer")}
               disabled={isOpening}
               className="mr-2"
             />
@@ -117,7 +117,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
             className="w-full border rounded px-2 py-1"
             placeholder="1-1000"
             value={cycleCountInput}
-            onChange={(e) => handleCycleCountInputChange(e.target.value)}
+            onChange={((e: any): any) => handleCycleCountInputChange(e.target.value)}
             onBlur={handleCycleCountBlur}
             disabled={isOpening}
           />

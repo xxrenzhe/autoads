@@ -43,7 +43,7 @@ interface NavigationProps {
   currentPage?: string;
 }
 
-export default function Navigation({ currentPage = "home" }: .*Props) {
+export default function Navigation({ currentPage = "home" }: NavigationProps) {
   const { t, locale, displayLocale, isLoading } = useLanguage();
   const { data: session } = useSession();
   const { openLoginModal, openUserCenterModal } = useAuthContext();
@@ -51,7 +51,7 @@ export default function Navigation({ currentPage = "home" }: .*Props) {
   const pathname = usePathname();
 
   // 如果语言还在加载中，显示加载状态
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <nav className="hidden lg:flex items-center space-x-6">
         <div className="flex items-center space-x-6 text-sm text-slate-600">
@@ -111,7 +111,7 @@ export default function Navigation({ currentPage = "home" }: .*Props) {
 
   
   const getColorClasses = (color: string, isActive = false, disabled = false) => {
-    if (disabled) => {
+    if (disabled) {
       return "text-gray-400 cursor-not-allowed";
     }
 
@@ -172,7 +172,7 @@ export default function Navigation({ currentPage = "home" }: .*Props) {
                   href={item.href}
                   className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 ${getColorClasses(item.color, isActive)}`}
                   title={getStr(item.label)}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={((: any): any) => setIsMobileMenuOpen(false)}
                 >
                   <Icon className="h-4 w-4" />
                   <span className="font-medium">{getStr(item.label)}</span>
@@ -250,7 +250,7 @@ export default function Navigation({ currentPage = "home" }: .*Props) {
                     <span>个人中心</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()}>
+                  <DropdownMenuItem onClick={((: any): any) => signOut()}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>退出登录</span>
                   </DropdownMenuItem>
@@ -260,7 +260,7 @@ export default function Navigation({ currentPage = "home" }: .*Props) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => openLoginModal(undefined, pathname)}
+                onClick={((: any): any) => openLoginModal(undefined, pathname)}
                 className="flex items-center space-x-2"
               >
                 <LogIn className="h-4 w-4" />
@@ -279,7 +279,7 @@ export default function Navigation({ currentPage = "home" }: .*Props) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          onClick={((: any): any) => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
           aria-label={
             isMobileMenuOpen
@@ -312,7 +312,7 @@ export default function Navigation({ currentPage = "home" }: .*Props) {
                     key={item.href}
                     href={item.href}
                     className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 hover:scale-105 ${getMobileColorClasses(item.color)} ${isActive ? "ring-2 ring-blue-200" : ""}`}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={((: any): any) => setIsMobileMenuOpen(false)}
                   >
                     <Icon className="h-5 w-5" />
                     <div>
@@ -345,7 +345,7 @@ export default function Navigation({ currentPage = "home" }: .*Props) {
                     key={item.href}
                     href={item.href}
                     className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 hover:scale-105 ${getMobileColorClasses(item.color)} ${isActive ? "ring-2 ring-blue-200" : ""}`}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={((: any): any) => setIsMobileMenuOpen(false)}
                   >
                     <Icon className="h-5 w-5" />
                     <div>
@@ -387,7 +387,7 @@ export default function Navigation({ currentPage = "home" }: .*Props) {
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center space-x-2"
-                  onClick={() => signOut()}
+                  onClick={((: any): any) => signOut()}
                 >
                   <LogOut className="h-4 w-4" />
                   <span>退出登录</span>
@@ -398,7 +398,7 @@ export default function Navigation({ currentPage = "home" }: .*Props) {
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center space-x-2"
-                  onClick={() => openLoginModal(undefined, pathname)}
+                  onClick={((: any): any) => openLoginModal(undefined, pathname)}
                 >
                   <LogIn className="h-4 w-4" />
                   <span>使用 Google 登录</span>

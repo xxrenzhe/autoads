@@ -130,7 +130,7 @@ const PlanListActions: React.FC = () => {
 
       const data = await response.json();
 
-      if (data.success) => {
+      if (data.success) {
         notify(`成功初始化${data.plans.length}个默认套餐`, { type: 'success' });
         // Refresh the page to show new plans
         window.location.reload();

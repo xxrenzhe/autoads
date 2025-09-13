@@ -21,7 +21,7 @@ interface PlanSelectorProps {
   selectedPlan?: Plan | null
 }
 
-export default function PlanSelector({ onPlanSelect, selectedPlan }: .*Props) {
+export default function PlanSelector({ onPlanSelect, selectedPlan }: PlanSelectorProps) {
   const [plans, setPlans] = useState<Plan[]>([])
   const [loading, setLoading] = useState(true)
   const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month')
@@ -33,7 +33,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: .*Props) {
   const loadPlans = async () => {
     try {
       const response = await fetch('/api/admin/plans?active=true')
-      if (response.ok) => {
+      if (response.ok) {
         const data = await response.json()
         setPlans(data.plans || [])
       }
@@ -47,7 +47,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: .*Props) {
   const filteredPlans = plans.filter((plan: any) => plan.interval === billingInterval)
 
   const formatPrice = (price: number, interval: string) => {
-    if (interval === 'year') => {
+    if (interval === 'year') {
       const monthlyPrice = price / 12
       return (
         <div>
@@ -73,7 +73,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: .*Props) {
     return Math.round(savings)
   }
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-4">
@@ -99,7 +99,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: .*Props) {
         <div className="flex items-center justify-center mb-6">
           <div className="bg-gray-100 p-1 rounded-lg">
             <button
-              onClick={() => setBillingInterval('month')}
+              onClick={((: any): any) => setBillingInterval('month')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 billingInterval === 'month'
                   ? 'bg-white text-gray-900 shadow-sm'
@@ -109,7 +109,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: .*Props) {
               Monthly
             </button>
             <button
-              onClick={() => setBillingInterval('year')}
+              onClick={((: any): any) => setBillingInterval('year')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors relative ${
                 billingInterval === 'year'
                   ? 'bg-white text-gray-900 shadow-sm'
@@ -142,7 +142,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: .*Props) {
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
-            onClick={() => onPlanSelect(plan)}
+            onClick={((: any): any) => onPlanSelect(plan)}
           >
             {plan.popular && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -187,7 +187,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: .*Props) {
               </ul>
 
               <button
-                onClick={() => onPlanSelect(plan)}
+                onClick={((: any): any) => onPlanSelect(plan)}
                 className={`w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md transition-colors ${
                   plan.popular
                     ? 'text-white bg-blue-600 hover:bg-blue-700'

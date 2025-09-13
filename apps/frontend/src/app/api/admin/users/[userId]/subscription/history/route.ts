@@ -68,7 +68,7 @@ export async function GET(
     ]);
 
     // Format the subscription history
-    const subscriptionHistory = subscriptions.map(((sub: any) => ({
+    const subscriptionHistory = subscriptions.map((sub: any: any) => ({
       id: sub.id,
       plan: {
         id: sub.plan.id,

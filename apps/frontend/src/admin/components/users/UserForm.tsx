@@ -38,7 +38,7 @@ export function UserForm({
   onCancel,
   isLoading = false,
   error = null
-}: .*Props) {
+}: UserFormProps) {
   const [formData, setFormData] = useState<UserFormData>({
     name: '',
     email: '',
@@ -55,7 +55,7 @@ export function UserForm({
 
   // Initialize form data when user prop changes
   useEffect(() => {
-    if (user) => {
+    if (user) {
       setFormData({
         name: user.name,
         email: user.email,
@@ -83,21 +83,21 @@ export function UserForm({
     const errors: Record<string, string> = {}
 
     // Name validation
-    if (!formData.name.trim()) => {
+    if (!formData.name.trim()) {
       errors.name = 'Name is required'
-    } else if (formData.name.trim().length < 2) => {
+    } else if (formData.name.trim().length < 2) {
       errors.name = 'Name must be at least 2 characters'
     }
 
     // Email validation
-    if (!formData.email.trim()) => {
+    if (!formData.email.trim()) {
       errors.email = 'Email is required'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) => {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Please enter a valid email address'
     }
 
     // Role validation
-    if (!formData.role) => {
+    if (!formData.role) {
       errors.role = 'Role is required'
     }
 
@@ -113,7 +113,7 @@ export function UserForm({
     setIsDirty(true)
 
     // Clear validation error for this field
-    if (validationErrors[field]) => {
+    if (validationErrors[field]) {
       setValidationErrors(prev => {
         const newErrors = { ...prev }
         delete newErrors[field]
@@ -135,8 +135,8 @@ export function UserForm({
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (file) => {
-      if (file.size > 5 * 1024 * 1024) => { // 5MB limit
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
         setValidationErrors(prev => ({
           ...prev,
           avatar: 'Avatar file size must be less than 5MB'
@@ -144,7 +144,7 @@ export function UserForm({
         return
       }
 
-      if (!file.type.startsWith('image/')) => {
+      if (!file.type.startsWith('image/')) {
         setValidationErrors(prev => ({
           ...prev,
           avatar: 'Avatar must be an image file'
@@ -164,7 +164,7 @@ export function UserForm({
       setIsDirty(true)
       
       // Clear avatar validation error
-      if (validationErrors.avatar) => {
+      if (validationErrors.avatar) {
         setValidationErrors(prev => {
           const newErrors = { ...prev }
           delete newErrors.avatar
@@ -177,7 +177,7 @@ export function UserForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     
-    if (!validateForm()) => {
+    if (!validateForm()) {
       return
     }
 
@@ -191,16 +191,16 @@ export function UserForm({
       }
 
       // Handle avatar upload if there's a new file
-      if (avatarFile) => {
+      if (avatarFile) {
         // In a real implementation, you would upload the file to a storage service
         // and get back a URL. For now, we'll use the preview URL.
         userData.avatar = avatarPreview || undefined
-      } else if (formData.avatar) => {
+      } else if (formData.avatar) {
         userData.avatar = formData.avatar
       }
 
       await onSave(userData)
-    } catch (err) => {
+    } catch (err) {
       // Error handling is done by the parent component
       console.error('Error saving user:', err)
     }

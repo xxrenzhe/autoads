@@ -60,7 +60,7 @@ export interface APIManagerProps {
   className?: string
 }
 
-export function APIManager({ className }: .*Props) {
+export function APIManager({ className }: APIManagerProps) {
   const [activeTab, setActiveTab] = useState<'endpoints' | 'keys' | 'analytics'>('endpoints')
   const [showCreateEndpoint, setShowCreateEndpoint] = useState(false)
   const [showCreateKey, setShowCreateKey] = useState(false)
@@ -239,14 +239,14 @@ export function APIManager({ className }: .*Props) {
         
         <div className="flex space-x-3">
           <Button 
-            onClick={() => setShowCreateEndpoint(true)}
+            onClick={((: any): any) => setShowCreateEndpoint(true)}
             aria-label="Add new API endpoint"
           >
             <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
             Add Endpoint
           </Button>
           <Button 
-            onClick={() => setShowCreateKey(true)}
+            onClick={((: any): any) => setShowCreateKey(true)}
             aria-label="Create new API key"
           >
             <Key className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -356,7 +356,7 @@ export function APIManager({ className }: .*Props) {
             <button
               key={id}
               ref={(el) => {
-                if (el) => {
+                if (el) {
                   tabRefs.current.set(id, el)
                 } else {
                   tabRefs.current.delete(id)
@@ -367,7 +367,7 @@ export function APIManager({ className }: .*Props) {
               aria-controls={`${id}-panel`}
               id={`${id}-tab`}
               tabIndex={activeTab === id ? 0 : -1}
-              onClick={() => handleTabChange(id as any)}
+              onClick={((: any): any) => handleTabChange(id as any)}
               onKeyDown={(e) => handleTabKeyDown(e, id)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                 activeTab === id

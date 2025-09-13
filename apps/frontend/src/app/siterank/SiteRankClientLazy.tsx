@@ -47,8 +47,8 @@ async function fetchRanks(
   const result = await resp.json();
   
   // 转换SimilarWeb响应格式
-  if (result.success && result.data) => {
-    return result.data.map(((item: any) => ({
+  if (result.success && result.data) {
+    return result.data.map((item: any: any) => ({
       domain: item.domain,
       rank: item.globalRank,
       monthlyVisits: item.monthlyVisits,
@@ -115,14 +115,14 @@ function SiteRankClientLazy() {
     setData(updatedData);
 
     const batchSize = 10;
-    for (let i = 0; i < updatedData.length; i += batchSize) => {
+    for (let i = 0; i < updatedData.length; i += batchSize) {
       const batch = updatedData.slice(i, i + batchSize);
       try {
         const batchResults = await fetchRanks(batch.map((item: any) => item.domain));
-        for (let j = 0; j < batch.length; j++) => {
+        for (let j = 0; j < batch.length; j++) {
           const idx = i + j;
           const result = batchResults.find((r: any) => r.domain === batch[j].domain);
-          if (result) => {
+          if (result) {
             updatedData[idx] = {
               ...updatedData[idx],
               status: "completed",
@@ -162,7 +162,7 @@ function SiteRankClientLazy() {
 
   // 处理输入分析
   const handleStartAnalysis = () => {
-    if (urlInput.trim() !== "") => {
+    if (urlInput.trim() !== "") {
       const urls = urlInput.split("\n").filter((url: any) => url.trim() !== "");
       const formattedData = urls.map((url: any) => {
         const trimmedUrl = url.trim();
@@ -207,7 +207,7 @@ function SiteRankClientLazy() {
                 <Textarea
                   placeholder="https://example.com&#10;https://test.com"
                   value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
+                  onChange={((e: any): any) => setUrlInput(e.target.value)}
                 />
               </div>
 
@@ -254,7 +254,7 @@ function SiteRankClientLazy() {
                 <Input
                   placeholder="搜索域名..."
                   value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
+                  onChange={((e: any): any) => setFilterText(e.target.value)}
                   className="w-64 rounded-lg border-blue-200 focus:border-blue-400 focus:ring-blue-400"
                 />
               </div>

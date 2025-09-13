@@ -298,7 +298,7 @@ export class ProgressConsistencyService {
         const result = await this.validateConsistency(taskId, frontendState);
 
         // 如果发现严重不一致，记录警告
-        const criticalIssues = result.inconsistencies.filter((i: any) => i.severity === 'critical');
+        const criticalIssues = result.inconsistencies.filter(i => i.severity === 'critical');
         if (criticalIssues.length > 0) {
           logger.warn('Critical consistency issues detected', {
             taskId,
@@ -372,7 +372,7 @@ export class ProgressConsistencyService {
     // 例如：发送事件通知前端更新状态，或者直接修复后端数据
 
     // 目前主要是记录日志，为后续扩展做准备
-    const repairableIssues = result.inconsistencies.filter((i: any) => 
+    const repairableIssues = result.inconsistencies.filter(i => 
       i.type === 'progress_mismatch' || i.type === 'count_mismatch'
     );
 
@@ -413,7 +413,7 @@ export class ProgressConsistencyService {
   getStats() {
     const activeValidations = this.validationTimers.size;
     const totalHistory = Array.from(this.consistencyHistory.values())
-      .reduce((sum, history: any) => sum + history.length, 0);
+      .reduce((sum, history) => sum + history.length, 0);
 
     return {
       enabled: this.config.enabled,

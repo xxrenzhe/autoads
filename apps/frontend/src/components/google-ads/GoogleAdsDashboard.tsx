@@ -86,23 +86,23 @@ export default function GoogleAdsDashboard() {
           body: JSON.stringify({ operation: 'stats' })
         })
     ]);
-      if (accountsRes.status === 'fulfilled') => {
+      if (accountsRes.status === 'fulfilled') {
         const accountsData = await accountsRes.value.json();
-        if (accountsData.success) => {
+        if (accountsData.success) {
           setAccounts(accountsData.data);
-          if (accountsData.data.length > 0 && !selectedAccount) => {
+          if (accountsData.data.length > 0 && !selectedAccount) {
             setSelectedAccount(accountsData.data[0].id);
           }
         }
       }
 
-      if (statsRes.status === 'fulfilled') => {
+      if (statsRes.status === 'fulfilled') {
         const statsData = await statsRes.value.json();
-        if (statsData.success) => {
+        if (statsData.success) {
           setStats(statsData.data);
         }
       }
-    } catch (err) => { setError('Failed to load Google Ads data');
+    } catch (err) { setError('Failed to load Google Ads data');
       logger.error('Error loading Google Ads data:', new EnhancedError('Error loading Google Ads data:', { error: err instanceof Error ? err.message : String(err)
        }));
     } finally {
@@ -119,7 +119,7 @@ export default function GoogleAdsDashboard() {
         body: JSON.stringify({ operation: 'refresh' })
       });
       await loadData();
-    } catch (err) => { setError('Failed to refresh data');
+    } catch (err) { setError('Failed to refresh data');
       logger.error('Error refreshing data:', new EnhancedError('Error refreshing data:', { error: err instanceof Error ? err.message : String(err)
        }));
     } finally {
@@ -128,7 +128,7 @@ export default function GoogleAdsDashboard() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) => {
+    switch (status.toLowerCase()) {
       case 'active':
       case 'enabled':
         return 'bg-green-500';
@@ -143,7 +143,7 @@ export default function GoogleAdsDashboard() {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) => {
+    switch (status.toLowerCase()) {
       case 'active':
       case 'enabled':
         return <CheckCircle className="w-4 h-4" />;
@@ -176,7 +176,7 @@ export default function GoogleAdsDashboard() {
     return clicks > 0 ? cost / clicks : 0;
   };
 
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -367,7 +367,7 @@ export default function GoogleAdsDashboard() {
                       <Button 
                         size="sm" 
                         variant={selectedAccount === account.id ? 'default' : 'outline'}
-                        onClick={() => setSelectedAccount(account.id)}
+                        onClick={((: any): any) => setSelectedAccount(account.id)}
                       >
                         选择
                       </Button>

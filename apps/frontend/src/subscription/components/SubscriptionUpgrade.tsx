@@ -45,7 +45,7 @@ export function SubscriptionUpgrade({
   onUpgrade, 
   onDowngrade,
   className 
-}: .*Props) {
+}: SubscriptionUpgradeProps) {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [changeType, setChangeType] = useState<'upgrade' | 'downgrade'>('upgrade')
@@ -61,7 +61,7 @@ export function SubscriptionUpgrade({
         body: JSON.stringify({ planId }),
       })
       
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Failed to upgrade subscription')
       }
       
@@ -84,7 +84,7 @@ export function SubscriptionUpgrade({
         body: JSON.stringify({ planId }),
       })
       
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Failed to downgrade subscription')
       }
       
@@ -116,7 +116,7 @@ export function SubscriptionUpgrade({
   const handleConfirmChange = () => {
     if (!selectedPlan) return
 
-    if (changeType === 'upgrade') => {
+    if (changeType === 'upgrade') {
       upgradeMutation.mutate(selectedPlan)
       onUpgrade?.(selectedPlan)
     } else {
@@ -258,7 +258,7 @@ export function SubscriptionUpgrade({
 
                     {/* Action Button */}
                     <Button
-                      onClick={() => handlePlanSelect(plan.id, plan.price)}
+                      onClick={((: any): any) => handlePlanSelect(plan.id, plan.price)}
                       className="w-full"
                       variant={isUpgradePlan ? 'default' : 'outline'}
                     >
@@ -368,7 +368,7 @@ export function SubscriptionUpgrade({
                       
                       <Button
                         variant="outline"
-                        onClick={() => {
+                        onClick={((: any): any) => {
                           setShowConfirmation(false)
                           setSelectedPlan(null)
                         }}

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       
       // Generate simplified export data
       const exportData = [
-        ...((stats.overallTrends || []).map((trend: any) => ({
+        ...(stats.overallTrends || []).map((trend: any: any) => ({
           date: trend.period,
           type: 'trend',
           metric: 'overall_usage',
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
           users: trend.uniqueUsers || 0,
           transactions: trend.usageCount || 0
         })),
-        ...((stats.featurePopularity || []).map((feature: any) => ({
+        ...(stats.featurePopularity || []).map((feature: any: any) => ({
           date: new Date().toISOString().split('T')[0],
           type: 'feature',
           metric: feature.feature || 'unknown',
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Process data for export
-    const exportData = usageData.map(((transaction: any) => ({
+    const exportData = usageData.map((transaction: any: any) => ({
       date: transaction.createdAt.toISOString(),
       userId: transaction.user?.id || 'unknown',
       userEmail: transaction.user?.email || 'unknown',
@@ -146,7 +146,7 @@ function generateExportResponse(data: any[], format: string, filename: string): 
     const headers = Object.keys(data[0] || {});
     const csvContent = [
       headers.join(','),
-      ...data.map(((row: any) => 
+      ...data.map((row: any: any) => 
         headers.map((header: any) => {
           const value = row[header];
           return typeof value === 'string' && value.includes(',') 

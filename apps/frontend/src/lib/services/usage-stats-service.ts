@@ -85,13 +85,13 @@ export class UsageStatsService {
           totalUsage: log._sum.usage || 0,
           usageCount: log._count
         })),
-        apiEndpoints: apiUsage.map(((api: any) => ({
+        apiEndpoints: apiUsage.map((api: any: any) => ({
           endpoint: api.endpoint,
           totalTokens: api._sum.tokenConsumed || 0,
           callCount: api._count,
           avgResponseTime: api._avg.responseTime || 0
         })),
-        behaviors: behaviorAnalytics.map(((behavior: any) => ({
+        behaviors: behaviorAnalytics.map((behavior: any: any) => ({
           feature: behavior.feature,
           action: behavior.action,
           totalTokens: behavior._sum.tokensConsumed || 0,
@@ -377,7 +377,7 @@ export class UsageStatsService {
       ]);
 
       return {
-        byType: byType.map(((t: any) => ({
+        byType: byType.map((t: any: any) => ({
           type: t.type,
           totalAmount: Number(t._sum.amount || 0),
           count: t._count
@@ -387,7 +387,7 @@ export class UsageStatsService {
           totalUsage: Number(p.total_usage),
           uniqueUsers: p.unique_users
         })),
-        byFeature: byFeature.map(((f: any) => ({
+        byFeature: byFeature.map((f: any: any) => ({
           feature: f.feature,
           totalUsage: Number(f._sum.usage || 0),
           uniqueUsers: f._count.userId

@@ -45,7 +45,7 @@ export function RoleManager({
   onRoleEdit,
   onRoleDelete,
   onRoleCreate
-}: .*Props) {
+}: RoleManagerProps) {
   const {
     roles,
     isLoading,
@@ -70,7 +70,7 @@ export function RoleManager({
 
   const handleRoleSelect = (roleId: string) => {
     const newSelected = new Set(selectedRoles)
-    if (newSelected.has(roleId)) => {
+    if (newSelected.has(roleId)) {
       newSelected.delete(roleId)
     } else {
       newSelected.add(roleId)
@@ -79,7 +79,7 @@ export function RoleManager({
   }
 
   const handleSelectAll = () => {
-    if (selectedRoles.size === filteredRoles.length) => {
+    if (selectedRoles.size === filteredRoles.length) {
       setSelectedRoles(new Set())
     } else {
       setSelectedRoles(new Set(filteredRoles?.filter(Boolean)?.map((role: any) => role.id)))
@@ -97,7 +97,7 @@ export function RoleManager({
   }
 
   const handleDeleteRole = async (roleId: string) => {
-    if (window.confirm('Are you sure you want to delete this role? This action cannot be undone.')) => {
+    if (window.confirm('Are you sure you want to delete this role? This action cannot be undone.')) {
       try {
         await deleteRole(roleId)
         onRoleDelete?.(roleId)
@@ -118,16 +118,16 @@ export function RoleManager({
 
   const getRoleHierarchy = (role: Role): Role[] => {
     const hierarchy: Role[] = [role]
-    if (role.parentRole) => {
+    if (role.parentRole) {
       const parent = roles.find((r: any) => r.id === role.parentRole)
-      if (parent) => {
+      if (parent) {
         hierarchy.unshift(...getRoleHierarchy(parent))
       }
     }
     return hierarchy
   }
 
-  if (error) => {
+  if (error) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -216,7 +216,7 @@ export function RoleManager({
                   variant="destructive"
                   size="sm"
                   onClick={((: any): any) => {
-                    if (window.confirm(`Are you sure you want to delete ${selectedRoles.size} role(s)?`)) => {
+                    if (window.confirm(`Are you sure you want to delete ${selectedRoles.size} role(s)?`)) {
                       selectedRoles.forEach((roleId: any) => handleDeleteRole(roleId))
                       setSelectedRoles(new Set())
                     }

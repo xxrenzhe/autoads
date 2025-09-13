@@ -43,7 +43,7 @@ export const SimpleProgressBar: React.FC<SimpleProgressBarProps> = ({
   };
 
   // 如果没有进度数据，不显示进度条
-  if (progress === 0 && !isOpening && !isTerminated) => {
+  if (progress === 0 && !isOpening && !isTerminated) {
     return null as any;
   }
 

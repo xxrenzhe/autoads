@@ -26,7 +26,7 @@ interface EnvVarEditProps {
   onCancel?: () => void
 }
 
-export function EnvVarEdit({ envVar, onSave, onCancel }: .*Props) {
+export function EnvVarEdit({ envVar, onSave, onCancel }: EnvVarEditProps) {
   const isEdit = !!envVar
   
   const [formData, setFormData] = useState({
@@ -42,7 +42,7 @@ export function EnvVarEdit({ envVar, onSave, onCancel }: .*Props) {
   const updateEnvVar = useUpdateEnvVar()
   
   useEffect(() => {
-    if (envVar) => {
+    if (envVar) {
       setFormData({
         key: envVar.key,
         value: envVar.value,
@@ -54,13 +54,13 @@ export function EnvVarEdit({ envVar, onSave, onCancel }: .*Props) {
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
     
-    if (!formData.key.trim()) => {
+    if (!formData.key.trim()) {
       newErrors.key = 'Key is required'
-    } else if (!/^[A-Z_][A-Z0-9_]*$/.test(formData.key)) => {
+    } else if (!/^[A-Z_][A-Z0-9_]*$/.test(formData.key)) {
       newErrors.key = 'Key must be uppercase letters, numbers, and underscores only'
     }
     
-    if (!formData.value.trim()) => {
+    if (!formData.value.trim()) {
       newErrors.value = 'Value is required'
     }
     
@@ -74,7 +74,7 @@ export function EnvVarEdit({ envVar, onSave, onCancel }: .*Props) {
       [field]: value
     }))
     
-    if (touched[field]) => {
+    if (touched[field]) {
       setErrors(prev => ({
         ...prev,
         [field]: ''
@@ -88,7 +88,7 @@ export function EnvVarEdit({ envVar, onSave, onCancel }: .*Props) {
       [field]: true
     }))
     
-    if (errors[field]) => {
+    if (errors[field]) {
       validateForm()
     }
   }
@@ -96,12 +96,12 @@ export function EnvVarEdit({ envVar, onSave, onCancel }: .*Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!validateForm()) => {
+    if (!validateForm()) {
       return
     }
     
     try {
-      if (isEdit && envVar) => {
+      if (isEdit && envVar) {
         await updateEnvVar.mutateAsync({
           id: envVar.id,
           data: formData
@@ -145,7 +145,7 @@ export function EnvVarEdit({ envVar, onSave, onCancel }: .*Props) {
             <Input
               id="key"
               value={formData.key}
-              onChange={(e) => handleInputChange('key', e.target.value.toUpperCase())}
+              onChange={((e: any): any) => handleInputChange('key', e.target.value.toUpperCase())}
               onBlur={() => handleBlur('key')}
               placeholder="e.g., DATABASE_URL"
               disabled={isSubmitting || isEdit}
@@ -188,7 +188,7 @@ export function EnvVarEdit({ envVar, onSave, onCancel }: .*Props) {
               <input
                 type="checkbox"
                 checked={formData.isSecret}
-                onChange={(e) => handleInputChange('isSecret', e.target.checked)}
+                onChange={((e: any): any) => handleInputChange('isSecret', e.target.checked)}
                 disabled={isSubmitting}
                 className="rounded border-gray-300"
               />

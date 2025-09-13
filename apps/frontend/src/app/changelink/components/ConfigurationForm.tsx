@@ -29,7 +29,7 @@ interface ConfigurationFormProps {
   initialData?: Partial<TrackingConfiguration>;
 }
 
-export function ConfigurationForm({ onSave, onCancel, initialData }: .*Props) {
+export function ConfigurationForm({ onSave, onCancel, initialData }: ConfigurationFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     environmentId: initialData?.environmentId || '',
@@ -47,21 +47,21 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: .*Props) {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) => {
+    if (!formData.name.trim()) {
       newErrors.name = '配置名称不能为空';
     }
 
-    if (!formData.environmentId.trim()) => {
+    if (!formData.environmentId.trim()) {
       newErrors.environmentId = '环境ID不能为空';
     }
 
-    if (formData.repeatCount < 1) => {
+    if (formData.repeatCount < 1) {
       newErrors.repeatCount = '重复次数必须大于0';
     }
 
     
     const validLinks = formData.originalLinks.filter((link: any) => link.trim());
-    if (validLinks.length === 0) => {
+    if (validLinks.length === 0) {
       newErrors.originalLinks = '至少需要添加一个原始链接';
     }
 
@@ -72,7 +72,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: .*Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) => {
+    if (!validateForm()) {
       return;
     }
 
@@ -104,7 +104,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: .*Props) {
   };
 
   const removeLink = (index: number) => {
-    if (formData.originalLinks.length > 1) => {
+    if (formData.originalLinks.length > 1) {
       setFormData(prev => ({
         ...prev,
         originalLinks: prev.originalLinks.filter((_, i: any) => i !== index)
@@ -219,7 +219,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: .*Props) {
                   <div key={index} className="flex items-center space-x-2">
                     <Input
                       value={link}
-                      onChange={(e) => updateLink(index, e.target.value)}
+                      onChange={((e: any): any) => updateLink(index, e.target.value)}
                       placeholder={`原始链接 ${index + 1}`}
                       className="flex-1"
                     />
@@ -228,7 +228,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: .*Props) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => removeLink(index)}
+                        onClick={((: any): any) => removeLink(index)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="w-4 h-4" />

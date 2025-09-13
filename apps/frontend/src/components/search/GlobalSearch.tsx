@@ -209,7 +209,7 @@ interface GlobalSearchProps {
   trigger?: React.ReactNode
 }
 
-export default function GlobalSearch({ trigger }: .*Props) {
+export default function GlobalSearch({ trigger }: GlobalSearchProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const { data: session } = useSession()
@@ -232,7 +232,7 @@ export default function GlobalSearch({ trigger }: .*Props) {
 
   // Group results by category
   const groupedResults = searchResults.reduce((acc, item: any) => {
-    if (!acc[item.category]) => {
+    if (!acc[item.category]) {
       acc[item.category] = []
     }
     acc[item.category].push(item)
@@ -248,7 +248,7 @@ export default function GlobalSearch({ trigger }: .*Props) {
   // Keyboard shortcut
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         setOpen((open) => !open)
       }
@@ -271,7 +271,7 @@ export default function GlobalSearch({ trigger }: .*Props) {
   return (
     <>
       {trigger ? (
-        <div onClick={() => setOpen(true)}>
+        <div onClick={((: any): any) => setOpen(true)}>
           {trigger}
         </div>
       ) : (
@@ -280,7 +280,7 @@ export default function GlobalSearch({ trigger }: .*Props) {
           className={cn(
             "relative h-8 w-full justify-start rounded-[0.5rem] bg-background text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
           )}
-          onClick={() => setOpen(true)}
+          onClick={((: any): any) => setOpen(true)}
         >
           <Search className="h-4 w-4 mr-2" />
           <span className="hidden lg:inline-flex">Search...</span>

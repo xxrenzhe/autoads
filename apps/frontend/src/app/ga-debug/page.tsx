@@ -47,7 +47,7 @@ export default function GADebugPage() {
       const request = args[0];
       const url = typeof request === 'string' ? request : request instanceof URL ? request.href : request.url;
       
-      if (url.includes('googletagmanager.com') || url.includes('google-analytics.com')) => {
+      if (url.includes('googletagmanager.com') || url.includes('google-analytics.com')) {
         const startTime = Date.now();
         
         try {
@@ -148,9 +148,9 @@ export default function GADebugPage() {
 
     // Manual GA test
     const testGA = () => {
-      if (typeof window.gtag !== 'undefined') => {
+      if (typeof window.gtag !== 'undefined') {
         const gaId = (window as any).__RUNTIME_CONFIG__?.GA_ID;
-        if (gaId) => {
+        if (gaId) {
           console.log('🧪 Testing GA event...');
           window.gtag('event', 'test_event', {
             event_category: 'Debug',
@@ -242,23 +242,23 @@ export default function GADebugPage() {
             <h2 className="text-xl font-semibold mb-4">Test Actions</h2>
             <div className="space-y-4">
               <button
-                onClick={() => window.location.reload()}
+                onClick={((: any): any) => window.location.reload()}
                 className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
               >
                 Reload Page
               </button>
               
               <button
-                onClick={() => (window as any).testGA?.()}
+                onClick={((: any): any) => (window as any).testGA?.()}
                 className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition"
               >
                 Send Test Event
               </button>
               
               <button
-                onClick={() => {
+                onClick={((: any): any) => {
                   const gaId = (window as any).__RUNTIME_CONFIG__?.GA_ID;
-                  if (gaId) => {
+                  if (gaId) {
                     window.open(`https://analytics.google.com/analytics/web/#/p${gaId.replace('G-', '')}/`, '_blank');
                   }
                 }}

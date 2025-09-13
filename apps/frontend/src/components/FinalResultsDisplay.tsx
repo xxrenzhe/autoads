@@ -25,21 +25,21 @@ const FinalResultsDisplay = ({
   onExportText,
   onExportCsv,
   isExporting,
-}: .*Props) {
+}: FinalResultsDisplayProps) => {
   const { t, locale } = useLanguage();
 
   const getStatusBadge = (status: string | number | null) => {
     // Convert number status to string status
     let statusStr: string;
-    if (typeof status === "number") => {
-      if (status >= 200 && status < 300) => {
+    if (typeof status === "number") {
+      if (status >= 200 && status < 300) {
         statusStr = "success";
-      } else if (status >= 300 && status < 400) => {
+      } else if (status >= 300 && status < 400) {
         statusStr = "opened";
       } else {
         statusStr = "failed";
       }
-    } else if (status === null) => {
+    } else if (status === null) {
       statusStr = "waitingDetection";
     } else {
       statusStr = status;
@@ -65,7 +65,7 @@ const FinalResultsDisplay = ({
 
   const successfulResults = results.filter((r: any) => {
     const status = r.status;
-    if (typeof status === "number") => {
+    if (typeof status === "number") {
       return status >= 200 && status < 400;
     }
     return status === "success" || status === "opened";
@@ -156,14 +156,14 @@ const FinalResultsDisplay = ({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => navigator.clipboard.writeText(url)}
+                    onClick={((: any): any) => navigator.clipboard.writeText(url)}
                   >
                     <Copy className="w-3 h-3" />
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => window.open(url, "_blank")}
+                    onClick={((: any): any) => window.open(url, "_blank")}
                   >
                     <ExternalLink className="w-3 h-3" />
                   </Button>

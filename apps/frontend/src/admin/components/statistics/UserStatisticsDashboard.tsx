@@ -59,7 +59,7 @@ interface TabPanelProps {
   value: number;
 }
 
-function TabPanel(props: TabPanelProps) => {
+function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
 
   return (
@@ -123,7 +123,7 @@ export const UserStatisticsDashboard: React.FC = () => {
       const params = new URLSearchParams();
       
       // Date range handling
-      if (filters.dateRange === 'custom' && filters.customStartDate && filters.customEndDate) => {
+      if (filters.dateRange === 'custom' && filters.customStartDate && filters.customEndDate) {
         params.append('startDate', filters.customStartDate);
         params.append('endDate', filters.customEndDate);
       } else {
@@ -134,28 +134,28 @@ export const UserStatisticsDashboard: React.FC = () => {
       
       // Other filters
       params.append('groupBy', filters.groupBy);
-      if (filters.userSegment !== 'all') => {
+      if (filters.userSegment !== 'all') {
         params.append('userSegment', filters.userSegment);
       }
-      if (filters.features.length > 0) => {
+      if (filters.features.length > 0) {
         params.append('features', filters.features.join(','));
       }
-      if (filters.minTokenUsage > 0) => {
+      if (filters.minTokenUsage > 0) {
         params.append('minTokenUsage', filters.minTokenUsage.toString());
       }
-      if (filters.maxTokenUsage > 0) => {
+      if (filters.maxTokenUsage > 0) {
         params.append('maxTokenUsage', filters.maxTokenUsage.toString());
       }
 
       const response = await fetch(`/api/admin/statistics/${endpoint}?${params.toString()}`);
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Failed to fetch statistics');
       }
 
       const data = await response.json();
       setStatistics(data.data);
-    } catch (err: any) => {
+    } catch (err: any) {
       setError(err.message || 'An error occurred');
     } finally {
       setLoading(false);
@@ -194,7 +194,7 @@ export const UserStatisticsDashboard: React.FC = () => {
       const params = new URLSearchParams();
       
       // Add current filters to export
-      if (filters.dateRange === 'custom' && filters.customStartDate && filters.customEndDate) => {
+      if (filters.dateRange === 'custom' && filters.customStartDate && filters.customEndDate) {
         params.append('startDate', filters.customStartDate);
         params.append('endDate', filters.customEndDate);
       } else {
@@ -205,13 +205,13 @@ export const UserStatisticsDashboard: React.FC = () => {
       
       params.append('groupBy', filters.groupBy);
       params.append('format', format);
-      if (filters.userSegment !== 'all') => {
+      if (filters.userSegment !== 'all') {
         params.append('userSegment', filters.userSegment);
       }
 
       const response = await fetch(`/api/admin/statistics/${endpoint}/export?${params.toString()}`);
       
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Export failed');
       }
 
@@ -226,7 +226,7 @@ export const UserStatisticsDashboard: React.FC = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (err: any) => {
+    } catch (err: any) {
       setError(`Export failed: ${err.message}`);
     }
     setExportMenuAnchor(null);
@@ -236,7 +236,7 @@ export const UserStatisticsDashboard: React.FC = () => {
     setTabValue(newValue);
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
@@ -244,7 +244,7 @@ export const UserStatisticsDashboard: React.FC = () => {
     );
   }
 
-  if (error) => {
+  if (error) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">{error}</Alert>
@@ -432,7 +432,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') => {
+                      if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         handleFeatureToggle(feature);
                       }

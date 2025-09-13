@@ -32,7 +32,7 @@ interface AutoClickBatchProps {
   t: (key: string) => string | string[];
 }
 
-export default function AutoClickBatch({ locale, t }: .*Props) {
+export default function AutoClickBatch({ locale, t }: AutoClickBatchProps) {
   const { data: session } = useSession();
   const { openLoginModal } = useAuthContext();
   const { data: subscriptionLimits, loading: limitsLoading } = useSubscriptionLimits();
@@ -56,7 +56,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
   const fetchTasks = async () => {
     try {
       const response = await fetch('/api/autoclick/tasks');
-      if (response.ok) => {
+      if (response.ok) {
         const data = await response.json();
         setTasks(data.tasks || []);
       }
@@ -68,7 +68,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
   };
 
   useEffect(() => {
-    if (session) => {
+    if (session) {
       fetchTasks();
     } else {
       setLoading(false);
@@ -88,7 +88,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
         body: JSON.stringify(formData)
       });
 
-      if (response.ok) => {
+      if (response.ok) {
         setFormData({
           offerUrl: '',
           country: 'US',
@@ -117,7 +117,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
         method: 'POST'
       });
 
-      if (response.ok) => {
+      if (response.ok) {
         fetchTasks();
       } else {
         const error = await response.json();
@@ -130,7 +130,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'running': return 'text-green-600 bg-green-100';
       case 'pending': return 'text-yellow-600 bg-yellow-100';
       case 'terminated': return 'text-red-600 bg-red-100';
@@ -139,7 +139,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'running': return '已启动';
       case 'pending': return '未启动';
       case 'terminated': return '已终止';
@@ -148,7 +148,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) => {
+    switch (status) {
       case 'running': return <Play className="w-4 h-4" />;
       case 'pending': return <Clock className="w-4 h-4" />;
       case 'terminated': return <Square className="w-4 h-4" />;
@@ -166,10 +166,10 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-semibold text-gray-900">自动化点击任务</h3>
         <button
-          onClick={() => {
-            if (!session) => {
+          onClick={((: any): any) => {
+            if (!session) {
               openLoginModal('autoclick');
-            } else if (!hasAutoClickAccess) => {
+            } else if (!hasAutoClickAccess) {
               window.location.href = '/pricing';
             } else {
               setShowForm(!showForm);
@@ -194,7 +194,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
               <input
                 type="url"
                 value={formData.offerUrl}
-                onChange={(e) => setFormData({ ...formData, offerUrl: e.target.value })}
+                onChange={((e: any): any) => setFormData({ ...formData, offerUrl: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="https://example.com"
                 required
@@ -206,7 +206,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
               </label>
               <select
                 value={formData.country}
-                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                onChange={((e: any): any) => setFormData({ ...formData, country: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="US">美国</option>
@@ -221,7 +221,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
               </label>
               <select
                 value={formData.timeWindow}
-                onChange={(e) => setFormData({ ...formData, timeWindow: e.target.value })}
+                onChange={((e: any): any) => setFormData({ ...formData, timeWindow: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="00:00-24:00">全天 (00:00-24:00)</option>
@@ -237,7 +237,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
                 min="1"
                 max="10000"
                 value={formData.dailyClicks}
-                onChange={(e) => setFormData({ ...formData, dailyClicks: parseInt(e.target.value) })}
+                onChange={((e: any): any) => setFormData({ ...formData, dailyClicks: parseInt(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
@@ -249,7 +249,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
               <input
                 type="url"
                 value={formData.referer}
-                onChange={(e) => setFormData({ ...formData, referer: e.target.value })}
+                onChange={((e: any): any) => setFormData({ ...formData, referer: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="https://google.com"
               />
@@ -257,7 +257,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
           </div>
           <div className="mt-6 flex justify-end gap-3">
             <button
-              onClick={() => setShowForm(false)}
+              onClick={((: any): any) => setShowForm(false)}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
             >
               取消
@@ -356,7 +356,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
                         {hasAutoClickAccess ? (
                           <ProtectedButton
                             featureName="autoclick"
-                            onClick={() => handleUpdateTaskStatus(task.id, 'start')}
+                            onClick={((: any): any) => handleUpdateTaskStatus(task.id, 'start')}
                             className="p-2 text-green-600 bg-green-50 rounded-lg hover:bg-green-100"
                           >
                             <Play className="w-4 h-4" />
@@ -380,7 +380,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
                         {hasAutoClickAccess ? (
                           <ProtectedButton
                             featureName="autoclick"
-                            onClick={() => handleUpdateTaskStatus(task.id, 'terminate')}
+                            onClick={((: any): any) => handleUpdateTaskStatus(task.id, 'terminate')}
                             className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100"
                           >
                             <Square className="w-4 h-4" />
@@ -404,7 +404,7 @@ export default function AutoClickBatch({ locale, t }: .*Props) {
                     {hasAutoClickAccess ? (
                       <ProtectedButton
                         featureName="autoclick"
-                        onClick={() => setMonitoringTaskId(monitoringTaskId === task.id ? null : task.id)}
+                        onClick={((: any): any) => setMonitoringTaskId(monitoringTaskId === task.id ? null : task.id)}
                         className={`p-2 rounded-lg ${
                           monitoringTaskId === task.id 
                             ? 'text-blue-600 bg-blue-100' 

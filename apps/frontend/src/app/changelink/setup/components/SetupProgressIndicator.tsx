@@ -21,9 +21,9 @@ export const SetupProgressIndicator = memo(({
   setupSteps, 
   currentStep, 
   onStepClick 
-}: .*Props) {
+}: SetupProgressIndicatorProps) => {
   const getStepStatus = (step: SetupStep) => {
-    switch (step.status) => {
+    switch (step.status) {
       case 'completed':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'error':
@@ -36,7 +36,7 @@ export const SetupProgressIndicator = memo(({
   };
 
   const handleStepKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === 'Enter' || e.key === ' ') => {
+    if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onStepClick(index);
     }
@@ -57,7 +57,7 @@ export const SetupProgressIndicator = memo(({
             {/* 步骤圆圈 */}
             <button
               type="button"
-              onClick={() => onStepClick(index)}
+              onClick={((: any): any) => onStepClick(index)}
               onKeyDown={(e) => handleStepKeyDown(e, index)}
               className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                 index === currentStep 

@@ -68,7 +68,7 @@ const RestrictionStatusAlert = () => {
   const expiresAt = new Date(record.expiresAt);
   const isExpired = expiresAt < now;
 
-  if (!record.isActive) => {
+  if (!record.isActive) {
     return (
       <Alert severity="success">
         <AlertTitle>限制已解除</AlertTitle>
@@ -77,7 +77,7 @@ const RestrictionStatusAlert = () => {
     );
   }
 
-  if (isExpired) => {
+  if (isExpired) {
     return (
       <Alert severity="warning">
         <AlertTitle>限制已过期</AlertTitle>

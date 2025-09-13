@@ -59,7 +59,7 @@ interface TabPanelProps {
   value: number;
 }
 
-function TabPanel(props: TabPanelProps) => {
+function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
   return (
     <div
@@ -138,7 +138,7 @@ const TokenUsageAnalysis: React.FC = () => {
       const endDate = endOfDay(new Date());
       let startDate: Date;
       
-      switch (dateRange) => {
+      switch (dateRange) {
         case '7':
           startDate = startOfDay(subDays(endDate, 7));
           break;
@@ -160,7 +160,7 @@ const TokenUsageAnalysis: React.FC = () => {
       };
 
       // Fetch data based on current tab
-      switch (tabValue) => {
+      switch (tabValue) {
         case 0: // Overview
           await fetchOverviewData(params);
           break;
@@ -174,7 +174,7 @@ const TokenUsageAnalysis: React.FC = () => {
           await fetchTimeSeriesData(params);
           break;
       }
-    } catch (err: any) => {
+    } catch (err: any) {
       setError(err.message || '获取数据失败');
     } finally {
       setLoading(false);
@@ -218,7 +218,7 @@ const TokenUsageAnalysis: React.FC = () => {
     notify('导出功能开发中', { type: 'info' });
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
@@ -226,7 +226,7 @@ const TokenUsageAnalysis: React.FC = () => {
     );
   }
 
-  if (error) => {
+  if (error) {
     return (
       <Alert severity="error" sx={{ m: 3 }}>
         {error}

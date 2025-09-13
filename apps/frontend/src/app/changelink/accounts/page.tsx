@@ -103,7 +103,7 @@ export default function AccountsPage() {
   const handleCreateAccount = async () => {
     try {
       if (!formData.accountName || !formData.accountId || !formData.clientId || 
-          !formData.clientSecret || !formData.developerToken) => {
+          !formData.clientSecret || !formData.developerToken) {
         alert('请填写所有必填字段');
         return;
       }
@@ -184,7 +184,7 @@ export default function AccountsPage() {
       
       // 监听授权完成
       const checkClosed = setInterval(() => {
-        if (authWindow?.closed) => {
+        if (authWindow?.closed) {
           clearInterval(checkClosed);
           // 重新加载账户状态
           setTimeout(() => {
@@ -343,7 +343,7 @@ export default function AccountsPage() {
     </div>
   );
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
@@ -365,7 +365,7 @@ export default function AccountsPage() {
         </div>
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
-            <Button onClick={() => { resetForm(); setShowCreateDialog(true); }}>
+            <Button onClick={((: any): any) => { resetForm(); setShowCreateDialog(true); }}>
               <Plus className="h-4 w-4 mr-2" />
               添加账号
             </Button>
@@ -379,7 +379,7 @@ export default function AccountsPage() {
             </DialogHeader>
             <AccountForm />
             <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              <Button variant="outline" onClick={((: any): any) => setShowCreateDialog(false)}>
                 取消
               </Button>
               <Button onClick={handleCreateAccount}>
@@ -396,7 +396,7 @@ export default function AccountsPage() {
             <Key className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium mb-2">暂无 Google Ads 账号</h3>
             <p className="text-gray-600 mb-4">添加您的第一个 Google Ads 账号来开始使用</p>
-            <Button onClick={() => setShowCreateDialog(true)}>
+            <Button onClick={((: any): any) => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               添加账号
             </Button>
@@ -449,7 +449,7 @@ export default function AccountsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => toggleShowSecret(account.id, 'clientId')}
+                          onClick={((: any): any) => toggleShowSecret(account.id, 'clientId')}
                         >
                           {showSecrets[`${account.id}_clientId`] ? 
                             <EyeOff className="h-3 w-3" /> : 
@@ -472,7 +472,7 @@ export default function AccountsPage() {
                     {account.status === 'expired' || !account.refreshToken ? (
                       <Button
                         size="sm"
-                        onClick={() => handleOAuthAuthorization(account)}
+                        onClick={((: any): any) => handleOAuthAuthorization(account)}
                         className="flex-1"
                       >
                         <ExternalLink className="h-4 w-4 mr-1" />
@@ -482,7 +482,7 @@ export default function AccountsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleRefreshToken(account)}
+                        onClick={((: any): any) => handleRefreshToken(account)}
                         className="flex-1"
                       >
                         <RefreshCw className="h-4 w-4 mr-1" />
@@ -493,7 +493,7 @@ export default function AccountsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleSyncAccountData(account)}
+                      onClick={((: any): any) => handleSyncAccountData(account)}
                     >
                       <RefreshCw className="h-4 w-4 mr-1" />
                       同步数据
@@ -502,7 +502,7 @@ export default function AccountsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => openEditDialog(account)}
+                      onClick={((: any): any) => openEditDialog(account)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -510,7 +510,7 @@ export default function AccountsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDeleteAccount(account.id)}
+                      onClick={((: any): any) => handleDeleteAccount(account.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -533,7 +533,7 @@ export default function AccountsPage() {
           </DialogHeader>
           <AccountForm />
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+            <Button variant="outline" onClick={((: any): any) => setShowEditDialog(false)}>
               取消
             </Button>
             <Button onClick={handleUpdateAccount}>

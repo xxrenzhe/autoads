@@ -13,7 +13,7 @@ interface WithAuthOptions {
 export function withAuth<P extends object>(
   Component: ComponentType<P>,
   options: WithAuthOptions = {}
-) => {
+) {
   const { requireAuth = true, requiredRole, fallback } = options
 
   const AuthenticatedComponent = (props: P) => {

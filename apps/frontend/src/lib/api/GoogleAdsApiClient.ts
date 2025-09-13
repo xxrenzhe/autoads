@@ -294,7 +294,7 @@ export class GoogleAdsApiClient {
         headers: { 'customer-id': customerId },
       });
 
-      return response.data.results.map(((result: any) => this.mapAdResult(result.ad));
+      return response.data.results.map((result: any: any) => this.mapAdResult(result.ad));
     } catch (error) {
       console.error('获取广告列表失败:', error);
       throw error;
@@ -319,7 +319,7 @@ export class GoogleAdsApiClient {
         headers: { 'customer-id': customerId },
       });
 
-      return response.data.results.map(((result: any) => this.mapAdGroupResult(result.adGroup));
+      return response.data.results.map((result: any: any) => this.mapAdGroupResult(result.adGroup));
     } catch (error) {
       console.error('获取广告组列表失败:', error);
       throw error;
@@ -343,7 +343,7 @@ export class GoogleAdsApiClient {
         headers: { 'customer-id': customerId },
       });
 
-      return response.data.results.map(((result: any) => this.mapCampaignResult(result.campaign));
+      return response.data.results.map((result: any: any) => this.mapCampaignResult(result.campaign));
     } catch (error) {
       console.error('获取广告系列列表失败:', error);
       throw error;
@@ -432,7 +432,7 @@ export class GoogleAdsApiClient {
         headers: { 'customer-id': customerId },
       });
 
-      return response.data.results.map(((result: any) => this.mapPerformanceResult(result));
+      return response.data.results.map((result: any: any) => this.mapPerformanceResult(result));
     } catch (error) {
       console.error('获取广告性能数据失败:', error);
       throw error;

@@ -415,7 +415,7 @@ export class SubscriptionHelper {
     await prisma.queuedInvitationReward.updateMany({
       where: {
         id: {
-          in: queuedRewards.map(((r: any) => r.id)
+          in: queuedRewards.map((r: any: any) => r.id)
         }
       },
       data: {
@@ -434,7 +434,7 @@ export class SubscriptionHelper {
           subscriptionId: subscription.id,
           totalDays,
           rewardsCount: queuedRewards.length,
-          rewardIds: queuedRewards.map(((r: any) => r.id)
+          rewardIds: queuedRewards.map((r: any: any) => r.id)
         }
       }
     });

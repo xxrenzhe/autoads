@@ -46,7 +46,7 @@ export default function ConfigurationPreview({
   onEdit,
   onSave,
   isOpen
-}: .*Props) {
+}: ConfigurationPreviewProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const validator = new ConfigurationValidator();
 
@@ -81,8 +81,8 @@ export default function ConfigurationPreview({
 
     const adCounts = new Map<string, number>();
     
-    for (const mapping of configuration.adMappingConfig) => {
-      if (Array.isArray(mapping.adMappings)) => {
+    for (const mapping of configuration.adMappingConfig) {
+      if (Array.isArray(mapping.adMappings)) {
         mapping.adMappings.forEach((ad: any) => {
           const adId = ad.adId;
           adCounts.set(adId, (adCounts.get(adId) || 0) + 1);
@@ -93,9 +93,9 @@ export default function ConfigurationPreview({
     googleAdsAccounts.forEach((account => { account.campaignMappings?.forEach(campaign: any) => {
         campaign.adGroupMappings?.forEach((adGroup: any) => {
           adGroup.adMappings?.forEach((ad: any) => {
-            if (ad.adId) => {
+            if (ad.adId) {
               const count = adCounts.get(ad.adId);
-              if (count && count > 0) => {
+              if (count && count > 0) {
                 mappedAds.push({
                   id: ad.adId,
                   name: ad.adName || 'Unknown Ad',
@@ -120,9 +120,9 @@ export default function ConfigurationPreview({
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
 
-    if (hours > 0) => {
+    if (hours > 0) {
       return `${hours}小时${minutes}分钟`;
-    } else if (minutes > 0) => {
+    } else if (minutes > 0) {
       return `${minutes}分钟${secs}秒`;
     } else {
       return `${secs}秒`;

@@ -71,7 +71,7 @@ export default function AdsPowerConfigForm({
   onValidateEnvironment,
   onTestLinks,
   isSubmitting = false
-}: .*Props) {
+}: AdsPowerConfigFormProps) {
   const [activeTab, setActiveTab] = useState('basic');
   const [environmentValidation, setEnvironmentValidation] = useState<{
     status: 'idle' | 'validating' | 'valid' | 'invalid';
@@ -143,7 +143,7 @@ export default function AdsPowerConfigForm({
   const validateStep = useCallback((stepId: number): boolean => {
     const values = form.getValues();
 
-    switch (stepId) => {
+    switch (stepId) {
       case 1: // 基础配置
         return !!(values.name && values.environmentId && values.notificationEmail);
       case 2: // 链接配置
@@ -158,23 +158,23 @@ export default function AdsPowerConfigForm({
   // 步骤导航
   const goToStep = useCallback((stepId: number) => {
     const step = steps.find((s: any) => s.id === stepId);
-    if (step) => {
+    if (step) {
       setActiveTab(step.tab);
       setCurrentStep(stepId);
     }
   }, [steps]);
   // 下一步
   const nextStep = useCallback(() => {
-    if (validateStep(currentStep)) => {
+    if (validateStep(currentStep)) {
       setCompletedSteps(prev => new Set(Array.from(prev).concat([currentStep])));
-      if (currentStep < steps.length) => {
+      if (currentStep < steps.length) {
         goToStep(currentStep + 1);
       }
     }
   }, [currentStep, validateStep, goToStep, steps.length]);
   // 上一步
   const prevStep = useCallback(() => {
-    if (currentStep > 1) => {
+    if (currentStep > 1) {
       goToStep(currentStep - 1);
     }
   }, [currentStep, goToStep]);
@@ -207,7 +207,7 @@ export default function AdsPowerConfigForm({
       account.campaignMappings?.forEach((campaign: any) => {
         campaign.adGroupMappings?.forEach((adGroup: any) => {
           adGroup.adMappings?.forEach((ad: any) => {
-            if (ad.adId && ad.adName && campaign.campaignName && adGroup.adGroupName) => {
+            if (ad.adId && ad.adName && campaign.campaignName && adGroup.adGroupName) {
               ads.push({
                 id: ad.adId,
                 name: ad.adName,
@@ -226,7 +226,7 @@ export default function AdsPowerConfigForm({
 
   // 验证环境ID
   const handleValidateEnvironment = async (environmentId: string) => {
-    if (!environmentId) => {
+    if (!environmentId) {
       setEnvironmentValidation({ status: 'idle' });
       return;
     }
@@ -303,7 +303,7 @@ export default function AdsPowerConfigForm({
   // 监听环境ID变化
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-      if (name === 'environmentId' && value.environmentId) => {
+      if (name === 'environmentId' && value.environmentId) {
         const timeoutId = setTimeout(() => {
           handleValidateEnvironment(value.environmentId!);
         }, 500); // 防抖
@@ -330,7 +330,7 @@ export default function AdsPowerConfigForm({
                       ? 'bg-green-600 text-white'
                       : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                     }`}
-                  onClick={() => goToStep(step.id)}
+                  onClick={((: any): any) => goToStep(step.id)}
                 >
                   {completedSteps.has(step.id) ? (
                     <CheckCircle className="h-4 w-4" />
@@ -494,7 +494,7 @@ export default function AdsPowerConfigForm({
                             max={10}
                             placeholder="输入重复次数"
                             {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                            onChange={((e: any): any) => field.onChange(parseInt(e.target.value) || 1)}
                           />
                         </FormControl>
                         <FormDescription>每个链接将被执行的次数（1-10次）</FormDescription>
@@ -572,7 +572,7 @@ export default function AdsPowerConfigForm({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemoveOriginalLink(index)}
+                          onClick={((: any): any) => handleRemoveOriginalLink(index)}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
@@ -683,7 +683,7 @@ export default function AdsPowerConfigForm({
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => removeLinkMapping(index)}
+                                  onClick={((: any): any) => removeLinkMapping(index)}
                                 >
                                   <Trash2 className="h-4 w-4 text-red-500" />
                                 </Button>
@@ -716,7 +716,7 @@ export default function AdsPowerConfigForm({
                                           min={1}
                                           max={10}
                                           {...field}
-                                          onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                          onChange={((e: any): any) => field.onChange(parseInt(e.target.value) || 1)}
                                         />
                                       </FormControl>
                                     </FormItem>
@@ -750,9 +750,9 @@ export default function AdsPowerConfigForm({
                                       <input
                                         type="checkbox"
                                         checked={form.watch(`linkMappings.${index}.targetAdIds`)?.includes(ad.id) || false}
-                                        onChange={(e) => {
+                                        onChange={((e: any): any) => {
                                           const currentIds = form.getValues(`linkMappings.${index}.targetAdIds`) || [];
-                                          if (e.target.checked) => {
+                                          if (e.target.checked) {
                                             form.setValue(`linkMappings.${index}.targetAdIds`, [...currentIds, ad.id]);
                                           } else {
                                             form.setValue(`linkMappings.${index}.targetAdIds`, currentIds.filter((id: any) => id !== ad.id));
@@ -835,7 +835,7 @@ export default function AdsPowerConfigForm({
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">配置预览</h3>
-                  <Button variant="ghost" size="sm" onClick={() => setShowPreview(false)}>
+                  <Button variant="ghost" size="sm" onClick={((: any): any) => setShowPreview(false)}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>

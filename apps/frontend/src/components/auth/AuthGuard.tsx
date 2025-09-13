@@ -24,18 +24,18 @@ export function AuthGuard({
   redirectUrl,
   requireAuth = true,
   requiredRole
-}: .*Props) {
+}: AuthGuardProps) {
   const { data: session, status } = useSession()
   const [showLoginModal, setShowLoginModal] = useState(false)
 
   useEffect(() => {
-    if (requireAuth && status === 'unauthenticated') => {
+    if (requireAuth && status === 'unauthenticated') {
       setShowLoginModal(true)
     }
   }, [status, requireAuth])
 
   // 加载中状态
-  if (status === 'loading') => {
+  if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
         <div className="flex flex-col items-center space-y-4">
@@ -47,7 +47,7 @@ export function AuthGuard({
   }
 
   // 未登录状态
-  if (requireAuth && !session) => {
+  if (requireAuth && !session) {
     return (
       <>
         {fallback || (
@@ -72,7 +72,7 @@ export function AuthGuard({
                 )}
               </div>
               <button
-                onClick={() => setShowLoginModal(true)}
+                onClick={((: any): any) => setShowLoginModal(true)}
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
               >
                 立即登录
@@ -91,9 +91,9 @@ export function AuthGuard({
   }
 
   // 角色检查
-  if (requireAuth && session && requiredRole) => {
+  if (requireAuth && session && requiredRole) {
     const userRole = (session.user as any).role
-    if (userRole !== requiredRole.toUpperCase()) => {
+    if (userRole !== requiredRole.toUpperCase()) {
       return (
         <div className="flex items-center justify-center min-h-[400px] p-8">
           <div className="text-center space-y-6 max-w-md">
@@ -131,7 +131,7 @@ export function useAuthModal() {
     description?: string
     redirectUrl?: string
   }) => {
-    if (!session) => {
+    if (!session) {
       setShowLoginModal(true)
       return { opened: true, ...options }
     }

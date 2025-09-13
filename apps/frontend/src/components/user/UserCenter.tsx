@@ -68,7 +68,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
     const currentIndex = tabs.findIndex(tab => tab.id === tabId);
     let nextIndex = currentIndex;
 
-    switch (event.key) => {
+    switch (event.key) {
       case 'ArrowLeft':
         event.preventDefault();
         nextIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1;
@@ -108,7 +108,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
 
   // Get account status display with accessibility improvements
   const getAccountStatus = (status?: string) => {
-    switch (status) => {
+    switch (status) {
       case 'ACTIVE': 
         return { 
           text: '账户已激活', 
@@ -141,7 +141,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
     }
   };
 
-  if (!user) => {
+  if (!user) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Alert 
@@ -297,7 +297,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'dashboard' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'dashboard' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={() => setActiveTab('dashboard')}
+            onClick={((: any): any) => setActiveTab('dashboard')}
           >
             数据概览
           </Box>
@@ -311,7 +311,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'usage' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'usage' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={() => setActiveTab('usage')}
+            onClick={((: any): any) => setActiveTab('usage')}
           >
             使用报告
           </Box>
@@ -325,7 +325,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'recharge' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'recharge' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={() => setActiveTab('recharge')}
+            onClick={((: any): any) => setActiveTab('recharge')}
           >
             快速充值
           </Box>
@@ -339,7 +339,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'checkin' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'checkin' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={() => setActiveTab('checkin')}
+            onClick={((: any): any) => setActiveTab('checkin')}
           >
             每日签到
           </Box>
@@ -353,7 +353,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'transactions' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'transactions' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={() => setActiveTab('transactions')}
+            onClick={((: any): any) => setActiveTab('transactions')}
           >
             交易记录
           </Box>
@@ -367,7 +367,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'subscription' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'subscription' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={() => setActiveTab('subscription')}
+            onClick={((: any): any) => setActiveTab('subscription')}
           >
             订阅管理
           </Box>
@@ -381,7 +381,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'invitation' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'invitation' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={() => setActiveTab('invitation')}
+            onClick={((: any): any) => setActiveTab('invitation')}
           >
             邀请好友
           </Box>

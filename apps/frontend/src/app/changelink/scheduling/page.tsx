@@ -221,9 +221,9 @@ export default function SchedulingPage() {
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
 
-    if (hours > 0) => {
+    if (hours > 0) {
       return `${hours}小时${minutes % 60}分钟`;
-    } else if (minutes > 0) => {
+    } else if (minutes > 0) {
       return `${minutes}分钟${seconds % 60}秒`;
     } else {
       return `${seconds}秒`;
@@ -275,7 +275,7 @@ export default function SchedulingPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => {
+              onClick={((: any): any) => {
                 setSelectedTask(task);
                 setShowDetailDialog(true);
               }}
@@ -286,7 +286,7 @@ export default function SchedulingPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => handleToggleTask(task.id, task.status)}
+              onClick={((: any): any) => handleToggleTask(task.id, task.status)}
             >
               {task.status === 'active' ? (
                 <>
@@ -303,7 +303,7 @@ export default function SchedulingPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => handleDeleteTask(task.id)}
+              onClick={((: any): any) => handleDeleteTask(task.id)}
             >
               <Trash2 className="h-4 w-4 mr-1" />
               删除
@@ -449,7 +449,7 @@ export default function SchedulingPage() {
     </Tabs>
   );
 
-  if (loading) => {
+  if (loading) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
@@ -474,7 +474,7 @@ export default function SchedulingPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             刷新
           </Button>
-          <Button onClick={() => setShowCreateDialog(true)}>
+          <Button onClick={((: any): any) => setShowCreateDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             创建任务
           </Button>

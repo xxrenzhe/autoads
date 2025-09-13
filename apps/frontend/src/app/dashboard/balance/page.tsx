@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function TokenBalancePage() {
   const session = await auth()
   
-  if (!session?.user) => {
+  if (!session?.user) {
     redirect('/auth/signin')
   }
 

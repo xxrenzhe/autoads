@@ -59,7 +59,7 @@ export const AutoClickTaskList = () => {
         method: 'POST',
       });
       
-      if (response.ok) => {
+      if (response.ok) {
         notify(`任务${action === 'start' ? '启动' : action === 'terminate' ? '终止' : '暂停'}成功`, { type: 'success' });
         refresh();
       } else {
@@ -77,7 +77,7 @@ export const AutoClickTaskList = () => {
         <Button
           size="small"
           color="primary"
-          onClick={() => handleAction(record.id, 'start')}
+          onClick={((: any): any) => handleAction(record.id, 'start')}
           title="启动任务"
         >
           <Play />
@@ -87,7 +87,7 @@ export const AutoClickTaskList = () => {
         <Button
           size="small"
           color="error"
-          onClick={() => handleAction(record.id, 'terminate')}
+          onClick={((: any): any) => handleAction(record.id, 'terminate')}
           title="终止任务"
         >
           <Stop />
@@ -95,7 +95,7 @@ export const AutoClickTaskList = () => {
       )}
       <Button
         size="small"
-        onClick={() => handleAction(record.id, 'refresh')}
+        onClick={((: any): any) => handleAction(record.id, 'refresh')}
         title="刷新状态"
       >
         <Refresh />

@@ -149,7 +149,7 @@ const TokenTransactionDashboard: React.FC = () => {
         fetch('/api/user/tokens/balance-history?days=30')
       ]);
 
-      if (!transactionsRes.ok || !statsRes.ok || !historyRes.ok) => {
+      if (!transactionsRes.ok || !statsRes.ok || !historyRes.ok) {
         throw new Error('Failed to fetch data');
       }
 
@@ -160,7 +160,7 @@ const TokenTransactionDashboard: React.FC = () => {
       setTransactions(transactionsData.data.transactions);
       setStats(statsData.data);
       setBalanceHistory(historyData.data);
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
@@ -189,7 +189,7 @@ const TokenTransactionDashboard: React.FC = () => {
         body: JSON.stringify(Object.fromEntries(params))
       });
 
-      if (response.ok) => {
+      if (response.ok) {
         const data = await response.json();
         // Create and download CSV
         const csv = convertToCSV(data.data.data);
@@ -199,7 +199,7 @@ const TokenTransactionDashboard: React.FC = () => {
         link.download = data.data.filename;
         link.click();
       }
-    } catch (err) => {
+    } catch (err) {
       console.error('Export failed:', err);
     }
   };
@@ -216,7 +216,7 @@ const TokenTransactionDashboard: React.FC = () => {
     return csv;
   };
 
-  if (loading) => {
+  if (loading) {
     return (
       <Box sx={{ p: 3 }}>
         <LinearProgress />
@@ -224,7 +224,7 @@ const TokenTransactionDashboard: React.FC = () => {
     );
   }
 
-  if (error) => {
+  if (error) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">{error}</Alert>
@@ -346,7 +346,7 @@ const TokenTransactionDashboard: React.FC = () => {
             <Select
               value={filter.type}
               label="Token类型"
-              onChange={(e) => handleFilterChange('type', e.target.value)}
+              onChange={((e: any): any) => handleFilterChange('type', e.target.value)}
             >
               <MenuItem value="">全部</MenuItem>
               <MenuItem value="SUBSCRIPTION">订阅Token</MenuItem>

@@ -12,13 +12,13 @@ function HeadGoogleAnalyticsInner() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (isGAEnabled()) => {
+    if (isGAEnabled()) {
       const url = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
       pageview(url);
     }
   }, [pathname, searchParams]);
 
-  if (!isGAEnabled()) => {
+  if (!isGAEnabled()) {
     return null as any;
   }
 

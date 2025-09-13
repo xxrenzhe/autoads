@@ -73,12 +73,12 @@ const GoogleAdsAccountManager: React.FC = () => {
     setError(null);
     try {
       const response = await fetch('/api/adscenter/oauth/accounts');
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Failed to load accounts');
       }
       const data = await response.json();
       setAccounts(data.accounts || []);
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load accounts');
     } finally {
       setLoading(false);
@@ -102,15 +102,15 @@ const GoogleAdsAccountManager: React.FC = () => {
         }),
       });
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Failed to start OAuth flow');
       }
 
       const data = await response.json();
-      if (data.authUrl) => {
+      if (data.authUrl) {
         window.open(data.authUrl, '_blank', 'width=600,height=700');
       }
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start OAuth flow');
     } finally {
       setIsAuthenticating(false);
@@ -128,18 +128,18 @@ const GoogleAdsAccountManager: React.FC = () => {
         body: JSON.stringify({ accountId }),
       });
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Token validation failed');
       }
 
       const data = await response.json();
-      if (data.valid) => {
+      if (data.valid) {
         setSuccess('Token is valid');
         loadAccounts(); // 刷新账户列表
       } else {
         setError('Token is invalid or expired');
       }
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Token validation failed');
     }
   }, [oauthConfig]);
@@ -155,18 +155,18 @@ const GoogleAdsAccountManager: React.FC = () => {
         body: JSON.stringify({ accountId }),
       });
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Token refresh failed');
       }
 
       const data = await response.json();
-      if (data.success) => {
+      if (data.success) {
         setSuccess('Token refreshed successfully');
         loadAccounts();
       } else {
         setError('Token refresh failed');
       }
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Token refresh failed');
     }
   }, [oauthConfig]);
@@ -187,14 +187,14 @@ const GoogleAdsAccountManager: React.FC = () => {
         }),
       });
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Account sync failed');
       }
 
       // 模拟进度更新
       const interval = setInterval(() => {
         setSyncProgress(prev => {
-          if (prev >= 100) => {
+          if (prev >= 100) {
             clearInterval(interval);
             return 100;
           }
@@ -203,19 +203,19 @@ const GoogleAdsAccountManager: React.FC = () => {
       }, 200);
 
       const data = await response.json();
-      if (data.success) => {
+      if (data.success) {
         setSuccess('Account data synced successfully');
         loadAccounts();
       } else {
         setError('Account sync failed');
       }
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Account sync failed');
     }
   }, [oauthConfig]);
   // 删除账户
   const deleteAccount = useCallback(async (accountId: string) => {
-    if (!confirm('Are you sure you want to delete this account?')) => {
+    if (!confirm('Are you sure you want to delete this account?')) {
       return;
     }
 
@@ -229,13 +229,13 @@ const GoogleAdsAccountManager: React.FC = () => {
         body: JSON.stringify({ accountId }),
       });
 
-      if (!response.ok) => {
+      if (!response.ok) {
         throw new Error('Failed to delete account');
       }
 
       setSuccess('Account deleted successfully');
       loadAccounts();
-    } catch (err) => {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete account');
     }
   }, [oauthConfig]);
@@ -262,7 +262,7 @@ const GoogleAdsAccountManager: React.FC = () => {
         const importedAccounts = JSON.parse(e.target?.result as string);
         setAccounts(importedAccounts);
         setSuccess('Accounts imported successfully');
-      } catch (err) => {
+      } catch (err) {
         setError('Invalid file format');
       }
     };
@@ -360,14 +360,14 @@ const GoogleAdsAccountManager: React.FC = () => {
                 <Input
                   placeholder="Search accounts..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              onChange={((e: any): any) => setFilterStatus(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md"
             >
               <option value="all">All Status</option>
@@ -424,7 +424,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => validateToken(account.id)}
+                          onClick={((: any): any) => validateToken(account.id)}
                         >
                           <Shield className="w-4 h-4 mr-1" />
                           Validate
@@ -432,7 +432,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => refreshToken(account.id)}
+                          onClick={((: any): any) => refreshToken(account.id)}
                         >
                           <RefreshCw className="w-4 h-4 mr-1" />
                           Refresh
@@ -440,7 +440,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => syncAccountData(account.id)}
+                          onClick={((: any): any) => syncAccountData(account.id)}
                         >
                           <Download className="w-4 h-4 mr-1" />
                           Sync
@@ -448,7 +448,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setSelectedAccount(account)}
+                          onClick={((: any): any) => setSelectedAccount(account)}
                         >
                           <Settings className="w-4 h-4 mr-1" />
                           Settings
@@ -456,7 +456,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => deleteAccount(account.id)}
+                          onClick={((: any): any) => deleteAccount(account.id)}
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
                           Delete

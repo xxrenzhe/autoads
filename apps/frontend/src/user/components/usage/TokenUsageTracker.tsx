@@ -44,7 +44,7 @@ export function TokenUsageTracker({
   userId, 
   showForecast = true, 
   showBudgetAlerts = true 
-}: .*Props) {
+}: TokenUsageTrackerProps) {
   const {
     currentUsage,
     usageHistory,
@@ -92,7 +92,7 @@ export function TokenUsageTracker({
   }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) => {
+    if (active && payload && payload.length) {
       return (
         <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
@@ -115,7 +115,7 @@ export function TokenUsageTracker({
     return null
   }
 
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -124,7 +124,7 @@ export function TokenUsageTracker({
     )
   }
 
-  if (error) => {
+  if (error) {
     return (
       <div className="text-center text-red-600 p-6">
         <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
@@ -151,7 +151,7 @@ export function TokenUsageTracker({
         <div className="flex items-center space-x-2">
           <select
             value={selectedTimeRange}
-            onChange={(e) => setSelectedTimeRange(e.target.value)}
+            onChange={((e: any): any) => setSelectedTimeRange(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="7d">Last 7 Days</option>
@@ -159,7 +159,7 @@ export function TokenUsageTracker({
             <option value="90d">Last 90 Days</option>
             <option value="1y">Last Year</option>
           </select>
-          <Button variant="outline" size="sm" onClick={() => exportUsageData('csv')}>
+          <Button variant="outline" size="sm" onClick={((: any): any) => exportUsageData('csv')}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -288,7 +288,7 @@ export function TokenUsageTracker({
       {/* View Selector */}
       <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
         <button
-          onClick={() => setSelectedView('overview')}
+          onClick={((: any): any) => setSelectedView('overview')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             selectedView === 'overview'
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -298,7 +298,7 @@ export function TokenUsageTracker({
           Overview
         </button>
         <button
-          onClick={() => setSelectedView('features')}
+          onClick={((: any): any) => setSelectedView('features')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             selectedView === 'features'
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -308,7 +308,7 @@ export function TokenUsageTracker({
           By Features
         </button>
         <button
-          onClick={() => setSelectedView('batches')}
+          onClick={((: any): any) => setSelectedView('batches')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             selectedView === 'batches'
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -319,7 +319,7 @@ export function TokenUsageTracker({
         </button>
         {showForecast && (
           <button
-            onClick={() => setSelectedView('forecast')}
+            onClick={((: any): any) => setSelectedView('forecast')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               selectedView === 'forecast'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'

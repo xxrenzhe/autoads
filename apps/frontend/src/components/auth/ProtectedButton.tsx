@@ -29,12 +29,12 @@ export function ProtectedButton({
   requireAuth = true,
   fallback,
   ...props
-}: .*Props) {
+}: ProtectedButtonProps) {
   const { isAuthenticated, openLoginModal } = useAuthContext()
   const [isLoading, setIsLoading] = useState(false)
 
   const handleClick = async () => {
-    if (requireAuth && !isAuthenticated) => {
+    if (requireAuth && !isAuthenticated) {
       openLoginModal(featureName)
       return
     }
@@ -48,7 +48,7 @@ export function ProtectedButton({
   }
 
   // 如果提供了 fallback 且未登录，显示 fallback
-  if (fallback && !isAuthenticated && requireAuth) => {
+  if (fallback && !isAuthenticated && requireAuth) {
     return <>{fallback}</>
   }
 
@@ -61,7 +61,7 @@ export function ProtectedButton({
     className.includes('rounded-')
   )
 
-  if (hasCustomStyling) => {
+  if (hasCustomStyling) {
     return (
       <button
         onClick={handleClick}

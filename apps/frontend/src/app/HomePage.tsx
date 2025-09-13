@@ -42,7 +42,7 @@ export default function HomePage() {
     const urlParams = new URLSearchParams(window.location.search);
     const invitationCode = urlParams.get('invite') || urlParams.get('invitation');
     
-    if (invitationCode) => {
+    if (invitationCode) {
       trackInvitationClick(invitationCode);
     }
   }, []);
@@ -52,7 +52,7 @@ export default function HomePage() {
     // A/B testing removed - tracking disabled
   };
 
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
@@ -198,7 +198,7 @@ export default function HomePage() {
               <Link 
                 href="/adscenter"
                 className="inline-flex items-center justify-center w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-300 group-hover:shadow-lg"
-                onClick={() => handleCTAClick('automation')}
+                onClick={((: any): any) => handleCTAClick('automation')}
               >
                 立即使用
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
@@ -251,7 +251,7 @@ export default function HomePage() {
             <Link 
               href="/adscenter"
               className="inline-flex items-center justify-center border-2 border-white text-white font-semibold py-3 px-8 rounded-xl hover:bg-white hover:text-purple-600 transition-all duration-300"
-              onClick={() => handleCTAClick('automation_cta')}
+              onClick={((: any): any) => handleCTAClick('automation_cta')}
             >配置自动化广告<LinkIcon className="w-5 h-5 ml-2" />
             </Link>
           </div>

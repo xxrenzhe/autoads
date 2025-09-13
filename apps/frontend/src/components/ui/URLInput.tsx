@@ -39,7 +39,7 @@ export function URLInput({
   className = '',
   showStats = false,
   allowFileUpload = true
-}: .*Props) {
+}: URLInputProps) {
   const [inputText, setInputText] = useState(value);
   const [parsedURLs, setParsedURLs] = useState<ParsedURL[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -51,7 +51,7 @@ export function URLInput({
     const lines = text.split('\n').filter((line: any) => line.trim());
     const result: ParsedURL[] = [];
     
-    for (let i = 0; i < lines.length; i++) => {
+    for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
       
@@ -59,7 +59,7 @@ export function URLInput({
       
       try {
         // 检查恶意URL
-        if (isMaliciousUrl(sanitized)) => {
+        if (isMaliciousUrl(sanitized)) {
           result.push({
             original: line,
             normalized: sanitized,
@@ -71,7 +71,7 @@ export function URLInput({
         
         // 验证URL格式
         const url = new URL(sanitized);
-        if (url.protocol !== 'http:' && url.protocol !== 'https:') => {
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
           result.push({
             original: line,
             normalized: sanitized,
@@ -82,7 +82,7 @@ export function URLInput({
         }
         
         // 验证主机名
-        if (!url.hostname || url.hostname.includes('..')) => {
+        if (!url.hostname || url.hostname.includes('..')) {
           result.push({
             original: line,
             normalized: sanitized,
@@ -115,7 +115,7 @@ export function URLInput({
   const handleInputChange = useCallback((text: string) => {
     setInputText(text);
     
-    if (!text.trim()) => {
+    if (!text.trim()) {
       setParsedURLs([]);
       onChange([]);
       return;
@@ -131,13 +131,13 @@ export function URLInput({
       const invalidURLs = parsed.filter((u: any) => !u.valid);
       
       // 检查数量限制
-      if (validURLs.length > maxUrls) => {
+      if (validURLs.length > maxUrls) {
         onError?.(`URL数量超过限制（最多${maxUrls}个）`);
         return;
       }
       
       // 如果有无效URL，报告第一个错误
-      if (invalidURLs.length > 0) => {
+      if (invalidURLs.length > 0) {
         onError?.(invalidURLs[0].error || '部分URL格式无效');
       }
       
@@ -153,7 +153,7 @@ export function URLInput({
 
   // 处理文件上传
   const handleFileUpload = useCallback(async (file: File) => {
-    if (!file.type.includes('text') && !file.name.endsWith('.txt') && !file.name.endsWith('.csv')) => {
+    if (!file.type.includes('text') && !file.name.endsWith('.txt') && !file.name.endsWith('.csv')) {
       onError?.('请上传文本文件（.txt或.csv）');
       return;
     }
@@ -171,9 +171,9 @@ export function URLInput({
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') => {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-    } else if (e.type === 'dragleave') => {
+    } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
   }, []);
@@ -183,14 +183,14 @@ export function URLInput({
     e.stopPropagation();
     setDragActive(false);
     
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) => {
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(e.dataTransfer.files[0]);
     }
   }, [handleFileUpload]);
 
   // 文件选择处理
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) => {
+    if (e.target.files && e.target.files[0]) {
       handleFileUpload(e.target.files[0]);
     }
   }, [handleFileUpload]);
@@ -258,7 +258,7 @@ export function URLInput({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={((: any): any) => fileInputRef.current?.click()}
             >
               <FileText className="w-4 h-4 mr-2" />
               选择文件
@@ -270,7 +270,7 @@ export function URLInput({
         <div className="space-y-2">
           <Textarea
             value={inputText}
-            onChange={(e) => handleInputChange(e.target.value)}
+            onChange={((e: any): any) => handleInputChange(e.target.value)}
             placeholder={placeholder}
             className="min-h-[200px] font-mono text-sm"
             disabled={isProcessing}

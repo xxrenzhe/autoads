@@ -16,11 +16,11 @@ export function BatchOpenVersionGate({
   version, 
   children, 
   fallback 
-}: .*Props) {
+}: BatchOpenVersionGateProps) {
   const router = useRouter()
   const { hasAccess, versionInfo, isLoading } = useBatchOpenVersion(version)
 
-  if (isLoading) => {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-6 w-6 animate-spin" />
@@ -29,8 +29,8 @@ export function BatchOpenVersionGate({
     )
   }
 
-  if (!hasAccess) => {
-    if (fallback) => {
+  if (!hasAccess) {
+    if (fallback) {
       return <>{fallback}</>
     }
 
@@ -50,7 +50,7 @@ export function BatchOpenVersionGate({
 
         <div className="space-y-3">
           <Button 
-            onClick={() => router.push('/pricing')}
+            onClick={((: any): any) => router.push('/pricing')}
             className="w-full"
           >
             <Crown className="h-4 w-4 mr-2" />
@@ -60,7 +60,7 @@ export function BatchOpenVersionGate({
           {version !== 'basic' && (
             <Button 
               variant="outline" 
-              onClick={() => router.push('/batchopen/versions')}
+              onClick={((: any): any) => router.push('/batchopen/versions')}
               className="w-full"
             >
               了解所有版本

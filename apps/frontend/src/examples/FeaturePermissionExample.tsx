@@ -19,7 +19,7 @@ export function SiteRankFeatureExample() {
   // 检查企业版功能权限
   const { hasAccess: hasMaxAccess, loading: maxLoading, limits: maxLimits } = useFeatureAccess('siterank_max');
 
-  if (basicLoading || proLoading || maxLoading) => {
+  if (basicLoading || proLoading || maxLoading) {
     return <div>Checking feature permissions...</div>;
   }
 
@@ -77,7 +77,7 @@ export function SiteRankFeatureExample() {
             <Button 
               variant="link" 
               className="ml-2 p-0 h-auto"
-              onClick={() => window.location.href = '/subscription'}
+              onClick={((: any): any) => window.location.href = '/subscription'}
             >
               立即升级
             </Button>
@@ -99,15 +99,15 @@ export function DynamicFeatureButton({
   featureId: string;
   children: React.ReactNode;
   fallback?: React.ReactNode;
-}) => {
+}) {
   const { hasAccess, loading } = useFeatureAccess(featureId);
 
-  if (loading) => {
+  if (loading) {
     return <Button disabled>Loading...</Button>;
   }
 
-  if (!hasAccess) => {
-    if (fallback) => {
+  if (!hasAccess) {
+    if (fallback) {
       return <>{fallback}</>;
     }
     return (

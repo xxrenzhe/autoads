@@ -62,7 +62,7 @@ export function ConfigList({
   onConfigEdit,
   onConfigDelete,
   onConfigCreate
-}: .*Props) {
+}: ConfigListProps) {
   const {
     configs,
     categories,
@@ -102,7 +102,7 @@ export function ConfigList({
 
   const handleConfigSelect = (configId: string) => {
     const newSelected = new Set(selectedConfigs)
-    if (newSelected.has(configId)) => {
+    if (newSelected.has(configId)) {
       newSelected.delete(configId)
     } else {
       newSelected.add(configId)
@@ -111,7 +111,7 @@ export function ConfigList({
   }
 
   const handleSelectAll = () => {
-    if (selectedConfigs.size === filteredConfigs.length) => {
+    if (selectedConfigs.size === filteredConfigs.length) {
       setSelectedConfigs(new Set())
     } else {
       setSelectedConfigs(new Set(filteredConfigs?.filter(Boolean)?.map((config: any) => config.id)))
@@ -119,7 +119,7 @@ export function ConfigList({
   }
 
   const handleDeleteConfig = async (configId: string) => {
-    if (window.confirm('Are you sure you want to delete this configuration? This action cannot be undone.')) => {
+    if (window.confirm('Are you sure you want to delete this configuration? This action cannot be undone.')) {
       try {
         await deleteConfig(configId)
         onConfigDelete?.(configId)
@@ -147,7 +147,7 @@ export function ConfigList({
   }
 
   const getCategoryIcon = (category: string) => {
-    switch (category.toLowerCase()) => {
+    switch (category.toLowerCase()) {
       case 'database': return Database
       case 'api': return Globe
       case 'security': return Shield
@@ -160,7 +160,7 @@ export function ConfigList({
   }
 
   const getTypeColor = (type: string) => {
-    switch (type) => {
+    switch (type) {
       case 'string': return 'blue'
       case 'number': return 'green'
       case 'boolean': return 'purple'
@@ -171,11 +171,11 @@ export function ConfigList({
   }
 
   const formatValue = (config: ConfigItem) => {
-    if (config.isSecret && !showSecrets) => {
+    if (config.isSecret && !showSecrets) {
       return '••••••••'
     }
     
-    if (config.type === 'json' || config.type === 'array') => {
+    if (config.type === 'json' || config.type === 'array') {
       return JSON.stringify(config.value)
     }
     
@@ -185,7 +185,7 @@ export function ConfigList({
   const environments = ['all', 'development', 'staging', 'production']
   const types = ['all', 'string', 'number', 'boolean', 'json', 'array']
 
-  if (error) => {
+  if (error) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -339,7 +339,7 @@ export function ConfigList({
                   variant="destructive"
                   size="sm"
                   onClick={((: any): any) => {
-                    if (window.confirm(`Are you sure you want to delete ${selectedConfigs.size} configuration(s)?`)) => {
+                    if (window.confirm(`Are you sure you want to delete ${selectedConfigs.size} configuration(s)?`)) {
                       selectedConfigs.forEach((configId: any) => handleDeleteConfig(configId))
                       setSelectedConfigs(new Set())
                     }

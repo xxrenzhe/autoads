@@ -33,7 +33,7 @@ export interface BadgeProps
   variant?: "default" | "secondary" | "destructive" | "outline" | "warning" | "success"
 }
 
-function Badge({ className, variant, ...props }: .*Props) {
+function Badge({ className, variant, ...props }: BadgeProps) {
   return (
     <div className={cn(badgeVariants({ variant }), className)} {...props} />
   )
