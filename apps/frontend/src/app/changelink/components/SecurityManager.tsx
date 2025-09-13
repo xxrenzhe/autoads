@@ -348,7 +348,7 @@ export function SecurityManager() {
   }, []);
 
   const getRoleColor = (role: string) => {
-    switch (role) {
+    switch (role) => {
       case 'admin':
         return 'text-red-600 bg-red-100';
       case 'manager':
@@ -363,7 +363,7 @@ export function SecurityManager() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'active':
         return 'text-green-600 bg-green-100';
       case 'inactive':
@@ -376,7 +376,7 @@ export function SecurityManager() {
   };
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) {
+    switch (severity) => {
       case 'critical':
         return 'text-red-600 bg-red-100';
       case 'high':
@@ -391,7 +391,7 @@ export function SecurityManager() {
   };
 
   const getEventIcon = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'login':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'logout':
@@ -582,7 +582,7 @@ export function SecurityManager() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => setSelectedUser(user)}
+                          onClick={() => setSelectedUser(user)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -590,7 +590,7 @@ export function SecurityManager() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={((: any): any) => handleEnableTwoFactor(user.id)}
+                            onClick={() => handleEnableTwoFactor(user.id)}
                             disabled={isLoading}
                           >
                             <Key className="h-4 w-4" />
@@ -599,7 +599,7 @@ export function SecurityManager() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => handleUserStatusChange(
+                          onClick={() => handleUserStatusChange(
                             user.id, 
                             user.status === 'active' ? 'suspended' : 'active'
                           )}

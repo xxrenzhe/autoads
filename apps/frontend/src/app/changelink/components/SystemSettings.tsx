@@ -189,7 +189,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
     }
   }, [config, onSave]);
   const handleReset = useCallback(async () => {
-    if (!confirm('Are you sure you want to reset all settings to default values? This action cannot be undone.')) {
+    if (!confirm('Are you sure you want to reset all settings to default values? This action cannot be undone.')) => {
       return;
     }
 
@@ -198,7 +198,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
 
     try {
       const success = await onReset?.() ?? true;
-      if (success) {
+      if (success) => {
         // Reset to default config
         setConfig({
           general: {
@@ -316,7 +316,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
   }, [setConfig]);
 
   const getEncryptionLevelColor = (level: string) => {
-    switch (level) {
+    switch (level) => {
       case 'high': return 'text-green-600 bg-green-50';
       case 'standard': return 'text-yellow-600 bg-yellow-50';
       case 'basic': return 'text-red-600 bg-red-50';
@@ -390,7 +390,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                   <Input
                     id="system-name"
                     value={config.general.systemName}
-                    onChange={((e: any): any) => updateConfig('general', 'systemName', e.target.value)}
+                    onChange={(e) => updateConfig('general', 'systemName', e.target.value)}
                   />
                 </div>
                 <div>
@@ -490,7 +490,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="5"
                     max="480"
                     value={config.security.sessionTimeout}
-                    onChange={((e: any): any) => updateConfig('security', 'sessionTimeout', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('security', 'sessionTimeout', parseInt(e.target.value))}
                   />
                 </div>
                 <div>
@@ -501,7 +501,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="3"
                     max="10"
                     value={config.security.maxLoginAttempts}
-                    onChange={((e: any): any) => updateConfig('security', 'maxLoginAttempts', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('security', 'maxLoginAttempts', parseInt(e.target.value))}
                   />
                 </div>
               </div>
@@ -517,7 +517,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       min="6"
                       max="20"
                       value={config.security.passwordPolicy.minLength}
-                      onChange={((e: any): any) => updateNestedConfig('security', 'passwordPolicy', 'minLength', parseInt(e.target.value))}
+                      onChange={(e) => updateNestedConfig('security', 'passwordPolicy', 'minLength', parseInt(e.target.value))}
                     />
                   </div>
                   <div className="space-y-3">
@@ -611,7 +611,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="1"
                     max="20"
                     value={config.performance.maxConcurrentExecutions}
-                    onChange={((e: any): any) => updateConfig('performance', 'maxConcurrentExecutions', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('performance', 'maxConcurrentExecutions', parseInt(e.target.value))}
                   />
                 </div>
                 <div>
@@ -622,7 +622,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="30"
                     max="3600"
                     value={config.performance.executionTimeout}
-                    onChange={((e: any): any) => updateConfig('performance', 'executionTimeout', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('performance', 'executionTimeout', parseInt(e.target.value))}
                   />
                 </div>
                 <div>
@@ -633,7 +633,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="0"
                     max="10"
                     value={config.performance.retryAttempts}
-                    onChange={((e: any): any) => updateConfig('performance', 'retryAttempts', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('performance', 'retryAttempts', parseInt(e.target.value))}
                   />
                 </div>
                 <div>
@@ -644,7 +644,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="100"
                     max="10000"
                     value={config.performance.retryDelay}
-                    onChange={((e: any): any) => updateConfig('performance', 'retryDelay', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('performance', 'retryDelay', parseInt(e.target.value))}
                   />
                 </div>
               </div>
@@ -668,7 +668,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       min="10"
                       max="1000"
                       value={config.performance.cacheSize}
-                      onChange={((e: any): any) => updateConfig('performance', 'cacheSize', parseInt(e.target.value))}
+                      onChange={(e) => updateConfig('performance', 'cacheSize', parseInt(e.target.value))}
                     />
                   </div>
                   <div>
@@ -710,7 +710,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       min="1"
                       max="168"
                       value={config.performance.cleanupInterval}
-                      onChange={((e: any): any) => updateConfig('performance', 'cleanupInterval', parseInt(e.target.value))}
+                      onChange={(e) => updateConfig('performance', 'cleanupInterval', parseInt(e.target.value))}
                     />
                   </div>
                 </div>
@@ -740,7 +740,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="5"
                     max="50"
                     value={config.database.connectionPool}
-                    onChange={((e: any): any) => updateConfig('database', 'connectionPool', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('database', 'connectionPool', parseInt(e.target.value))}
                   />
                 </div>
                 <div>
@@ -751,7 +751,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="5"
                     max="300"
                     value={config.database.queryTimeout}
-                    onChange={((e: any): any) => updateConfig('database', 'queryTimeout', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('database', 'queryTimeout', parseInt(e.target.value))}
                   />
                 </div>
               </div>
@@ -791,7 +791,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       min="1"
                       max="365"
                       value={config.database.backupRetention}
-                      onChange={((e: any): any) => updateConfig('database', 'backupRetention', parseInt(e.target.value))}
+                      onChange={(e) => updateConfig('database', 'backupRetention', parseInt(e.target.value))}
                     />
                   </div>
                 </div>
@@ -812,7 +812,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
-                  onClick={((: any): any) => handleTestConnection('database')}
+                  onClick={() => handleTestConnection('database')}
                   disabled={isTesting}
                 >
                   {isTesting ? (
@@ -893,7 +893,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="1"
                     max="100"
                     value={config.notifications.alertThreshold}
-                    onChange={((e: any): any) => updateConfig('notifications', 'alertThreshold', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('notifications', 'alertThreshold', parseInt(e.target.value))}
                   />
                 </div>
               </div>
@@ -915,7 +915,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       id="quiet-start"
                       type="time"
                       value={config.notifications.quietHours.start}
-                      onChange={((e: any): any) => updateNestedConfig('notifications', 'quietHours', 'start', e.target.value)}
+                      onChange={(e) => updateNestedConfig('notifications', 'quietHours', 'start', e.target.value)}
                     />
                   </div>
                   <div>
@@ -924,7 +924,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       id="quiet-end"
                       type="time"
                       value={config.notifications.quietHours.end}
-                      onChange={((e: any): any) => updateNestedConfig('notifications', 'quietHours', 'end', e.target.value)}
+                      onChange={(e) => updateNestedConfig('notifications', 'quietHours', 'end', e.target.value)}
                     />
                   </div>
                 </div>

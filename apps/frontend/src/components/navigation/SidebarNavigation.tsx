@@ -149,7 +149,7 @@ interface SidebarNavigationProps {
   className?: string
 }
 
-export default function SidebarNavigation({ type, className }: SidebarNavigationProps) {
+export default function SidebarNavigation({ type, className }: .*Props) {
   const [collapsed, setCollapsed] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>([])
   const pathname = usePathname()
@@ -163,7 +163,7 @@ export default function SidebarNavigation({ type, className }: SidebarNavigation
   }
 
   const isActive = (href: string) => {
-    if (href === '/dashboard' || href === '/admin') {
+    if (href === '/dashboard' || href === '/admin') => {
       return pathname === href
     }
     return pathname.startsWith(href)
@@ -200,7 +200,7 @@ export default function SidebarNavigation({ type, className }: SidebarNavigation
         <Button
           variant="ghost"
           size="sm"
-          onClick={((: any): any) => setCollapsed(!collapsed)}
+          onClick={() => setCollapsed(!collapsed)}
           className="h-8 w-8 p-0"
         >
           {collapsed ? (
@@ -220,7 +220,7 @@ export default function SidebarNavigation({ type, className }: SidebarNavigation
                 <Link
                   href={item.children ? '#' : item.href}
                   onClick={((e: any): any) => {
-                    if (item.children) {
+                    if (item.children) => {
                       e.preventDefault()
                       toggleExpanded(item.href)
                     }

@@ -17,7 +17,7 @@ export default function SignIn() {
 
   useEffect(() => {
     // If user is already authenticated, redirect to dashboard
-    if (status === 'authenticated') {
+    if (status === 'authenticated') => {
       const callbackUrl = searchParams.get('callbackUrl') || '/'
       router.push(callbackUrl)
     }
@@ -33,14 +33,14 @@ export default function SignIn() {
         callbackUrl,
         redirect: true // Let NextAuth handle the redirect
       })
-    } catch (err) {
+    } catch (err) => {
       console.error('Sign in error:', err)
       setError('登录失败，请稍后重试')
       setIsLoading(false)
     }
   }
 
-  if (status === 'loading') {
+  if (status === 'loading') => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

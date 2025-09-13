@@ -88,7 +88,7 @@ const navigationItems: NavigationItem[] = [
   }
 ];
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children }: .*Props) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
     isOnline: true,
@@ -139,7 +139,7 @@ export default function Layout({ children }: LayoutProps) {
       { label: 'Google Ads自动化', href: '/adscenter' }
     ];
 
-    if (currentPage.href !== '/adscenter') { breadcrumbs.push({ label: currentPage.label, href: currentPage.href });
+    if (currentPage.href !== '/adscenter') => { breadcrumbs.push({ label: currentPage.label, href: currentPage.href });
     }
 
     return breadcrumbs;
@@ -160,7 +160,7 @@ export default function Layout({ children }: LayoutProps) {
                 variant="ghost"
                 size="sm"
                 className="lg:hidden mr-2"
-                onClick={((: any): any) => setIsSidebarOpen(!isSidebarOpen)}
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 aria-label="打开菜单"
               >
                 <Menu className="h-5 w-5" />
@@ -238,7 +238,7 @@ export default function Layout({ children }: LayoutProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={((: any): any) => setIsSidebarOpen(false)}
+                onClick={() => setIsSidebarOpen(false)}
                 aria-label="关闭菜单"
               >
                 <X className="h-5 w-5" />
@@ -262,7 +262,7 @@ export default function Layout({ children }: LayoutProps) {
                         : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                       }
                     `}
-                    onClick={((: any): any) => setIsSidebarOpen(false)}
+                    onClick={() => setIsSidebarOpen(false)}
                   >
                     <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-blue-700' : 'text-gray-400'}`} />
                     <span className="flex-1">{item.label}</span>
@@ -362,7 +362,7 @@ export default function Layout({ children }: LayoutProps) {
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
-          onClick={((: any): any) => setIsSidebarOpen(false)}
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
     </div>

@@ -75,7 +75,7 @@ interface TabPanelProps {
   value: number;
 }
 
-function TabPanel({ children, value, index }: TabPanelProps) {
+function TabPanel({ children, value, index }: .*Props) {
   return (
     <div hidden={value !== index} style={{ height: value === index ? 'auto' : 0, overflow: 'hidden' }}>
       {children}
@@ -94,7 +94,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
     try {
       setLoading(true);
       const response = await fetch(`/api/user/usage-report?userId=${userId}`);
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json();
         setUsageData(data);
       }
@@ -123,7 +123,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
     return new Intl.NumberFormat('zh-CN').format(num);
   };
 
-  if (loading && !usageData) {
+  if (loading && !usageData) => {
     return (
       <Card>
         <CardContent>
@@ -135,7 +135,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
     );
   }
 
-  if (!usageData) {
+  if (!usageData) => {
     return (
       <Card>
         <CardContent>
@@ -375,7 +375,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
               <Button 
                 variant="outlined" 
                 size="small"
-                onClick={((: any): any) => setShowDetails(true)}
+                onClick={() => setShowDetails(true)}
               >
                 查看全部
               </Button>
@@ -476,7 +476,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
           </TableContainer>
         </DialogContent>
         <DialogActions>
-          <Button onClick={((: any): any) => setShowDetails(false)}>关闭</Button>
+          <Button onClick={() => setShowDetails(false)}>关闭</Button>
         </DialogActions>
       </Dialog>
     </Box>

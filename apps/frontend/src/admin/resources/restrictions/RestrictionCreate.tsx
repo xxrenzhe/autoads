@@ -55,7 +55,7 @@ export const RestrictionCreate = () => {
 
   useEffect(() => {
     const userId = searchParams.get('userId');
-    if (userId) {
+    if (userId) => {
       setDefaultUserId(userId);
     }
   }, [searchParams]);
@@ -73,7 +73,7 @@ export const RestrictionCreate = () => {
     const transformed = { ...data };
     
     // Calculate expiresAt based on duration
-    if (!customDuration && selectedPreset) {
+    if (!customDuration && selectedPreset) => {
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + selectedPreset);
       transformed.expiresAt = expiresAt.toISOString();
@@ -143,7 +143,7 @@ export const RestrictionCreate = () => {
               control={
                 <Checkbox
                   checked={customDuration}
-                  onChange={((e: any): any) => setCustomDuration(e.target.checked)}
+                  onChange={(e) => setCustomDuration(e.target.checked)}
                 />
               }
               label="自定义过期时间"
@@ -162,7 +162,7 @@ export const RestrictionCreate = () => {
                     control={
                       <Checkbox
                         checked={selectedPreset === preset.value}
-                        onChange={((: any): any) => setSelectedPreset(preset.value)}
+                        onChange={() => setSelectedPreset(preset.value)}
                       />
                     }
                     label={preset.label}

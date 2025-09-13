@@ -27,7 +27,7 @@ interface SubscriptionManagerProps {
   subscription: Subscription | null
 }
 
-export default function SubscriptionManager({ subscription }: SubscriptionManagerProps) {
+export default function SubscriptionManager({ subscription }: .*Props) {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -42,7 +42,7 @@ export default function SubscriptionManager({ subscription }: SubscriptionManage
         body: JSON.stringify({ subscriptionId: subscription.id, immediately: false })
       })
 
-      if (response.ok) {
+      if (response.ok) => {
         setMessage({ type: 'success', text: '订阅将在当前计费周期结束后取消' })
         // Refresh the page to show updated status
         setTimeout(() => window.location.reload(), 2000)
@@ -64,7 +64,7 @@ export default function SubscriptionManager({ subscription }: SubscriptionManage
         method: 'POST'
       })
 
-      if (response.ok) {
+      if (response.ok) => {
         const { url } = await response.json()
         window.location.href = url
       } else {
@@ -78,11 +78,11 @@ export default function SubscriptionManager({ subscription }: SubscriptionManage
   }
 
   const getStatusBadge = (status: string, cancelAtPeriodEnd?: boolean) => {
-    if (cancelAtPeriodEnd) {
+    if (cancelAtPeriodEnd) => {
       return <Badge variant="outline">即将取消</Badge>
     }
     
-    switch (status) {
+    switch (status) => {
       case 'ACTIVE':
         return <Badge variant="default">活跃</Badge>
       case 'PENDING':
@@ -96,7 +96,7 @@ export default function SubscriptionManager({ subscription }: SubscriptionManage
     }
   }
 
-  if (!subscription) {
+  if (!subscription) => {
     return (
       <Card>
         <CardHeader>

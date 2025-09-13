@@ -32,7 +32,7 @@ interface TestResult {
   data?: any;
 }
 
-export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: AdsPowerTestProps) {
+export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: .*Props) {
   const [testing, setTesting] = useState(false);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [testUrl, setTestUrl] = useState('https://yeahpromos.com/index/index/openurl?track=634643bd23cd9762&url=');
@@ -57,7 +57,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
     setTestResults([...steps]);
     try {
       const config = await secureManager.getSecureConfig();
-      if (!(config?.adsPowerConfig as any)?.apiUrl) {
+      if (!(config?.adsPowerConfig as any)?.apiUrl) => {
         throw new Error('AdsPower API地址未配置');
       }
 
@@ -67,7 +67,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
       
       try {
         const response = await fetch(`${config?.adsPowerConfig?.apiUrl}/api/v1/user/list`);
-        if (!response.ok) {
+        if (!response.ok) => {
           throw new Error(`API连接失败: ${response.status}`);
         }
         await updateTestStep(0, 'success', 'AdsPower API连接成功', Date.now() - startTime1);
@@ -84,9 +84,9 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
         const response = await fetch(`${config?.adsPowerConfig?.apiUrl}/api/v1/user/list`);
         const data = await response.json();
         
-        if (data.code === 0 && data.data?.list) {
-          const environment = data.data.list.find((env: any: any) => env.user_id === environmentId);
-          if (!environment) {
+        if (data.code === 0 && data.data?.list) => {
+          const environment = data.data.list.find(((env: any) => env.user_id === environmentId);
+          if (!environment) => {
             throw new Error(`环境ID ${environmentId} 不存在`);
           }
           await updateTestStep(1, 'success', `环境验证成功: ${environment.name || environmentId}`, Date.now() - startTime2);
@@ -106,7 +106,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
         const response = await fetch(`${config?.adsPowerConfig?.apiUrl}/api/v1/browser/start?user_id=${environmentId}`);
         const data = await response.json();
         
-        if (data.code === 0) {
+        if (data.code === 0) => {
           await updateTestStep(2, 'success', '浏览器启动成功', Date.now() - startTime3, data.data);
         } else {
           throw new Error(data.msg || '浏览器启动失败');
@@ -151,7 +151,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
         const response = await fetch(`${config?.adsPowerConfig?.apiUrl}/api/v1/browser/stop?user_id=${environmentId}`);
         const data = await response.json();
         
-        if (data.code === 0) {
+        if (data.code === 0) => {
           await updateTestStep(5, 'success', '浏览器关闭成功', Date.now() - startTime6);
         } else {
           // 即使关闭失败也不算致命错误
@@ -180,7 +180,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
   };
 
   const getStepIcon = (status: TestResult['status']) => {
-    switch (status) {
+    switch (status) => {
       case 'pending':
         return <Clock className="h-4 w-4 text-gray-400" />;
       case 'running':
@@ -231,7 +231,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
               <Input
                 id="environmentId"
                 value={environmentId}
-                onChange={((e: any): any) => onEnvironmentIdChange(e.target.value)}
+                onChange={(e) => onEnvironmentIdChange(e.target.value)}
                 placeholder="输入AdsPower环境ID"
                 disabled={testing}
               />
@@ -241,7 +241,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
               <Input
                 id="testUrl"
                 value={testUrl}
-                onChange={((e: any): any) => setTestUrl(e.target.value)}
+                onChange={(e) => setTestUrl(e.target.value)}
                 placeholder="输入要测试的广告联盟链接"
                 disabled={testing}
               />

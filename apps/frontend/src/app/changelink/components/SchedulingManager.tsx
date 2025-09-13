@@ -67,7 +67,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
     }
   }, [selectedConfiguration, scheduleConfig, onCreateScheduledTask]);
   const handleDeleteTask = useCallback(async (taskId: string) => {
-    if (confirm('Are you sure you want to delete this scheduled task?')) {
+    if (confirm('Are you sure you want to delete this scheduled task?')) => {
       try {
         await onDeleteScheduledTask(taskId);
       } catch (error) {
@@ -89,7 +89,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
   }, []);
 
   const getStatusColor = useCallback((status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'scheduled':
         return 'bg-blue-500';
       case 'running':
@@ -112,7 +112,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
           <p className="text-gray-600">Manage scheduled tasks and automation</p>
         </div>
         <Button
-          onClick={((: any): any) => setSelectedConfiguration(configurations[0] || null)}
+          onClick={() => setSelectedConfiguration(configurations[0] || null)}
           disabled={configurations.length === 0}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -192,7 +192,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
               </Button>
               <Button
                 variant="outline"
-                onClick={((: any): any) => setSelectedConfiguration(null)}
+                onClick={() => setSelectedConfiguration(null)}
               >
                 Cancel
               </Button>
@@ -270,7 +270,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={((: any): any) => handleExecuteTask(t.id)}
+                        onClick={() => handleExecuteTask(t.id)}
                         disabled={t.status === 'running'}
                       >
                         <Play className="h-4 w-4 mr-1" />
@@ -279,7 +279,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={((: any): any) => handleDeleteTask(t.id)}
+                        onClick={() => handleDeleteTask(t.id)}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
                         Delete
@@ -304,7 +304,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
             <Button
               variant="outline"
               className="h-20 flex flex-col items-center justify-center"
-              onClick={((: any): any) => {
+              onClick={() => {
                 // Enable all scheduled tasks
                 logger.info('Enable all tasks');
               }}
@@ -316,7 +316,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
             <Button
               variant="outline"
               className="h-20 flex flex-col items-center justify-center"
-              onClick={((: any): any) => {
+              onClick={() => {
                 // Disable all scheduled tasks
                 logger.info('Disable all tasks');
               }}
@@ -328,7 +328,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
             <Button
               variant="outline"
               className="h-20 flex flex-col items-center justify-center"
-              onClick={((: any): any) => {
+              onClick={() => {
                 // View scheduling logs
                 logger.info('View logs');
               }}

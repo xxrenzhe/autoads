@@ -61,7 +61,7 @@ interface EnvVarManagerProps {
   initialVars?: EnvironmentVariable[]
 }
 
-export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) {
+export default function EnvVarManager({ initialVars = [] }: .*Props) {
   const [envVars, setEnvVars] = useState<EnvironmentVariable[]>(initialVars)
   const [loading, setLoading] = useState(false)
   const [reloadStatus, setReloadStatus] = useState<{ [key: string]: 'pending' | 'success' | 'error' }>({})
@@ -83,7 +83,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
     setLoading(true)
     try {
       const response = await fetch('/api/admin/env-vars')
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json()
         setEnvVars(data)
       }
@@ -95,7 +95,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
   }
 
   const handleSave = async () => {
-    if (!formData.key || !formData.value) {
+    if (!formData.key || !formData.value) => {
       toast.error('Key and value are required')
       return
     }
@@ -115,7 +115,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
         }),
       })
 
-      if (response.ok) {
+      if (response.ok) => {
         toast.success(
           editingVar ? 'Environment variable updated' : 'Environment variable created'
         )
@@ -130,7 +130,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
         fetchEnvVars()
 
         // Show reload status if hot reload enabled
-        if (formData.isHotReload) {
+        if (formData.isHotReload) => {
           setReloadStatus(prev => ({
             ...prev,
             [formData.key]: 'pending',
@@ -160,7 +160,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
   }
 
   const handleDelete = async (id: string, key: string) => {
-    if (!confirm(`Are you sure you want to delete ${key}?`)) {
+    if (!confirm(`Are you sure you want to delete ${key}?`)) => {
       return
     }
 
@@ -169,7 +169,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
         method: 'DELETE',
       })
 
-      if (response.ok) {
+      if (response.ok) => {
         toast.success('Environment variable deleted')
         fetchEnvVars()
         
@@ -219,7 +219,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
   }
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'pending':
         return <Clock className="h-4 w-4 text-yellow-500" />
       case 'success':
@@ -252,7 +252,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
               </Button>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={((: any): any) => setEditingVar(null)}>
+                  <Button onClick={() => setEditingVar(null)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Variable
                   </Button>
@@ -276,7 +276,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                       <Input
                         id="key"
                         value={formData.key}
-                        onChange={((e: any): any) => setFormData({ ...formData, key: e.target.value.toUpperCase() })}
+                        onChange={(e) => setFormData({ ...formData, key: e.target.value.toUpperCase() })}
                         className="col-span-3"
                         disabled={!!editingVar}
                         placeholder="e.g., API_URL"
@@ -290,7 +290,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                         id="value"
                         type={formData.isSecret ? 'password' : 'text'}
                         value={formData.value}
-                        onChange={((e: any): any) => setFormData({ ...formData, value: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, value: e.target.value })}
                         className="col-span-3"
                         placeholder="Enter value"
                       />
@@ -329,7 +329,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                     )}
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={((: any): any) => setDialogOpen(false)}>
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
                       Cancel
                     </Button>
                     <Button onClick={handleSave}>
@@ -369,7 +369,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={((: any): any) => toggleSecretVisibility(envVar.key)}
+                            onClick={() => toggleSecretVisibility(envVar.key)}
                           >
                             {showSecrets[envVar.key] ? (
                               <EyeOff className="h-4 w-4" />
@@ -405,14 +405,14 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={((: any): any) => handleEdit(envVar)}
+                          onClick={() => handleEdit(envVar)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={((: any): any) => handleDelete(envVar.id, envVar.key)}
+                          onClick={() => handleDelete(envVar.id, envVar.key)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

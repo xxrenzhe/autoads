@@ -130,7 +130,7 @@ export function StatusIndicator({
   variant = 'badge',
   animated = false,
   className
-}: StatusIndicatorProps) {
+}: .*Props) {
   // Map common status strings to our defined types
   const normalizedStatus = (() => {
     if (status in statusConfig) return status as keyof typeof statusConfig;
@@ -145,7 +145,7 @@ export function StatusIndicator({
   const displayLabel = label || config.label;
   const Icon = config.icon;
 
-  if (variant === 'dot') {
+  if (variant === 'dot') => {
     return (
       <div className={clsx("flex items-center space-x-2", className)}>
         <div
@@ -165,7 +165,7 @@ export function StatusIndicator({
     );
   }
 
-  if (variant === 'icon') {
+  if (variant === 'icon') => {
     return (
       <div className={clsx("flex items-center space-x-2", className)}>
         <Icon
@@ -221,7 +221,7 @@ export function BatchStatusIndicator({
   statuses,
   size = 'md',
   className
-}: BatchStatusIndicatorProps) {
+}: .*Props) {
   const total = statuses.reduce((sum, item: any) => sum + item.count, 0);
 
   return (

@@ -99,7 +99,7 @@ export class SmartRequestScheduler {
     requests: Array<() => Promise<T>>,
     priorities?: number[]
   ): Promise<T[]> {
-    const promises = requests.map((request, index) => 
+    const promises = requests.map((request, index: any) => 
       this.addRequest(request, priorities?.[index] ?? 0)
     );
     

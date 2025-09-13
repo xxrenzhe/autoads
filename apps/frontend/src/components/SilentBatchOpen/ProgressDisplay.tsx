@@ -65,7 +65,7 @@ export const ProgressDisplay: React.FC<ProgressDisplayProps> = ({
   proxyPhase,
   requiredProxyCount
 }) => {
-  if (!showProgress) {
+  if (!showProgress) => {
     return null as any;
   }
 
@@ -77,10 +77,10 @@ export const ProgressDisplay: React.FC<ProgressDisplayProps> = ({
 
   // 获取连接状态文本
   const getConnectionStatusText = () => {
-    if (realtimeProgress.connectionType === 'websocket') {
+    if (realtimeProgress.connectionType === 'websocket') => {
       return realtimeProgress.connected ? 'WebSocket实时连接' : 'WebSocket连接中...';
     }
-    if (realtimeProgress.connectionType === 'polling') {
+    if (realtimeProgress.connectionType === 'polling') => {
       return '轮询模式（备用）';
     }
     return '';
@@ -88,13 +88,13 @@ export const ProgressDisplay: React.FC<ProgressDisplayProps> = ({
 
   // 获取连接状态指示器颜色
   const getConnectionIndicatorColor = () => {
-    if (realtimeProgress.connected) {
+    if (realtimeProgress.connected) => {
       return 'bg-green-500';
     }
-    if (realtimeProgress.connectionType === 'websocket') {
+    if (realtimeProgress.connectionType === 'websocket') => {
       return 'bg-yellow-500';
     }
-    if (realtimeProgress.connectionType === 'polling') {
+    if (realtimeProgress.connectionType === 'polling') => {
       return 'bg-blue-500';
     }
     return 'bg-gray-500';

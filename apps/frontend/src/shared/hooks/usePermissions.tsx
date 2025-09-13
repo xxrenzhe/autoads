@@ -37,7 +37,7 @@ class PermissionChecker {
   private permissions: Permission[];
   private roles: Role[];
 
-  constructor(permissions: Permission[], roles: Role[]) {
+  constructor(permissions: Permission[], roles: Role[]) => {
     this.permissions = permissions;
     this.roles = roles;
   }
@@ -49,19 +49,19 @@ class PermissionChecker {
       p => p.resource === resource && p.action === action
     );
 
-    if (directPermission) {
-      if (this.checkConditions(directPermission.conditions, context)) {
+    if (directPermission) => {
+      if (this.checkConditions(directPermission.conditions, context)) => {
         return { allowed: true };
       }
     }
 
     // Check role-based permissions
-    for (const role of this.roles) {
+    for (const role of this.roles) => {
       const rolePermission = role.permissions.find(
         p => p.resource === resource && p.action === action
       );
 
-      if (rolePermission && this.checkConditions(rolePermission.conditions, context)) {
+      if (rolePermission && this.checkConditions(rolePermission.conditions, context)) => {
         return { allowed: true };
       }
     }
@@ -74,9 +74,9 @@ class PermissionChecker {
 
   // Check if user has any of the specified permissions
   hasAnyPermission(permissions: Array<{ resource: string; action: string }>, context?: Record<string, any>): PermissionCheckResult {
-    for (const perm of permissions) {
+    for (const perm of permissions) => {
       const result = this.hasPermission(perm.resource, perm.action, context);
-      if (result.allowed) {
+      if (result.allowed) => {
         return result;
       }
     }
@@ -89,9 +89,9 @@ class PermissionChecker {
 
   // Check if user has all specified permissions
   hasAllPermissions(permissions: Array<{ resource: string; action: string }>, context?: Record<string, any>): PermissionCheckResult {
-    for (const perm of permissions) {
+    for (const perm of permissions) => {
       const result = this.hasPermission(perm.resource, perm.action, context);
-      if (!result.allowed) {
+      if (!result.allowed) => {
         return result;
       }
     }
@@ -138,7 +138,7 @@ class PermissionChecker {
     return Object.entries(conditions).every(([key, expectedValue]) => {
       const contextValue = context[key];
       
-      if (Array.isArray(expectedValue)) {
+      if (Array.isArray(expectedValue)) => {
         return expectedValue.includes(contextValue);
       }
       
@@ -151,14 +151,14 @@ class PermissionChecker {
 export function usePermissions() {
   const tenantContext = useContext(TenantContext);
   
-  if (!tenantContext) {
+  if (!tenantContext) => {
     throw new Error('usePermissions must be used within a TenantProvider');
   }
 
   const { permissions, user } = tenantContext;
 
   const checker = useMemo(() => {
-    if (!permissions || !user) {
+    if (!permissions || !user) => {
       return new PermissionChecker([], []);
     }
 
@@ -245,10 +245,10 @@ export function WithPermissions({
   context, 
   fallback = null, 
   children 
-}: WithPermissionsProps) {
+}: .*Props) {
   const { can } = usePermissions();
   
-  if (can(resource, action, context)) {
+  if (can(resource, action, context)) => {
     return <>{children}</>;
   }
   

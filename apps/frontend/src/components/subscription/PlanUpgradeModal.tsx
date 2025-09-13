@@ -39,7 +39,7 @@ export default function PlanUpgradeModal({
   onPlanSelect,
   onClose,
   loading
-}: PlanUpgradeModalProps) {
+}: .*Props) {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
 
   // Filter plans by interval and categorize
@@ -48,7 +48,7 @@ export default function PlanUpgradeModal({
   const downgradePlans = samePeriodPlans.filter((plan: any) => plan.price < currentPlan.price)
 
   const handlePlanSelect = async () => {
-    if (selectedPlan) {
+    if (selectedPlan) => {
       await onPlanSelect(selectedPlan)
     }
   }
@@ -73,7 +73,7 @@ export default function PlanUpgradeModal({
 
     return (
       <div
-        onClick={((: any): any) => setSelectedPlan(plan)}
+        onClick={() => setSelectedPlan(plan)}
         className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all ${
           isSelected
             ? 'border-blue-500 bg-blue-50'

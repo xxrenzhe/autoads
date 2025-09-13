@@ -49,7 +49,7 @@ func Logger() gin.HandlerFunc {
 			var reqBodyStr interface{}
 			if c.Request.Method == "GET" {
 				dataMap := make(map[string]interface{})
-				for key, _ := range c.Request.URL.Query() {
+				for key := range c.Request.URL.Query() {
 					dataMap[key] = c.Query(key)
 				}
 				reqBodyStr = dataMap

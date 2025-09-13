@@ -58,8 +58,32 @@ export class AdminAuthService {
         return { success: false, error: 'Account suspended' }
       }
 
-      // TODO: Add password validation here
-      // For now, we'll skip password check since we're using test data
+      // 密码校验（使用bcrypt哈希）
+      if (!user.password) {
+        return { success: false, error: 'Invalid credentials' }
+      }
+
+      const bcrypt = await import('bcryptjs')
+      const ok = await bcrypt.compare(credentials.password, user.password)
+      if (!ok) {
+        // 记录失败审计
+        if (credentials.ip || credentials.userAgent) {
+          await prisma.auditLog.create({
+            data: {
+              userId: user.id,
+              action: 'ADMIN_LOGIN_FAILED',
+              resource: 'auth',
+              severity: 'WARN',
+              category: 'AUTHENTICATION',
+              outcome: 'FAILURE',
+              ipAddress: credentials.ip || null,
+              userAgent: credentials.userAgent || null,
+              metadata: { reason: 'invalid_password', timestamp: new Date().toISOString() }
+            }
+          })
+        }
+        return { success: false, error: 'Invalid credentials' }
+      }
 
       // Create session
       const sessionToken = this.generateSessionToken()
@@ -70,6 +94,15 @@ export class AdminAuthService {
           userId: user.id,
           sessionToken,
           expires: expiresAt
+        }
+      })
+
+      // 更新登录信息
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          lastLoginAt: new Date(),
+          loginCount: { increment: 1 }
         }
       })
 

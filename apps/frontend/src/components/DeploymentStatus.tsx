@@ -21,7 +21,7 @@ export function DeploymentBanner() {
   if (env === 'production') return null as any;
 
   const getBannerConfig = () => {
-    if (env === 'preview') {
+    if (env === 'preview') => {
       return {
         color: 'bg-blue-50 border-blue-200',
         textColor: 'text-blue-800',
@@ -30,7 +30,7 @@ export function DeploymentBanner() {
         title: 'Preview环境',
         subtitle: 'Vercel预览版本'
       };
-    } else if (env === 'development') {
+    } else if (env === 'development') => {
       return {
         color: 'bg-green-50 border-green-200',
         textColor: 'text-green-800',
@@ -206,7 +206,7 @@ export function DeploymentInfo() {
                 variant="outline" 
                 size="sm" 
                 className="mt-2"
-                onClick={((: any): any) => window.open('https://www.autoads.dev', '_blank')}
+                onClick={() => window.open('https://www.autoads.dev', '_blank')}
               >
                 <ExternalLink className="w-4 h-4 mr-1" />
                 访问生产环境

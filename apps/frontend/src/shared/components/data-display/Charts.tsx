@@ -52,8 +52,8 @@ export function CustomLineChart({
   height = 300,
   className,
   loading = false
-}: LineChartProps) {
-  if (loading) {
+}: .*Props) {
+  if (loading) => {
     return (
       <div className={clsx("flex items-center justify-center", className)} style={{ height }}>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -105,8 +105,8 @@ export function CustomAreaChart({
   height = 300,
   className,
   loading = false
-}: AreaChartProps) {
-  if (loading) {
+}: .*Props) {
+  if (loading) => {
     return (
       <div className={clsx("flex items-center justify-center", className)} style={{ height }}>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -158,8 +158,8 @@ export function CustomBarChart({
   height = 300,
   className,
   loading = false
-}: BarChartProps) {
-  if (loading) {
+}: .*Props) {
+  if (loading) => {
     return (
       <div className={clsx("flex items-center justify-center", className)} style={{ height }}>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -215,8 +215,8 @@ export function CustomPieChart({
   height = 300,
   className,
   loading = false
-}: PieChartProps) {
-  if (loading) {
+}: .*Props) {
+  if (loading) => {
     return (
       <div className={clsx("flex items-center justify-center", className)} style={{ height }}>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -272,8 +272,8 @@ export function MultiLineChart({
   height = 300,
   className,
   loading = false
-}: MultiLineChartProps) {
-  if (loading) {
+}: .*Props) {
+  if (loading) => {
     return (
       <div className={clsx("flex items-center justify-center", className)} style={{ height }}>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -323,7 +323,7 @@ export function ChartContainer({
   children,
   className,
   actions
-}: ChartContainerProps) {
+}: .*Props) {
   return (
     <div className={clsx("bg-white rounded-lg border border-gray-200 p-6", className)}>
       {(title || description || actions) && (

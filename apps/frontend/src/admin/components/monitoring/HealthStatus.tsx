@@ -43,7 +43,7 @@ export function HealthStatus({
   showActions = true, 
   compactView = false,
   autoRefresh = true 
-}: HealthStatusProps) {
+}: .*Props) {
   const {
     services,
     systemMetrics,
@@ -57,7 +57,7 @@ export function HealthStatus({
   const [selectedService, setSelectedService] = useState<ServiceStatus | null>(null)
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'healthy': return CheckCircle
       case 'degraded': return AlertTriangle
       case 'down': return XCircle
@@ -66,7 +66,7 @@ export function HealthStatus({
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'healthy': return 'success'
       case 'degraded': return 'warning'
       case 'down': return 'destructive'
@@ -84,7 +84,7 @@ export function HealthStatus({
   }
 
   const handleRestartService = async (serviceName: string) => {
-    if (window.confirm(`Are you sure you want to restart ${serviceName}? This may cause temporary downtime.`)) {
+    if (window.confirm(`Are you sure you want to restart ${serviceName}? This may cause temporary downtime.`)) => {
       try {
         await restartService(serviceName)
       } catch (error) {
@@ -105,7 +105,7 @@ export function HealthStatus({
   const overallHealth = downServices.length > 0 ? 'down' : 
                       degradedServices.length > 0 ? 'degraded' : 'healthy'
 
-  if (servicesError) {
+  if (servicesError) => {
     return (
       <Card>
         <CardContent className="p-6">

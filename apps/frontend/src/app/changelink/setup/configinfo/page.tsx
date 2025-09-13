@@ -9,7 +9,7 @@ import Link from 'next/link';
 export default function ConfigInfoPage() {
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
-    if (element) {
+    if (element) => {
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
@@ -48,7 +48,7 @@ export default function ConfigInfoPage() {
                 <ul className="space-y-2">
                   <li>
                     <button 
-                      onClick={((: any): any) => scrollToSection('google-ads')}
+                      onClick={() => scrollToSection('google-ads')}
                       className="text-blue-600 hover:text-blue-800 text-left w-full"
                     >
                       Google Ads 账号配置
@@ -56,7 +56,7 @@ export default function ConfigInfoPage() {
                   </li>
                   <li>
                     <button 
-                      onClick={((: any): any) => scrollToSection('affiliate-links')}
+                      onClick={() => scrollToSection('affiliate-links')}
                       className="text-blue-600 hover:text-blue-800 text-left w-full"
                     >
                       广告联盟链接配置
@@ -64,7 +64,7 @@ export default function ConfigInfoPage() {
                   </li>
                   <li>
                     <button 
-                      onClick={((: any): any) => scrollToSection('adspower')}
+                      onClick={() => scrollToSection('adspower')}
                       className="text-blue-600 hover:text-blue-800 text-left w-full"
                     >
                       AdsPower 环境配置
@@ -77,7 +77,7 @@ export default function ConfigInfoPage() {
                 <ul className="space-y-2">
                   <li>
                     <button 
-                      onClick={((: any): any) => scrollToSection('execution-config')}
+                      onClick={() => scrollToSection('execution-config')}
                       className="text-blue-600 hover:text-blue-800 text-left w-full"
                     >
                       执行配置创建
@@ -85,7 +85,7 @@ export default function ConfigInfoPage() {
                   </li>
                   <li>
                     <button 
-                      onClick={((: any): any) => scrollToSection('automation')}
+                      onClick={() => scrollToSection('automation')}
                       className="text-blue-600 hover:text-blue-800 text-left w-full"
                     >
                       自动化任务设置
@@ -93,7 +93,7 @@ export default function ConfigInfoPage() {
                   </li>
                   <li>
                     <button 
-                      onClick={((: any): any) => scrollToSection('verification')}
+                      onClick={() => scrollToSection('verification')}
                       className="text-blue-600 hover:text-blue-800 text-left w-full"
                     >
                       系统验证测试

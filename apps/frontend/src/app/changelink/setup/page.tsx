@@ -240,7 +240,7 @@ export default function SetupPage() {
     // 清理函数
     return () => {
       isMountedRef.current = false;
-      if (autoSaveTimeoutRef.current) {
+      if (autoSaveTimeoutRef.current) => {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
@@ -248,13 +248,13 @@ export default function SetupPage() {
 
   // 导航函数 - memoized
   const nextStep = useCallback(() => {
-    if (currentStep < setupSteps.length - 1) {
+    if (currentStep < setupSteps.length - 1) => {
       setCurrentStep(currentStep + 1);
     }
   }, [currentStep, setupSteps.length]);
 
   const prevStep = useCallback(() => {
-    if (currentStep > 0) {
+    if (currentStep > 0) => {
       setCurrentStep(currentStep - 1);
     }
   }, [currentStep]);
@@ -262,34 +262,34 @@ export default function SetupPage() {
   // 键盘导航处理函数 - memoized
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // Alt + 左箭头: 上一步
-    if (e.altKey && e.key === 'ArrowLeft') {
+    if (e.altKey && e.key === 'ArrowLeft') => {
       e.preventDefault();
-      if (currentStep > 0) {
+      if (currentStep > 0) => {
         prevStep();
       }
     }
     // Alt + 右箭头: 下一步
-    else if (e.altKey && e.key === 'ArrowRight') {
+    else if (e.altKey && e.key === 'ArrowRight') => {
       e.preventDefault();
-      if (currentStep < setupSteps.length - 1) {
+      if (currentStep < setupSteps.length - 1) => {
         nextStep();
       }
     }
     // 数字键 1-6: 直接跳转到对应步骤
-    else if (e.key >= '1' && e.key <= '6') {
+    else if (e.key >= '1' && e.key <= '6') => {
       const stepIndex = parseInt(e.key) - 1;
-      if (stepIndex < setupSteps.length) {
+      if (stepIndex < setupSteps.length) => {
         e.preventDefault();
         setCurrentStep(stepIndex);
       }
     }
     // Home: 第一步
-    else if (e.key === 'Home') {
+    else if (e.key === 'Home') => {
       e.preventDefault();
       setCurrentStep(0);
     }
     // End: 最后一步
-    else if (e.key === 'End') {
+    else if (e.key === 'End') => {
       e.preventDefault();
       setCurrentStep(setupSteps.length - 1);
     }
@@ -312,7 +312,7 @@ export default function SetupPage() {
       });
       
       const result = await response.json();
-      if (result.success && result.data) {
+      if (result.success && result.data) => {
         // 恢复当前步骤
         setCurrentStep(result.data.currentStep);
         console.log('Setup progress loaded successfully');
@@ -324,7 +324,7 @@ export default function SetupPage() {
 
   // 自动保存进度（带防抖）
   const autoSaveProgress = useCallback(() => {
-    if (autoSaveTimeoutRef.current) {
+    if (autoSaveTimeoutRef.current) => {
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
@@ -356,28 +356,28 @@ export default function SetupPage() {
         });
 
         const result = await response.json();
-        if (result.success && isMountedRef.current) {
+        if (result.success && isMountedRef.current) => {
           setAutoSaveStatus('saved');
           console.log('✅ Setup progress auto-saved');
           // 2秒后重置状态
           setTimeout(() => {
-            if (isMountedRef.current) {
+            if (isMountedRef.current) => {
               setAutoSaveStatus('idle');
             }
           }, 2000);
-        } else if (isMountedRef.current) {
+        } else if (isMountedRef.current) => {
           setAutoSaveStatus('error');
           console.error('❌ Auto-save failed:', result.error);
           // 显示错误提示（仅在持续错误时）
           setTimeout(() => {
-            if (isMountedRef.current && autoSaveStatus === 'error') {
+            if (isMountedRef.current && autoSaveStatus === 'error') => {
               setAutoSaveStatus('idle');
             }
           }, 3000);
         }
       } catch (error) {
         console.error('Auto-save failed:', error);
-        if (isMountedRef.current) {
+        if (isMountedRef.current) => {
           setAutoSaveStatus('error');
         }
       }
@@ -417,11 +417,11 @@ export default function SetupPage() {
       });
 
       const result = await response.json();
-      if (result.success) {
+      if (result.success) => {
         setAutoSaveStatus('saved');
         alert('✅ 进度已保存');
         setTimeout(() => {
-          if (isMountedRef.current) {
+          if (isMountedRef.current) => {
             setAutoSaveStatus('idle');
           }
         }, 2000);
@@ -441,36 +441,36 @@ export default function SetupPage() {
     try {
       // 加载Google Ads账号
       const googleAdsResponse = await fetch('/api/adscenter/settings?type=google-ads-accounts');
-      if (googleAdsResponse.ok) {
+      if (googleAdsResponse.ok) => {
         const result = await googleAdsResponse.json();
-        if (result.success) {
+        if (result.success) => {
           setGoogleAdsAccounts(result.data || []);
         }
       }
 
       // 加载广告联盟链接
       const affiliateResponse = await fetch('/api/adscenter/settings?type=affiliate-links');
-      if (affiliateResponse.ok) {
+      if (affiliateResponse.ok) => {
         const result = await affiliateResponse.json();
-        if (result.success) {
+        if (result.success) => {
           setAffiliateLinks(result.data || []);
         }
       }
 
       // 加载AdsPower环境
       const adsPowerResponse = await fetch('/api/adscenter/settings?type=adspower-environments');
-      if (adsPowerResponse.ok) {
+      if (adsPowerResponse.ok) => {
         const result = await adsPowerResponse.json();
-        if (result.success) {
+        if (result.success) => {
           setAdsPowerEnvironments(result.data || []);
         }
       }
 
       // 加载配置
       const configurationsResponse = await fetch('/api/adscenter/settings?type=configurations');
-      if (configurationsResponse.ok) {
+      if (configurationsResponse.ok) => {
         const result = await configurationsResponse.json();
-        if (result.success) {
+        if (result.success) => {
           setConfigurations(result.data.configurations || []);
         }
       }
@@ -483,7 +483,7 @@ export default function SetupPage() {
 
   // 添加Google Ads账号
   const addGoogleAdsAccount = async () => {
-    if (!newGoogleAdsAccount.name || !newGoogleAdsAccount.customerId) {
+    if (!newGoogleAdsAccount.name || !newGoogleAdsAccount.customerId) => {
       alert('请填写必要的账号信息');
       return;
     }
@@ -503,7 +503,7 @@ export default function SetupPage() {
       });
 
       const result = await response.json();
-      if (result.success) {
+      if (result.success) => {
         setGoogleAdsAccounts(prev => [...prev, result.data]);
         setNewGoogleAdsAccount({
           name: '',
@@ -559,7 +559,7 @@ export default function SetupPage() {
 
   // 添加广告联盟链接
   const addAffiliateLink = async () => {
-    if (!newAffiliateLink.name || !newAffiliateLink.affiliateUrl) {
+    if (!newAffiliateLink.name || !newAffiliateLink.affiliateUrl) => {
       alert('请填写链接名称和URL');
       return;
     }
@@ -579,7 +579,7 @@ export default function SetupPage() {
       });
 
       const result = await response.json();
-      if (result.success) {
+      if (result.success) => {
         setAffiliateLinks(prev => [...prev, result.data]);
         setNewAffiliateLink({
           name: '',
@@ -632,7 +632,7 @@ export default function SetupPage() {
 
   // 添加AdsPower环境
   const addAdsPowerEnvironment = async () => {
-    if (!newAdsPowerEnv.name || !newAdsPowerEnv.environmentId) {
+    if (!newAdsPowerEnv.name || !newAdsPowerEnv.environmentId) => {
       alert('请填写环境名称和环境ID');
       return;
     }
@@ -652,7 +652,7 @@ export default function SetupPage() {
       });
 
       const result = await response.json();
-      if (result.success) {
+      if (result.success) => {
         setAdsPowerEnvironments(prev => [...prev, result.data]);
         setNewAdsPowerEnv({
           name: '',
@@ -705,7 +705,7 @@ export default function SetupPage() {
 
   // 创建配置
   const createConfiguration = async () => {
-    if (!newConfiguration.name || !newConfiguration.environmentId) {
+    if (!newConfiguration.name || !newConfiguration.environmentId) => {
       alert('请填写配置名称和环境ID');
       return;
     }
@@ -730,7 +730,7 @@ export default function SetupPage() {
       });
 
       const result = await response.json();
-      if (result.success) {
+      if (result.success) => {
         setConfigurations(prev => [...prev, result.data]);
         setNewConfiguration({
           name: '',
@@ -768,7 +768,7 @@ export default function SetupPage() {
 
       const result = await response.json();
       
-      if (result.success) {
+      if (result.success) => {
         alert('系统验证通过！所有配置正常。');
       } else {
         alert('系统验证失败: ' + result.error);
@@ -783,7 +783,7 @@ export default function SetupPage() {
 
   // 执行测试运行
   const runTestExecution = async () => {
-    if (configurations.length === 0) {
+    if (configurations.length === 0) => {
       alert('请先创建执行配置');
       return;
     }
@@ -801,7 +801,7 @@ export default function SetupPage() {
 
       const result = await response.json();
       
-      if (result.success) {
+      if (result.success) => {
         alert('测试执行成功！系统运行正常。');
       } else {
         alert('测试执行失败: ' + result.error);
@@ -832,7 +832,7 @@ export default function SetupPage() {
   }, []);
 
   const getStepStatus = useCallback((step: SetupStep) => {
-    switch (step.status) {
+    switch (step.status) => {
       case 'completed':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'error':
@@ -903,7 +903,7 @@ export default function SetupPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={((: any): any) => setShowKeyboardHelp(!showKeyboardHelp)}
+              onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
               className="text-gray-600 hover:text-gray-800"
               aria-label="显示键盘快捷键帮助"
             >

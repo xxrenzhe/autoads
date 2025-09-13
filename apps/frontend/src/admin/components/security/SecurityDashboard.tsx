@@ -93,16 +93,16 @@ export default function SecurityDashboard() {
         auditRes.json()
       ])
 
-      if (threatsData.success) {
+      if (threatsData.success) => {
         setThreats(threatsData.data.threats)
         setThreatMetrics(threatsData.data.metrics)
       }
 
-      if (sessionsData.success) {
+      if (sessionsData.success) => {
         setSecurityMetrics(sessionsData.data.metrics)
       }
 
-      if (auditData.success) {
+      if (auditData.success) => {
         setAuditEvents(auditData.data.events)
       }
     } catch (error) {
@@ -133,7 +133,7 @@ export default function SecurityDashboard() {
 
       const data = await response.json()
       
-      if (data.success) {
+      if (data.success) => {
         toast.success('Threat resolved successfully')
         await fetchSecurityData()
       } else {
@@ -159,7 +159,7 @@ export default function SecurityDashboard() {
 
       const data = await response.json()
       
-      if (data.success) {
+      if (data.success) => {
         toast.success('IP address blocked successfully')
         await fetchSecurityData()
       } else {
@@ -172,7 +172,7 @@ export default function SecurityDashboard() {
   }
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) {
+    switch (severity) => {
       case 'critical': return 'destructive'
       case 'high': return 'destructive'
       case 'medium': return 'secondary'
@@ -182,7 +182,7 @@ export default function SecurityDashboard() {
   }
 
   const getOutcomeIcon = (outcome: string) => {
-    switch (outcome) {
+    switch (outcome) => {
       case 'success': return <CheckCircle className="h-4 w-4 text-green-500" />
       case 'failure': return <XCircle className="h-4 w-4 text-red-500" />
       case 'error': return <AlertTriangle className="h-4 w-4 text-yellow-500" />
@@ -190,7 +190,7 @@ export default function SecurityDashboard() {
     }
   }
 
-  if (loading) {
+  if (loading) => {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin" />

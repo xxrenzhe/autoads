@@ -25,11 +25,11 @@ export function AuthStatus({
   showAvatar = true, 
   showDropdown = true,
   variant = 'default'
-}: AuthStatusProps) {
+}: .*Props) {
   const { data: session, status } = useSession()
 
   // 加载状态
-  if (status === 'loading') {
+  if (status === 'loading') => {
     return (
       <div className="flex items-center space-x-2">
         <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
@@ -41,7 +41,7 @@ export function AuthStatus({
   }
 
   // 未登录状态
-  if (!session) {
+  if (!session) => {
     return (
       <LoginButton
         variant={variant === 'minimal' ? 'ghost' : 'outline'}
@@ -61,7 +61,7 @@ export function AuthStatus({
   const userAvatar = user?.image || ''
   const userInitial = userName.charAt(0).toUpperCase()
 
-  if (!showDropdown) {
+  if (!showDropdown) => {
     return (
       <div className="flex items-center space-x-2">
         {showAvatar && (
@@ -158,7 +158,7 @@ export function AuthStatus({
         <DropdownMenuSeparator />
         
         <DropdownMenuItem
-          onClick={((: any): any) => signOut()}
+          onClick={() => signOut()}
           className="flex items-center text-red-600 focus:text-red-600"
         >
           <LogOut className="mr-2 h-4 w-4" />

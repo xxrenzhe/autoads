@@ -28,7 +28,7 @@ interface EnvVarListProps {
   onCreate?: () => void
 }
 
-export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
+export function EnvVarList({ onEdit, onCreate }: .*Props) {
   const { data: envVars, isLoading, error, refetch } = useEnvVars()
   const deleteEnvVar = useDeleteEnvVar()
   
@@ -72,7 +72,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
   }
 
   const handleDelete = (envVar: EnvironmentVariable) => {
-    if (window.confirm(`Are you sure you want to delete "${envVar.key}"?`)) {
+    if (window.confirm(`Are you sure you want to delete "${envVar.key}"?`)) => {
       deleteEnvVar.mutate(envVar.id)
     }
   }
@@ -83,7 +83,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
     setShowSecrets(!showSecrets)
   }
 
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <Card>
         <CardContent className="p-6">
@@ -96,7 +96,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
     )
   }
 
-  if (error) {
+  if (error) => {
     return (
       <Card>
         <CardContent className="p-6">
@@ -121,7 +121,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={((: any): any) => refetch()}
+              onClick={() => refetch()}
               disabled={isLoading}
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -143,7 +143,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
               <Input
                 placeholder="Search environment variables..."
                 value={searchTerm}
-                onChange={((e: any): any) => setSearchTerm(e.target.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -152,7 +152,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
           <div className="flex gap-2">
             <select
               value={selectedCategory}
-              onChange={((e: any): any) => setSelectedCategory(e.target.value)}
+              onChange={(e) => setSelectedCategory(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
               <option value="all">All Categories</option>
@@ -166,7 +166,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
             <Button
               variant={showSecrets ? "default" : "outline"}
               size="sm"
-              onClick={((: any): any) => setShowSecrets(!showSecrets)}
+              onClick={() => setShowSecrets(!showSecrets)}
             >
               <Shield className="h-4 w-4 mr-2" />
               Show Secrets
@@ -232,7 +232,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0"
-                              onClick={((: any): any) => toggleSecretVisibility(envVar.id)}
+                              onClick={() => toggleSecretVisibility(envVar.id)}
                             >
                               {showSecrets ? (
                                 <EyeOff className="h-3 w-3" />
@@ -245,7 +245,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0"
-                            onClick={((: any): any) => handleCopy(envVar.value, envVar.id)}
+                            onClick={() => handleCopy(envVar.value, envVar.id)}
                           >
                             <Copy className={`h-3 w-3 ${copiedId === envVar.id ? 'text-green-600' : ''}`} />
                           </Button>
@@ -269,7 +269,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={((: any): any) => onEdit(envVar)}
+                          onClick={() => onEdit(envVar)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -277,7 +277,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((: any): any) => handleDelete(envVar)}
+                        onClick={() => handleDelete(envVar)}
                         disabled={deleteEnvVar.isPending}
                       >
                         <Trash2 className="h-4 w-4" />

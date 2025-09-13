@@ -46,7 +46,7 @@ export function UserBehaviorAnalytics({
   userId, 
   timeRange = '30d',
   showComparison = true 
-}: UserBehaviorAnalyticsProps) {
+}: .*Props) {
   const {
     behaviorData,
     activityPatterns,
@@ -96,20 +96,20 @@ export function UserBehaviorAnalytics({
     // Announce view change to screen readers
     const announcement = `Switched to ${newView} view`
     const announcer = document.getElementById(viewAnnouncementId)
-    if (announcer) {
+    if (announcer) => {
       announcer.textContent = announcement
     }
   }, [viewAnnouncementId])
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent, action: () => void) => {
-    if (event.key === 'Enter' || event.key === ' ') {
+    if (event.key === 'Enter' || event.key === ' ') => {
       event.preventDefault()
       action()
     }
   }, [])
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+    if (active && payload && payload.length) => {
       return (
         <div 
           className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"
@@ -137,7 +137,7 @@ export function UserBehaviorAnalytics({
     return null
   }
 
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <div 
         className="flex items-center justify-center h-64"
@@ -151,7 +151,7 @@ export function UserBehaviorAnalytics({
     )
   }
 
-  if (error) {
+  if (error) => {
     return (
       <div 
         className="text-center text-red-600 p-6"
@@ -186,7 +186,7 @@ export function UserBehaviorAnalytics({
           <select
             id="time-range-select"
             value={selectedTimeRange}
-            onChange={((e: any): any) => setSelectedTimeRange(e.target.value)}
+            onChange={(e) => setSelectedTimeRange(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-labelledby={timeRangeLabelId}
           >
@@ -198,7 +198,7 @@ export function UserBehaviorAnalytics({
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={((: any): any) => exportAnalytics('csv')}
+            onClick={() => exportAnalytics('csv')}
             aria-label="Export analytics data as CSV"
           >
             <Download className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -323,7 +323,7 @@ export function UserBehaviorAnalytics({
             aria-selected={selectedView === key}
             aria-controls={`${key}-panel`}
             tabIndex={selectedView === key ? 0 : -1}
-            onClick={((: any): any) => handleViewChange(key)}
+            onClick={() => handleViewChange(key)}
             onKeyDown={(e) => handleKeyDown(e, () => handleViewChange(key))}
             className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               selectedView === key

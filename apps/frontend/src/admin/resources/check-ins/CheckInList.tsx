@@ -39,7 +39,7 @@ const CheckInActions = () => {
   return (
     <TopToolbar>
       <Button
-        onClick={((: any): any) => refresh()}
+        onClick={() => refresh()}
         label="刷新"
         startIcon={<RefreshIcon />}
       />
@@ -59,7 +59,7 @@ const CheckInStats: React.FC = () => {
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/admin/check-ins/stats');
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json();
         setStats(data);
       }
@@ -70,11 +70,11 @@ const CheckInStats: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading) => {
     return <Box sx={{ mb: 2 }}>加载中...</Box>;
   }
 
-  if (!stats) {
+  if (!stats) => {
     return <Box sx={{ mb: 2 }}>无法加载统计数据</Box>;
   }
 

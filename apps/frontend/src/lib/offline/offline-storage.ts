@@ -197,7 +197,7 @@ export class OfflineStorage {
 
       request.onerror = () => reject(request.error)
       request.onsuccess = () => {
-        const results = request.result.filter(item => {
+        const results = request.result.filter((item: any) => {
           // Filter out expired data
           if (item.expiresAt && item.expiresAt < Date.now()) {
             this.deleteData(item.id)

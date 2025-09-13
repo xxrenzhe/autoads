@@ -67,11 +67,11 @@ export async function GET(request: NextRequest) {
     const processedUsers = users.map((user: any) => {
       const totalTokens = user.token_usage.reduce((sum: number, usage: any: any) => sum + usage.tokensConsumed, 0);
       const operations = user.token_usage.length;
-      const batchOperations = user.token_usage.filter((usage: any: any) => usage.isBatch).length;
+      const batchOperations = user.token_usage.filter(((usage: any) => usage.isBatch).length;
       
       // Calculate preferred features
       const featureCount = new Map<string, number>();
-      user.token_usage.forEach((usage: any: any) => {
+      user.token_usage.forEach(((usage: any) => {
         featureCount.set(usage.feature, (featureCount.get(usage.feature) || 0) + 1);
       });
       

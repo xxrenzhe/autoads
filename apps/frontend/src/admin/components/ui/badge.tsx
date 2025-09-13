@@ -34,7 +34,7 @@ export interface BadgeProps
   children?: React.ReactNode;
 }
 
-function Badge({ className, variant, children, ...props }: BadgeProps) {
+function Badge({ className, variant, children, ...props }: .*Props) {
   return (
     <div className={cn(badgeVariants({ variant }), className)} {...props}>
       {children}

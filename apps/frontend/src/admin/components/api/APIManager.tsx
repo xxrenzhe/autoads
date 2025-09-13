@@ -60,7 +60,7 @@ export interface APIManagerProps {
   className?: string
 }
 
-export function APIManager({ className }: APIManagerProps) {
+export function APIManager({ className }: .*Props) {
   const [activeTab, setActiveTab] = useState<'endpoints' | 'keys' | 'analytics'>('endpoints')
   const [showCreateEndpoint, setShowCreateEndpoint] = useState(false)
   const [showCreateKey, setShowCreateKey] = useState(false)
@@ -239,14 +239,14 @@ export function APIManager({ className }: APIManagerProps) {
         
         <div className="flex space-x-3">
           <Button 
-            onClick={((: any): any) => setShowCreateEndpoint(true)}
+            onClick={() => setShowCreateEndpoint(true)}
             aria-label="Add new API endpoint"
           >
             <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
             Add Endpoint
           </Button>
           <Button 
-            onClick={((: any): any) => setShowCreateKey(true)}
+            onClick={() => setShowCreateKey(true)}
             aria-label="Create new API key"
           >
             <Key className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -356,7 +356,7 @@ export function APIManager({ className }: APIManagerProps) {
             <button
               key={id}
               ref={(el) => {
-                if (el) {
+                if (el) => {
                   tabRefs.current.set(id, el)
                 } else {
                   tabRefs.current.delete(id)
@@ -367,7 +367,7 @@ export function APIManager({ className }: APIManagerProps) {
               aria-controls={`${id}-panel`}
               id={`${id}-tab`}
               tabIndex={activeTab === id ? 0 : -1}
-              onClick={((: any): any) => handleTabChange(id as any)}
+              onClick={() => handleTabChange(id as any)}
               onKeyDown={(e) => handleTabKeyDown(e, id)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                 activeTab === id

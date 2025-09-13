@@ -26,7 +26,7 @@ interface EnhancedErrorBoundaryState {
 }
 
 export class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, EnhancedErrorBoundaryState> {
-  constructor(props: EnhancedErrorBoundaryProps) {
+  constructor(props: EnhancedErrorBoundaryProps) => {
     super(props);
     this.state = {
       hasError: false,
@@ -44,7 +44,7 @@ export class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps,
     };
   }
 
-  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) => {
     // Convert to BaseAppError
     const appError = ErrorUtils.fromUnknown(error, this.props.context || 'ReactComponent');
     
@@ -61,7 +61,7 @@ export class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps,
     });
 
     // Call custom error handler if provided
-    if (this.props.onError) {
+    if (this.props.onError) => {
       this.props.onError(appError, errorInfo);
     }
 
@@ -69,7 +69,7 @@ export class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps,
     this.reportToErrorTracking(appError, errorInfo);
   }
 
-  override componentDidUpdate(prevProps: EnhancedErrorBoundaryProps) {
+  override componentDidUpdate(prevProps: EnhancedErrorBoundaryProps) => {
     const { resetKeys, resetOnPropsChange } = this.props;
     const { hasError } = this.state;
 
@@ -78,7 +78,7 @@ export class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps,
       hasError &&
       ((resetOnPropsChange && prevProps !== this.props) ||
         (resetKeys && prevProps.resetKeys !== resetKeys))
-    ) {
+    ) => {
       this.resetErrorBoundary();
     }
   }
@@ -91,17 +91,17 @@ export class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps,
     });
   };
 
-  override render() {
+  override render() => {
     const { hasError, error, errorInfo } = this.state;
     const { children, fallback } = this.props;
 
-    if (!hasError || !error) {
+    if (!hasError || !error) => {
       return children;
     }
 
     // Render custom fallback if provided
-    if (fallback) {
-      if (typeof fallback === 'function') {
+    if (fallback) => {
+      if (typeof fallback === 'function') => {
         return fallback(error, errorInfo!);
       }
       return fallback;
@@ -126,7 +126,7 @@ export class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps,
               重试
             </button>
             <button
-              onClick={((: any): any) => window.location.reload()}
+              onClick={() => window.location.reload()}
               className="ml-2 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
             >
               刷新页面
@@ -177,7 +177,7 @@ export class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps,
    */
   private reportToErrorTracking(error: BaseAppError, errorInfo: ErrorInfo): void {
     // This could integrate with services like Sentry, LogRocket, etc.
-    if (typeof window !== 'undefined' && (window as any).Sentry) {
+    if (typeof window !== 'undefined' && (window as any).Sentry) => {
       (window as any).Sentry.withScope((scope: any) => {
         scope.setUser({ id: 'current-user' }); // Get actual user ID from auth context
         scope.setTag('context', this.props.context || 'ReactComponent');
@@ -189,7 +189,7 @@ export class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps,
     }
 
     // Log security event for errors that might indicate security issues
-    if (error.statusCode === 401 || error.statusCode === 403) {
+    if (error.statusCode === 401 || error.statusCode === 403) => {
       logger.security(
         'authentication_error',
         'medium',
@@ -204,7 +204,7 @@ export class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps,
 }
 
 // Hook-based error boundary
-export function useEnhancedErrorHandler(context?: string) {
+export function useEnhancedErrorHandler(context?: string) => {
   const { resetError, captureError } = useErrorHandler();
 
   const captureEnhancedError = React.useCallback((error: Error | BaseAppError) => {
@@ -242,7 +242,7 @@ export function AsyncEnhancedErrorBoundary({
   maxRetries = 3,
   retryDelay = 1000,
   context
-}: AsyncErrorBoundaryProps) {
+}: .*Props) {
   const [error, setError] = React.useState<BaseAppError | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [retryCount, setRetryCount] = React.useState(0);
@@ -255,7 +255,7 @@ export function AsyncEnhancedErrorBoundary({
     try {
       // The actual operation should be implemented by the children
       setLoading(false);
-    } catch (err) {
+    } catch (err) => {
       const caughtError = err instanceof BaseAppError 
         ? err 
         : ErrorUtils.fromUnknown(err, context || 'AsyncOperation');
@@ -265,10 +265,10 @@ export function AsyncEnhancedErrorBoundary({
       captureEnhancedError(caughtError);
 
       // Check if we should retry
-      if (onError && retryCount < maxRetries) {
+      if (onError && retryCount < maxRetries) => {
       const shouldRetry = await onError(caughtError);
       // Note: onError might return void, so we check explicitly for true
-      if (shouldRetry === true) {
+      if (shouldRetry === true) => {
           setRetryCount(prev => prev + 1);
           setTimeout(execute, retryDelay * Math.pow(2, retryCount)); // Exponential backoff
         }
@@ -302,7 +302,7 @@ export function NetworkEnhancedErrorBoundary({
   fallback, 
   onNetworkError,
   context 
-}: NetworkErrorBoundaryProps) {
+}: .*Props) {
   const [isOnline, setIsOnline] = React.useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
@@ -331,8 +331,8 @@ export function NetworkEnhancedErrorBoundary({
     };
   }, [onNetworkError, context, captureEnhancedError]);
 
-  if (!isOnline) {
-    if (fallback) {
+  if (!isOnline) => {
+    if (fallback) => {
       return <>{fallback}</>;
     }
     
@@ -347,7 +347,7 @@ export function NetworkEnhancedErrorBoundary({
             请检查您的网络连接并重试
           </p>
           <button
-            onClick={((: any): any) => window.location.reload()}
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
             重新连接

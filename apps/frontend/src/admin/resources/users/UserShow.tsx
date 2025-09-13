@@ -36,7 +36,7 @@ const UserShowActions = () => {
       <Button
         label="限制用户"
         startIcon={<BlockIcon />}
-        onClick={((: any): any) => {
+        onClick={() => {
           // Navigate to restriction create with pre-filled userId
           window.location.href = `/#/restrictions/create?userId=${record?.id}`;
         }}

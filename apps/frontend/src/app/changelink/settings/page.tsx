@@ -93,20 +93,20 @@ export default function SimpleSettingsPage() {
       const importData = JSON.parse(text);
       
       // 验证导入数据格式
-      if (!importData.accounts || !importData.links || !importData.associations) {
+      if (!importData.accounts || !importData.links || !importData.associations) => {
         throw new Error('无效的配置文件格式');
       }
       
       // 导入数据
-      for (const account of importData.accounts) {
+      for (const account of importData.accounts) => {
         await globalConfigurationManager.addGoogleAdsAccount(account);
       }
       
-      for (const link of importData.links) {
+      for (const link of importData.links) => {
         await globalConfigurationManager.addAffiliateLink(link);
       }
       
-      for (const association of importData.associations) {
+      for (const association of importData.associations) => {
         await globalConfigurationManager.addLinkAccountAssociation(association);
       }
       
@@ -123,7 +123,7 @@ export default function SimpleSettingsPage() {
   };
 
   const handleClearData = async () => {
-    if (!confirm('确定要清除所有配置数据吗？此操作不可恢复！')) {
+    if (!confirm('确定要清除所有配置数据吗？此操作不可恢复！')) => {
       return;
     }
 

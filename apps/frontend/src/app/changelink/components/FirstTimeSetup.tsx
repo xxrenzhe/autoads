@@ -49,7 +49,7 @@ interface SetupData {
   };
 }
 
-export default function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
+export default function FirstTimeSetup({ onComplete }: { onComplete: () => void }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [setupData, setSetupData] = useState<SetupData>({
@@ -119,7 +119,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
   const validateCurrentStep = (): boolean => {
-    switch (steps[currentStep].id) {
+    switch (steps[currentStep].id) => {
       case 'welcome':
         return true;
       case 'user':
@@ -138,11 +138,11 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
   };
 
   const handleNext = async () => {
-    if (!validateCurrentStep()) {
+    if (!validateCurrentStep()) => {
       return;
     }
 
-    if (currentStep < steps.length - 1) {
+    if (currentStep < steps.length - 1) => {
       // 标记当前步骤为完成
       const newSteps = [...steps];
       newSteps[currentStep].completed = true;
@@ -156,7 +156,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
   };
 
   const handlePrevious = () => {
-    if (currentStep > 0) {
+    if (currentStep > 0) => {
       setCurrentStep(currentStep - 1);
     }
   };
@@ -206,7 +206,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
     setLoading(true);
     try {
       const response = await fetch(`${setupData.adspower.apiUrl}/api/v1/user/list`);
-      if (response.ok) {
+      if (response.ok) => {
         alert('AdsPower 连接测试成功！');
       } else {
         alert('AdsPower 连接测试失败，请检查 API 地址');
@@ -219,7 +219,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
   };
 
   const renderStepContent = () => {
-    switch (steps[currentStep].id) {
+    switch (steps[currentStep].id) => {
       case 'welcome':
         return (
           <div className="text-center space-y-6">

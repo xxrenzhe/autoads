@@ -91,7 +91,7 @@ interface TabPanelProps {
   value: number;
 }
 
-function TabPanel(props: TabPanelProps) {
+function TabPanel(props: TabPanelProps) => {
   const { children, value, index, ...other } = props;
 
   return (
@@ -147,13 +147,13 @@ export const ApiList: React.FC = () => {
       setLoading(true);
       const response = await fetch('/api/admin/documentation/apis');
       
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to fetch API list');
       }
       
       const data = await response.json();
       setApis(data.data || []);
-    } catch (err: any) {
+    } catch (err: any) => {
       setError(err.message || 'Failed to load API list');
     } finally {
       setLoading(false);
@@ -173,7 +173,7 @@ export const ApiList: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'active': return 'success';
       case 'deprecated': return 'error';
       case 'beta': return 'warning';
@@ -183,7 +183,7 @@ export const ApiList: React.FC = () => {
   };
 
   const getMethodColor = (method: string) => {
-    switch (method.toUpperCase()) {
+    switch (method.toUpperCase()) => {
       case 'GET': return 'info';
       case 'POST': return 'success';
       case 'PUT': return 'warning';
@@ -194,7 +194,7 @@ export const ApiList: React.FC = () => {
   };
 
   const getAuthIcon = (auth: string) => {
-    switch (auth) {
+    switch (auth) => {
       case 'none': return <Public color="success" />;
       case 'session': return <Security color="info" />;
       case 'admin': return <Lock color="error" />;
@@ -214,7 +214,7 @@ export const ApiList: React.FC = () => {
 
   const groupedApis = filteredApis.reduce((groups, api: any) => {
     const category = api.category;
-    if (!groups[category]) {
+    if (!groups[category]) => {
       groups[category] = [];
     }
     groups[category].push(api);
@@ -449,7 +449,7 @@ export const ApiList: React.FC = () => {
     </Box>
   );
 
-  if (loading) {
+  if (loading) => {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
@@ -457,7 +457,7 @@ export const ApiList: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error) => {
     return (
       <Alert severity="error" sx={{ m: 3 }}>
         {error}
@@ -526,7 +526,7 @@ export const ApiList: React.FC = () => {
                 select
                 label="分类"
                 value={selectedCategory}
-                onChange={((e: any): any) => setSelectedCategory(e.target.value)}
+                onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 {categories.map((category: any) => (
                   <MenuItem key={category.value} value={category.value}>
@@ -545,7 +545,7 @@ export const ApiList: React.FC = () => {
                 select
                 label="状态"
                 value={selectedStatus}
-                onChange={((e: any): any) => setSelectedStatus(e.target.value)}
+                onChange={(e) => setSelectedStatus(e.target.value)}
               >
                 {statusOptions.map((status: any) => (
                   <MenuItem key={status.value} value={status.value}>
@@ -621,7 +621,7 @@ export const ApiList: React.FC = () => {
                   <TableCell>
                     <IconButton
                       size="small"
-                      onClick={((: any): any) => setExpandedApi(expandedApi === api.id ? null : api.id)}
+                      onClick={() => setExpandedApi(expandedApi === api.id ? null : api.id)}
                     >
                       <Description />
                     </IconButton>

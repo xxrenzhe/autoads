@@ -322,7 +322,7 @@ export class InvitationService {
       const totalTokensEarned = 0; // No additional token rewards, only Pro plan subscription
 
       // Format recent invitations from activities
-      const recentInvitations: InvitationData[] = recentActivities.map((activity: any: any) => ({
+      const recentInvitations: InvitationData[] = recentActivities.map(((activity: any) => ({
         id: activity.id,
         code: invitation?.code || 'N/A',
         inviterEmail: activity.user.email,

@@ -32,18 +32,18 @@ export function LoginButton({
   showIcon = true,
   fullWidth = false,
   ...props
-}: LoginButtonProps) {
+}: .*Props) {
   const { data: session, status } = useSession()
   const [showLoginModal, setShowLoginModal] = useState(false)
 
   const handleClick = () => {
-    if (!session) {
+    if (!session) => {
       setShowLoginModal(true)
     }
   }
 
   // 如果已登录，显示用户信息
-  if (session) {
+  if (session) => {
     return (
       <Button
         variant="ghost"
@@ -62,7 +62,7 @@ export function LoginButton({
   }
 
   // 加载状态
-  if (status === 'loading') {
+  if (status === 'loading') => {
     return (
       <Button
         variant={variant}
@@ -117,7 +117,7 @@ export function FeatureLoginButton({
   ...props
 }: Omit<LoginButtonProps, 'variant' | 'size'> & {
   feature: string
-}) {
+}) => {
   return (
     <LoginButton
       variant="outline"

@@ -112,7 +112,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
     const loadPlans = async () => {
       try {
         const response = await fetch('/api/admin/plans/available');
-        if (response.ok) {
+        if (response.ok) => {
           const data = await response.json();
           setPlans(data.plans);
         }
@@ -130,7 +130,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
     setLoading(true);
     try {
       const response = await fetch(`/api/admin/users/${effectiveUserId}/subscription/history`);
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json();
         setSubscriptions(data.subscriptions);
       }
@@ -150,7 +150,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
 
   // Assign subscription
   const handleAssignSubscription = async () => {
-    if (!selectedPlan || !effectiveUserId) {
+    if (!selectedPlan || !effectiveUserId) => {
       notify('请选择一个套餐', { type: 'warning' });
       return;
     }
@@ -167,7 +167,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
         })
       });
 
-      if (response.ok) {
+      if (response.ok) => {
         notify('套餐分配成功', { type: 'success' });
         setAssignDialogOpen(false);
         resetForm();
@@ -199,7 +199,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
         })
       });
 
-      if (response.ok) {
+      if (response.ok) => {
         notify('套餐修改成功', { type: 'success' });
         setModifyDialogOpen(false);
         resetModifyForm();
@@ -229,7 +229,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'ACTIVE': return 'success';
       case 'CANCELLED': return 'error';
       case 'EXPIRED': return 'warning';
@@ -238,7 +238,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'ACTIVE': return '有效';
       case 'CANCELLED': return '已取消';
       case 'EXPIRED': return '已过期';

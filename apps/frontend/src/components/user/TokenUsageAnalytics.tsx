@@ -96,11 +96,11 @@ export default function TokenUsageAnalytics() {
         usageRes.json()
       ])
 
-      if (balanceData.success) {
+      if (balanceData.success) => {
         setBalance(balanceData.data)
       }
 
-      if (usageData.success) {
+      if (usageData.success) => {
         setUsage(usageData.data)
       }
     } catch (error) {
@@ -129,7 +129,7 @@ export default function TokenUsageAnalytics() {
 
       const data = await response.json()
       
-      if (data.success) {
+      if (data.success) => {
         const csv = convertToCSV(data.data.records)
         downloadCSV(csv, `token-usage-${new Date().toISOString().split('T')[0]}.csv`)
         toast.success('Usage data exported successfully')
@@ -165,7 +165,7 @@ export default function TokenUsageAnalytics() {
     window.URL.revokeObjectURL(url)
   }
 
-  if (loading) {
+  if (loading) => {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin" />
@@ -173,7 +173,7 @@ export default function TokenUsageAnalytics() {
     )
   }
 
-  if (!balance || !usage) {
+  if (!balance || !usage) => {
     return (
       <Alert>
         <AlertTriangle className="h-4 w-4" />
@@ -301,7 +301,7 @@ export default function TokenUsageAnalytics() {
           <label className="text-sm font-medium">Time Range:</label>
           <select
             value={dateRange}
-            onChange={((e: any): any) => setDateRange(e.target.value)}
+            onChange={(e) => setDateRange(e.target.value)}
             className="px-3 py-1 border rounded-md text-sm"
           >
             <option value="7">Last 7 days</option>
@@ -315,7 +315,7 @@ export default function TokenUsageAnalytics() {
           <label className="text-sm font-medium">Feature:</label>
           <select
             value={selectedFeature}
-            onChange={((e: any): any) => setSelectedFeature(e.target.value)}
+            onChange={(e) => setSelectedFeature(e.target.value)}
             className="px-3 py-1 border rounded-md text-sm"
           >
             <option value="all">All features</option>

@@ -115,7 +115,7 @@ export const ExecutionStatusIndicator: React.FC<{
   size?: 'sm' | 'md' | 'lg';
 }> = ({ status, showLabel = true, size = 'md' }) => {
   const getStatusConfig = () => {
-    switch (status) {
+    switch (status) => {
       case 'pending':
         return {
           icon: Clock,
@@ -209,7 +209,7 @@ export const ProgressIndicator: React.FC<{
   const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
   
   const getVariantClasses = () => {
-    switch (variant) {
+    switch (variant) => {
       case 'success':
         return 'bg-green-500';
       case 'warning':

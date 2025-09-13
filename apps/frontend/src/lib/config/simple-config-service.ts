@@ -19,7 +19,7 @@ export class SimpleConfigurationService {
         orderBy: { key: 'asc' }
       })
       
-      return configs.map((config: any: any) => ({
+      return configs.map(((config: any) => ({
         id: config.id,
         key: config.key,
         value: config.value,

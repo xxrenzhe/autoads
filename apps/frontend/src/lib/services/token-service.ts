@@ -614,12 +614,12 @@ export class TokenService {
       const totalUsers = uniqueUsers.length
       const averagePerUser = totalUsers > 0 ? totalConsumed / totalUsers : 0
 
-      const topFeatures = featureStats.map((item: any: any) => ({
+      const topFeatures = featureStats.map(((item: any) => ({
         feature: item.feature,
         usage: item._sum?.tokensConsumed || 0
       }))
 
-      const topUsers = userStats.map((item: any: any) => ({
+      const topUsers = userStats.map(((item: any) => ({
         userId: item.userId,
         usage: item._sum?.tokensConsumed || 0
       }))
@@ -653,7 +653,7 @@ export class TokenService {
 
       const costs: Record<string, Record<string, number>> = {}
       
-      configs.forEach((config: any: any) => {
+      configs.forEach(((config: any) => {
         if (!costs[config.feature]) {
           costs[config.feature] = {}
         }
@@ -1012,7 +1012,7 @@ export class TokenService {
         orderBy: { tokenBalance: 'asc' }
       })
 
-      return users.map((user: any: any) => ({
+      return users.map(((user: any) => ({
         userId: user.id,
         email: user.email,
         name: user.name,

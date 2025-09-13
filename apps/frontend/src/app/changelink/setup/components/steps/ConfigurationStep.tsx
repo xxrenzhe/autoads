@@ -57,14 +57,14 @@ export const ConfigurationStep = memo(({
   adsPowerEnvironments,
   onConfigurationChange,
   onCreateConfiguration
-}: ConfigurationStepProps) => {
+}: .*Props) {
   const handleInputChange = useCallback((field: keyof Configuration, value: string | number | string[] | Array<{accountId: string; accountName: string}>) => {
     onConfigurationChange({ ...newConfiguration, [field]: value });
   }, [newConfiguration, onConfigurationChange]);
 
   const handleLinkToggle = useCallback((linkId: string, checked: boolean) => {
     const links = newConfiguration.originalLinks || [];
-    if (checked) {
+    if (checked) => {
       handleInputChange('originalLinks', [...links, linkId]);
     } else {
       handleInputChange('originalLinks', links.filter((id: any) => id !== linkId));
@@ -73,7 +73,7 @@ export const ConfigurationStep = memo(({
 
   const handleAccountToggle = useCallback((accountId: string, accountName: string, checked: boolean) => {
     const accounts = newConfiguration.googleAdsAccounts || [];
-    if (checked) {
+    if (checked) => {
       handleInputChange('googleAdsAccounts', [...accounts, { accountId, accountName }]);
     } else {
       handleInputChange('googleAdsAccounts', accounts.filter((acc: any) => acc.accountId !== accountId));
@@ -121,7 +121,7 @@ export const ConfigurationStep = memo(({
               <input
                 type="text"
                 value={newConfiguration.name || ''}
-                onChange={((e: any): any) => handleInputChange('name', e.target.value)}
+                onChange={(e) => handleInputChange('name', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="我的自动化配置"
               />
@@ -131,7 +131,7 @@ export const ConfigurationStep = memo(({
               <label className="block text-sm font-medium mb-2">配置描述（Description）<br/><span className="text-xs text-gray-500">配置的详细说明和用途</span></label>
               <textarea
                 value={newConfiguration.description || ''}
-                onChange={((e: any): any) => handleInputChange('description', e.target.value)}
+                onChange={(e) => handleInputChange('description', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 rows={3}
                 placeholder="配置描述和用途说明"
@@ -143,7 +143,7 @@ export const ConfigurationStep = memo(({
                 <label className="block text-sm font-medium mb-2">执行环境（Execution Environment）*<br/><span className="text-xs text-gray-500">选择用于自动化执行的AdsPower环境</span></label>
                 <select
                   value={newConfiguration.environmentId || ''}
-                  onChange={((e: any): any) => handleInputChange('environmentId', e.target.value)}
+                  onChange={(e) => handleInputChange('environmentId', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md"
                 >
                   <option value="">选择环境</option>
@@ -162,7 +162,7 @@ export const ConfigurationStep = memo(({
                   min="1"
                   max="10"
                   value={newConfiguration.repeatCount || 1}
-                  onChange={((e: any): any) => handleInputChange('repeatCount', parseInt(e.target.value) || 1)}
+                  onChange={(e) => handleInputChange('repeatCount', parseInt(e.target.value) || 1)}
                   className="w-full px-3 py-2 border rounded-md"
                 />
               </div>
@@ -173,7 +173,7 @@ export const ConfigurationStep = memo(({
               <input
                 type="email"
                 value={newConfiguration.notificationEmail || ''}
-                onChange={((e: any): any) => handleInputChange('notificationEmail', e.target.value)}
+                onChange={(e) => handleInputChange('notificationEmail', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="your@email.com"
               />
@@ -187,7 +187,7 @@ export const ConfigurationStep = memo(({
                     <input
                       type="checkbox"
                       checked={newConfiguration.originalLinks?.includes(link.id) || false}
-                      onChange={((e: any): any) => handleLinkToggle(link.id, e.target.checked)}
+                      onChange={(e) => handleLinkToggle(link.id, e.target.checked)}
                       className="rounded"
                     />
                     <span className="text-sm">{link.name}</span>
@@ -204,7 +204,7 @@ export const ConfigurationStep = memo(({
                     <input
                       type="checkbox"
                       checked={newConfiguration.googleAdsAccounts?.some(acc => acc.accountId === account.id) || false}
-                      onChange={((e: any): any) => handleAccountToggle(account.id, account.name, e.target.checked)}
+                      onChange={(e) => handleAccountToggle(account.id, account.name, e.target.checked)}
                       className="rounded"
                     />
                     <span className="text-sm">{account.name}</span>
@@ -236,7 +236,7 @@ export const ConfigurationStep = memo(({
                 <p className="text-sm text-blue-700">您可以前往配置管理页面进行详细设置和执行</p>
               </div>
               <Button
-                onClick={((: any): any) => window.location.href = '/adscenter/configurations'}
+                onClick={() => window.location.href = '/adscenter/configurations'}
                 variant="outline"
                 className="text-blue-700 border-blue-300 hover:bg-blue-50"
               >

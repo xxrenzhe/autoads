@@ -74,7 +74,7 @@ export function GoogleAdsConfigWizard({
   onOAuthStart,
   isAuthenticated = false,
   availableAccounts = []
-}: GoogleAdsConfigWizardProps) {
+}: .*Props) {
   const [activeStep, setActiveStep] = useState<'auth' | 'account' | 'basic' | 'links' | 'schedule' | 'review'>('auth');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -123,7 +123,7 @@ export function GoogleAdsConfigWizard({
   }, [config, onSave]);
 
   const addAffiliateLink = useCallback(() => {
-    if (!newLink.name || !newLink.originalUrl || !newLink.affiliateUrl) {
+    if (!newLink.name || !newLink.originalUrl || !newLink.affiliateUrl) => {
       setError('Please fill in all required fields for the affiliate link');
       return;
     }
@@ -173,7 +173,7 @@ export function GoogleAdsConfigWizard({
   const nextStep = useCallback(() => {
     const steps = ['auth', 'account', 'basic', 'links', 'schedule', 'review'];
     const currentIndex = steps.indexOf(activeStep);
-    if (currentIndex < steps.length - 1) {
+    if (currentIndex < steps.length - 1) => {
       setActiveStep(steps[currentIndex + 1] as any);
     }
   }, [activeStep]);
@@ -181,13 +181,13 @@ export function GoogleAdsConfigWizard({
   const prevStep = useCallback(() => {
     const steps = ['auth', 'account', 'basic', 'links', 'schedule', 'review'];
     const currentIndex = steps.indexOf(activeStep);
-    if (currentIndex > 0) {
+    if (currentIndex > 0) => {
       setActiveStep(steps[currentIndex - 1] as any);
     }
   }, [activeStep]);
 
   const isStepComplete = useCallback((step: string) => {
-    switch (step) {
+    switch (step) => {
       case 'auth':
         return isAuthenticated;
       case 'account':
@@ -555,7 +555,7 @@ export function GoogleAdsConfigWizard({
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={((: any): any) => removeAffiliateLink(link.id)}
+                          onClick={() => removeAffiliateLink(link.id)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

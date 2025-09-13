@@ -134,7 +134,7 @@ export default function UserTokensPage() {
   const [loadingBatchDetails, setLoadingBatchDetails] = useState(false)
 
   useEffect(() => {
-    if (session?.user) {
+    if (session?.user) => {
       fetchTokenData()
     }
   }, [session, timeRange, featureFilter, currentPage, includeBatchDetails])
@@ -151,7 +151,7 @@ export default function UserTokensPage() {
       })
       
       const response = await fetch(`/api/user/tokens?${params}`)
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json()
         setApiData(data)
       }
@@ -166,7 +166,7 @@ export default function UserTokensPage() {
     try {
       setLoadingBatchDetails(true)
       const response = await fetch(`/api/user/tokens/batch/${batchId}`)
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json()
         setBatchDetails(data.data)
         setSelectedBatchId(batchId)
@@ -188,7 +188,7 @@ export default function UserTokensPage() {
   }
 
   const getFeatureIcon = (feature: string) => {
-    switch (feature) {
+    switch (feature) => {
       case 'siterank':
         return '🔍'
       case 'batchopen':
@@ -217,7 +217,7 @@ export default function UserTokensPage() {
     setBatchDetails(null)
   }
 
-  if (!session) {
+  if (!session) => {
     return (
       <div className="container mx-auto py-8">
         <Card>
@@ -421,7 +421,7 @@ export default function UserTokensPage() {
               <Button
                 variant={includeBatchDetails ? "default" : "outline"}
                 size="sm"
-                onClick={((: any): any) => setIncludeBatchDetails(!includeBatchDetails)}
+                onClick={() => setIncludeBatchDetails(!includeBatchDetails)}
               >
                 <Info className="h-4 w-4 mr-2" />
                 {includeBatchDetails ? "隐藏详情" : "显示详情"}
@@ -492,7 +492,7 @@ export default function UserTokensPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={((: any): any) => handleBatchDetailsClick(usage.batchId!)}
+                                onClick={() => handleBatchDetailsClick(usage.batchId!)}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -583,7 +583,7 @@ export default function UserTokensPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={((: any): any) => handlePageChange(currentPage - 1)}
+                      onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage <= 1}
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -595,7 +595,7 @@ export default function UserTokensPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={((: any): any) => handlePageChange(currentPage + 1)}
+                      onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage >= apiData.data.pagination.totalPages}
                     >
                       下一页

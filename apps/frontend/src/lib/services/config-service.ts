@@ -251,7 +251,7 @@ class ConfigService {
       take: limit
     })
 
-    return logs?.filter(Boolean)?.map((log: any: any) => ({
+    return logs?.filter((Boolean)?.map((log: any) => ({
       id: log.id,
       action: log.action,
       key: (log.details as any)?.key || '',

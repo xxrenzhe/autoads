@@ -83,7 +83,7 @@ export interface IntegrationManagerProps {
   className?: string
 }
 
-export function IntegrationManager({ className }: IntegrationManagerProps) {
+export function IntegrationManager({ className }: .*Props) {
   const [activeTab, setActiveTab] = useState<'overview' | 'integrations' | 'templates' | 'health'>('overview')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [showSetupModal, setShowSetupModal] = useState(false)
@@ -171,7 +171,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
   })
 
   const getStatusIcon = (status: Integration['status']) => {
-    switch (status) {
+    switch (status) => {
       case 'connected': return <CheckCircle className="h-4 w-4 text-green-600" />
       case 'disconnected': return <XCircle className="h-4 w-4 text-gray-400" />
       case 'error': return <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -181,7 +181,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
   }
 
   const getStatusColor = (status: Integration['status']): string => {
-    switch (status) {
+    switch (status) => {
       case 'connected': return 'bg-green-100 text-green-800'
       case 'disconnected': return 'bg-gray-100 text-gray-800'
       case 'error': return 'bg-red-100 text-red-800'
@@ -191,7 +191,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
   }
 
   const getCategoryIcon = (category: string) => {
-    switch (category) {
+    switch (category) => {
       case 'analytics': return <BarChart3 className="h-5 w-5" />
       case 'payment': return <CreditCard className="h-5 w-5" />
       case 'communication': return <Mail className="h-5 w-5" />

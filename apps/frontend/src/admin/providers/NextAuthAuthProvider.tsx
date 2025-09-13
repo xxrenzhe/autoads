@@ -34,7 +34,7 @@ export const createNextAuthAuthProvider = (): AuthProvider => {
 
     checkError: (error: ErrorResponse) => {
       const status = error.status;
-      if (status === 401 || status === 403) {
+      if (status === 401 || status === 403) => {
         // 如果 API 返回 401/403，重定向到登录页面
         window.location.href = '/auth/admin-signin?callbackUrl=/admin';
         return Promise.reject();
@@ -47,9 +47,9 @@ export const createNextAuthAuthProvider = (): AuthProvider => {
       // 由于在客户端，我们返回所有管理员权限
       // 根据用户角色返回不同的权限
       const userStr = localStorage.getItem('nextAuthUser');
-      if (userStr) {
+      if (userStr) => {
         const user = JSON.parse(userStr);
-        if (user.role === 'SUPER_ADMIN') {
+        if (user.role === 'SUPER_ADMIN') => {
           return Promise.resolve([
             'admin', 'super_admin',
             'users:read', 'users:write', 'users:delete',
@@ -60,7 +60,7 @@ export const createNextAuthAuthProvider = (): AuthProvider => {
             'api:read', 'api:write',
             'admin:settings'
           ]);
-        } else if (user.role === 'ADMIN') {
+        } else if (user.role === 'ADMIN') => {
           return Promise.resolve([
             'admin',
             'users:read', 'users:write',
@@ -90,7 +90,7 @@ export const createNextAuthAuthProvider = (): AuthProvider => {
       // 由于在客户端，我们无法直接访问会话信息
       // 我们可以从 localStorage 或全局状态获取
       const userStr = localStorage.getItem('nextAuthUser');
-      if (userStr) {
+      if (userStr) => {
         const user = JSON.parse(userStr);
         return Promise.resolve({
           id: user.id,
@@ -110,11 +110,11 @@ export const createNextAuthAuthProvider = (): AuthProvider => {
 
 // 创建一个高阶组件来包装 React Admin
 export const withNextAuth = (WrappedComponent: React.ComponentType<any>) => {
-  return function WithNextAuth(props: any) {
+  return function WithNextAuth(props: any) => {
     const { data: session } = useSession();
     
     // 将 NextAuth 用户信息存储到 localStorage，供 Auth Provider 使用
-    if (session?.user) {
+    if (session?.user) => {
       localStorage.setItem('nextAuthUser', JSON.stringify(session.user));
     }
     

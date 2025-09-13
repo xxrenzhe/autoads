@@ -57,7 +57,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               id="enable-delay"
               type="checkbox"
               checked={settings.enableDelay}
-              onChange={((e: any): any) => onSettingChange('enableDelay', e.target.checked)}
+              onChange={(e) => onSettingChange('enableDelay', e.target.checked)}
               className="rounded"
             />
           </div>
@@ -70,7 +70,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <input
                 type="range"
                 value={settings.delay}
-                onChange={((e: any): any) => onSettingChange('delay', parseInt(e.target.value))}
+                onChange={(e) => onSettingChange('delay', parseInt(e.target.value))}
                 max={5000}
                 min={100}
                 step={100}
@@ -87,7 +87,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               id="enable-tab-limit"
               type="checkbox"
               checked={settings.enableTabLimit}
-              onChange={((e: any): any) => onSettingChange('enableTabLimit', e.target.checked)}
+              onChange={(e) => onSettingChange('enableTabLimit', e.target.checked)}
               className="rounded"
             />
           </div>
@@ -100,7 +100,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <input
                 type="range"
                 value={settings.maxTabs}
-                onChange={((e: any): any) => onSettingChange('maxTabs', parseInt(e.target.value))}
+                onChange={(e) => onSettingChange('maxTabs', parseInt(e.target.value))}
                 max={50}
                 min={1}
                 step={1}
@@ -131,7 +131,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   id="enable-window-mode"
                   type="checkbox"
                   checked={settings.enableWindowMode}
-                  onChange={((e: any): any) => onSettingChange('enableWindowMode', e.target.checked)}
+                  onChange={(e) => onSettingChange('enableWindowMode', e.target.checked)}
                   className="rounded"
                 />
               </div>
@@ -146,7 +146,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                       id="window-width"
                       type="number"
                       value={settings.windowWidth}
-                      onChange={((e: any): any) => onSettingChange('windowWidth', parseInt(e.target.value) || DEFAULT_WINDOW_WIDTH)}
+                      onChange={(e) => onSettingChange('windowWidth', parseInt(e.target.value) || DEFAULT_WINDOW_WIDTH)}
                       min={400}
                       max={2000}
                     />
@@ -159,7 +159,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                       id="window-height"
                       type="number"
                       value={settings.windowHeight}
-                      onChange={((e: any): any) => onSettingChange('windowHeight', parseInt(e.target.value) || DEFAULT_WINDOW_HEIGHT)}
+                      onChange={(e) => onSettingChange('windowHeight', parseInt(e.target.value) || DEFAULT_WINDOW_HEIGHT)}
                       min={300}
                       max={1500}
                     />

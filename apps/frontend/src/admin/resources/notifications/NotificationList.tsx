@@ -54,7 +54,7 @@ const NotificationTypeField: React.FC = () => {
   if (!record) return null;
 
   const getIcon = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'EMAIL':
         return <Email fontSize="small" />;
       case 'SYSTEM':
@@ -66,7 +66,7 @@ const NotificationTypeField: React.FC = () => {
   };
 
   const getColor = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'EMAIL':
         return 'primary';
       case 'SYSTEM':
@@ -78,7 +78,7 @@ const NotificationTypeField: React.FC = () => {
   };
 
   const getTypeLabel = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'EMAIL':
         return '邮件';
       case 'SYSTEM':
@@ -105,7 +105,7 @@ const NotificationStatusField: React.FC = () => {
   if (!record) return null;
 
   const getIcon = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'PENDING':
         return <Schedule fontSize="small" />;
       case 'SENT':
@@ -120,7 +120,7 @@ const NotificationStatusField: React.FC = () => {
   };
 
   const getColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'PENDING':
         return 'warning';
       case 'SENT':
@@ -135,7 +135,7 @@ const NotificationStatusField: React.FC = () => {
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'PENDING':
         return '待发送';
       case 'SENT':

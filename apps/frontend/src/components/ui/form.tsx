@@ -49,7 +49,7 @@ const useFormField = () => {
 
   const fieldState = getFieldState(fieldContext.name, formState)
 
-  if (!fieldContext) {
+  if (!fieldContext) => {
     throw new Error("useFormField should be used within <FormField>")
   }
 
@@ -150,7 +150,7 @@ const FormMessage = React.forwardRef<
   const { error, formMessageId } = useFormField()
   const body = error ? String(error?.message) : children
 
-  if (!body) {
+  if (!body) => {
     return null
   }
 

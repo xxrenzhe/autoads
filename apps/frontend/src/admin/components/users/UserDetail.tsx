@@ -77,7 +77,7 @@ export function UserDetail({
   onDelete,
   onStatusChange,
   onRoleChange
-}: UserDetailProps) {
+}: .*Props) {
   const [activeTab, setActiveTab] = useState('overview')
   const [activities, setActivities] = useState<UserActivity[]>([])
   const [subscription, setSubscription] = useState<UserSubscription | null>(null)
@@ -85,7 +85,7 @@ export function UserDetail({
   const [isLoading, setIsLoading] = useState(false)
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'active': return 'success'
       case 'inactive': return 'secondary'
       case 'suspended': return 'destructive'
@@ -95,7 +95,7 @@ export function UserDetail({
   }
 
   const getSubscriptionStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'active': return 'success'
       case 'cancelled': return 'warning'
       case 'expired': return 'destructive'
@@ -105,7 +105,7 @@ export function UserDetail({
   }
 
   const getPaymentStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'succeeded': return 'success'
       case 'failed': return 'destructive'
       case 'pending': return 'warning'
@@ -132,13 +132,13 @@ export function UserDetail({
   }
 
   const handleStatusChange = (newStatus: string) => {
-    if (onStatusChange) {
+    if (onStatusChange) => {
       onStatusChange(user.id, newStatus)
     }
   }
 
   const handleRoleChange = (newRole: string) => {
-    if (onRoleChange) {
+    if (onRoleChange) => {
       onRoleChange(user.id, newRole)
     }
   }

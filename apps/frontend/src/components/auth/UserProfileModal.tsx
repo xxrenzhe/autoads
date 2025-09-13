@@ -26,11 +26,11 @@ interface UserProfileModalProps {
   onClose: () => void
 }
 
-export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
+export function UserProfileModal({ isOpen, onClose }: .*Props) {
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState('profile')
 
-  if (!session?.user) {
+  if (!session?.user) => {
     return null
   }
 

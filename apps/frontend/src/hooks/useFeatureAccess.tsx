@@ -16,7 +16,7 @@ export interface UserFeatures {
   limits: Record<string, any>;
 }
 
-export function useFeatureAccess(featureId?: string) {
+export function useFeatureAccess(featureId?: string) => {
   const [hasAccess, setHasAccess] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export function useFeatureAccess(featureId?: string) {
         setLoading(true);
         const response = await fetch(`/api/user/features/${featureId}/access`);
         
-        if (!response.ok) {
+        if (!response.ok) => {
           throw new Error('Failed to check feature access');
         }
         
@@ -38,10 +38,10 @@ export function useFeatureAccess(featureId?: string) {
         setHasAccess(result.hasAccess);
         setLimits(result.limits || null);
         
-        if (result.reason) {
+        if (result.reason) => {
           setError(result.reason);
         }
-      } catch (err) {
+      } catch (err) => {
         setError(err instanceof Error ? err.message : 'Unknown error');
         setHasAccess(false);
       } finally {
@@ -88,13 +88,13 @@ export function useUserFeatures() {
         setLoading(true);
         const response = await fetch('/api/user/features');
         
-        if (!response.ok) {
+        if (!response.ok) => {
           throw new Error('Failed to fetch user features');
         }
         
         const result = await response.json();
         setData(result);
-      } catch (err) {
+      } catch (err) => {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
@@ -137,26 +137,26 @@ export function FeatureGuard({
   children: React.ReactNode;
   fallback?: React.ReactNode;
   showUpgradePrompt?: boolean;
-}) {
+}) => {
   const { hasAccess, loading, error } = useFeatureAccess(featureId);
 
-  if (loading) {
+  if (loading) => {
     return <div className="animate-pulse">Loading...</div>;
   }
 
-  if (!hasAccess) {
-    if (fallback) {
+  if (!hasAccess) => {
+    if (fallback) => {
       return <>{fallback}</>;
     }
 
-    if (showUpgradePrompt) {
+    if (showUpgradePrompt) => {
       return (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-yellow-800">
             {error || 'This feature requires a higher subscription plan.'}
           </p>
           <button
-            onClick={((: any): any) => window.location.href = '/subscription'}
+            onClick={() => window.location.href = '/subscription'}
             className="mt-2 px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
           >
             Upgrade Plan

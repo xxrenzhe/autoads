@@ -323,7 +323,7 @@ class AuditService {
         prisma.auditLog.count({ where })
       ])
 
-      const mappedLogs: AuditLogEntry[] = logs?.filter(Boolean)?.map((log: any: any) => ({
+      const mappedLogs: AuditLogEntry[] = logs?.filter((Boolean)?.map((log: any) => ({
         id: log.id,
         userId: log.userId || undefined,
         userEmail: log.userEmail || undefined,
@@ -446,20 +446,20 @@ class AuditService {
           acc[item.outcome] = item._count.outcome
           return acc
         }, {} as Record<string, number>),
-        topUsers: topUsersData?.filter(Boolean)?.map((item: any: any) => ({
+        topUsers: topUsersData?.filter((Boolean)?.map((item: any) => ({
           userId: item.userId!,
           userEmail: item.userEmail || 'Unknown',
           count: item._count.userId
         })),
-        topActions: topActionsData?.filter(Boolean)?.map((item: any: any) => ({
+        topActions: topActionsData?.filter((Boolean)?.map((item: any) => ({
           action: item.action,
           count: item._count.action
         })),
-        topResources: topResourcesData?.filter(Boolean)?.map((item: any: any) => ({
+        topResources: topResourcesData?.filter((Boolean)?.map((item: any) => ({
           resource: item.resource || 'unknown',
           count: item._count.resource
         })),
-        recentActivity: recentActivityData?.filter(Boolean)?.map((log: any: any) => ({
+        recentActivity: recentActivityData?.filter((Boolean)?.map((log: any) => ({
           id: log.id,
           userId: log.userId || undefined,
           userEmail: log.userEmail || undefined,
@@ -558,7 +558,7 @@ class AuditService {
       ])
 
       // Calculate risk score based on actions
-      const riskScore = this.calculateUserRiskScore(recentActions?.filter(Boolean)?.map((log: any: any) => ({
+      const riskScore = this.calculateUserRiskScore((recentActions?.filter(Boolean)?.map((log: any) => ({
         action: log.action,
         severity: log.severity as any,
         outcome: log.outcome as any
@@ -570,7 +570,7 @@ class AuditService {
           acc[item.category] = item._count.category
           return acc
         }, {} as Record<string, number>),
-        recentActions: recentActions?.filter(Boolean)?.map((log: any: any) => ({
+        recentActions: recentActions?.filter((Boolean)?.map((log: any) => ({
           id: log.id,
           userId: log.userId || undefined,
           userEmail: log.userEmail || undefined,

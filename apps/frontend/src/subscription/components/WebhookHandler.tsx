@@ -35,7 +35,7 @@ export function WebhookHandler({
   className, 
   showFilters = true, 
   maxEvents = 50 
-}: WebhookHandlerProps) {
+}: .*Props) {
   const [selectedEventType, setSelectedEventType] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedEvent, setSelectedEvent] = useState<WebhookEvent | null>(null)
@@ -54,7 +54,7 @@ export function WebhookHandler({
       params.append('limit', maxEvents.toString())
 
       const response = await fetch(`/api/admin/webhooks/stripe?${params}`)
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to fetch webhook events')
       }
       const result = await response.json()
@@ -64,7 +64,7 @@ export function WebhookHandler({
   })
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'processed': return 'success'
       case 'failed': return 'destructive'
       case 'pending': return 'warning'
@@ -73,7 +73,7 @@ export function WebhookHandler({
   }
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'processed': return CheckCircle
       case 'failed': return AlertCircle
       case 'pending': return Clock
@@ -87,7 +87,7 @@ export function WebhookHandler({
         method: 'POST'
       })
       
-      if (response.ok) {
+      if (response.ok) => {
         refetch()
       }
     } catch (error) {
@@ -112,7 +112,7 @@ export function WebhookHandler({
     'payment_intent.payment_failed'
   ]
 
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <div className={`space-y-6 ${className}`}>
         <div className="flex items-center justify-between">
@@ -142,7 +142,7 @@ export function WebhookHandler({
     )
   }
 
-  if (error) {
+  if (error) => {
     return (
       <div className={`${className}`}>
         <Card>
@@ -154,7 +154,7 @@ export function WebhookHandler({
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               {error.message}
             </p>
-            <Button onClick={((: any): any) => refetch()} variant="outline">
+            <Button onClick={() => refetch()} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
               Try Again
             </Button>
@@ -177,7 +177,7 @@ export function WebhookHandler({
           </p>
         </div>
         
-        <Button onClick={((: any): any) => refetch()} variant="outline" size="sm">
+        <Button onClick={() => refetch()} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
@@ -197,7 +197,7 @@ export function WebhookHandler({
               
               <select
                 value={selectedEventType}
-                onChange={((e: any): any) => setSelectedEventType(e.target.value)}
+                onChange={(e) => setSelectedEventType(e.target.value)}
                 className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {eventTypes?.filter(Boolean)?.map((type: any) => (
@@ -209,7 +209,7 @@ export function WebhookHandler({
               
               <select
                 value={selectedStatus}
-                onChange={((e: any): any) => setSelectedStatus(e.target.value)}
+                onChange={(e) => setSelectedStatus(e.target.value)}
                 className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
@@ -271,7 +271,7 @@ export function WebhookHandler({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((: any): any) => setSelectedEvent(event)}
+                        onClick={() => setSelectedEvent(event)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View
@@ -281,7 +281,7 @@ export function WebhookHandler({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={((: any): any) => handleRetryWebhook(event.id)}
+                          onClick={() => handleRetryWebhook(event.id)}
                         >
                           <RefreshCw className="h-4 w-4 mr-1" />
                           Retry
@@ -318,7 +318,7 @@ export function WebhookHandler({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={((: any): any) => setSelectedEvent(null)}
+                  onClick={() => setSelectedEvent(null)}
                 >
                   ×
                 </Button>

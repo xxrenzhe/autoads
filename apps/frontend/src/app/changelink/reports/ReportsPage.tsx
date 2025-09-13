@@ -96,7 +96,7 @@ export default function ReportsPage() {
       const now = new Date();
       let startDate = new Date();
       
-      switch (timeRange) {
+      switch (timeRange) => {
         case '7d':
           startDate.setDate(now.getDate() - 7);
           break;
@@ -153,7 +153,7 @@ export default function ReportsPage() {
     // 按类型统计
     const byType: Record<string, any> = {};
     sessions.forEach((session: any) => {
-      if (!byType[session.type]) {
+      if (!byType[session.type]) => {
         byType[session.type] = {
           count: 0,
           success: 0,
@@ -163,9 +163,9 @@ export default function ReportsPage() {
       }
       
       byType[session.type].count++;
-      if (session.status === 'completed') {
+      if (session.status === 'completed') => {
         byType[session.type].success++;
-      } else if (session.status === 'failed') {
+      } else if (session.status === 'failed') => {
         byType[session.type].failed++;
       }
     });
@@ -195,7 +195,7 @@ export default function ReportsPage() {
     const dailyTrend: Array<{ date: string; sessions: number; successRate: number }> = [];
     const dayCount = Math.min(90, Math.ceil((timeRange.end.getTime() - timeRange.start.getTime()) / (1000 * 60 * 60 * 24)));
     
-    for (let i = dayCount - 1; i >= 0; i--) {
+    for (let i = dayCount - 1; i >= 0; i--) => {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
@@ -230,7 +230,7 @@ export default function ReportsPage() {
   const exportReport = (format: 'csv' | 'json') => {
     if (!reportData) return;
     
-    if (format === 'csv') {
+    if (format === 'csv') => {
       const csvContent = [
         ['会话ID', '名称', '类型', '状态', '开始时间', '结束时间', '执行时长', '进度', '错误信息'],
         ...reportData.sessions?.filter(Boolean)?.map((session: any) => [
@@ -276,7 +276,7 @@ export default function ReportsPage() {
     return date.toLocaleString('zh-CN');
   };
 
-  if (!reportData) {
+  if (!reportData) => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -321,7 +321,7 @@ export default function ReportsPage() {
                       key={range}
                       variant={timeRange === range ? "default" : "ghost"}
                       size="sm"
-                      onClick={((: any): any) => setTimeRange(range)}
+                      onClick={() => setTimeRange(range)}
                       className="text-xs"
                     >
                       {range === '7d' ? '7天' : range === '30d' ? '30天' : range === '90d' ? '90天' : '全部'}
@@ -401,10 +401,10 @@ export default function ReportsPage() {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button size="sm" onClick={((: any): any) => exportReport('csv')} className={UI_CONSTANTS.buttons.primary}>
+                <Button size="sm" onClick={() => exportReport('csv')} className={UI_CONSTANTS.buttons.primary}>
                   CSV
                 </Button>
-                <Button size="sm" variant="outline" onClick={((: any): any) => exportReport('json')}>
+                <Button size="sm" variant="outline" onClick={() => exportReport('json')}>
                   JSON
                 </Button>
               </div>

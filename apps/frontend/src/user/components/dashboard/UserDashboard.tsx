@@ -31,7 +31,7 @@ export interface UserDashboardProps {
   layout?: 'default' | 'compact' | 'detailed'
 }
 
-export function UserDashboard({ userId, layout = 'default' }: UserDashboardProps) {
+export function UserDashboard({ userId, layout = 'default' }: .*Props) {
   const {
     userStats,
     subscriptionInfo,
@@ -53,7 +53,7 @@ export function UserDashboard({ userId, layout = 'default' }: UserDashboardProps
     return () => clearInterval(interval)
   }, [refreshDashboard])
 
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -62,7 +62,7 @@ export function UserDashboard({ userId, layout = 'default' }: UserDashboardProps
     )
   }
 
-  if (error) {
+  if (error) => {
     return (
       <div className="text-center text-red-600 p-6">
         <p>Error loading dashboard: {error}</p>
@@ -232,7 +232,7 @@ export function UserDashboard({ userId, layout = 'default' }: UserDashboardProps
                 </div>
                 <select
                   value={selectedTimeRange}
-                  onChange={((e: any): any) => setSelectedTimeRange(e.target.value)}
+                  onChange={(e) => setSelectedTimeRange(e.target.value)}
                   className="text-sm border border-gray-300 rounded px-2 py-1"
                 >
                   <option value="24h">Last 24 Hours</option>

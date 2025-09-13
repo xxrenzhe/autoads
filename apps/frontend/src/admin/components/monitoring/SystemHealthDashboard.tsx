@@ -74,7 +74,7 @@ export interface SystemHealthDashboardProps {
   className?: string
 }
 
-export function SystemHealthDashboard({ className }: SystemHealthDashboardProps) {
+export function SystemHealthDashboard({ className }: .*Props) {
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [refreshInterval, setRefreshInterval] = useState(30) // seconds
   const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'infrastructure' | 'errors'>('overview')
@@ -129,7 +129,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
   })
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'healthy': return <CheckCircle className="h-4 w-4 text-green-600" />
       case 'degraded': return <Clock className="h-4 w-4 text-yellow-600" />
       case 'unhealthy': return <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -138,7 +138,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
   }
 
   const getStatusColor = (status: string): string => {
-    switch (status) {
+    switch (status) => {
       case 'healthy': return 'bg-green-100 text-green-800'
       case 'degraded': return 'bg-yellow-100 text-yellow-800'
       case 'unhealthy': return 'bg-red-100 text-red-800'
@@ -159,7 +159,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
   }
 
   const getLevelIcon = (level: ErrorLog['level']) => {
-    switch (level) {
+    switch (level) => {
       case 'error': return <AlertTriangle className="h-4 w-4 text-red-600" />
       case 'warning': return <Clock className="h-4 w-4 text-yellow-600" />
       case 'info': return <CheckCircle className="h-4 w-4 text-blue-600" />

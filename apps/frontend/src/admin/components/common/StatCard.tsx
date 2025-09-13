@@ -44,7 +44,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   loading = false,
 }) => {
   const getColor = () => {
-    switch (color) {
+    switch (color) => {
       case 'success':
         return '#4caf50';
       case 'error':
@@ -142,7 +142,7 @@ export const StatCard: React.FC<StatCardProps> = ({
     </Card>
   );
 
-  if (tooltip) {
+  if (tooltip) => {
     return (
       <Tooltip title={tooltip} placement="top">
         <Box>{cardContent}</Box>

@@ -55,7 +55,7 @@ export function UserSubscriptionManager({
   userId, 
   currentSubscription, 
   onSubscriptionChange 
-}: UserSubscriptionManagerProps) {
+}: .*Props) {
   const [plans, setPlans] = useState<Plan[]>([])
   const [selectedPlan, setSelectedPlan] = useState<string>('')
   const [duration, setDuration] = useState<number>(1)
@@ -76,7 +76,7 @@ export function UserSubscriptionManager({
     try {
       const response = await fetch('/api/admin/plans?action=list&includeInactive=false')
       const data = await response.json()
-      if (data.success) {
+      if (data.success) => {
         setPlans(data.data.plans)
       }
     } catch (error) {
@@ -85,7 +85,7 @@ export function UserSubscriptionManager({
   }
 
   const assignSubscription = async () => {
-    if (!selectedPlan) {
+    if (!selectedPlan) => {
       setMessage({ type: 'error', text: 'Please select a plan' })
       return
     }
@@ -99,7 +99,7 @@ export function UserSubscriptionManager({
         notes
       }
 
-      if (customEndDate) {
+      if (customEndDate) => {
         payload.customEndDate = customEndDate
       } else {
         payload.duration = duration
@@ -113,7 +113,7 @@ export function UserSubscriptionManager({
 
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok) => {
         setMessage({ type: 'success', text: 'Subscription assigned successfully' })
         setShowAssignForm(false)
         setSelectedPlan('')
@@ -143,7 +143,7 @@ export function UserSubscriptionManager({
         notes
       }
 
-      if (extendDays > 0) {
+      if (extendDays > 0) => {
         payload.extendDays = extendDays
       }
 
@@ -155,7 +155,7 @@ export function UserSubscriptionManager({
 
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok) => {
         setMessage({ type: 'success', text: 'Subscription modified successfully' })
         setShowModifyForm(false)
         setExtendDays(0)
@@ -172,7 +172,7 @@ export function UserSubscriptionManager({
   }
 
   const cancelSubscription = async () => {
-    if (!currentSubscription || !confirm('Are you sure you want to cancel this subscription?')) {
+    if (!currentSubscription || !confirm('Are you sure you want to cancel this subscription?')) => {
       return
     }
 
@@ -192,7 +192,7 @@ export function UserSubscriptionManager({
 
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok) => {
         setMessage({ type: 'success', text: 'Subscription cancelled successfully' })
         onSubscriptionChange?.()
       } else {

@@ -63,7 +63,7 @@ interface SetupWizardProps {
   onSkip?: () => void;
 }
 
-export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
+export default function SetupWizard({ onComplete, onSkip }: .*Props) {
   const [currentStep, setCurrentStep] = useState(0);
   const [googleAdsConfig, setGoogleAdsConfig] = useState<GoogleAdsConfig>({
     clientId: '',
@@ -159,7 +159,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
       });
 
       // 如果有默认值，自动标记Google Ads步骤为已完成
-      if (defaults.clientId && defaults.clientSecret && defaults.developerToken) {
+      if (defaults.clientId && defaults.clientSecret && defaults.developerToken) => {
         markStepCompleted('google-ads');
       }
     };
@@ -168,13 +168,13 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
   }, []);
 
   const handleNext = () => {
-    if (currentStep < setupSteps.length - 1) {
+    if (currentStep < setupSteps.length - 1) => {
       setCurrentStep(currentStep + 1);
     }
   };
 
   const handlePrevious = () => {
-    if (currentStep > 0) {
+    if (currentStep > 0) => {
       setCurrentStep(currentStep - 1);
     }
   };
@@ -200,7 +200,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
         }
       }));
       
-      if (isValid) {
+      if (isValid) => {
         // 保存配置到本地数据库
         await saveGoogleAdsConfig();
         markStepCompleted('google-ads');
@@ -236,7 +236,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
         }
       }));
       
-      if (isValid) {
+      if (isValid) => {
         // 保存配置到本地数据库
         await saveEmailConfig();
         markStepCompleted('email');
@@ -283,7 +283,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
       });
       
       const result = await response.json();
-      if (!result.success) {
+      if (!result.success) => {
         throw new Error(result.error);
       }
     } catch (error) {
@@ -304,7 +304,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
       });
       
       const result = await response.json();
-      if (!result.success) {
+      if (!result.success) => {
         throw new Error(result.error);
       }
     } catch (error) {
@@ -362,7 +362,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
       });
       
       const result = await response.json();
-      if (result.success) {
+      if (result.success) => {
         onComplete();
       } else {
         throw new Error(result.error);
@@ -475,7 +475,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             <input
               type="text"
               value={googleAdsConfig.clientId}
-              onChange={((e: any): any) => {
+              onChange={(e) => {
                 setGoogleAdsConfig(prev => ({ ...prev, clientId: e.target.value }));
                 setUsingDefaults(prev => ({ ...prev, clientId: false }));
               }}
@@ -492,7 +492,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     setEditMode(prev => ({ ...prev, clientId: false }));
                     setUsingDefaults(prev => ({ ...prev, clientId: true }));
                     setGoogleAdsConfig(prev => ({ ...prev, clientId: '' }));
@@ -541,7 +541,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               <input
                 type={showPasswords ? "text" : "password"}
                 value={googleAdsConfig.clientSecret}
-                onChange={((e: any): any) => {
+                onChange={(e) => {
                   setGoogleAdsConfig(prev => ({ ...prev, clientSecret: e.target.value }));
                   setUsingDefaults(prev => ({ ...prev, clientSecret: false }));
                 }}
@@ -550,7 +550,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               />
               <button
                 type="button"
-                onClick={((: any): any) => setShowPasswords(!showPasswords)}
+                onClick={() => setShowPasswords(!showPasswords)}
                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
               >
                 {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -566,7 +566,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     setEditMode(prev => ({ ...prev, clientSecret: false }));
                     setUsingDefaults(prev => ({ ...prev, clientSecret: true }));
                     setGoogleAdsConfig(prev => ({ ...prev, clientSecret: '' }));
@@ -614,7 +614,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             <input
               type={showPasswords ? "text" : "password"}
               value={googleAdsConfig.developerToken}
-              onChange={((e: any): any) => {
+              onChange={(e) => {
                 setGoogleAdsConfig(prev => ({ ...prev, developerToken: e.target.value }));
                 setUsingDefaults(prev => ({ ...prev, developerToken: false }));
               }}
@@ -631,7 +631,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     setEditMode(prev => ({ ...prev, developerToken: false }));
                     setUsingDefaults(prev => ({ ...prev, developerToken: true }));
                     setGoogleAdsConfig(prev => ({ ...prev, developerToken: '' }));
@@ -690,7 +690,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             <input
               type="text"
               value={googleAdsConfig.loginCustomerId}
-              onChange={((e: any): any) => {
+              onChange={(e) => {
                 setGoogleAdsConfig(prev => ({ ...prev, loginCustomerId: e.target.value }));
                 setUsingDefaults(prev => ({ ...prev, loginCustomerId: false }));
               }}
@@ -708,7 +708,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     setEditMode(prev => ({ ...prev, loginCustomerId: false }));
                     setUsingDefaults(prev => ({ ...prev, loginCustomerId: true }));
                     setGoogleAdsConfig(prev => ({ ...prev, loginCustomerId: '' }));
@@ -747,7 +747,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={((: any): any) => {
+                onClick={() => {
                   markStepCompleted('google-ads');
                   handleNext();
                 }}
@@ -831,7 +831,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             />
             <button
               type="button"
-              onClick={((: any): any) => setShowPasswords(!showPasswords)}
+              onClick={() => setShowPasswords(!showPasswords)}
               className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
             >
               {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -874,7 +874,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
 
           <Button
             variant="ghost"
-            onClick={((: any): any) => {
+            onClick={() => {
               markStepCompleted('email');
               handleNext();
             }}
@@ -935,7 +935,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
           <Button
             onClick={(async (): any) => {
               const success = await initializeDatabase();
-              if (success) {
+              if (success) => {
                 handleNext();
               }
             }}
@@ -1053,7 +1053,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 />
                 <button
                   type="button"
-                  onClick={((: any): any) => setShowPasswords(!showPasswords)}
+                  onClick={() => setShowPasswords(!showPasswords)}
                   className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
                 >
                   {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -1096,7 +1096,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
 
               <Button
                 variant="ghost"
-                onClick={((: any): any) => {
+                onClick={() => {
                   markStepCompleted('advanced');
                   handleNext();
                 }}
@@ -1137,7 +1137,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
   );
 
   const renderCurrentStep = () => {
-    switch (setupSteps[currentStep].id) {
+    switch (setupSteps[currentStep].id) => {
       case 'welcome':
         return renderWelcomeStep();
       case 'google-ads':

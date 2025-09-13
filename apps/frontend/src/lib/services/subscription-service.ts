@@ -414,7 +414,7 @@ export class SubscriptionService {
       })
 
       // 转换为历史记录格式
-      const history = subscriptions.map(subscription => ({
+      const history = subscriptions.map((subscription: any) => ({
         id: subscription.id,
         userId: subscription.userId,
         currentSubscriptionId: subscription.id,

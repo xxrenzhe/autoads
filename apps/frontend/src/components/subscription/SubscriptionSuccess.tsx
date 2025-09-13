@@ -19,7 +19,7 @@ export default function SubscriptionSuccess() {
     const sessionId = searchParams.get('session_id')
     const subscriptionId = searchParams.get('subscription_id')
 
-    if (sessionId || subscriptionId) {
+    if (sessionId || subscriptionId) => {
       verifySubscription(sessionId, subscriptionId)
     } else {
       setError('Missing subscription information')
@@ -36,7 +36,7 @@ export default function SubscriptionSuccess() {
       const response = await fetch(`/api/subscriptions/verify?${params}`)
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok) => {
         setSubscriptionData(data)
       } else {
         setError(data.error || 'Failed to verify subscription')
@@ -57,7 +57,7 @@ export default function SubscriptionSuccess() {
     router.push('/account/subscription')
   }
 
-  if (loading) {
+  if (loading) => {
     return (
       <div className="bg-white rounded-lg shadow p-8">
         <div className="text-center">
@@ -73,7 +73,7 @@ export default function SubscriptionSuccess() {
     )
   }
 
-  if (error) {
+  if (error) => {
     return (
       <div className="bg-white rounded-lg shadow p-8">
         <div className="text-center">
@@ -86,13 +86,13 @@ export default function SubscriptionSuccess() {
           </p>
           <div className="flex justify-center space-x-4">
             <button
-              onClick={((: any): any) => router.push('/subscribe')}
+              onClick={() => router.push('/subscribe')}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
             >
               Try Again
             </button>
             <button
-              onClick={((: any): any) => router.push('/contact')}
+              onClick={() => router.push('/contact')}
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
             >
               Contact Support

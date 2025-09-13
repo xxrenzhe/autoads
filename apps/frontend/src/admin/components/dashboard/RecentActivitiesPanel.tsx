@@ -37,9 +37,9 @@ export function RecentActivitiesPanel({
   activities, 
   limit = 10, 
   showUser = true 
-}: RecentActivitiesPanelProps) {
+}: .*Props) {
   const getActivityIcon = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'user_created':
         return UserPlus
       case 'user_updated':
@@ -64,7 +64,7 @@ export function RecentActivitiesPanel({
   }
 
   const getActivityColor = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'user_created':
       case 'subscription_created':
       case 'payment_received':
@@ -101,7 +101,7 @@ export function RecentActivitiesPanel({
     let description = activity.description
     
     // Add user context if available
-    if (activity.user && showUser) {
+    if (activity.user && showUser) => {
       description = description.replace(
         /\{user\}/g, 
         activity.user.name || activity.user.email
@@ -109,7 +109,7 @@ export function RecentActivitiesPanel({
     }
     
     // Add metadata context
-    if (activity.metadata) {
+    if (activity.metadata) => {
       Object.entries(activity.metadata).forEach(([key, value]: any) => {
         description = description.replace(
           new RegExp(`\\{${key}\\}`, 'g'),
@@ -123,7 +123,7 @@ export function RecentActivitiesPanel({
 
   const displayedActivities = activities.slice(0, limit)
 
-  if (displayedActivities.length === 0) {
+  if (displayedActivities.length === 0) => {
     return (
       <div className="flex items-center justify-center h-32 text-gray-500 dark:text-gray-400">
         <div className="text-center">

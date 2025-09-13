@@ -61,7 +61,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     if (aValue === null || aValue === undefined) return 1;
     if (bValue === null || bValue === undefined) return -1;
 
-    if (typeof aValue === "string" && typeof bValue === "string") {
+    if (typeof aValue === "string" && typeof bValue === "string") => {
       aValue = aValue.toLowerCase();
       bValue = bValue.toLowerCase();
     }
@@ -69,7 +69,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     if (
       (typeof aValue === "string" || typeof aValue === "number") &&
       (typeof bValue === "string" || typeof bValue === "number")
-    ) {
+    ) => {
       if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
       return 0;
@@ -88,9 +88,9 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     
         const exportData = results.map((row: any) => {
           const exportRow: Record<string, string | number | null | undefined> = {};
-          for (const header of headers) {
+          for (const header of headers) => {
             const value = row[header];
-            if (header === "测试优先级" && typeof value === "number") {
+            if (header === "测试优先级" && typeof value === "number") => {
               const { level } = getPriorityLevel(value, [], locale);
               exportRow[getColumnDisplayName(header, locale)] = level;
             } else {
@@ -175,7 +175,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             <Input
               placeholder={"搜索域名..."}
               value={searchTerm}
-              onChange={((e: any): any) => onSearchChange(e.target.value)}
+              onChange={(e) => onSearchChange(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -200,7 +200,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                   <th
                     key={col}
                     className={`py-3 px-4 text-left text-sm font-semibold text-slate-700 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors ${sortField === col ? "bg-blue-50" : ""} ${getColumnWidth(col)} ${getColumnClass(col)}`}
-                    onClick={((: any): any) => onSort(col)}
+                    onClick={() => onSort(col)}
                   >
                     <div className="flex items-center justify-between">
                       <span>{getColumnDisplayName(col, locale)}</span>

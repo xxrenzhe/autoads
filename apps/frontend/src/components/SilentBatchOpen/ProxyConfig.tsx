@@ -98,7 +98,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
     setError('');
     
     // 只有当URL真正改变时才重置验证状态
-    if (newUrl.trim() !== lastValidatedProxyUrl) {
+    if (newUrl.trim() !== lastValidatedProxyUrl) => {
       logger.info('URL已修改，重置验证状态');
       setProxyValidationSuccess(false);
     }
@@ -106,17 +106,17 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
 
   // 处理代理验证
   const handleValidateProxy = useCallback(async () => {
-    if (!proxyUrl.trim()) {
+    if (!proxyUrl.trim()) => {
       return;
     }
     
     // 验证前检查协议类型，如果是SOCKS则显示错误
     const proxyType = detectProxyProtocol(proxyUrl);
-    if (proxyType === 'socks5') {
+    if (proxyType === 'socks5') => {
       setError('❌ 静默版本不支持SOCKS5代理！请使用HTTP代理 (proxyType=http)。\n\n💡 解决方案：\n1. 将URL中的 proxyType=socks5 改为 proxyType=http\n2. 或使用我们提供的SOCKS5转换工具');
       setProxyValidationSuccess(false);
       return;
-    } else if (proxyType === 'socks4') {
+    } else if (proxyType === 'socks4') => {
       setError('❌ 静默版本不支持SOCKS4代理！请使用HTTP代理 (proxyType=http)。\n\n💡 解决方案：\n1. 将URL中的 proxyType=socks4 改为 proxyType=http\n2. 或联系代理服务商获取HTTP代理接口');
       setProxyValidationSuccess(false);
       return;
@@ -136,7 +136,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
           <input
             type="text"
             value={proxyUrl}
-            onChange={((e: any): any) => handleProxyUrlChange(e.target.value)}
+            onChange={(e) => handleProxyUrlChange(e.target.value)}
             placeholder="https://api.iprocket.io/api?username=xxx&password=xxx&cc=ROW&ips=1&type=-res-&proxyType=http&responseType=txt"
             className={`flex-1 p-2 border rounded-lg ${proxyValidationSuccess ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}
             disabled={isOpening}
@@ -197,7 +197,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
               type="radio"
               value="social"
               checked={refererOption === "social"}
-              onChange={((: any): any) => onRefererOptionChange("social")}
+              onChange={() => onRefererOptionChange("social")}
               className="mr-2"
               disabled={isOpening}
             />
@@ -208,7 +208,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
               <span className="text-sm whitespace-nowrap">社交媒体</span>
               <select
                 value={selectedSocialMedia}
-                onChange={((e: any): any) => onSelectedSocialMediaChange(e.target.value)}
+                onChange={(e) => onSelectedSocialMediaChange(e.target.value)}
                 className="flex-1 p-2 border border-gray-300 rounded-lg"
                 disabled={isOpening}
               >
@@ -225,7 +225,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
               type="radio"
               value="custom"
               checked={refererOption === "custom"}
-              onChange={((: any): any) => onRefererOptionChange("custom")}
+              onChange={() => onRefererOptionChange("custom")}
               className="mr-2"
               disabled={isOpening}
             />
@@ -237,7 +237,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
             <input
               type="text"
               value={customReferer}
-              onChange={((e: any): any) => onCustomRefererChange(e.target.value)}
+              onChange={(e) => onCustomRefererChange(e.target.value)}
               placeholder="请输入自定义Referer，例如：https://www.google.com/（留空则不发送Referer）"
               className="w-full p-2 border border-gray-300 rounded-lg"
               disabled={isOpening}

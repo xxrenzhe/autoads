@@ -41,14 +41,14 @@ export default function SubscriptionFlow() {
   // Check for pre-selected plan from URL params
   useEffect(() => {
     const planId = searchParams.get('plan')
-    if (planId) {
+    if (planId) => {
       loadPlanDetails(planId)
     }
   }, [searchParams])
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (status === 'unauthenticated') => {
       router.push('/auth/signin?callbackUrl=/subscribe')
     }
   }, [status, router])
@@ -56,7 +56,7 @@ export default function SubscriptionFlow() {
   const loadPlanDetails = async (planId: string) => {
     try {
       const response = await fetch(`/api/admin/plans/${planId}`)
-      if (response.ok) {
+      if (response.ok) => {
         const plan = await response.json()
         setSelectedPlan(plan)
       }
@@ -92,7 +92,7 @@ export default function SubscriptionFlow() {
 
       const result = await response.json()
 
-      if (response.ok) {
+      if (response.ok) => {
         setSubscriptionId(result.subscriptionId)
         setCurrentStep('success')
       } else {
@@ -118,7 +118,7 @@ export default function SubscriptionFlow() {
     setError(null)
   }
 
-  if (status === 'loading') {
+  if (status === 'loading') => {
     return (
       <div className="bg-white rounded-lg shadow p-8">
         <div className="animate-pulse space-y-4">
@@ -130,7 +130,7 @@ export default function SubscriptionFlow() {
     )
   }
 
-  if (status === 'unauthenticated') {
+  if (status === 'unauthenticated') => {
     return null // Will redirect to login
   }
 

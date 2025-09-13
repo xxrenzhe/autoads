@@ -20,7 +20,7 @@ import { useSession } from "next-auth/react";
 const logger = createClientLogger('SiteRankPageRefactored');
 
 function getStr(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) {
+  if (Array.isArray(value)) => {
     return value[0] || "";
   }
   return value || "";
@@ -110,7 +110,7 @@ export default function SiteRankPageRefactored() {
 
   // 处理排序点击
   const handleSort = (field: string) => {
-    if (sortField === field) {
+    if (sortField === field) => {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
@@ -140,7 +140,7 @@ export default function SiteRankPageRefactored() {
     onStatusUpdate: (analyzing, backgroundQuerying) => {
       setIsAnalyzing(analyzing);
       setIsBackgroundQuerying(backgroundQuerying);
-      if (!analyzing && !backgroundQuerying) {
+      if (!analyzing && !backgroundQuerying) => {
         setHasQueried(true);
       }
     },
@@ -154,12 +154,12 @@ export default function SiteRankPageRefactored() {
     setTokenError("");
     
     // 如果没有域名，直接返回
-    if (domainList.length === 0 && fileDomains.length === 0) {
+    if (domainList.length === 0 && fileDomains.length === 0) => {
       return;
     }
     
     // 首先检查用户是否登录
-    if (!session?.user?.id) {
+    if (!session?.user?.id) => {
       // 未登录用户，跳转到登录页面
       window.location.href = '/api/auth/signin?callbackUrl=' + encodeURIComponent(window.location.pathname);
       return;
@@ -180,7 +180,7 @@ export default function SiteRankPageRefactored() {
       
       const data = await response.json();
       
-      if (!data.available) {
+      if (!data.available) => {
         setTokenError("Token余额不足，请充值后重试");
         setIsTokenChecking(false);
         return;
@@ -214,12 +214,12 @@ export default function SiteRankPageRefactored() {
       // Check if using batch URL input mode
       const isBatchInputMode = fileDomains.length === 0 && domainList.length > 0;
       
-      if (isTokenError) {
+      if (isTokenError) => {
         // Show token error with unified message below the start button
         setTokenError("Token余额不足，请充值后重试");
       } else {
         // For other errors, show in the appropriate section based on input mode
-        if (isBatchInputMode) {
+        if (isBatchInputMode) => {
           setUrlError(errorMessage);
         } else {
           setFileError(errorMessage);
@@ -236,7 +236,7 @@ export default function SiteRankPageRefactored() {
     onDrop: (acceptedFiles: File[]) => {
       try {
         const file = acceptedFiles[0];
-        if (file) {
+        if (file) => {
           setFileName(file.name);
           // 这里会通过FileUpload组件处理
         }
@@ -325,7 +325,7 @@ export default function SiteRankPageRefactored() {
                   className="w-full h-32 border rounded p-2"
                   placeholder={getStr(t("siterank.inputPlaceholder") as string | string[] | undefined)}
                   value={urlInput}
-                  onChange={((e: any): any) => {
+                  onChange={(e) => {
                     setUrlInput(e.target.value);
                     if (urlError) setUrlError("");
                     if (tokenError) setTokenError("");

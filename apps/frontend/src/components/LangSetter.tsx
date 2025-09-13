@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 export function LangSetter() {
   const { locale } = useLanguage();
   useEffect(() => {
-    if (typeof document !== "undefined") {
+    if (typeof document !== "undefined") => {
       document.documentElement.lang = locale;
     }
   }, [locale]);

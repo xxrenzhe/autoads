@@ -89,8 +89,8 @@ export class BatchOpenPermissionService {
     }
 
     const available = Object.entries(versions)
-      .filter(([_, hasAccess]) => hasAccess)
-      .map(([version]) => version)
+      .filter(([_, hasAccess]: any) => hasAccess)
+      .map(([version]: any) => version)
 
     const highest = available.includes('automated') 
       ? 'automated' 

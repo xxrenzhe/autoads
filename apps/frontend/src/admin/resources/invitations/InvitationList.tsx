@@ -65,7 +65,7 @@ const InvitationActions = () => {
   return (
     <TopToolbar>
       <Button
-        onClick={((: any): any) => refresh()}
+        onClick={() => refresh()}
         label="刷新"
         startIcon={<RefreshIcon />}
       />
@@ -125,7 +125,7 @@ const RevokeButton = () => {
         method: 'POST'
       });
       
-      if (response.ok) {
+      if (response.ok) => {
         notify('邀请码已撤销', { type: 'success' });
         refresh();
       } else {
@@ -159,7 +159,7 @@ const InvitationStats: React.FC = () => {
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/admin/invitations/stats');
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json();
         setStats(data);
       }
@@ -170,11 +170,11 @@ const InvitationStats: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading) => {
     return <Box sx={{ mb: 2 }}>加载中...</Box>;
   }
 
-  if (!stats) {
+  if (!stats) => {
     return <Box sx={{ mb: 2 }}>无法加载统计数据</Box>;
   }
 

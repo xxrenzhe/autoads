@@ -308,7 +308,7 @@ export const useNotification = () => {
     const notification = { id, type, message, duration };
     
     setNotifications(prev => [...prev, notification]);
-    if (duration > 0) {
+    if (duration > 0) => {
       setTimeout(() => {
         setNotifications(prev => prev.filter((n: any) => n.id !== id));
       }, duration);

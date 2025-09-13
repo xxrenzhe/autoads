@@ -18,13 +18,13 @@ export default function GATestPage() {
 
     // Check if GA is loaded
     const checkInterval = setInterval(() => {
-      if (typeof window.gtag !== 'undefined') {
+      if (typeof window.gtag !== 'undefined') => {
         setGaStatus("✅ gtag is loaded");
         clearInterval(checkInterval);
         
         // Test a pageview
         const gaId = getGA_TRACKING_ID();
-        if (gaId) {
+        if (gaId) => {
           window.gtag('config', gaId, {
             page_path: '/ga-test'
           });
@@ -46,7 +46,7 @@ export default function GATestPage() {
     // Timeout after 5 seconds
     setTimeout(() => {
       clearInterval(checkInterval);
-      if (gaStatus === "Checking...") {
+      if (gaStatus === "Checking...") => {
         setGaStatus("❌ Timeout - gtag not loaded");
       }
     }, 5000);
@@ -86,7 +86,7 @@ export default function GATestPage() {
           </div>
           
           <button
-            onClick={((: any): any) => window.location.reload()}
+            onClick={() => window.location.reload()}
             className="w-full mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
           >
             Reload Page

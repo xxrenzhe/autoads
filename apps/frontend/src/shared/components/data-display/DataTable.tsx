@@ -46,7 +46,7 @@ export function DataTable<T extends Record<string, any>>({
   caption,
   ariaLabel,
   id
-}: DataTableProps<T>) {
+}: DataTableProps<T>) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumn, setSortColumn] = useState<keyof T | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
@@ -64,7 +64,7 @@ export function DataTable<T extends Record<string, any>>({
     let filtered = [...data];
 
     // Global search
-    if (searchTerm) {
+    if (searchTerm) => {
       filtered = filtered.filter((row: any) =>
         Object.values(row).some(value =>
           String(value).toLowerCase().includes(searchTerm.toLowerCase())
@@ -74,7 +74,7 @@ export function DataTable<T extends Record<string, any>>({
 
     // Column-specific filters
     Object.entries(columnFilters).forEach(([columnKey, filterValue]: any) => {
-      if (filterValue) {
+      if (filterValue) => {
         filtered = filtered.filter((row: any) =>
           String(row[columnKey]).toLowerCase().includes(filterValue.toLowerCase())
         );
@@ -108,11 +108,11 @@ export function DataTable<T extends Record<string, any>>({
   const totalPages = Math.ceil(sortedData.length / pageSize);
 
   const handleSort = (column: keyof T) => {
-    if (sortColumn === column) {
+    if (sortColumn === column) => {
       setSortDirection(prev => 
         prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc'
       );
-      if (sortDirection === 'desc') {
+      if (sortDirection === 'desc') => {
         setSortColumn(null);
       }
     } else {
@@ -122,7 +122,7 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent, action: () => void) => {
-    if (event.key === 'Enter' || event.key === ' ') {
+    if (event.key === 'Enter' || event.key === ' ') => {
       event.preventDefault();
       action();
     }
@@ -134,7 +134,7 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   const getSortAriaLabel = (column: keyof T, header: string): string => {
-    if (sortColumn !== column) {
+    if (sortColumn !== column) => {
       return `Sort by ${header}`;
     }
     const currentSort = sortDirection === 'asc' ? 'ascending' : 'descending';
@@ -151,7 +151,7 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   const getSortIcon = (column: keyof T) => {
-    if (sortColumn !== column) {
+    if (sortColumn !== column) => {
       return <ChevronUpDownIcon className="w-4 h-4 text-gray-400" />;
     }
     return sortDirection === 'asc' 
@@ -159,7 +159,7 @@ export function DataTable<T extends Record<string, any>>({
       : <ChevronDownIcon className="w-4 h-4 text-blue-600" />;
   };
 
-  if (loading) {
+  if (loading) => {
     return (
       <div 
         className="flex items-center justify-center p-8"
@@ -189,7 +189,7 @@ export function DataTable<T extends Record<string, any>>({
             type="text"
             placeholder={searchPlaceholder}
             value={searchTerm}
-            onChange={((e: any): any) => {
+            onChange={(e) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
@@ -224,7 +224,7 @@ export function DataTable<T extends Record<string, any>>({
                     column.sortable && "cursor-pointer hover:bg-gray-100 focus:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset",
                     column.width && `w-${column.width}`
                   )}
-                  onClick={((: any): any) => column.sortable && handleSort(column.key)}
+                  onClick={() => column.sortable && handleSort(column.key)}
                   onKeyDown={(e) => column.sortable && handleKeyDown(e, () => handleSort(column.key))}
                   tabIndex={column.sortable ? 0 : undefined}
                   role={column.sortable ? "columnheader button" : "columnheader"}
@@ -258,7 +258,7 @@ export function DataTable<T extends Record<string, any>>({
                           type="text"
                           placeholder={`Filter ${column.header.toLowerCase()}...`}
                           value={columnFilters[String(column.key)] || ''}
-                          onChange={((e: any): any) => handleColumnFilter(String(column.key), e.target.value)}
+                          onChange={(e) => handleColumnFilter(String(column.key), e.target.value)}
                           className="text-sm h-8"
                           aria-label={`Filter ${column.header}`}
                         />
@@ -289,7 +289,7 @@ export function DataTable<T extends Record<string, any>>({
                     "hover:bg-gray-50",
                     onRowClick && "cursor-pointer focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
                   )}
-                  onClick={((: any): any) => onRowClick?.(row)}
+                  onClick={() => onRowClick?.(row)}
                   onKeyDown={(e) => onRowClick && handleKeyDown(e, () => onRowClick(row))}
                   tabIndex={onRowClick ? 0 : undefined}
                   aria-label={onRowClick ? `Row ${index + 1}, click to select` : undefined}
@@ -353,7 +353,7 @@ export function DataTable<T extends Record<string, any>>({
                     key={pageNum}
                     variant={currentPage === pageNum ? "default" : "outline"}
                     size="sm"
-                    onClick={((: any): any) => setCurrentPage(pageNum)}
+                    onClick={() => setCurrentPage(pageNum)}
                     aria-label={`Go to page ${pageNum}`}
                     aria-current={currentPage === pageNum ? "page" : undefined}
                   >
@@ -367,7 +367,7 @@ export function DataTable<T extends Record<string, any>>({
                   <Button
                     variant={currentPage === totalPages ? "default" : "outline"}
                     size="sm"
-                    onClick={((: any): any) => setCurrentPage(totalPages)}
+                    onClick={() => setCurrentPage(totalPages)}
                     aria-label={`Go to page ${totalPages}`}
                     aria-current={currentPage === totalPages ? "page" : undefined}
                   >

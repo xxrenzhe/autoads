@@ -157,7 +157,7 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
       typeof window !== "undefined" &&
       extWindow.backgroundOpenExtension &&
       extWindow.backgroundOpenExtension.id
-    ) {
+    ) => {
       logger.info('✅ 检测到插件:');
       setPluginDetected(true);
       return true;
@@ -167,7 +167,7 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
     if (typeof window !== "undefined" && (
       document.querySelector('script[data-background-open]') || 
       window.hasOwnProperty('backgroundOpenContentScriptLoaded')
-    )) {
+    )) => {
       logger.info('✅ 检测到content script标记');
       setPluginDetected(true);
       return true;
@@ -198,7 +198,7 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
   }, [checkPlugin]);
   // 监听扩展检测事件
   useEffect(() => {
-    function handleExtensionDetected(e: Event) {
+    function handleExtensionDetected(e: Event) => {
       const customEvent = e as CustomEvent;
       (window as ExtendedWindow).backgroundOpenExtension = {
           id: customEvent.detail.id
@@ -236,11 +236,11 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
   }, [checkPlugin]);
   // 监听批量打开进度和终止确认消息
   useEffect(() => {
-    function handleProgressMsg(event: MessageEvent) {
+    function handleProgressMsg(event: MessageEvent) => {
       if (isTerminated) return; // 终止后忽略所有进度消息
       
       // 处理进度更新消息
-      if (event.data && event.data.type === "BATCH_OPEN_PROGRESS") {
+      if (event.data && event.data.type === "BATCH_OPEN_PROGRESS") => {
         const count = event.data.count || 0;
         const total = event.data.total || 1;
         setProgress(count); // 分子为已打开的URL个数
@@ -248,7 +248,7 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
         setCachedTotalToOpen(total);
         setStatus(`已打开 ${count}/${total} 个标签页`);
         // 当进度达到100%时，只重置isOpening状态，保持进度条显示
-        if (count >= total) {
+        if (count >= total) => {
           setTimeout(() => {
             setIsOpening(false);
             setStatus(`批量打开完成，共打开 ${total} 个标签页`);
@@ -257,7 +257,7 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
       }
       
       // 处理终止确认消息
-      if (event.data && event.data.type === "BATCH_TERMINATE_CONFIRMED") {
+      if (event.data && event.data.type === "BATCH_TERMINATE_CONFIRMED") => {
         logger.info('收到终止确认消息:');
         setIsOpening(false);
         setIsTerminated(true);
@@ -271,8 +271,8 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
       message: { type?: string; message?: string }, 
       sender: unknown, 
       sendResponse: (response?: unknown) => void
-    ) {
-      if (message && message.type === "BATCH_TERMINATE_CONFIRMED") {
+    ) => {
+      if (message && message.type === "BATCH_TERMINATE_CONFIRMED") => {
         logger.info('收到Chrome扩展终止确认:');
         setIsOpening(false);
         setIsTerminated(true);
@@ -295,13 +295,13 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
     };
     
     const chromeRuntime = windowWithChrome.chrome?.runtime;
-    if (chromeRuntime?.onMessage) {
+    if (chromeRuntime?.onMessage) => {
       chromeRuntime.onMessage.addListener(handleChromeMessage);
     }
     
     return () => {
       window.removeEventListener("message", handleProgressMsg);
-      if (chromeRuntime?.onMessage) {
+      if (chromeRuntime?.onMessage) => {
         chromeRuntime.onMessage.removeListener(handleChromeMessage);
       }
     };
@@ -343,7 +343,7 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
     }, 200); // 允许后续操作
     // 关闭所有已打开的标签页
     securePostMessage({ type: "BATCH_CLOSE_ALL_TABS" });
-    for (const win of openedWindows.current) {
+    for (const win of openedWindows.current) => {
       try {
         win.close();
       } catch {}
@@ -370,14 +370,14 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
     setCachedTotalToOpen(null); // 重置缓存分母
     abortRef.current = false;
     // 关闭上次所有窗口
-    for (const win of openedWindows.current) {
+    for (const win of openedWindows.current) => {
       try {
         win.close();
       } catch {}
     }
     openedWindows.current = [];
 
-    if (urls.length === 0) {
+    if (urls.length === 0) => {
       const errorMsg =
         getTranslation(t, "batchopen.error.no_urls") ||
         "请输入至少一个URL";
@@ -386,7 +386,7 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
       return;
     }
     // 移除输入数量限制
-    // if (urls.length > MAX_TABS) {
+    // if (urls.length > MAX_TABS) => {
     //   const errorMsg = getT(t, 'batchopen.error.too_many_urls')
     //     ? getT(t, 'batchopen.error.too_many_urls').replace('{max}', String(MAX_TABS))
     //     : `最多${MAX_TABS}个URL`;
@@ -397,7 +397,7 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
     setIsOpening(true);
     let blocked = false;
     const opened: Window[] = [];
-    if (version === "basic") {
+    if (version === "basic") => {
       // 初级版：检查并消费 token
       const tokenResult = await consumeTokens(
         'batchopen',
@@ -413,17 +413,17 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
         }
       );
       
-      if (!tokenResult.success) {
+      if (!tokenResult.success) => {
         setIsOpening(false);
         return;
       }
       
       // 初级版：只打开一次
-      for (let i = 0; i < urls.length; i++) {
+      for (let i = 0; i < urls.length; i++) => {
         if (abortRef.current) break;
         const url = urls[i];
         const win: Window | null = window.open(url, "_blank");
-        if (!win) {
+        if (!win) => {
           blocked = true;
           break;
         }
@@ -437,7 +437,7 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
         setIsOpening(false);
         setStatus(`批量打开完成，共打开 ${opened.length} 个标签页`);
       }, 1000);
-      if (blocked) {
+      if (blocked) => {
         setPopupBlocked(true);
         const blockedMsg =
           getTranslation(t, "batchopen.status.popup_blocked") ||
@@ -455,10 +455,10 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
       }
     }
     setIsOpening(false);
-    if (blocked) {
+    if (blocked) => {
       setPopupBlocked(true);
       setStatus(getTranslation(t, "batchopen.status.popup_blocked") || "弹窗被阻止");
-    } else if (!abortRef.current) {
+    } else if (!abortRef.current) => {
       setStatus(
         getTranslation(t, "batchopen.status.success")
           ? getTranslation(t, "batchopen.status.success").replace(
@@ -487,14 +487,14 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
     let terminateConfirmed = false;
     
     // 第2层：Chrome扩展API终止（主要方法）
-    if (typeof window !== 'undefined' && window.chrome && window.chrome.runtime && window.chrome.runtime.sendMessage) {
+    if (typeof window !== 'undefined' && window.chrome && window.chrome.runtime && window.chrome.runtime.sendMessage) => {
       logger.info('📤 发送Chrome扩展终止消息');
       window.chrome.runtime.sendMessage(
         { action: "terminateBatchOpen" },
         (response: unknown) => {
           logger.info('📨 Chrome扩展终止响应:');
           const typedResponse = response as { success?: boolean; message?: string } | undefined;
-          if (typedResponse && typedResponse.success) {
+          if (typedResponse && typedResponse.success) => {
             terminateConfirmed = true;
             setStatus("批量打开已完全终止");
             showFeedback("success", typedResponse.message || "批量打开已成功终止");
@@ -503,14 +503,14 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
     }
     
     // 第3层：PostMessage广播终止（兼容方法）
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') => {
       logger.info('📢 发送PostMessage终止广播');
       securePostMessage({ type: "BATCH_TERMINATE" });
     }
     
     // 第4层：超时保护机制 - 如果3秒内没有收到确认，强制显示终止状态
     setTimeout(() => {
-      if (!terminateConfirmed) {
+      if (!terminateConfirmed) => {
         logger.info('⏰ 终止超时保护触发');
         setStatus("批量打开已终止（超时保护）");
         showFeedback("info", "终止请求已发送，如仍有标签页打开请手动关闭");
@@ -538,7 +538,7 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
 
   // 计算剩余时间 - 基于剩余未打开次数 * 间隔时间
   const calculateRemainingTime = () => {
-    if (!isOpening || progress === 0 || !cachedTotalToOpen) {
+    if (!isOpening || progress === 0 || !cachedTotalToOpen) => {
       return null as any;
     }
 
@@ -554,9 +554,9 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
     // 计算总剩余时间：剩余次数 * 间隔时间
     const remainingSeconds = remaining * intervalSeconds;
     
-    if (remainingSeconds < 60) {
+    if (remainingSeconds < 60) => {
       return `约${remainingSeconds}秒`;
-    } else if (remainingSeconds < 3600) {
+    } else if (remainingSeconds < 3600) => {
       const minutes = Math.ceil(remainingSeconds / 60);
       return `约${minutes}分钟`;
     } else {
@@ -573,19 +573,19 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
       <div className="flex justify-center gap-4 mb-8">
         <button
           className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${version === "basic" ? UI_CONSTANTS.buttons.primary : UI_CONSTANTS.buttons.outline}`}
-          onClick={((: any): any) => handleSwitchVersion("basic")}
+          onClick={() => handleSwitchVersion("basic")}
         >
           {getTranslation(t, "batchopen.basicVersion.title")}
         </button>
         <button
           className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${version === "silent" ? UI_CONSTANTS.buttons.primary : UI_CONSTANTS.buttons.outline}`}
-          onClick={((: any): any) => handleSwitchVersion("silent")}
+          onClick={() => handleSwitchVersion("silent")}
         >
           {getTranslation(t, "batchopen.silentVersion.title")}
         </button>
         <button
           className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${version === "autoclick" ? UI_CONSTANTS.buttons.primary : UI_CONSTANTS.buttons.outline} relative`}
-          onClick={((: any): any) => handleSwitchVersion("autoclick")}
+          onClick={() => handleSwitchVersion("autoclick")}
         >
           {getTranslation(t, "batchopen.autoclickVersion.title")}
           <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">

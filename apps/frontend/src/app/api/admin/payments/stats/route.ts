@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
       averageAmount: totalPayments > 0 ? (totalRevenue._sum.amount || 0) / successfulPayments : 0,
       revenueByMethod,
       revenueByStatus,
-      dailyRevenue: dailyRevenue.map((day: any: any) => ({
+      dailyRevenue: dailyRevenue.map(((day: any) => ({
         date: day.date,
         amount: Number(day.amount),
         count: day.count,

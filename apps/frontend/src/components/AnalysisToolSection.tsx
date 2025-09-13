@@ -4,7 +4,7 @@ interface AnalysisToolSectionProps {
   locale: string;
 }
 
-const AnalysisToolSection = ({ locale }: AnalysisToolSectionProps) => {
+const AnalysisToolSection = ({ locale }: .*Props) {
   return (
     <section className="py-8 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="container mx-auto px-4">

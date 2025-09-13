@@ -78,11 +78,11 @@ const TransactionStats: React.FC = () => {
   // Calculate stats
   const totalTransactions = data.length;
   const totalAcquired = data
-    .filter((t: any: any) => t.amount > 0)
+    .filter(((t: any) => t.amount > 0)
     .reduce((sum: number, t: any: any) => sum + t.amount, 0);
   const totalConsumed = Math.abs(
     data
-      .filter((t: any: any) => t.amount < 0)
+      .filter(((t: any) => t.amount < 0)
       .reduce((sum: number, t: any: any) => sum + t.amount, 0)
   );
 

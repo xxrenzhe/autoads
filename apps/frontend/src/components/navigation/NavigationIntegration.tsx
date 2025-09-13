@@ -101,7 +101,7 @@ export function NavigationLinks() {
   }
 
   const isActive = (href: string) => {
-    if (href === '/') {
+    if (href === '/') => {
       return pathname === '/'
     }
     return pathname.startsWith(href)

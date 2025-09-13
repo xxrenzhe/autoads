@@ -46,9 +46,9 @@ export function SubscriptionCard({
   usage, 
   onUpgrade, 
   onManage 
-}: SubscriptionCardProps) {
+}: .*Props) {
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'active': return 'success'
       case 'trial': return 'warning'
       case 'cancelled': return 'destructive'
@@ -58,7 +58,7 @@ export function SubscriptionCard({
   }
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'active': return CheckCircle
       case 'trial': return Clock
       case 'cancelled': return AlertTriangle
@@ -97,7 +97,7 @@ export function SubscriptionCard({
   const daysUntilReset = getDaysUntilReset()
 
   // Free plan case
-  if (!subscription) {
+  if (!subscription) => {
     return (
       <Card>
         <CardHeader>

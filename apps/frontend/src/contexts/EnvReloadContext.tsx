@@ -21,7 +21,7 @@ const EnvReloadContext = createContext<EnvReloadContextType>({
 const UPDATE_CHECK_INTERVAL = 60000 // 60 seconds (increased to reduce frequency)
 const LAST_UPDATE_KEY = 'env_last_update'
 
-export function EnvReloadProvider({ children }: { children: React.ReactNode }) {
+export function EnvReloadProvider({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession()
   const [envUpdatePending, setEnvUpdatePending] = useState(false)
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null)
@@ -33,13 +33,13 @@ export function EnvReloadProvider({ children }: { children: React.ReactNode }) {
   // Check for environment updates
   const checkForUpdates = async () => {
     // Only check for updates if user is admin
-    if (!isAdmin) {
+    if (!isAdmin) => {
       return
     }
 
     try {
       const response = await fetch('/api/admin/env-vars')
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json()
         
         // Get the last update time from localStorage
@@ -47,7 +47,7 @@ export function EnvReloadProvider({ children }: { children: React.ReactNode }) {
         const currentUpdateTime = new Date().toISOString()
         
         // If there's no stored time, store the current time
-        if (!storedLastUpdate) {
+        if (!storedLastUpdate) => {
           localStorage.setItem(LAST_UPDATE_KEY, currentUpdateTime)
           return
         }
@@ -60,7 +60,7 @@ export function EnvReloadProvider({ children }: { children: React.ReactNode }) {
           return storedVars[key] !== currentVars[key]
         })
         
-        if (hasChanges) {
+        if (hasChanges) => {
           setEnvUpdatePending(true)
           setLastUpdateTime(new Date())
           localStorage.setItem(LAST_UPDATE_KEY, currentUpdateTime)
@@ -76,7 +76,7 @@ export function EnvReloadProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Only set up polling for admin users
-    if (!isAdmin) {
+    if (!isAdmin) => {
       return
     }
 
@@ -88,9 +88,9 @@ export function EnvReloadProvider({ children }: { children: React.ReactNode }) {
     
     // Listen for storage events (for cross-tab updates)
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === LAST_UPDATE_KEY) {
+      if (event.key === LAST_UPDATE_KEY) => {
         const updateTime = event.newValue ? new Date(event.newValue) : null
-        if (updateTime && (!lastUpdateTime || updateTime > lastUpdateTime)) {
+        if (updateTime && (!lastUpdateTime || updateTime > lastUpdateTime)) => {
           setEnvUpdatePending(true)
           setLastUpdateTime(updateTime)
         }
@@ -129,7 +129,7 @@ export function EnvReloadProvider({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={((: any): any) => window.location.reload()}
+              onClick={() => window.location.reload()}
               className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-sm"
             >
               立即刷新

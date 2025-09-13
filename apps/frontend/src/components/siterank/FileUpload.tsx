@@ -45,7 +45,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     try {
       onError(""); // 清除之前的错误
       // 先设置文件名
-      if (onFileSelected) {
+      if (onFileSelected) => {
         onFileSelected(file.name);
       }
       const result = await processFile(file, locale, batchQueryLimit);

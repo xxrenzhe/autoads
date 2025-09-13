@@ -29,7 +29,7 @@ export default function DashboardLayout({
   description,
   actions,
   className
-}: DashboardLayoutProps) {
+}: .*Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: session } = useSession()
 
@@ -152,10 +152,10 @@ export default function DashboardLayout({
 }
 
 // Specialized layouts for different dashboard types
-export function UserDashboardLayout(props: Omit<DashboardLayoutProps, 'type'>) {
+export function UserDashboardLayout(props: Omit<DashboardLayoutProps, 'type'>) => {
   return <DashboardLayout {...props} type="user" />
 }
 
-export function AdminDashboardLayout(props: Omit<DashboardLayoutProps, 'type'>) {
+export function AdminDashboardLayout(props: Omit<DashboardLayoutProps, 'type'>) => {
   return <DashboardLayout {...props} type="admin" />
 }

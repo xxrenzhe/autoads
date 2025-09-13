@@ -19,7 +19,7 @@ interface CurrentStepDisplayProps {
   onStepClick: (index: number) => void;
 }
 
-export const CurrentStepDisplay = memo(({ setupSteps, currentStep, onStepClick }: CurrentStepDisplayProps) => {
+export const CurrentStepDisplay = memo(({ setupSteps, currentStep, onStepClick }: .*Props) {
   return (
     <Card>
       <CardHeader>

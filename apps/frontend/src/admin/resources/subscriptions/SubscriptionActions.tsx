@@ -104,13 +104,13 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
         }
       );
 
-      if (json.success) {
+      if (json.success) => {
         notify(json.message, { type: 'success' });
         refresh();
       } else {
         notify(json.error || '操作失败', { type: 'error' });
       }
-    } catch (error: any) {
+    } catch (error: any) => {
       notify(error.message || '操作失败', { type: 'error' });
     } finally {
       setLoading(false);
@@ -122,7 +122,7 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
   const renderActionForm = () => {
     if (!actionDialog) return null as any;
 
-    switch (actionDialog.action) {
+    switch (actionDialog.action) => {
       case 'cancel':
         return (
           <Box>
@@ -130,7 +130,7 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
               <InputLabel>取消方式</InputLabel>
               <Select
                 value={String(actionData.immediate || false)}
-                onChange={((e: any): any) => setActionData({ ...actionData, immediate: e.target.value === 'true' })}
+                onChange={(e) => setActionData({ ...actionData, immediate: e.target.value === 'true' })}
                 label="取消方式"
               >
                 <MenuItem value="false">到期后取消</MenuItem>
@@ -144,7 +144,7 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
               multiline
               rows={3}
               value={actionData.reason || ''}
-              onChange={((e: any): any) => setActionData({ ...actionData, reason: e.target.value })}
+              onChange={(e) => setActionData({ ...actionData, reason: e.target.value })}
             />
           </Box>
         );
@@ -158,13 +158,13 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
               label="续费天数"
               type="number"
               value={actionData.duration || 30}
-              onChange={((e: any): any) => setActionData({ ...actionData, duration: parseInt(e.target.value) || 30 })}
+              onChange={(e) => setActionData({ ...actionData, duration: parseInt(e.target.value) || 30 })}
             />
             <FormControl fullWidth margin="normal">
               <InputLabel>续费方式</InputLabel>
               <Select
                 value={String(actionData.extendCurrent || true)}
-                onChange={((e: any): any) => setActionData({ ...actionData, extendCurrent: e.target.value === 'true' })}
+                onChange={(e) => setActionData({ ...actionData, extendCurrent: e.target.value === 'true' })}
                 label="续费方式"
               >
                 <MenuItem value="true">延长当前有效期</MenuItem>
@@ -182,14 +182,14 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
               margin="normal"
               label="新套餐ID"
               value={actionData.newPlanId || ''}
-              onChange={((e: any): any) => setActionData({ ...actionData, newPlanId: e.target.value })}
+              onChange={(e) => setActionData({ ...actionData, newPlanId: e.target.value })}
               helperText="输入要升级到的套餐ID"
             />
             <FormControl fullWidth margin="normal">
               <InputLabel>是否按比例计费</InputLabel>
               <Select
                 value={String(actionData.prorate !== undefined ? actionData.prorate : true)}
-                onChange={((e: any): any) => setActionData({ ...actionData, prorate: e.target.value === 'true' })}
+                onChange={(e) => setActionData({ ...actionData, prorate: e.target.value === 'true' })}
                 label="是否按比例计费"
               >
                 <MenuItem value="true">按比例计费</MenuItem>
@@ -208,7 +208,7 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
               label="退款金额"
               type="number"
               value={actionData.amount || ''}
-              onChange={((e: any): any) => setActionData({ ...actionData, amount: parseFloat(e.target.value) || 0 })}
+              onChange={(e) => setActionData({ ...actionData, amount: parseFloat(e.target.value) || 0 })}
               helperText={`当前月费：${subscription.monthlyPrice} ${subscription.currency}`}
             />
             <TextField
@@ -218,7 +218,7 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
               multiline
               rows={3}
               value={actionData.reason || ''}
-              onChange={((e: any): any) => setActionData({ ...actionData, reason: e.target.value })}
+              onChange={(e) => setActionData({ ...actionData, reason: e.target.value })}
             />
           </Box>
         );
@@ -232,7 +232,7 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
               label="暂停天数"
               type="number"
               value={actionData.pauseDuration || 7}
-              onChange={((e: any): any) => setActionData({ ...actionData, pauseDuration: parseInt(e.target.value) || 7 })}
+              onChange={(e) => setActionData({ ...actionData, pauseDuration: parseInt(e.target.value) || 7 })}
             />
             <Alert severity="info" sx={{ mt: 2 }}>
               订阅将在指定天数后自动恢复
@@ -246,7 +246,7 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
   };
 
   const isActionDisabled = (action: string) => {
-    switch (action) {
+    switch (action) => {
       case 'cancel':
         return subscription.status === 'cancelled' || subscription.status === 'expired';
       case 'renew':
@@ -276,7 +276,7 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
         onClose={() => setAnchorEl(null)}
       >
         <MenuItem 
-          onClick={((: any): any) => handleActionClick('cancel')}
+          onClick={() => handleActionClick('cancel')}
           disabled={isActionDisabled('cancel')}
         >
           <Cancel sx={{ mr: 1 }} />
@@ -284,25 +284,25 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
         </MenuItem>
         
         <MenuItem 
-          onClick={((: any): any) => handleActionClick('renew')}
+          onClick={() => handleActionClick('renew')}
           disabled={isActionDisabled('renew')}
         >
           <Refresh sx={{ mr: 1 }} />
           续费订阅
         </MenuItem>
         
-        <MenuItem onClick={((: any): any) => handleActionClick('upgrade')}>
+        <MenuItem onClick={() => handleActionClick('upgrade')}>
           <Upgrade sx={{ mr: 1 }} />
           升级套餐
         </MenuItem>
         
-        <MenuItem onClick={((: any): any) => handleActionClick('refund')}>
+        <MenuItem onClick={() => handleActionClick('refund')}>
           <MoneyOff sx={{ mr: 1 }} />
           处理退款
         </MenuItem>
         
         <MenuItem 
-          onClick={((: any): any) => handleActionClick('pause')}
+          onClick={() => handleActionClick('pause')}
           disabled={isActionDisabled('pause')}
         >
           <Pause sx={{ mr: 1 }} />
@@ -310,7 +310,7 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
         </MenuItem>
         
         <MenuItem 
-          onClick={((: any): any) => handleActionClick('resume')}
+          onClick={() => handleActionClick('resume')}
           disabled={isActionDisabled('resume')}
         >
           <PlayArrow sx={{ mr: 1 }} />
@@ -352,7 +352,7 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
         </DialogContent>
         
         <DialogActions>
-          <Button onClick={((: any): any) => setActionDialog(null)}>取消</Button>
+          <Button onClick={() => setActionDialog(null)}>取消</Button>
           <Button
             onClick={handleActionConfirm}
             variant="contained"

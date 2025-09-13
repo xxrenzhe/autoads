@@ -22,7 +22,7 @@ interface Subscription {
   }
 }
 
-export default function PaymentPage({ params }: { params: { id: string } }) {
+export default function PaymentPage({ params }: { params: { id: string } }) => {
   const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -31,7 +31,7 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed'>('pending')
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (status === 'unauthenticated') => {
       router.push('/auth/signin')
       return
     }
@@ -42,7 +42,7 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
   const fetchSubscription = async () => {
     try {
       const response = await fetch(`/api/subscriptions/${params.id}`)
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json()
         setSubscription(data)
       }
@@ -69,11 +69,11 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
         }),
       })
 
-      if (response.ok) {
+      if (response.ok) => {
         const payment = await response.json()
         
         // Redirect to Wise payment page
-        if (payment.redirectUrl) {
+        if (payment.redirectUrl) => {
           window.location.href = payment.redirectUrl
         } else {
           setPaymentStatus('completed')
@@ -101,7 +101,7 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
     }
   }
 
-  if (!subscription) {
+  if (!subscription) => {
     return <div>Loading...</div>
   }
 

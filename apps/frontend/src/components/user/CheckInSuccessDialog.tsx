@@ -211,7 +211,7 @@ const CheckInSuccessDialog: React.FC<CheckInSuccessDialogProps> = ({
                     >
                       <Button
                         variant="outlined"
-                        onClick={((: any): any) => onShare(platform.id)}
+                        onClick={() => onShare(platform.id)}
                         startIcon={<span style={{ fontSize: '1.2rem' }}>{platform.icon}</span>}
                         sx={{
                           borderRadius: 2,

@@ -52,7 +52,7 @@ export function ConfigEditor({
   onCancel,
   isLoading = false,
   error = null
-}: ConfigEditorProps) {
+}: .*Props) {
   const { categories, validateConfigValue } = useConfigManagement()
   
   const [formData, setFormData] = useState<ConfigFormData>({
@@ -75,7 +75,7 @@ export function ConfigEditor({
 
   // Initialize form data when config prop changes
   useEffect(() => {
-    if (config) {
+    if (config) => {
       setFormData({
         key: config.key,
         value: config.value,
@@ -111,39 +111,39 @@ export function ConfigEditor({
     const errors: Record<string, string> = {}
 
     // Key validation
-    if (!formData.key.trim()) {
+    if (!formData.key.trim()) => {
       errors.key = 'Key is required'
-    } else if (!/^[A-Z_][A-Z0-9_]*$/i.test(formData.key)) {
+    } else if (!/^[A-Z_][A-Z0-9_]*$/i.test(formData.key)) => {
       errors.key = 'Key must contain only letters, numbers, and underscores'
     }
 
     // Value validation
-    if (formData.isRequired && (formData.value === '' || formData.value == null)) {
+    if (formData.isRequired && (formData.value === '' || formData.value == null)) => {
       errors.value = 'Value is required'
     }
 
     // Type-specific validation
-    if (formData.value !== '' && formData.value != null) {
+    if (formData.value !== '' && formData.value != null) => {
       let parsedValue = formData.value
       
       try {
-        switch (formData.type) {
+        switch (formData.type) => {
           case 'number':
             parsedValue = Number(formData.value)
-            if (isNaN(parsedValue)) {
+            if (isNaN(parsedValue)) => {
               errors.value = 'Value must be a valid number'
             }
             break
           case 'boolean':
-            if (typeof formData.value === 'string') {
-              if (!['true', 'false'].includes(formData.value.toLowerCase())) {
+            if (typeof formData.value === 'string') => {
+              if (!['true', 'false'].includes(formData.value.toLowerCase())) => {
                 errors.value = 'Value must be true or false'
               }
               parsedValue = formData.value.toLowerCase() === 'true'
             }
             break
           case 'json':
-            if (typeof formData.value === 'string') {
+            if (typeof formData.value === 'string') => {
               try {
                 parsedValue = JSON.parse(formData.value)
               } catch {
@@ -152,40 +152,40 @@ export function ConfigEditor({
             }
             break
           case 'array':
-            if (typeof formData.value === 'string') {
+            if (typeof formData.value === 'string') => {
               try {
                 parsedValue = JSON.parse(formData.value)
-                if (!Array.isArray(parsedValue)) {
+                if (!Array.isArray(parsedValue)) => {
                   errors.value = 'Value must be a valid JSON array'
                 }
               } catch {
                 errors.value = 'Value must be a valid JSON array'
               }
-            } else if (!Array.isArray(formData.value)) {
+            } else if (!Array.isArray(formData.value)) => {
               errors.value = 'Value must be an array'
             }
             break
         }
 
         // Custom validation if no type errors
-        if (!errors.value && config) {
+        if (!errors.value && config) => {
           const validation = validateConfigValue({ ...config, ...formData } as ConfigItem, parsedValue)
-          if (!validation.isValid) {
+          if (!validation.isValid) => {
             errors.value = validation.error || 'Invalid value'
           }
         }
-      } catch (err) {
+      } catch (err) => {
         errors.value = 'Invalid value format'
       }
     }
 
     // Description validation
-    if (!formData.description.trim()) {
+    if (!formData.description.trim()) => {
       errors.description = 'Description is required'
     }
 
     // Category validation
-    if (!formData.category.trim()) {
+    if (!formData.category.trim()) => {
       errors.category = 'Category is required'
     }
 
@@ -201,7 +201,7 @@ export function ConfigEditor({
     setIsDirty(true)
 
     // Clear validation error for this field
-    if (validationErrors[field]) {
+    if (validationErrors[field]) => {
       setValidationErrors(prev => {
         const newErrors = { ...prev }
         delete newErrors[field]
@@ -210,7 +210,7 @@ export function ConfigEditor({
     }
 
     // Clear JSON error when value changes
-    if (field === 'value') {
+    if (field === 'value') => {
       setJsonError(null)
     }
   }
@@ -227,7 +227,7 @@ export function ConfigEditor({
   }
 
   const formatValueForDisplay = () => {
-    if (formData.type === 'json' || formData.type === 'array') {
+    if (formData.type === 'json' || formData.type === 'array') => {
       try {
         return JSON.stringify(formData.value, null, 2)
       } catch {
@@ -241,7 +241,7 @@ export function ConfigEditor({
     let processedValue: any = newValue
 
     // Process value based on type
-    switch (formData.type) {
+    switch (formData.type) => {
       case 'number':
         processedValue = newValue === '' ? '' : Number(newValue)
         break
@@ -251,13 +251,13 @@ export function ConfigEditor({
       case 'json':
       case 'array':
         try {
-          if (newValue.trim()) {
+          if (newValue.trim()) => {
             processedValue = JSON.parse(newValue)
             setJsonError(null)
           } else {
             processedValue = formData.type === 'array' ? [] : {}
           }
-        } catch (err) {
+        } catch (err) => {
           processedValue = newValue // Keep as string for editing
           setJsonError('Invalid JSON format')
         }
@@ -272,13 +272,13 @@ export function ConfigEditor({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     
-    if (!validateForm()) {
+    if (!validateForm()) => {
       return
     }
 
     try {
       await onSave?.(formData)
-    } catch (err) {
+    } catch (err) => {
       console.error('Error saving config:', err)
     }
   }

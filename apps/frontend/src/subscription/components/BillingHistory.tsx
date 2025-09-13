@@ -80,7 +80,7 @@ export function BillingHistory({
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'paid': return 'success'
       case 'pending': return 'warning'
       case 'failed': return 'destructive'
@@ -90,7 +90,7 @@ export function BillingHistory({
   }
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'paid': return CheckCircle
       case 'pending': return Clock
       case 'failed': return AlertCircle
@@ -102,7 +102,7 @@ export function BillingHistory({
   const handleDownloadInvoice = async (recordId: string) => {
     try {
       const response = await fetch(`/api/billing/invoice/${recordId}/download`)
-      if (response.ok) {
+      if (response.ok) => {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -121,7 +121,7 @@ export function BillingHistory({
   const handleDownloadReceipt = async (recordId: string) => {
     try {
       const response = await fetch(`/api/billing/receipt/${recordId}/download`)
-      if (response.ok) {
+      if (response.ok) => {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -137,7 +137,7 @@ export function BillingHistory({
     }
   }
 
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <div className={`space-y-6 ${className}`}>
         <div className="flex items-center justify-between">
@@ -167,7 +167,7 @@ export function BillingHistory({
     )
   }
 
-  if (error) {
+  if (error) => {
     return (
       <div className={`${className}`}>
         <Card>
@@ -179,7 +179,7 @@ export function BillingHistory({
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               {error.message}
             </p>
-            <Button onClick={((: any): any) => refetch()} variant="outline">
+            <Button onClick={() => refetch()} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
               Try Again
             </Button>
@@ -202,7 +202,7 @@ export function BillingHistory({
           </p>
         </div>
         
-        <Button onClick={((: any): any) => refetch()} variant="outline" size="sm">
+        <Button onClick={() => refetch()} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
@@ -222,7 +222,7 @@ export function BillingHistory({
               
               <select
                 value={selectedStatus}
-                onChange={((e: any): any) => setSelectedStatus(e.target.value)}
+                onChange={(e) => setSelectedStatus(e.target.value)}
                 className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
@@ -234,7 +234,7 @@ export function BillingHistory({
               
               <select
                 value={selectedPeriod}
-                onChange={((e: any): any) => setSelectedPeriod(e.target.value)}
+                onChange={(e) => setSelectedPeriod(e.target.value)}
                 className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Time</option>
@@ -300,7 +300,7 @@ export function BillingHistory({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={((: any): any) => handleDownloadInvoice(record.id)}
+                          onClick={() => handleDownloadInvoice(record.id)}
                         >
                           <Download className="h-4 w-4 mr-1" />
                           Invoice
@@ -311,7 +311,7 @@ export function BillingHistory({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={((: any): any) => handleDownloadReceipt(record.id)}
+                          onClick={() => handleDownloadReceipt(record.id)}
                         >
                           <Receipt className="h-4 w-4 mr-1" />
                           Receipt

@@ -45,7 +45,7 @@ interface BillingDetails {
   }
 }
 
-function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
+function PaymentFormContent({ plan, onSubmit, loading }: .*Props) {
   const stripe = useStripe()
   const elements = useElements()
   
@@ -68,29 +68,29 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!billingDetails.name.trim()) {
+    if (!billingDetails.name.trim()) => {
       newErrors.name = 'Name is required'
     }
 
-    if (!billingDetails.email.trim()) {
+    if (!billingDetails.email.trim()) => {
       newErrors.email = 'Email is required'
-    } else if (!/\S+@\S+\.\S+/.test(billingDetails.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(billingDetails.email)) => {
       newErrors.email = 'Email is invalid'
     }
 
-    if (!billingDetails.address.line1.trim()) {
+    if (!billingDetails.address.line1.trim()) => {
       newErrors.address_line1 = 'Address is required'
     }
 
-    if (!billingDetails.address.city.trim()) {
+    if (!billingDetails.address.city.trim()) => {
       newErrors.city = 'City is required'
     }
 
-    if (!billingDetails.address.state.trim()) {
+    if (!billingDetails.address.state.trim()) => {
       newErrors.state = 'State is required'
     }
 
-    if (!billingDetails.address.postal_code.trim()) {
+    if (!billingDetails.address.postal_code.trim()) => {
       newErrors.postal_code = 'Postal code is required'
     }
 
@@ -101,16 +101,16 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
 
-    if (!stripe || !elements || loading) {
+    if (!stripe || !elements || loading) => {
       return
     }
 
-    if (!validateForm()) {
+    if (!validateForm()) => {
       return
     }
 
     const cardElement = elements.getElement(CardElement)
-    if (!cardElement) {
+    if (!cardElement) => {
       return
     }
 
@@ -132,7 +132,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
       },
     })
 
-    if (error) {
+    if (error) => {
       setCardError(error.message || 'An error occurred with your card')
       return
     }
@@ -145,7 +145,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
   }
 
   const handleInputChange = (field: string, value: string) => {
-    if (field.startsWith('address.')) {
+    if (field.startsWith('address.')) => {
       const addressField = field.split('.')[1]
       setBillingDetails(prev => ({
         ...prev,
@@ -162,7 +162,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
     }
 
     // Clear error when user starts typing
-    if (errors[field]) {
+    if (errors[field]) => {
       setErrors(prev => ({
         ...prev,
         [field]: ''
@@ -219,7 +219,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
               type="text"
               id="name"
               value={billingDetails.name}
-              onChange={((e: any): any) => handleInputChange('name', e.target.value)}
+              onChange={(e) => handleInputChange('name', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.name ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -238,7 +238,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
               type="email"
               id="email"
               value={billingDetails.email}
-              onChange={((e: any): any) => handleInputChange('email', e.target.value)}
+              onChange={(e) => handleInputChange('email', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.email ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -258,7 +258,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
             type="text"
             id="address_line1"
             value={billingDetails.address.line1}
-            onChange={((e: any): any) => handleInputChange('address.line1', e.target.value)}
+            onChange={(e) => handleInputChange('address.line1', e.target.value)}
             className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.address_line1 ? 'border-red-300' : 'border-gray-300'
             }`}
@@ -277,7 +277,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
             type="text"
             id="address_line2"
             value={billingDetails.address.line2 || ''}
-            onChange={((e: any): any) => handleInputChange('address.line2', e.target.value)}
+            onChange={(e) => handleInputChange('address.line2', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Apartment, suite, etc."
           />
@@ -292,7 +292,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
               type="text"
               id="city"
               value={billingDetails.address.city}
-              onChange={((e: any): any) => handleInputChange('address.city', e.target.value)}
+              onChange={(e) => handleInputChange('address.city', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.city ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -311,7 +311,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
               type="text"
               id="state"
               value={billingDetails.address.state}
-              onChange={((e: any): any) => handleInputChange('address.state', e.target.value)}
+              onChange={(e) => handleInputChange('address.state', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.state ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -330,7 +330,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
               type="text"
               id="postal_code"
               value={billingDetails.address.postal_code}
-              onChange={((e: any): any) => handleInputChange('address.postal_code', e.target.value)}
+              onChange={(e) => handleInputChange('address.postal_code', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.postal_code ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -399,7 +399,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
   )
 }
 
-export default function PaymentForm(props: PaymentFormProps) {
+export default function PaymentForm(props: PaymentFormProps) => {
   return (
     <Elements stripe={stripePromise}>
       <PaymentFormContent {...props} />

@@ -17,7 +17,7 @@ class PerformanceMemoryCache {
   private maxSize: number;
   private ttl: number;
   
-  constructor(maxSize = 1000, ttl = 5 * 60 * 1000) { // 默认5分钟
+  constructor(maxSize = 1000, ttl = 5 * 60 * 1000) => { // 默认5分钟
     this.maxSize = maxSize;
     this.ttl = ttl;
   }
@@ -26,7 +26,7 @@ class PerformanceMemoryCache {
     const item = this.cache.get(key);
     if (!item) return null as any;
     
-    if (Date.now() > item.expires) {
+    if (Date.now() > item.expires) => {
       this.cache.delete(key);
       return null as any;
     }
@@ -35,7 +35,7 @@ class PerformanceMemoryCache {
   }
   
   set(key: string, value: unknown, ttl?: number): void {
-    if (this.cache.size >= this.maxSize) {
+    if (this.cache.size >= this.maxSize) => {
       this.evictLRU();
     }
     
@@ -48,7 +48,7 @@ class PerformanceMemoryCache {
   private evictLRU(): void {
     // 简单的LRU策略：删除第一个条目
     const firstKey = this.cache.keys().next().value;
-    if (firstKey) {
+    if (firstKey) => {
       this.cache.delete(firstKey);
     }
   }
@@ -71,7 +71,7 @@ class BatchProcessor {
   private batchSize: number;
   private delay: number;
   
-  constructor(batchSize = 10, delay = 100) {
+  constructor(batchSize = 10, delay = 100) => {
     this.batchSize = batchSize;
     this.delay = delay;
   }
@@ -80,7 +80,7 @@ class BatchProcessor {
     return new Promise((resolve, reject) => {
       this.queue.push({ task, resolve: resolve as (value: unknown) => void, reject });
       
-      if (this.queue.length >= this.batchSize || !this.isProcessing) {
+      if (this.queue.length >= this.batchSize || !this.isProcessing) => {
         this.process();
       }
     });
@@ -91,7 +91,7 @@ class BatchProcessor {
     
     this.isProcessing = true;
     
-    while (this.queue.length > 0) {
+    while (this.queue.length > 0) => {
       const batch = this.queue.splice(0, this.batchSize);
       
       try {
@@ -101,14 +101,14 @@ class BatchProcessor {
         
         results.forEach((result, index: any) => {
           const item = batch[index];
-          if (result.status === 'fulfilled') {
+          if (result.status === 'fulfilled') => {
             item.resolve(result.value);
           } else {
             item.reject(result.reason);
           }
         });
         
-        if (this.queue.length > 0) {
+        if (this.queue.length > 0) => {
           await new Promise(resolve => setTimeout(resolve, this.delay));
         }
       } catch (error) {
@@ -154,7 +154,7 @@ class DebounceThrottle {
     let inThrottle: boolean;
     
     return (...args: Parameters<T>) => {
-      if (!inThrottle) {
+      if (!inThrottle) => {
         func(...args);
         inThrottle = true;
         setTimeout(() => inThrottle = false, limit);
@@ -201,16 +201,16 @@ class ImageOptimizer {
    * 生成懒加载图片的Intersection Observer
    */
   static createLazyLoader(): (element: HTMLImageElement) => void {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined') => {
       return () => {};
     }
     
     const imageObserver = new IntersectionObserver((entries, observer) => {
       entries.forEach((entry: any) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting) => {
           const img = entry.target as HTMLImageElement;
           const src = img.dataset.src;
-          if (src) {
+          if (src) => {
             img.src = src;
             img.removeAttribute('data-src');
             observer.unobserve(img);
@@ -223,7 +223,7 @@ class ImageOptimizer {
     });
     
     return (element: HTMLImageElement) => {
-      if (element.dataset.src) {
+      if (element.dataset.src) => {
         imageObserver.observe(element);
       }
     };
@@ -257,7 +257,7 @@ class CodeSplitOptimizer {
         }
       } catch (error) {
         logger.error('Dynamic import failed:', error instanceof Error ? error : new Error(String(error)));
-        if (fallback) {
+        if (fallback) => {
           return fallback as any;
         }
         throw error;
@@ -276,9 +276,9 @@ class CodeSplitOptimizer {
       link.rel = 'preload';
       link.href = url;
       
-      if (url.endsWith('.js')) {
+      if (url.endsWith('.js')) => {
         link.as = 'script';
-      } else if (url.endsWith('.css')) {
+      } else if (url.endsWith('.css')) => {
         link.as = 'style';
       } else {
         link.as = 'fetch';
@@ -299,7 +299,7 @@ class PerformanceMonitor {
    * 记录性能指标
    */
   static recordMetric(name: string, value: number): void {
-    if (!this.metrics.has(name)) {
+    if (!this.metrics.has(name)) => {
       this.metrics.set(name, []);
     }
     
@@ -307,7 +307,7 @@ class PerformanceMonitor {
     values.push(value);
     
     // 保持最近100个值
-    if (values.length > 100) {
+    if (values.length > 100) => {
       values.shift();
     }
   }
@@ -323,7 +323,7 @@ class PerformanceMonitor {
     p95: number;
   } | null {
     const values = this.metrics.get(name);
-    if (!values || values.length === 0) {
+    if (!values || values.length === 0) => {
       return null as any;
     }
     
@@ -376,16 +376,16 @@ class NetworkOptimizer {
   ): Promise<Response> {
     let lastError: Error;
     
-    for (let i = 0; i < maxRetries; i++) {
+    for (let i = 0; i < maxRetries; i++) => {
       try {
         const response = await fetch(url, options);
-        if (response.ok) {
+        if (response.ok) => {
           return response;
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       } catch (error) {
         lastError = error as Error;
-        if (i < maxRetries - 1) {
+        if (i < maxRetries - 1) => {
           await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
         }
       }
@@ -407,7 +407,7 @@ class NetworkOptimizer {
     const cacheKey = url + JSON.stringify(options);
     const cached = this.cache.get(cacheKey);
     
-    if (cached && Date.now() < cached.expires) {
+    if (cached && Date.now() < cached.expires) => {
       return cached.data as T;
     }
     
@@ -432,7 +432,7 @@ class NetworkOptimizer {
   ): Promise<T[]> {
     const results: T[] = [];
     
-    for (let i = 0; i < urls.length; i += batchSize) {
+    for (let i = 0; i < urls.length; i += batchSize) => {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
         batch?.filter(Boolean)?.map((url: any) => this.fetchWithRetry(url, options).then(res => res.json()))
@@ -464,7 +464,7 @@ class RenderOptimizer {
     );
     
     const visibleItems: React.ReactElement[] = [];
-    for (let i = visibleStart; i < visibleEnd; i++) {
+    for (let i = visibleStart; i < visibleEnd; i++) => {
       visibleItems.push(
         renderItem(items[i], i)
       );

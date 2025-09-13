@@ -52,7 +52,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             // Disabled styles
             'disabled:cursor-not-allowed disabled:opacity-50',
             // High contrast mode support
-            '@media (prefers-contrast: high) { border-width: 2px }',
+            '@media (prefers-contrast: high) => { border-width: 2px }',
             // Variant styles
             {
               'border-destructive focus-visible:ring-destructive': isInvalid,

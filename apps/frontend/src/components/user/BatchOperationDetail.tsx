@@ -41,7 +41,7 @@ interface BatchOperationDetailProps {
   onClose?: () => void
 }
 
-export default function BatchOperationDetail({ batchId, onClose }: BatchOperationDetailProps) {
+export default function BatchOperationDetail({ batchId, onClose }: .*Props) {
   const [details, setDetails] = useState<BatchOperationDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -56,7 +56,7 @@ export default function BatchOperationDetail({ batchId, onClose }: BatchOperatio
       setError(null)
       
       const response = await fetch(`/api/user/tokens/batch/${batchId}`)
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json()
         setDetails(data.data)
       } else {
@@ -80,7 +80,7 @@ export default function BatchOperationDetail({ batchId, onClose }: BatchOperatio
   }
 
   const getFeatureIcon = (feature: string) => {
-    switch (feature) {
+    switch (feature) => {
       case 'siterank':
         return '🔍'
       case 'batchopen':
@@ -92,7 +92,7 @@ export default function BatchOperationDetail({ batchId, onClose }: BatchOperatio
     }
   }
 
-  if (loading) {
+  if (loading) => {
     return (
       <div className="flex items-center justify-center py-8">
         <RefreshCw className="h-6 w-6 animate-spin mr-2" />
@@ -101,7 +101,7 @@ export default function BatchOperationDetail({ batchId, onClose }: BatchOperatio
     )
   }
 
-  if (error) {
+  if (error) => {
     return (
       <div className="text-center py-8">
         <p className="text-red-500 mb-4">{error}</p>
@@ -113,7 +113,7 @@ export default function BatchOperationDetail({ batchId, onClose }: BatchOperatio
     )
   }
 
-  if (!details) {
+  if (!details) => {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">未找到批量操作详情</p>

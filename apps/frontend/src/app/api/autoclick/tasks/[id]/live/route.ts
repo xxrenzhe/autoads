@@ -115,7 +115,7 @@ async function getProgressData(taskId: string) {
   const currentHour = new Date().getHours();
   
   // 获取当前小时的执行情况
-  const currentExecution = plan.hourlyExecutions.find((exec: any: any) => exec.hour === currentHour);
+  const currentExecution = plan.hourlyExecutions.find(((exec: any) => exec.hour === currentHour);
   const hourlyProgress = currentExecution ? {
     target: plan.hourlyClicks[currentHour] || 0,
     completed: currentExecution.successCount,

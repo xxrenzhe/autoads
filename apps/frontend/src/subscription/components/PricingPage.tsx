@@ -43,7 +43,7 @@ export interface PricingPageProps {
   onSelectPlan?: (planId: string, billing: 'monthly' | 'yearly') => void
 }
 
-export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPageProps) {
+export function PricingPage({ userId, currentPlan, onSelectPlan }: .*Props) {
   const { plans, isLoading, error } = usePricing()
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
@@ -67,7 +67,7 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
     return Math.round(savings)
   }
 
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -76,7 +76,7 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
     )
   }
 
-  if (error) {
+  if (error) => {
     return (
       <div className="text-center text-red-600 p-6">
         <p>Error loading pricing plans: {error}</p>
@@ -101,7 +101,7 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
             Monthly
           </span>
           <button
-            onClick={((: any): any) => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+            onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               billingCycle === 'yearly' ? 'bg-blue-600' : 'bg-gray-200'
             }`}
@@ -215,7 +215,7 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
 
                 {/* Action Button */}
                 <Button
-                  onClick={((: any): any) => handleSelectPlan(plan.id)}
+                  onClick={() => handleSelectPlan(plan.id)}
                   variant={isCurrentPlan ? 'outline' : plan.buttonVariant}
                   className="w-full"
                   disabled={isCurrentPlan}

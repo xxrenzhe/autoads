@@ -110,12 +110,12 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = ({
     if (message.includes('批量访问中...')) return 'url_processing';
     
     // 只有在状态为completed且没有pending任务时才显示完成
-    if (status === 'completed' && actualPendingCount === 0 && (message.includes('批量访问完成') || message.includes('完成！成功'))) {
+    if (status === 'completed' && actualPendingCount === 0 && (message.includes('批量访问完成') || message.includes('完成！成功'))) => {
       return 'completing';
     }
     
     // 根据进度推断阶段（当消息不明确时）
-    if (status === 'running') {
+    if (status === 'running') => {
       if (progress <= 15) return 'initializing';
       if (progress <= 25) return 'proxy_validating';
       if (progress <= 45) return 'proxy_fetching';
@@ -145,18 +145,18 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = ({
   const formatProgressDisplay = (): string => {
     const currentStage = getCurrentStage();
     
-    if (currentStage === 'proxy_fetching') {
+    if (currentStage === 'proxy_fetching') => {
       // 代理获取阶段显示 x/y 格式
       // 从消息中提取代理数量信息，格式如 "代理IP获取中 (5/10)"
       const proxyMatch = message.match(/代理IP获取中\s*\((\d+)\/(\d+)\)/);
-      if (proxyMatch) {
+      if (proxyMatch) => {
         const current = proxyMatch[1];
         const total = proxyMatch[2];
         return `${current}/${total}`;
       }
       // 如果无法解析，显示阶段名称
       return STAGE_INFO[currentStage].name;
-    } else if (currentStage === 'url_processing') {
+    } else if (currentStage === 'url_processing') => {
       // 批量访问阶段显示 x/y 格式
       const processed = successCount + failCount;
       
@@ -184,11 +184,11 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = ({
     
     // 在批量访问阶段，如果后端进度为0但有成功/失败计数，使用计数计算
     const currentStage = getCurrentStage();
-    if (currentStage === 'url_processing' && progress === 0 && totalItems > 0 && (successCount > 0 || failCount > 0)) {
+    if (currentStage === 'url_processing' && progress === 0 && totalItems > 0 && (successCount > 0 || failCount > 0)) => {
       targetProgress = Math.round((successCount + failCount) / totalItems * 100);
     }
     
-    if (Math.abs(displayProgress - targetProgress) > 0.5) {
+    if (Math.abs(displayProgress - targetProgress) > 0.5) => {
       setIsAnimating(true);
       
       // 使用requestAnimationFrame实现平滑动画
@@ -206,7 +206,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = ({
         
         setDisplayProgress(currentProgress);
         
-        if (progress < 1) {
+        if (progress < 1) => {
           requestAnimationFrame(animate);
         } else {
           setIsAnimating(false);
@@ -219,12 +219,12 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = ({
   
   // 智能剩余时间计算
   useEffect(() => {
-    if (isCompleted || isFailed || isTerminated) {
+    if (isCompleted || isFailed || isTerminated) => {
       setTimeRemaining(0);
       return;
     }
     
-    if (progress <= 0 || progress >= 100) {
+    if (progress <= 0 || progress >= 100) => {
       setTimeRemaining(null);
       return;
     }
@@ -233,7 +233,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = ({
     const now = Date.now();
     const processed = successCount + failCount;
     
-    if (processed > 0) {
+    if (processed > 0) => {
       // 基于实际处理速度计算
       const speed = processed / (now - (now - 30000)); // 假设30秒内处理了processed个
       setEstimatedSpeed(speed);
@@ -274,7 +274,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = ({
   };
 
   // 如果没有进度数据且任务未开始，不显示进度条
-  if (totalItems === 0 && progress === 0 && status === 'idle') {
+  if (totalItems === 0 && progress === 0 && status === 'idle') => {
     return null as any;
   }
 
@@ -282,7 +282,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = ({
   const getSpeedDisplay = (): string => {
     if (estimatedSpeed === 0) return '';
     const speedPerMinute = estimatedSpeed * 60;
-    if (speedPerMinute >= 1) {
+    if (speedPerMinute >= 1) => {
       return `${speedPerMinute.toFixed(1)}/分钟`;
     }
     return `${estimatedSpeed.toFixed(2)}/秒`;

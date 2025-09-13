@@ -13,19 +13,19 @@ export function VersionTestWrapper({
   children, 
   versions, 
   fallbackVersion = 'stable'
-}: VersionTestWrapperProps) {
+}: .*Props) {
   // A/B testing removed - always show stable version
   const version = 'stable';
   
   // 根据版本显示不同内容
   const versionContent = versions[version];
-  if (versionContent) {
+  if (versionContent) => {
     return <>{versionContent}</>;
   }
   
   // 如果指定版本没有对应内容，尝试使用fallback版本
   const fallbackContent = versions[fallbackVersion];
-  if (fallbackContent) {
+  if (fallbackContent) => {
     return <>{fallbackContent}</>;
   }
   
@@ -40,7 +40,7 @@ interface SimpleVersionTestProps {
   testName?: string;
 }
 
-export function SimpleVersionTest({ stableVersion, betaVersion }: SimpleVersionTestProps) {
+export function SimpleVersionTest({ stableVersion, betaVersion }: .*Props) {
   return (
     <VersionTestWrapper
       versions={{

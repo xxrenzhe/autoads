@@ -28,7 +28,7 @@ export interface PaymentProviderConfigProps {
   className?: string
 }
 
-export function PaymentProviderConfig({ className }: PaymentProviderConfigProps) {
+export function PaymentProviderConfig({ className }: .*Props) {
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({})
   const queryClient = useQueryClient()
 
@@ -60,7 +60,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
       }
     }> => {
       const response = await fetch('/api/admin/payment-providers/status')
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to fetch payment provider status')
       }
       return response.json()
@@ -73,7 +73,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
       const response = await fetch('/api/admin/payment-providers/health-check', {
         method: 'POST'
       })
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Health check failed')
       }
       return response.json()
@@ -92,7 +92,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
         },
         body: JSON.stringify({ provider: providerName }),
       })
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to set default provider')
       }
       return response.json()
@@ -116,7 +116,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
   }
 
   const getProviderIcon = (providerName: string) => {
-    switch (providerName.toLowerCase()) {
+    switch (providerName.toLowerCase()) => {
       case 'stripe':
         return <CreditCard className="h-5 w-5 text-blue-600" />
       case 'paypal':
@@ -138,7 +138,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
     return 'Active'
   }
 
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <div className={`space-y-6 ${className}`}>
         <div className="flex items-center justify-between">
@@ -165,7 +165,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
     )
   }
 
-  if (error) {
+  if (error) => {
     return (
       <div className={`${className}`}>
         <Card>
@@ -177,7 +177,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               {error.message}
             </p>
-            <Button onClick={((: any): any) => refetch()} variant="outline">
+            <Button onClick={() => refetch()} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
               Try Again
             </Button>
@@ -187,7 +187,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
     )
   }
 
-  if (!providerStatus) {
+  if (!providerStatus) => {
     return null
   }
 
@@ -206,7 +206,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
         
         <div className="flex items-center space-x-3">
           <Button
-            onClick={((: any): any) => healthCheckMutation.mutate()}
+            onClick={() => healthCheckMutation.mutate()}
             variant="outline"
             size="sm"
             disabled={healthCheckMutation.isPending}
@@ -321,7 +321,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={((: any): any) => toggleSecretVisibility(`${name}-publishable`)}
+                              onClick={() => toggleSecretVisibility(`${name}-publishable`)}
                             >
                               {showSecrets[`${name}-publishable`] ? (
                                 <EyeOff className="h-3 w-3" />
@@ -362,7 +362,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={((: any): any) => toggleSecretVisibility(`${name}-client`)}
+                              onClick={() => toggleSecretVisibility(`${name}-client`)}
                             >
                               {showSecrets[`${name}-client`] ? (
                                 <EyeOff className="h-3 w-3" />
@@ -390,7 +390,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={((: any): any) => setDefaultMutation.mutate(name)}
+                      onClick={() => setDefaultMutation.mutate(name)}
                       disabled={setDefaultMutation.isPending}
                     >
                       Set as Default
@@ -400,7 +400,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={((: any): any) => window.open(
+                    onClick={() => window.open(
                       name === 'stripe' 
                         ? 'https://dashboard.stripe.com' 
                         : 'https://developer.paypal.com',

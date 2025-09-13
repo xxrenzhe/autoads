@@ -94,7 +94,7 @@ export const SystemTaskStatusDashboard: React.FC = () => {
     setLoading(true);
     try {
       const response = await fetch('/api/admin/system/task-status');
-      if (response.ok) {
+      if (response.ok) => {
         const result = await response.json();
         setData(result);
       } else {
@@ -116,7 +116,7 @@ export const SystemTaskStatusDashboard: React.FC = () => {
   };
 
   const getLevelIcon = (level: string) => {
-    switch (level) {
+    switch (level) => {
       case 'error':
         return <Error color="error" />;
       case 'warning':
@@ -129,7 +129,7 @@ export const SystemTaskStatusDashboard: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'completed':
         return 'success';
       case 'error':

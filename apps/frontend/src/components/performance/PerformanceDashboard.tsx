@@ -61,7 +61,7 @@ export const PerformanceDashboard: React.FC = () => {
     return 'bg-red-500';
   };
 
-  if (loading) {
+  if (loading) => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
@@ -69,7 +69,7 @@ export const PerformanceDashboard: React.FC = () => {
     );
   }
 
-  if (!data) {
+  if (!data) => {
     return (
       <div className="text-center text-gray-500">
         Failed to load performance data

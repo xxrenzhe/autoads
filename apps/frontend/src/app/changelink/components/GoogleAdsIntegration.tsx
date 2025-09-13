@@ -130,7 +130,7 @@ export function GoogleAdsIntegration() {
         method: 'GET',
         ...options
       });
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error(`API Error: ${response.statusText}`);
       }
 
@@ -166,7 +166,7 @@ export function GoogleAdsIntegration() {
         body: JSON.stringify({ action, data })
       });
 
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error(`API Error: ${response.statusText}`);
       }
 
@@ -199,7 +199,7 @@ export function GoogleAdsIntegration() {
     try {
       const result = await apiCall('action=campaigns');
       setCampaigns(result.campaigns || []);
-    } catch (error: unknown) {
+    } catch (error: unknown) => {
       setError('加载广告系列失败: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsLoading(false);
@@ -217,7 +217,7 @@ export function GoogleAdsIntegration() {
       });
       const result = await apiCall(params.toString());
       setPerformance(result.performance || []);
-    } catch (error: unknown) {
+    } catch (error: unknown) => {
       setError('加载表现数据失败: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsLoading(false);
@@ -230,7 +230,7 @@ export function GoogleAdsIntegration() {
     try {
       const result = await apiCall('action=recommendations');
       setRecommendations(result.recommendations || []);
-    } catch (error: unknown) {
+    } catch (error: unknown) => {
       setError('加载优化建议失败: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsLoading(false);
@@ -245,7 +245,7 @@ export function GoogleAdsIntegration() {
     try {
       const result = await apiPost('get-ad-groups', { campaignId });
       setAdGroups(result.adGroups || []);
-    } catch (error: unknown) {
+    } catch (error: unknown) => {
       setError('加载广告组失败: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsLoading(false);
@@ -260,7 +260,7 @@ export function GoogleAdsIntegration() {
     try {
       const result = await apiPost('get-ads', { adGroupId });
       setAds(result.ads || []);
-    } catch (error: unknown) {
+    } catch (error: unknown) => {
       setError('加载广告失败: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsLoading(false);
@@ -272,7 +272,7 @@ export function GoogleAdsIntegration() {
     try {
       await apiPost('pause-campaign', { campaignId });
       await loadCampaigns();
-    } catch (error: unknown) {
+    } catch (error: unknown) => {
       setError('暂停广告系列失败: ' + (error instanceof Error ? error.message : String(error)));
     }
   }, [apiPost, loadCampaigns]);
@@ -280,7 +280,7 @@ export function GoogleAdsIntegration() {
     try {
       await apiPost('enable-campaign', { campaignId });
       await loadCampaigns();
-    } catch (error: unknown) {
+    } catch (error: unknown) => {
       setError('启用广告系列失败: ' + (error instanceof Error ? error.message : String(error)));
     }
   }, [apiPost, loadCampaigns]);
@@ -290,7 +290,7 @@ export function GoogleAdsIntegration() {
       logger.info('Applying recommendation:', recommendation);
       // In a real implementation, this would call the appropriate API
       await loadRecommendations();
-    } catch (error: unknown) {
+    } catch (error: unknown) => {
       setError('应用建议失败: ' + (error instanceof Error ? error.message : String(error)));
     }
   }, [loadRecommendations]);
@@ -302,19 +302,19 @@ export function GoogleAdsIntegration() {
   }, [loadCampaigns, loadPerformance, loadRecommendations]);
 
   useEffect(() => {
-    if (selectedCampaign) {
+    if (selectedCampaign) => {
       loadAdGroups(selectedCampaign);
     }
   }, [selectedCampaign, loadAdGroups]);
 
   useEffect(() => {
-    if (selectedAdGroup) {
+    if (selectedAdGroup) => {
       loadAds(selectedAdGroup);
     }
   }, [selectedAdGroup, loadAds]);
   // Utility Functions
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'ENABLED':
         return 'text-green-600 bg-green-100';
       case 'PAUSED':
@@ -327,7 +327,7 @@ export function GoogleAdsIntegration() {
   };
 
   const getChannelTypeIcon = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'SEARCH':
         return <Search className="h-4 w-4" />;
       case 'DISPLAY':
@@ -342,7 +342,7 @@ export function GoogleAdsIntegration() {
   };
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
+    switch (priority) => {
       case 'HIGH':
         return 'text-red-600 bg-red-100';
       case 'MEDIUM':
@@ -501,7 +501,7 @@ export function GoogleAdsIntegration() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={((: any): any) => campaign.status === 'ENABLED' ? 
+                        onClick={() => campaign.status === 'ENABLED' ? 
                           pauseCampaign(campaign.id) : enableCampaign(campaign.id)}
                       >
                         {campaign.status === 'ENABLED' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -548,14 +548,14 @@ export function GoogleAdsIntegration() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => setSelectedCampaign(campaign.id)}
+                          onClick={() => setSelectedCampaign(campaign.id)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => campaign.status === 'ENABLED' ? 
+                          onClick={() => campaign.status === 'ENABLED' ? 
                             pauseCampaign(campaign.id) : enableCampaign(campaign.id)}
                         >
                           {campaign.status === 'ENABLED' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -678,7 +678,7 @@ export function GoogleAdsIntegration() {
                       </div>
                       <Button
                         size="sm"
-                        onClick={((: any): any) => applyRecommendation(recommendation)}
+                        onClick={() => applyRecommendation(recommendation)}
                       >
                         <Zap className="h-4 w-4 mr-2" />
                         应用建议
@@ -752,7 +752,7 @@ export function GoogleAdsIntegration() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => setSelectedAdGroup(adGroup.id)}
+                          onClick={() => setSelectedAdGroup(adGroup.id)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>

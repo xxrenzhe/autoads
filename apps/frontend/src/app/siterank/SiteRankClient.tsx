@@ -24,7 +24,7 @@ const logger = createClientLogger('SiteRankClient');
 
 
 function getStr(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) {
+  if (Array.isArray(value)) => {
     return value[0] || "";
   }
   return value || "";
@@ -123,7 +123,7 @@ export default function SiteRankClient() {
 
   // 处理排序点击
   const handleSort = (field: string) => {
-    if (sortField === field) {
+    if (sortField === field) => {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
@@ -149,7 +149,7 @@ export default function SiteRankClient() {
     onStatusUpdate: (analyzing, backgroundQuerying) => {
       setIsAnalyzing(analyzing);
       setIsBackgroundQuerying(backgroundQuerying);
-      if (analyzing || backgroundQuerying) {
+      if (analyzing || backgroundQuerying) => {
         setHasQueried(true);
       }
     },
@@ -159,9 +159,9 @@ export default function SiteRankClient() {
   const handleStartAnalysis = async () => {
     try {
       // 如果是批量URL输入模式，检查域名数量
-      if (fileDomains.length === 0 && domainList.length > 0) {
+      if (fileDomains.length === 0 && domainList.length > 0) => {
         const validation = validateBatchQueryCount(domainList);
-        if (!validation.valid) {
+        if (!validation.valid) => {
           setFileError(validation.error || "域名数量超过限制");
           return;
         }
@@ -185,7 +185,7 @@ export default function SiteRankClient() {
         }
       );
       
-      if (!tokenResult.success) {
+      if (!tokenResult.success) => {
         return;
       }
       
@@ -283,7 +283,7 @@ export default function SiteRankClient() {
                         className="w-full border-2 border-gray-200 rounded-xl p-4 resize-none h-[140px] focus:border-blue-500 focus:outline-none transition-colors"
                         placeholder={getStr(t("siterank.inputPlaceholder") as string | string[] | undefined)}
                         value={urlInput}
-                        onChange={((e: any): any) => setUrlInput(e.target.value)}
+                        onChange={(e) => setUrlInput(e.target.value)}
                       />
                       <div className="text-sm text-gray-500 mt-3 h-6 flex items-center gap-2">
                         <span className="w-2 h-2 bg-blue-500 rounded-full inline-block"></span>

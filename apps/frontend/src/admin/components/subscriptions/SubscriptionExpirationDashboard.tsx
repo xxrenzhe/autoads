@@ -64,7 +64,7 @@ export const SubscriptionExpirationDashboard: React.FC = () => {
     setLoading(true);
     try {
       const response = await fetch('/api/admin/subscriptions/expiring-stats');
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json();
         setStats(data.stats);
       } else {
@@ -89,7 +89,7 @@ export const SubscriptionExpirationDashboard: React.FC = () => {
         method: 'POST'
       });
       
-      if (response.ok) {
+      if (response.ok) => {
         const data = await response.json();
         notify(`Processed ${data.results.processedSubscriptions} subscriptions`, { type: 'success' });
         loadData();

@@ -350,7 +350,7 @@ class SimplifiedProxyService {
         successfulAttempts += batchResult.successfulAttempts;
         
         // 添加新获取的代理到唯一集合
-        batchResult.proxies.forEach(proxy => {
+        batchResult.proxies.forEach((proxy: any) => {
           const key = `${proxy.host}:${proxy.port}`;
           if (!uniqueProxies.has(key)) {
             uniqueProxies.set(key, proxy);
@@ -364,7 +364,7 @@ class SimplifiedProxyService {
 
         logger.info(`📊 批量获取后状态`, {
           obtainedThisBatch: batchResult.proxies.length,
-          uniqueThisBatch: batchResult.proxies.filter(p => {
+          uniqueThisBatch: batchResult.proxies.filter((p: any) => {
             const key = `${p.host}:${p.port}`;
             return uniqueProxies.get(key) === p;
           }).length,
@@ -394,7 +394,7 @@ class SimplifiedProxyService {
           successfulAttempts += individualResult.successfulAttempts;
           
           // 添加单独请求获取的代理
-          individualResult.proxies.forEach(proxy => {
+          individualResult.proxies.forEach((proxy: any) => {
             const key = `${proxy.host}:${proxy.port}`;
             if (!uniqueProxies.has(key)) {
               uniqueProxies.set(key, proxy);
@@ -403,7 +403,7 @@ class SimplifiedProxyService {
 
           logger.info(`📊 单独补充后状态`, {
             obtainedThisBatch: individualResult.proxies.length,
-            uniqueThisBatch: individualResult.proxies.filter(p => {
+            uniqueThisBatch: individualResult.proxies.filter((p: any) => {
               const key = `${p.host}:${p.port}`;
               return uniqueProxies.get(key) === p;
             }).length,
@@ -656,7 +656,7 @@ class SimplifiedProxyService {
     const uniqueProxies = new Map<string, ProxyConfig>();
     
     // 添加已存在的代理
-    existingProxies.forEach(proxy => {
+    existingProxies.forEach((proxy: any) => {
       const key = `${proxy.host}:${proxy.port}`;
       uniqueProxies.set(key, proxy);
     });
@@ -1071,8 +1071,8 @@ class SimplifiedProxyService {
       // 检查是否有任务正在执行，如果有则跳过代理补充
       if (global.globalTaskExecutionFlags && global.globalTaskExecutionFlags.size > 0) {
         const activeTasks = Array.from(global.globalTaskExecutionFlags.entries())
-          .filter(([_, flag]) => flag.active)
-          .map(([taskId, _]) => taskId);
+          .filter(([_, flag]: any) => flag.active)
+          .map(([taskId, _]: any) => taskId);
         
         if (activeTasks.length > 0) {
           logger.debug(`检测到任务正在执行，跳过代理补充`, { 

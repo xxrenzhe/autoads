@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
 
     // Format hourly data with all hours
     const formattedHourlyUsage = Array.from({ length: 24 }, (_, i) => {
-      const hourData = hourlyUsage.find((h: any: any) => parseInt(h.hour) === i);
+      const hourData = hourlyUsage.find(((h: any) => parseInt(h.hour) === i);
       return {
         hour: `${i}:00`,
         requests: hourData?.requests || 0
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Process endpoint data
-    const endpointStats = endpoints.map((endpoint: any: any) => ({
+    const endpointStats = endpoints.map(((endpoint: any) => ({
       endpoint: endpoint.endpoint,
       count: endpoint._count.id,
       avgResponseTime: Math.round(endpoint._avg.responseTime || 0),
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
       endpoints: endpointStats,
       hourlyUsage: formattedHourlyUsage,
       dailyUsage,
-      statusCodes: statusCodes.map((sc: any: any) => ({
+      statusCodes: statusCodes.map(((sc: any) => ({
         code: sc.statusCode,
         count: sc.count,
         percentage: sc.percentage

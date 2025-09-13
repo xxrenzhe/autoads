@@ -477,7 +477,7 @@ export class TokenTransactionService {
         return acc
       }, {} as Record<string, string>)
 
-      const topUsers = userStats.map((stat: any: any) => ({
+      const topUsers = userStats.map(((stat: any) => ({
         userId: stat.userId,
         email: userEmailMap[stat.userId] || 'Unknown',
         netChange: stat._sum.amount || 0
@@ -554,7 +554,7 @@ export class TokenTransactionService {
       })
 
       // Format for export
-      const exportData = transactions.map((t: any: any) => ({
+      const exportData = transactions.map(((t: any) => ({
         ID: t.id,
         User: t.user.email,
         UserName: t.user.name,

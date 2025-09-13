@@ -47,7 +47,7 @@ export interface TokenBalanceManagerProps {
   className?: string
 }
 
-export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
+export function TokenBalanceManager({ className }: .*Props) {
   const [selectedUser, setSelectedUser] = useState<string>('')
   const [adjustmentAmount, setAdjustmentAmount] = useState<number>(0)
   const [adjustmentReason, setAdjustmentReason] = useState<string>('')
@@ -141,9 +141,9 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
   const getBalanceStatus = (balance: TokenBalance): { color: string; icon: React.ReactNode; label: string } => {
     const usagePercentage = (balance.usedTokens / balance.totalTokens) * 100
     
-    if (usagePercentage >= 90) {
+    if (usagePercentage >= 90) => {
       return { color: 'text-red-600', icon: <AlertTriangle className="h-4 w-4" />, label: 'Critical' }
-    } else if (usagePercentage >= 75) {
+    } else if (usagePercentage >= 75) => {
       return { color: 'text-yellow-600', icon: <Clock className="h-4 w-4" />, label: 'Warning' }
     } else {
       return { color: 'text-green-600', icon: <CheckCircle className="h-4 w-4" />, label: 'Healthy' }
@@ -151,7 +151,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
   }
 
   const getTransactionIcon = (type: TokenTransaction['type']) => {
-    switch (type) {
+    switch (type) => {
       case 'purchase': return <Plus className="h-4 w-4 text-green-600" />
       case 'usage': return <Minus className="h-4 w-4 text-red-600" />
       case 'refund': return <Plus className="h-4 w-4 text-blue-600" />
@@ -162,7 +162,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
   }
 
   const handleAdjustBalance = () => {
-    if (!selectedUser || adjustmentAmount === 0 || !adjustmentReason.trim()) {
+    if (!selectedUser || adjustmentAmount === 0 || !adjustmentReason.trim()) => {
       return
     }
     
@@ -194,7 +194,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
           </p>
         </div>
         
-        <Button onClick={((: any): any) => setShowTopUpModal(true)}>
+        <Button onClick={() => setShowTopUpModal(true)}>
           <CreditCard className="h-4 w-4 mr-2" />
           Process Top-Up
         </Button>
@@ -285,7 +285,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
           ].map(({ id, label, icon: Icon }: any) => (
             <button
               key={id}
-              onClick={((: any): any) => setActiveTab(id as any)}
+              onClick={() => setActiveTab(id as any)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
                   ? 'border-blue-500 text-blue-600'
@@ -440,7 +440,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
                 </label>
                 <select
                   value={selectedUser}
-                  onChange={((e: any): any) => setSelectedUser(e.target.value)}
+                  onChange={(e) => setSelectedUser(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Choose a user...</option>
@@ -459,7 +459,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
                 <Input
                   type="number"
                   value={adjustmentAmount}
-                  onChange={((e: any): any) => setAdjustmentAmount(parseInt(e.target.value) || 0)}
+                  onChange={(e) => setAdjustmentAmount(parseInt(e.target.value) || 0)}
                   placeholder="Enter positive or negative amount"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -473,7 +473,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
                 </label>
                 <Input
                   value={adjustmentReason}
-                  onChange={((e: any): any) => setAdjustmentReason(e.target.value)}
+                  onChange={(e) => setAdjustmentReason(e.target.value)}
                   placeholder="e.g., Refund for service issue, Bonus tokens, etc."
                 />
               </div>

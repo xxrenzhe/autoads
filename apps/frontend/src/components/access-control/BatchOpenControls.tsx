@@ -28,6 +28,10 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
   const [schedule, setSchedule] = useState('')
   const [script, setScript] = useState('')
 
+  // Track running tasks and controllers to allow stopping
+  const controllersRef = (globalThis as any).__batchOpenControllers ?? { timers: new Set<number>(), aborts: new Set<AbortController>(), running: false }
+  ;(globalThis as any).__batchOpenControllers = controllersRef
+
   const versionLimits = versionInfo ? {
     maxUrls: versionInfo.maxUrls,
     maxConcurrent: versionInfo.maxConcurrent,
@@ -41,19 +45,76 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
   const handleStart = async () => {
     if (!urls.trim()) return
 
+    const list = urls
+      .split('\n')
+      .map((u) => u.trim())
+      .filter((u) => u)
+
+    if (list.length === 0) return
+
+    // Respect version limits
+    const limit = Number(versionLimits.maxUrls || 0)
+    const toProcess = limit > 0 ? list.slice(0, limit) : list
+
+    // Prevent duplicate runs
+    if (controllersRef.running) return
+    controllersRef.running = true
     setIsRunning(true)
-    // TODO: Implement actual batch open logic
-    console.log(`Starting ${version} batch open with URLs:`, urls.split('\n'))
-    
-    // Simulate processing
-    setTimeout(() => {
-      setIsRunning(false)
-    }, 3000)
+
+    const concurrent = Math.max(1, Math.min(Number(maxConcurrent) || 1, versionLimits.maxConcurrent || 5))
+    const waitMs = Math.max(100, Number(delay) || 1000)
+
+    console.log(`Starting ${version} batch open`, { count: toProcess.length, concurrent, waitMs, showBrowser })
+
+    let index = 0
+
+    const openOne = async (url: string) => {
+      if (showBrowser && version !== 'silent') {
+        // Open in new tab/window. Browsers may block popups if not user-initiated.
+        window.open(url, '_blank', 'noopener')
+      } else {
+        // Silent mode: best-effort fetch (may be limited by CORS)
+        const controller = new AbortController()
+        controllersRef.aborts.add(controller)
+        try {
+          await fetch(url, { mode: 'no-cors', signal: controller.signal })
+        } catch (e) {
+          // ignore fetch errors in no-cors
+        } finally {
+          controllersRef.aborts.delete(controller)
+        }
+      }
+    }
+
+    const worker = async () => {
+      while (controllersRef.running && index < toProcess.length) {
+        const current = index++
+        const url = toProcess[current]
+        await openOne(url)
+        await new Promise((r) => {
+          const t = window.setTimeout(r, waitMs)
+          controllersRef.timers.add(t)
+        })
+      }
+    }
+
+    await Promise.all(Array.from({ length: concurrent }).map(() => worker()))
+
+    controllersRef.running = false
+    // Clear any leftover timers
+    controllersRef.timers.forEach((t: number) => clearTimeout(t))
+    controllersRef.timers.clear()
+    setIsRunning(false)
   }
 
   const handleStop = () => {
+    // Stop workers and abort in-flight requests
+    controllersRef.running = false
+    controllersRef.timers.forEach((t: number) => clearTimeout(t))
+    controllersRef.timers.clear()
+    controllersRef.aborts.forEach((c: AbortController) => c.abort())
+    controllersRef.aborts.clear()
     setIsRunning(false)
-    // TODO: Implement stop logic
   }
 
   const getUrlsCount = () => {
@@ -131,7 +192,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                 <Textarea
                   placeholder="https://example.com/page1&#10;https://example.com/page2&#10;https://example.com/page3"
                   value={urls}
-                  onChange={((e: any): any) => setUrls(e.target.value)}
+                  onChange={(e) => setUrls(e.target.value)}
                   rows={10}
                   className="font-mono text-sm"
                 />
@@ -153,7 +214,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                       id="delay"
                       type="number"
                       value={delay}
-                      onChange={((e: any): any) => setDelay(e.target.value)}
+                      onChange={(e) => setDelay(e.target.value)}
                       min="100"
                       max="10000"
                       step="100"
@@ -203,7 +264,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                     id="proxy"
                     placeholder="http://proxy.example.com:8080"
                     value={proxyUrl}
-                    onChange={((e: any): any) => setProxyUrl(e.target.value)}
+                    onChange={(e) => setProxyUrl(e.target.value)}
                   />
                 </div>
               </CardContent>
@@ -290,7 +351,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                       id="schedule"
                       placeholder="0 9 * * *"
                       value={schedule}
-                      onChange={((e: any): any) => setSchedule(e.target.value)}
+                      onChange={(e) => setSchedule(e.target.value)}
                     />
                     <p className="text-sm text-gray-500">
                       例如：0 9 * * * (每天9点执行)
@@ -319,7 +380,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                       id="script"
                       placeholder="// 在页面加载后执行的脚本&#10;console.log('Page loaded');&#10;document.querySelector('.button').click();"
                       value={script}
-                      onChange={((e: any): any) => setScript(e.target.value)}
+                      onChange={(e) => setScript(e.target.value)}
                       rows={8}
                       className="font-mono text-sm"
                     />

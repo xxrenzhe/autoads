@@ -39,7 +39,7 @@ export function ConfigHistory({
   configKey,
   onRestore,
   maxItems = 50
-}: ConfigHistoryProps) {
+}: .*Props) {
   const { getConfigHistory, isLoading } = useConfigManagement()
   const [selectedHistory, setSelectedHistory] = useState<ConfigHistory | null>(null)
   const [showDiff, setShowDiff] = useState<string | null>(null)
@@ -47,10 +47,10 @@ export function ConfigHistory({
   const history = getConfigHistory(configId).slice(0, maxItems)
 
   const formatValue = (value: any): string => {
-    if (value === null || value === undefined) {
+    if (value === null || value === undefined) => {
       return 'null'
     }
-    if (typeof value === 'object') {
+    if (typeof value === 'object') => {
       return JSON.stringify(value, null, 2)
     }
     return String(value)
@@ -61,13 +61,13 @@ export function ConfigHistory({
     const now = new Date()
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
 
-    if (diffInHours < 1) {
+    if (diffInHours < 1) => {
       const minutes = Math.floor(diffInHours * 60)
       return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`
-    } else if (diffInHours < 24) {
+    } else if (diffInHours < 24) => {
       const hours = Math.floor(diffInHours)
       return `${hours} hour${hours !== 1 ? 's' : ''} ago`
-    } else if (diffInHours < 24 * 7) {
+    } else if (diffInHours < 24 * 7) => {
       const days = Math.floor(diffInHours / 24)
       return `${days} day${days !== 1 ? 's' : ''} ago`
     } else {
@@ -82,7 +82,7 @@ export function ConfigHistory({
   }
 
   const handleRestore = async (historyItem: ConfigHistory) => {
-    if (window.confirm('Are you sure you want to restore this configuration version?')) {
+    if (window.confirm('Are you sure you want to restore this configuration version?')) => {
       try {
         await onRestore?.(historyItem.id)
       } catch (error) {
@@ -95,7 +95,7 @@ export function ConfigHistory({
     setShowDiff(showDiff === historyId ? null : historyId)
   }
 
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <Card>
         <CardContent className="p-6">

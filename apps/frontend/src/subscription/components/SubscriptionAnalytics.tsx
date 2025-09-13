@@ -44,7 +44,7 @@ export interface SubscriptionAnalyticsProps {
   className?: string
 }
 
-export function SubscriptionAnalytics({ className }: SubscriptionAnalyticsProps) {
+export function SubscriptionAnalytics({ className }: .*Props) {
   const [period, setPeriod] = useState(30)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -57,7 +57,7 @@ export function SubscriptionAnalytics({ className }: SubscriptionAnalyticsProps)
     queryKey: ['subscription-analytics', period],
     queryFn: async (): Promise<SubscriptionAnalyticsData> => {
       const response = await fetch(`/api/admin/subscription/analytics?period=${period}`)
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to fetch subscription analytics')
       }
       const result = await response.json()
@@ -101,7 +101,7 @@ export function SubscriptionAnalytics({ className }: SubscriptionAnalyticsProps)
     )
   }
 
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <div className={`space-y-6 ${className}`}>
         <div className="flex items-center justify-between">
@@ -128,7 +128,7 @@ export function SubscriptionAnalytics({ className }: SubscriptionAnalyticsProps)
     )
   }
 
-  if (error) {
+  if (error) => {
     return (
       <div className={`${className}`}>
         <Card>
@@ -148,7 +148,7 @@ export function SubscriptionAnalytics({ className }: SubscriptionAnalyticsProps)
     )
   }
 
-  if (!analytics) {
+  if (!analytics) => {
     return (
       <div className={`${className}`}>
         <Card>
@@ -182,7 +182,7 @@ export function SubscriptionAnalytics({ className }: SubscriptionAnalyticsProps)
         <div className="flex items-center space-x-3">
           <select
             value={period}
-            onChange={((e: any): any) => setPeriod(parseInt(e.target.value))}
+            onChange={(e) => setPeriod(parseInt(e.target.value))}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value={7}>Last 7 days</option>

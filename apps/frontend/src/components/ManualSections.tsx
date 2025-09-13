@@ -25,7 +25,7 @@ import {
 
 // Helper function to safely handle translation arrays
 const getTranslationArray = (value: string | string[]): string[] => {
-  if (Array.isArray(value)) {
+  if (Array.isArray(value)) => {
     return value;
   }
   return [value];

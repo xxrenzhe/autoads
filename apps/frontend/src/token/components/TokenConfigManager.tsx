@@ -34,7 +34,7 @@ export interface TokenConfigManagerProps {
   className?: string
 }
 
-export function TokenConfigManager({ className }: TokenConfigManagerProps) {
+export function TokenConfigManager({ className }: .*Props) {
   const [editingConfig, setEditingConfig] = useState<TokenConfig | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [formData, setFormData] = useState({
@@ -54,7 +54,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
     queryKey: ['token-configs'],
     queryFn: async (): Promise<TokenConfig[]> => {
       const response = await fetch('/api/admin/token-config')
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to fetch token configurations')
       }
       const result = await response.json()
@@ -72,7 +72,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
         },
         body: JSON.stringify(configData),
       })
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to create token configuration')
       }
       return response.json()
@@ -93,7 +93,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
         },
         body: JSON.stringify(configData),
       })
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to update token configuration')
       }
       return response.json()
@@ -110,7 +110,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
       const response = await fetch(`/api/admin/token-config/${configId}`, {
         method: 'DELETE',
       })
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to delete token configuration')
       }
       return response.json()
@@ -125,7 +125,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
       const response = await fetch(`/api/admin/token-config/${configId}/toggle`, {
         method: 'POST',
       })
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to toggle token configuration')
       }
       return response.json()
@@ -160,7 +160,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (editingConfig) {
+    if (editingConfig) => {
       updateConfigMutation.mutate({
         id: editingConfig.id,
         ...formData
@@ -171,7 +171,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
   }
 
   const handleDelete = (configId: string) => {
-    if (window.confirm('Are you sure you want to delete this token configuration?')) {
+    if (window.confirm('Are you sure you want to delete this token configuration?')) => {
       deleteConfigMutation.mutate(configId)
     }
   }
@@ -180,7 +180,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
     return (tokens * costPerToken).toFixed(4)
   }
 
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <div className={`space-y-6 ${className}`}>
         <div className="flex items-center justify-between">
@@ -220,7 +220,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
           </p>
         </div>
         
-        <Button onClick={((: any): any) => setShowCreateForm(true)}>
+        <Button onClick={() => setShowCreateForm(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Configuration
         </Button>
@@ -243,7 +243,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
                   </label>
                   <Input
                     value={formData.feature}
-                    onChange={((e: any): any) => setFormData({ ...formData, feature: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, feature: e.target.value })}
                     placeholder="e.g., SiteRank API, Batch URL Check"
                     required
                   />
@@ -258,7 +258,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
                     step="0.0001"
                     min="0"
                     value={formData.costPerToken}
-                    onChange={((e: any): any) => setFormData({ ...formData, costPerToken: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, costPerToken: parseFloat(e.target.value) || 0 })}
                     placeholder="0.0010"
                     required
                   />
@@ -272,7 +272,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
                     type="number"
                     min="1"
                     value={formData.minimumTokens}
-                    onChange={((e: any): any) => setFormData({ ...formData, minimumTokens: parseInt(e.target.value) || 1 })}
+                    onChange={(e) => setFormData({ ...formData, minimumTokens: parseInt(e.target.value) || 1 })}
                     required
                   />
                 </div>
@@ -285,7 +285,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
                     type="number"
                     min="1"
                     value={formData.maximumTokens}
-                    onChange={((e: any): any) => setFormData({ ...formData, maximumTokens: parseInt(e.target.value) || 1000 })}
+                    onChange={(e) => setFormData({ ...formData, maximumTokens: parseInt(e.target.value) || 1000 })}
                     required
                   />
                 </div>
@@ -297,7 +297,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
                 </label>
                 <Input
                   value={formData.description}
-                  onChange={((e: any): any) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Brief description of this feature"
                 />
               </div>
@@ -341,7 +341,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     setShowCreateForm(false)
                     setEditingConfig(null)
                     resetForm()
@@ -412,7 +412,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={((: any): any) => handleEdit(config)}
+                      onClick={() => handleEdit(config)}
                       className="flex-1"
                     >
                       <Edit className="h-3 w-3 mr-1" />
@@ -422,7 +422,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={((: any): any) => toggleConfigMutation.mutate(config.id)}
+                      onClick={() => toggleConfigMutation.mutate(config.id)}
                       disabled={toggleConfigMutation.isPending}
                     >
                       <Settings className="h-3 w-3" />
@@ -431,7 +431,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={((: any): any) => handleDelete(config.id)}
+                      onClick={() => handleDelete(config.id)}
                       disabled={deleteConfigMutation.isPending}
                     >
                       <Trash2 className="h-3 w-3" />
@@ -457,7 +457,7 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Create your first token configuration to get started.
                 </p>
-                <Button onClick={((: any): any) => setShowCreateForm(true)}>
+                <Button onClick={() => setShowCreateForm(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Configuration
                 </Button>

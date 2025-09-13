@@ -10,14 +10,14 @@ interface AppLayoutProps {
   children: React.ReactNode
 }
 
-export default function AppLayout({ children }: AppLayoutProps) {
+export default function AppLayout({ children }: .*Props) {
   const pathname = usePathname()
   
   // Check if current path is admin-related
   const isAdminPath = pathname.startsWith('/admin') || pathname.startsWith('/admin-dashboard')
   
   // For admin paths, render children directly without any layout
-  if (isAdminPath) {
+  if (isAdminPath) => {
     return <>{children}</>
   }
   

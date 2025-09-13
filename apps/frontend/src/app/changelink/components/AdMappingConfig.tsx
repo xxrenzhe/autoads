@@ -49,7 +49,7 @@ export default function AdMappingConfig({
   originalLinks, 
   adMappingConfig, 
   onAdMappingChange 
-}: AdMappingConfigProps) {
+}: .*Props) {
   const [googleAdsAccounts, setGoogleAdsAccounts] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [adGroups, setAdGroups] = useState<any[]>([]);
@@ -85,7 +85,7 @@ export default function AdMappingConfig({
       setGoogleAdsAccounts(accountList);
       
       // 加载第一个账户的广告系列
-      if (accountList.length > 0) {
+      if (accountList.length > 0) => {
         await loadCampaigns(accountList[0].accountId);
       }
     } catch (error) {
@@ -105,7 +105,7 @@ export default function AdMappingConfig({
       setCampaigns(mockCampaigns);
       
       // 加载第一个广告系列的广告组
-      if (mockCampaigns.length > 0) {
+      if (mockCampaigns.length > 0) => {
         await loadAdGroups(accountId, mockCampaigns[0].id);
       }
     } catch (error) {
@@ -126,7 +126,7 @@ export default function AdMappingConfig({
       setAdGroups(mockAdGroups);
       
       // 加载第一个广告组的广告
-      if (mockAdGroups.length > 0) {
+      if (mockAdGroups.length > 0) => {
         await loadAds(accountId, mockAdGroups[0].id);
       }
     } catch (error) {
@@ -160,7 +160,7 @@ export default function AdMappingConfig({
       executionNumber: 1
     };
     
-    if (!updatedConfig[linkIndex]) {
+    if (!updatedConfig[linkIndex]) => {
       updatedConfig[linkIndex] = {
         originalUrl: originalLinks[linkIndex],
         adMappings: []
@@ -191,7 +191,7 @@ export default function AdMappingConfig({
     const selectedAdGroup = adGroups.find((ag: any) => ag.id === selectedAd?.adGroupId);
     const selectedCampaign = campaigns.find((c: any) => c.id === selectedAdGroup?.campaignId);
 
-    if (selectedAd) {
+    if (selectedAd) => {
       const updatedConfig = [...adMappingConfig];
       updatedConfig[linkIndex].adMappings[mappingIndex] = {
         ...updatedConfig[linkIndex].adMappings[mappingIndex],
@@ -206,7 +206,7 @@ export default function AdMappingConfig({
     }
   };
 
-  if (originalLinks.length === 0) {
+  if (originalLinks.length === 0) => {
     return (
       <Alert>
         <AlertCircle className="h-4 w-4" />
@@ -249,7 +249,7 @@ export default function AdMappingConfig({
               <Button
                 type="button"
                 size="sm"
-                onClick={((: any): any) => addAdMapping(linkIndex)}
+                onClick={() => addAdMapping(linkIndex)}
                 disabled={googleAdsAccounts.length === 0}
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -274,7 +274,7 @@ export default function AdMappingConfig({
                         type="button"
                         size="sm"
                         variant="outline"
-                        onClick={((: any): any) => removeAdMapping(linkIndex, mappingIndex)}
+                        onClick={() => removeAdMapping(linkIndex, mappingIndex)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

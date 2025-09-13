@@ -328,9 +328,9 @@ export class ConfigurationValidator {
     if (!config.adMappingConfig) return 0;
 
     const uniqueAdIds = new Set<string>();
-    config.adMappingConfig.forEach((mapping: any: any) => {
+    config.adMappingConfig.forEach(((mapping: any) => {
       if (mapping.adMappings) {
-        mapping.adMappings.forEach((adMapping: any: any) => {
+        mapping.adMappings.forEach(((adMapping: any) => {
           if (adMapping.targetAdId) {
             uniqueAdIds.add(adMapping.targetAdId);
           }

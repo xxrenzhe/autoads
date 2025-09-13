@@ -28,7 +28,7 @@ function RuntimeGoogleAnalyticsInner() {
     const waitForConfig = (attempt = 1) => {
       const config = (window as any).__RUNTIME_CONFIG__;
       
-      if (config && config.GA_ID) {
+      if (config && config.GA_ID) => {
         // 配置已可用
         console.log(`✅ Runtime config found after ${attempt} attempts:`, config.GA_ID);
         setGaId(config.GA_ID);
@@ -36,7 +36,7 @@ function RuntimeGoogleAnalyticsInner() {
       } else {
         // 配置还未加载，等待
         console.log(`Waiting for runtime config... attempt ${attempt}`);
-        if (attempt < 50) { // 最多等待5秒
+        if (attempt < 50) => { // 最多等待5秒
           setTimeout(() => waitForConfig(attempt + 1), 100);
         } else {
           console.error('❌ Runtime config not found after 5 seconds');
@@ -44,7 +44,7 @@ function RuntimeGoogleAnalyticsInner() {
           fetch('/api/config')
             .then(response => response.json())
             .then(config => {
-              if (config.GA_ID) {
+              if (config.GA_ID) => {
                 console.log('✅ Fallback: Config loaded from API:', config.GA_ID);
                 (window as any).__RUNTIME_CONFIG__ = config;
                 setGaId(config.GA_ID);
@@ -67,7 +67,7 @@ function RuntimeGoogleAnalyticsInner() {
     console.log(`🚀 Loading Google Analytics with ID: ${trackingId}`);
     
     // 检查是否已经加载
-    if (typeof window.gtag !== 'undefined') {
+    if (typeof window.gtag !== 'undefined') => {
       console.log('✅ Google Analytics already loaded');
       setIsLoaded(true);
       return;
@@ -78,7 +78,7 @@ function RuntimeGoogleAnalyticsInner() {
     console.log('📝 Initialized dataLayer, length:', window.dataLayer.length);
     
     // 创建gtag函数
-    window.gtag = function(...args: any[]) {
+    window.gtag = function(...args: any[]) => {
       console.log('📊 gtag called:', args);
       window.dataLayer.push(args);
     };
@@ -107,7 +107,7 @@ function RuntimeGoogleAnalyticsInner() {
       
       // 发送测试事件
       setTimeout(() => {
-        if (window.gtag) {
+        if (window.gtag) => {
           window.gtag('event', 'page_load_test', {
             event_category: 'Debug',
             event_label: 'Page Load',
@@ -128,7 +128,7 @@ function RuntimeGoogleAnalyticsInner() {
 
   // 发送页面浏览事件
   useEffect(() => {
-    if (gaId && isLoaded && window.gtag) {
+    if (gaId && isLoaded && window.gtag) => {
       const url = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
       window.gtag('config', gaId, {
         page_path: url,

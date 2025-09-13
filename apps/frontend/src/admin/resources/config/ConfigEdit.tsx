@@ -48,7 +48,7 @@ const ConfigEditToolbar: React.FC = () => (
  * Dynamic input field based on configuration type
  */
 const DynamicInputField: React.FC<{ type: string }> = ({ type }) => {
-  switch (type) {
+  switch (type) => {
     case 'number':
       return <NumberInput source="value" fullWidth />;
     case 'boolean':

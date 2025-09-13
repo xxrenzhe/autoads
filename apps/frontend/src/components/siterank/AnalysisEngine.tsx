@@ -38,7 +38,7 @@ export const useAnalysisEngine = ({
   onResultsUpdate,
   onProgressUpdate,
   onStatusUpdate,
-}: AnalysisEngineProps) => {
+}: .*Props) {
   // 速率限制状态
   const [rateLimitStatus, setRateLimitStatus] = useState<RateLimitStatus>({
     remaining: 500,
@@ -58,7 +58,7 @@ export const useAnalysisEngine = ({
     const uniqueList: string[] = [];
     
     domains.forEach((domain: any) => {
-      if (!domainSet.has(domain)) {
+      if (!domainSet.has(domain)) => {
         domainSet.add(domain);
         uniqueList.push(domain);
       }
@@ -70,21 +70,21 @@ export const useAnalysisEngine = ({
   
   // 处理请求队列
   const processRequestQueue = useCallback(async () => {
-    if (isProcessingQueue.current || requestQueue.current.length === 0) {
+    if (isProcessingQueue.current || requestQueue.current.length === 0) => {
       return;
     }
 
     isProcessingQueue.current = true;
 
-    while (requestQueue.current.length > 0) {
+    while (requestQueue.current.length > 0) => {
       const request = requestQueue.current.shift()!;
       
       try {
         // 检查速率限制状态
-        if (rateLimitStatus.remaining <= 10) {
+        if (rateLimitStatus.remaining <= 10) => {
           // 等待速率限制重置
           const waitTime = Math.max(0, rateLimitStatus.resetTime - Date.now());
-          if (waitTime > 0) {
+          if (waitTime > 0) => {
             await sleep(waitTime);
             // 重新获取速率限制状态
             continue;
@@ -96,14 +96,14 @@ export const useAnalysisEngine = ({
         request.resolve(result);
         
         // 更新速率限制状态（使用服务器返回的准确信息）
-        if (result.rateLimitInfo) {
+        if (result.rateLimitInfo) => {
           setRateLimitStatus(prev => ({
             ...prev,
             remaining: result.rateLimitInfo.remaining,
             totalRequests: result.rateLimitInfo.totalRequests,
             isLimited: result.rateLimitInfo.remaining === 0
           }));
-        } else if (result.fromCache !== true) {
+        } else if (result.fromCache !== true) => {
           // 如果没有返回 rateLimitInfo 且不是缓存，则手动减少
           setRateLimitStatus(prev => ({
             ...prev,
@@ -112,14 +112,14 @@ export const useAnalysisEngine = ({
           }));
         }
         
-        if (result.fromCache) {
+        if (result.fromCache) => {
           logger.info(`缓存命中: ${request.domain}`);
         }
 
         // 根据剩余配额调整延迟
-        if (rateLimitStatus.remaining < 50) {
+        if (rateLimitStatus.remaining < 50) => {
           await sleep(100); // 低配额时增加延迟
-        } else if (rateLimitStatus.remaining < 100) {
+        } else if (rateLimitStatus.remaining < 100) => {
           await sleep(50);  // 中等配额时适度延迟
         }
         
@@ -146,11 +146,11 @@ export const useAnalysisEngine = ({
       
       clearTimeout(timeoutId);
       
-      if (!response.ok) {
+      if (!response.ok) => {
         const errorData = await response.json().catch(() => ({}));
         
         // 更新速率限制状态
-        if (response.status === 429 || response.status === 403) {
+        if (response.status === 429 || response.status === 403) => {
           setRateLimitStatus({
             remaining: 0,
             resetTime: errorData.resetTime || Date.now() + 60000,
@@ -164,7 +164,7 @@ export const useAnalysisEngine = ({
       
       const result = await response.json();
       
-      if (result.success && result.data) {
+      if (result.success && result.data) => {
         return {
           domain,
           globalRank: result.data.globalRank,
@@ -176,7 +176,7 @@ export const useAnalysisEngine = ({
         throw new Error('Invalid response format');
       }
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') => {
         throw new Error('Request timeout');
       }
       throw error;
@@ -202,13 +202,13 @@ export const useAnalysisEngine = ({
     onStatusUpdate(true, false);
 
     try {
-      if (domains.length === 0) {
+      if (domains.length === 0) => {
         throw new Error("请输入URL或上传文件");
       }
 
       // 验证域名数量是否超过限制
       const validation = validateBatchQueryCount(domains);
-      if (!validation.valid) {
+      if (!validation.valid) => {
         throw new Error(validation.error || "域名数量超过限制");
       }
 
@@ -254,7 +254,7 @@ export const useAnalysisEngine = ({
       // 创建域名到原始索引的映射，用于更新重复域名
       const domainToIndices = new Map<string, number[]>();
       domains.forEach((domain, index: any) => {
-        if (!domainToIndices.has(domain)) {
+        if (!domainToIndices.has(domain)) => {
           domainToIndices.set(domain, []);
         }
         domainToIndices.get(domain)!.push(index);
@@ -267,7 +267,7 @@ export const useAnalysisEngine = ({
       let consecutiveErrors = 0; // 连续错误计数
       const maxConsecutiveErrors = 3; // 最大连续错误数
 
-      for (let i = 0; i < uniqueDomains.length; i += batchSize) {
+      for (let i = 0; i < uniqueDomains.length; i += batchSize) => {
         const batch = uniqueDomains.slice(i, i + batchSize);
         const batchPromises = batch?.filter(Boolean)?.map(async (domain, batchIndex) => {
           const globalIndex = i + batchIndex;
@@ -279,7 +279,7 @@ export const useAnalysisEngine = ({
               const newResults = [...prev];
               const indices = domainToIndices.get(domain) || [];
               
-              if (indices.length === 0) {
+              if (indices.length === 0) => {
                 logger.warn(`Could not find indices for domain: ${domain}`);
                 return newResults;
               }
@@ -291,7 +291,7 @@ export const useAnalysisEngine = ({
               
               // 更新所有相同域名的记录
               indices.forEach((index: any) => {
-                if (index < newResults.length) {
+                if (index < newResults.length) => {
                   newResults[index] = {
                     ...newResults[index],
                     GlobalRank: similarWebData?.globalRank ?? null,
@@ -315,7 +315,7 @@ export const useAnalysisEngine = ({
             }));
 
             // 处理 SimilarWeb API 响应
-            if (similarWebData.globalRank !== undefined || similarWebData.monthlyVisits !== undefined) {
+            if (similarWebData.globalRank !== undefined || similarWebData.monthlyVisits !== undefined) => {
               const globalRank = similarWebData.globalRank;
               const monthlyVisits = similarWebData.monthlyVisits;
               
@@ -362,13 +362,13 @@ export const useAnalysisEngine = ({
           const newResults = [...prev];
           let hasUpdates = false;
           
-          for (const domain of batch) {
+          for (const domain of batch) => {
             const indices = domainToIndices.get(domain) || [];
             
             indices.forEach((index: any) => {
-              if (index < newResults.length) {
+              if (index < newResults.length) => {
                 const result = newResults[index];
-                if (result.GlobalRank === "loading" || result.MonthlyVisits === "loading" || result.测试优先级 === "loading") {
+                if (result.GlobalRank === "loading" || result.MonthlyVisits === "loading" || result.测试优先级 === "loading") => {
                   newResults[index] = {
                     ...result,
                     GlobalRank: result.GlobalRank === "loading" ? null : result.GlobalRank,
@@ -395,22 +395,22 @@ export const useAnalysisEngine = ({
           !r.success && r.error !== "invalid_data" && r.error !== "invalid_response"
         ).length;
 
-        if (realErrors > 0 && consecutiveErrors >= maxConsecutiveErrors) {
+        if (realErrors > 0 && consecutiveErrors >= maxConsecutiveErrors) => {
           // 如果有真正的错误（网络、超时等），减少批次大小
           batchSize = Math.max(3, Math.floor(batchSize * 0.8));
           logger.warn(`Reducing batch size to ${batchSize} due to ${realErrors} real errors`);
-        } else if (successCount === batchResults.length && consecutiveErrors === 0) {
+        } else if (successCount === batchResults.length && consecutiveErrors === 0) => {
           // 如果全部成功，增加批次大小
           batchSize = Math.min(15, Math.floor(batchSize * 1.1));
           logger.info(`Increasing batch size to ${batchSize} due to ${successCount} successes`);
-        } else if (errorRate < 0.3) {
+        } else if (errorRate < 0.3) => {
           // 如果错误率低于30%，保持或略微增加批次大小
           batchSize = Math.min(12, batchSize + 1);
           logger.debug(`Maintaining batch size at ${batchSize} (error rate: ${(errorRate * 100).toFixed(1)}%)`);
         }
 
         // 智能延迟，根据错误率调整
-        if (i + batchSize < domains.length) {
+        if (i + batchSize < domains.length) => {
           const errorRate = errorCount / batchResults.length;
           const delay = errorRate > 0.5 ? 1000 : errorRate > 0.2 ? 500 : 200; // 根据错误率调整延迟
           
@@ -421,7 +421,7 @@ export const useAnalysisEngine = ({
       }
 
       // 所有查询完成后，重新计算优先级确保高、中、低三档分布
-      if (allResults.length > 0) {
+      if (allResults.length > 0) => {
         const allGlobalRanks = allResults.map((r: any) => r.globalRank);
         const allMonthlyVisits = allResults.map((r: any) => r.monthlyVisits);
 
@@ -429,7 +429,7 @@ export const useAnalysisEngine = ({
           const newResults = [...prev];
           
           // 为每个唯一域名计算优先级
-          for (const result of allResults) {
+          for (const result of allResults) => {
             const priority = calculatePriority(
               result.globalRank,
               result.monthlyVisits,
@@ -440,7 +440,7 @@ export const useAnalysisEngine = ({
             // 更新所有相同域名的记录
             const indices = domainToIndices.get(result.domain) || [];
             indices.forEach((index: any) => {
-              if (index < newResults.length) {
+              if (index < newResults.length) => {
                 newResults[index] = {
                   ...newResults[index],
                   测试优先级: priority
@@ -460,11 +460,11 @@ export const useAnalysisEngine = ({
         let hasUpdates = false;
         let loadingCount = 0;
         
-        for (let i = 0; i < newResults.length; i++) {
+        for (let i = 0; i < newResults.length; i++) => {
           const result = newResults[i];
           const isLoading = result.GlobalRank === "loading" || result.MonthlyVisits === "loading" || result.测试优先级 === "loading";
           
-          if (isLoading) {
+          if (isLoading) => {
             loadingCount++;
             newResults[i] = {
               ...result,
@@ -490,7 +490,7 @@ export const useAnalysisEngine = ({
   
   // 计算预计完成时间
   const getEstimatedCompletionTime = useCallback((remainingDomains: number) => {
-    if (rateLimitStatus.isLimited) {
+    if (rateLimitStatus.isLimited) => {
       const waitTime = Math.max(0, rateLimitStatus.resetTime - Date.now());
       const avgTimePerRequest = 2000; // 平均每个请求2秒
       return waitTime + (remainingDomains * avgTimePerRequest);

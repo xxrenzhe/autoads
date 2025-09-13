@@ -22,7 +22,7 @@ const RoleIcon: React.FC = () => {
   const record = useRecordContext();
   if (!record) return null as any;
   
-  switch (record.name) {
+  switch (record.name) => {
     case 'ADMIN':
       return <AdminIcon className="h-5 w-5" />;
     case 'SUPER_ADMIN':

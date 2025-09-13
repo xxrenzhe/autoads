@@ -23,7 +23,7 @@ export function LazyWrapper({
   children,
   fallback = null,
   delay = 0,
-}: LazyWrapperProps) {
+}: .*Props) {
   return (
     <Suspense fallback={fallback}>
       {delay > 0 ? (
@@ -41,7 +41,7 @@ interface DelayedRenderProps {
   delay: number;
 }
 
-function DelayedRender({ children, delay }: DelayedRenderProps) {
+function DelayedRender({ children, delay }: .*Props) {
   const [shouldRender, setShouldRender] = useState(false);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export function InViewLazy({
   threshold = 0.1,
   rootMargin = "50px",
   fallback = null,
-}: InViewLazyProps) {
+}: .*Props) {
   const [isInView, setIsInView] = useState(false);
   const [ref, setRef] = useState<HTMLDivElement | null>(null);
 
@@ -77,7 +77,7 @@ export function InViewLazy({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting) => {
           setIsInView(true);
           observer.disconnect();
         }

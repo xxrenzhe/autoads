@@ -40,10 +40,10 @@ export function UserActivityChart({
   title = 'User Activity Chart',
   description,
   className = ''
-}: UserActivityChartProps) {
+}: .*Props) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    switch (timeRange) {
+    switch (timeRange) => {
       case '1h':
         return date.toLocaleTimeString('en-US', { 
           hour: '2-digit', 
@@ -90,7 +90,7 @@ export function UserActivityChart({
   }, [data, timeRange])
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+    if (active && payload && payload.length) => {
       return (
         <div 
           className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"
@@ -126,7 +126,7 @@ export function UserActivityChart({
     return null
   }
 
-  if (!data || data.length === 0) {
+  if (!data || data.length === 0) => {
     return (
       <div 
         className={`flex items-center justify-center h-64 text-gray-500 dark:text-gray-400 ${className}`}
@@ -143,7 +143,7 @@ export function UserActivityChart({
 
   const chartId = `user-activity-chart-${Math.random().toString(36).substr(2, 9)}`
 
-  if (type === 'line') {
+  if (type === 'line') => {
     return (
       <div className={className}>
         {title && (
@@ -226,7 +226,7 @@ export function UserActivityChart({
     )
   }
 
-  if (type === 'bar') {
+  if (type === 'bar') => {
     return (
       <div className={className}>
         {title && (

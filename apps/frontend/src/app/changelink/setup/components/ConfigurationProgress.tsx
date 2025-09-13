@@ -24,7 +24,7 @@ export const ConfigurationProgress = memo(({
   totalRequiredSteps, 
   completedRequiredSteps, 
   progressPercentage 
-}: ConfigurationProgressProps) => {
+}: .*Props) {
   return (
     <div 
       className="p-4 space-y-4"

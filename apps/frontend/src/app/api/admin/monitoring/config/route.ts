@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { createLogger } from '@/lib/utils/security/secure-logger';
+import { prisma } from '@/lib/prisma';
 
 const logger = createLogger('APIMonitoringConfig');
 
@@ -116,11 +117,28 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // TODO: 将配置保存到数据库或配置文件
-    logger.info('Monitoring configuration updated', { 
-      userId: session.user.id,
-      updates 
-    });
+    // 将配置保存到数据库（system_configs 表中）
+    const configValue = JSON.stringify({
+      ...(await (async () => {
+        const existing = await prisma.systemConfig.findUnique({ where: { key: 'monitoring_config' } })
+        try { return existing ? JSON.parse(existing.value) : {} } catch { return {} }
+      })()),
+      ...updates
+    })
+
+    await prisma.systemConfig.upsert({
+      where: { key: 'monitoring_config' },
+      update: { value: configValue, updatedBy: session.user.id },
+      create: {
+        key: 'monitoring_config',
+        value: configValue,
+        category: 'monitoring',
+        description: '系统监控配置',
+        createdBy: session.user.id
+      }
+    })
+
+    logger.info('Monitoring configuration updated', { userId: session.user.id });
 
     return NextResponse.json({
       success: true,

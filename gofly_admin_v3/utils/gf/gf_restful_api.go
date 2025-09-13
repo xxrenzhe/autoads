@@ -146,7 +146,7 @@ func RequestParam(c *GinCtx) (map[string]interface{}, error) {
 			}
 		}
 	}
-	for key, _ := range c.Request.URL.Query() {
+	for key := range c.Request.URL.Query() {
 		dataMap[key] = c.Query(key)
 	}
 	return dataMap, nil

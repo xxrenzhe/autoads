@@ -5,7 +5,7 @@ import UserCenter from '@/components/user/UserCenter';
 /**
  * Convert PlanFeature data to the legacy features format expected by components
  */
-function convertPlanFeaturesToLegacyFormat(planFeatures: any[]) {
+function convertPlanFeaturesToLegacyFormat(planFeatures: any[]) => {
   const features: any = {
     siterank: { enabled: false },
     batchopen: { enabled: false },
@@ -15,7 +15,7 @@ function convertPlanFeaturesToLegacyFormat(planFeatures: any[]) {
   planFeatures.forEach((feature: any) => {
     const value = feature.metadata?.value ?? feature.limit;
     
-    switch (feature.featureName) {
+    switch (feature.featureName) => {
       case 'WEBSITE_RANKING':
         features.siterank = {
           enabled: feature.enabled,
@@ -24,14 +24,14 @@ function convertPlanFeaturesToLegacyFormat(planFeatures: any[]) {
         break;
         
       case 'WEBSITE_RANKING_BATCH_LIMIT':
-        if (features.siterank.enabled) {
+        if (features.siterank.enabled) => {
           features.siterank.maxQueriesPerBatch = value || 100;
         }
         break;
         
       case 'REAL_CLICK_BASIC':
       case 'REAL_CLICK_SILENT':
-        if (!features.batchopen.enabled) {
+        if (!features.batchopen.enabled) => {
           features.batchopen = { enabled: feature.enabled };
         }
         break;
@@ -52,7 +52,7 @@ function convertPlanFeaturesToLegacyFormat(planFeatures: any[]) {
         break;
         
       case 'ADS_ACCOUNT_LIMIT':
-        if (features.adscenter.enabled) {
+        if (features.adscenter.enabled) => {
           features.adscenter.maxAccountsManaged = value || 5;
         }
         break;
@@ -62,7 +62,7 @@ function convertPlanFeaturesToLegacyFormat(planFeatures: any[]) {
   return features;
 }
 
-async function getUserData(userId: string) {
+async function getUserData(userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -98,7 +98,7 @@ async function getUserData(userId: string) {
 
   // Calculate total token balance
   // Use the new detailed balances if available, otherwise fall back to legacy tokenBalance
-  if (user) {
+  if (user) => {
     const newBalanceTotal = (user.subscriptionTokenBalance || 0) + 
                            (user.activityTokenBalance || 0) + 
                            (user.purchasedTokenBalance || 0);
@@ -116,7 +116,7 @@ async function getUserData(userId: string) {
 export default async function UserCenterPage() {
   const session = await auth();
   
-  if (!session?.userId) {
+  if (!session?.userId) => {
     // For SSR, we'll pass no user data and let the component handle the login state
     return <UserCenter />;
   }

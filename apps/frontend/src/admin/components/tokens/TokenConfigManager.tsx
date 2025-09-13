@@ -101,7 +101,7 @@ export default function TokenConfigManager() {
   }, [])
 
   useEffect(() => {
-    if (config && originalConfig) {
+    if (config && originalConfig) => {
       const hasChanges = JSON.stringify(config) !== JSON.stringify(originalConfig)
       setHasUnsavedChanges(hasChanges)
     }
@@ -113,7 +113,7 @@ export default function TokenConfigManager() {
       const response = await fetch('/api/admin/tokens/config')
       const data = await response.json()
       
-      if (data.success) {
+      if (data.success) => {
         setConfig(data.data)
         setOriginalConfig(JSON.parse(JSON.stringify(data.data)))
         setValidationErrors([])
@@ -134,7 +134,7 @@ export default function TokenConfigManager() {
       const response = await fetch('/api/admin/tokens/history?limit=20')
       const data = await response.json()
       
-      if (data.success) {
+      if (data.success) => {
         setConfigHistory(data.data.records)
       } else {
         toast.error('Failed to fetch configuration history')
@@ -151,35 +151,35 @@ export default function TokenConfigManager() {
     const errors: ValidationError[] = []
 
     // Validate siterank
-    if (configToValidate.siterank.costPerDomain < 0) {
+    if (configToValidate.siterank.costPerDomain < 0) => {
       errors.push({ field: 'siterank.costPerDomain', message: 'Cost per domain must be non-negative' })
     }
-    if (configToValidate.siterank.costPerDomain > 100) {
+    if (configToValidate.siterank.costPerDomain > 100) => {
       errors.push({ field: 'siterank.costPerDomain', message: 'Cost per domain seems too high (>100)' })
     }
-    if (configToValidate.siterank.batchMultiplier < 0 || configToValidate.siterank.batchMultiplier > 1) {
+    if (configToValidate.siterank.batchMultiplier < 0 || configToValidate.siterank.batchMultiplier > 1) => {
       errors.push({ field: 'siterank.batchMultiplier', message: 'Batch multiplier must be between 0 and 1' })
     }
 
     // Validate batchopen
-    if (configToValidate.batchopen.costPerUrl < 0) {
+    if (configToValidate.batchopen.costPerUrl < 0) => {
       errors.push({ field: 'batchopen.costPerUrl', message: 'Cost per URL must be non-negative' })
     }
-    if (configToValidate.batchopen.costPerUrl > 100) {
+    if (configToValidate.batchopen.costPerUrl > 100) => {
       errors.push({ field: 'batchopen.costPerUrl', message: 'Cost per URL seems too high (>100)' })
     }
-    if (configToValidate.batchopen.batchMultiplier < 0 || configToValidate.batchopen.batchMultiplier > 1) {
+    if (configToValidate.batchopen.batchMultiplier < 0 || configToValidate.batchopen.batchMultiplier > 1) => {
       errors.push({ field: 'batchopen.batchMultiplier', message: 'Batch multiplier must be between 0 and 1' })
     }
 
     // Validate adscenter
-    if (configToValidate.adscenter.costPerLinkChange < 0) {
+    if (configToValidate.adscenter.costPerLinkChange < 0) => {
       errors.push({ field: 'adscenter.costPerLinkChange', message: 'Cost per link change must be non-negative' })
     }
-    if (configToValidate.adscenter.costPerLinkChange > 100) {
+    if (configToValidate.adscenter.costPerLinkChange > 100) => {
       errors.push({ field: 'adscenter.costPerLinkChange', message: 'Cost per link change seems too high (>100)' })
     }
-    if (configToValidate.adscenter.batchMultiplier < 0 || configToValidate.adscenter.batchMultiplier > 1) {
+    if (configToValidate.adscenter.batchMultiplier < 0 || configToValidate.adscenter.batchMultiplier > 1) => {
       errors.push({ field: 'adscenter.batchMultiplier', message: 'Batch multiplier must be between 0 and 1' })
     }
 
@@ -193,7 +193,7 @@ export default function TokenConfigManager() {
     const errors = validateConfig(config)
     setValidationErrors(errors)
     
-    if (errors.length > 0) {
+    if (errors.length > 0) => {
       toast.error('Please fix validation errors before saving')
       return
     }
@@ -213,7 +213,7 @@ export default function TokenConfigManager() {
 
       const data = await response.json()
       
-      if (data.success) {
+      if (data.success) => {
         setConfig(data.data)
         setOriginalConfig(JSON.parse(JSON.stringify(data.data)))
         setReason('')
@@ -221,7 +221,7 @@ export default function TokenConfigManager() {
         toast.success('Token configuration updated successfully')
         
         // Refresh history if it's being shown
-        if (showHistory) {
+        if (showHistory) => {
           fetchConfigHistory()
         }
       } else {
@@ -236,7 +236,7 @@ export default function TokenConfigManager() {
   }
 
   const resetConfig = () => {
-    if (originalConfig) {
+    if (originalConfig) => {
       setConfig(JSON.parse(JSON.stringify(originalConfig)))
       setValidationErrors([])
       setHasUnsavedChanges(false)
@@ -261,7 +261,7 @@ export default function TokenConfigManager() {
 
       const data = await response.json()
       
-      if (data.success) {
+      if (data.success) => {
         setCalculationResult(data.data)
       } else {
         toast.error(data.error || 'Failed to calculate cost')
@@ -304,7 +304,7 @@ export default function TokenConfigManager() {
     return validationErrors.some(error => error.field === fieldPath)
   }
 
-  if (loading) {
+  if (loading) => {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin" />
@@ -312,7 +312,7 @@ export default function TokenConfigManager() {
     )
   }
 
-  if (!config) {
+  if (!config) => {
     return (
       <Alert>
         <AlertTriangle className="h-4 w-4" />

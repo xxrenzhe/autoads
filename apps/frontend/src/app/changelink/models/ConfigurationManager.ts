@@ -312,8 +312,8 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('google_ads');
     return configs
-      .filter((config: any: any) => config.key.startsWith('googleAdsAccount_'))
-      .map((config: any: any) => config.value as GoogleAdsAccount)
+      .filter(((config: any) => config.key.startsWith('googleAdsAccount_'))
+      .map(((config: any) => config.value as GoogleAdsAccount)
       .sort((a: GoogleAdsAccount, b: GoogleAdsAccount) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -353,7 +353,7 @@ export class ConfigurationManager {
 
     // 删除账号配置
     const configs = await (await getDatabaseService()).getAllConfigs('google_ads');
-    const accountConfig = configs.find((config: any: any) => config.key === `googleAdsAccount_${id}`);
+    const accountConfig = configs.find(((config: any) => config.key === `googleAdsAccount_${id}`);
     
     if (accountConfig) {
       // 这里需要实现删除配置的方法
@@ -393,8 +393,8 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('user');
     return configs
-      .filter((config: any: any) => config.key.startsWith('affiliateLink_'))
-      .map((config: any: any) => config.value as AffiliateLink)
+      .filter(((config: any) => config.key.startsWith('affiliateLink_'))
+      .map(((config: any) => config.value as AffiliateLink)
       .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -447,8 +447,8 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('system');
     return configs
-      .filter((config: any: any) => config.key.startsWith('adsPowerEnv_'))
-      .map((config: any: any) => config.value as AdsPowerEnvironment)
+      .filter(((config: any) => config.key.startsWith('adsPowerEnv_'))
+      .map(((config: any) => config.value as AdsPowerEnvironment)
       .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -484,8 +484,8 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('associations');
     return configs
-      .filter((config: any: any) => config.key.startsWith('association_'))
-      .map((config: any: any) => config.value as LinkAccountAssociation)
+      .filter(((config: any) => config.key.startsWith('association_'))
+      .map(((config: any) => config.value as LinkAccountAssociation)
       .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -541,8 +541,8 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('tasks');
     return configs
-      .filter((config: any: any) => config.key.startsWith('task_'))
-      .map((config: any: any) => config.value as AutomationTask)
+      .filter(((config: any) => config.key.startsWith('task_'))
+      .map(((config: any) => config.value as AutomationTask)
       .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -622,8 +622,8 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('executions');
     let records = configs
-      .filter((config: any: any) => config.key.startsWith('execution_'))
-      .map((config: any: any) => config.value as ExecutionRecord);
+      .filter(((config: any) => config.key.startsWith('execution_'))
+      .map(((config: any) => config.value as ExecutionRecord);
 
     // 应用过滤器
     if (filters) {
@@ -664,8 +664,8 @@ export class ConfigurationManager {
       const allConfigs = await this.getAllConfigurations();
       const configurations = allConfigs || [];
 
-      const activeCount = configurations.filter((c: any: any) => c.status === 'active').length;
-      const pausedCount = configurations.filter((c: any: any) => c.status === 'paused').length;
+      const activeCount = configurations.filter(((c: any) => c.status === 'active').length;
+      const pausedCount = configurations.filter(((c: any) => c.status === 'paused').length;
 
       // 计算备份数量
       const keys = await (await getDatabaseService()).getAllKeys(this.options.namespace);
@@ -704,7 +704,7 @@ export class ConfigurationManager {
       const allConfigs = await this.getAllConfigurations();
       const configurations = allConfigs || [];
 
-      return configurations.filter((config: any: any) => 
+      return configurations.filter(((config: any) => 
         config.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         config.originalLinks.some((link: string) => link.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (config.notificationEmail && config.notificationEmail.toLowerCase().includes(searchTerm.toLowerCase()))

@@ -113,7 +113,45 @@ class BatchHotReloadManager {
     
     if (hotReloadableConfigs.length > 0) {
       console.log(`热重载配置: ${hotReloadableConfigs.join(', ')}`)
-      // TODO: 实现实际的热重载逻辑
+      // 实际热重载：读取最新配置值并触发全局热重载服务
+      try {
+        const { hotReloadService } = await import('@/lib/hot-reload')
+
+        // 批量查询配置值
+        const records = await prisma.systemConfig.findMany({
+          where: { key: { in: hotReloadableConfigs } },
+          select: { key: true, value: true }
+        })
+
+        // 建立映射，缺失的键使用空值
+        const valueMap = new Map<string, any>()
+        for (const key of hotReloadableConfigs) valueMap.set(key, null)
+        for (const r of records) {
+          // 尝试将JSON字符串解析为对象
+          let parsed: any = r.value
+          try {
+            parsed = JSON.parse(r.value)
+          } catch {
+            parsed = r.value
+          }
+          valueMap.set(r.key, parsed)
+        }
+
+        // 逐个触发热重载事件（采用防抖合并）
+        await Promise.all(
+          hotReloadableConfigs.map((key) =>
+            hotReloadService.triggerReload({
+              type: 'config',
+              action: 'update',
+              key,
+              data: valueMap.get(key),
+              timestamp: Date.now()
+            })
+          )
+        )
+      } catch (err) {
+        console.error('执行热重载失败:', err)
+      }
     }
   }
 }

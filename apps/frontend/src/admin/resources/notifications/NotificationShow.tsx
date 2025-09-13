@@ -37,7 +37,7 @@ const NotificationTypeDisplay: React.FC = () => {
   if (!record) return null;
 
   const getIcon = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'EMAIL':
         return <Email fontSize="small" />;
       case 'SMS':
@@ -50,7 +50,7 @@ const NotificationTypeDisplay: React.FC = () => {
   };
 
   const getColor = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'EMAIL':
         return 'primary';
       case 'SMS':
@@ -77,7 +77,7 @@ const NotificationStatusDisplay: React.FC = () => {
   if (!record) return null;
 
   const getIcon = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'PENDING':
         return <Schedule fontSize="small" />;
       case 'SENT':
@@ -92,7 +92,7 @@ const NotificationStatusDisplay: React.FC = () => {
   };
 
   const getColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'PENDING':
         return 'warning';
       case 'SENT':

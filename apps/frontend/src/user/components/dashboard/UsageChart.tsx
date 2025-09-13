@@ -33,10 +33,10 @@ export function UsageChart({
   timeRange, 
   type = 'area',
   height = 300 
-}: UsageChartProps) {
+}: .*Props) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    switch (timeRange) {
+    switch (timeRange) => {
       case '24h':
         return date.toLocaleTimeString('en-US', { 
           hour: '2-digit', 
@@ -64,7 +64,7 @@ export function UsageChart({
   }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+    if (active && payload && payload.length) => {
       return (
         <div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
@@ -89,7 +89,7 @@ export function UsageChart({
     return null
   }
 
-  if (!data || data.length === 0) {
+  if (!data || data.length === 0) => {
     return (
       <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
         <div className="text-center">
@@ -100,7 +100,7 @@ export function UsageChart({
     )
   }
 
-  if (type === 'area') {
+  if (type === 'area') => {
     return (
       <ResponsiveContainer width="100%" height={height}>
         <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -154,7 +154,7 @@ export function UsageChart({
     )
   }
 
-  if (type === 'bar') {
+  if (type === 'bar') => {
     return (
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>

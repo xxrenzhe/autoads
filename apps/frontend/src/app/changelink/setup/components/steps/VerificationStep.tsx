@@ -17,7 +17,7 @@ export const VerificationStep = memo(({
   configurations, 
   onRunSystemVerification, 
   onRunTestExecution 
-}: VerificationStepProps) => {
+}: .*Props) {
   return (
     <Card>
       <CardHeader>

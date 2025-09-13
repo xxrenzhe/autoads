@@ -35,7 +35,7 @@ interface UserCenterModalProps {
   user: any
 }
 
-export default function UserCenterModal({ isOpen, onClose, user }: UserCenterModalProps) {
+export default function UserCenterModal({ isOpen, onClose, user }: .*Props) {
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState<'profile' | 'tokens' | 'subscription' | 'invitation'>('profile')
   const [tokenUsage, setTokenUsage] = useState<any[]>([])
@@ -80,7 +80,7 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
 
   // 复制邀请链接
   const handleCopyInvitationLink = async () => {
-    if (invitationData.url) {
+    if (invitationData.url) => {
       try {
         await navigator.clipboard.writeText(invitationData.url)
         setCopied(true)
@@ -94,11 +94,11 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
   // 获取Token使用记录
   useEffect(() => {
     const fetchTokenUsage = async () => {
-      if (activeTab === 'tokens' && session?.user?.id) {
+      if (activeTab === 'tokens' && session?.user?.id) => {
         setIsLoading(true)
         try {
           const response = await fetch('/api/user/tokens/usage?limit=20')
-          if (response.ok) {
+          if (response.ok) => {
             const data = await response.json()
             setTokenUsage(data.data?.records || [])
             setMonthlyUsage(data.data?.analytics?.totalTokensUsed || 0)
@@ -117,12 +117,12 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
   // 获取邀请数据
   useEffect(() => {
     const fetchInvitationData = async () => {
-      if (activeTab === 'invitation' && session?.user?.id) {
+      if (activeTab === 'invitation' && session?.user?.id) => {
         setIsLoading(true)
         try {
           // 获取邀请码和URL
           const codeResponse = await fetch('/api/invitation/my-code')
-          if (codeResponse.ok) {
+          if (codeResponse.ok) => {
             const codeData = await codeResponse.json()
             setInvitationData(prev => ({
               ...prev,
@@ -133,7 +133,7 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
 
           // 获取邀请统计
           const statsResponse = await fetch('/api/invitation/stats')
-          if (statsResponse.ok) {
+          if (statsResponse.ok) => {
             const statsData = await statsResponse.json()
             setInvitationData(prev => ({
               ...prev,
@@ -199,7 +199,7 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
               return (
                 <button
                   key={item.id}
-                  onClick={((: any): any) => setActiveTab(item.id as any)}
+                  onClick={() => setActiveTab(item.id as any)}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                     activeTab === item.id
                       ? 'bg-white text-blue-600 shadow-sm'
@@ -472,7 +472,7 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
                   <div className="space-y-3">
                     <h3 className="font-medium text-gray-900">最近邀请</h3>
                     <div className="space-y-2">
-                      {invitationData.stats.recentInvitations.slice(0, 5).map((inv: any: any) => (
+                      {invitationData.stats.recentInvitations.slice((0, 5).map((inv: any) => (
                         <div key={inv.id} className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <Users className="h-5 w-5 text-gray-400" />
@@ -502,7 +502,7 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
             <Button
               variant="ghost"
               size="sm"
-              onClick={((: any): any) => window.open('/settings', '_blank')}
+              onClick={() => window.open('/settings', '_blank')}
               className="text-gray-600"
             >
               <Settings className="h-4 w-4 mr-2" />

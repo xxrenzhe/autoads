@@ -62,7 +62,7 @@ export default function SubscriptionManagement() {
   const router = useRouter()
 
   useEffect(() => {
-    if (session?.userId) {
+    if (session?.userId) => {
       loadSubscriptionData()
     }
   }, [session])
@@ -76,17 +76,17 @@ export default function SubscriptionManagement() {
         fetch('/api/subscriptions/usage')
       ])
 
-      if (subResponse.ok) {
+      if (subResponse.ok) => {
         const subData = await subResponse.json()
         setSubscription(subData.subscription)
       }
 
-      if (invoicesResponse.ok) {
+      if (invoicesResponse.ok) => {
         const invoicesData = await invoicesResponse.json()
         setInvoices(invoicesData.invoices || [])
       }
 
-      if (usageResponse.ok) {
+      if (usageResponse.ok) => {
         const usageData = await usageResponse.json()
         setUsageStats(usageData.usage)
       }
@@ -104,7 +104,7 @@ export default function SubscriptionManagement() {
         method: 'POST'
       })
       
-      if (response.ok) {
+      if (response.ok) => {
         const { url } = await response.json()
         window.location.href = url
       } else {
@@ -119,7 +119,7 @@ export default function SubscriptionManagement() {
   }
 
   const handleDowngrade = async () => {
-    if (!confirm('确定要降级订阅吗？降级将在当前计费周期结束时生效。')) {
+    if (!confirm('确定要降级订阅吗？降级将在当前计费周期结束时生效。')) => {
       return
     }
 
@@ -129,7 +129,7 @@ export default function SubscriptionManagement() {
         method: 'POST'
       })
       
-      if (response.ok) {
+      if (response.ok) => {
         loadSubscriptionData()
         alert('降级请求已提交，将在当前计费周期结束时生效')
       } else {
@@ -144,7 +144,7 @@ export default function SubscriptionManagement() {
   }
 
   const handleCancelSubscription = async () => {
-    if (!confirm('确定要取消订阅吗？取消后您将在当前计费周期结束时失去付费功能。')) {
+    if (!confirm('确定要取消订阅吗？取消后您将在当前计费周期结束时失去付费功能。')) => {
       return
     }
 
@@ -154,7 +154,7 @@ export default function SubscriptionManagement() {
         method: 'POST'
       })
       
-      if (response.ok) {
+      if (response.ok) => {
         loadSubscriptionData()
         alert('订阅已取消，将在当前计费周期结束时停止')
       } else {
@@ -175,7 +175,7 @@ export default function SubscriptionManagement() {
         method: 'POST'
       })
       
-      if (response.ok) {
+      if (response.ok) => {
         loadSubscriptionData()
         alert('订阅已重新激活')
       } else {
@@ -239,7 +239,7 @@ export default function SubscriptionManagement() {
     )
   }
 
-  if (loading) {
+  if (loading) => {
     return (
       <div className="space-y-6">
         {[...Array(3)].map((_, i: any) => (
@@ -253,7 +253,7 @@ export default function SubscriptionManagement() {
     )
   }
 
-  if (!subscription) {
+  if (!subscription) => {
     return (
       <div className="text-center py-12">
         <CreditCardIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -262,7 +262,7 @@ export default function SubscriptionManagement() {
           您当前使用的是免费版，升级到付费计划解锁更多功能
         </p>
         <button
-          onClick={((: any): any) => router.push('/pricing')}
+          onClick={() => router.push('/pricing')}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
         >
           查看订阅计划

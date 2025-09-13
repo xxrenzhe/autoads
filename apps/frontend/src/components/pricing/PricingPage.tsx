@@ -153,8 +153,8 @@ export default function PricingPage() {
   }
 
   const handleSubscribeClick = (planId: string, planName: string) => {
-    if (planId === 'free') {
-      if (session) {
+    if (planId === 'free') => {
+      if (session) => {
         window.location.href = '/dashboard'
       } else {
         window.location.href = '/auth/signin'
@@ -296,7 +296,7 @@ export default function PricingPage() {
                     plan.id === 'max' && "bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 hover:shadow-lg"
                   )}
                   size="lg"
-                  onClick={((: any): any) => handleSubscribeClick(plan.id, plan.name)}
+                  onClick={() => handleSubscribeClick(plan.id, plan.name)}
                 >
                   {plan.buttonText}
                   {plan.id !== 'free' && <ArrowRight className="w-5 h-5 ml-2" />}

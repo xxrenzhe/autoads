@@ -53,7 +53,7 @@ export default function StatusPage() {
   const loadBuildInfo = async () => {
     try {
       const response = await fetch('/build-info.json');
-      if (response.ok) {
+      if (response.ok) => {
         const info = await response.json();
         setBuildInfo(info);
       }

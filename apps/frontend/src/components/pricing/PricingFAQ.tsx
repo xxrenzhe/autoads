@@ -56,7 +56,7 @@ export default function PricingFAQ() {
 
   const toggleItem = (index: number) => {
     const newOpenItems = new Set(openItems)
-    if (newOpenItems.has(index)) {
+    if (newOpenItems.has(index)) => {
       newOpenItems.delete(index)
     } else {
       newOpenItems.add(index)
@@ -72,7 +72,7 @@ export default function PricingFAQ() {
           className="bg-white rounded-lg border border-gray-200 shadow-sm"
         >
           <button
-            onClick={((: any): any) => toggleItem(index)}
+            onClick={() => toggleItem(index)}
             className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
           >
             <h3 className="text-lg font-medium text-gray-900 pr-4">

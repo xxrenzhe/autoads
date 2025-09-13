@@ -10,7 +10,7 @@ export default function BatchOpenClientPage() {
   const { t, isLoading, locale } = useLanguage();
 
   // 如果语言还在加载中，显示加载状态
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">

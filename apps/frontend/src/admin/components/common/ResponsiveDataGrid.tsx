@@ -60,7 +60,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
 
   // Format date columns
   const enhancedColumns = columns.map((col: any) => {
-    if (col.type === 'dateTime') {
+    if (col.type === 'dateTime') => {
       return {
         ...col,
         renderCell: (params: GridRenderCellParams) => {
@@ -73,7 +73,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
         },
       };
     }
-    if (col.type === 'date') {
+    if (col.type === 'date') => {
       return {
         ...col,
         renderCell: (params: GridRenderCellParams) => {
@@ -86,7 +86,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
         },
       };
     }
-    if (col.type === 'boolean') {
+    if (col.type === 'boolean') => {
       return {
         ...col,
         renderCell: (params: GridRenderCellParams) => {
@@ -117,7 +117,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
           getActions: (params: any) => {
             const actionsArray: any[] = [];
 
-            if (onView) {
+            if (onView) => {
               actionsArray.push(
                 <GridActionsCellItem
                   icon={<ViewIcon />}
@@ -128,7 +128,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
               );
             }
 
-            if (onEdit) {
+            if (onEdit) => {
               actionsArray.push(
                 <GridActionsCellItem
                   icon={<EditIcon />}
@@ -140,7 +140,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
             }
 
             actions.forEach((action: any) => {
-              if (!action.show || action.show(params.row)) {
+              if (!action.show || action.show(params.row)) => {
                 actionsArray.push(
                   <GridActionsCellItem
                     icon={action.icon}
@@ -152,7 +152,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
               }
             });
 
-            if (onDelete) {
+            if (onDelete) => {
               actionsArray.push(
                 <GridActionsCellItem
                   icon={<DeleteIcon />}

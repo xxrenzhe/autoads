@@ -46,7 +46,7 @@ export default function ClientPage() {
 
       const validUrls = urlList.filter((url: any) => url.trim() !== "");
 
-      if (validUrls.length === 0) {
+      if (validUrls.length === 0) => {
         const errorMsg = t("noValidUrls");
         setError(Array.isArray(errorMsg) ? errorMsg[0] : errorMsg);
         setIsProcessing(false);
@@ -55,8 +55,8 @@ export default function ClientPage() {
 
       const newResults: UrlResult[] = [];
 
-      for (let i = 0; i < validUrls.length; i++) {
-        if (abortControllerRef.current.signal.aborted) {
+      for (let i = 0; i < validUrls.length; i++) => {
+        if (abortControllerRef.current.signal.aborted) => {
           break;
         }
 
@@ -73,7 +73,7 @@ export default function ClientPage() {
             signal: abortControllerRef.current.signal,
           });
 
-          if (!response.ok) {
+          if (!response.ok) => {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
 
@@ -95,11 +95,11 @@ export default function ClientPage() {
           setResults([...newResults]);
 
           // Add delay between requests to avoid overwhelming the server
-          if (i < validUrls.length - 1) {
+          if (i < validUrls.length - 1) => {
             await new Promise((resolve) => setTimeout(resolve, 100));
           }
-        } catch (err) {
-          if (err instanceof Error && err.name === "AbortError") {
+        } catch (err) => {
+          if (err instanceof Error && err.name === "AbortError") => {
             break;
           }
 
@@ -129,14 +129,14 @@ export default function ClientPage() {
   // Cleanup abort controller on unmount
   useEffect(() => {
     return () => {
-      if (abortControllerRef.current) {
+      if (abortControllerRef.current) => {
         abortControllerRef.current.abort();
       }
     };
   }, []);
 
   // 如果语言还在加载中，显示加载状态
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">

@@ -107,13 +107,13 @@ export const TokenRulesList: React.FC = () => {
       setLoading(true);
       const response = await fetch('/api/admin/tokens/rules');
       
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to fetch token rules');
       }
       
       const data = await response.json();
       setRules(data.data || []);
-    } catch (err: any) {
+    } catch (err: any) => {
       setError(err.message || 'Failed to load token rules');
     } finally {
       setLoading(false);
@@ -124,13 +124,13 @@ export const TokenRulesList: React.FC = () => {
     try {
       const response = await fetch(`/api/admin/tokens/rules/${ruleId}/history`);
       
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to fetch rule history');
       }
       
       const data = await response.json();
       setRuleHistory(data.data || []);
-    } catch (err: any) {
+    } catch (err: any) => {
       console.error('Failed to fetch rule history:', err);
       setRuleHistory([]);
     }
@@ -177,7 +177,7 @@ export const TokenRulesList: React.FC = () => {
         }),
       });
       
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to update token rule');
       }
       
@@ -189,7 +189,7 @@ export const TokenRulesList: React.FC = () => {
       setEditValues({});
       setConfirmDialog({ open: false, ruleId: null, newCost: 0, oldCost: 0 });
       
-    } catch (err: any) {
+    } catch (err: any) => {
       setError(err.message || 'Failed to update token rule');
     }
   };
@@ -207,12 +207,12 @@ export const TokenRulesList: React.FC = () => {
         }),
       });
       
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Failed to toggle rule status');
       }
       
       await fetchTokenRules();
-    } catch (err: any) {
+    } catch (err: any) => {
       setError(err.message || 'Failed to toggle rule status');
     }
   };
@@ -243,7 +243,7 @@ export const TokenRulesList: React.FC = () => {
         method: 'POST',
       });
 
-      if (!response.ok) {
+      if (!response.ok) => {
         throw new Error('Hot-reload failed');
       }
 
@@ -254,7 +254,7 @@ export const TokenRulesList: React.FC = () => {
       
       // You could show a success toast here
       console.log('Hot-reload successful:', data.message);
-    } catch (err: any) {
+    } catch (err: any) => {
       setError(err.message || 'Hot-reload failed');
     } finally {
       setLoading(false);
@@ -278,7 +278,7 @@ export const TokenRulesList: React.FC = () => {
     return 'error';
   };
 
-  if (loading) {
+  if (loading) => {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
@@ -286,7 +286,7 @@ export const TokenRulesList: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error) => {
     return (
       <Alert severity="error" sx={{ m: 3 }}>
         {error}
@@ -374,7 +374,7 @@ export const TokenRulesList: React.FC = () => {
                           size="small"
                           type="number"
                           value={editValues[rule.id] || rule.cost}
-                          onChange={((e: any): any) => setEditValues({
+                          onChange={(e) => setEditValues({
                             ...editValues,
                             [rule.id]: parseInt(e.target.value) || 0
                           })}
@@ -395,7 +395,7 @@ export const TokenRulesList: React.FC = () => {
                         control={
                           <Switch
                             checked={rule.isActive}
-                            onChange={((: any): any) => handleToggleActive(rule.id, rule.isActive)}
+                            onChange={() => handleToggleActive(rule.id, rule.isActive)}
                             size="small"
                           />
                         }
@@ -438,7 +438,7 @@ export const TokenRulesList: React.FC = () => {
                               <IconButton
                                 size="small"
                                 color="primary"
-                                onClick={((: any): any) => handleEditSave(rule.id)}
+                                onClick={() => handleEditSave(rule.id)}
                               >
                                 <Save />
                               </IconButton>
@@ -457,7 +457,7 @@ export const TokenRulesList: React.FC = () => {
                             <Tooltip title="编辑规则">
                               <IconButton
                                 size="small"
-                                onClick={((: any): any) => handleEditRule(rule)}
+                                onClick={() => handleEditRule(rule)}
                               >
                                 <Edit />
                               </IconButton>
@@ -465,7 +465,7 @@ export const TokenRulesList: React.FC = () => {
                             <Tooltip title="查看历史">
                               <IconButton
                                 size="small"
-                                onClick={((: any): any) => handleShowHistory(rule.id)}
+                                onClick={() => handleShowHistory(rule.id)}
                               >
                                 <History />
                               </IconButton>
@@ -518,7 +518,7 @@ export const TokenRulesList: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            onClick={((: any): any) => setConfirmDialog({ open: false, ruleId: null, newCost: 0, oldCost: 0 })}
+            onClick={() => setConfirmDialog({ open: false, ruleId: null, newCost: 0, oldCost: 0 })}
           >
             取消
           </Button>
@@ -587,7 +587,7 @@ export const TokenRulesList: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={((: any): any) => setHistoryDialog({ open: false, ruleId: null })}>
+          <Button onClick={() => setHistoryDialog({ open: false, ruleId: null })}>
             关闭
           </Button>
         </DialogActions>

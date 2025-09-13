@@ -24,7 +24,7 @@ interface ErrorBoundaryState {
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
+  constructor(props: ErrorBoundaryProps) => {
     super(props);
     this.state = {
       hasError: false,
@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     };
   }
 
-  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) => {
     this.setState({
       error,
       errorInfo
@@ -53,12 +53,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
      }));
 
     // 调用自定义错误处理函数
-    if (this.props.onError) {
+    if (this.props.onError) => {
       this.props.onError(error, errorInfo);
     }
   }
 
-  override componentDidUpdate(prevProps: ErrorBoundaryProps) {
+  override componentDidUpdate(prevProps: ErrorBoundaryProps) => {
     const { resetKeys, resetOnPropsChange } = this.props;
     const { hasError } = this.state;
 
@@ -67,7 +67,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       hasError &&
       ((resetOnPropsChange && prevProps !== this.props) ||
         (resetKeys && prevProps.resetKeys !== resetKeys))
-    ) {
+    ) => {
       this.resetErrorBoundary();
     }
   }
@@ -80,17 +80,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     });
   };
 
-  override render() {
+  override render() => {
     const { hasError, error, errorInfo } = this.state;
     const { children, fallback } = this.props;
 
-    if (!hasError || !error) {
+    if (!hasError || !error) => {
       return children;
     }
 
     // 渲染错误回退UI
-    if (fallback) {
-      if (typeof fallback === 'function') {
+    if (fallback) => {
+      if (typeof fallback === 'function') => {
         return fallback(error, errorInfo!);
       }
       return fallback;
@@ -115,7 +115,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               重试
             </button>
             <button
-              onClick={((: any): any) => window.location.reload()}
+              onClick={() => window.location.reload()}
               className="ml-2 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
             >
               刷新页面
@@ -155,7 +155,7 @@ export function useErrorHandler() {
   }, []);
 
   // 如果有错误，抛出它以被ErrorBoundary捕获
-  if (error) {
+  if (error) => {
     throw error;
   }
 
@@ -179,7 +179,7 @@ export function AsyncErrorBoundary({
   retry,
   maxRetries = 3,
   retryDelay = 1000
-}: AsyncErrorBoundaryProps) {
+}: .*Props) {
   const [error, setError] = React.useState<Error | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [retryCount, setRetryCount] = React.useState(0);
@@ -192,15 +192,15 @@ export function AsyncErrorBoundary({
       // 这里应该执行异步操作
       // 由于这是一个通用组件，具体操作由children处理
       setLoading(false);
-    } catch (err) {
+    } catch (err) => {
       const caughtError = err instanceof Error ? err : new Error(String(err));
       setError(caughtError);
       setLoading(false);
 
       // 检查是否可以重试
-      if (retry && retryCount < maxRetries) {
+      if (retry && retryCount < maxRetries) => {
         const shouldRetry = await retry(caughtError, retryCount);
-        if (shouldRetry) {
+        if (shouldRetry) => {
           setRetryCount(prev => prev + 1);
           setTimeout(execute, retryDelay * Math.pow(2, retryCount)); // 指数退避
         }
@@ -232,7 +232,7 @@ export function NetworkErrorBoundary({
   children, 
   fallback, 
   onNetworkError 
-}: NetworkErrorBoundaryProps) {
+}: .*Props) {
   const [isOnline, setIsOnline] = React.useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
@@ -250,8 +250,8 @@ export function NetworkErrorBoundary({
     };
   }, []);
 
-  if (!isOnline) {
-    if (fallback) {
+  if (!isOnline) => {
+    if (fallback) => {
       return <>{fallback}</>;
     }
     
@@ -266,7 +266,7 @@ export function NetworkErrorBoundary({
             请检查您的网络连接并重试
           </p>
           <button
-            onClick={((: any): any) => window.location.reload()}
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
             重新连接

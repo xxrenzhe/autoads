@@ -44,7 +44,7 @@ const getPerformanceGrade = (metrics: PerformanceMetrics): string => {
 // 发送到分析服务的函数
 const sendToAnalytics = (metrics: PerformanceMetrics) => {
   // 这里可以集成Google Analytics, Vercel Analytics等
-  if (typeof window !== "undefined" && "gtag" in window) {
+  if (typeof window !== "undefined" && "gtag" in window) => {
     const gtag = (window as Window & { gtag: typeof window.gtag }).gtag;
 
     const eventData: Record<string, string | number | boolean> = {};
@@ -70,17 +70,17 @@ export default function PerformanceMonitor() {
         const metrics: PerformanceMetrics = {};
 
         // 计算关键性能指标
-        if (navigation) {
+        if (navigation) => {
           metrics.ttfb = navigation.responseStart - navigation.requestStart;
           metrics.loadTime = navigation.loadEventEnd - navigation.fetchStart;
         }
 
         // 获取Web Vitals
         const observer = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            switch (entry.entryType) {
+          for (const entry of list.getEntries()) => {
+            switch (entry.entryType) => {
               case "paint":
-                if (entry.name === "first-contentful-paint") {
+                if (entry.name === "first-contentful-paint") => {
                   metrics.fcp = entry.startTime;
                 }
                 break;
@@ -91,7 +91,7 @@ export default function PerformanceMonitor() {
                 metrics.fid = (entry as any).processingStart - entry.startTime;
                 break;
               case "layout-shift":
-                if (!(entry as any).hadRecentInput) {
+                if (!(entry as any).hadRecentInput) => {
                   metrics.cls = (metrics.cls || 0) + (entry as any).value;
                 }
                 break;
@@ -112,12 +112,12 @@ export default function PerformanceMonitor() {
         window.addEventListener("load", () => {
           setTimeout(() => {
             const finalMetrics = { ...metrics };
-            if (navigation) {
+            if (navigation) => {
               finalMetrics.loadTime = performance.now();
             }
 
             // 开发环境下输出性能报告
-            if (process.env.NODE_ENV === "development") {
+            if (process.env.NODE_ENV === "development") => {
               logger.info(`🚀 ${APP_CONFIG.site.name} 性能报告`);
               logger.info(`📊 首次内容绘制 (FCP): ${metrics.fcp || "未测量"}ms`);
               logger.info(`📊 最大内容绘制 (LCP): ${metrics.lcp || "未测量"}ms`);
@@ -131,13 +131,13 @@ export default function PerformanceMonitor() {
               logger.info("🏆 性能评级:");
               logger.info(performanceGrade);
 
-              if (finalMetrics.loadTime && finalMetrics.loadTime > 1000) {
+              if (finalMetrics.loadTime && finalMetrics.loadTime > 1000) => {
                 logger.warn("⚠️ 页面加载时间超过1秒，建议优化");
               }
             }
 
             // 生产环境下可以发送到分析服务
-            if (process.env.NODE_ENV === "production") {
+            if (process.env.NODE_ENV === "production") => {
               // 可以发送到Google Analytics或其他分析服务
               sendToAnalytics(finalMetrics);
             }

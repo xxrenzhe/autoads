@@ -306,7 +306,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
     if (!currentUser) return;
 
     try {
-      if (isCreating) {
+      if (isCreating) => {
         const newUser = {
           ...currentUser,
           id: `user_${Date.now()}`,
@@ -339,7 +339,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
       });
     }
   }, [currentUser, isCreating, onUserCreated, onUserUpdated]);
-  const handleDeleteUser = useCallback((userId: string) => { if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+  const handleDeleteUser = useCallback((userId: string) => { if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) => {
       setUsers(prev => prev.filter((user: any) => user.id !== userId));
       onUserDeleted?.(userId);
       setOperationResult({
@@ -365,7 +365,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
     if (!currentRole) return;
 
     try {
-      if (isCreating) {
+      if (isCreating) => {
         const newRole = {
           ...currentRole,
           id: `role_${Date.now()}`,
@@ -393,7 +393,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
       });
     }
   }, [currentRole, isCreating, onRoleCreated, onRoleUpdated]);
-  const handleDeleteRole = useCallback((roleId: string) => { if (confirm('Are you sure you want to delete this role? This action cannot be undone.')) {
+  const handleDeleteRole = useCallback((roleId: string) => { if (confirm('Are you sure you want to delete this role? This action cannot be undone.')) => {
       setRoles(prev => prev.filter((role: any) => role.id !== roleId));
       onRoleDeleted?.(roleId);
       setOperationResult({
@@ -419,7 +419,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
     return matchesSearch && matchesRole && matchesStatus;
   });
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status) => {
       case 'active': return 'text-green-600 bg-green-50';
       case 'inactive': return 'text-gray-600 bg-gray-50';
       case 'suspended': return 'text-red-600 bg-red-50';
@@ -428,7 +428,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
   };
 
   const getRoleColor = (roleName: string) => {
-    switch (roleName.toLowerCase()) {
+    switch (roleName.toLowerCase()) => {
       case 'administrator': return 'text-purple-600 bg-purple-50';
       case 'manager': return 'text-blue-600 bg-blue-50';
       case 'analyst': return 'text-green-600 bg-green-50';
@@ -467,7 +467,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 <Input
                   placeholder="Search users..."
                   value={searchTerm}
-                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-64"
                 />
               </div>
@@ -526,7 +526,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                               ? 'border-primary bg-primary/5'
                               : 'border-border hover:border-primary/50'
                           }`}
-                          onClick={((: any): any) => setCurrentUser(user)}
+                          onClick={() => setCurrentUser(user)}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
@@ -634,7 +634,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                           value={currentUser.role.id}
                           onValueChange={((value: any): any) => {
                             const role = roles.find((r: any) => r.id === value);
-                            if (role) {
+                            if (role) => {
                               setCurrentUser(prev => prev ? { ...prev, role } : null);
                             }
                           }}
@@ -692,7 +692,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             variant="ghost"
                             size="sm"
                             className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={((: any): any) => setShowPassword(!showPassword)}
+                            onClick={() => setShowPassword(!showPassword)}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
@@ -762,7 +762,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             ? 'border-primary bg-primary/5'
                             : 'border-border hover:border-primary/50'
                         }`}
-                        onClick={((: any): any) => setCurrentRole(role)}
+                        onClick={() => setCurrentRole(role)}
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
@@ -858,8 +858,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
                               type="checkbox"
                               id={permission.id}
                               checked={currentRole.permissions.some(p => p.id === permission.id)}
-                              onChange={((e: any): any) => {
-                                if (e.target.checked) {
+                              onChange={(e) => {
+                                if (e.target.checked) => {
                                   setCurrentRole(prev => prev ? {
                                     ...prev,
                                     permissions: [...prev.permissions, permission]

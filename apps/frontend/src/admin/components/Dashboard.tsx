@@ -117,7 +117,7 @@ const AdminDashboard: React.FC = () => {
           const fallbackResponse = await fetch('/api/admin/dashboard/stats');
           const fallbackData = await fallbackResponse.json();
           setStats(fallbackData);
-        } catch (fallbackError) {
+        } catch (fallbackError) => {
           console.error('Failed to fetch fallback dashboard stats:', fallbackError);
         }
       } finally {
@@ -136,8 +136,8 @@ const AdminDashboard: React.FC = () => {
   // Keyboard shortcuts
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.altKey) {
-        switch (event.key.toLowerCase()) {
+      if (event.altKey) => {
+        switch (event.key.toLowerCase()) => {
           case 'u':
             event.preventDefault();
             navigate('/admin-dashboard/users');
@@ -182,7 +182,7 @@ const AdminDashboard: React.FC = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [navigate]);
 
-  if (loading) {
+  if (loading) => {
     return (
       <Box sx={{ p: 3 }}>
         <LinearProgress />

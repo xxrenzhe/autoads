@@ -94,17 +94,17 @@ export default function SubscriptionAnalyticsDashboard() {
         fetch('/api/admin/subscriptions/lifecycle')
       ])
 
-      if (analyticsResponse.ok) {
+      if (analyticsResponse.ok) => {
         const data = await analyticsResponse.json()
         setAnalytics(data.data)
       }
 
-      if (trendsResponse.ok) {
+      if (trendsResponse.ok) => {
         const data = await trendsResponse.json()
         setTrends(data.data || [])
       }
 
-      if (lifecycleResponse.ok) {
+      if (lifecycleResponse.ok) => {
         const data = await lifecycleResponse.json()
         setLifecycleMetrics(data.data)
       }
@@ -127,7 +127,7 @@ export default function SubscriptionAnalyticsDashboard() {
       const response = await fetch(`/api/admin/subscriptions/export?days=${dateRange}`)
       const data = await response.json()
       
-      if (data.success) {
+      if (data.success) => {
         // Create and download CSV
         const csv = convertToCSV(data.data)
         downloadCSV(csv, `subscription-analytics-${new Date().toISOString().split('T')[0]}.csv`)
@@ -162,7 +162,7 @@ export default function SubscriptionAnalyticsDashboard() {
     window.URL.revokeObjectURL(url)
   }
 
-  if (loading) {
+  if (loading) => {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin" />
@@ -170,7 +170,7 @@ export default function SubscriptionAnalyticsDashboard() {
     )
   }
 
-  if (!analytics) {
+  if (!analytics) => {
     return (
       <Alert>
         <AlertDescription>

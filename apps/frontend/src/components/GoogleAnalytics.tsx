@@ -16,8 +16,8 @@ function GoogleAnalyticsInner() {
     pageview(url);
   }, [pathname, searchParams]);
   
-  if (!isGAEnabled()) {
-    if (process.env.NODE_ENV === 'development') {
+  if (!isGAEnabled()) => {
+    if (process.env.NODE_ENV === 'development') => {
       console.log(
         `Google Analytics disabled - GA_TRACKING_ID: ${getGA_TRACKING_ID() ? '[SET]' : '[NOT_SET]'}, NODE_ENV: ${process.env.NODE_ENV}`
       );
@@ -38,7 +38,7 @@ function GoogleAnalyticsInner() {
           __html: (() => {
             // 验证GA_TRACKING_ID格式 (应该是 G-XXXXXXXXXX 或 UA-XXXXXXXX-X)
             const isValidTrackingId = /^(G-[A-Z0-9]+|UA-\d+-\d+)$/.test(getGA_TRACKING_ID() || '');
-            if (!isValidTrackingId) {
+            if (!isValidTrackingId) => {
               console.warn('Invalid Google Analytics tracking ID');
               return '';
             }

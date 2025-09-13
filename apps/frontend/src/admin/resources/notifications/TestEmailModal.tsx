@@ -40,7 +40,7 @@ export const TestEmailModal: React.FC<TestEmailModalProps> = ({
   ];
 
   const handleSend = async () => {
-    if (!email) {
+    if (!email) => {
       alert('请输入收件人邮箱');
       return;
     }
@@ -73,7 +73,7 @@ export const TestEmailModal: React.FC<TestEmailModalProps> = ({
             label="收件人邮箱"
             type="email"
             value={email}
-            onChange={((e: any): any) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             fullWidth
             required
             helperText="请输入要接收测试邮件的邮箱地址"
@@ -84,7 +84,7 @@ export const TestEmailModal: React.FC<TestEmailModalProps> = ({
             <Select
               value={template}
               label="邮件模板"
-              onChange={((e: any): any) => setTemplate(e.target.value)}
+              onChange={(e) => setTemplate(e.target.value)}
             >
               {templates.map((t: any) => (
                 <MenuItem key={t.id} value={t.id}>

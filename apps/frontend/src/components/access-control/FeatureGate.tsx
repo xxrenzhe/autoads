@@ -42,13 +42,13 @@ export default function FeatureGate({
   fallback, 
   showUpgradePrompt = true,
   className 
-}: FeatureGateProps) {
+}: .*Props) {
   const { data: session } = useSession()
   const [access, setAccess] = useState<FeatureAccess | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (session?.user) {
+    if (session?.user) => {
       checkAccess()
     } else {
       setAccess({
@@ -66,7 +66,7 @@ export default function FeatureGate({
       const response = await fetch(`/api/user/access-control/check?feature=${feature}`)
       const data = await response.json()
       
-      if (data.success) {
+      if (data.success) => {
         setAccess(data.data)
       } else {
         setAccess({
@@ -87,7 +87,7 @@ export default function FeatureGate({
     }
   }
 
-  if (loading) {
+  if (loading) => {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -95,21 +95,21 @@ export default function FeatureGate({
     )
   }
 
-  if (!access) {
+  if (!access) => {
     return fallback || <div>Unable to check feature access</div>
   }
 
-  if (access.hasAccess) {
+  if (access.hasAccess) => {
     return <div className={className}>{children}</div>
   }
 
   // Show custom fallback if provided
-  if (fallback) {
+  if (fallback) => {
     return <div className={className}>{fallback}</div>
   }
 
   // Show upgrade prompt for premium features
-  if (access.upgradeRequired && showUpgradePrompt) {
+  if (access.upgradeRequired && showUpgradePrompt) => {
     return (
       <div className={className}>
         <UpgradePrompt access={access} />
@@ -118,7 +118,7 @@ export default function FeatureGate({
   }
 
   // Show usage limit reached
-  if (access.usageLimit && access.currentUsage !== undefined) {
+  if (access.usageLimit && access.currentUsage !== undefined) => {
     return (
       <div className={className}>
         <UsageLimitReached access={access} />
@@ -127,7 +127,7 @@ export default function FeatureGate({
   }
 
   // Show authentication required
-  if (!session) {
+  if (!session) => {
     return (
       <div className={className}>
         <AuthenticationRequired feature={feature} />
@@ -153,7 +153,7 @@ export default function FeatureGate({
   )
 }
 
-function UpgradePrompt({ access }: { access: FeatureAccess }) {
+function UpgradePrompt({ access }: { access: FeatureAccess }) => {
   return (
     <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
       <CardHeader>
@@ -199,7 +199,7 @@ function UpgradePrompt({ access }: { access: FeatureAccess }) {
   )
 }
 
-function UsageLimitReached({ access }: { access: FeatureAccess }) {
+function UsageLimitReached({ access }: { access: FeatureAccess }) => {
   const usagePercentage = access.usageLimit && access.currentUsage !== undefined
     ? (access.currentUsage / access.usageLimit) * 100
     : 0
@@ -260,7 +260,7 @@ function UsageLimitReached({ access }: { access: FeatureAccess }) {
   )
 }
 
-function AuthenticationRequired({ feature }: { feature: string }) {
+function AuthenticationRequired({ feature }: { feature: string }) => {
   return (
     <Card className="border-blue-200 bg-blue-50">
       <CardHeader>
@@ -312,13 +312,13 @@ function AuthenticationRequired({ feature }: { feature: string }) {
 }
 
 // Hook for checking feature access
-export function useFeatureAccess(feature: string) {
+export function useFeatureAccess(feature: string) => {
   const { data: session } = useSession()
   const [access, setAccess] = useState<FeatureAccess | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (session?.user) {
+    if (session?.user) => {
       checkAccess()
     } else {
       setAccess({
@@ -335,7 +335,7 @@ export function useFeatureAccess(feature: string) {
       const response = await fetch(`/api/user/access-control/check?feature=${feature}`)
       const data = await response.json()
       
-      if (data.success) {
+      if (data.success) => {
         setAccess(data.data)
       }
     } catch (error) {

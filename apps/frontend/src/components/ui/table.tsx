@@ -19,7 +19,7 @@ Table.displayName = "Table";
 const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
->(function TableHeader({ className, ...props }, ref) {
+>(function TableHeader({ className, ...props }, ref) => {
   return <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />;
 });
 TableHeader.displayName = "TableHeader";
@@ -27,7 +27,7 @@ TableHeader.displayName = "TableHeader";
 const TableBody = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
->(function TableBody({ className, ...props }, ref) {
+>(function TableBody({ className, ...props }, ref) => {
   return (
     <tbody
       ref={ref}
@@ -41,7 +41,7 @@ TableBody.displayName = "TableBody";
 const TableFooter = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
->(function TableFooter({ className, ...props }, ref) {
+>(function TableFooter({ className, ...props }, ref) => {
   return (
     <tfoot
       ref={ref}
@@ -58,7 +58,7 @@ TableFooter.displayName = "TableFooter";
 const TableRow = React.forwardRef<
   HTMLTableRowElement,
   React.HTMLAttributes<HTMLTableRowElement>
->(function TableRow({ className, ...props }, ref) {
+>(function TableRow({ className, ...props }, ref) => {
   return (
     <tr
       ref={ref}
@@ -75,7 +75,7 @@ TableRow.displayName = "TableRow";
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
->(function TableHead({ className, ...props }, ref) {
+>(function TableHead({ className, ...props }, ref) => {
   return (
     <th
       ref={ref}
@@ -92,7 +92,7 @@ TableHead.displayName = "TableHead";
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
->(function TableCell({ className, ...props }, ref) {
+>(function TableCell({ className, ...props }, ref) => {
   return (
     <td
       ref={ref}
@@ -106,7 +106,7 @@ TableCell.displayName = "TableCell";
 const TableCaption = React.forwardRef<
   HTMLTableCaptionElement,
   React.HTMLAttributes<HTMLTableCaptionElement>
->(function TableCaption({ className, ...props }, ref) {
+>(function TableCaption({ className, ...props }, ref) => {
   return (
     <caption
       ref={ref}

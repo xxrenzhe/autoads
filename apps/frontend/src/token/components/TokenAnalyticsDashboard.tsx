@@ -71,7 +71,7 @@ export interface TokenAnalyticsDashboardProps {
   className?: string
 }
 
-export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardProps) {
+export function TokenAnalyticsDashboard({ className }: .*Props) {
   const [timeRange, setTimeRange] = useState('7d')
   const [selectedFeature, setSelectedFeature] = useState<string>('all')
   const [activeTab, setActiveTab] = useState<'overview' | 'patterns' | 'forecast' | 'alerts'>('overview')
@@ -167,7 +167,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
   }
 
   const getAlertIcon = (type: TokenAlert['type']) => {
-    switch (type) {
+    switch (type) => {
       case 'budget_exceeded':
         return <DollarSign className="h-4 w-4 text-red-600" />
       case 'unusual_usage':
@@ -182,7 +182,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
   }
 
   const getSeverityColor = (severity: TokenAlert['severity']): string => {
-    switch (severity) {
+    switch (severity) => {
       case 'critical': return 'bg-red-100 border-red-200 text-red-800'
       case 'high': return 'bg-orange-100 border-orange-200 text-orange-800'
       case 'medium': return 'bg-yellow-100 border-yellow-200 text-yellow-800'
@@ -226,7 +226,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
         <div className="flex items-center space-x-3">
           <select
             value={timeRange}
-            onChange={((e: any): any) => setTimeRange(e.target.value)}
+            onChange={(e) => setTimeRange(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="24h">Last 24 Hours</option>
@@ -240,7 +240,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
             Filters
           </Button>
           
-          <Button onClick={((: any): any) => exportData('usage')}>
+          <Button onClick={() => exportData('usage')}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -348,7 +348,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
           ].map(({ id, label, icon: Icon }: any) => (
             <button
               key={id}
-              onClick={((: any): any) => setActiveTab(id as any)}
+              onClick={() => setActiveTab(id as any)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
                   ? 'border-blue-500 text-blue-600'

@@ -27,19 +27,19 @@ export default function FeatureAvailabilityIndicator({
   variant = 'badge',
   showUpgradeButton = false,
   className
-}: FeatureAvailabilityIndicatorProps) {
+}: .*Props) {
   const { access, loading } = useFeatureAccess(feature)
 
-  if (loading) {
+  if (loading) => {
     return <div className="animate-pulse bg-muted rounded h-5 w-16" />
   }
 
-  if (!access) {
+  if (!access) => {
     return null
   }
 
   const getIndicatorContent = () => {
-    if (access.hasAccess) {
+    if (access.hasAccess) => {
       return {
         icon: CheckCircle,
         text: 'Available',
@@ -49,7 +49,7 @@ export default function FeatureAvailabilityIndicator({
       }
     }
 
-    if (access.upgradeRequired) {
+    if (access.upgradeRequired) => {
       return {
         icon: Crown,
         text: 'Pro Feature',
@@ -59,7 +59,7 @@ export default function FeatureAvailabilityIndicator({
       }
     }
 
-    if (access.usageLimit && access.currentUsage !== undefined) {
+    if (access.usageLimit && access.currentUsage !== undefined) => {
       const isNearLimit = (access.currentUsage / access.usageLimit) >= 0.8
       return {
         icon: AlertTriangle,
@@ -97,7 +97,7 @@ export default function FeatureAvailabilityIndicator({
     </div>
   )
 
-  if (variant === 'badge') {
+  if (variant === 'badge') => {
     return (
       <TooltipProvider>
         <Tooltip>
@@ -118,7 +118,7 @@ export default function FeatureAvailabilityIndicator({
     )
   }
 
-  if (variant === 'button') {
+  if (variant === 'button') => {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
         <TooltipProvider>
@@ -147,7 +147,7 @@ export default function FeatureAvailabilityIndicator({
     )
   }
 
-  if (variant === 'icon') {
+  if (variant === 'icon') => {
     return (
       <TooltipProvider>
         <Tooltip>
@@ -162,7 +162,7 @@ export default function FeatureAvailabilityIndicator({
     )
   }
 
-  if (variant === 'inline') {
+  if (variant === 'inline') => {
     return (
       <TooltipProvider>
         <Tooltip>
@@ -184,7 +184,7 @@ export default function FeatureAvailabilityIndicator({
 }
 
 // Specialized components for common use cases
-export function FeatureBadge({ feature, className }: { feature: string; className?: string }) {
+export function FeatureBadge({ feature, className }: { feature: string; className?: string }) => {
   return (
     <FeatureAvailabilityIndicator 
       feature={feature} 
@@ -194,7 +194,7 @@ export function FeatureBadge({ feature, className }: { feature: string; classNam
   )
 }
 
-export function FeatureButton({ feature, className }: { feature: string; className?: string }) {
+export function FeatureButton({ feature, className }: { feature: string; className?: string }) => {
   return (
     <FeatureAvailabilityIndicator 
       feature={feature} 
@@ -205,7 +205,7 @@ export function FeatureButton({ feature, className }: { feature: string; classNa
   )
 }
 
-export function FeatureIcon({ feature, className }: { feature: string; className?: string }) {
+export function FeatureIcon({ feature, className }: { feature: string; className?: string }) => {
   return (
     <FeatureAvailabilityIndicator 
       feature={feature} 
@@ -215,7 +215,7 @@ export function FeatureIcon({ feature, className }: { feature: string; className
   )
 }
 
-export function InlineFeatureStatus({ feature, className }: { feature: string; className?: string }) {
+export function InlineFeatureStatus({ feature, className }: { feature: string; className?: string }) => {
   return (
     <FeatureAvailabilityIndicator 
       feature={feature} 

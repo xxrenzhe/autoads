@@ -114,11 +114,11 @@ const SubscriptionStats: React.FC = () => {
     
     acc.total++;
     
-    if (subscription.status === 'ACTIVE') {
+    if (subscription.status === 'ACTIVE') => {
       acc.active++;
     }
     
-    if (isTrial) {
+    if (isTrial) => {
       acc.trials++;
     }
     

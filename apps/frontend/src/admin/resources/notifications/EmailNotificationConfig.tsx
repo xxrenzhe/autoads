@@ -41,13 +41,13 @@ const EmailConfigToolbar = (props: any) => {
         body: JSON.stringify(testData),
       });
 
-      if (response.ok) {
+      if (response.ok) => {
         notify('测试邮件发送成功', { type: 'success' });
       } else {
         const error = await response.json();
         notify(`发送失败: ${error.message}`, { type: 'error' });
       }
-    } catch (err) {
+    } catch (err) => {
       notify('发送失败: 网络错误', { type: 'error' });
     }
   };
@@ -57,7 +57,7 @@ const EmailConfigToolbar = (props: any) => {
       <SaveButton />
       <Button
         label="测试邮件"
-        onClick={((: any): any) => setOpenTestModal(true)}
+        onClick={() => setOpenTestModal(true)}
         startIcon={<Test />}
         sx={{ ml: 1 }}
       >
@@ -98,7 +98,7 @@ const SmtpConfiguration = () => (
 
         <FormDataConsumer>
           {({ formData, ...rest }) => {
-            if (formData?.emailConfig?.provider === 'smtp') {
+            if (formData?.emailConfig?.provider === 'smtp') => {
               return (
                 <>
                   <TextInput

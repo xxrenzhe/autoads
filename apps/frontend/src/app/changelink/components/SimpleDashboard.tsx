@@ -61,7 +61,7 @@ export default function SimpleDashboard() {
       const configStats = await simpleConfigManager.getStats();
       setStats(configStats);
       setError(null);
-    } catch (err) {
+    } catch (err) => {
       setError('加载仪表板数据失败');
       console.error('Dashboard loading error:', err);
     } finally {
@@ -78,7 +78,7 @@ export default function SimpleDashboard() {
 
   const health = getHealthStatus();
 
-  if (isLoading) {
+  if (isLoading) => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -89,7 +89,7 @@ export default function SimpleDashboard() {
     );
   }
 
-  if (error) {
+  if (error) => {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">

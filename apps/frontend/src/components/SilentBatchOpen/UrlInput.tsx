@@ -69,7 +69,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({
       </label>
       <textarea
         value={input}
-        onChange={((e: any): any) => handleInputChange(e.target.value)}
+        onChange={(e) => handleInputChange(e.target.value)}
         placeholder={getTranslation(t, "batchopen.input.placeholder")}
         className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
         disabled={isOpening}

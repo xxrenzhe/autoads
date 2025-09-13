@@ -44,7 +44,7 @@ const TemplateTypeField: React.FC = () => {
   if (!record) return null;
 
   const getIcon = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'EMAIL':
         return <Email fontSize="small" />;
       case 'SYSTEM':
@@ -56,7 +56,7 @@ const TemplateTypeField: React.FC = () => {
   };
 
   const getColor = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'EMAIL':
         return 'primary';
       case 'SYSTEM':
@@ -68,7 +68,7 @@ const TemplateTypeField: React.FC = () => {
   };
 
   const getTypeLabel = (type: string) => {
-    switch (type) {
+    switch (type) => {
       case 'EMAIL':
         return '邮件';
       case 'SYSTEM':

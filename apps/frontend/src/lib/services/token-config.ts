@@ -95,7 +95,7 @@ export class TokenConfigService {
     }
 
     // Apply database values
-    configs.forEach((item: any: any) => {
+    configs.forEach(((item: any) => {
       const [, feature, setting] = item.key.split('.')
       if (feature && setting && config[feature as keyof TokenConfig]) {
         const value = item.type === 'number' ? parseFloat(item.value) : item.value

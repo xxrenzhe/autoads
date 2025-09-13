@@ -41,7 +41,7 @@ const ResultsSection = ({
   onExportText,
   onExportCsv,
   isExporting,
-}: ResultsSectionProps) => {
+}: .*Props) {
   const { t, locale } = useLanguage();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -68,7 +68,7 @@ const ResultsSection = ({
       await navigator.clipboard.writeText(text);
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
-    } catch (err) {
+    } catch (err) => {
       logger.error('Failed to copy:', new EnhancedError('Failed to copy:', { error: err instanceof Error ? err.message : String(err)
        }));
     }
@@ -77,15 +77,15 @@ const ResultsSection = ({
   const getStatusBadge = (status: string | number | null) => {
     // Convert number status to string status
     let statusStr: string;
-    if (typeof status === "number") {
-      if (status >= 200 && status < 300) {
+    if (typeof status === "number") => {
+      if (status >= 200 && status < 300) => {
         statusStr = "success";
-      } else if (status >= 300 && status < 400) {
+      } else if (status >= 300 && status < 400) => {
         statusStr = "opened";
       } else {
         statusStr = "failed";
       }
-    } else if (status === null) {
+    } else if (status === null) => {
       statusStr = "waitingDetection";
     } else {
       statusStr = status;
@@ -111,14 +111,14 @@ const ResultsSection = ({
 
   const successfulResults = results.filter((r: any) => {
     const status = r.status;
-    if (typeof status === "number") {
+    if (typeof status === "number") => {
       return status >= 200 && status < 400;
     }
     return status === "success" || status === "opened";
   });
   const failedResults = results.filter((r: any) => {
     const status = r.status;
-    if (typeof status === "number") {
+    if (typeof status === "number") => {
       return status >= 400 || status === null;
     }
     return (
@@ -201,11 +201,11 @@ const ResultsSection = ({
                           <input
                             type="text"
                             value={editValue}
-                            onChange={((e: any): any) => setEditValue(e.target.value)}
+                            onChange={(e) => setEditValue(e.target.value)}
                             className="flex-1 px-2 py-1 text-sm border rounded"
                             autoFocus
                           />
-                          <Button size="sm" onClick={((: any): any) => handleSave(index)}>
+                          <Button size="sm" onClick={() => handleSave(index)}>
                             <Check className="w-3 h-3" />
                           </Button>
                           <Button
@@ -226,7 +226,7 @@ const ResultsSection = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={((: any): any) =>
+                                onClick={() =>
                                   result.finalUrl &&
                                   copyToClipboard(result.finalUrl, index)
                                 }
@@ -240,7 +240,7 @@ const ResultsSection = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={((: any): any) =>
+                                onClick={() =>
                                   window.open(result.finalUrl, "_blank")
                                 }
                               >
@@ -256,7 +256,7 @@ const ResultsSection = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) =>
+                          onClick={() =>
                             handleEdit(index, result.finalUrl || "")
                           }
                         >
