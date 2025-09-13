@@ -12,6 +12,7 @@ import (
 	"gofly-admin-v3/internal/auth"
 	"gofly-admin-v3/internal/batchgo"
 	"gofly-admin-v3/internal/chengelink"
+	"gofly-admin-v3/internal/audit"
 	"gofly-admin-v3/internal/siterank"
 	"gofly-admin-v3/internal/store"
 	// "gofly-admin-v3/internal/user"  // 暂时禁用，有编译错误
@@ -73,6 +74,9 @@ func registerBusinessRoutes(db interface{}) {
 	// 注册Chengelink路由
 	chengelink.RegisterRoutes(gormDB)
 
+	// 注册审计统计路由
+	audit.RegisterRoutes(gormDB)
+
 	// 注册Dashboard路由
 	dashboard.RegisterRoutes(gormDB)
 
@@ -86,7 +90,7 @@ func registerBusinessRoutes(db interface{}) {
 	checkin.RegisterRoutes(gormDB)
 
 	glog.Info(nil, "business_routes_registered", gf.Map{
-		"modules": []string{"auth", "siterank", "batchgo", "chengelink", "dashboard", "websocket", "invitation", "checkin"},
+		"modules": []string{"auth", "siterank", "batchgo", "chengelink", "dashboard", "websocket", "invitation", "checkin", "audit"},
 	})
 }
 

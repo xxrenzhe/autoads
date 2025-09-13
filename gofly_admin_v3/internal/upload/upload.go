@@ -233,25 +233,52 @@ func (us *UploadService) UploadFiles(files []*multipart.FileHeader, userID strin
 
 // DeleteFile 删除文件
 func (us *UploadService) DeleteFile(fileID string) error {
-	// TODO: 从数据库获取文件信息
-	// 这里简化处理，需要先查询文件信息
+    // 通过本地索引查询并删除文件与缩略图
+    indexPath := filepath.Join(us.config.UploadPath, ".index", "uploads.jsonl")
+    if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+        return errors.New("index not found")
+    }
 
-	// fileInfo := getFileFromDB(fileID)
-	// if fileInfo == nil {
-	//     return errors.New("file not found")
-	// }
-
-	// // 删除文件
-	// if err := os.Remove(filepath.Join(us.config.UploadPath, fileInfo.Path)); err != nil {
-	//     return err
-	// }
-
-	// // 删除缩略图
-	// if fileInfo.ThumbPath != "" {
-	//     os.Remove(filepath.Join(us.config.UploadPath, fileInfo.ThumbPath))
-	// }
-
-	return nil
+    data, err := os.ReadFile(indexPath)
+    if err != nil {
+        return err
+    }
+    lines := strings.Split(string(data), "\n")
+    var outLines []string
+    deleted := false
+    for _, line := range lines {
+        line = strings.TrimSpace(line)
+        if line == "" { continue }
+        var rec struct {
+            ID        string `json:"id"`
+            Path      string `json:"path"`
+            ThumbPath string `json:"thumb_path"`
+        }
+        if err := json.Unmarshal([]byte(line), &rec); err != nil {
+            // 保留无法解析的行，避免数据丢失
+            outLines = append(outLines, line)
+            continue
+        }
+        if rec.ID == fileID {
+            // 删除物理文件
+            _ = os.Remove(filepath.Join(us.config.UploadPath, filepath.Clean(rec.Path)))
+            if rec.ThumbPath != "" {
+                _ = os.Remove(filepath.Join(us.config.UploadPath, filepath.Clean(rec.ThumbPath)))
+            }
+            deleted = true
+            continue
+        }
+        outLines = append(outLines, line)
+    }
+    if !deleted {
+        return errors.New("file not found")
+    }
+    // 重写索引
+    if err := os.MkdirAll(filepath.Dir(indexPath), 0755); err != nil { return err }
+    if err := os.WriteFile(indexPath, []byte(strings.Join(outLines, "\n")), 0644); err != nil {
+        return err
+    }
+    return nil
 }
 
 // getFileType 获取文件类型

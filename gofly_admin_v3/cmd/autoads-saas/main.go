@@ -412,10 +412,16 @@ func (app *AutoAdsSaaSApp) setupEmailRoutes(api *gin.RouterGroup) {
 
 // setupAuditRoutes 设置审计路由
 func (app *AutoAdsSaaSApp) setupAuditRoutes(api *gin.RouterGroup) {
-	auditGroup := api.Group("/audit")
-	{
-		// 获取用户审计日志
-		auditGroup.GET("/events", func(c *gin.Context) {
+    auditGroup := api.Group("/audit")
+    {
+        // 用户活动摘要
+        auditGroup.GET("/user/activity-summary", func(c *gin.Context) {
+            ctrl := audit.NewController(audit.NewAutoAdsAuditService(app.db))
+            ctrl.GetUserActivitySummaryHandler(c)
+        })
+
+        // 获取用户审计日志
+        auditGroup.GET("/events", func(c *gin.Context) {
 			userID := c.Query("user_id")
 			limit := 20
 			offset := 0
@@ -450,10 +456,10 @@ func (app *AutoAdsSaaSApp) setupAuditRoutes(api *gin.RouterGroup) {
 			})
 		})
 
-		// 获取用户操作统计
-		auditGroup.GET("/stats/:user_id", func(c *gin.Context) {
-			userID := c.Param("user_id")
-			days := 30
+        // 获取用户操作统计
+        auditGroup.GET("/stats/:user_id", func(c *gin.Context) {
+            userID := c.Param("user_id")
+            days := 30
 
 			if d := c.Query("days"); d != "" {
 				if parsed, err := strconv.Atoi(d); err == nil && parsed > 0 {
@@ -467,13 +473,37 @@ func (app *AutoAdsSaaSApp) setupAuditRoutes(api *gin.RouterGroup) {
 				return
 			}
 
-			c.JSON(200, gin.H{
-				"code":    0,
-				"message": "Success",
-				"data":    stats,
-			})
-		})
-	}
+            c.JSON(200, gin.H{
+                "code":    0,
+                "message": "Success",
+                "data":    stats,
+            })
+        })
+
+        // 安全概览（含可疑用户与API滥用统计）
+        auditGroup.GET("/security/overview", func(c *gin.Context) {
+            ctrl := audit.NewController(audit.NewAutoAdsAuditService(app.db))
+            ctrl.GetSecurityOverviewHandler(c)
+        })
+
+        // 数据访问事件
+        auditGroup.GET("/events/data-access", func(c *gin.Context) {
+            ctrl := audit.NewController(audit.NewAutoAdsAuditService(app.db))
+            ctrl.GetDataAccessEventsHandler(c)
+        })
+
+        // 权限变更
+        auditGroup.GET("/events/permission-changes", func(c *gin.Context) {
+            ctrl := audit.NewController(audit.NewAutoAdsAuditService(app.db))
+            ctrl.GetPermissionChangesHandler(c)
+        })
+
+        // 数据导出
+        auditGroup.GET("/events/data-exports", func(c *gin.Context) {
+            ctrl := audit.NewController(audit.NewAutoAdsAuditService(app.db))
+            ctrl.GetDataExportEventsHandler(c)
+        })
+    }
 }
 
 // setupDocsRoutes 设置API文档路由

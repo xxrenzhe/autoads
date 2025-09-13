@@ -73,10 +73,12 @@ func NewDB(config DatabaseConfig) (*DB, error) {
 		return nil, fmt.Errorf("failed to get sqlDB: %w", err)
 	}
 
-	// 配置连接池
-	sqlDB.SetMaxIdleConns(config.MaxIdle)
-	sqlDB.SetMaxOpenConns(config.MaxOpen)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+    // 配置连接池
+    sqlDB.SetMaxIdleConns(config.MaxIdle)
+    sqlDB.SetMaxOpenConns(config.MaxOpen)
+    maxLife := time.Hour
+    if config.MaxLifetime > 0 { maxLife = time.Duration(config.MaxLifetime) * time.Second }
+    sqlDB.SetConnMaxLifetime(maxLife)
 
 	return &DB{DB: db}, nil
 }
