@@ -1,7 +1,6 @@
 package upload
 
 import (
-	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
@@ -20,7 +19,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"gofly-admin-v3/internal/config"
 	"gofly-admin-v3/internal/validator"
 	"gofly-admin-v3/utils/gf"
 )

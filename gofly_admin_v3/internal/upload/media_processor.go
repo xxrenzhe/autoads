@@ -66,7 +66,7 @@ func (mp *MediaProcessor) ProcessMedia(fileInfo *FileInfo, uploadPath string) (*
 	}
 
 	// 获取文件扩展名
-	ext := strings.ToLower(filepath.Ext(fileInfo.Filename))
+	_ = strings.ToLower(filepath.Ext(fileInfo.Filename)) // ext is not used
 
 	// 根据文件类型进行处理
 	switch fileInfo.Type {
