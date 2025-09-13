@@ -19,12 +19,11 @@ import (
 // EnhancedRateLimitManager 增强的速率限制管理器
 type EnhancedRateLimitManager struct {
 	*ratelimit.RateLimitManager
-	db          *gorm.DB
-	cache       *cache.Cache
-	userService *user.Service
-	analytics   *RateLimitAnalytics
-	hotConfig   *HotConfigManager
-	mu          sync.RWMutex
+	db        *gorm.DB
+	cache     *cache.Cache
+	analytics *RateLimitAnalytics
+	hotConfig *HotConfigManager
+	mu        sync.RWMutex
 }
 
 // RateLimitAnalytics 速率限制分析器
@@ -75,7 +74,6 @@ func NewEnhancedRateLimitManager(
 	baseMgr *ratelimit.RateLimitManager,
 	db *gorm.DB,
 	cache *cache.Cache,
-	userService *user.Service,
 ) *EnhancedRateLimitManager {
 
 	analytics := &RateLimitAnalytics{
@@ -92,7 +90,6 @@ func NewEnhancedRateLimitManager(
 		RateLimitManager: baseMgr,
 		db:               db,
 		cache:            cache,
-		userService:      userService,
 		analytics:        analytics,
 		hotConfig:        hotConfig,
 	}

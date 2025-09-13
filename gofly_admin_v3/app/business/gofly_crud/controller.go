@@ -4,18 +4,17 @@ import (
 	"gofly-admin-v3/internal/batchgo"
 	"gofly-admin-v3/internal/crud"
 	"gofly-admin-v3/internal/siterank"
-	"gofly-admin-v3/internal/store"
 	"gofly-admin-v3/internal/subscription"
-	internaluser "gofly-admin-v3/internal/user"
+	"gofly-admin-v3/internal/user"
 	"gofly-admin-v3/utils/gf"
 )
 
 // Type alias for models
-type User = internaluser.Model
+type User = user.User
 type BatchTask = batchgo.BatchTask
 type SiteRankQuery = siterank.SiteRankQuery
 type AdsAccount = crud.AdsAccount
-type TokenTransaction = user.TokenTransaction
+type TokenTransaction = struct{} // Placeholder - not used in CRUD
 type Subscription = subscription.Subscription
 
 // GoFlyCRUDController 使用GoFly自动生成的CRUD控制器
@@ -47,7 +46,7 @@ func (c *GoFlyCRUDController) GetList(ctx *gf.GinCtx) {
 		return
 	}
 
-	gf.Success().SetData(result).JSON(ctx)
+	gf.Success().SetData(result).Regin(ctx)
 }
 
 // @Router /business/gofly-crud/user/:id [get]
@@ -94,18 +93,18 @@ func (c *GoFlyCRUDController) Update(ctx *gf.GinCtx) {
 
 	// GoFly自动绑定
 	if err := ctx.ShouldBind(&user); err != nil {
-		gf.Error(err.Error()).JSON(ctx)
+		gf.Failed().SetMsg(err.Error()).Regin(ctx)
 		return
 	}
 
 	// 自动更新
 	_, err := gf.DB().Model(&User{}).Where("id = ?", id).Update(&user)
 	if err != nil {
-		gf.Error("更新失败").JSON(ctx)
+		gf.Failed().SetMsg("更新失败").Regin(ctx)
 		return
 	}
 
-	gf.Success().SetMsg("更新成功").JSON(ctx)
+	gf.Success().SetMsg("更新成功").Regin(ctx)
 }
 
 // @Router /business/gofly-crud/user/:id [delete]
@@ -115,11 +114,11 @@ func (c *GoFlyCRUDController) Delete(ctx *gf.GinCtx) {
 	// 软删除
 	_, err := gf.DB().Model(&User{}).Where("id = ?", id).Update(gf.Map{"deleted_at": gf.Now()})
 	if err != nil {
-		gf.Error("删除失败").JSON(ctx)
+		gf.Failed().SetMsg("删除失败").Regin(ctx)
 		return
 	}
 
-	gf.Success().SetMsg("删除成功").JSON(ctx)
+	gf.Success().SetMsg("删除成功").Regin(ctx)
 }
 
 // BatchGo CRUD operations
@@ -140,11 +139,11 @@ func (c *GoFlyCRUDController) GetBatchTaskList(ctx *gf.GinCtx) {
 
 	result, err := paginator.Paginate(query)
 	if err != nil {
-		gf.Error("查询失败").JSON(ctx)
+		gf.Failed().SetMsg("查询失败").Regin(ctx)
 		return
 	}
 
-	gf.Success().SetData(result).JSON(ctx)
+	gf.Success().SetData(result).Regin(ctx)
 }
 
 // @Router /business/gofly-crud/batch-task [post]
@@ -152,7 +151,7 @@ func (c *GoFlyCRUDController) CreateBatchTask(ctx *gf.GinCtx) {
 	var task BatchTask
 
 	if err := ctx.ShouldBind(&task); err != nil {
-		gf.Error(err.Error()).JSON(ctx)
+		gf.Failed().SetMsg(err.Error()).Regin(ctx)
 		return
 	}
 
@@ -160,11 +159,11 @@ func (c *GoFlyCRUDController) CreateBatchTask(ctx *gf.GinCtx) {
 
 	_, err := gf.DB().Model(&BatchTask{}).Insert(&task)
 	if err != nil {
-		gf.Error("创建失败").JSON(ctx)
+		gf.Failed().SetMsg("创建失败").Regin(ctx)
 		return
 	}
 
-	gf.Success().SetData(task).JSON(ctx)
+	gf.Success().SetData(task).Regin(ctx)
 }
 
 // SiteRankGo CRUD operations
@@ -177,11 +176,11 @@ func (c *GoFlyCRUDController) GetSiteRankQueryList(ctx *gf.GinCtx) {
 
 	result, err := paginator.Paginate(query)
 	if err != nil {
-		gf.Error("查询失败").JSON(ctx)
+		gf.Failed().SetMsg("查询失败").Regin(ctx)
 		return
 	}
 
-	gf.Success().SetData(result).JSON(ctx)
+	gf.Success().SetData(result).Regin(ctx)
 }
 
 // AdsCenterGo CRUD operations
@@ -194,30 +193,33 @@ func (c *GoFlyCRUDController) GetAdsAccountList(ctx *gf.GinCtx) {
 
 	result, err := paginator.Paginate(query)
 	if err != nil {
-		gf.Error("查询失败").JSON(ctx)
+		gf.Failed().SetMsg("查询失败").Regin(ctx)
 		return
 	}
 
-	gf.Success().SetData(result).JSON(ctx)
+	gf.Success().SetData(result).Regin(ctx)
 }
 
 // RegisterAutoCRUD 注册自动CRUD路由
 func RegisterAutoCRUD() {
+	// TODO: Implement auto CRUD registration
+	// These are commented out because gf.RegisterAutoCRUD doesn't exist
+	// 
 	// 注册用户模块自动CRUD
-	gf.RegisterAutoCRUD(&User{}, "/business/gofly-crud/user")
-
+	// gf.RegisterAutoCRUD(&User{}, "/business/gofly-crud/user")
+	//
 	// 注册BatchGo模块自动CRUD
-	gf.RegisterAutoCRUD(&BatchTask{}, "/business/gofly-crud/batch-task")
-
+	// gf.RegisterAutoCRUD(&BatchTask{}, "/business/gofly-crud/batch-task")
+	//
 	// 注册SiteRankGo模块自动CRUD
-	gf.RegisterAutoCRUD(&SiteRankQuery{}, "/business/gofly-crud/siterank-query")
-
+	// gf.RegisterAutoCRUD(&SiteRankQuery{}, "/business/gofly-crud/siterank-query")
+	//
 	// 注册AdsCenterGo模块自动CRUD
-	gf.RegisterAutoCRUD(&AdsAccount{}, "/business/gofly-crud/ads-account")
-
+	// gf.RegisterAutoCRUD(&AdsAccount{}, "/business/gofly-crud/ads-account")
+	//
 	// 注册Token交易自动CRUD
-	gf.RegisterAutoCRUD(&TokenTransaction{}, "/business/gofly-crud/token-transaction")
-
+	// gf.RegisterAutoCRUD(&TokenTransaction{}, "/business/gofly-crud/token-transaction")
+	//
 	// 注册订阅自动CRUD
-	gf.RegisterAutoCRUD(&Subscription{}, "/business/gofly-crud/subscription")
+	// gf.RegisterAutoCRUD(&Subscription{}, "/business/gofly-crud/subscription")
 }

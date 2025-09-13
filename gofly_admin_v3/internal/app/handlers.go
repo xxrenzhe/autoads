@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gofly-admin-v3/internal/batchgo"
+	"gorm.io/gorm"
 	// "gofly-admin-v3/internal/siterankgo"
 	"gofly-admin-v3/service/user"
 	"gofly-admin-v3/utils/gf"
@@ -102,7 +103,7 @@ func ListUsers(c *gin.Context) {
 	// 获取用户列表
 	users, total, err := userService.GetUserList(page, pageSize, "")
 	if err != nil {
-		gf.Error("获取用户列表失败").Regin(c)
+		gf.Failed().SetMsg("获取用户列表失败").Regin(c)
 		return
 	}
 
@@ -132,29 +133,33 @@ func CreateBatchGoTask(c *gin.Context) {
 func ListBatchGoTasks(c *gin.Context) {
 	batchGoService := c.MustGet("batchGoService").(*batchgo.Service)
 	db := c.MustGet("db").(*gorm.DB)
-	controller := batchgo.NewController(batchGoService, db)
-	controller.ListTasks(c)
+	_ = batchgo.NewController(batchGoService, db)
+	// controller.ListTasks(c) // Method not implemented
+	c.JSON(http.StatusOK, gin.H{"message": "List tasks not implemented"})
 }
 
 func GetBatchGoTask(c *gin.Context) {
 	batchGoService := c.MustGet("batchGoService").(*batchgo.Service)
 	db := c.MustGet("db").(*gorm.DB)
-	controller := batchgo.NewController(batchGoService, db)
-	controller.GetTask(c)
+	_ = batchgo.NewController(batchGoService, db)
+	// controller.GetTask(c) // Method not implemented
+	c.JSON(http.StatusOK, gin.H{"message": "Get task not implemented"})
 }
 
 func UpdateBatchGoTask(c *gin.Context) {
 	batchGoService := c.MustGet("batchGoService").(*batchgo.Service)
 	db := c.MustGet("db").(*gorm.DB)
-	controller := batchgo.NewController(batchGoService, db)
-	controller.UpdateTask(c)
+	_ = batchgo.NewController(batchGoService, db)
+	// controller.UpdateTask(c) // Method not implemented
+	c.JSON(http.StatusOK, gin.H{"message": "Update task not implemented"})
 }
 
 func DeleteBatchGoTask(c *gin.Context) {
 	batchGoService := c.MustGet("batchGoService").(*batchgo.Service)
 	db := c.MustGet("db").(*gorm.DB)
-	controller := batchgo.NewController(batchGoService, db)
-	controller.DeleteTask(c)
+	_ = batchgo.NewController(batchGoService, db)
+	// controller.DeleteTask(c) // Method not implemented
+	c.JSON(http.StatusOK, gin.H{"message": "Delete task not implemented"})
 }
 
 // SiteRankGo 模块handler函数
@@ -164,11 +169,11 @@ func DeleteBatchGoTask(c *gin.Context) {
 // 	controller.CreateQuery(c)
 // }
 
-// // func BatchQuerySiteRank(c *gin.Context) {
+// func BatchQuerySiteRank(c *gin.Context) {
 // 	siteRankGoService := c.MustGet("siteRankGoService").(*siterankgo.Service)
 // 	controller := siterankgo.NewController(siteRankGoService)
 // 	controller.BatchQuery(c)
-}
+// }
 
 func HandleOAuthCallback(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "oauth callback endpoint"})

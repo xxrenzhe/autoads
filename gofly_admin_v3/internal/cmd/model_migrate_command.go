@@ -30,7 +30,7 @@ func (c *ModelMigrateCommand) Run(args []string) {
 		model      = flagSet.String("model", "", "Model name (required)")
 		table      = flagSet.String("table", "", "Table name (optional)")
 		path       = flagSet.String("path", "migrations", "Migration directory")
-		package_   = flagSet.String("package", "migrations", "Package name")
+		_          = flagSet.String("package", "migrations", "Package name")
 		drop       = flagSet.Bool("drop", false, "Generate drop table migration")
 		softDelete = flagSet.Bool("soft-delete", true, "Enable soft deletes")
 		timestamps = flagSet.Bool("timestamps", true, "Enable timestamps")

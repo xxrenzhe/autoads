@@ -11,8 +11,8 @@ type TestAutoAdsSaaSApp struct {
 	Router *gin.Engine // 导出字段供测试使用
 }
 
-// NewAutoAdsSaaSApp 创建测试用的AutoAds SaaS应用
-func NewAutoAdsSaaSApp() *TestAutoAdsSaaSApp {
+// NewTestAutoAdsSaaSApp 创建测试用的AutoAds SaaS应用
+func NewTestAutoAdsSaaSApp() *TestAutoAdsSaaSApp {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 

@@ -7,9 +7,7 @@ import (
 
 	"gofly-admin-v3/internal/config"
 	"gofly-admin-v3/internal/store"
-	serviceuser "gofly-admin-v3/service/user"
 	"gofly-admin-v3/utils/gf"
-	"gofly-admin-v3/utils/gform"
 )
 
 func main() {
@@ -35,7 +33,6 @@ func main() {
 	defer redis.Close()
 
 	// 4. 初始化用户服务 (commented out - not used)
-	// userService := serviceuser.NewService(db)
 
 	// 5. 初始化速率限制管理器 (commented out - interface mismatch)
 	// rateLimitManager := ratelimit.NewRateLimitManager(cfg, db, userService)
