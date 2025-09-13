@@ -340,24 +340,24 @@ func (ad *AnomalyDetector) getUserBehaviorPattern(userID string) (*UserBehaviorP
 
 	// 从缓存获取
 	cacheKey := fmt.Sprintf("behavior_pattern:%s", userID)
-	if cached, err := ad.cache.Get(cacheKey); err == nil {
-		if p, ok := cached.(*UserBehaviorPattern); ok {
-			ad.mu.Lock()
-			ad.patterns[userID] = p
-			ad.mu.Unlock()
-			return p, nil
-		}
+	var cachedPattern *UserBehaviorPattern
+	if err := (*ad.cache).Get(cacheKey, &cachedPattern); err == nil {
+		ad.mu.Lock()
+		ad.patterns[userID] = cachedPattern
+		ad.mu.Unlock()
+		return cachedPattern, nil
 	}
 
 	// 从数据库分析
-	pattern, err := ad.analyzeBehaviorPattern(userID)
+	var err error
+	pattern, err = ad.analyzeBehaviorPattern(userID)
 	if err != nil {
 		return nil, err
 	}
 
 	if pattern != nil {
 		// 缓存结果
-		ad.cache.Set(cacheKey, pattern, 24*time.Hour)
+		(*ad.cache).Set(cacheKey, pattern, 24*time.Hour)
 		ad.mu.Lock()
 		ad.patterns[userID] = pattern
 		ad.mu.Unlock()
@@ -526,17 +526,13 @@ func (ta *ThreatAnalyzer) evaluateThreatCondition(condition ThreatCondition, ipA
 func (ta *ThreatAnalyzer) checkIPFrequency(ipAddress string, condition ThreatCondition) bool {
 	// 从缓存获取IP请求计数
 	cacheKey := fmt.Sprintf("ip_freq:%s", ipAddress)
-	count, err := ta.cache.Get(cacheKey)
+	var count int
+	err := (*ta.cache).Get(cacheKey, &count)
 	if err != nil {
 		return false
 	}
-
-	if requestCount, ok := count.(int); ok {
-		threshold, _ := condition.Value.(float64)
-		return float64(requestCount) > threshold
-	}
-
-	return false
+	threshold, _ := condition.Value.(float64)
+	return float64(count) > threshold
 }
 
 // checkSuspiciousUserAgent 检查可疑User-Agent
@@ -703,7 +699,7 @@ func (ass *AdvancedSecuritySystem) recordSecurityEvent(ctx context.Context, resu
 		)
 	}
 
-	glog.Warn(ctx, "security_event_recorded", gf.Map{
+	glog.Warning(ctx, "security_event_recorded", gf.Map{
 		"event_id":   event.ID,
 		"type":       event.Type,
 		"severity":   event.Severity,
@@ -762,7 +758,7 @@ func (ass *AdvancedSecuritySystem) updateBehaviorPatterns() {
 
 		if pattern != nil {
 			cacheKey := fmt.Sprintf("behavior_pattern:%s", userID)
-			ass.cache.Set(cacheKey, pattern, 24*time.Hour)
+			(*ass.cache).Set(cacheKey, pattern, 24*time.Hour)
 		}
 	}
 }

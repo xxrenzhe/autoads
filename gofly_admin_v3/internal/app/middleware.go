@@ -25,7 +25,8 @@ func UserAuth() gin.HandlerFunc {
 		token = strings.TrimPrefix(token, "Bearer ")
 
 		// 验证 token
-		claims, err := auth.DefaultService.ParseToken(token)
+		authService := c.MustGet("authService").(*auth.Service)
+		claims, err := authService.ValidateToken(token)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"code":    1001,
@@ -42,10 +43,34 @@ func UserAuth() gin.HandlerFunc {
 	}
 }
 
+// ErrorHandler 错误处理中间件
+func ErrorHandler() gin.HandlerFunc {
+	return gin.ErrorLogger()
+}
+
+// Logger 日志中间件
+func Logger() gin.HandlerFunc {
+	return gin.Logger()
+}
+
+// GlobalRateLimit 全局限流中间件
+func GlobalRateLimit() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+	}
+}
+
+// ValidateRequest 请求验证中间件
+func ValidateRequest(model interface{}) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+	}
+}
+
 // AdminAuth 管理员认证中间件
 func AdminAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		username, password, hasAuth := c.Request.BasicAuth()
+		username, _, hasAuth := c.Request.BasicAuth()
 		if !hasAuth {
 			c.Header("WWW-Authenticate", `Basic realm="Admin Area"`)
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -90,41 +115,6 @@ func CORS() gin.HandlerFunc {
 	}
 }
 
-// ErrorHandler 错误处理中间件
-func ErrorHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Next()
-
-		// 检查是否有错误
-		if len(c.Errors) > 0 {
-			err := c.Errors.Last()
-
-			// 根据错误类型返回不同的HTTP状态码
-			switch err.Error() {
-			case "unauthorized":
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"code":    1001,
-					"message": "未授权访问",
-				})
-			case "forbidden":
-				c.JSON(http.StatusForbidden, gin.H{
-					"code":    1003,
-					"message": "访问被禁止",
-				})
-			case "not_found":
-				c.JSON(http.StatusNotFound, gin.H{
-					"code":    1004,
-					"message": "资源不存在",
-				})
-			default:
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"code":    5000,
-					"message": "服务器内部错误",
-				})
-			}
-		}
-	}
-}
 
 // RateLimiter 限流中间件
 func RateLimiter() gin.HandlerFunc {

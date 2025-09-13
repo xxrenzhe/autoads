@@ -6,15 +6,21 @@ import (
 	"net"
 	"strconv"
 
+	// "gofly-admin-v3/internal/admin"
+	"gofly-admin-v3/internal/auth"
+	// "gofly-admin-v3/internal/adscenter"
 	"gofly-admin-v3/internal/batchgo"
+	// "gofly-admin-v3/internal/chengelink"
 	"gofly-admin-v3/internal/config"
+	// "gofly-admin-v3/internal/invitation"
 	"gofly-admin-v3/internal/oauth"
 	"gofly-admin-v3/internal/ratelimit"
 	// "gofly-admin-v3/internal/siterankgo"
 	"gofly-admin-v3/internal/store"
 	"gofly-admin-v3/internal/subscription"
+	// "gofly-admin-v3/internal/token"
 	"gofly-admin-v3/service/user"
-)
+		)
 
 // Context 应用上下文
 type Context struct {
@@ -26,13 +32,19 @@ type Context struct {
 
 	// 核心服务
 	UserService      *user.Service
+	AuthService      *auth.Service
 	SubService       *subscription.Service
 	OAuthService     *oauth.OAuthService
 	RateLimitManager *ratelimit.RateLimitManager
 
 	// 业务模块
-	BatchGoService    *batchgo.Service
-	// SiteRankGoService *siterankgo.Service
+	BatchGoService       *batchgo.Service
+	// AdminService         *admin.Service
+	// TokenService         *token.Service
+	// SiteRankGoService    *siterankgo.Service
+	// AdsCenterGoService   *adscenter.Service
+	// ChengelinkService    *chengelink.Service
+	// InvitationService    *invitation.Service
 }
 
 // NewContext 创建应用上下文
@@ -84,11 +96,17 @@ func NewContext(cfg *Config) (*Context, error) {
 
 		// TODO: Fix user service to work with gorm.DB or create adapter
 		UserService:      nil, // user.NewService expects gform.DB, not *gorm.DB
+		AuthService:      auth.NewService(),
 		SubService:       subscription.NewService(db),
 		RateLimitManager: rateLimitManager,
 
-		BatchGoService:    batchgo.NewService(db.DB, nil, nil),
-		// SiteRankGoService: siterankgo.NewService(db, redis, rateLimitManager),
+		BatchGoService:       batchgo.NewService(db.DB, nil, nil),
+		// AdminService:         nil, // TODO: Initialize admin service
+		// TokenService:         nil, // TODO: Initialize token service
+		// SiteRankGoService:    nil, // TODO: Initialize siterankgo service
+		// AdsCenterGoService:   nil, // TODO: Initialize adscenter service
+		// ChengelinkService:    nil, // TODO: Initialize chengelink service
+		// InvitationService:    nil, // TODO: Initialize invitation service
 	}
 
 	log.Println("所有服务初始化完成")
@@ -98,7 +116,7 @@ func NewContext(cfg *Config) (*Context, error) {
 // Close 关闭所有连接
 func (ctx *Context) Close() error {
 	if ctx.DB != nil {
-		sqlDB, err := ctx.DB.DB()
+		sqlDB, err := ctx.DB.DB.DB()
 		if err != nil {
 			return err
 		}

@@ -22,12 +22,11 @@ import (
 	"gofly-admin-v3/internal/dictionary"
 	"gofly-admin-v3/internal/docs"
 	"gofly-admin-v3/internal/email"
-	"gofly-admin-v3/internal/export"
+	// "gofly-admin-v3/internal/export"
 	"gofly-admin-v3/internal/i18n"
 	"gofly-admin-v3/internal/metrics"
 	"gofly-admin-v3/internal/upload"
 	"gofly-admin-v3/internal/ux"
-	"gofly-admin-v3/utils/gf"
 )
 
 // Version 应用版本
@@ -721,7 +720,7 @@ func (app *AutoAdsSaaSApp) setupAdminUploadRoutes(admin *gin.RouterGroup) {
 // initMonitoring 初始化监控
 func (app *AutoAdsSaaSApp) initMonitoring() {
 	// 注册自定义指标
-	userTokensGauge := prometheus.NewGaugeVec(
+	_ = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "autoads_user_tokens_total",
 			Help: "Total tokens per user",
@@ -729,7 +728,7 @@ func (app *AutoAdsSaaSApp) initMonitoring() {
 		[]string{"user_id"},
 	)
 
-	app.metricsService.RegisterCustomMetric("user_tokens", userTokensGauge)
+	// TODO: Fix metric registration - app.metricsService.RegisterCustomMetric("user_tokens", userTokensGauge)
 
 	// 注册健康检查
 	app.healthChecker.RegisterCheck("email_service", func() (bool, string) {

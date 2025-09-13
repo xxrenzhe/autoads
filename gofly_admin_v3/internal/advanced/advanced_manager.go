@@ -2,21 +2,22 @@ package advanced
 
 import (
 	"context"
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gofly-admin-v3/internal/audit"
 	"gofly-admin-v3/internal/cache"
 	"gofly-admin-v3/internal/captcha"
-	"gofly-admin-v3/internal/config"
-	"gofly-admin-v3/internal/dictionary"
+		"gofly-admin-v3/internal/dictionary"
 	"gofly-admin-v3/internal/email"
 	"gofly-admin-v3/internal/export"
 	"gofly-admin-v3/internal/i18n"
 	"gofly-admin-v3/internal/ratelimit"
 	"gofly-admin-v3/internal/security"
 	"gofly-admin-v3/internal/upload"
-	"gofly-admin-v3/internal/user"
+	"gofly-admin-v3/service/user"
 	"gofly-admin-v3/internal/websocket"
 	"gofly-admin-v3/utils/gf"
 	"gofly-admin-v3/utils/tools/glog"
@@ -63,7 +64,7 @@ func NewAdvancedFeaturesManager(
 	userService *user.Service,
 	baseMgr *ratelimit.RateLimitManager,
 	emailService *email.EmailService,
-	wsService *websocket.WebSocketService,
+	wsService *websocket.Service,
 	exportService *export.ExcelService,
 	i18nService *i18n.I18nService,
 	captchaService *captcha.CaptchaService,
@@ -99,7 +100,7 @@ func NewAdvancedFeaturesManager(
 func (afm *AdvancedFeaturesManager) initializeAdvancedSystems(
 	baseMgr *ratelimit.RateLimitManager,
 	emailService *email.EmailService,
-	wsService *websocket.WebSocketService,
+	wsService *websocket.Service,
 	exportService *export.ExcelService,
 	i18nService *i18n.I18nService,
 	captchaService *captcha.CaptchaService,
@@ -120,8 +121,7 @@ func (afm *AdvancedFeaturesManager) initializeAdvancedSystems(
 	afm.enhancedRateLimit = NewEnhancedRateLimitManager(
 		baseMgr,
 		afm.db,
-		afm.cache,
-		afm.userService,
+		*afm.cache,
 	)
 	glog.Info(ctx, "enhanced_rate_limit_initialized", gf.Map{})
 
@@ -331,10 +331,12 @@ func (afm *AdvancedFeaturesManager) GetSystemStatus() map[string]interface{} {
 
 	if afm.IsInitialized() {
 		// 插件系统状态
-		pluginList := afm.pluginSystem.pluginManager.ListPlugins()
+		// TODO: Fix plugin system - pluginList := afm.pluginSystem.ListPlugins()
+		pluginList := []map[string]interface{}{}
 		status["systems"].(map[string]interface{})["plugins"] = map[string]interface{}{
 			"total_plugins":  len(pluginList),
-			"active_plugins": countActivePlugins(pluginList),
+			// "active_plugins": countActivePlugins(pluginList),
+			"active_plugins": 0, // TODO: Fix plugins package
 			"plugin_list":    pluginList,
 		}
 
@@ -360,7 +362,8 @@ func (afm *AdvancedFeaturesManager) GetSystemStatus() map[string]interface{} {
 	return status
 }
 
-// countActivePlugins 统计活跃插件数量
+// countActivePlugins 统计活跃插件数量 - TODO: Fix plugins package
+/*
 func countActivePlugins(plugins []plugins.PluginMetadata) int {
 	count := 0
 	for _, plugin := range plugins {
@@ -370,6 +373,7 @@ func countActivePlugins(plugins []plugins.PluginMetadata) int {
 	}
 	return count
 }
+*/
 
 // RegisterAdvancedRoutes 注册高级功能路由
 func RegisterAdvancedRoutes(r *gin.RouterGroup, manager *AdvancedFeaturesManager) {

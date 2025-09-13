@@ -2,8 +2,7 @@ package advanced
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+		"fmt"
 	"sync"
 	"time"
 
@@ -19,7 +18,7 @@ import (
 type UnifiedNotificationSystem struct {
 	db           *gorm.DB
 	emailService *email.EmailService
-	wsService    *websocket.WebSocketService
+	wsService    *websocket.Service
 	templates    map[string]*NotificationTemplate
 	channels     map[string]NotificationChannel
 	rules        map[string]*NotificationRule
@@ -110,7 +109,7 @@ type EmailChannel struct {
 
 // WebSocketChannel WebSocket通知渠道
 type WebSocketChannel struct {
-	service *websocket.WebSocketService
+	service *websocket.Service
 	enabled bool
 }
 
@@ -124,7 +123,7 @@ type SystemChannel struct {
 func NewUnifiedNotificationSystem(
 	db *gorm.DB,
 	emailService *email.EmailService,
-	wsService *websocket.WebSocketService,
+	wsService *websocket.Service,
 ) *UnifiedNotificationSystem {
 
 	system := &UnifiedNotificationSystem{
@@ -350,7 +349,7 @@ func (uns *UnifiedNotificationSystem) renderTemplate(template *NotificationTempl
 	content := template.Content
 
 	for key, value := range data {
-		placeholder := fmt.Sprintf("{{.%s}}", key)
+		_ = fmt.Sprintf("{{.%s}}", key)
 		valueStr := fmt.Sprintf("%v", value)
 		title = fmt.Sprintf(title, valueStr)
 		content = fmt.Sprintf(content, valueStr)

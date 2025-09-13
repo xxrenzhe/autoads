@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gofly-admin-v3/internal/audit"
-	"gofly-admin-v3/internal/config"
+	_ "gofly-admin-v3/internal/config"
 	"gofly-admin-v3/utils/gf"
 	"gofly-admin-v3/utils/tools/glog"
 	"gorm.io/gorm"
@@ -87,6 +87,22 @@ func (pm *PluginManager) ListPlugins() []map[string]interface{} {
 	return result
 }
 
+// GetPluginStatus 获取插件状态
+func (pm *PluginManager) GetPluginStatus(name string) (string, error) {
+	pm.mu.RLock()
+	plugin, exists := pm.plugins[name]
+	pm.mu.RUnlock()
+
+	if !exists {
+		return "", fmt.Errorf("plugin not found: %s", name)
+	}
+
+	if plugin.IsEnabled() {
+		return "enabled", nil
+	}
+	return "disabled", nil
+}
+
 // GetPluginManager 获取插件管理器实例
 func GetPluginManager() *PluginManager {
 	return NewPluginManager()
@@ -95,6 +111,7 @@ func GetPluginManager() *PluginManager {
 // AdvancedPluginSystem 高级插件系统
 type AdvancedPluginSystem struct {
 	plugins      map[string]Plugin
+	pluginManager *PluginManager
 	auditService *audit.AuditService
 	db           *gorm.DB
 	eventBus     *EventBus
@@ -122,12 +139,14 @@ type Event struct {
 
 // NewAdvancedPluginSystem 创建高级插件系统
 func NewAdvancedPluginSystem(db *gorm.DB, auditService *audit.AuditService) *AdvancedPluginSystem {
+	pm := GetPluginManager()
 	return &AdvancedPluginSystem{
-		pluginManager: GetPluginManager(),
-		auditService:  auditService,
-		db:            db,
-		eventBus:      NewEventBus(),
-		hooks:         make(map[string][]HookFunc),
+		plugins:      pm.plugins,
+		pluginManager: pm,
+		auditService: auditService,
+		db:           db,
+		eventBus:     NewEventBus(),
+		hooks:        make(map[string][]HookFunc),
 	}
 }
 

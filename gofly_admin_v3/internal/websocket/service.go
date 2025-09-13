@@ -133,6 +133,11 @@ func (s *Service) NotifyPlanExpired(userID, planName string, expiresAt time.Time
 	}
 }
 
+// SendToUser 发送消息给指定用户
+func (s *Service) SendToUser(userID string, message interface{}) error {
+	return s.manager.SendToUser(userID, message)
+}
+
 // NotifySystemMessage 发送系统消息
 func (s *Service) NotifySystemMessage(userID, title, message, level string) {
 	if err := s.manager.SendSystemNotification(userID, title, message, level); err != nil {

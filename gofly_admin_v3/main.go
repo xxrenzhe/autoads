@@ -12,13 +12,13 @@ import (
 
 	//引入数据库驱动-去这里下载：https://doc.goflys.cn/docview?id=26&fid=395
 	// Redis驱动和安装说明：https://doc.goflys.cn/docview?id=26&fid=392
-	"gofly-admin-v3/internal/app"
+	// "gofly-admin-v3/internal/app" // 暂时未使用
 	"gofly-admin-v3/internal/cache"
 	"gofly-admin-v3/internal/config"
 	"gofly-admin-v3/internal/docs"
 	dbinit "gofly-admin-v3/internal/init"
 	"gofly-admin-v3/internal/metrics"
-	"gofly-admin-v3/internal/middleware"
+	// "gofly-admin-v3/internal/middleware" // 暂时未使用
 	_ "gofly-admin-v3/utils/drivers/mysql"
 	_ "gofly-admin-v3/utils/drivers/redis"
 	"gofly-admin-v3/utils/router"
@@ -96,8 +96,8 @@ func main() {
 	metrics.InitializeDefaultChecks()
 	log.Println("✅ 监控系统初始化成功")
 
-	// 6. 初始化GoFly高级功能
-	init.InitGoFlyFeatures()
+	// 6. 初始化GoFly高级功能 (需要build标签)
+	// dbinit.InitGoFlyFeatures() // 暂时禁用，需要autoads_init_advanced build标签
 
 	// 7. 初始化API文档系统
 	if err := docs.GenerateAPIDocs(); err != nil {
@@ -107,15 +107,11 @@ func main() {
 	}
 
 	// 启用API文档自动收集中间件
-	middleware.EnableAPIDoc()
+	// middleware.EnableAPIDoc() // 暂时禁用，函数不存在
 
 	// 8. 启动服务器
 	log.Println("🚀 启动服务器...")
-	go func() {
-		if err := router.RunServer(); err != nil {
-			log.Fatalf("服务器启动失败: %v", err)
-		}
-	}()
+	router.RunServer()
 
 	// 9. 等待中断信号
 	quit := make(chan os.Signal, 1)
@@ -125,7 +121,7 @@ func main() {
 	log.Println("正在关闭服务器...")
 
 	// 优雅关闭
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// 关闭配置管理器

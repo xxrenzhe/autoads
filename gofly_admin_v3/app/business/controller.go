@@ -13,7 +13,7 @@ import (
 	_ "gofly-admin-v3/app/business/dashboard"
 	_ "gofly-admin-v3/app/business/datacenter"
 	_ "gofly-admin-v3/app/business/developer"
-	"gofly-admin-v3/app/business/gofly_crud"
+	// "gofly-admin-v3/app/business/gofly_crud"
 	_ "gofly-admin-v3/app/business/system"
 	_ "gofly-admin-v3/app/business/user"
 	"gofly-admin-v3/utils/gf"

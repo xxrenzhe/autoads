@@ -1,27 +1,24 @@
 package app
 
 import (
-	"fmt"
-	"net/http"
-	"time"
+	// "fmt"
+	// "net/http"
+	// "time"
 
 	"github.com/gin-gonic/gin"
 	// "gofly-admin-v3/internal/admin"  // 暂时禁用
-	"gofly-admin-v3/internal/adscentergo"
-	"gofly-admin-v3/internal/auth"
-	"gofly-admin-v3/internal/batchgo"
-	"gofly-admin-v3/internal/chengelink"
+	// "gofly-admin-v3/internal/adscentergo"
+	// "gofly-admin-v3/internal/auth"
+	// "gofly-admin-v3/internal/batchgo"
+	// "gofly-admin-v3/internal/chengelink"
 	// "gofly-admin-v3/internal/checkin"  // 暂时禁用
 	// "gofly-admin-v3/internal/invitation"  // 暂时禁用
 	"gofly-admin-v3/internal/metrics"
-	"gofly-admin-v3/internal/middleware"
-	"gofly-admin-v3/internal/models"
+	// "gofly-admin-v3/internal/models"
 	// "gofly-admin-v3/internal/personalcenter"  // 暂时禁用
-	"gofly-admin-v3/internal/ratelimit"
-	"gofly-admin-v3/internal/siterankgo"
+	// "gofly-admin-v3/internal/ratelimit"
+	// "gofly-admin-v3/internal/siterankgo"
 	// "gofly-admin-v3/internal/token"  // 暂时禁用
-	"gofly-admin-v3/internal/user"
-	"gofly-admin-v3/utils/gf"
 )
 
 // SetupRoutes 设置路由
@@ -30,16 +27,16 @@ func SetupRoutes(router *gin.Engine, ctx *Context) {
 	router.Use(func(c *gin.Context) {
 		c.Set("userService", ctx.UserService)
 		c.Set("authService", ctx.AuthService)
-		c.Set("adminService", ctx.AdminService)
+		// c.Set("adminService", ctx.AdminService)
 		c.Set("oauthService", ctx.OAuthService)
-		c.Set("tokenService", ctx.TokenService)
+		// c.Set("tokenService", ctx.TokenService)
 		c.Set("batchGoService", ctx.BatchGoService)
-		c.Set("siteRankGoService", ctx.SiteRankGoService)
-		c.Set("adsCenterGoService", ctx.AdsCenterGoService)
-		c.Set("chengelinkService", ctx.ChengelinkService)
-		c.Set("invitationService", ctx.InvitationService)
-		c.Set("checkinService", ctx.CheckinService)
-		c.Set("personalCenterService", ctx.PersonalCenterService)
+		// c.Set("siteRankGoService", ctx.SiteRankGoService)
+		// c.Set("adsCenterGoService", ctx.AdsCenterGoService)
+		// c.Set("chengelinkService", ctx.ChengelinkService)
+		// c.Set("invitationService", ctx.InvitationService)
+		// c.Set("checkinService", ctx.CheckinService)
+		// c.Set("personalCenterService", ctx.PersonalCenterService)
 		c.Set("rateLimitManager", ctx.RateLimitManager)
 		c.Next()
 	})
@@ -48,26 +45,27 @@ func SetupRoutes(router *gin.Engine, ctx *Context) {
 	metrics.SetupMetrics(router)
 
 	// 全局中间件
-	router.Use(middleware.ErrorHandler())
-	router.Use(middleware.Logger())
-	router.Use(middleware.GlobalRateLimit())
+	router.Use(ErrorHandler())
+	router.Use(Logger())
+	router.Use(GlobalRateLimit())
 	router.Use(metrics.GetMetrics().HTTPMiddleware())
 
 	// API版本分组
 	v1 := router.Group("/api/v1")
 	{
-		// 用户相关路由
+		// 用户相关路由 - TODO: Fix user service initialization
+		/*
 		userGroup := v1.Group("/user")
 		{
 			// 注册 - 使用请求验证
-			userGroup.POST("/register", middleware.ValidateRequest(&models.RegisterRequest{}), func(c *gin.Context) {
+			userGroup.POST("/register", ValidateRequest(&models.RegisterRequest{}), func(c *gin.Context) {
 				userService := c.MustGet("userService").(*user.Service)
 				authService := c.MustGet("authService").(*auth.Service)
 				controller := user.NewController(authService, userService)
 				controller.Register(c)
 			})
 			// 登录 - 使用请求验证
-			userGroup.POST("/login", middleware.ValidateRequest(&models.LoginRequest{}), func(c *gin.Context) {
+			userGroup.POST("/login", ValidateRequest(&models.LoginRequest{}), func(c *gin.Context) {
 				userService := c.MustGet("userService").(*user.Service)
 				authService := c.MustGet("authService").(*auth.Service)
 				controller := user.NewController(authService, userService)
@@ -86,53 +84,58 @@ func SetupRoutes(router *gin.Engine, ctx *Context) {
 				controller.Profile(c)
 			})
 			// 更新资料 - 使用请求验证
-			userGroup.PUT("/profile", UserAuth(), middleware.ValidateRequest(&models.UpdateProfileRequest{}), func(c *gin.Context) {
+			userGroup.PUT("/profile", UserAuth(), ValidateRequest(&models.UpdateProfileRequest{}), func(c *gin.Context) {
 				userService := c.MustGet("userService").(*user.Service)
 				authService := c.MustGet("authService").(*auth.Service)
 				controller := user.NewController(authService, userService)
 				controller.UpdateProfile(c)
 			})
-			// 修改密码 - 使用请求验证
-			userGroup.POST("/change-password", UserAuth(), middleware.ValidateRequest(&models.UpdatePasswordRequest{}), func(c *gin.Context) {
-				userService := c.MustGet("userService").(*user.Service)
-				authService := c.MustGet("authService").(*auth.Service)
-				controller := user.NewController(authService, userService)
-				controller.ChangePassword(c)
-			})
-			userGroup.POST("/start-trial", UserAuth(), func(c *gin.Context) {
-				userService := c.MustGet("userService").(*user.Service)
-				authService := c.MustGet("authService").(*auth.Service)
-				controller := user.NewController(authService, userService)
-				controller.StartTrial(c)
-			})
-			userGroup.POST("/refresh-token", UserAuth(), func(c *gin.Context) {
-				userService := c.MustGet("userService").(*user.Service)
-				authService := c.MustGet("authService").(*auth.Service)
-				controller := user.NewController(authService, userService)
-				controller.RefreshToken(c)
-			})
-			userGroup.POST("/logout", UserAuth(), func(c *gin.Context) {
-				userService := c.MustGet("userService").(*user.Service)
-				authService := c.MustGet("authService").(*auth.Service)
-				controller := user.NewController(authService, userService)
-				controller.Logout(c)
-			})
-			// Google OAuth回调
-			userGroup.GET("/google/callback", func(c *gin.Context) {
-				userService := c.MustGet("userService").(*user.Service)
-				authService := c.MustGet("authService").(*auth.Service)
-				controller := user.NewController(authService, userService)
-				controller.GoogleOAuthCallback(c)
-			})
 		}
+		*/
+		/*
+		// 修改密码 - 使用请求验证
+		userGroup.POST("/change-password", UserAuth(), ValidateRequest(&models.UpdatePasswordRequest{}), func(c *gin.Context) {
+			userService := c.MustGet("userService").(*user.Service)
+			authService := c.MustGet("authService").(*auth.Service)
+			controller := user.NewController(authService, userService)
+			controller.ChangePassword(c)
+		})
+		userGroup.POST("/start-trial", UserAuth(), func(c *gin.Context) {
+			userService := c.MustGet("userService").(*user.Service)
+			authService := c.MustGet("authService").(*auth.Service)
+			controller := user.NewController(authService, userService)
+			controller.StartTrial(c)
+		})
+		userGroup.POST("/refresh-token", UserAuth(), func(c *gin.Context) {
+			userService := c.MustGet("userService").(*user.Service)
+			authService := c.MustGet("authService").(*auth.Service)
+			controller := user.NewController(authService, userService)
+			controller.RefreshToken(c)
+		})
+		userGroup.POST("/logout", UserAuth(), func(c *gin.Context) {
+			userService := c.MustGet("userService").(*user.Service)
+			authService := c.MustGet("authService").(*auth.Service)
+			controller := user.NewController(authService, userService)
+			controller.Logout(c)
+		})
+		// Google OAuth回调
+		userGroup.GET("/google/callback", func(c *gin.Context) {
+			userService := c.MustGet("userService").(*user.Service)
+			authService := c.MustGet("authService").(*auth.Service)
+			controller := user.NewController(authService, userService)
+			controller.GoogleOAuthCallback(c)
+		})
+		}
+		*/
 
 		// 管理员路由 - 登录相关（无需认证）
-		adminGroup := v1.Group("/admin")
+		_ = v1.Group("/admin")
 		{
-			adminGroup.POST("/login", AdminLogin)
+			// adminGroup.POST("/login", AdminLogin) // TODO: Fix admin service
 		}
 
-		// 管理员路由 - 需要认证
+		// 管理员路由 - 需要认证 - TODO: Fix admin service initialization
+		/*
 		adminAuthGroup := v1.Group("/admin")
 		adminAuthGroup.Use(AdminAuth())
 		{
@@ -903,9 +906,11 @@ func SetupRoutes(router *gin.Engine, ctx *Context) {
 			})
 		}
 	}
+	*/
 }
 
-// AdminLogin 管理员登录
+// AdminLogin 管理员登录 - TODO: Fix admin service initialization
+/*
 func AdminLogin(c *gin.Context) {
 	adminService := c.MustGet("adminService").(*admin.Service)
 
@@ -935,4 +940,6 @@ func AdminLogin(c *gin.Context) {
 			"role":     adminAccount.Role,
 		},
 	}).Regin(c)
+}
+*/
 }

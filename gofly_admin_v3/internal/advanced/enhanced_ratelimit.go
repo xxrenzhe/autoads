@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gofly-admin-v3/internal/cache"
-	"gofly-admin-v3/internal/config"
+	_ "gofly-admin-v3/internal/config"
 	"gofly-admin-v3/internal/ratelimit"
 	"gofly-admin-v3/internal/user"
 	"gofly-admin-v3/utils/gf"
@@ -20,7 +20,7 @@ import (
 type EnhancedRateLimitManager struct {
 	*ratelimit.RateLimitManager
 	db        *gorm.DB
-	cache     *cache.Cache
+	cache     cache.Cache
 	analytics *RateLimitAnalytics
 	hotConfig *HotConfigManager
 	mu        sync.RWMutex
@@ -29,7 +29,7 @@ type EnhancedRateLimitManager struct {
 // RateLimitAnalytics 速率限制分析器
 type RateLimitAnalytics struct {
 	db    *gorm.DB
-	cache *cache.Cache
+	cache cache.Cache
 }
 
 // HotConfigManager 热配置管理器
@@ -73,7 +73,7 @@ type UserUsagePattern struct {
 func NewEnhancedRateLimitManager(
 	baseMgr *ratelimit.RateLimitManager,
 	db *gorm.DB,
-	cache *cache.Cache,
+	cache cache.Cache,
 ) *EnhancedRateLimitManager {
 
 	analytics := &RateLimitAnalytics{
@@ -167,18 +167,18 @@ func (e *EnhancedRateLimitManager) checkCustomRateLimit(ctx context.Context, use
 	cacheKey := fmt.Sprintf("rate_limit:%s:%s", userID, feature)
 
 	// 获取当前计数
-	count, err := e.cache.Get(cacheKey)
+	var count int
+	err := e.cache.Get(cacheKey, &count)
 	if err != nil {
 		count = 0
 	}
 
-	currentCount := count.(int)
-	if currentCount >= limit {
-		return fmt.Errorf("rate limit exceeded: %d/%d", currentCount, limit)
+	if count >= limit {
+		return fmt.Errorf("rate limit exceeded: %d/%d", count, limit)
 	}
 
 	// 增加计数
-	newCount := currentCount + 1
+	newCount := count + 1
 	e.cache.Set(cacheKey, newCount, time.Minute)
 
 	// 记录使用情况
@@ -239,10 +239,9 @@ func (e *EnhancedRateLimitManager) RegisterConfigChangeCallback(plan, feature st
 func (a *RateLimitAnalytics) GetUserUsagePattern(userID, feature string) (*UserUsagePattern, error) {
 	// 先从缓存获取
 	cacheKey := fmt.Sprintf("usage_pattern:%s:%s", userID, feature)
-	if cached, err := a.cache.Get(cacheKey); err == nil {
-		if pattern, ok := cached.(*UserUsagePattern); ok {
-			return pattern, nil
-		}
+	var pattern *UserUsagePattern
+	if err := a.cache.Get(cacheKey, &pattern); err == nil {
+		return pattern, nil
 	}
 
 	// 从数据库分析
@@ -322,7 +321,7 @@ func (a *RateLimitAnalytics) analyzeUserUsagePattern(userID, feature string) (*U
 
 	return &UserUsagePattern{
 		UserID:              userID,
-		Plan:                user.Plan,
+		Plan:                user.PlanName,
 		Feature:             feature,
 		AvgRequestsPerHour:  avgPerHour,
 		PeakRequestsPerHour: peakPerHour,
@@ -428,7 +427,8 @@ func (a *RateLimitAnalytics) RecordUsage(userID, feature string, count int) {
 	go func() {
 		// 更新实时统计
 		cacheKey := fmt.Sprintf("usage_stats:%s:%s", userID, feature)
-		currentStats, _ := a.cache.Get(cacheKey)
+		var currentStats interface{}
+		_ = a.cache.Get(cacheKey, &currentStats)
 
 		stats := map[string]interface{}{
 			"total_requests": count,
@@ -477,18 +477,18 @@ func (e *EnhancedRateLimitManager) runPeriodicAnalysis() {
 
 	for _, u := range users {
 		for _, feature := range features {
-			pattern, err := e.analytics.analyzeUserUsagePattern(fmt.Sprintf("%d", u.ID), feature)
+			pattern, err := e.analytics.analyzeUserUsagePattern(u.ID, feature)
 			if err != nil {
 				continue
 			}
 
 			// 缓存分析结果
-			cacheKey := fmt.Sprintf("usage_pattern:%d:%s", u.ID, feature)
+			cacheKey := fmt.Sprintf("usage_pattern:%s:%s", u.ID, feature)
 			e.cache.Set(cacheKey, pattern, 30*time.Minute)
 
 			// 检查是否需要调整限制
 			if pattern.RiskScore > 0.7 {
-				glog.Warn(ctx, "high_risk_user_detected", gf.Map{
+				glog.Warning(ctx, "high_risk_user_detected", gf.Map{
 					"user_id":    u.ID,
 					"feature":    feature,
 					"risk_score": pattern.RiskScore,

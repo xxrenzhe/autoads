@@ -503,8 +503,9 @@ func (fpt *FileProcessingTool) manageFile(params map[string]interface{}) (interf
 	case "delete":
 		return nil, gfile.Remove(filePath)
 	case "copy":
-		destPath := gconv.String(params["dest_path"])
-		return nil, gfile.Copy(filePath, destPath)
+		_ = gconv.String(params["dest_path"])
+		// Use os.Copy or implement file copy functionality
+		return nil, fmt.Errorf("copy operation not implemented")
 	default:
 		return nil, fmt.Errorf("unsupported operation: %s", operation)
 	}

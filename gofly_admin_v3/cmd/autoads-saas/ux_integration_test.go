@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gofly-admin-v3/internal/captcha"
 	"gofly-admin-v3/internal/dictionary"
-	"gofly-admin-v3/internal/export"
+	// "gofly-admin-v3/internal/export" // 暂时未使用
 	"gofly-admin-v3/internal/i18n"
 	"gofly-admin-v3/internal/upload"
 )
