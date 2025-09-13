@@ -164,7 +164,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
 
       {/* Quick Stats */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h6" color="textSecondary" gutterBottom>
@@ -189,7 +189,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h6" color="textSecondary" gutterBottom>
@@ -205,7 +205,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h6" color="textSecondary" gutterBottom>
@@ -221,7 +221,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h6" color="textSecondary" gutterBottom>
@@ -294,7 +294,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
           <CardContent>
             <Typography variant="h6" gutterBottom>Token类型分布</Typography>
             <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <Box sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="body2">订阅Token</Typography>
@@ -340,7 +340,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
                   />
                 </Box>
               </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>使用建议</Typography>

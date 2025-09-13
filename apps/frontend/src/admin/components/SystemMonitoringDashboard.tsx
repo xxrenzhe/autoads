@@ -89,7 +89,7 @@ const SystemHealthCard: React.FC<{ metrics: SystemMetrics }> = ({ metrics }) => 
       />
       <CardContent>
         <Grid container spacing={2}>
-          <Grid size={{ xs: 6 }}>
+          <Grid item xs={6}>
             <Typography variant="body2" color="textSecondary">
               CPU Usage
             </Typography>
@@ -104,7 +104,7 @@ const SystemHealthCard: React.FC<{ metrics: SystemMetrics }> = ({ metrics }) => 
             </Box>
           </Grid>
           
-          <Grid size={{ xs: 6 }}>
+          <Grid item xs={6}>
             <Typography variant="body2" color="textSecondary">
               Memory Usage
             </Typography>
@@ -119,7 +119,7 @@ const SystemHealthCard: React.FC<{ metrics: SystemMetrics }> = ({ metrics }) => 
             </Box>
           </Grid>
           
-          <Grid size={{ xs: 6 }}>
+          <Grid item xs={6}>
             <Typography variant="body2" color="textSecondary">
               Disk Usage
             </Typography>
@@ -134,7 +134,7 @@ const SystemHealthCard: React.FC<{ metrics: SystemMetrics }> = ({ metrics }) => 
             </Box>
           </Grid>
           
-          <Grid size={{ xs: 6 }}>
+          <Grid item xs={6}>
             <Typography variant="body2" color="textSecondary">
               Error Rate
             </Typography>
@@ -286,17 +286,17 @@ export const SystemMonitoringDashboard: React.FC = () => {
 
       <Grid container spacing={3}>
         {/* System Health */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid item xs={12} md={6}>
           <SystemHealthCard metrics={metrics} />
         </Grid>
 
         {/* Key Metrics */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardHeader title="Key Metrics" />
             <CardContent>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 6 }}>
+                <Grid item xs={6}>
                   <Typography variant="h4" color="primary">
                     {metrics.activeUsers}
                   </Typography>
@@ -304,7 +304,7 @@ export const SystemMonitoringDashboard: React.FC = () => {
                     Active Users
                   </Typography>
                 </Grid>
-                <Grid size={{ xs: 6 }}>
+                <Grid item xs={6}>
                   <Typography variant="h4" color="primary">
                     {metrics.totalRequests.toLocaleString()}
                   </Typography>
@@ -312,7 +312,7 @@ export const SystemMonitoringDashboard: React.FC = () => {
                     Total Requests
                   </Typography>
                 </Grid>
-                <Grid size={{ xs: 6 }}>
+                <Grid item xs={6}>
                   <Typography variant="h4" color="primary">
                     {metrics.responseTime}ms
                   </Typography>
@@ -320,7 +320,7 @@ export const SystemMonitoringDashboard: React.FC = () => {
                     Avg Response Time
                   </Typography>
                 </Grid>
-                <Grid size={{ xs: 6 }}>
+                <Grid item xs={6}>
                   <Typography variant="h4" color="primary">
                     {Math.floor(metrics.uptime / 3600)}h
                   </Typography>
@@ -334,12 +334,12 @@ export const SystemMonitoringDashboard: React.FC = () => {
         </Grid>
 
         {/* Performance Chart */}
-        <Grid size={{ xs: 12 }}>
+        <Grid item xs={12}>
           <PerformanceChart data={performanceData} />
         </Grid>
 
         {/* Module Statistics */}
-        <Grid size={{ xs: 12 }}>
+        <Grid item xs={12}>
           <ModuleStatsTable stats={moduleStats} />
         </Grid>
       </Grid>

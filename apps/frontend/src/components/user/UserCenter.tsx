@@ -173,7 +173,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
             个人信息
           </Typography>
           <Grid container spacing={3}>
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" color="textSecondary">
                   邮箱地址
@@ -183,7 +183,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
                 </Typography>
               </Box>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" color="textSecondary">
                   注册时间
@@ -193,7 +193,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
                 </Typography>
               </Box>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" color="textSecondary">
                   最后登录
@@ -203,7 +203,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
                 </Typography>
               </Box>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" color="textSecondary">
                   账户状态
@@ -222,7 +222,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
 
       {/* Token Balance Overview */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h6" color="textSecondary">
@@ -235,7 +235,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
           </Card>
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h6" color="textSecondary">
@@ -251,7 +251,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
           </Card>
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h6" color="textSecondary">
@@ -267,7 +267,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
           </Card>
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h6" color="textSecondary">
@@ -391,13 +391,13 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
       {/* Tab Content */}
       {activeTab === 'dashboard' && (
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 8 }}>
+          <Grid item xs={12} md={8}>
             <UsageReport 
               userId={user.id} 
               onQuickRecharge={() => setActiveTab('recharge')}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid item xs={12} md={4}>
             <QuickRecharge 
               userId={user.id}
               currentBalance={tokenBalance}

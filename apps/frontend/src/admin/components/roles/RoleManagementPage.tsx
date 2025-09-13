@@ -191,7 +191,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
 
       <Grid container spacing={3}>
         {roles.map((role) => (
-          <Grid size={{ xs: 12, md: 6, lg: 4 }} key={role.id}>
+          <Grid item xs={12} md={6} lg={4} key={role.id}>
             <Card 
               sx={{ 
                 height: '100%',
@@ -339,7 +339,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
                 </Typography>
                 <Grid container spacing={1}>
                   {getPermissionsByCategory(category).map(permission => (
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={permission.id}>
+                    <Grid item xs={12} sm={6} md={4} key={permission.id}>
                       <Card 
                         variant="outlined" 
                         sx={{ 

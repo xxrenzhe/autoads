@@ -332,7 +332,7 @@ export function HealthStatus({
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center">
-                {React.createElement(getServiceIcon(selectedService.name), { className: "h-5 w-5 mr-2" })}
+                {React.createElement(getServiceIcon(selectedService.name), { className: "h-5 w-5 mr-2", key: "service-icon" })}
                 {selectedService.name} Details
               </div>
               <Button

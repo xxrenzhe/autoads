@@ -182,7 +182,7 @@ const UserStatisticsDashboard: React.FC = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid size={{ xs: 12, sm: 3 }}>
+            <Grid item xs={12} sm={3}>
               <FormControl fullWidth size="small">
                 <InputLabel>时间范围</InputLabel>
                 <Select
@@ -200,7 +200,7 @@ const UserStatisticsDashboard: React.FC = () => {
 
             {dateRange === 'custom' && (
               <>
-                <Grid size={{ xs: 12, sm: 3 }}>
+                <Grid item xs={12} sm={3}>
                   <TextField
                     label="开始日期"
                     type="date"
@@ -211,7 +211,7 @@ const UserStatisticsDashboard: React.FC = () => {
                     onChange={(e) => setCustomStartDate(e.target.value)}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 3 }}>
+                <Grid item xs={12} sm={3}>
                   <TextField
                     label="结束日期"
                     type="date"
@@ -225,7 +225,7 @@ const UserStatisticsDashboard: React.FC = () => {
               </>
             )}
 
-            <Grid size={{ xs: 12, sm: 3 }}>
+            <Grid item xs={12} sm={3}>
               <FormControl fullWidth size="small">
                 <InputLabel>分组方式</InputLabel>
                 <Select
@@ -240,7 +240,7 @@ const UserStatisticsDashboard: React.FC = () => {
               </FormControl>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 3 }}>
+            <Grid item xs={12} sm={3}>
               <Button
                 variant="contained"
                 onClick={fetchStatistics}
@@ -258,7 +258,7 @@ const UserStatisticsDashboard: React.FC = () => {
         <>
           {/* Summary Cards */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -279,7 +279,7 @@ const UserStatisticsDashboard: React.FC = () => {
               </Card>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -300,7 +300,7 @@ const UserStatisticsDashboard: React.FC = () => {
               </Card>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -325,7 +325,7 @@ const UserStatisticsDashboard: React.FC = () => {
               </Card>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -350,7 +350,7 @@ const UserStatisticsDashboard: React.FC = () => {
           {/* Charts */}
           <Grid container spacing={3}>
             {/* Daily Registration Chart */}
-            <Grid size={{ xs: 12, lg: 8 }}>
+            <Grid item xs={12} lg={8}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -396,7 +396,7 @@ const UserStatisticsDashboard: React.FC = () => {
             </Grid>
 
             {/* Subscription Distribution */}
-            <Grid size={{ xs: 12, lg: 4 }}>
+            <Grid item xs={12} lg={4}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -433,7 +433,7 @@ const UserStatisticsDashboard: React.FC = () => {
             </Grid>
 
             {/* User Status Distribution */}
-            <Grid size={{ xs: 12, lg: 6 }}>
+            <Grid item xs={12} lg={6}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -453,7 +453,7 @@ const UserStatisticsDashboard: React.FC = () => {
             </Grid>
 
             {/* Top Plans */}
-            <Grid size={{ xs: 12, lg: 6 }}>
+            <Grid item xs={12} lg={6}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>

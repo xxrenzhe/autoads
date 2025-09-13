@@ -287,7 +287,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
         
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 6 }}>
+            <Grid item xs={6}>
               <Typography variant="subtitle2" color="text.secondary">
                 功能类型
               </Typography>
@@ -296,7 +296,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
               </Typography>
             </Grid>
             
-            <Grid size={{ xs: 6 }}>
+            <Grid item xs={6}>
               <Typography variant="subtitle2" color="text.secondary">
                 方法类型
               </Typography>
@@ -305,7 +305,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
               </Typography>
             </Grid>
             
-            <Grid size={{ xs: 6 }}>
+            <Grid item xs={6}>
               <Typography variant="subtitle2" color="text.secondary">
                 Token成本
               </Typography>
@@ -324,7 +324,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
               </Box>
             </Grid>
             
-            <Grid size={{ xs: 6 }}>
+            <Grid item xs={6}>
               <Typography variant="subtitle2" color="text.secondary">
                 状态
               </Typography>
@@ -335,7 +335,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
               />
             </Grid>
             
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Typography variant="subtitle2" color="text.secondary">
                 描述
               </Typography>
@@ -418,7 +418,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
               </Typography>
               
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid item xs={12} md={6}>
                   <FormControl fullWidth error={!!validationErrors.feature}>
                     <InputLabel>功能类型</InputLabel>
                     <Select
@@ -450,7 +450,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
                   </FormControl>
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid item xs={12} md={6}>
                   <FormControl fullWidth error={!!validationErrors.method}>
                     <InputLabel>方法类型</InputLabel>
                     <Select
@@ -473,7 +473,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
                   </FormControl>
                 </Grid>
 
-                <Grid size={{ xs: 12 }}>
+                <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label="规则描述"
@@ -498,7 +498,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
               </Typography>
               
               <Grid container spacing={2} alignItems="center">
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Token成本"
@@ -512,7 +512,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid item xs={12} md={6}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Info color="info" />
                     <Typography variant="body2" color="text.secondary">
@@ -529,7 +529,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
                   </Box>
                 </Grid>
 
-                <Grid size={{ xs: 12 }}>
+                <Grid item xs={12}>
                   <FormControlLabel
                     control={
                       <Switch

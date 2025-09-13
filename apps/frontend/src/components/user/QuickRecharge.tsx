@@ -214,7 +214,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
             <Typography variant="h6" gutterBottom>选择充值套餐</Typography>
             <Grid container spacing={2}>
               {rechargePackages.map((pkg) => (
-                <Grid size={{ xs: 12, sm: 6 }} key={pkg.id}>
+                <Grid item xs={12} sm={6} key={pkg.id}>
                   <Card
                     variant={selectedPackage?.id === pkg.id ? "elevation" : "outlined"}
                     sx={{
@@ -266,7 +266,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
 
             <Typography variant="h6" gutterBottom>自定义充值</Typography>
             <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="充值金额 (¥)"
@@ -276,7 +276,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
                   inputProps={{ min: 1, step: 0.1 }}
                 />
               </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Token数量"
@@ -456,7 +456,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
 
           <Grid container spacing={2}>
             {rechargePackages.slice(0, 3).map((pkg) => (
-              <Grid size={{ xs: 12, sm: 4 }} key={pkg.id}>
+              <Grid item xs={12} sm={4} key={pkg.id}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ textAlign: 'center' }}>
                     <Typography variant="subtitle1">{pkg.name}</Typography>

@@ -298,7 +298,7 @@ const TokenUsageAnalysis: React.FC = () => {
           <>
             {/* Summary Cards */}
             <Grid container spacing={3} sx={{ mb: 3 }}>
-              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Grid item xs={12} sm={6} md={3}>
                 <Card>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -319,7 +319,7 @@ const TokenUsageAnalysis: React.FC = () => {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Grid item xs={12} sm={6} md={3}>
                 <Card>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -340,7 +340,7 @@ const TokenUsageAnalysis: React.FC = () => {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Grid item xs={12} sm={6} md={3}>
                 <Card>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -361,7 +361,7 @@ const TokenUsageAnalysis: React.FC = () => {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Grid item xs={12} sm={6} md={3}>
                 <Card>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -386,7 +386,7 @@ const TokenUsageAnalysis: React.FC = () => {
             {/* Charts */}
             <Grid container spacing={3}>
               {/* Usage by Dimension */}
-              <Grid size={{ xs: 12, lg: 8 }}>
+              <Grid item xs={12} lg={8}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -408,7 +408,7 @@ const TokenUsageAnalysis: React.FC = () => {
               </Grid>
 
               {/* Feature Distribution */}
-              <Grid size={{ xs: 12, lg: 4 }}>
+              <Grid item xs={12} lg={4}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -449,7 +449,7 @@ const TokenUsageAnalysis: React.FC = () => {
       {/* User Dimension Tab */}
       <TabPanel value={tabValue} index={1}>
         <Grid container spacing={3}>
-          <Grid size={12}>
+          <Grid item xs={12}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -473,7 +473,7 @@ const TokenUsageAnalysis: React.FC = () => {
       {/* Feature Dimension Tab */}
       <TabPanel value={tabValue} index={2}>
         <Grid container spacing={3}>
-          <Grid size={12}>
+          <Grid item xs={12}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -500,7 +500,7 @@ const TokenUsageAnalysis: React.FC = () => {
       {/* Time Series Tab */}
       <TabPanel value={tabValue} index={3}>
         <Grid container spacing={3}>
-          <Grid size={12}>
+          <Grid item xs={12}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>

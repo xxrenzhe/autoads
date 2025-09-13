@@ -262,7 +262,7 @@ const CheckInModule: React.FC = () => {
           const dayNum = format(day.date, 'd');
           
           return (
-            <Grid size={{ xs: 4, sm: 3, md: 2, lg: 1 }} key={index}>
+            <Grid item xs={4} sm={3} md={2} lg={1} key={index}>
               <Card 
                 sx={{ 
                   height: 80,
@@ -348,7 +348,7 @@ const CheckInModule: React.FC = () => {
 
         {/* Current Status */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ bgcolor: 'primary.light', color: 'white' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <EmojiEvents />
@@ -362,7 +362,7 @@ const CheckInModule: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ bgcolor: 'warning.light', color: 'white' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Whatshot />
@@ -376,7 +376,7 @@ const CheckInModule: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ bgcolor: 'info.light', color: 'white' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <TrendingUp />
@@ -390,7 +390,7 @@ const CheckInModule: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ bgcolor: 'secondary.light', color: 'white' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Star />

@@ -266,7 +266,7 @@ const AdminDashboard: React.FC = () => {
       </Box>
       
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="总用户数"
             value={stats?.totalUsers || 0}
@@ -277,7 +277,7 @@ const AdminDashboard: React.FC = () => {
           />
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="付费订阅"
             value={(stats?.totalSubscriptions || 0) - (stats?.trialUsers || 0)}
@@ -293,7 +293,7 @@ const AdminDashboard: React.FC = () => {
           />
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="本月收入"
             value={`¥${stats?.monthlyRevenue || 0}`}
@@ -304,7 +304,7 @@ const AdminDashboard: React.FC = () => {
           />
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="试用用户"
             value={stats?.trialUsers || 0}
@@ -319,7 +319,7 @@ const AdminDashboard: React.FC = () => {
       </Grid>
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Token消耗"
             value={stats?.tokenConsumption.thisMonth || 0}
@@ -330,7 +330,7 @@ const AdminDashboard: React.FC = () => {
           />
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="API调用"
             value={stats?.apiUsage.thisMonth || 0}
@@ -341,7 +341,7 @@ const AdminDashboard: React.FC = () => {
           />
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="SiteRank使用"
             value={stats?.featureUsage?.siterank || 0}
@@ -351,7 +351,7 @@ const AdminDashboard: React.FC = () => {
           />
         </Grid>
         
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="BatchOpen使用"
             value={stats?.featureUsage?.batchopen || 0}
@@ -363,7 +363,7 @@ const AdminDashboard: React.FC = () => {
       </Grid>
 
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" component="div" sx={{ mb: 2 }}>
@@ -461,7 +461,7 @@ const AdminDashboard: React.FC = () => {
           </Card>
         </Grid>
         
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" component="div" sx={{ mb: 2 }}>
@@ -522,7 +522,7 @@ const AdminDashboard: React.FC = () => {
       </Grid>
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" component="div" sx={{ mb: 2 }}>
@@ -577,7 +577,7 @@ const AdminDashboard: React.FC = () => {
           </Card>
         </Grid>
         
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" component="div" sx={{ mb: 2 }}>
@@ -662,7 +662,7 @@ const AdminDashboard: React.FC = () => {
           </Card>
         </Grid>
         
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" component="div" sx={{ mb: 2 }}>
@@ -747,7 +747,7 @@ const AdminDashboard: React.FC = () => {
       </Grid>
 
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12 }}>
+        <Grid item xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" component="div" sx={{ mb: 2 }}>

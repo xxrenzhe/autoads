@@ -225,7 +225,7 @@ export const ApiList: React.FC = () => {
     <Box sx={{ mt: 2 }}>
       <Grid container spacing={3}>
         {/* Basic Information */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid item xs={12} md={6}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -282,7 +282,7 @@ export const ApiList: React.FC = () => {
         </Grid>
 
         {/* Usage Statistics */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid item xs={12} md={6}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -328,7 +328,7 @@ export const ApiList: React.FC = () => {
 
         {/* Parameters */}
         {api.parameters.length > 0 && (
-          <Grid size={{ xs: 12 }}>
+          <Grid item xs={12}>
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -373,7 +373,7 @@ export const ApiList: React.FC = () => {
 
         {/* Response Examples */}
         {api.responses.length > 0 && (
-          <Grid size={{ xs: 12 }}>
+          <Grid item xs={12}>
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -404,7 +404,7 @@ export const ApiList: React.FC = () => {
 
         {/* Usage Examples */}
         {api.examples.length > 0 && (
-          <Grid size={{ xs: 12 }}>
+          <Grid item xs={12}>
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -417,7 +417,7 @@ export const ApiList: React.FC = () => {
                     </AccordionSummary>
                     <AccordionDetails>
                       <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, md: 6 }}>
+                        <Grid item xs={12} md={6}>
                           <Typography variant="overline" display="block">
                             请求
                           </Typography>
@@ -427,7 +427,7 @@ export const ApiList: React.FC = () => {
                             </Typography>
                           </Paper>
                         </Grid>
-                        <Grid size={{ xs: 12, md: 6 }}>
+                        <Grid item xs={12} md={6}>
                           <Typography variant="overline" display="block">
                             响应
                           </Typography>
@@ -497,7 +497,7 @@ export const ApiList: React.FC = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
                 placeholder="搜索API路径或描述..."
@@ -520,7 +520,7 @@ export const ApiList: React.FC = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12, md: 3 }}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
                 select
@@ -539,7 +539,7 @@ export const ApiList: React.FC = () => {
               </TextField>
             </Grid>
             
-            <Grid size={{ xs: 12, md: 3 }}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
                 select

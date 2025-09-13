@@ -260,7 +260,7 @@ const TokenTransactionDashboard: React.FC = () => {
       {/* Stats Cards */}
       {stats && (
         <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 12, md: 3 }}>
+          <Grid item xs={12} md={3}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -278,7 +278,7 @@ const TokenTransactionDashboard: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid size={{ xs: 12, md: 3 }}>
+          <Grid item xs={12} md={3}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -296,7 +296,7 @@ const TokenTransactionDashboard: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid size={{ xs: 12, md: 3 }}>
+          <Grid item xs={12} md={3}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -314,7 +314,7 @@ const TokenTransactionDashboard: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid size={{ xs: 12, md: 3 }}>
+          <Grid item xs={12} md={3}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -449,7 +449,7 @@ const TokenTransactionDashboard: React.FC = () => {
 
       {tabValue === 2 && stats && (
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -476,7 +476,7 @@ const TokenTransactionDashboard: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>

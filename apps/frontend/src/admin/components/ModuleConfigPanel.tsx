@@ -92,7 +92,7 @@ const ModuleConfigPanel: React.FC<ModuleConfigPanelProps> = ({
       <CardContent>
         <Grid container spacing={3}>
           {/* Performance Settings */}
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <Typography variant="h6" gutterBottom>
               Performance Settings
             </Typography>
@@ -139,7 +139,7 @@ const ModuleConfigPanel: React.FC<ModuleConfigPanelProps> = ({
           </Grid>
 
           {/* Cache Settings */}
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <Typography variant="h6" gutterBottom>
               Cache Settings
             </Typography>

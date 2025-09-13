@@ -277,7 +277,7 @@ const PaymentStatsDashboard: React.FC = () => {
       </Box>
 
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -295,7 +295,7 @@ const PaymentStatsDashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -313,7 +313,7 @@ const PaymentStatsDashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -331,7 +331,7 @@ const PaymentStatsDashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -349,7 +349,7 @@ const PaymentStatsDashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 8 }}>
+        <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -375,7 +375,7 @@ const PaymentStatsDashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -419,7 +419,7 @@ const PaymentDetailsDialog: React.FC<{
       <DialogContent>
         <Box sx={{ mt: 2 }}>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <Typography variant="subtitle2" color="textSecondary">
                 支付金额
               </Typography>
@@ -427,13 +427,13 @@ const PaymentDetailsDialog: React.FC<{
                 {payment.currency} {payment.amount.toFixed(2)}
               </Typography>
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <Typography variant="subtitle2" color="textSecondary">
                 支付状态
               </Typography>
               <PaymentStatusChip status={payment.status} />
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <Typography variant="subtitle2" color="textSecondary">
                 支付渠道
               </Typography>
@@ -441,7 +441,7 @@ const PaymentDetailsDialog: React.FC<{
                 {payment.provider}
               </Typography>
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <Typography variant="subtitle2" color="textSecondary">
                 支付时间
               </Typography>
@@ -449,7 +449,7 @@ const PaymentDetailsDialog: React.FC<{
                 {format(new Date(payment.createdAt), 'yyyy-MM-dd HH:mm:ss', { locale: zhCN })}
               </Typography>
             </Grid>
-            <Grid size={12}>
+            <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary">
                 用户信息
               </Typography>
@@ -458,7 +458,7 @@ const PaymentDetailsDialog: React.FC<{
               </Typography>
             </Grid>
             {payment.subscription && (
-              <Grid size={12}>
+              <Grid item xs={12}>
                 <Typography variant="subtitle2" color="textSecondary">
                   关联订阅
                 </Typography>
@@ -468,7 +468,7 @@ const PaymentDetailsDialog: React.FC<{
               </Grid>
             )}
             {payment.metadata && (
-              <Grid size={12}>
+              <Grid item xs={12}>
                 <Typography variant="subtitle2" color="textSecondary">
                   元数据
                 </Typography>

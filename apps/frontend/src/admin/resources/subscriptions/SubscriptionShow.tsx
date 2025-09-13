@@ -25,7 +25,7 @@ const SubscriptionFeatures: React.FC = () => {
   
   return (
     <Grid container spacing={2} sx={{ mt: 2 }}>
-      <Grid size={{ xs: 12, md: 6 }}>
+      <Grid item xs={12} md={6}>
         <Paper sx={{ p: 2 }}>
           <Typography variant="subtitle2" gutterBottom>
             功能列表
@@ -43,7 +43,7 @@ const SubscriptionFeatures: React.FC = () => {
         </Paper>
       </Grid>
       
-      <Grid size={{ xs: 12, md: 6 }}>
+      <Grid item xs={12} md={6}>
         <Paper sx={{ p: 2 }}>
           <Typography variant="subtitle2" gutterBottom>
             元数据
@@ -77,19 +77,19 @@ const SubscriptionPayments: React.FC = () => {
           {record.payments.map((payment: any, index: number) => (
             <Paper key={index} sx={{ p: 2, mb: 2 }}>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid item xs={12} md={3}>
                   <Typography variant="subtitle2">支付ID</Typography>
                   <Typography variant="body2">{payment.id}</Typography>
                 </Grid>
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid item xs={12} md={3}>
                   <Typography variant="subtitle2">金额</Typography>
                   <Typography variant="body2">{payment.amount} {payment.currency}</Typography>
                 </Grid>
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid item xs={12} md={3}>
                   <Typography variant="subtitle2">状态</Typography>
                   <Typography variant="body2">{payment.status}</Typography>
                 </Grid>
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid item xs={12} md={3}>
                   <Typography variant="subtitle2">时间</Typography>
                   <Typography variant="body2">{new Date(payment.createdAt).toLocaleString()}</Typography>
                 </Grid>

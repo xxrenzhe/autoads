@@ -187,7 +187,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
 
             <Grid container spacing={2} alignItems="center">
               {/* Date Range Filter */}
-              <Grid size={{ xs: 12, md: 3 }}>
+              <Grid item xs={12} md={3}>
                 <FormControl size="small" fullWidth>
                   <InputLabel>时间范围</InputLabel>
                   <Select
@@ -203,7 +203,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
               </Grid>
 
               {/* User Segment Filter */}
-              <Grid size={{ xs: 12, md: 3 }}>
+              <Grid item xs={12} md={3}>
                 <FormControl size="small" fullWidth>
                   <InputLabel>用户类型</InputLabel>
                   <Select
@@ -220,7 +220,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
               </Grid>
 
               {/* Feature Filter */}
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>功能过滤:</Typography>
                 <Stack direction="row" spacing={1}>
                   {['siterank', 'batchopen', 'adscenter'].map((feature) => (
@@ -261,7 +261,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
           <Box>
             {/* Core Metrics Cards */}
             <Grid container spacing={3} sx={{ mb: 3 }}>
-              <Grid size={{ xs: 12, md: 3 }}>
+              <Grid item xs={12} md={3}>
                 <Card>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -279,7 +279,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, md: 3 }}>
+              <Grid item xs={12} md={3}>
                 <Card>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -297,7 +297,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, md: 3 }}>
+              <Grid item xs={12} md={3}>
                 <Card>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -315,7 +315,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, md: 3 }}>
+              <Grid item xs={12} md={3}>
                 <Card>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -336,7 +336,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
 
             {/* Core Charts */}
             <Grid container spacing={3}>
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -369,7 +369,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -410,7 +410,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
           <Box>
             {/* Behavior Charts */}
             <Grid container spacing={3}>
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -431,7 +431,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom>

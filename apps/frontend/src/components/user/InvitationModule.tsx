@@ -221,7 +221,7 @@ const InvitationModule: React.FC = () => {
         {/* Stats Overview */}
         {stats && (
           <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid size={{ xs: 12, sm: 4 }}>
+            <Grid item xs={12} sm={4}>
               <Card sx={{ bgcolor: 'primary.light', color: 'white' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Group />
@@ -235,7 +235,7 @@ const InvitationModule: React.FC = () => {
               </Card>
             </Grid>
             
-            <Grid size={{ xs: 12, sm: 4 }}>
+            <Grid item xs={12} sm={4}>
               <Card sx={{ bgcolor: 'success.light', color: 'white' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <CheckCircle />
@@ -249,7 +249,7 @@ const InvitationModule: React.FC = () => {
               </Card>
             </Grid>
             
-            <Grid size={{ xs: 12, sm: 4 }}>
+            <Grid item xs={12} sm={4}>
               <Card sx={{ bgcolor: 'warning.light', color: 'white' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Star />

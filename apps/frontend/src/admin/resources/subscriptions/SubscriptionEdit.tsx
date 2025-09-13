@@ -57,7 +57,7 @@ export const SubscriptionEdit: React.FC = () => {
           </Typography>
           
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <ReferenceInput
                 source="userId"
                 reference="users"
@@ -67,7 +67,7 @@ export const SubscriptionEdit: React.FC = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <ReferenceInput
                 source="planId"
                 reference="plans"
@@ -77,7 +77,7 @@ export const SubscriptionEdit: React.FC = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <SelectInput
                 source="status"
                 label="状态"
@@ -87,7 +87,7 @@ export const SubscriptionEdit: React.FC = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <TextInput
                 source="stripeSubscriptionId"
                 label="Stripe订阅ID"
@@ -96,7 +96,7 @@ export const SubscriptionEdit: React.FC = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <TextInput
                 source="stripeCustomerId"
                 label="Stripe客户ID"
@@ -114,7 +114,7 @@ export const SubscriptionEdit: React.FC = () => {
           </Typography>
           
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <NumberInput
                 source="monthlyPrice"
                 label="月付价格"
@@ -125,7 +125,7 @@ export const SubscriptionEdit: React.FC = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <NumberInput
                 source="yearlyPrice"
                 label="年付价格"
@@ -135,7 +135,7 @@ export const SubscriptionEdit: React.FC = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <SelectInput
                 source="currency"
                 label="币种"
@@ -148,7 +148,7 @@ export const SubscriptionEdit: React.FC = () => {
           </Grid>
           
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <DateInput
                 source="startDate"
                 label="开始日期"
@@ -157,7 +157,7 @@ export const SubscriptionEdit: React.FC = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <DateInput
                 source="endDate"
                 label="结束日期"
@@ -165,7 +165,7 @@ export const SubscriptionEdit: React.FC = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <DateInput
                 source="nextBillingDate"
                 label="下次计费日期"
@@ -182,7 +182,7 @@ export const SubscriptionEdit: React.FC = () => {
           </Typography>
           
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <NumberInput
                 source="usageLimit"
                 label="使用限制"
@@ -192,7 +192,7 @@ export const SubscriptionEdit: React.FC = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <NumberInput
                 source="usageCount"
                 label="已使用次数"

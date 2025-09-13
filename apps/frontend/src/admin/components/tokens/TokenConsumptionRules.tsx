@@ -227,7 +227,7 @@ const TokenConsumptionRules: React.FC = () => {
       <TabPanel value={tabValue} index={0}>
         {config && (
           <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -259,7 +259,7 @@ const TokenConsumptionRules: React.FC = () => {
               </Card>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -298,7 +298,7 @@ const TokenConsumptionRules: React.FC = () => {
               </Card>
             </Grid>
 
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
                   variant="contained"
@@ -317,7 +317,7 @@ const TokenConsumptionRules: React.FC = () => {
       <TabPanel value={tabValue} index={1}>
         <Grid container spacing={3}>
           {rules.map((rule) => (
-            <Grid size={{ xs: 12, md: 6 }} key={rule.id}>
+            <Grid item xs={12} md={6} key={rule.id}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -367,7 +367,7 @@ const TokenConsumptionRules: React.FC = () => {
       {/* Calculation Examples Tab */}
       <TabPanel value={tabValue} index={2}>
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12 }}>
+          <Grid item xs={12}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
