@@ -8,8 +8,7 @@ import (
 	"gofly-admin-v3/utils/gf"
 	"gofly-admin-v3/utils/tools/gcfg"
 	"gofly-admin-v3/utils/tools/gconv"
-	"gofly-admin-v3/utils/tools/gfile"
-	"gofly-admin-v3/utils/tools/gjson"
+		"gofly-admin-v3/utils/tools/gjson"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -18,6 +17,24 @@ import (
 	"strings"
 	"time"
 )
+
+// CopyFile 复制文件
+func CopyFile(src, dst string) error {
+	source, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+
+	_, err = io.Copy(destination, source)
+	return err
+}
 
 // 代码仓安装操作
 type Codestoreoption struct{ NoNeedAuths []string }
@@ -222,12 +239,12 @@ func (api *Codestoreoption) InstallCode(c *gf.GinCtx) {
 		}
 		//分别复制配置文件到resource的的配置文件夹
 		if !install_cofig.App.Installcover {
-			gfile.CopyFile(filepath.Join(path, "/devsource/codemarket/install/", packName, "config.yml"), filepath.Join(path, "/resource/codeinstall", packName, "config.yml"))
+			CopyFile(filepath.Join(path, "/devsource/codemarket/install/", packName, "config.yml"), filepath.Join(path, "/resource/codeinstall", packName, "config.yml"))
 		}
 		//复制包配置到/resource/config下
 		confFilePath := filepath.Join(path, "/devsource/codemarket/install/", packName, packName+".yaml")
 		if _, err := os.Stat(confFilePath); !os.IsNotExist(err) { //存在
-			gfile.CopyFile(confFilePath, filepath.Join(path, "/resource/config", packName+".yaml"))
+			CopyFile(confFilePath, filepath.Join(path, "/resource/config", packName+".yaml"))
 		}
 		// 如存在附件资源存在则复制到 /resource/static下
 		staticFilePath := filepath.Join(path, "/devsource/codemarket/install/", packName, packName)
@@ -582,7 +599,7 @@ func (api *Codestoreoption) PackCode(c *gf.GinCtx) {
 	// 查看/resource/config是否存在动态配置文件-存在则复制到包目录下
 	confFilePath := filepath.Join(path, "/resource/config", packName+".yaml")
 	if _, err := os.Stat(confFilePath); !os.IsNotExist(err) { //存在
-		gfile.CopyFile(confFilePath, filepath.Join(pack_path, packName+".yaml"))
+		CopyFile(confFilePath, filepath.Join(pack_path, packName+".yaml"))
 	}
 	// 查看/resource/static是否存在静态文件-存在则复制到包目录下
 	staticFilePath := filepath.Join(path, "/resource/static", packName)

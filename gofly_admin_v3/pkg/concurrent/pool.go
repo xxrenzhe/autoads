@@ -148,7 +148,16 @@ func (p *WorkerPool) TrySubmit(task Task) bool {
 func (p *WorkerPool) GetMetrics() PoolMetrics {
 	p.metrics.mu.RLock()
 	defer p.metrics.mu.RUnlock()
-	return *p.metrics
+	// Return a copy without the mutex
+	return PoolMetrics{
+		TasksProcessed:    p.metrics.TasksProcessed,
+		TasksFailed:       p.metrics.TasksFailed,
+		TasksRetried:      p.metrics.TasksRetried,
+		ActiveWorkers:     p.metrics.ActiveWorkers,
+		QueueSize:         p.metrics.QueueSize,
+		ProcessingTime:    p.metrics.ProcessingTime,
+		LastProcessedTime: p.metrics.LastProcessedTime,
+	}
 }
 
 // collectMetrics 收集统计信息

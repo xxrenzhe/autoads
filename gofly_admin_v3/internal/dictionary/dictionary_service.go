@@ -1,7 +1,6 @@
 package dictionary
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -9,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gofly-admin-v3/internal/cache"
 	"gofly-admin-v3/internal/i18n"
-	"gofly-admin-v3/internal/models"
 	"gofly-admin-v3/internal/response"
 	"gorm.io/gorm"
 )

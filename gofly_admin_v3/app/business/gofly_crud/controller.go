@@ -3,8 +3,12 @@ package business
 import (
 	"gofly-admin-v3/internal/crud"
 	"gofly-admin-v3/internal/store"
+	"gofly-admin-v3/service/user"
 	"gofly-admin-v3/utils/gf"
 )
+
+// Type alias for User model
+type User = user.Model
 
 // GoFlyCRUDController 使用GoFly自动生成的CRUD控制器
 type GoFlyCRUDController struct{}
@@ -31,7 +35,7 @@ func (c *GoFlyCRUDController) GetList(ctx *gf.GinCtx) {
 	// 自动执行分页查询
 	result, err := paginator.Paginate(query)
 	if err != nil {
-		gf.Error().SetMsg("查询失败").Regin(ctx)
+		gf.Failed().SetMsg("查询失败").Regin(ctx)
 		return
 	}
 
@@ -43,9 +47,9 @@ func (c *GoFlyCRUDController) GetDetail(ctx *gf.GinCtx) {
 	id := ctx.Param("id")
 
 	var user User
-	err := gf.DB().First(&user, "id = ?", id).Error
+	err := gf.DB().Where("id = ?", id).First(&user)
 	if err != nil {
-		gf.Error().SetMsg("用户不存在").Regin(ctx)
+		gf.Failed().SetMsg("用户不存在").Regin(ctx)
 		return
 	}
 
@@ -58,7 +62,7 @@ func (c *GoFlyCRUDController) Create(ctx *gf.GinCtx) {
 
 	// GoFly自动绑定和验证
 	if err := ctx.ShouldBind(&user); err != nil {
-		gf.Error().SetMsg(err.Error()).Regin(ctx)
+		gf.Failed().SetMsg(err.Error()).Regin(ctx)
 		return
 	}
 
@@ -66,9 +70,9 @@ func (c *GoFlyCRUDController) Create(ctx *gf.GinCtx) {
 	user.ID = gf.UUID()
 
 	// 自动创建
-	err := gf.DB().Create(&user).Error
+	err := gf.DB().Create(&user)
 	if err != nil {
-		gf.Error().SetMsg("创建失败").Regin(ctx)
+		gf.Failed().SetMsg("创建失败").Regin(ctx)
 		return
 	}
 

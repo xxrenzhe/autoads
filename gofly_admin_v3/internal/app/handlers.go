@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gofly-admin-v3/internal/batchgo"
 	"gofly-admin-v3/internal/siterankgo"
-	"gofly-admin-v3/internal/user"
+	"gofly-admin-v3/service/user"
 	"gofly-admin-v3/utils/gf"
 )
 
@@ -90,21 +90,6 @@ func GoogleOAuthCallback(c *gin.Context) {
 	})
 }
 
-// UserAuth 用户认证中间件
-func UserAuth() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// 暂时跳过认证，后续实现JWT认证
-		c.Next()
-	}
-}
-
-// AdminAuth 管理员认证中间件
-func AdminAuth() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// 暂时跳过认证，后续实现管理员认证
-		c.Next()
-	}
-}
 
 // ListUsers 列出用户（管理员功能）
 func ListUsers(c *gin.Context) {

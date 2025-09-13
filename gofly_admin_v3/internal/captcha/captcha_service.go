@@ -9,8 +9,7 @@ import (
 	"image/png"
 	"math"
 	"math/big"
-	"strconv"
-	"strings"
+		"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"

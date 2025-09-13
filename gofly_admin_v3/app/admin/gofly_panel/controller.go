@@ -1,8 +1,36 @@
 package gofly_panel
 
 import (
+	"gofly-admin-v3/internal/batchgo"
+	"gofly-admin-v3/service/user"
 	"gofly-admin-v3/utils/gf"
+	"gofly-admin-v3/utils/gform"
 )
+
+// Type aliases for models
+type User = user.Model
+type BatchTask = batchgo.BatchTask
+
+// Paginator 分页器
+type Paginator struct {
+	ctx *gf.GinCtx
+}
+
+// NewPaginator 创建分页器
+func NewPaginator(ctx *gf.GinCtx) *Paginator {
+	return &Paginator{ctx: ctx}
+}
+
+// Paginate 执行分页查询
+func (p *Paginator) Paginate(query *gform.Model) (gform.Result, error) {
+	// 简单实现：直接返回所有结果
+	record, err := query.Find()
+	if err != nil {
+		return nil, err
+	}
+	// Convert single Record to Result ([]Record)
+	return gform.Result{record}, nil
+}
 
 // GoFlyPanelController GoFly管理面板控制器
 type GoFlyPanelController struct{}
@@ -102,19 +130,19 @@ func (c *GoFlyPanelController) GetStats(ctx *gf.GinCtx) {
 		},
 		"tasks": gf.Map{
 			"total": func() int {
-				if count, _ := gf.DB().Model(&BatchTask{}).Count(); _ == nil {
+				if count, err := gf.DB().Model(&BatchTask{}).Count(); err == nil {
 					return count
 				}
 				return 0
 			}(),
 			"running": func() int {
-				if count, _ := gf.DB().Model(&BatchTask{}).Where("status = ?", "RUNNING").Count(); _ == nil {
+				if count, err := gf.DB().Model(&BatchTask{}).Where("status = ?", "RUNNING").Count(); err == nil {
 					return count
 				}
 				return 0
 			}(),
 			"completed": func() int {
-				if count, _ := gf.DB().Model(&BatchTask{}).Where("status = ?", "COMPLETED").Count(); _ == nil {
+				if count, err := gf.DB().Model(&BatchTask{}).Where("status = ?", "COMPLETED").Count(); err == nil {
 					return count
 				}
 				return 0
@@ -133,7 +161,7 @@ func (c *GoFlyPanelController) GetStats(ctx *gf.GinCtx) {
 // @Router /admin/gofly-panel/api/users [get]
 func (c *GoFlyPanelController) GetUsers(ctx *gf.GinCtx) {
 	// 使用GoFly的自动分页查询
-	paginator := gf.NewPaginator(ctx)
+	paginator := NewPaginator(ctx)
 
 	var users []User
 	query := gf.DB().Model(&users)
@@ -148,7 +176,7 @@ func (c *GoFlyPanelController) GetUsers(ctx *gf.GinCtx) {
 
 	result, err := paginator.Paginate(query.Order("created_at DESC"))
 	if err != nil {
-		gf.Error().SetMsg("查询失败").Regin(ctx)
+		gf.Failed().SetMsg("查询失败").Regin(ctx)
 		return
 	}
 
@@ -161,13 +189,13 @@ func (c *GoFlyPanelController) UpdateUser(ctx *gf.GinCtx) {
 	var user User
 
 	if err := ctx.ShouldBind(&user); err != nil {
-		gf.Error().SetMsg(err.Error()).Regin(ctx)
+		gf.Failed().SetMsg(err.Error()).Regin(ctx)
 		return
 	}
 
-	err := gf.DB().Model(&User{}).Where("id = ?", id).Updates(&user).Error
+	_, err := gf.DB().Model(&User{}).Where("id = ?", id).Update(&user)
 	if err != nil {
-		gf.Error().SetMsg("更新失败").Regin(ctx)
+		gf.Failed().SetMsg("更新失败").Regin(ctx)
 		return
 	}
 

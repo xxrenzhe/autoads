@@ -2,20 +2,50 @@ package export
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	// "github.com/xuri/excelize/v2"
-	"gofly-admin-v3/internal/models"
+	"gofly-admin-v3/internal/batchgo"
 	"gofly-admin-v3/internal/response"
+	"gofly-admin-v3/service/user"
 	"gorm.io/gorm"
 )
 
 // ExcelService Excel导出服务
 type ExcelService struct {
 	db *gorm.DB
+}
+
+// User 用户模型别名
+type User = user.Model
+
+// BatchTask 批处理任务模型别名
+type BatchTask = batchgo.BatchTask
+
+// TokenTransaction 令牌交易记录
+type TokenTransaction struct {
+	ID        string      `json:"id" gorm:"primaryKey"`
+	UserID    string      `json:"user_id"`
+	Type      string      `json:"type"`
+	Amount    int64       `json:"amount"`
+	Balance   int64       `json:"balance"`
+	Reference string      `json:"reference"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+	Metadata  interface{} `json:"metadata" gorm:"type:json"`
+}
+
+// SiteRankQuery 网站排名查询记录
+type SiteRankQuery struct {
+	ID        string    `json:"id" gorm:"primaryKey"`
+	UserID    string    `json:"user_id"`
+	URL       string    `json:"url"`
+	Metrics   string    `json:"metrics"`
+	Status    string    `json:"status"`
+	Result    string    `json:"result" gorm:"type:text"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // NewExcelService 创建Excel导出服务
@@ -28,66 +58,45 @@ func (s *ExcelService) ExportUserData(c *gin.Context) {
 	userID := c.GetUint("user_id")
 
 	// 获取用户信息
-	var user models.User
+	var user User
 	if err := s.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		response.Error(c, 5001, "用户不存在")
 		return
 	}
 
-	// 创建Excel文件
-	f := excelize.NewFile()
-	defer f.Close()
-
-	// 设置工作表名称
-	sheetName := "用户数据"
-	f.SetSheetName("Sheet1", sheetName)
-
-	// 设置表头
-	headers := []string{"字段", "值"}
-	for i, header := range headers {
-		cell := fmt.Sprintf("%c1", 'A'+i)
-		f.SetCellValue(sheetName, cell, header)
-	}
+	// 创建CSV内容
+	var csvContent strings.Builder
+	csvContent.WriteString("字段,值\n")
 
 	// 用户数据
-	userData := [][]interface{}{
+	userData := [][]string{
 		{"用户ID", user.ID},
 		{"邮箱", user.Email},
-		{"姓名", user.Name},
+		{"用户名", user.Username},
 		{"角色", user.Role},
-		{"Token余额", user.TokenBalance},
-		{"套餐", user.Plan},
-		{"套餐到期时间", formatTime(user.PlanExpires)},
-		{"邀请码", user.InviteCode},
+		{"Token余额", strconv.FormatInt(user.TokenBalance, 10)},
+		{"邮箱验证", strconv.FormatBool(user.EmailVerified)},
 		{"注册时间", user.CreatedAt.Format("2006-01-02 15:04:05")},
-		{"最后登录", formatTime(user.LastLogin)},
-		{"状态", getStatusText(user.Status)},
 	}
 
-	// 填充数据
-	for i, row := range userData {
-		rowNum := i + 2
-		for j, value := range row {
-			cell := fmt.Sprintf("%c%d", 'A'+j, rowNum)
-			f.SetCellValue(sheetName, cell, value)
-		}
+	if user.LastLoginAt != nil {
+		userData = append(userData, []string{"最后登录", user.LastLoginAt.Format("2006-01-02 15:04:05")})
 	}
 
-	// 设置样式
-	s.setExcelStyle(f, sheetName, len(userData)+1)
+	// 写入CSV
+	for _, row := range userData {
+		csvContent.WriteString(fmt.Sprintf("\"%s\",\"%s\"\n", row[0], row[1]))
+	}
 
 	// 生成文件名
-	filename := fmt.Sprintf("用户数据_%s_%s.xlsx", user.Email, time.Now().Format("20060102_150405"))
+	filename := fmt.Sprintf("用户数据_%s_%s.csv", user.Email, time.Now().Format("20060102_150405"))
 
 	// 设置响应头
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Header("Content-Type", "text/csv")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 
 	// 输出文件
-	if err := f.Write(c.Writer); err != nil {
-		response.Error(c, 5002, "导出失败")
-		return
-	}
+	c.String(200, csvContent.String())
 }
 
 // ExportTaskRecords 导出任务记录
@@ -95,11 +104,11 @@ func (s *ExcelService) ExportTaskRecords(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	taskType := c.Query("type") // batch, siterank, chengelink
 
-	var tasks []models.BatchTask
+	var tasks []BatchTask
 	query := s.db.Where("user_id = ?", userID)
 
 	if taskType != "" {
-		query = query.Where("type = ?", taskType)
+		query = query.Where("mode = ?", taskType)
 	}
 
 	if err := query.Order("created_at DESC").Find(&tasks).Error; err != nil {
@@ -107,263 +116,110 @@ func (s *ExcelService) ExportTaskRecords(c *gin.Context) {
 		return
 	}
 
-	// 创建Excel文件
-	f := excelize.NewFile()
-	defer f.Close()
-
-	sheetName := "任务记录"
-	f.SetSheetName("Sheet1", sheetName)
-
-	// 设置表头
-	headers := []string{
-		"任务ID", "任务名称", "任务类型", "状态", "总URL数",
-		"成功数", "失败数", "开始时间", "结束时间", "耗时(秒)", "创建时间",
-	}
-
-	for i, header := range headers {
-		cell := fmt.Sprintf("%c1", 'A'+i)
-		f.SetCellValue(sheetName, cell, header)
-	}
+	// 创建CSV内容
+	var csvContent strings.Builder
+	csvContent.WriteString("任务ID,任务名称,模式,状态,URL总数,创建时间\n")
 
 	// 填充数据
-	for i, task := range tasks {
-		rowNum := i + 2
-		duration := ""
-		if task.DurationMs > 0 {
-			duration = fmt.Sprintf("%.2f", float64(task.DurationMs)/1000)
-		}
-
-		row := []interface{}{
+	for _, task := range tasks {
+		row := fmt.Sprintf("\"%s\",\"%s\",\"%s\",\"%s\",%d,\"%s\"\n",
 			task.ID,
 			task.Name,
-			task.Type,
+			task.Mode,
 			task.Status,
-			task.TotalURLs,
-			task.SuccessCount,
-			task.FailCount,
-			formatTime(task.StartTime),
-			formatTime(task.EndTime),
-			duration,
+			task.URLCount,
 			task.CreatedAt.Format("2006-01-02 15:04:05"),
-		}
-
-		for j, value := range row {
-			cell := fmt.Sprintf("%c%d", 'A'+j, rowNum)
-			f.SetCellValue(sheetName, cell, value)
-		}
+		)
+		csvContent.WriteString(row)
 	}
 
-	// 设置样式
-	s.setExcelStyle(f, sheetName, len(tasks)+1)
-
 	// 生成文件名
-	filename := fmt.Sprintf("任务记录_%s_%s.xlsx", taskType, time.Now().Format("20060102_150405"))
+	filename := fmt.Sprintf("任务记录_%s_%s.csv", taskType, time.Now().Format("20060102_150405"))
 
 	// 设置响应头
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Header("Content-Type", "text/csv")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 
 	// 输出文件
-	if err := f.Write(c.Writer); err != nil {
-		response.Error(c, 5002, "导出失败")
-		return
-	}
+	c.String(200, csvContent.String())
 }
 
 // ExportTokenTransactions 导出Token交易记录
 func (s *ExcelService) ExportTokenTransactions(c *gin.Context) {
 	userID := c.GetUint("user_id")
 
-	var transactions []models.TokenTransaction
+	var transactions []TokenTransaction
 	if err := s.db.Where("user_id = ?", userID).Order("created_at DESC").Find(&transactions).Error; err != nil {
 		response.Error(c, 5001, "查询交易记录失败")
 		return
 	}
 
-	// 创建Excel文件
-	f := excelize.NewFile()
-	defer f.Close()
-
-	sheetName := "Token交易记录"
-	f.SetSheetName("Sheet1", sheetName)
-
-	// 设置表头
-	headers := []string{
-		"交易ID", "变动金额", "变动后余额", "交易类型", "描述", "交易时间",
-	}
-
-	for i, header := range headers {
-		cell := fmt.Sprintf("%c1", 'A'+i)
-		f.SetCellValue(sheetName, cell, header)
-	}
+	// 创建CSV内容
+	var csvContent strings.Builder
+	csvContent.WriteString("交易ID,变动金额,变动后余额,交易类型,关联ID,交易时间\n")
 
 	// 填充数据
-	for i, tx := range transactions {
-		rowNum := i + 2
-
-		row := []interface{}{
+	for _, tx := range transactions {
+		row := fmt.Sprintf("\"%s\",%d,%d,\"%s\",\"%s\",\"%s\"\n",
 			tx.ID,
 			tx.Amount,
 			tx.Balance,
 			tx.Type,
-			tx.Description,
+			tx.Reference,
 			tx.CreatedAt.Format("2006-01-02 15:04:05"),
-		}
-
-		for j, value := range row {
-			cell := fmt.Sprintf("%c%d", 'A'+j, rowNum)
-			f.SetCellValue(sheetName, cell, value)
-		}
+		)
+		csvContent.WriteString(row)
 	}
 
-	// 设置样式
-	s.setExcelStyle(f, sheetName, len(transactions)+1)
-
 	// 生成文件名
-	filename := fmt.Sprintf("Token交易记录_%s.xlsx", time.Now().Format("20060102_150405"))
+	filename := fmt.Sprintf("Token交易记录_%s.csv", time.Now().Format("20060102_150405"))
 
 	// 设置响应头
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Header("Content-Type", "text/csv")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 
 	// 输出文件
-	if err := f.Write(c.Writer); err != nil {
-		response.Error(c, 5002, "导出失败")
-		return
-	}
+	c.String(200, csvContent.String())
 }
 
-// ExportSiteRankQueries 导出SiteRank查询记录
+// ExportSiteRankQueries 导出网站排名查询记录
 func (s *ExcelService) ExportSiteRankQueries(c *gin.Context) {
 	userID := c.GetUint("user_id")
 
-	var queries []models.SiteRankQuery
+	var queries []SiteRankQuery
 	if err := s.db.Where("user_id = ?", userID).Order("created_at DESC").Find(&queries).Error; err != nil {
-		response.Error(c, 5001, "查询SiteRank记录失败")
+		response.Error(c, 5001, "查询记录失败")
 		return
 	}
 
-	// 创建Excel文件
-	f := excelize.NewFile()
-	defer f.Close()
-
-	sheetName := "SiteRank查询记录"
-	f.SetSheetName("Sheet1", sheetName)
-
-	// 设置表头
-	headers := []string{
-		"查询ID", "域名", "状态", "全球排名", "分类排名", "分类",
-		"访问量", "跳出率", "页面/访问", "平均时长", "优先级", "查询时间",
-	}
-
-	for i, header := range headers {
-		cell := fmt.Sprintf("%c1", 'A'+i)
-		f.SetCellValue(sheetName, cell, header)
-	}
+	// 创建CSV内容
+	var csvContent strings.Builder
+	csvContent.WriteString("查询ID,URL,指标,状态,创建时间\n")
 
 	// 填充数据
-	for i, query := range queries {
-		rowNum := i + 2
-
-		row := []interface{}{
+	for _, query := range queries {
+		row := fmt.Sprintf("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
 			query.ID,
-			query.Domain,
+			query.URL,
+			query.Metrics,
 			query.Status,
-			formatInt(query.GlobalRank),
-			formatInt(query.CategoryRank),
-			query.Category,
-			formatFloat(query.Visits),
-			formatFloat(query.BounceRate),
-			formatFloat(query.PagesPerVisit),
-			formatFloat(query.AvgDuration),
-			query.Priority,
 			query.CreatedAt.Format("2006-01-02 15:04:05"),
-		}
-
-		for j, value := range row {
-			cell := fmt.Sprintf("%c%d", 'A'+j, rowNum)
-			f.SetCellValue(sheetName, cell, value)
-		}
+		)
+		csvContent.WriteString(row)
 	}
 
-	// 设置样式
-	s.setExcelStyle(f, sheetName, len(queries)+1)
-
 	// 生成文件名
-	filename := fmt.Sprintf("SiteRank查询记录_%s.xlsx", time.Now().Format("20060102_150405"))
+	filename := fmt.Sprintf("网站排名查询_%s.csv", time.Now().Format("20060102_150405"))
 
 	// 设置响应头
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Header("Content-Type", "text/csv")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 
 	// 输出文件
-	if err := f.Write(c.Writer); err != nil {
-		response.Error(c, 5002, "导出失败")
-		return
-	}
+	c.String(200, csvContent.String())
 }
 
-// setExcelStyle 设置Excel样式
-func (s *ExcelService) setExcelStyle(f *excelize.File, sheetName string, rows int) {
-	// 设置表头样式
-	headerStyle, _ := f.NewStyle(&excelize.Style{
-		Font: &excelize.Font{
-			Bold: true,
-			Size: 12,
-		},
-		Fill: excelize.Fill{
-			Type:    "pattern",
-			Color:   []string{"#E6E6FA"},
-			Pattern: 1,
-		},
-		Alignment: &excelize.Alignment{
-			Horizontal: "center",
-			Vertical:   "center",
-		},
-		Border: []excelize.Border{
-			{Type: "left", Color: "000000", Style: 1},
-			{Type: "top", Color: "000000", Style: 1},
-			{Type: "bottom", Color: "000000", Style: 1},
-			{Type: "right", Color: "000000", Style: 1},
-		},
-	})
-
-	// 应用表头样式
-	f.SetRowStyle(sheetName, 1, 1, headerStyle)
-
-	// 设置数据样式
-	dataStyle, _ := f.NewStyle(&excelize.Style{
-		Border: []excelize.Border{
-			{Type: "left", Color: "000000", Style: 1},
-			{Type: "top", Color: "000000", Style: 1},
-			{Type: "bottom", Color: "000000", Style: 1},
-			{Type: "right", Color: "000000", Style: 1},
-		},
-	})
-
-	// 应用数据样式
-	if rows > 1 {
-		f.SetRowStyle(sheetName, 2, rows, dataStyle)
-	}
-
-	// 自动调整列宽
-	cols, _ := f.GetCols(sheetName)
-	for i, col := range cols {
-		maxWidth := 10.0
-		for _, cell := range col {
-			if width := float64(len(cell)) * 1.2; width > maxWidth {
-				maxWidth = width
-			}
-		}
-		if maxWidth > 50 {
-			maxWidth = 50
-		}
-		colName := fmt.Sprintf("%c", 'A'+i)
-		f.SetColWidth(sheetName, colName, colName, maxWidth)
-	}
-}
-
-// 辅助函数
+// formatTime 格式化时间
 func formatTime(t *time.Time) string {
 	if t == nil {
 		return ""
@@ -371,40 +227,16 @@ func formatTime(t *time.Time) string {
 	return t.Format("2006-01-02 15:04:05")
 }
 
-func formatInt(i *int) string {
-	if i == nil {
-		return ""
-	}
-	return strconv.Itoa(*i)
-}
-
-func formatFloat(f *float64) string {
-	if f == nil {
-		return ""
-	}
-	return fmt.Sprintf("%.2f", *f)
-}
-
-func getStatusText(status int) string {
+// getStatusText 获取状态文本
+func getStatusText(status string) string {
 	switch status {
-	case 1:
+	case "ACTIVE":
 		return "正常"
-	case 0:
+	case "INACTIVE":
 		return "禁用"
+	case "PENDING":
+		return "待激活"
 	default:
-		return "未知"
-	}
-}
-
-// RegisterExportRoutes 注册导出路由
-func RegisterExportRoutes(r *gin.RouterGroup, db *gorm.DB) {
-	service := NewExcelService(db)
-
-	export := r.Group("/export")
-	{
-		export.GET("/user-data", service.ExportUserData)
-		export.GET("/task-records", service.ExportTaskRecords)
-		export.GET("/token-transactions", service.ExportTokenTransactions)
-		export.GET("/siterank-queries", service.ExportSiteRankQueries)
+		return status
 	}
 }

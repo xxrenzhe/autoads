@@ -164,13 +164,13 @@ func CopyAllDir(targetPath string, destPath string) error {
 			return os.MkdirAll(destPath, info.Mode())
 		}
 		//如果是文件则生成这个文件
-		return CopyFile(path, destPath)
+		return CopyFileCommon(path, destPath)
 	})
 	return err
 }
 
 // 复制单个文件
-func CopyFile(srcFile, destFile string) error {
+func CopyFileCommon(srcFile, destFile string) error {
 	src, err := os.Open(srcFile)
 	if err != nil {
 		return err

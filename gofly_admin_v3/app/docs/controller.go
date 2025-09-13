@@ -4,6 +4,87 @@ import (
 	"gofly-admin-v3/utils/gf"
 )
 
+// Server Swagger服务器配置
+type Server struct {
+	URL         string `json:"url"`
+	Description string `json:"description"`
+}
+
+// SwaggerSpec Swagger规范
+type SwaggerSpec struct {
+	OpenAPI string            `json:"openapi"`
+	Servers []Server          `json:"servers"`
+	Info    map[string]interface{} `json:"info"`
+	Paths   map[string]interface{} `json:"paths"`
+}
+
+// GetSwaggerSpec 获取Swagger规范
+func GetSwaggerSpec() *SwaggerSpec {
+	return &SwaggerSpec{
+		OpenAPI: "3.0.0",
+		Info: map[string]interface{}{
+			"title":       "GoFly Admin API",
+			"description": "GoFly Admin管理系统API文档",
+			"version":     "1.0.0",
+		},
+		Paths: make(map[string]interface{}),
+	}
+}
+
+// PostmanCollection Postman集合
+type PostmanCollection struct {
+	Info struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	} `json:"info"`
+	Variable []struct {
+		Key   string      `json:"key"`
+		Value interface{} `json:"value"`
+	} `json:"variable"`
+}
+
+// GetSwaggerSpec 获取Swagger规范
+func GetSwaggerSpec() *SwaggerSpec {
+	return &SwaggerSpec{
+		OpenAPI: "3.0.0",
+		Servers: []Server{},
+		Info: map[string]interface{}{
+			"title":       "GoFly Admin V3 API",
+			"description": "GoFly Admin V3 API Documentation",
+			"version":     "1.0.0",
+		},
+		Paths: make(map[string]interface{}),
+	}
+}
+
+// GetPostmanCollection 获取Postman集合
+func GetPostmanCollection() *PostmanCollection {
+	return &PostmanCollection{
+		Info: struct {
+			Name        string `json:"name"`
+			Description string `json:"description"`
+		}{
+			Name:        "GoFly Admin V3 API",
+			Description: "GoFly Admin V3 API Collection",
+		},
+		Variable: []struct {
+			Key   string      `json:"key"`
+			Value interface{} `json:"value"`
+		}{
+			{
+				Key:   "base_url",
+				Value: "http://localhost:8080",
+			},
+		},
+	}
+}
+
+// GenerateAPIDocs 生成API文档
+func GenerateAPIDocs() error {
+	// 简单实现：不执行任何操作
+	return nil
+}
+
 // DocsController API文档控制器
 type DocsController struct{}
 

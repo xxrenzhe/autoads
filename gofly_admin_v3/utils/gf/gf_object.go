@@ -1,6 +1,7 @@
 package gf
 
 import (
+	"context"
 	"gofly-admin-v3/utils/gform"
 	"gofly-admin-v3/utils/tools/gcfg"
 	"gofly-admin-v3/utils/tools/gins"
@@ -39,6 +40,27 @@ func Config(name ...string) *gcfg.Config {
 // See Config.
 func Cfg(name ...string) *gcfg.Config {
 	return Config(name...)
+}
+
+// GetConfig gets a configuration value by key
+func GetConfig(key string, def ...interface{}) interface{} {
+	cfg := Config()
+	if cfg == nil {
+		if len(def) > 0 {
+			return def[0]
+		}
+		return nil
+	}
+	
+	ctx := context.Background()
+	val, err := cfg.Get(ctx, key, def...)
+	if err != nil {
+		if len(def) > 0 {
+			return def[0]
+		}
+		return nil
+	}
+	return val.Val()
 }
 
 // Redis returns an instance of redis client with specified configuration group name.
