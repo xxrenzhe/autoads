@@ -200,7 +200,7 @@ export default function SidebarNavigation({ type, className }: SidebarNavigation
         <Button
           variant="ghost"
           size="sm"
-          onClick={((: any): any) => setCollapsed(!collapsed)}
+          onClick={() => setCollapsed(!collapsed)}
           className="h-8 w-8 p-0"
         >
           {collapsed ? (

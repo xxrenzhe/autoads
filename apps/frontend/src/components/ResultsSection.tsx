@@ -201,11 +201,11 @@ const ResultsSection = ({
                           <input
                             type="text"
                             value={editValue}
-                            onChange={((e: any): any) => setEditValue(e.target.value)}
+                            onChange={(e) => setEditValue(e.target.value)}
                             className="flex-1 px-2 py-1 text-sm border rounded"
                             autoFocus
                           />
-                          <Button size="sm" onClick={((: any): any) => handleSave(index)}>
+                          <Button size="sm" onClick={() => handleSave(index)}>
                             <Check className="w-3 h-3" />
                           </Button>
                           <Button
@@ -226,7 +226,7 @@ const ResultsSection = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={((: any): any) =>
+                                onClick={() =>
                                   result.finalUrl &&
                                   copyToClipboard(result.finalUrl, index)
                                 }
@@ -240,9 +240,7 @@ const ResultsSection = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={((: any): any) =>
-                                  window.open(result.finalUrl, "_blank")
-                                }
+                                onClick={() => { if (result.finalUrl) window.open(result.finalUrl, "_blank"); }}
                               >
                                 <ExternalLink className="w-3 h-3" />
                               </Button>
@@ -256,7 +254,7 @@ const ResultsSection = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) =>
+                          onClick={() =>
                             handleEdit(index, result.finalUrl || "")
                           }
                         >

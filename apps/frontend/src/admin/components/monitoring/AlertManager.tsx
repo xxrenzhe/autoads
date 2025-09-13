@@ -230,7 +230,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
                 <Input
                   placeholder="Search alerts..."
                   value={searchTerm}
-                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm((e.target as any).value)}
                   className="pl-10"
                 />
               </div>
@@ -240,7 +240,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
             <div className="flex gap-2">
               <select
                 value={statusFilter}
-                onChange={((e: any): any) => setStatusFilter(e.target.value)}
+                onChange={(e) => setStatusFilter((e.target as any).value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
@@ -250,7 +250,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
               
               <select
                 value={severityFilter}
-                onChange={((e: any): any) => setSeverityFilter(e.target.value)}
+                onChange={(e) => setSeverityFilter((e.target as any).value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Severity</option>
@@ -262,7 +262,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
               
               <select
                 value={typeFilter}
-                onChange={((e: any): any) => setTypeFilter(e.target.value)}
+                onChange={(e) => setTypeFilter((e.target as any).value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Types</option>
@@ -280,7 +280,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
               <Button
                 variant="outline"
                 size="sm"
-                onClick={((: any): any) => setShowCreateForm(true)}
+                onClick={() => setShowCreateForm(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Alert
@@ -297,7 +297,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
       {/* Alerts List */}
       <div className="space-y-4">
         {isAlertsLoading ? (
-          Array.from({ length: 3 }).map((_, index: any) => (
+          Array.from({ length: 3 }).map((_, index) => (
             <Card key={index} className="animate-pulse">
               <CardContent className="p-6">
                 <div className="space-y-4">
@@ -323,7 +323,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
             </CardContent>
           </Card>
         ) : (
-          filteredAlerts.map((alert: any) => {
+          filteredAlerts.map((alert) => {
             const AlertIcon = getAlertIcon(alert.type)
             
             return (
@@ -399,14 +399,14 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={((: any): any) => handleAcknowledgeAlert(alert.id)}
+                            onClick={() => handleAcknowledgeAlert(alert.id)}
                           >
                             <Check className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={((: any): any) => handleResolveAlert(alert.id)}
+                            onClick={() => handleResolveAlert(alert.id)}
                             disabled={isResolvingAlert}
                           >
                             <X className="h-4 w-4" />
@@ -416,7 +416,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={((: any): any) => setSelectedAlert(alert)}
+                        onClick={() => setSelectedAlert(alert)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>

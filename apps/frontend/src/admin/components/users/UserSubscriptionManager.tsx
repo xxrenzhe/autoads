@@ -251,7 +251,7 @@ export function UserSubscriptionManager({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={((: any): any) => setShowModifyForm(!showModifyForm)}
+                  onClick={() => setShowModifyForm(!showModifyForm)}
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Modify
@@ -315,7 +315,7 @@ export function UserSubscriptionManager({
             <p className="text-gray-600 mb-4">
               This user is on the free plan
             </p>
-            <Button onClick={((: any): any) => setShowAssignForm(true)}>
+            <Button onClick={() => setShowAssignForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Assign Subscription
             </Button>
@@ -354,7 +354,7 @@ export function UserSubscriptionManager({
                   type="number"
                   min="1"
                   value={duration}
-                  onChange={((e: any): any) => setDuration(parseInt(e.target.value) || 1)}
+                  onChange={(e) => setDuration(parseInt(e.target.value) || 1)}
                   disabled={!!customEndDate}
                 />
               </div>
@@ -364,7 +364,7 @@ export function UserSubscriptionManager({
                   id="custom-end-date"
                   type="date"
                   value={customEndDate}
-                  onChange={((e: any): any) => setCustomEndDate(e.target.value)}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
@@ -376,7 +376,7 @@ export function UserSubscriptionManager({
                 id="notes"
                 placeholder="Add any notes about this subscription assignment..."
                 value={notes}
-                onChange={((e: any): any) => setNotes(e.target.value)}
+                onChange={(e) => setNotes(e.target.value)}
                 rows={3}
               />
             </div>
@@ -390,7 +390,7 @@ export function UserSubscriptionManager({
               </Button>
               <Button
                 variant="outline"
-                onClick={((: any): any) => setShowAssignForm(false)}
+                onClick={() => setShowAssignForm(false)}
               >
                 Cancel
               </Button>
@@ -408,14 +408,14 @@ export function UserSubscriptionManager({
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="extend-days">Extend by Days</Label>
-              <Input
-                id="extend-days"
-                type="number"
-                min="1"
-                value={extendDays}
-                onChange={((e: any): any) => setExtendDays(parseInt(e.target.value) || 0)}
-                placeholder="Number of days to extend"
-              />
+                <Input
+                  id="extend-days"
+                  type="number"
+                  min="1"
+                  value={extendDays}
+                  onChange={(e) => setExtendDays(parseInt(e.target.value) || 0)}
+                  placeholder="Number of days to extend"
+                />
             </div>
 
             <div>
@@ -424,7 +424,7 @@ export function UserSubscriptionManager({
                 id="modify-notes"
                 placeholder="Add any notes about this modification..."
                 value={notes}
-                onChange={((e: any): any) => setNotes(e.target.value)}
+                onChange={(e) => setNotes(e.target.value)}
                 rows={3}
               />
             </div>
@@ -438,7 +438,7 @@ export function UserSubscriptionManager({
               </Button>
               <Button
                 variant="outline"
-                onClick={((: any): any) => setShowModifyForm(false)}
+                onClick={() => setShowModifyForm(false)}
               >
                 Cancel
               </Button>

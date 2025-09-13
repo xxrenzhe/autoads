@@ -375,7 +375,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
               <Button 
                 variant="outlined" 
                 size="small"
-                onClick={((: any): any) => setShowDetails(true)}
+                onClick={() => setShowDetails(true)}
               >
                 查看全部
               </Button>
@@ -476,7 +476,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
           </TableContainer>
         </DialogContent>
         <DialogActions>
-          <Button onClick={((: any): any) => setShowDetails(false)}>关闭</Button>
+          <Button onClick={() => setShowDetails(false)}>关闭</Button>
         </DialogActions>
       </Dialog>
     </Box>

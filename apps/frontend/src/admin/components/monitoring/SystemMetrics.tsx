@@ -361,7 +361,7 @@ export function SystemMetrics({
               </div>
               <div className="flex space-x-2">
                 <button
-                  onClick={((: any): any) => setSelectedMetric('cpu')}
+                  onClick={() => setSelectedMetric('cpu')}
                   className={`px-3 py-1 text-sm rounded ${
                     selectedMetric === 'cpu' 
                       ? 'bg-blue-100 text-blue-700' 
@@ -371,7 +371,7 @@ export function SystemMetrics({
                   CPU
                 </button>
                 <button
-                  onClick={((: any): any) => setSelectedMetric('memory')}
+                  onClick={() => setSelectedMetric('memory')}
                   className={`px-3 py-1 text-sm rounded ${
                     selectedMetric === 'memory' 
                       ? 'bg-blue-100 text-blue-700' 
@@ -381,7 +381,7 @@ export function SystemMetrics({
                   Memory
                 </button>
                 <button
-                  onClick={((: any): any) => setSelectedMetric('disk')}
+                  onClick={() => setSelectedMetric('disk')}
                   className={`px-3 py-1 text-sm rounded ${
                     selectedMetric === 'disk' 
                       ? 'bg-blue-100 text-blue-700' 

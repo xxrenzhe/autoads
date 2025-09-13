@@ -161,7 +161,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
         <div className="flex items-center space-x-6 text-sm text-slate-600">
           {/* Navigation Links */}
           <div className="flex items-center">
-            {navItems.map((item: any) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               const isActive =
                 pathname === item.href || (item.href === "/" && pathname === "/");
@@ -172,7 +172,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                   href={item.href}
                   className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 ${getColorClasses(item.color, isActive)}`}
                   title={getStr(item.label)}
-                  onClick={((: any): any) => setIsMobileMenuOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <Icon className="h-4 w-4" />
                   <span className="font-medium">{getStr(item.label)}</span>
@@ -198,7 +198,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {dropdownItems.map((item, index: any) => {
+                {dropdownItems.map((item, index) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
                   
@@ -250,7 +250,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                     <span>个人中心</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={((: any): any) => signOut()}>
+                  <DropdownMenuItem onClick={() => signOut()}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>退出登录</span>
                   </DropdownMenuItem>
@@ -260,7 +260,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={((: any): any) => openLoginModal(undefined, pathname)}
+                onClick={() => openLoginModal(undefined, pathname)}
                 className="flex items-center space-x-2"
               >
                 <LogIn className="h-4 w-4" />
@@ -279,7 +279,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={((: any): any) => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
           aria-label={
             isMobileMenuOpen
@@ -301,7 +301,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
           <div className="max-w-6xl mx-auto px-4 py-4">
             <div className="grid grid-cols-1 gap-2">
               {/* 主要导航项目 */}
-              {navItems.map((item: any) => {
+              {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive =
                   pathname === item.href ||
@@ -312,7 +312,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                     key={item.href}
                     href={item.href}
                     className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 hover:scale-105 ${getMobileColorClasses(item.color)} ${isActive ? "ring-2 ring-blue-200" : ""}`}
-                    onClick={((: any): any) => setIsMobileMenuOpen(false)}
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Icon className="h-5 w-5" />
                     <div>
@@ -336,7 +336,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
               <div className="border-t border-gray-200 my-2"></div>
               
               {/* 下拉菜单项目 */}
-              {dropdownItems.map((item: any) => {
+              {dropdownItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
 
@@ -345,7 +345,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                     key={item.href}
                     href={item.href}
                     className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 hover:scale-105 ${getMobileColorClasses(item.color)} ${isActive ? "ring-2 ring-blue-200" : ""}`}
-                    onClick={((: any): any) => setIsMobileMenuOpen(false)}
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Icon className="h-5 w-5" />
                     <div>
@@ -387,7 +387,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center space-x-2"
-                  onClick={((: any): any) => signOut()}
+                  onClick={() => signOut()}
                 >
                   <LogOut className="h-4 w-4" />
                   <span>退出登录</span>
@@ -398,7 +398,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center space-x-2"
-                  onClick={((: any): any) => openLoginModal(undefined, pathname)}
+                  onClick={() => openLoginModal(undefined, pathname)}
                 >
                   <LogIn className="h-4 w-4" />
                   <span>使用 Google 登录</span>

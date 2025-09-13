@@ -194,7 +194,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
           </p>
         </div>
         
-        <Button onClick={((: any): any) => setShowTopUpModal(true)}>
+        <Button onClick={() => setShowTopUpModal(true)}>
           <CreditCard className="h-4 w-4 mr-2" />
           Process Top-Up
         </Button>

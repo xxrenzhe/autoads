@@ -227,7 +227,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: PlanManagerProp
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
           <div role="status" aria-label="Loading subscription plans">
-            {Array.from({ length: 3 }).map((_, index: any) => (
+            {Array.from({ length: 3 }).map((_, index: number) => (
               <Card key={index} className="animate-pulse" aria-hidden="true">
                 <CardContent className="p-6">
                   <div className="space-y-4">
@@ -292,7 +292,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: PlanManagerProp
               aria-pressed={adminMode ? selectedPlans.has(plan.id) : undefined}
               aria-selected={selectedPlans.has(plan.id)}
               onKeyDown={(e) => handlePlanCardKeyDown(e, plan)}
-              onClick={((: any): any) => adminMode ? handlePlanSelect(plan.id) : onPlanSelect?.(plan)}
+              onClick={() => (adminMode ? handlePlanSelect(plan.id) : onPlanSelect?.(plan))}
             >
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -373,7 +373,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: PlanManagerProp
                       Features included:
                     </h3>
                     <ul className="space-y-1" aria-label={`Features included in ${plan.name} plan`}>
-                      {plan.features?.slice(0, 4).map((feature, index: any) => (
+                      {plan.features?.slice(0, 4).map((feature, index: number) => (
                         <li key={index} className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                           <Check className="h-3 w-3 text-green-500 mr-2 flex-shrink-0" aria-hidden="true" />
                           {feature}
@@ -396,7 +396,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: PlanManagerProp
                       <input
                         type="checkbox"
                         checked={selectedPlans.has(plan.id)}
-                        onChange={((e: any): any) => {
+                        onChange={(e) => {
                           e.stopPropagation()
                           handlePlanSelect(plan.id)
                         }}
@@ -407,7 +407,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: PlanManagerProp
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((e: any): any) => {
+                        onClick={(e) => {
                           e.stopPropagation()
                           handleEditPlan(plan)
                         }}
@@ -420,7 +420,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: PlanManagerProp
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((e: any): any) => {
+                        onClick={(e) => {
                           e.stopPropagation()
                           handleToggleStatus(plan.id)
                         }}
@@ -436,7 +436,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: PlanManagerProp
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((e: any): any) => {
+                        onClick={(e) => {
                           e.stopPropagation()
                           handleDeletePlan(plan.id)
                         }}
@@ -449,7 +449,7 @@ export function PlanManager({ onPlanSelect, adminMode = false }: PlanManagerProp
                   ) : (
                     <Button
                       className={`w-full ${plan.popular ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                      onClick={((e: any): any) => {
+                      onClick={(e) => {
                         e.stopPropagation()
                         onPlanSelect?.(plan)
                       }}
@@ -492,8 +492,8 @@ export function PlanManager({ onPlanSelect, adminMode = false }: PlanManagerProp
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={((: any): any) => {
-                    selectedPlans.forEach((planId: any) => {
+                  onClick={() => {
+                    selectedPlans.forEach((planId: string) => {
                       handleToggleStatus(planId)
                     })
                     setSelectedPlans(new Set())
@@ -506,9 +506,9 @@ export function PlanManager({ onPlanSelect, adminMode = false }: PlanManagerProp
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     if (window.confirm(`Are you sure you want to delete ${selectedPlans.size} plan(s)?`)) {
-                      selectedPlans.forEach((planId: any) => handleDeletePlan(planId))
+                      selectedPlans.forEach((planId: string) => handleDeletePlan(planId))
                       setSelectedPlans(new Set())
                     }
                   }}

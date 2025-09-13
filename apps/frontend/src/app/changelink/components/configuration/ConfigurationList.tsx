@@ -58,7 +58,7 @@ export default function ConfigurationList({
   const [activeTab, setActiveTab] = useState('grid');
 
   // 过滤配置
-  const filteredConfigurations = configurations.filter((config: any) => {
+  const filteredConfigurations = configurations.filter((config) => {
     // 搜索过滤
     const matchesSearch = searchQuery === '' || 
       config.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -121,7 +121,7 @@ export default function ConfigurationList({
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredConfigurations?.filter(Boolean)?.map((config: any) => (
+        {filteredConfigurations?.filter(Boolean)?.map((config) => (
           <Card 
             key={config.id} 
             className={`hover:shadow-md transition-shadow ${selectedConfigs.includes(config.id) ? 'ring-2 ring-blue-500' : ''}`}
@@ -129,11 +129,11 @@ export default function ConfigurationList({
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <div className="flex items-start space-x-2">
-                  <Checkbox
-                    checked={selectedConfigs.includes(config.id)}
-                    onCheckedChange={((: any): any) => handleSelectConfig(config.id)}
-                    className="mt-1"
-                  />
+                <Checkbox 
+                  checked={selectedConfigs.includes(config.id)}
+                  onCheckedChange={() => handleSelectConfig(config.id)}
+                  className="mt-1"
+                />
                   <div>
                     <CardTitle className="text-lg">{config.name}</CardTitle>
                     <p className="text-sm text-gray-500">{config.environmentId}</p>
@@ -194,7 +194,7 @@ export default function ConfigurationList({
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={((: any): any) => onEdit(config)}
+                      onClick={() => onEdit(config)}
                     >
                       <Edit className="h-3 w-3 mr-1" />
                       编辑
@@ -207,16 +207,16 @@ export default function ConfigurationList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={((: any): any) => onExecute(config)}>
+                        <DropdownMenuItem onClick={() => onExecute(config)}>
                           <Play className="h-4 w-4 mr-2" />
                           执行
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={((: any): any) => onDuplicate(config)}>
+                        <DropdownMenuItem onClick={() => onDuplicate(config)}>
                           <Copy className="h-4 w-4 mr-2" />
                           复制
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={((: any): any) => onDelete(config)}
+                          onClick={() => onDelete(config)}
                           className="text-red-600"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
@@ -274,7 +274,7 @@ export default function ConfigurationList({
             </tr>
           </thead>
           <tbody className="divide-y">
-            {filteredConfigurations?.filter(Boolean)?.map((config: any) => (
+            {filteredConfigurations?.filter(Boolean)?.map((config) => (
               <tr 
                 key={config.id} 
                 className={`hover:bg-slate-50 ${selectedConfigs.includes(config.id) ? 'bg-blue-50' : ''}`}
@@ -282,7 +282,7 @@ export default function ConfigurationList({
                 <td className="p-2">
                   <Checkbox
                     checked={selectedConfigs.includes(config.id)}
-                    onCheckedChange={((: any): any) => handleSelectConfig(config.id)}
+                    onCheckedChange={() => handleSelectConfig(config.id)}
                   />
                 </td>
                 <td className="p-2">
@@ -325,7 +325,7 @@ export default function ConfigurationList({
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={((: any): any) => onEdit(config)}
+                      onClick={() => onEdit(config)}
                     >
                       <Edit className="h-3 w-3" />
                     </Button>
@@ -337,16 +337,16 @@ export default function ConfigurationList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={((: any): any) => onExecute(config)}>
+                        <DropdownMenuItem onClick={() => onExecute(config)}>
                           <Play className="h-4 w-4 mr-2" />
                           执行
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={((: any): any) => onDuplicate(config)}>
+                        <DropdownMenuItem onClick={() => onDuplicate(config)}>
                           <Copy className="h-4 w-4 mr-2" />
                           复制
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={((: any): any) => onDelete(config)}
+                          onClick={() => onDelete(config)}
                           className="text-red-600"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
@@ -397,7 +397,7 @@ export default function ConfigurationList({
             <Input
               placeholder="搜索配置名称或环境ID..."
               value={searchQuery}
-              onChange={((e: any): any) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>

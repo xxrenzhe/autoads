@@ -1,18 +1,20 @@
 package metrics
 
 import (
-	"fmt"
-	"net/http"
-	"runtime"
-	"strconv"
-	"sync"
-	"time"
+    "context"
+    "fmt"
+    "net/http"
+    "runtime"
+    "strconv"
+    "sync"
+    "time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gofly-admin-v3/internal/cache"
+    "github.com/gin-gonic/gin"
+    "github.com/prometheus/client_golang/prometheus"
+    "github.com/prometheus/client_golang/prometheus/promauto"
+    "github.com/prometheus/client_golang/prometheus/promhttp"
+    "gofly-admin-v3/internal/cache"
+    "gofly-admin-v3/utils/gf"
 )
 
 // Metrics 指标收集器
@@ -405,17 +407,40 @@ func SetupMetrics(router *gin.Engine) {
 	// Prometheus指标
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	// 健康检查
-	router.GET("/health", func(c *gin.Context) {
-		hc := GetHealthChecker()
-		status, message := hc.GetStatus()
+    // 健康检查
+    router.GET("/health", func(c *gin.Context) {
+        hc := GetHealthChecker()
+        status, message := hc.GetStatus()
 
-		c.JSON(http.StatusOK, gin.H{
-			"status":    status,
-			"message":   message,
-			"timestamp": time.Now(),
-		})
-	})
+        c.JSON(http.StatusOK, gin.H{
+            "status":    status,
+            "message":   message,
+            "timestamp": time.Now(),
+        })
+    })
+
+    // 数据库健康检查
+    router.GET("/health/db", func(c *gin.Context) {
+        // 使用GoFly gform 进行简单校验
+        ctx := c.Request.Context()
+        if _, err := gf.DB().Query(ctx, "SELECT 1"); err != nil {
+            c.JSON(http.StatusServiceUnavailable, gin.H{"status": false, "message": "DB not reachable", "error": err.Error()})
+            return
+        }
+        c.JSON(http.StatusOK, gin.H{"status": true, "message": "DB OK"})
+    })
+
+    // Redis健康检查
+    router.GET("/health/redis", func(c *gin.Context) {
+        cacheCli := cache.GetCache()
+        key := "health_check"
+        if err := cacheCli.Set(key, "ok", 5*time.Second); err != nil {
+            c.JSON(http.StatusServiceUnavailable, gin.H{"status": false, "message": "Redis not reachable", "error": err.Error()})
+            return
+        }
+        _ = cacheCli.Delete(key)
+        c.JSON(http.StatusOK, gin.H{"status": true, "message": "Redis OK"})
+    })
 
 	// 详细健康检查
 	router.GET("/health/detail", func(c *gin.Context) {
@@ -460,13 +485,15 @@ func SetupMetrics(router *gin.Engine) {
 
 // InitializeDefaultChecks 初始化默认健康检查
 func InitializeDefaultChecks() {
-	hc := GetHealthChecker()
+    hc := GetHealthChecker()
 
-	// 数据库连接检查
-	hc.RegisterCheck("database", func() (bool, string) {
-		// TODO: 实现实际的数据库连接检查
-		return true, "Database connection OK"
-	})
+    // 数据库连接检查
+    hc.RegisterCheck("database", func() (bool, string) {
+        if _, err := gf.DB().Query(context.Background(), "SELECT 1"); err != nil {
+            return false, fmt.Sprintf("Database connection failed: %v", err)
+        }
+        return true, "Database connection OK"
+    })
 
 	// Redis连接检查
 	hc.RegisterCheck("redis", func() (bool, string) {

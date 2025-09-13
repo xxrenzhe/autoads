@@ -360,14 +360,14 @@ const GoogleAdsAccountManager: React.FC = () => {
                 <Input
                   placeholder="Search accounts..."
                   value={searchTerm}
-                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
             <select
               value={filterStatus}
-              onChange={((e: any): any) => setFilterStatus(e.target.value)}
+              onChange={(e) => setFilterStatus(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md"
             >
               <option value="all">All Status</option>
@@ -394,7 +394,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                 </CardContent>
               </Card>
             ) : (
-              filteredAccounts.map((account: any) => (
+              filteredAccounts.map((account) => (
                 <Card key={account.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start">
@@ -424,7 +424,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => validateToken(account.id)}
+                          onClick={() => validateToken(account.id)}
                         >
                           <Shield className="w-4 h-4 mr-1" />
                           Validate
@@ -432,7 +432,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => refreshToken(account.id)}
+                          onClick={() => refreshToken(account.id)}
                         >
                           <RefreshCw className="w-4 h-4 mr-1" />
                           Refresh
@@ -440,7 +440,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => syncAccountData(account.id)}
+                          onClick={() => syncAccountData(account.id)}
                         >
                           <Download className="w-4 h-4 mr-1" />
                           Sync
@@ -448,7 +448,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => setSelectedAccount(account)}
+                          onClick={() => setSelectedAccount(account)}
                         >
                           <Settings className="w-4 h-4 mr-1" />
                           Settings
@@ -456,7 +456,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={((: any): any) => deleteAccount(account.id)}
+                          onClick={() => deleteAccount(account.id)}
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
                           Delete
@@ -485,7 +485,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                   <label className="block text-sm font-medium mb-2">Client ID</label>
                   <Input
                     value={oauthConfig.clientId}
-                    onChange={((e: any) => setOauthConfig(prev: any) => ({ ...prev, clientId: e.target.value }))}
+                    onChange={(e) => setOauthConfig(prev => ({ ...prev, clientId: e.target.value }))}
                     placeholder="Enter your Google Ads API client ID"
                   />
                 </div>
@@ -494,7 +494,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                   <Input
                     type="password"
                     value={oauthConfig.clientSecret}
-                    onChange={((e: any) => setOauthConfig(prev: any) => ({ ...prev, clientSecret: e.target.value }))}
+                    onChange={(e) => setOauthConfig(prev => ({ ...prev, clientSecret: e.target.value }))}
                     placeholder="Enter your Google Ads API client secret"
                   />
                 </div>
@@ -503,7 +503,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                 <label className="block text-sm font-medium mb-2">Redirect URI</label>
                 <Input
                   value={oauthConfig.redirectUri}
-                  onChange={((e: any) => setOauthConfig(prev: any) => ({ ...prev, redirectUri: e.target.value }))}
+                  onChange={(e) => setOauthConfig(prev => ({ ...prev, redirectUri: e.target.value }))}
                   placeholder="https://your-domain.com/api/adscenter/oauth/callback"
                 />
               </div>
@@ -511,7 +511,7 @@ const GoogleAdsAccountManager: React.FC = () => {
                 <label className="block text-sm font-medium mb-2">Scopes</label>
                 <Input
                   value={oauthConfig.scopes.join(' ')}
-                  onChange={((e: any) => setOauthConfig(prev: any) => ({ ...prev, scopes: e.target.value.split(' ') }))}
+                  onChange={(e) => setOauthConfig(prev => ({ ...prev, scopes: e.target.value.split(' ') }))}
                   placeholder="https://www.googleapis.com/auth/adwords"
                 />
               </div>

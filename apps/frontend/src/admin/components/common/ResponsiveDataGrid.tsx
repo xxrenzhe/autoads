@@ -122,7 +122,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
                 <GridActionsCellItem
                   icon={<ViewIcon />}
                   label="查看"
-                  onClick={((: any): any) => onView(params.row)}
+                  onClick={() => onView?.(params.row)}
                   showInMenu
                 />
               );
@@ -133,7 +133,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
                 <GridActionsCellItem
                   icon={<EditIcon />}
                   label="编辑"
-                  onClick={((: any): any) => onEdit(params.row)}
+                  onClick={() => onEdit?.(params.row)}
                   showInMenu
                 />
               );
@@ -145,7 +145,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
                   <GridActionsCellItem
                     icon={action.icon}
                     label={action.label}
-                    onClick={((: any): any) => action.onClick(params.row)}
+                    onClick={() => action.onClick(params.row)}
                     showInMenu
                   />
                 );
@@ -157,7 +157,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
                 <GridActionsCellItem
                   icon={<DeleteIcon />}
                   label="删除"
-                  onClick={((: any): any) => onDelete(params.row)}
+                  onClick={() => onDelete?.(params.row)}
                   showInMenu
                 />
               );

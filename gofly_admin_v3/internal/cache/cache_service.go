@@ -84,19 +84,29 @@ func (r *RedisCacheService) Exists(key string) bool {
 
 // Clear 清空缓存
 func (r *RedisCacheService) Clear() error {
-	ctx := context.Background()
-	pattern := r.getFullKey("*")
+    ctx := context.Background()
+    pattern := r.getFullKey("*")
 
-	keys, err := r.client.Keys(ctx, pattern).Result()
-	if err != nil {
-		return err
-	}
-
-	if len(keys) > 0 {
-		return r.client.Del(ctx, keys...).Err()
-	}
-
-	return nil
+    var batch []string
+    iter := r.client.Scan(ctx, 0, pattern, 500).Iterator()
+    for iter.Next(ctx) {
+        batch = append(batch, iter.Val())
+        if len(batch) >= 1000 {
+            if err := r.client.Del(ctx, batch...).Err(); err != nil {
+                return err
+            }
+            batch = batch[:0]
+        }
+    }
+    if err := iter.Err(); err != nil {
+        return err
+    }
+    if len(batch) > 0 {
+        if err := r.client.Del(ctx, batch...).Err(); err != nil {
+            return err
+        }
+    }
+    return nil
 }
 
 // GetTTL 获取缓存TTL

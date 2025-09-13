@@ -219,7 +219,7 @@ export default function GoogleAdsAutomationDashboard({
                 <Button 
                   variant="outline" 
                   className="h-auto p-4 flex flex-col items-start space-y-2"
-                  onClick={((: any): any) => setActiveTab('configurations')}
+                  onClick={() => setActiveTab('configurations')}
                 >
                   <Settings className="h-4 w-4" />
                   <span className="font-medium">管理配置</span>
@@ -244,7 +244,7 @@ export default function GoogleAdsAutomationDashboard({
                 <Button 
                   variant="outline" 
                   className="h-auto p-4 flex flex-col items-start space-y-2"
-                  onClick={((: any): any) => {}}
+                  onClick={() => {}}
                 >
                   <Play className="h-4 w-4" />
                   <span className="font-medium">执行任务</span>

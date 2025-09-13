@@ -1,12 +1,13 @@
 package upload
 
 import (
-	"context"
-	"crypto/md5"
-	"encoding/hex"
-	"errors"
-	"fmt"
-	"image"
+    "context"
+    "crypto/md5"
+    "encoding/json"
+    "encoding/hex"
+    "errors"
+    "fmt"
+    "image"
 	"image/jpeg"
 	"image/png"
 	"io"
@@ -451,11 +452,34 @@ func UploadMiddleware(fieldName string, maxFiles int) gin.HandlerFunc {
 
 // HandleUpload 处理上传的便捷函数
 func HandleUpload(c *gin.Context, fieldName string, maxFiles int) ([]*FileInfo, error) {
-	// 获取用户ID
-	userID, _ := c.Get("user_id")
-	if userID == nil {
-		return nil, errors.New("user not authenticated")
-	}
+    // 获取用户ID（兼容 user_id / userID）
+    var uidStr string
+    if v, ok := c.Get("user_id"); ok && v != nil {
+        switch vv := v.(type) {
+        case string:
+            uidStr = vv
+        case int64:
+            uidStr = fmt.Sprintf("%d", vv)
+        case int:
+            uidStr = fmt.Sprintf("%d", vv)
+        default:
+            uidStr = fmt.Sprint(vv)
+        }
+    } else if v, ok := c.Get("userID"); ok && v != nil {
+        switch vv := v.(type) {
+        case string:
+            uidStr = vv
+        case int64:
+            uidStr = fmt.Sprintf("%d", vv)
+        case int:
+            uidStr = fmt.Sprintf("%d", vv)
+        default:
+            uidStr = fmt.Sprint(vv)
+        }
+    }
+    if uidStr == "" {
+        return nil, errors.New("user not authenticated")
+    }
 
 	// 获取文件
 	files, exists := c.Get("upload_files")
@@ -464,8 +488,8 @@ func HandleUpload(c *gin.Context, fieldName string, maxFiles int) ([]*FileInfo, 
 	}
 
 	// 上传文件
-	us := GetUploadService()
-	return us.UploadFiles(files.([]*multipart.FileHeader), userID.(string))
+    us := GetUploadService()
+    return us.UploadFiles(files.([]*multipart.FileHeader), uidStr)
 }
 
 // ValidateFileType 验证文件类型

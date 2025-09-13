@@ -366,7 +366,7 @@ export default function ConfigurationsPage() {
             <Input
               id="name"
               value={formData.name}
-              onChange={((e: any) => setFormData(prev: any) => ({ ...prev, name: e.target.value }))}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: (e.target as any).value }))}
               placeholder="输入配置名称"
             />
           </div>
@@ -375,7 +375,8 @@ export default function ConfigurationsPage() {
             <Input
               id="environmentId"
               value={formData.environmentId}
-              onChange={((e: any) => setFormData(prev: any) => ({ ...prev, environmentId: e.target.value }))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData(prev => ({ ...prev, environmentId: e.target.value }))}
               placeholder="输入环境ID"
             />
           </div>
@@ -390,7 +391,8 @@ export default function ConfigurationsPage() {
               min="1"
               max="10"
               value={formData.repeatCount}
-              onChange={((e: any) => setFormData(prev: any) => ({ ...prev, repeatCount: parseInt(e.target.value) || 1 }))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData(prev => ({ ...prev, repeatCount: parseInt(e.target.value) || 1 }))}
             />
           </div>
           <div>
@@ -399,7 +401,8 @@ export default function ConfigurationsPage() {
               id="notificationEmail"
               type="email"
               value={formData.notificationEmail}
-              onChange={((e: any) => setFormData(prev: any) => ({ ...prev, notificationEmail: e.target.value }))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData(prev => ({ ...prev, notificationEmail: e.target.value }))}
               placeholder="输入邮箱地址"
             />
           </div>
@@ -415,11 +418,13 @@ export default function ConfigurationsPage() {
               添加链接
             </Button>
           </div>
-          {formData.originalLinks.map((link, index: any) => (
+          {formData.originalLinks.map((link, index) => (
             <div key={index} className="flex gap-2">
               <Input
                 value={link}
-                onChange={((e: any): any) => updateOriginalLink(index, e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  updateOriginalLink(index, e.target.value)
+                }
                 placeholder="输入广告联盟链接"
               />
               {formData.originalLinks.length > 1 && (
@@ -427,7 +432,7 @@ export default function ConfigurationsPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={((: any): any) => removeOriginalLink(index)}
+                  onClick={() => removeOriginalLink(index)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -446,18 +451,22 @@ export default function ConfigurationsPage() {
               添加账户
             </Button>
           </div>
-          {formData.googleAdsAccounts.map((account, index: any) => (
+          {formData.googleAdsAccounts.map((account, index) => (
             <div key={index} className="grid grid-cols-2 gap-2">
               <Input
                 value={account.accountId}
-                onChange={((e: any): any) => updateGoogleAdsAccount(index, 'accountId', e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  updateGoogleAdsAccount(index, 'accountId', e.target.value)
+                }
                 placeholder="账户ID"
               />
               <div className="flex gap-2">
                 <div className="flex-1">
                   <Input
                     value={account.accountName}
-                    onChange={((e: any): any) => updateGoogleAdsAccount(index, 'accountName', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      updateGoogleAdsAccount(index, 'accountName', e.target.value)
+                    }
                     placeholder="账户名称"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -472,7 +481,7 @@ export default function ConfigurationsPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={((: any): any) => removeGoogleAdsAccount(index)}
+                    onClick={() => removeGoogleAdsAccount(index)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -519,7 +528,7 @@ export default function ConfigurationsPage() {
               </Button>
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogTrigger asChild>
-                  <Button onClick={((: any): any) => { resetForm(); setShowCreateDialog(true); }}>
+                  <Button onClick={() => { resetForm(); setShowCreateDialog(true); }}>
                     <Plus className="h-4 w-4 mr-2" />
                     新建配置
                   </Button>
@@ -533,7 +542,7 @@ export default function ConfigurationsPage() {
                   </DialogHeader>
                   <ConfigurationForm />
                   <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="outline" onClick={((: any): any) => setShowCreateDialog(false)}>
+                    <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                       取消
                     </Button>
                     <Button onClick={handleCreateConfiguration}>
@@ -555,12 +564,12 @@ export default function ConfigurationsPage() {
               <h3 className="text-lg font-medium mb-2">暂无配置</h3>
               <p className="text-gray-600 mb-4">创建您的第一个配置来开始自动化流程</p>
               <div className="flex gap-2">
-                <Button onClick={((: any): any) => setShowCreateDialog(true)}>
+                <Button onClick={() => setShowCreateDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   创建配置
                 </Button>
                 <Button 
-                  onClick={((: any): any) => window.location.href = '/adscenter/setup'} 
+                  onClick={() => window.location.href = '/adscenter/setup'} 
                   variant="outline"
                 >
                   <Settings className="h-4 w-4 mr-2" />
@@ -571,7 +580,7 @@ export default function ConfigurationsPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {configurations.map((config: any) => (
+            {configurations.map((config) => (
               <Card key={config.id} className={UI_CONSTANTS.cards.featured + " hover:shadow-xl transition-all duration-300"}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -610,21 +619,21 @@ export default function ConfigurationsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={((: any): any) => openViewDialog(config)}
+                      onClick={() => openViewDialog(config)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={((: any): any) => openEditDialog(config)}
+                      onClick={() => openEditDialog(config)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={((: any): any) => handleExecuteConfiguration(config.id)}
+                      onClick={() => handleExecuteConfiguration(config.id)}
                       disabled={config.status !== 'active'}
                     >
                       <Play className="h-4 w-4" />
@@ -633,7 +642,7 @@ export default function ConfigurationsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={((: any): any) => handleUpdateStatus(config.id, 'paused')}
+                        onClick={() => handleUpdateStatus(config.id, 'paused')}
                       >
                         <Pause className="h-4 w-4" />
                       </Button>
@@ -641,7 +650,7 @@ export default function ConfigurationsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={((: any): any) => handleUpdateStatus(config.id, 'active')}
+                        onClick={() => handleUpdateStatus(config.id, 'active')}
                       >
                         <Play className="h-4 w-4" />
                       </Button>
@@ -649,7 +658,7 @@ export default function ConfigurationsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={((: any): any) => handleDeleteConfiguration(config.id)}
+                      onClick={() => handleDeleteConfiguration(config.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -673,7 +682,7 @@ export default function ConfigurationsPage() {
           </DialogHeader>
           <ConfigurationForm isEdit={true} />
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={((: any): any) => setShowEditDialog(false)}>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               取消
             </Button>
             <Button onClick={handleUpdateConfiguration}>
@@ -716,7 +725,7 @@ export default function ConfigurationsPage() {
               <div>
                 <Label>广告联盟链接</Label>
                 <div className="mt-1 space-y-1">
-                  {selectedConfig.originalLinks.map((link, index: any) => (
+                  {selectedConfig.originalLinks.map((link, index) => (
                     <p key={index} className="text-sm text-gray-600 break-all">{link}</p>
                   ))}
                 </div>
@@ -725,7 +734,7 @@ export default function ConfigurationsPage() {
               <div>
                 <Label>Google Ads 账户</Label>
                 <div className="mt-1 space-y-1">
-                  {selectedConfig.googleAdsAccounts.map((account, index: any) => (
+                  {selectedConfig.googleAdsAccounts.map((account, index) => (
                     <p key={index} className="text-sm text-gray-600">
                       {account.accountName} ({account.accountId})
                     </p>

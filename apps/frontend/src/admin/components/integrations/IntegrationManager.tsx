@@ -250,7 +250,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
             <RefreshCw className="h-4 w-4 mr-2" />
             Sync All
           </Button>
-          <Button onClick={((: any): any) => setShowSetupModal(true)}>
+          <Button onClick={() => setShowSetupModal(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Integration
           </Button>
@@ -343,7 +343,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
           ].map(({ id, label, icon: Icon }: any) => (
             <button
               key={id}
-              onClick={((: any): any) => setActiveTab(id as any)}
+              onClick={() => setActiveTab(id as any)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
                   ? 'border-blue-500 text-blue-600'
@@ -428,7 +428,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
                 key={category}
                 variant={selectedCategory === category ? 'default' : 'outline'}
                 size="sm"
-                onClick={((: any): any) => setSelectedCategory(category)}
+                onClick={() => setSelectedCategory(category)}
               >
                 {category === 'all' ? 'All' : category.charAt(0).toUpperCase() + category.slice(1)}
               </Button>
@@ -495,7 +495,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((: any): any) => testIntegrationMutation.mutate(integration.id)}
+                        onClick={() => testIntegrationMutation.mutate(integration.id)}
                         disabled={testIntegrationMutation.isPending}
                       >
                         <Play className="h-3 w-3 mr-1" />
@@ -505,7 +505,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((: any): any) => toggleIntegrationMutation.mutate(integration.id)}
+                        onClick={() => toggleIntegrationMutation.mutate(integration.id)}
                         disabled={toggleIntegrationMutation.isPending}
                       >
                         {integration.isActive ? 
@@ -560,7 +560,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
                   <div className="flex space-x-2">
                     <Button
                       size="sm"
-                      onClick={((: any): any) => handleSetupIntegration(template)}
+                      onClick={() => handleSetupIntegration(template)}
                       className="flex-1"
                     >
                       <Plus className="h-3 w-3 mr-1" />
@@ -647,7 +647,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
                   <Input
                     type={field.type === 'password' ? 'password' : 'text'}
                     value={setupData[field.name] || ''}
-                    onChange={((e: any): any) => setSetupData({ ...setupData, [field.name]: e.target.value })}
+                    onChange={(e) => setSetupData({ ...setupData, [field.name]: (e.target as any).value })}
                     placeholder={field.description}
                   />
                 </div>
@@ -664,7 +664,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
               </Button>
               <Button
                 variant="outline"
-                onClick={((: any): any) => {
+                onClick={() => {
                   setShowSetupModal(false)
                   setSelectedTemplate(null)
                   setSetupData({})

@@ -170,7 +170,7 @@ export const UserStatisticsDashboard: React.FC = () => {
     setFilters(prev => ({
       ...prev,
       features: prev.features.includes(feature)
-        ? prev.features.filter((f: any) => f !== feature)
+        ? prev.features.filter((f) => f !== feature)
         : [...prev.features, feature]
     }));
   };
@@ -278,7 +278,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                 <Button
                   size="small"
                   startIcon={<Download />}
-                  onClick={((e: any): any) => setExportMenuAnchor(e.currentTarget)}
+                  onClick={(e) => setExportMenuAnchor((e.currentTarget as any))}
                   aria-label="导出统计数据"
                   aria-haspopup="true"
                   aria-expanded={Boolean(exportMenuAnchor)}
@@ -290,15 +290,15 @@ export const UserStatisticsDashboard: React.FC = () => {
                   open={Boolean(exportMenuAnchor)}
                   onClose={() => setExportMenuAnchor(null)}
                 >
-                  <MenuItem onClick={((: any): any) => exportData('csv')}>
+                  <MenuItem onClick={() => exportData('csv')}>
                     <ListItemIcon><TableChart /></ListItemIcon>
                     <ListItemText>导出为 CSV</ListItemText>
                   </MenuItem>
-                  <MenuItem onClick={((: any): any) => exportData('json')}>
+                  <MenuItem onClick={() => exportData('json')}>
                     <ListItemIcon><FileDownload /></ListItemIcon>
                     <ListItemText>导出为 JSON</ListItemText>
                   </MenuItem>
-                  <MenuItem onClick={((: any): any) => exportData('excel')}>
+                  <MenuItem onClick={() => exportData('excel')}>
                     <ListItemIcon><Assessment /></ListItemIcon>
                     <ListItemText>导出为 Excel</ListItemText>
                   </MenuItem>
@@ -313,7 +313,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                 <Select
                   value={filters.dateRange}
                   label="时间范围"
-                  onChange={((e: any): any) => handleFilterChange('dateRange', e.target.value)}
+                  onChange={(e) => handleFilterChange('dateRange', (e.target as any).value)}
                 >
                   <MenuItem value="7">最近7天</MenuItem>
                   <MenuItem value="30">最近30天</MenuItem>
@@ -331,7 +331,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                     type="date"
                     label="开始日期"
                     value={filters.customStartDate}
-                    onChange={((e: any): any) => handleFilterChange('customStartDate', e.target.value)}
+                    onChange={(e) => handleFilterChange('customStartDate', (e.target as any).value)}
                     InputLabelProps={{ shrink: true }}
                     aria-describedby="start-date-help"
                     helperText="选择统计开始日期"
@@ -342,7 +342,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                     type="date"
                     label="结束日期"
                     value={filters.customEndDate}
-                    onChange={((e: any): any) => handleFilterChange('customEndDate', e.target.value)}
+                    onChange={(e) => handleFilterChange('customEndDate', (e.target as any).value)}
                     InputLabelProps={{ shrink: true }}
                     aria-describedby="end-date-help"
                     helperText="选择统计结束日期"
@@ -357,7 +357,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                 <Select
                   value={filters.userSegment}
                   label="用户类型"
-                  onChange={((e: any): any) => handleFilterChange('userSegment', e.target.value)}
+                  onChange={(e) => handleFilterChange('userSegment', (e.target as any).value)}
                 >
                   <MenuItem value="all">所有用户</MenuItem>
                   <MenuItem value="trial">试用用户</MenuItem>
@@ -375,7 +375,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                 <Select
                   value={filters.groupBy}
                   label="分组方式"
-                  onChange={((e: any): any) => handleFilterChange('groupBy', e.target.value)}
+                  onChange={(e) => handleFilterChange('groupBy', (e.target as any).value)}
                 >
                   <MenuItem value="hour">按小时</MenuItem>
                   <MenuItem value="day">按天</MenuItem>
@@ -390,7 +390,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                 type="number"
                 label="最小Token使用量"
                 value={filters.minTokenUsage}
-                onChange={((e: any): any) => handleFilterChange('minTokenUsage', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleFilterChange('minTokenUsage', parseInt((e.target as any).value) || 0)}
                 inputProps={{ 
                   min: 0,
                   'aria-describedby': 'min-token-help'
@@ -405,7 +405,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                 type="number"
                 label="最大Token使用量"
                 value={filters.maxTokenUsage}
-                onChange={((e: any): any) => handleFilterChange('maxTokenUsage', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleFilterChange('maxTokenUsage', parseInt((e.target as any).value) || 0)}
                 inputProps={{ 
                   min: 0,
                   'aria-describedby': 'max-token-help'
@@ -420,12 +420,12 @@ export const UserStatisticsDashboard: React.FC = () => {
             <Box sx={{ mt: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>功能过滤器:</Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap">
-                {['siterank', 'batchopen', 'adscenter'].map((feature: any) => (
+                {['siterank', 'batchopen', 'adscenter'].map((feature) => (
                   <Chip
                     key={feature}
                     label={feature.toUpperCase()}
                     variant={filters.features.includes(feature) ? 'filled' : 'outlined'}
-                    onClick={((: any): any) => handleFeatureToggle(feature)}
+                    onClick={() => handleFeatureToggle(feature)}
                     color={filters.features.includes(feature) ? 'primary' : 'default'}
                     size="small"
                     aria-label={`${filters.features.includes(feature) ? '取消选择' : '选择'} ${feature} 功能过滤器`}
@@ -458,7 +458,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                       color="secondary"
                     />
                   )}
-                  {filters.features.map((feature: any) => (
+                  {filters.features.map((feature) => (
                     <Chip
                       key={feature}
                       size="small"
@@ -663,7 +663,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                           fill="#8884d8"
                           dataKey="_count.id"
                         >
-                          {(statistics.featurePopularity || []).map((entry: any, index: number: any) => (
+                          {(statistics.featurePopularity || []).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
@@ -818,7 +818,7 @@ export const UserStatisticsDashboard: React.FC = () => {
                           fill="#8884d8"
                           dataKey="user_count"
                         >
-                          {(statistics.userSegments || []).map((entry: any, index: number: any) => (
+                          {(statistics.userSegments || []).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>

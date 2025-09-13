@@ -123,7 +123,7 @@ const HelpSystem: React.FC = () => {
 
   const HelpButton = () => (
     <button
-      onClick={((: any): any) => setIsOpen(true)}
+      onClick={() => setIsOpen(true)}
       className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-all duration-200 z-50"
       title="获取帮助"
     >
@@ -139,7 +139,7 @@ const HelpSystem: React.FC = () => {
           type="text"
           placeholder="搜索帮助文档..."
           value={searchQuery}
-          onChange={((e: any): any) => setSearchQuery(e.target.value)}
+          onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
@@ -149,10 +149,10 @@ const HelpSystem: React.FC = () => {
           <h3 className="font-medium text-gray-900">搜索结果 ({searchResults.length})</h3>
           {searchResults.length > 0 ? (
             <div className="space-y-2">
-              {searchResults.map((article: any) => (
+              {searchResults.map((article) => (
                 <div
                   key={article.id}
-                  onClick={((: any): any) => setSelectedArticle(article)}
+                  onClick={() => setSelectedArticle(article)}
                   className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
                 >
                   <h4 className="font-medium text-gray-900">{article.title}</h4>
@@ -181,10 +181,10 @@ const HelpSystem: React.FC = () => {
         <div className="space-y-4">
           <h3 className="font-medium text-gray-900">热门文章</h3>
           <div className="space-y-2">
-            {helpArticles.slice(0, 3).map((article: any) => (
+            {helpArticles.slice(0, 3).map((article) => (
               <div
                 key={article.id}
-                onClick={((: any): any) => setSelectedArticle(article)}
+                onClick={() => setSelectedArticle(article)}
                 className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer flex items-center justify-between"
               >
                 <div>
@@ -280,7 +280,7 @@ const HelpSystem: React.FC = () => {
   const ArticleView = () => (
     <div className="space-y-4">
       <button
-        onClick={((: any): any) => setSelectedArticle(null)}
+        onClick={() => setSelectedArticle(null)}
         className="text-blue-600 hover:text-blue-700 text-sm flex items-center"
       >
         ← 返回搜索
@@ -294,7 +294,7 @@ const HelpSystem: React.FC = () => {
           <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
             {selectedArticle?.category}
           </span>
-          {selectedArticle?.tags.map((tag: any) => (
+          {selectedArticle?.tags.map((tag) => (
             <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
               {tag}
             </span>
@@ -309,14 +309,14 @@ const HelpSystem: React.FC = () => {
           <p className="text-sm text-gray-600 mb-3">这篇文章对您有帮助吗？</p>
           <div className="flex space-x-2">
             <button
-              onClick={((: any): any) => handleFeedback(selectedArticle?.id || '', true)}
+              onClick={() => handleFeedback(selectedArticle?.id || '', true)}
               className="flex items-center px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200"
             >
               <ThumbsUp size={14} className="mr-1" />
               有帮助 ({selectedArticle?.helpful})
             </button>
             <button
-              onClick={((: any): any) => handleFeedback(selectedArticle?.id || '', false)}
+              onClick={() => handleFeedback(selectedArticle?.id || '', false)}
               className="flex items-center px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
             >
               <ThumbsDown size={14} className="mr-1" />
@@ -343,7 +343,7 @@ const HelpSystem: React.FC = () => {
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">帮助中心</h2>
             <button
-              onClick={((: any): any) => setIsOpen(false)}
+              onClick={() => setIsOpen(false)}
               className="text-gray-400 hover:text-gray-600"
             >
               ✕
@@ -354,7 +354,7 @@ const HelpSystem: React.FC = () => {
           {!selectedArticle && (
             <div className="flex border-b border-gray-200">
               <button
-                onClick={((: any): any) => setActiveTab('search')}
+                onClick={() => setActiveTab('search')}
                 className={`px-4 py-2 text-sm font-medium ${
                   activeTab === 'search'
                     ? 'text-blue-600 border-b-2 border-blue-600'
@@ -364,7 +364,7 @@ const HelpSystem: React.FC = () => {
                 搜索帮助
               </button>
               <button
-                onClick={((: any): any) => setActiveTab('faq')}
+                onClick={() => setActiveTab('faq')}
                 className={`px-4 py-2 text-sm font-medium ${
                   activeTab === 'faq'
                     ? 'text-blue-600 border-b-2 border-blue-600'
@@ -374,7 +374,7 @@ const HelpSystem: React.FC = () => {
                 常见问题
               </button>
               <button
-                onClick={((: any): any) => setActiveTab('contact')}
+                onClick={() => setActiveTab('contact')}
                 className={`px-4 py-2 text-sm font-medium ${
                   activeTab === 'contact'
                     ? 'text-blue-600 border-b-2 border-blue-600'

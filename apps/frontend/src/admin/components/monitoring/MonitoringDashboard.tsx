@@ -444,13 +444,13 @@ export default function MonitoringDashboard() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={((: any): any) => acknowledgeAlert(alert.id)}
+                            onClick={() => acknowledgeAlert(alert.id)}
                           >
                             Acknowledge
                           </Button>
                           <Button
                             size="sm"
-                            onClick={((: any): any) => resolveAlert(alert.id)}
+                            onClick={() => resolveAlert(alert.id)}
                           >
                             Resolve
                           </Button>

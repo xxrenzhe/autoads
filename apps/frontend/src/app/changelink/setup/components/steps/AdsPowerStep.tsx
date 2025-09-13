@@ -64,7 +64,7 @@ export const AdsPowerStep = memo(({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={((: any): any) => onTestConnection(env.id)}
+                      onClick={() => onTestConnection(env.id)}
                       disabled={loading}
                     >
                       <TestTube className="h-4 w-4 mr-1" />

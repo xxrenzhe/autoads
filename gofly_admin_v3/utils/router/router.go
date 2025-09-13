@@ -25,8 +25,17 @@ import (
 	"gofly-admin-v3/utils/tools/gctx"
 	"gofly-admin-v3/utils/tools/gfile"
 
+	"gofly-admin-v3/internal/metrics"
+	"gofly-admin-v3/internal/upload"
+	"gofly-admin-v3/internal/docs"
+    "gofly-admin-v3/internal/middleware"
+    "gofly-admin-v3/internal/config"
+    "gofly-admin-v3/internal/cache"
+    "gofly-admin-v3/internal/admin"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+    redisv8 "github.com/go-redis/redis/v8"
 )
 
 var (
@@ -61,8 +70,13 @@ func RunServer() {
 	}
 	gfile.PutBytes(routerfileFullPath, []byte(routes))
 	srv := &http.Server{
-		Addr:    ":" + gconv.String(appConf_arr["port"]),
-		Handler: R,
+		Addr:              ":" + gconv.String(appConf_arr["port"]),
+		Handler:           R,
+		ReadTimeout:       15 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1MB
 	}
 	//启动服务
 	go func() {
@@ -135,6 +149,46 @@ func InitRouter(path string) *gin.Engine {
 	if _, err := os.Stat(staticStatic); err == nil {
 		R.Static("/static", "./resource/static/static")
 	}
+
+	// 上传文件访问
+	R.GET("/uploads/*filepath", upload.ServeFile)
+
+	// 简易Swagger JSON（默认示例，可替换为自动收集）
+	R.GET("/docs/swagger.json", func(c *gin.Context) {
+		// 基于当前Gin路由动态生成简易Swagger
+		spec := docs.GetDefaultSwaggerSpec(c.Request.Host)
+		paths := make(map[string]interface{})
+		for _, r := range R.Routes() {
+			if strings.Contains(r.Path, "/*filepath") || r.Path == "/" {
+				continue
+			}
+			method := strings.ToLower(r.Method)
+			// 简单的200响应定义
+			op := map[string]interface{}{
+				"summary":     r.Handler,
+				"operationId": r.Handler,
+				"responses": map[string]interface{}{
+					"200": map[string]interface{}{
+						"description": "OK",
+					},
+				},
+			}
+			// 合并到路径
+			if pv, ok := paths[r.Path]; ok {
+				pm := pv.(map[string]interface{})
+				pm[method] = op
+			} else {
+				paths[r.Path] = map[string]interface{}{method: op}
+			}
+		}
+		spec.Paths = paths
+		data, err := spec.ToJSON()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.Data(http.StatusOK, "application/json; charset=utf-8", data)
+	})
 	//注册网页资源访问目录，如admin后台、business后台、手机h5页面
 	webStatic := appConf_arr["webStatic"]
 	if webStatic != "" {
@@ -163,21 +217,125 @@ func InitRouter(path string) *gin.Engine {
 	}
 	R.Use(cors.New(cors.Config{
 		AllowOrigins:     allowurl_arr,
-		AllowOriginFunc:  func(origin string) bool { return true },
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowHeaders:     []string{"*"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
-	//1.对错误处理
-	R.Use(routeuse.Recover)
-	//2.限流rate-limit 中间件
-	R.Use(routeuse.LimitHandler())
+    // Prometheus HTTP请求指标
+    R.Use(metrics.GetMetrics().HTTPMiddleware())
+
+    //1.对错误处理
+    R.Use(routeuse.Recover)
+    //2.限流rate-limit 中间件（统一使用内部中间件）
+    // 构建限流配置（按RPM转RPS）
+    var rlConfig = middleware.DefaultRateLimitConfig
+    // 尝试从内部配置读取（首选）
+    cm := config.GetConfigManager()
+    if cm != nil && cm.GetConfig() != nil {
+        rc := cm.GetRateLimitConfig()
+        if rc.RequestsPerMinute > 0 { rlConfig.GlobalRPS = float64(rc.RequestsPerMinute) / 60.0 }
+        if rc.Burst > 0 { rlConfig.GlobalBurst = rc.Burst }
+        // 用户、IP、API 默认与全局相同
+        rlConfig.UserRPS, rlConfig.UserBurst = rlConfig.GlobalRPS, rlConfig.GlobalBurst
+        rlConfig.IPRPS, rlConfig.IPBurst = rlConfig.GlobalRPS, rlConfig.GlobalBurst
+        rlConfig.APIRPS, rlConfig.APIBurst = rlConfig.GlobalRPS, rlConfig.GlobalBurst
+        // Redis 开关与窗口
+        rconf := cm.GetRedisConfig()
+        rlConfig.UseRedis = rconf.Enable
+        rlConfig.Window = time.Minute
+    } else {
+        // 兼容旧 gcfg 配置
+        if v, err := gcfg.Instance().Get(ctx, "rate_limit"); err == nil {
+            arr := gconv.Map(v)
+            rpm := gconv.Int(arr["requests_per_minute"]) // per-minute
+            burst := gconv.Int(arr["burst"])              // burst capacity
+            if rpm > 0 { rlConfig.GlobalRPS = float64(rpm) / 60.0 }
+            if burst > 0 { rlConfig.GlobalBurst = burst }
+            rlConfig.UserRPS, rlConfig.UserBurst = rlConfig.GlobalRPS, rlConfig.GlobalBurst
+            rlConfig.IPRPS, rlConfig.IPBurst = rlConfig.GlobalRPS, rlConfig.GlobalBurst
+            rlConfig.APIRPS, rlConfig.APIBurst = rlConfig.GlobalRPS, rlConfig.GlobalBurst
+        }
+        if rv, err := gcfg.Instance().Get(ctx, "redis"); err == nil {
+            rarr := gconv.Map(rv)
+            rlConfig.UseRedis = gconv.Bool(rarr["enable"])
+        }
+        rlConfig.Window = time.Minute
+    }
+    rlConfig.Window = time.Minute
+    // 可选：初始化 redis 客户端（如果启用）
+    var redisClient *redisv8.Client
+    if rlConfig.UseRedis {
+        // 优先从内部配置获取 Redis 信息
+        if cm != nil && cm.GetConfig() != nil {
+            r := cm.GetRedisConfig()
+            redisClient = redisv8.NewClient(&redisv8.Options{
+                Addr:     fmt.Sprintf("%s:%d", r.Host, r.Port),
+                Password: r.Password,
+                DB:       r.DB,
+                PoolSize: r.PoolSize,
+            })
+        } else {
+            rv, _ := gcfg.Instance().Get(ctx, "redis")
+            rarr := gconv.Map(rv)
+            redisClient = redisv8.NewClient(&redisv8.Options{
+                Addr:     fmt.Sprintf("%v:%v", rarr["host"], rarr["port"]),
+                Password: gconv.String(rarr["password"]),
+                DB:       gconv.Int(rarr["db"]),
+                PoolSize: gconv.Int(rarr["pool_size"]),
+            })
+        }
+    }
+    rl := middleware.NewRateLimitMiddleware(rlConfig, redisClient)
+    // 套餐级 API 限流（从配置加载）
+    buildPlanRates := func() map[string]middleware.PlanRateConfig {
+        rates := map[string]middleware.PlanRateConfig{}
+        if cm != nil && cm.GetConfig() != nil {
+            for name, pr := range cm.GetRateLimitConfig().Plans {
+                rps := pr.RPS
+                if rps == 0 && pr.RPM > 0 { rps = float64(pr.RPM)/60.0 }
+                if rps <= 0 { continue }
+                rates[name] = middleware.PlanRateConfig{RPS: rps, Burst: pr.Burst}
+            }
+        }
+        if len(rates) == 0 {
+            // fallback 默认配置
+            rates["FREE"] = middleware.PlanRateConfig{RPS: 1, Burst: 10}
+            rates["PRO"] = middleware.PlanRateConfig{RPS: 10, Burst: 100}
+            rates["MAX"] = middleware.PlanRateConfig{RPS: 50, Burst: 300}
+        }
+        return rates
+    }
+    rl.SetPlanRates(buildPlanRates(), redisClient)
+    R.Use(rl.GlobalRateLimit())
+    R.Use(rl.IPRateLimit())
+    R.Use(rl.PlanAPIRateLimit(resolveUserPlan))
+
+    // 监听配置热更新，动态刷新套餐限额
+    if cm != nil && cm.GetConfig() != nil {
+        cm.AddCallback(func(cfg *config.Config) {
+            rates := map[string]middleware.PlanRateConfig{}
+            for name, pr := range cfg.RateLimit.Plans {
+                rps := pr.RPS
+                if rps == 0 && pr.RPM > 0 { rps = float64(pr.RPM)/60.0 }
+                if rps <= 0 { continue }
+                rates[name] = middleware.PlanRateConfig{RPS: rps, Burst: pr.Burst}
+            }
+            if len(rates) > 0 {
+                rl.SetPlanRates(rates, redisClient)
+            }
+        })
+    }
 	//3.判断接口是否合法
 	R.Use(routeuse.ValidityAPi())
 	//4.验证token
 	R.Use(routeuse.JwtVerify)
-	R.Use(Logger())
+    R.Use(Logger())
+    // 管理员JWT保护
+    R.Use(admin.AdminJWT())
+
+	// 指标与健康检查路由
+	metrics.SetupMetrics(R)
 	//5.没有注册的路由
 	R.NoRoute(func(c *gin.Context) {
 		pathURL := c.Request.URL.Path
@@ -240,6 +398,51 @@ func Bind(c *gin.Engine) {
 			c.OPTIONS(route.Path, route.Handler)
 		}
 	}
+}
+
+// resolveUserPlan 解析用户当前套餐（仅用户↔套餐，不看角色）
+func resolveUserPlan(c *gin.Context) string {
+    userID := c.GetString("userID")
+    if userID == "" {
+        userID = c.GetString("user_id")
+    }
+    if userID == "" {
+        return "FREE"
+    }
+
+    // 1) 短期缓存
+    planKey := "user:plan:" + userID
+    var cached string
+    if err := cache.GetCache().Get(planKey, &cached); err == nil && cached != "" {
+        return cached
+    }
+
+    // 2) 数据库：subscriptions + plans（若无表则回退）
+    ctx := c.Request.Context()
+    sql := `SELECT p.name AS plan_name, s.ended_at FROM subscriptions s
+            JOIN plans p ON p.id = s.plan_id
+            WHERE s.user_id = ? AND s.status = 'ACTIVE'
+            ORDER BY s.updated_at DESC LIMIT 1`
+    res, err := gf.DB().Query(ctx, sql, userID)
+    if err == nil && !res.IsEmpty() {
+        rec := res[0]
+        plan := rec["plan_name"].String()
+        endedAt := rec["ended_at"].String()
+        if endedAt != "" {
+            layouts := []string{time.RFC3339Nano, time.RFC3339, "2006-01-02 15:04:05"}
+            for _, layout := range layouts {
+                if t, e := time.Parse(layout, endedAt); e == nil {
+                    if time.Now().After(t) { plan = "FREE" }
+                    break
+                }
+            }
+        }
+        if plan == "" { plan = "FREE" }
+        _ = cache.GetCache().Set(planKey, plan, 2*time.Minute)
+        return plan
+    }
+
+    return "FREE"
 }
 
 // minHandler统一处理登录操作和独立模块处理路由拦截

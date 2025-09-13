@@ -271,7 +271,7 @@ export default function APIRateLimitManager() {
             Refresh
           </Button>
           <Button
-            onClick={((: any): any) => setShowCreateForm(true)}
+            onClick={() => setShowCreateForm(true)}
             aria-label="Create new rate limit rule"
           >
             <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -375,7 +375,7 @@ export default function APIRateLimitManager() {
                   ref={searchInputRef}
                   placeholder="Search rules..."
                   value={searchTerm}
-                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm((e.target as any).value)}
                   className="pl-10"
                   aria-describedby="search-help"
                 />
@@ -391,7 +391,7 @@ export default function APIRateLimitManager() {
                 <select
                   id="filter-role"
                   value={filterRole}
-                  onChange={((e: any): any) => setFilterRole(e.target.value)}
+                  onChange={(e) => setFilterRole((e.target as any).value)}
                   className="px-3 py-2 border rounded-md text-sm"
                   aria-label="Filter rules by user role"
                 >
@@ -408,7 +408,7 @@ export default function APIRateLimitManager() {
                 <select
                   id="filter-status"
                   value={filterStatus}
-                  onChange={((e: any): any) => setFilterStatus(e.target.value as any)}
+                  onChange={(e) => setFilterStatus(((e.target as any).value) as any)}
                   className="px-3 py-2 border rounded-md text-sm"
                   aria-label="Filter rules by active status"
                 >
@@ -472,7 +472,7 @@ export default function APIRateLimitManager() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={((: any): any) => setSelectedRule(rule)}
+                              onClick={() => setSelectedRule(rule)}
                               aria-label={`Edit rule ${rule.name}`}
                             >
                               <Edit className="h-4 w-4" aria-hidden="true" />
@@ -481,7 +481,7 @@ export default function APIRateLimitManager() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={((: any): any) => toggleRuleStatus(rule.id, !rule.isActive)}
+                              onClick={() => toggleRuleStatus(rule.id, !rule.isActive)}
                               aria-label={`${rule.isActive ? 'Deactivate' : 'Activate'} rule ${rule.name}`}
                             >
                               {rule.isActive ? (
@@ -496,7 +496,7 @@ export default function APIRateLimitManager() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={((: any): any) => deleteRule(rule.id)}
+                              onClick={() => deleteRule(rule.id)}
                               aria-label={`Delete rule ${rule.name}`}
                             >
                               <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -717,14 +717,14 @@ function RateLimitRuleModal({ rule, onSave, onClose, saving }: RateLimitRuleModa
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="name">Rule Name *</Label>
-            <Input
-              id="name"
-              ref={firstFocusableRef}
-              value={formData.name || ''}
-              onChange={((e: any): any) => setFormData({ ...formData, name: e.target.value })}
-              required
-              aria-describedby="name-help"
-            />
+              <Input
+                id="name"
+                ref={firstFocusableRef}
+                value={formData.name || ''}
+                onChange={(e) => setFormData({ ...formData, name: (e.target as any).value })}
+                required
+                aria-describedby="name-help"
+              />
             <div id="name-help" className="text-xs text-muted-foreground mt-1">
               A descriptive name for this rate limit rule
             </div>
@@ -737,7 +737,7 @@ function RateLimitRuleModal({ rule, onSave, onClose, saving }: RateLimitRuleModa
               <Input
                 id="endpoint"
                 value={formData.endpoint || ''}
-                onChange={((e: any): any) => setFormData({ ...formData, endpoint: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, endpoint: (e.target as any).value })}
                 placeholder="/api/v1/*"
                 required
                 aria-describedby="endpoint-help"
@@ -751,7 +751,7 @@ function RateLimitRuleModal({ rule, onSave, onClose, saving }: RateLimitRuleModa
               <select
                 id="method"
                 value={formData.method || 'ALL'}
-                onChange={((e: any): any) => setFormData({ ...formData, method: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, method: (e.target as any).value })}
                 className="w-full px-3 py-2 border rounded-md"
                 required
                 aria-describedby="method-help"
@@ -771,7 +771,7 @@ function RateLimitRuleModal({ rule, onSave, onClose, saving }: RateLimitRuleModa
             <select
               id="userRole"
               value={formData.userRole || 'all'}
-              onChange={((e: any): any) => setFormData({ ...formData, userRole: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, userRole: (e.target as any).value })}
               className="w-full px-3 py-2 border rounded-md"
               required
               aria-describedby="role-help"
@@ -795,7 +795,7 @@ function RateLimitRuleModal({ rule, onSave, onClose, saving }: RateLimitRuleModa
                 min="1"
                 max="10000"
                 value={formData.requestsPerMinute || 60}
-                onChange={((e: any): any) => setFormData({ ...formData, requestsPerMinute: parseInt(e.target.value) || 60 })}
+                onChange={(e) => setFormData({ ...formData, requestsPerMinute: parseInt((e.target as any).value) || 60 })}
                 required
                 aria-describedby="minute-help"
               />
@@ -811,7 +811,7 @@ function RateLimitRuleModal({ rule, onSave, onClose, saving }: RateLimitRuleModa
                 min="1"
                 max="100000"
                 value={formData.requestsPerHour || 1000}
-                onChange={((e: any): any) => setFormData({ ...formData, requestsPerHour: parseInt(e.target.value) || 1000 })}
+                onChange={(e) => setFormData({ ...formData, requestsPerHour: parseInt((e.target as any).value) || 1000 })}
                 required
                 aria-describedby="hour-help"
               />
@@ -827,7 +827,7 @@ function RateLimitRuleModal({ rule, onSave, onClose, saving }: RateLimitRuleModa
                 min="1"
                 max="1000000"
                 value={formData.requestsPerDay || 10000}
-                onChange={((e: any): any) => setFormData({ ...formData, requestsPerDay: parseInt(e.target.value) || 10000 })}
+                onChange={(e) => setFormData({ ...formData, requestsPerDay: parseInt((e.target as any).value) || 10000 })}
                 required
                 aria-describedby="day-help"
               />
@@ -842,7 +842,7 @@ function RateLimitRuleModal({ rule, onSave, onClose, saving }: RateLimitRuleModa
             <Input
               id="description"
               value={formData.description || ''}
-              onChange={((e: any): any) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, description: (e.target as any).value })}
               placeholder="Describe this rate limit rule..."
               aria-describedby="desc-help"
             />
@@ -857,7 +857,7 @@ function RateLimitRuleModal({ rule, onSave, onClose, saving }: RateLimitRuleModa
                 type="checkbox"
                 id="isActive"
                 checked={formData.isActive || false}
-                onChange={((e: any): any) => setFormData({ ...formData, isActive: e.target.checked })}
+                onChange={(e) => setFormData({ ...formData, isActive: (e.target as any).checked })}
                 className="rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
                 aria-describedby="active-help"
               />

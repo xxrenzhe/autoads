@@ -64,7 +64,7 @@ export const AffiliateLinksStep = memo(({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={((: any): any) => onTestLink(link.id)}
+                      onClick={() => onTestLink(link.id)}
                       disabled={loading}
                     >
                       <TestTube className="h-4 w-4 mr-1" />
@@ -87,7 +87,7 @@ export const AffiliateLinksStep = memo(({
                 <input
                   type="text"
                   value={newLink.name || ''}
-                  onChange={((e: any): any) => handleInputChange('name', e.target.value)}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md"
                   placeholder="Home Depot 联盟链接"
                 />
@@ -97,7 +97,7 @@ export const AffiliateLinksStep = memo(({
                 <label className="block text-sm font-medium mb-2">链接分类（Category）<br/><span className="text-xs text-gray-500">选择链接所属的业务类别</span></label>
                 <select
                   value={newLink.category || ''}
-                  onChange={((e: any): any) => handleInputChange('category', e.target.value)}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md"
                 >
                   <option value="">选择分类</option>
@@ -115,7 +115,7 @@ export const AffiliateLinksStep = memo(({
               <input
                 type="url"
                 value={newLink.affiliateUrl || ''}
-                onChange={((e: any): any) => handleInputChange('affiliateUrl', e.target.value)}
+                onChange={(e) => handleInputChange('affiliateUrl', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="https://yeahpromos.com/click?id=..."
               />

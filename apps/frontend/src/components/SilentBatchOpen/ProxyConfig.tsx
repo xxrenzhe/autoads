@@ -197,7 +197,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
               type="radio"
               value="social"
               checked={refererOption === "social"}
-              onChange={((: any): any) => onRefererOptionChange("social")}
+              onChange={() => onRefererOptionChange("social")}
               className="mr-2"
               disabled={isOpening}
             />
@@ -208,7 +208,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
               <span className="text-sm whitespace-nowrap">社交媒体</span>
               <select
                 value={selectedSocialMedia}
-                onChange={((e: any): any) => onSelectedSocialMediaChange(e.target.value)}
+                onChange={(e) => onSelectedSocialMediaChange(e.target.value)}
                 className="flex-1 p-2 border border-gray-300 rounded-lg"
                 disabled={isOpening}
               >
@@ -225,7 +225,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
               type="radio"
               value="custom"
               checked={refererOption === "custom"}
-              onChange={((: any): any) => onRefererOptionChange("custom")}
+              onChange={() => onRefererOptionChange("custom")}
               className="mr-2"
               disabled={isOpening}
             />

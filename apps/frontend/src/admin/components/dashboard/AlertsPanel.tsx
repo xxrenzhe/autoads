@@ -174,7 +174,7 @@ export function AlertsPanel({
             <Filter className="h-4 w-4 text-gray-400" />
             <select
               value={filter}
-              onChange={((e: any): any) => setFilter(e.target.value as any)}
+              onChange={(e) => setFilter(((e.target as any).value) as any)}
               className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All ({alerts.length})</option>
@@ -241,7 +241,7 @@ export function AlertsPanel({
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={((: any): any) => handleResolveAlert(alert.id)}
+                            onClick={() => handleResolveAlert(alert.id)}
                             disabled={isResolving}
                             className="text-xs"
                           >
@@ -262,7 +262,7 @@ export function AlertsPanel({
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={((: any): any) => window.open(alert.actionUrl, '_blank')}
+                            onClick={() => window.open(alert.actionUrl, '_blank')}
                             className="text-xs"
                           >
                             <ExternalLink className="h-3 w-3 mr-1" />
@@ -273,7 +273,7 @@ export function AlertsPanel({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={((: any): any) => handleDismissAlert(alert.id)}
+                            onClick={() => handleDismissAlert(alert.id)}
                             className="text-xs text-gray-500 hover:text-gray-700"
                           >
                             <X className="h-3 w-3" />
@@ -297,7 +297,7 @@ export function AlertsPanel({
               variant="outline"
               size="sm"
               className="w-full mt-2"
-              onClick={((: any): any) => {/* Navigate to full alerts page */}}
+              onClick={() => { /* Navigate to full alerts page */ }}
             >
               View All Alerts
             </Button>

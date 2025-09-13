@@ -525,10 +525,10 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={((e: any): any) => {
-                                  e.stopPropagation();
-                                  handleTestConnection(integration);
-                                }}
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              handleTestConnection(integration);
+                            }}
                                 disabled={isTesting}
                               >
                                 <TestTube className="h-3 w-3" />
@@ -536,10 +536,10 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={((e: any): any) => {
-                                  e.stopPropagation();
-                                  handleSyncData(integration.id);
-                                }}
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              handleSyncData(integration.id);
+                            }}
                                 disabled={isSyncing}
                               >
                                 <RefreshCw className="h-3 w-3" />
@@ -591,14 +591,14 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                         <Input
                           id="name"
                           value={currentIntegration.name}
-                          onChange={((e: any) => setCurrentIntegration(prev: any) => prev ? { ...prev, name: e.target.value } : null)}
+                          onChange={(e) => setCurrentIntegration(prev => prev ? { ...prev, name: e.target.value } : null)}
                         />
                       </div>
                       <div>
                         <Label htmlFor="type">Type</Label>
                         <Select
                           value={currentIntegration.type}
-                          onValueChange={((value: any) => setCurrentIntegration(prev: any) => prev ? { ...prev, type: value as 'email' | 'api' | 'database' | 'webhook' | 'storage' | 'analytics' | 'messaging' } : null)}
+                          onValueChange={(value: 'email' | 'api' | 'database' | 'webhook' | 'storage' | 'analytics' | 'messaging') => setCurrentIntegration(prev => prev ? { ...prev, type: value } : null)}
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -621,7 +621,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                       <Input
                         id="provider"
                         value={currentIntegration.provider}
-                        onChange={((e: any) => setCurrentIntegration(prev: any) => prev ? { ...prev, provider: e.target.value } : null)}
+                        onChange={(e) => setCurrentIntegration(prev => prev ? { ...prev, provider: e.target.value } : null)}
                       />
                     </div>
 
@@ -630,7 +630,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                       <Textarea
                         id="description"
                         value={currentIntegration.description}
-                        onChange={((e: any) => setCurrentIntegration(prev: any) => prev ? { ...prev, description: e.target.value } : null)}
+                        onChange={(e) => setCurrentIntegration(prev => prev ? { ...prev, description: e.target.value } : null)}
                         rows={3}
                       />
                     </div>
@@ -640,7 +640,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                         <Label htmlFor="status">Status</Label>
                         <Select
                           value={currentIntegration.status}
-                          onValueChange={((value: any) => setCurrentIntegration(prev: any) => prev ? { ...prev, status: value as 'active' | 'inactive' | 'error' | 'testing' } : null)}
+          onValueChange={(value) => setCurrentIntegration(prev => prev ? { ...prev, status: value as 'active' | 'inactive' | 'error' | 'testing' } : null)}
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -657,7 +657,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                         <Label htmlFor="sync-frequency">Sync Frequency</Label>
                         <Select
                           value={currentIntegration.syncFrequency}
-                          onValueChange={((value: any) => setCurrentIntegration(prev: any) => prev ? { ...prev, syncFrequency: value as 'realtime' | 'hourly' | 'daily' | 'weekly' | 'manual' } : null)}
+                          onValueChange={(value) => setCurrentIntegration(prev => prev ? { ...prev, syncFrequency: value as 'realtime' | 'hourly' | 'daily' | 'weekly' | 'manual' } : null)}
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -679,7 +679,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={((: any): any) => setShowSecrets(!showSecrets)}
+                          onClick={() => setShowSecrets(!showSecrets)}
                         >
                           {showSecrets ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
@@ -691,9 +691,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                           <Input
                             id="endpoint"
                             value={currentIntegration.config.endpoint || ''}
-                            onChange={((e: any) => setCurrentIntegration(prev: any) => prev ? {
+                            onChange={(e) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, endpoint: e.target.value }
+                              config: { ...prev.config, endpoint: (e.target as any).value }
                             } : null)}
                           />
                         </div>
@@ -703,9 +703,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                             id="api-key"
                             type={showSecrets ? 'text' : 'password'}
                             value={currentIntegration.config.apiKey || ''}
-                            onChange={((e: any) => setCurrentIntegration(prev: any) => prev ? {
+                            onChange={(e) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, apiKey: e.target.value }
+                              config: { ...prev.config, apiKey: (e.target as any).value }
                             } : null)}
                           />
                         </div>
@@ -717,9 +717,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                           <Input
                             id="username"
                             value={currentIntegration.config.username || ''}
-                            onChange={((e: any) => setCurrentIntegration(prev: any) => prev ? {
+                            onChange={(e) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, username: e.target.value }
+                              config: { ...prev.config, username: (e.target as any).value }
                             } : null)}
                           />
                         </div>
@@ -729,9 +729,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                             id="password"
                             type={showSecrets ? 'text' : 'password'}
                             value={currentIntegration.config.password || ''}
-                            onChange={((e: any) => setCurrentIntegration(prev: any) => prev ? {
+                            onChange={(e) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, password: e.target.value }
+                              config: { ...prev.config, password: (e.target as any).value }
                             } : null)}
                           />
                         </div>
@@ -744,9 +744,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                             id="timeout"
                             type="number"
                             value={currentIntegration.config.timeout || 30}
-                            onChange={((e: any) => setCurrentIntegration(prev: any) => prev ? {
+                            onChange={(e) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, timeout: parseInt(e.target.value) }
+                              config: { ...prev.config, timeout: parseInt((e.target as any).value) }
                             } : null)}
                           />
                         </div>
@@ -756,9 +756,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                             id="retry-attempts"
                             type="number"
                             value={currentIntegration.config.retryAttempts || 3}
-                            onChange={((e: any) => setCurrentIntegration(prev: any) => prev ? {
+                            onChange={(e) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, retryAttempts: parseInt(e.target.value) }
+                              config: { ...prev.config, retryAttempts: parseInt((e.target as any).value) }
                             } : null)}
                           />
                         </div>
@@ -822,7 +822,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => handleTestConnection(integration)}
+                          onClick={() => handleTestConnection(integration)}
                           disabled={isTesting}
                         >
                           {isTesting ? (
@@ -835,7 +835,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => handleSyncData(integration.id)}
+                          onClick={() => handleSyncData(integration.id)}
                           disabled={isSyncing}
                         >
                           {isSyncing ? (
@@ -909,7 +909,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                   { name: 'SendGrid Email', type: 'email', provider: 'SendGrid', description: 'SendGrid email service template' },
                   { name: 'Google Analytics', type: 'analytics', provider: 'Google', description: 'Google Analytics integration template' },
                   { name: 'AWS S3', type: 'storage', provider: 'AWS', description: 'AWS S3 storage integration template' }
-                ].map((template, index: any) => (
+                ].map((template, index) => (
                   <div key={index} className="p-4 border rounded-lg hover:border-primary/50 transition-colors">
                     <div className="flex items-center gap-2 mb-2">
                       {getTypeIcon(template.type)}

@@ -94,11 +94,11 @@ export const ConfigurationStep = memo(({
           <div>
             <h4 className="font-medium mb-3">已创建的配置</h4>
             <div className="space-y-2">
-              {configurations?.filter(Boolean)?.map((config: any) => (
+              {configurations?.filter(Boolean)?.map((config) => (
                 <div key={config.id} className="p-3 border rounded-lg">
                   <div className="font-medium">{config.name}</div>
                   <div className="text-sm text-gray-600 mt-1">
-                    环境: {adsPowerEnvironments.find((env: any) => env.id === config.environmentId)?.name || config.environmentId}
+                    环境: {adsPowerEnvironments.find((env) => env.id === config.environmentId)?.name || config.environmentId}
                   </div>
                   <div className="text-sm text-gray-600">
                     链接数: {config.originalLinks.length} | 账户数: {config.googleAdsAccounts.length}
@@ -121,7 +121,7 @@ export const ConfigurationStep = memo(({
               <input
                 type="text"
                 value={newConfiguration.name || ''}
-                onChange={((e: any): any) => handleInputChange('name', e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('name', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="我的自动化配置"
               />
@@ -143,11 +143,11 @@ export const ConfigurationStep = memo(({
                 <label className="block text-sm font-medium mb-2">执行环境（Execution Environment）*<br/><span className="text-xs text-gray-500">选择用于自动化执行的AdsPower环境</span></label>
                 <select
                   value={newConfiguration.environmentId || ''}
-                  onChange={((e: any): any) => handleInputChange('environmentId', e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('environmentId', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md"
                 >
                   <option value="">选择环境</option>
-                  {adsPowerEnvironments?.filter(Boolean)?.map((env: any) => (
+                  {adsPowerEnvironments?.filter(Boolean)?.map((env) => (
                     <option key={env.id} value={env.id}>
                       {env.name} ({env.environmentId})
                     </option>
@@ -162,7 +162,7 @@ export const ConfigurationStep = memo(({
                   min="1"
                   max="10"
                   value={newConfiguration.repeatCount || 1}
-                  onChange={((e: any): any) => handleInputChange('repeatCount', parseInt(e.target.value) || 1)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('repeatCount', parseInt(e.target.value) || 1)}
                   className="w-full px-3 py-2 border rounded-md"
                 />
               </div>
@@ -173,7 +173,7 @@ export const ConfigurationStep = memo(({
               <input
                 type="email"
                 value={newConfiguration.notificationEmail || ''}
-                onChange={((e: any): any) => handleInputChange('notificationEmail', e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('notificationEmail', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="your@email.com"
               />
@@ -182,12 +182,12 @@ export const ConfigurationStep = memo(({
             <div>
               <label className="block text-sm font-medium mb-2">联盟链接选择（Affiliate Links）<br/><span className="text-xs text-gray-500">选择需要自动更新的广告联盟链接</span></label>
               <div className="space-y-2">
-                {affiliateLinks?.filter(Boolean)?.map((link: any) => (
+                {affiliateLinks?.filter(Boolean)?.map((link) => (
                   <label key={link.id} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       checked={newConfiguration.originalLinks?.includes(link.id) || false}
-                      onChange={((e: any): any) => handleLinkToggle(link.id, e.target.checked)}
+                      onChange={(e) => handleLinkToggle(link.id, (e.target as HTMLInputElement).checked)}
                       className="rounded"
                     />
                     <span className="text-sm">{link.name}</span>
@@ -199,12 +199,12 @@ export const ConfigurationStep = memo(({
             <div>
               <label className="block text-sm font-medium mb-2">Google Ads账户（Google Ads Accounts）<br/><span className="text-xs text-gray-500">选择用于链接更新的Google Ads账户</span></label>
               <div className="space-y-2">
-                {googleAdsAccounts?.filter(Boolean)?.map((account: any) => (
+                {googleAdsAccounts?.filter(Boolean)?.map((account) => (
                   <label key={account.id} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       checked={newConfiguration.googleAdsAccounts?.some(acc => acc.accountId === account.id) || false}
-                      onChange={((e: any): any) => handleAccountToggle(account.id, account.name, e.target.checked)}
+                      onChange={(e) => handleAccountToggle(account.id, account.name, (e.target as HTMLInputElement).checked)}
                       className="rounded"
                     />
                     <span className="text-sm">{account.name}</span>
@@ -236,7 +236,7 @@ export const ConfigurationStep = memo(({
                 <p className="text-sm text-blue-700">您可以前往配置管理页面进行详细设置和执行</p>
               </div>
               <Button
-                onClick={((: any): any) => window.location.href = '/adscenter/configurations'}
+                onClick={() => { window.location.href = '/adscenter/configurations'; }}
                 variant="outline"
                 className="text-blue-700 border-blue-300 hover:bg-blue-50"
               >

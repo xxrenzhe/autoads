@@ -275,7 +275,7 @@ export default function SchedulingPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={((: any): any) => {
+              onClick={() => {
                 setSelectedTask(task);
                 setShowDetailDialog(true);
               }}
@@ -286,7 +286,7 @@ export default function SchedulingPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={((: any): any) => handleToggleTask(task.id, task.status)}
+              onClick={() => handleToggleTask(task.id, task.status)}
             >
               {task.status === 'active' ? (
                 <>
@@ -303,7 +303,7 @@ export default function SchedulingPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={((: any): any) => handleDeleteTask(task.id)}
+              onClick={() => handleDeleteTask(task.id)}
             >
               <Trash2 className="h-4 w-4 mr-1" />
               删除

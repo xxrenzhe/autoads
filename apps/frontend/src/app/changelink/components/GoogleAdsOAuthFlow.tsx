@@ -262,7 +262,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={authStep} onValueChange={((value: any): any) => setAuthStep(value as 'config' | 'auth' | 'callback' | 'success' | 'error')}>
+          <Tabs value={authStep} onValueChange={(value) => setAuthStep(value as 'config' | 'auth' | 'callback' | 'success' | 'error')}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="config">配置</TabsTrigger>
               <TabsTrigger value="auth">授权</TabsTrigger>
@@ -280,7 +280,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
                     type="text"
                     placeholder="Enter your Google Ads API Client ID"
                     value={oauthConfig.clientId}
-                    onChange={((e: any) => setOauthConfig(prev: any) => ({ ...prev, clientId: e.target.value }))}
+                    onChange={(e) => setOauthConfig(prev => ({ ...prev, clientId: e.target.value }))}
                   />
                 </div>
 
@@ -291,7 +291,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
                     type="password"
                     placeholder="Enter your Google Ads API Client Secret"
                     value={oauthConfig.clientSecret}
-                    onChange={((e: any) => setOauthConfig(prev: any) => ({ ...prev, clientSecret: e.target.value }))}
+                    onChange={(e) => setOauthConfig(prev => ({ ...prev, clientSecret: e.target.value }))}
                   />
                 </div>
 
@@ -302,7 +302,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
                     type="password"
                     placeholder="Enter your Google Ads Developer Token"
                     value={oauthConfig.developerToken}
-                    onChange={((e: any) => setOauthConfig(prev: any) => ({ ...prev, developerToken: e.target.value }))}
+                    onChange={(e) => setOauthConfig(prev => ({ ...prev, developerToken: e.target.value }))}
                   />
                 </div>
 
@@ -313,7 +313,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
                     type="text"
                     placeholder="http://localhost:3000/adscenter"
                     value={oauthConfig.redirectUri}
-                    onChange={((e: any) => setOauthConfig(prev: any) => ({ ...prev, redirectUri: e.target.value }))}
+                    onChange={(e) => setOauthConfig(prev => ({ ...prev, redirectUri: e.target.value }))}
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     在Google Cloud Console中配置的OAuth重定向URI
@@ -323,7 +323,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
                 <div>
                   <Label>API Scopes</Label>
                   <div className="space-y-2 mt-2">
-                    {oauthConfig.scopes.map((scope, index: any) => (
+                    {oauthConfig.scopes.map((scope, index) => (
                       <div key={index} className="flex items-center space-x-2">
                         <CheckCircle className="w-4 h-4 text-green-600" />
                         <span className="text-sm">{scope}</span>
@@ -353,7 +353,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
               </Alert>
 
               <Button 
-                onClick={((: any): any) => window.open(authUrl, '_blank')}
+                onClick={() => window.open(authUrl, '_blank')}
                 className="w-full"
                 size="lg"
               >
@@ -398,7 +398,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
                             </Badge>
                             <Button
                               size="sm"
-                              onClick={((: any): any) => validateAccount(acc.customerId)}
+                              onClick={() => validateAccount(acc.customerId)}
                               disabled={isLoading}
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />
@@ -407,7 +407,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={((: any): any) => refreshToken(acc.customerId)}
+                              onClick={() => refreshToken(acc.customerId)}
                               disabled={isLoading}
                             >
                               <RefreshCw className="w-4 h-4 mr-1" />
@@ -416,7 +416,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={((: any): any) => removeAccount(acc.customerId)}
+                              onClick={() => removeAccount(acc.customerId)}
                               disabled={isLoading}
                             >
                               <XCircle className="w-4 h-4 mr-1" />
@@ -441,7 +441,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
               </Alert>
 
               <Button 
-                onClick={((: any): any) => setAuthStep('config')}
+                onClick={() => setAuthStep('config')}
                 className="w-full"
               >
                 <Settings className="w-4 h-4 mr-2" />

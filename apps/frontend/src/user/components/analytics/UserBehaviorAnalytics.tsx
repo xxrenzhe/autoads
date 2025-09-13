@@ -316,14 +316,14 @@ export function UserBehaviorAnalytics({
           { key: 'features', label: 'Feature Adoption', icon: Zap },
           { key: 'journey', label: 'User Journey', icon: Target },
           { key: 'retention', label: 'Retention', icon: Users }
-        ].map(({ key, label, icon: Icon }: any) => (
+        ].map(({ key, label, icon: Icon }: { key: string; label: string; icon: any }) => (
           <button
             key={key}
             role="tab"
             aria-selected={selectedView === key}
             aria-controls={`${key}-panel`}
             tabIndex={selectedView === key ? 0 : -1}
-            onClick={((: any): any) => handleViewChange(key)}
+            onClick={() => handleViewChange(key)}
             onKeyDown={(e) => handleKeyDown(e, () => handleViewChange(key))}
             className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               selectedView === key
@@ -409,7 +409,7 @@ export function UserBehaviorAnalytics({
                       dataKey="sessions"
                       label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                     >
-                      {(behaviorData?.deviceBreakdown || []).map((entry, index: any) => (
+                      {(behaviorData?.deviceBreakdown || []).map((entry, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -454,7 +454,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {activityPatterns?.weeklyActivity?.map((day, index: any) => (
+                  {activityPatterns?.weeklyActivity?.map((day, index: number) => (
                     <div key={day.day} className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {day.day}
@@ -482,7 +482,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {activityPatterns?.peakTimes?.map((peak, index: any) => (
+                  {activityPatterns?.peakTimes?.map((peak, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">
@@ -522,7 +522,7 @@ export function UserBehaviorAnalytics({
                     />
                     <YAxis className="text-xs" />
                     <Tooltip content={<CustomTooltip />} />
-                    {featureAdoption?.features?.map((feature, index: any) => (
+                    {featureAdoption?.features?.map((feature, index: number) => (
                       <Line
                         key={feature.name}
                         type="monotone"
@@ -545,7 +545,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {featureAdoption?.features?.map((feature, index: any) => (
+                  {featureAdoption?.features?.map((feature, index: number) => (
                     <div key={feature.name} className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="text-lg font-bold text-gray-400">

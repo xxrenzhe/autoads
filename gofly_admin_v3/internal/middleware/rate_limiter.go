@@ -169,18 +169,21 @@ type RateLimitConfig struct {
 
 // RateLimitMiddleware 限流中间件
 type RateLimitMiddleware struct {
-	globalLimiter RateLimiter
-	userLimiter   RateLimiter
-	ipLimiter     RateLimiter
-	apiLimiter    RateLimiter
-	config        RateLimitConfig
+    globalLimiter RateLimiter
+    userLimiter   RateLimiter
+    ipLimiter     RateLimiter
+    apiLimiter    RateLimiter
+    config        RateLimitConfig
+    // plan-based
+    planLimiters map[string]RateLimiter
+    planWindow   time.Duration
 }
 
 // NewRateLimitMiddleware 创建限流中间件
 func NewRateLimitMiddleware(config RateLimitConfig, redisClient *redis.Client) *RateLimitMiddleware {
-	middleware := &RateLimitMiddleware{
-		config: config,
-	}
+    middleware := &RateLimitMiddleware{
+        config: config,
+    }
 
 	if config.UseRedis && redisClient != nil {
 		// 使用Redis限流器
@@ -196,7 +199,28 @@ func NewRateLimitMiddleware(config RateLimitConfig, redisClient *redis.Client) *
 		middleware.apiLimiter = NewMemoryRateLimiter(config.APIRPS, config.APIBurst)
 	}
 
-	return middleware
+    return middleware
+}
+
+// PlanRateConfig 每个套餐的限流配置（按 RPS/Burst）
+type PlanRateConfig struct {
+    RPS   float64
+    Burst int
+}
+
+// SetPlanRates 初始化套餐限流器
+func (m *RateLimitMiddleware) SetPlanRates(rates map[string]PlanRateConfig, redisClient *redis.Client) {
+    m.planLimiters = make(map[string]RateLimiter)
+    if m.config.UseRedis && redisClient != nil {
+        m.planWindow = m.config.Window
+        for plan, r := range rates {
+            m.planLimiters[plan] = NewRedisRateLimiter(redisClient, m.planWindow, int(r.RPS*m.planWindow.Seconds()))
+        }
+    } else {
+        for plan, r := range rates {
+            m.planLimiters[plan] = NewMemoryRateLimiter(r.RPS, r.Burst)
+        }
+    }
 }
 
 // GlobalRateLimit 全局限流
@@ -212,12 +236,26 @@ func (m *RateLimitMiddleware) GlobalRateLimit() gin.HandlerFunc {
 
 // UserRateLimit 用户限流
 func (m *RateLimitMiddleware) UserRateLimit() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userID := c.GetString("user_id")
-		if userID == "" {
-			c.Next()
-			return
-		}
+    return func(c *gin.Context) {
+        userID := c.GetString("user_id")
+        if userID == "" {
+            if v, ok := c.Get("userID"); ok {
+                switch vv := v.(type) {
+                case string:
+                    userID = vv
+                case int64:
+                    userID = strconv.FormatInt(vv, 10)
+                case int:
+                    userID = strconv.Itoa(vv)
+                default:
+                    userID = fmt.Sprint(vv)
+                }
+            }
+        }
+        if userID == "" {
+            c.Next()
+            return
+        }
 
 		key := fmt.Sprintf("user:%s", userID)
 		if !m.userLimiter.Allow(key) {
@@ -272,6 +310,39 @@ func (m *RateLimitMiddleware) CustomRateLimit(keyFunc func(*gin.Context) string,
 		}
 		c.Next()
 	}
+}
+
+// PlanAPIRateLimit 按套餐对 API 进行限流
+// planResolver 从上下文解析套餐名（例如从 Header: X-User-Plan 或 用户上下文/角色）
+func (m *RateLimitMiddleware) PlanAPIRateLimit(planResolver func(*gin.Context) string) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        if len(m.planLimiters) == 0 {
+            c.Next()
+            return
+        }
+        plan := planResolver(c)
+        if plan == "" {
+            plan = "FREE"
+        }
+        limiter, ok := m.planLimiters[plan]
+        if !ok {
+            // fallback
+            if l, ok2 := m.planLimiters["FREE"]; ok2 {
+                limiter = l
+            } else {
+                c.Next()
+                return
+            }
+        }
+        method := c.Request.Method
+        path := c.Request.URL.Path
+        key := fmt.Sprintf("plan:%s:%s:%s", plan, method, path)
+        if !limiter.Allow(key) {
+            m.handleRateLimit(c, key, limiter)
+            return
+        }
+        c.Next()
+    }
 }
 
 // handleRateLimit 处理限流

@@ -217,7 +217,7 @@ const TokenConsumptionRules: React.FC = () => {
         </Button>
       </Box>
 
-      <Tabs value={tabValue} onChange={((e, newValue: any): any) => setTabValue(newValue)} sx={{ mb: 3 }}>
+      <Tabs value={tabValue} onChange={(_e, newValue) => setTabValue(newValue)} sx={{ mb: 3 }}>
         <Tab label="基础配置" />
         <Tab label="详细规则" />
         <Tab label="计算示例" />
@@ -333,7 +333,7 @@ const TokenConsumptionRules: React.FC = () => {
                       />
                     </Box>
                     <IconButton
-                      onClick={((: any): any) => handleEditRule(rule)}
+                      onClick={() => handleEditRule(rule)}
                       size="small"
                     >
                       <Edit />
@@ -433,14 +433,14 @@ const TokenConsumptionRules: React.FC = () => {
             label="基础消耗"
             type="number"
             value={editForm.baseCost || ''}
-            onChange={((e: any): any) => setEditForm({ ...editForm, baseCost: Number(e.target.value) })}
+            onChange={(e) => setEditForm({ ...editForm, baseCost: Number(e.target.value) })}
             margin="normal"
           />
           <TextField
             fullWidth
             label="描述"
             value={editForm.description || ''}
-            onChange={((e: any): any) => setEditForm({ ...editForm, description: e.target.value })}
+            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
             margin="normal"
             multiline
             rows={3}
@@ -450,7 +450,7 @@ const TokenConsumptionRules: React.FC = () => {
             <Select
               value={editForm.isActive ? 'active' : 'inactive'}
               label="状态"
-              onChange={((e: any): any) => setEditForm({ ...editForm, isActive: e.target.value === 'active' })}
+              onChange={(e) => setEditForm({ ...editForm, isActive: (e.target as any).value === 'active' })}
             >
               <MenuItem value="active">启用</MenuItem>
               <MenuItem value="inactive">禁用</MenuItem>
@@ -458,7 +458,7 @@ const TokenConsumptionRules: React.FC = () => {
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={((: any): any) => setEditDialogOpen(false)}>取消</Button>
+          <Button onClick={() => setEditDialogOpen(false)}>取消</Button>
           <Button onClick={handleSaveRule} variant="contained">
             保存
           </Button>

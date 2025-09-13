@@ -72,7 +72,7 @@ export const GoogleAdsStep = memo(({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={((: any): any) => onTestConnection(account.id)}
+                      onClick={() => onTestConnection(account.id)}
                       disabled={loading}
                     >
                       <TestTube className="h-4 w-4 mr-1" />
@@ -94,7 +94,7 @@ export const GoogleAdsStep = memo(({
               <input
                 type="text"
                 value={newAccount.name || ''}
-                onChange={((e: any): any) => handleInputChange('name', e.target.value)}
+                onChange={(e) => handleInputChange('name', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="我的Google Ads账号"
               />

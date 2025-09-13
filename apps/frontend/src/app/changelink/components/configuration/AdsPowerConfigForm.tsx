@@ -321,7 +321,7 @@ export default function AdsPowerConfigForm({
         {/* 步骤指示器 */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            {steps.map((step, index: any) => (
+            {steps.map((step, index) => (
               <div key={step.id} className="flex items-center">
                 <div
                   className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium cursor-pointer transition-colors ${currentStep === step.id
@@ -330,7 +330,7 @@ export default function AdsPowerConfigForm({
                       ? 'bg-green-600 text-white'
                       : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                     }`}
-                  onClick={((: any): any) => goToStep(step.id)}
+                  onClick={() => goToStep(step.id)}
                 >
                   {completedSteps.has(step.id) ? (
                     <CheckCircle className="h-4 w-4" />
@@ -358,7 +358,7 @@ export default function AdsPowerConfigForm({
           )}
         </div>
 
-        <Tabs value={activeTab} onValueChange={((value: any): any) => {
+        <Tabs value={activeTab} onValueChange={(value) => {
           setActiveTab(value);
           const step = steps.find((s: any) => s.tab === value);
           if (step) setCurrentStep(step.id);
@@ -494,7 +494,7 @@ export default function AdsPowerConfigForm({
                             max={10}
                             placeholder="输入重复次数"
                             {...field}
-                            onChange={((e: any): any) => field.onChange(parseInt(e.target.value) || 1)}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
                           />
                         </FormControl>
                         <FormDescription>每个链接将被执行的次数（1-10次）</FormDescription>
@@ -546,7 +546,7 @@ export default function AdsPowerConfigForm({
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {(form.getValues('originalLinks') || []).map((_, index: any) => (
+                {(form.getValues('originalLinks') || []).map((_, index) => (
                   <div key={`original-link-${index}`} className="space-y-2">
                     <div className="flex items-center gap-2">
                       <div className="flex-1">
@@ -572,7 +572,7 @@ export default function AdsPowerConfigForm({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={((: any): any) => handleRemoveOriginalLink(index)}
+                          onClick={() => handleRemoveOriginalLink(index)}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
@@ -674,7 +674,7 @@ export default function AdsPowerConfigForm({
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {linkMappingFields.map((field, index: any) => (
+                        {linkMappingFields.map((field, index) => (
                           <Card key={field.id} className="border-dashed">
                             <CardHeader className="pb-2">
                               <div className="flex justify-between items-center">
@@ -683,7 +683,7 @@ export default function AdsPowerConfigForm({
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  onClick={((: any): any) => removeLinkMapping(index)}
+                                  onClick={() => removeLinkMapping(index)}
                                 >
                                   <Trash2 className="h-4 w-4 text-red-500" />
                                 </Button>
@@ -835,7 +835,7 @@ export default function AdsPowerConfigForm({
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">配置预览</h3>
-                  <Button variant="ghost" size="sm" onClick={((: any): any) => setShowPreview(false)}>
+                  <Button variant="ghost" size="sm" onClick={() => setShowPreview(false)}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>

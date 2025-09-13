@@ -15,11 +15,14 @@ import (
 
 // AdvancedCache 高级缓存策略
 type AdvancedCache struct {
-	redis   *redis.Client
-	prefix  string
-	ttl     time.Duration
-	local   *LocalCache
-	metrics *CacheMetrics
+    redis   *redis.Client
+    prefix  string
+    ttl     time.Duration
+    local   *LocalCache
+    metrics *CacheMetrics
+    // simple singleflight
+    sfMu sync.Mutex
+    sfM  map[string]*sfCall
 }
 
 // CacheMetrics 缓存统计
@@ -63,13 +66,137 @@ func NewAdvancedCache(redisAddr string, prefix string, defaultTTL time.Duration,
 		glog.Error(ctx, "redis_connection_failed", gform.Map{"error": err})
 	}
 
-	return &AdvancedCache{
-		redis:   rdb,
-		prefix:  prefix,
-		ttl:     defaultTTL,
-		local:   NewLocalCache(localCacheSize),
-		metrics: &CacheMetrics{},
-	}
+    return &AdvancedCache{
+        redis:   rdb,
+        prefix:  prefix,
+        ttl:     defaultTTL,
+        local:   NewLocalCache(localCacheSize),
+        metrics: &CacheMetrics{},
+        sfM:     make(map[string]*sfCall),
+    }
+}
+
+type sfCall struct {
+    wg  sync.WaitGroup
+    val interface{}
+    err error
+}
+func (c *AdvancedCache) doSF(key string, fn func() (interface{}, error)) (interface{}, error) {
+    c.sfMu.Lock()
+    if f, ok := c.sfM[key]; ok {
+        c.sfMu.Unlock()
+        f.wg.Wait()
+        return f.val, f.err
+    }
+    f := &sfCall{}
+    f.wg.Add(1)
+    c.sfM[key] = f
+    c.sfMu.Unlock()
+    f.val, f.err = fn()
+    f.wg.Done()
+    c.sfMu.Lock()
+    delete(c.sfM, key)
+    c.sfMu.Unlock()
+    return f.val, f.err
+}
+
+// retry helpers for redis operations
+const advRedisOpTimeout = 2 * time.Second
+
+func (c *AdvancedCache) opCtx(ctx context.Context) (context.Context, context.CancelFunc) {
+    if ctx == nil {
+        return context.WithTimeout(context.Background(), advRedisOpTimeout)
+    }
+    if _, has := ctx.Deadline(); has {
+        return context.WithCancel(ctx)
+    }
+    return context.WithTimeout(ctx, advRedisOpTimeout)
+}
+
+func (c *AdvancedCache) withRetry(ctx context.Context, attempts int, baseSleep time.Duration, fn func(context.Context) error) error {
+    var err error
+    if attempts <= 0 {
+        attempts = 1
+    }
+    if baseSleep <= 0 {
+        baseSleep = 25 * time.Millisecond
+    }
+    for i := 0; i < attempts; i++ {
+        opCtx, cancel := c.opCtx(ctx)
+        err = fn(opCtx)
+        cancel()
+        if err == nil {
+            return nil
+        }
+        time.Sleep(baseSleep * time.Duration(i+1))
+    }
+    return err
+}
+
+func (c *AdvancedCache) withRetryBytes(ctx context.Context, attempts int, baseSleep time.Duration, fn func(context.Context) ([]byte, error)) ([]byte, error) {
+    var out []byte
+    var err error
+    if attempts <= 0 {
+        attempts = 1
+    }
+    if baseSleep <= 0 {
+        baseSleep = 25 * time.Millisecond
+    }
+    for i := 0; i < attempts; i++ {
+        opCtx, cancel := c.opCtx(ctx)
+        out, err = fn(opCtx)
+        cancel()
+        if err == nil {
+            return out, nil
+        }
+        time.Sleep(baseSleep * time.Duration(i+1))
+    }
+    return out, err
+}
+
+func (c *AdvancedCache) withRetryInt64(ctx context.Context, attempts int, baseSleep time.Duration, fn func(context.Context) (int64, error)) (int64, error) {
+    var out int64
+    var err error
+    if attempts <= 0 { attempts = 1 }
+    if baseSleep <= 0 { baseSleep = 25 * time.Millisecond }
+    for i := 0; i < attempts; i++ {
+        opCtx, cancel := c.opCtx(ctx)
+        out, err = fn(opCtx)
+        cancel()
+        if err == nil { return out, nil }
+        time.Sleep(baseSleep * time.Duration(i+1))
+    }
+    return out, err
+}
+
+func (c *AdvancedCache) withRetryDuration(ctx context.Context, attempts int, baseSleep time.Duration, fn func(context.Context) (time.Duration, error)) (time.Duration, error) {
+    var out time.Duration
+    var err error
+    if attempts <= 0 { attempts = 1 }
+    if baseSleep <= 0 { baseSleep = 25 * time.Millisecond }
+    for i := 0; i < attempts; i++ {
+        opCtx, cancel := c.opCtx(ctx)
+        out, err = fn(opCtx)
+        cancel()
+        if err == nil { return out, nil }
+        time.Sleep(baseSleep * time.Duration(i+1))
+    }
+    return out, err
+}
+
+func (c *AdvancedCache) withRetryString(ctx context.Context, attempts int, baseSleep time.Duration, fn func(context.Context) (string, error)) (string, error) {
+    var out string
+    var err error
+    if attempts <= 0 { attempts = 1 }
+    if baseSleep <= 0 { baseSleep = 25 * time.Millisecond }
+    for i := 0; i < attempts; i++ {
+        opCtx, cancel := c.opCtx(ctx)
+        out, err = fn(opCtx)
+        cancel()
+        if err == nil { return out, nil }
+        time.Sleep(baseSleep * time.Duration(i+1))
+    }
+    return out, err
 }
 
 // NewLocalCache 创建本地缓存
@@ -90,7 +217,9 @@ func (c *AdvancedCache) Get(ctx context.Context, key string) (interface{}, error
 
 	// 2. 从Redis获取
 	fullKey := c.buildKey(key)
-	value, err := c.redis.Get(ctx, fullKey).Bytes()
+    value, err := c.withRetryBytes(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) ([]byte, error) {
+        return c.redis.Get(opCtx, fullKey).Bytes()
+    })
 	if err == redis.Nil {
 		c.metrics.Misses++
 		return nil, fmt.Errorf("key not found")
@@ -126,13 +255,14 @@ func (c *AdvancedCache) Set(ctx context.Context, key string, value interface{}, 
 		return fmt.Errorf("marshal failed: %w", err)
 	}
 
-	// 设置到Redis
-	fullKey := c.buildKey(key)
-	err = c.redis.Set(ctx, fullKey, data, ttl).Err()
-	if err != nil {
-		c.metrics.Errors++
-		return fmt.Errorf("redis set failed: %w", err)
-	}
+    // 设置到Redis（重试）
+    fullKey := c.buildKey(key)
+    if err := c.withRetry(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) error {
+        return c.redis.Set(opCtx, fullKey, data, ttl).Err()
+    }); err != nil {
+        c.metrics.Errors++
+        return fmt.Errorf("redis set failed: %w", err)
+    }
 
 	// 同时设置到本地缓存
 	c.local.Set(key, value, time.Minute)
@@ -142,12 +272,13 @@ func (c *AdvancedCache) Set(ctx context.Context, key string, value interface{}, 
 
 // Delete 删除缓存
 func (c *AdvancedCache) Delete(ctx context.Context, key string) error {
-	fullKey := c.buildKey(key)
-	err := c.redis.Del(ctx, fullKey).Err()
-	if err != nil {
-		c.metrics.Errors++
-		return fmt.Errorf("redis delete failed: %w", err)
-	}
+    fullKey := c.buildKey(key)
+    if err := c.withRetry(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) error {
+        return c.redis.Del(opCtx, fullKey).Err()
+    }); err != nil {
+        c.metrics.Errors++
+        return fmt.Errorf("redis delete failed: %w", err)
+    }
 
 	// 删除本地缓存
 	c.local.Delete(key)
@@ -157,97 +288,110 @@ func (c *AdvancedCache) Delete(ctx context.Context, key string) error {
 
 // Exists 检查键是否存在
 func (c *AdvancedCache) Exists(ctx context.Context, key string) (bool, error) {
-	fullKey := c.buildKey(key)
-	count, err := c.redis.Exists(ctx, fullKey).Result()
-	if err != nil {
-		return false, fmt.Errorf("redis exists failed: %w", err)
-	}
-	return count > 0, nil
+    fullKey := c.buildKey(key)
+    count, err := c.withRetryInt64(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) (int64, error) {
+        return c.redis.Exists(opCtx, fullKey).Result()
+    })
+    if err != nil {
+        return false, fmt.Errorf("redis exists failed: %w", err)
+    }
+    return count > 0, nil
 }
 
 // TTL 获取键的TTL
 func (c *AdvancedCache) TTL(ctx context.Context, key string) (time.Duration, error) {
-	fullKey := c.buildKey(key)
-	ttl, err := c.redis.TTL(ctx, fullKey).Result()
-	if err != nil {
-		return 0, fmt.Errorf("redis ttl failed: %w", err)
-	}
-	return ttl, nil
+    fullKey := c.buildKey(key)
+    ttl, err := c.withRetryDuration(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) (time.Duration, error) {
+        return c.redis.TTL(opCtx, fullKey).Result()
+    })
+    if err != nil {
+        return 0, fmt.Errorf("redis ttl failed: %w", err)
+    }
+    return ttl, nil
 }
 
 // Expire 设置过期时间
 func (c *AdvancedCache) Expire(ctx context.Context, key string, ttl time.Duration) error {
-	fullKey := c.buildKey(key)
-	err := c.redis.Expire(ctx, fullKey, ttl).Err()
-	if err != nil {
-		return fmt.Errorf("redis expire failed: %w", err)
-	}
-	return nil
+    fullKey := c.buildKey(key)
+    if err := c.withRetry(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) error {
+        return c.redis.Expire(opCtx, fullKey, ttl).Err()
+    }); err != nil {
+        return fmt.Errorf("redis expire failed: %w", err)
+    }
+    return nil
 }
 
 // Increment 自增
 func (c *AdvancedCache) Increment(ctx context.Context, key string, delta int64) (int64, error) {
-	fullKey := c.buildKey(key)
-	result, err := c.redis.IncrBy(ctx, fullKey, delta).Result()
-	if err != nil {
-		return 0, fmt.Errorf("redis increment failed: %w", err)
-	}
-	return result, nil
+    fullKey := c.buildKey(key)
+    result, err := c.withRetryInt64(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) (int64, error) {
+        return c.redis.IncrBy(opCtx, fullKey, delta).Result()
+    })
+    if err != nil {
+        return 0, fmt.Errorf("redis increment failed: %w", err)
+    }
+    return result, nil
 }
 
 // GetOrSet 获取或设置缓存（原子操作）
 func (c *AdvancedCache) GetOrSet(ctx context.Context, key string, ttl time.Duration, fn func() (interface{}, error)) (interface{}, error) {
-	// 先尝试获取
-	value, err := c.Get(ctx, key)
-	if err == nil {
-		return value, nil
-	}
-
-	// 如果不存在，调用函数获取值
-	value, err = fn()
-	if err != nil {
-		return nil, err
-	}
-
-	// 设置缓存
-	if err := c.Set(ctx, key, value, ttl); err != nil {
-		glog.Warning(ctx, "cache_set_failed", gform.Map{"key": key, "error": err})
-	}
-
-	return value, nil
+    // 先尝试获取
+    if value, err := c.Get(ctx, key); err == nil {
+        return value, nil
+    }
+    // 防击穿
+    return c.doSF(c.buildKey(key), func() (interface{}, error) {
+        v, err := fn()
+        if err != nil { return nil, err }
+        if err := c.Set(ctx, key, v, ttl); err != nil {
+            glog.Warning(ctx, "cache_set_failed", gform.Map{"key": key, "error": err})
+        }
+        return v, nil
+    })
 }
 
 // GetPattern 获取匹配模式的所有键
 func (c *AdvancedCache) GetPattern(ctx context.Context, pattern string) ([]string, error) {
-	fullPattern := c.buildKey(pattern)
-	keys, err := c.redis.Keys(ctx, fullPattern).Result()
-	if err != nil {
-		return nil, fmt.Errorf("redis keys failed: %w", err)
-	}
-
-	// 移除前缀
-	result := make([]string, 0, len(keys))
-	for _, key := range keys {
-		result = append(result, key[len(c.prefix):])
-	}
-
-	return result, nil
+    fullPattern := c.buildKey(pattern)
+    var out []string
+    iter := c.redis.Scan(ctx, 0, fullPattern, 500).Iterator()
+    for iter.Next(ctx) {
+        k := iter.Val()
+        // 移除前缀
+        if len(k) >= len(c.prefix) {
+            out = append(out, k[len(c.prefix):])
+        } else {
+            out = append(out, k)
+        }
+    }
+    if err := iter.Err(); err != nil {
+        return nil, fmt.Errorf("redis scan failed: %w", err)
+    }
+    return out, nil
 }
 
 // DeletePattern 删除匹配模式的所有键
 func (c *AdvancedCache) DeletePattern(ctx context.Context, pattern string) error {
-	fullPattern := c.buildKey(pattern)
-	keys, err := c.redis.Keys(ctx, fullPattern).Result()
-	if err != nil {
-		return fmt.Errorf("redis keys failed: %w", err)
-	}
-
-	if len(keys) > 0 {
-		err = c.redis.Del(ctx, keys...).Err()
-		if err != nil {
-			return fmt.Errorf("redis delete pattern failed: %w", err)
-		}
-	}
+    fullPattern := c.buildKey(pattern)
+    var batch []string
+    iter := c.redis.Scan(ctx, 0, fullPattern, 500).Iterator()
+    for iter.Next(ctx) {
+        batch = append(batch, iter.Val())
+        if len(batch) >= 1000 {
+            if err := c.withRetry(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) error { return c.redis.Del(opCtx, batch...).Err() }); err != nil {
+                return fmt.Errorf("redis delete pattern failed: %w", err)
+            }
+            batch = batch[:0]
+        }
+    }
+    if err := iter.Err(); err != nil {
+        return fmt.Errorf("redis scan failed: %w", err)
+    }
+    if len(batch) > 0 {
+        if err := c.withRetry(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) error { return c.redis.Del(opCtx, batch...).Err() }); err != nil {
+            return fmt.Errorf("redis delete pattern failed: %w", err)
+        }
+    }
 
 	// 清理本地缓存
 	c.local.DeletePattern(pattern)
@@ -275,10 +419,12 @@ func (c *AdvancedCache) Pipeline(ctx context.Context, ops []CacheOperation) erro
 		}
 	}
 
-	_, err := pipe.Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("pipeline exec failed: %w", err)
-	}
+    if err := c.withRetry(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) error {
+        _, e := pipe.Exec(opCtx)
+        return e
+    }); err != nil {
+        return fmt.Errorf("pipeline exec failed: %w", err)
+    }
 
 	return nil
 }
@@ -295,10 +441,10 @@ type CacheOperation struct {
 // GetMetrics 获取缓存统计信息
 func (c *AdvancedCache) GetMetrics(ctx context.Context) (*CacheMetrics, error) {
 	// 获取Redis统计信息
-	_, err := c.redis.Info(ctx, "memory").Result()
-	if err != nil {
-		return nil, fmt.Errorf("redis info failed: %w", err)
-	}
+    _, err := c.withRetryString(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) (string, error) { return c.redis.Info(opCtx, "memory").Result() })
+    if err != nil {
+        return nil, fmt.Errorf("redis info failed: %w", err)
+    }
 
 	// 解析内存使用情况
 	metrics := &CacheMetrics{
@@ -315,18 +461,26 @@ func (c *AdvancedCache) GetMetrics(ctx context.Context) (*CacheMetrics, error) {
 
 // Clear 清空所有缓存
 func (c *AdvancedCache) Clear(ctx context.Context) error {
-	pattern := c.buildKey("*")
-	keys, err := c.redis.Keys(ctx, pattern).Result()
-	if err != nil {
-		return fmt.Errorf("redis keys failed: %w", err)
-	}
-
-	if len(keys) > 0 {
-		err = c.redis.Del(ctx, keys...).Err()
-		if err != nil {
-			return fmt.Errorf("redis clear failed: %w", err)
-		}
-	}
+    pattern := c.buildKey("*")
+    var batch []string
+    iter := c.redis.Scan(ctx, 0, pattern, 500).Iterator()
+    for iter.Next(ctx) {
+        batch = append(batch, iter.Val())
+        if len(batch) >= 1000 {
+            if err := c.withRetry(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) error { return c.redis.Del(opCtx, batch...).Err() }); err != nil {
+                return fmt.Errorf("redis clear failed: %w", err)
+            }
+            batch = batch[:0]
+        }
+    }
+    if err := iter.Err(); err != nil {
+        return fmt.Errorf("redis scan failed: %w", err)
+    }
+    if len(batch) > 0 {
+        if err := c.withRetry(ctx, 3, 25*time.Millisecond, func(opCtx context.Context) error { return c.redis.Del(opCtx, batch...).Err() }); err != nil {
+            return fmt.Errorf("redis clear failed: %w", err)
+        }
+    }
 
 	// 清空本地缓存
 	c.local.Clear()

@@ -228,7 +228,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
                         boxShadow: 2
                       }
                     }}
-                    onClick={((: any): any) => handlePackageSelect(pkg)}
+                    onClick={() => handlePackageSelect(pkg)}
                   >
                     {pkg.popular && (
                       <Chip
@@ -509,7 +509,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
         </DialogContent>
         <DialogActions>
           {activeStep > 0 && activeStep < 3 && (
-            <Button onClick={((: any): any) => setActiveStep(activeStep - 1)}>
+            <Button onClick={() => setActiveStep(activeStep - 1)}>
               上一步
             </Button>
           )}

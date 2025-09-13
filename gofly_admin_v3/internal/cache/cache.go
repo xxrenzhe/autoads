@@ -1,11 +1,12 @@
 package cache
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"sync"
-	"time"
+    "context"
+    "encoding/json"
+    "fmt"
+    "strings"
+    "sync"
+    "time"
 
 	"github.com/redis/go-redis/v9"
 	"gofly-admin-v3/internal/config"
@@ -51,8 +52,43 @@ type Cache interface {
 
 // RedisCache Redis缓存实现
 type RedisCache struct {
-	client *redis.Client
+    client *redis.Client
 }
+
+// simple singleflight to avoid cache stampede
+type flightGroup struct {
+    mu sync.Mutex
+    m  map[string]*flight
+}
+type flight struct {
+    wg  sync.WaitGroup
+    val interface{}
+    err error
+}
+var sf = &flightGroup{m: make(map[string]*flight)}
+
+func (g *flightGroup) Do(key string, fn func() (interface{}, error)) (interface{}, error) {
+    g.mu.Lock()
+    if f, ok := g.m[key]; ok {
+        g.mu.Unlock()
+        f.wg.Wait()
+        return f.val, f.err
+    }
+    f := &flight{}
+    f.wg.Add(1)
+    g.m[key] = f
+    g.mu.Unlock()
+    f.val, f.err = fn()
+    f.wg.Done()
+    g.mu.Lock()
+    delete(g.m, key)
+    g.mu.Unlock()
+    return f.val, f.err
+}
+
+// default timeout for external store operations
+const redisOpTimeout = 2 * time.Second
+func ctxWithTimeout() (context.Context, context.CancelFunc) { return context.WithTimeout(context.Background(), redisOpTimeout) }
 
 // NewRedisCache 创建Redis缓存实例
 func NewRedisCache() (*RedisCache, error) {
@@ -81,14 +117,20 @@ func NewRedisCache() (*RedisCache, error) {
 
 // Get 获取缓存值
 func (r *RedisCache) Get(key string, dest interface{}) error {
-	ctx := context.Background()
-
-	val, err := r.client.Get(ctx, key).Result()
-	if err != nil {
-		if err == redis.Nil {
-			return fmt.Errorf("key not found: %s", key)
-		}
-		return err
+    var val string
+    var err error
+    for attempt := 0; attempt < 3; attempt++ {
+        ctx, cancel := ctxWithTimeout()
+        val, err = r.client.Get(ctx, key).Result()
+        cancel()
+        if err == nil || err == redis.Nil { break }
+        time.Sleep(time.Duration(25*(attempt+1)) * time.Millisecond)
+    }
+    if err != nil {
+        if err == redis.Nil {
+            return fmt.Errorf("key not found: %s", key)
+        }
+        return err
 	}
 
 	// 如果是字符串类型，直接赋值
@@ -103,123 +145,167 @@ func (r *RedisCache) Get(key string, dest interface{}) error {
 
 // Set 设置缓存值
 func (r *RedisCache) Set(key string, value interface{}, expiration time.Duration) error {
-	ctx := context.Background()
 
-	// 将值转换为JSON
-	var val string
-	switch v := value.(type) {
-	case string:
-		val = v
-	case []byte:
-		val = string(v)
-	default:
-		data, err := json.Marshal(value)
-		if err != nil {
-			return err
-		}
-		val = string(data)
-	}
+    // 将值转换为JSON
+    var val string
+    switch v := value.(type) {
+    case string:
+        val = v
+    case []byte:
+        val = string(v)
+    default:
+        data, err := json.Marshal(value)
+        if err != nil {
+            return err
+        }
+        val = string(data)
+    }
 
-	return r.client.Set(ctx, key, val, expiration).Err()
+    var last error
+    for attempt := 0; attempt < 3; attempt++ {
+        ctx, cancel := ctxWithTimeout()
+        last = r.client.Set(ctx, key, val, expiration).Err()
+        cancel()
+        if last == nil { return nil }
+        time.Sleep(time.Duration(25*(attempt+1)) * time.Millisecond)
+    }
+    return last
 }
 
 // Delete 删除缓存
 func (r *RedisCache) Delete(key string) error {
-	ctx := context.Background()
-	return r.client.Del(ctx, key).Err()
+    var last error
+    for attempt := 0; attempt < 3; attempt++ {
+        ctx, cancel := ctxWithTimeout()
+        last = r.client.Del(ctx, key).Err()
+        cancel()
+        if last == nil { return nil }
+        time.Sleep(time.Duration(25*(attempt+1)) * time.Millisecond)
+    }
+    return last
 }
 
 // Exists 检查key是否存在
 func (r *RedisCache) Exists(key string) (bool, error) {
-	ctx := context.Background()
-	n, err := r.client.Exists(ctx, key).Result()
-	return n > 0, err
+    var n int64
+    var err error
+    for attempt := 0; attempt < 3; attempt++ {
+        ctx, cancel := ctxWithTimeout()
+        n, err = r.client.Exists(ctx, key).Result()
+        cancel()
+        if err == nil { break }
+        time.Sleep(time.Duration(25*(attempt+1)) * time.Millisecond)
+    }
+    return n > 0, err
 }
 
 // GetOrSet 获取或设置缓存（如果不存在）
 func (r *RedisCache) GetOrSet(key string, valueFunc func() (interface{}, error), expiration time.Duration, dest interface{}) error {
-	// 尝试获取缓存
-	if err := r.Get(key, dest); err == nil {
-		return nil
-	}
+    // 尝试获取缓存
+    if err := r.Get(key, dest); err == nil {
+        return nil
+    }
 
-	// 缓存不存在，调用函数获取值
-	value, err := valueFunc()
-	if err != nil {
-		return err
-	}
+    // 通过 singleflight 防击穿
+    val, err := sf.Do(key, func() (interface{}, error) {
+        v, e := valueFunc()
+        if e != nil {
+            return nil, e
+        }
+        // 写入缓存（best effort）
+        if err := r.Set(key, v, expiration); err != nil {
+            gf.Log().Warning(context.Background(), fmt.Sprintf("Failed to set cache for key %s: %v", key, err))
+        }
+        return v, nil
+    })
+    if err != nil {
+        return err
+    }
 
-	// 设置缓存
-	if err := r.Set(key, value, expiration); err != nil {
-		gf.Log().Warning(context.Background(), fmt.Sprintf("Failed to set cache for key %s: %v", key, err))
-	}
-
-	// 将值赋给目标
-	switch v := value.(type) {
-	case string:
-		if s, ok := dest.(*string); ok {
-			*s = v
-		}
-	default:
-		data, err := json.Marshal(value)
-		if err == nil {
-			json.Unmarshal(data, dest)
-		}
-	}
-
-	return nil
+    // 复制值到目标
+    switch v := val.(type) {
+    case string:
+        if s, ok := dest.(*string); ok { *s = v }
+    default:
+        data, e := json.Marshal(val)
+        if e == nil { _ = json.Unmarshal(data, dest) }
+    }
+    return nil
 }
 
 // DeletePattern 删除匹配模式的key
 func (r *RedisCache) DeletePattern(pattern string) error {
-	ctx := context.Background()
-	keys, err := r.client.Keys(ctx, pattern).Result()
-	if err != nil {
-		return err
-	}
-
-	if len(keys) > 0 {
-		return r.client.Del(ctx, keys...).Err()
-	}
-
-	return nil
+    // Use SCAN to avoid blocking Redis with KEYS on large datasets
+    ctx, cancel := ctxWithTimeout()
+    defer cancel()
+    var toDelete []string
+    iter := r.client.Scan(ctx, 0, pattern, 500).Iterator()
+    for iter.Next(ctx) {
+        toDelete = append(toDelete, iter.Val())
+        if len(toDelete) >= 1000 {
+            if err := r.client.Del(ctx, toDelete...).Err(); err != nil {
+                return err
+            }
+            toDelete = toDelete[:0]
+        }
+    }
+    if err := iter.Err(); err != nil {
+        return err
+    }
+    if len(toDelete) > 0 {
+        if err := r.client.Del(ctx, toDelete...).Err(); err != nil {
+            return err
+        }
+    }
+    return nil
 }
 
 // LPush 左推入列表
 func (r *RedisCache) LPush(key string, values ...interface{}) error {
-	ctx := context.Background()
-	return r.client.LPush(ctx, key, values...).Err()
+    ctx, cancel := ctxWithTimeout()
+    defer cancel()
+    return r.client.LPush(ctx, key, values...).Err()
 }
 
 // RPush 右推入列表
 func (r *RedisCache) RPush(key string, values ...interface{}) error {
-	ctx := context.Background()
-	return r.client.RPush(ctx, key, values...).Err()
+    ctx, cancel := ctxWithTimeout()
+    defer cancel()
+    return r.client.RPush(ctx, key, values...).Err()
 }
 
 // LRange 获取列表范围
 func (r *RedisCache) LRange(key string, start, stop int64) ([]string, error) {
-	ctx := context.Background()
-	return r.client.LRange(ctx, key, start, stop).Result()
+    ctx, cancel := ctxWithTimeout()
+    defer cancel()
+    return r.client.LRange(ctx, key, start, stop).Result()
 }
 
 // LLen 获取列表长度
 func (r *RedisCache) LLen(key string) (int64, error) {
-	ctx := context.Background()
-	return r.client.LLen(ctx, key).Result()
+    ctx, cancel := ctxWithTimeout()
+    defer cancel()
+    return r.client.LLen(ctx, key).Result()
 }
 
 // HSet 设置哈希值
 func (r *RedisCache) HSet(key string, values map[string]interface{}) error {
-	ctx := context.Background()
-	return r.client.HSet(ctx, key, values).Err()
+    ctx, cancel := ctxWithTimeout()
+    defer cancel()
+    return r.client.HSet(ctx, key, values).Err()
 }
 
 // HGet 获取哈希字段值
 func (r *RedisCache) HGet(key, field string, dest interface{}) error {
-	ctx := context.Background()
-
-	val, err := r.client.HGet(ctx, key, field).Result()
+    var val string
+    var err error
+    for attempt := 0; attempt < 3; attempt++ {
+        ctx, cancel := ctxWithTimeout()
+        val, err = r.client.HGet(ctx, key, field).Result()
+        cancel()
+        if err == nil || err == redis.Nil { break }
+        time.Sleep(time.Duration(25*(attempt+1)) * time.Millisecond)
+    }
 	if err != nil {
 		if err == redis.Nil {
 			return fmt.Errorf("field not found: %s.%s", key, field)
@@ -239,44 +325,71 @@ func (r *RedisCache) HGet(key, field string, dest interface{}) error {
 
 // HGetAll 获取所有哈希字段
 func (r *RedisCache) HGetAll(key string) (map[string]string, error) {
-	ctx := context.Background()
-	return r.client.HGetAll(ctx, key).Result()
+    var out map[string]string
+    var err error
+    for attempt := 0; attempt < 3; attempt++ {
+        ctx, cancel := ctxWithTimeout()
+        out, err = r.client.HGetAll(ctx, key).Result()
+        cancel()
+        if err == nil { break }
+        time.Sleep(time.Duration(25*(attempt+1)) * time.Millisecond)
+    }
+    return out, err
 }
 
 // HDelete 删除哈希字段
 func (r *RedisCache) HDelete(key string, fields ...string) error {
-	ctx := context.Background()
-	return r.client.HDel(ctx, key, fields...).Err()
+    ctx, cancel := ctxWithTimeout()
+    defer cancel()
+    return r.client.HDel(ctx, key, fields...).Err()
 }
 
 // SAdd 添加到集合
 func (r *RedisCache) SAdd(key string, members ...interface{}) error {
-	ctx := context.Background()
-	return r.client.SAdd(ctx, key, members...).Err()
+    ctx, cancel := ctxWithTimeout()
+    defer cancel()
+    return r.client.SAdd(ctx, key, members...).Err()
 }
 
 // SMembers 获取集合成员
 func (r *RedisCache) SMembers(key string) ([]string, error) {
-	ctx := context.Background()
-	return r.client.SMembers(ctx, key).Result()
+    ctx, cancel := ctxWithTimeout()
+    defer cancel()
+    return r.client.SMembers(ctx, key).Result()
 }
 
 // SRem 从集合中删除
 func (r *RedisCache) SRem(key string, members ...interface{}) error {
-	ctx := context.Background()
-	return r.client.SRem(ctx, key, members...).Err()
+    ctx, cancel := ctxWithTimeout()
+    defer cancel()
+    return r.client.SRem(ctx, key, members...).Err()
 }
 
 // Expire 设置过期时间
 func (r *RedisCache) Expire(key string, expiration time.Duration) error {
-	ctx := context.Background()
-	return r.client.Expire(ctx, key, expiration).Err()
+    var last error
+    for attempt := 0; attempt < 3; attempt++ {
+        ctx, cancel := ctxWithTimeout()
+        last = r.client.Expire(ctx, key, expiration).Err()
+        cancel()
+        if last == nil { return nil }
+        time.Sleep(time.Duration(25*(attempt+1)) * time.Millisecond)
+    }
+    return last
 }
 
 // TTL 获取剩余时间
 func (r *RedisCache) TTL(key string) (time.Duration, error) {
-	ctx := context.Background()
-	return r.client.TTL(ctx, key).Result()
+    var d time.Duration
+    var err error
+    for attempt := 0; attempt < 3; attempt++ {
+        ctx, cancel := ctxWithTimeout()
+        d, err = r.client.TTL(ctx, key).Result()
+        cancel()
+        if err == nil { break }
+        time.Sleep(time.Duration(25*(attempt+1)) * time.Millisecond)
+    }
+    return d, err
 }
 
 // Close 关闭连接
@@ -320,8 +433,8 @@ func GetCache() Cache {
 
 // MemoryCache 内存缓存实现（作为后备）
 type MemoryCache struct {
-	store map[string]memoryItem
-	mutex sync.RWMutex
+    store map[string]memoryItem
+    mutex sync.RWMutex
 }
 
 type memoryItem struct {
@@ -414,86 +527,292 @@ func (m *MemoryCache) Exists(key string) (bool, error) {
 
 // 其他方法的基本实现...
 func (m *MemoryCache) GetOrSet(key string, valueFunc func() (interface{}, error), expiration time.Duration, dest interface{}) error {
-	if err := m.Get(key, dest); err == nil {
-		return nil
-	}
+    if err := m.Get(key, dest); err == nil {
+        return nil
+    }
 
-	value, err := valueFunc()
-	if err != nil {
-		return err
-	}
+    val, err := sf.Do(key, func() (interface{}, error) {
+        v, e := valueFunc()
+        if e != nil { return nil, e }
+        _ = m.Set(key, v, expiration)
+        return v, nil
+    })
+    if err != nil { return err }
 
-	m.Set(key, value, expiration)
-
-	switch v := value.(type) {
-	case string:
-		if s, ok := dest.(*string); ok {
-			*s = v
-		}
-	default:
-		data, _ := json.Marshal(value)
-		json.Unmarshal(data, dest)
-	}
-
-	return nil
+    switch v := val.(type) {
+    case string:
+        if s, ok := dest.(*string); ok { *s = v }
+    default:
+        data, _ := json.Marshal(val)
+        _ = json.Unmarshal(data, dest)
+    }
+    return nil
 }
 
 func (m *MemoryCache) DeletePattern(pattern string) error {
-	// 内存缓存不支持模式删除
-	return nil
+    m.mutex.Lock()
+    defer m.mutex.Unlock()
+
+    // Support simple prefix patterns like "prefix:*"
+    if strings.HasSuffix(pattern, "*") {
+        prefix := strings.TrimSuffix(pattern, "*")
+        for k := range m.store {
+            if strings.HasPrefix(k, prefix) {
+                delete(m.store, k)
+            }
+        }
+        return nil
+    }
+    delete(m.store, pattern)
+    return nil
 }
 
 func (m *MemoryCache) LPush(key string, values ...interface{}) error {
-	// 简化实现
-	return fmt.Errorf("not implemented")
+    m.mutex.Lock()
+    defer m.mutex.Unlock()
+
+    item := m.store[key]
+    var list []string
+    if v, ok := item.value.([]string); ok {
+        list = v
+    }
+    // prepend values in order
+    for i := len(values) - 1; i >= 0; i-- {
+        list = append([]string{fmt.Sprint(values[i])}, list...)
+    }
+    m.store[key] = memoryItem{value: list, expiration: item.expiration}
+    return nil
 }
 
 func (m *MemoryCache) RPush(key string, values ...interface{}) error {
-	return fmt.Errorf("not implemented")
+    m.mutex.Lock()
+    defer m.mutex.Unlock()
+
+    item := m.store[key]
+    var list []string
+    if v, ok := item.value.([]string); ok {
+        list = v
+    }
+    for _, val := range values {
+        list = append(list, fmt.Sprint(val))
+    }
+    m.store[key] = memoryItem{value: list, expiration: item.expiration}
+    return nil
 }
 
 func (m *MemoryCache) LRange(key string, start, stop int64) ([]string, error) {
-	return nil, fmt.Errorf("not implemented")
+    m.mutex.RLock()
+    defer m.mutex.RUnlock()
+
+    item, ok := m.store[key]
+    if !ok {
+        return []string{}, nil
+    }
+    list, ok := item.value.([]string)
+    if !ok {
+        return []string{}, nil
+    }
+    n := int64(len(list))
+    if start < 0 {
+        start = n + start
+    }
+    if stop < 0 {
+        stop = n + stop
+    }
+    if start < 0 {
+        start = 0
+    }
+    if stop >= n {
+        stop = n - 1
+    }
+    if start > stop || start >= n {
+        return []string{}, nil
+    }
+    return append([]string{}, list[start:stop+1]...), nil
 }
 
 func (m *MemoryCache) LLen(key string) (int64, error) {
-	return 0, fmt.Errorf("not implemented")
+    m.mutex.RLock()
+    defer m.mutex.RUnlock()
+
+    if item, ok := m.store[key]; ok {
+        if list, ok := item.value.([]string); ok {
+            return int64(len(list)), nil
+        }
+    }
+    return 0, nil
 }
 
 func (m *MemoryCache) HSet(key string, values map[string]interface{}) error {
-	return fmt.Errorf("not implemented")
+    m.mutex.Lock()
+    defer m.mutex.Unlock()
+
+    item := m.store[key]
+    var h map[string]string
+    if existing, ok := item.value.(map[string]string); ok {
+        h = existing
+    } else {
+        h = make(map[string]string)
+    }
+    for k, v := range values {
+        switch vv := v.(type) {
+        case string:
+            h[k] = vv
+        case []byte:
+            h[k] = string(vv)
+        default:
+            b, _ := json.Marshal(v)
+            h[k] = string(b)
+        }
+    }
+    m.store[key] = memoryItem{value: h, expiration: item.expiration}
+    return nil
 }
 
 func (m *MemoryCache) HGet(key, field string, dest interface{}) error {
-	return fmt.Errorf("not implemented")
+    m.mutex.RLock()
+    defer m.mutex.RUnlock()
+
+    item, ok := m.store[key]
+    if !ok {
+        return fmt.Errorf("field not found: %s.%s", key, field)
+    }
+    h, ok := item.value.(map[string]string)
+    if !ok {
+        return fmt.Errorf("field not found: %s.%s", key, field)
+    }
+    val, ok := h[field]
+    if !ok {
+        return fmt.Errorf("field not found: %s.%s", key, field)
+    }
+    if s, ok := dest.(*string); ok {
+        *s = val
+        return nil
+    }
+    return json.Unmarshal([]byte(val), dest)
 }
 
 func (m *MemoryCache) HGetAll(key string) (map[string]string, error) {
-	return nil, fmt.Errorf("not implemented")
+    m.mutex.RLock()
+    defer m.mutex.RUnlock()
+
+    item, ok := m.store[key]
+    if !ok {
+        return map[string]string{}, nil
+    }
+    if h, ok := item.value.(map[string]string); ok {
+        out := make(map[string]string, len(h))
+        for k, v := range h {
+            out[k] = v
+        }
+        return out, nil
+    }
+    return map[string]string{}, nil
 }
 
 func (m *MemoryCache) HDelete(key string, fields ...string) error {
-	return fmt.Errorf("not implemented")
+    m.mutex.Lock()
+    defer m.mutex.Unlock()
+
+    item, ok := m.store[key]
+    if !ok {
+        return nil
+    }
+    if h, ok := item.value.(map[string]string); ok {
+        for _, f := range fields {
+            delete(h, f)
+        }
+        m.store[key] = memoryItem{value: h, expiration: item.expiration}
+    }
+    return nil
 }
 
 func (m *MemoryCache) SAdd(key string, members ...interface{}) error {
-	return fmt.Errorf("not implemented")
+    m.mutex.Lock()
+    defer m.mutex.Unlock()
+
+    item := m.store[key]
+    var set map[string]struct{}
+    if v, ok := item.value.(map[string]struct{}); ok {
+        set = v
+    } else {
+        set = make(map[string]struct{})
+    }
+    for _, mem := range members {
+        set[fmt.Sprint(mem)] = struct{}{}
+    }
+    m.store[key] = memoryItem{value: set, expiration: item.expiration}
+    return nil
 }
 
 func (m *MemoryCache) SMembers(key string) ([]string, error) {
-	return nil, fmt.Errorf("not implemented")
+    m.mutex.RLock()
+    defer m.mutex.RUnlock()
+
+    item, ok := m.store[key]
+    if !ok {
+        return []string{}, nil
+    }
+    if set, ok := item.value.(map[string]struct{}); ok {
+        out := make([]string, 0, len(set))
+        for k := range set {
+            out = append(out, k)
+        }
+        return out, nil
+    }
+    return []string{}, nil
 }
 
 func (m *MemoryCache) SRem(key string, members ...interface{}) error {
-	return fmt.Errorf("not implemented")
+    m.mutex.Lock()
+    defer m.mutex.Unlock()
+
+    item, ok := m.store[key]
+    if !ok {
+        return nil
+    }
+    if set, ok := item.value.(map[string]struct{}); ok {
+        for _, mem := range members {
+            delete(set, fmt.Sprint(mem))
+        }
+        m.store[key] = memoryItem{value: set, expiration: item.expiration}
+    }
+    return nil
 }
 
 func (m *MemoryCache) Expire(key string, expiration time.Duration) error {
-	return fmt.Errorf("not implemented")
+    m.mutex.Lock()
+    defer m.mutex.Unlock()
+
+    item, ok := m.store[key]
+    if !ok {
+        return nil
+    }
+    var exp int64
+    if expiration > 0 {
+        exp = time.Now().Add(expiration).UnixNano()
+    }
+    item.expiration = exp
+    m.store[key] = item
+    return nil
 }
 
 func (m *MemoryCache) TTL(key string) (time.Duration, error) {
-	return 0, fmt.Errorf("not implemented")
+    m.mutex.RLock()
+    defer m.mutex.RUnlock()
+
+    item, ok := m.store[key]
+    if !ok {
+        return 0, nil
+    }
+    if item.expiration == 0 {
+        return -1, nil
+    }
+    d := time.Until(time.Unix(0, item.expiration))
+    if d < 0 {
+        return 0, nil
+    }
+    return d, nil
 }
 
 func (m *MemoryCache) Close() error {

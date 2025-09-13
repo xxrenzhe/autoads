@@ -1,14 +1,11 @@
 package main
 
 import (
-	"context"
-	"flag"
-	"fmt"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+    "flag"
+    "fmt"
+    "log"
+    "os"
+    "time"
 
 	//引入数据库驱动-去这里下载：https://doc.goflys.cn/docview?id=26&fid=395
 	// Redis驱动和安装说明：https://doc.goflys.cn/docview?id=26&fid=392
@@ -113,19 +110,8 @@ func main() {
 	log.Println("🚀 启动服务器...")
 	router.RunServer()
 
-	// 9. 等待中断信号
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	log.Println("正在关闭服务器...")
-
-	// 优雅关闭
-	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	// 关闭配置管理器
-	configManager.Close()
-
-	log.Println("✅ 服务器已关闭")
+    // RunServer 内部已处理优雅关闭与信号监听，返回即表示服务已退出
+    log.Println("正在清理资源...")
+    configManager.Close()
+    log.Println("✅ 服务器已关闭")
 }

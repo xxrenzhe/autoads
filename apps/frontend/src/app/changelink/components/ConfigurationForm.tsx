@@ -107,7 +107,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
     if (formData.originalLinks.length > 1) {
       setFormData(prev => ({
         ...prev,
-        originalLinks: prev.originalLinks.filter((_, i: any) => i !== index)
+        originalLinks: prev.originalLinks.filter((_, i) => i !== index)
       }));
     }
   };
@@ -115,7 +115,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
   const updateLink = (index: number, value: string) => {
     setFormData(prev => ({
       ...prev,
-      originalLinks: prev.originalLinks.map((link, i: any) => i === index ? value : link)
+      originalLinks: prev.originalLinks.map((link, i) => i === index ? value : link)
     }));
   };
 
@@ -154,7 +154,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={((e: any) => setFormData(prev: any) => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="输入配置名称"
                     className={errors.name ? 'border-red-500' : ''}
                   />
@@ -171,7 +171,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
                   <Input
                     id="environmentId"
                     value={formData.environmentId}
-                    onChange={((e: any) => setFormData(prev: any) => ({ ...prev, environmentId: e.target.value }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, environmentId: e.target.value }))}
                     placeholder="输入环境ID"
                     className={errors.environmentId ? 'border-red-500' : ''}
                   />
@@ -193,7 +193,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
                     min="1"
                     max="100"
                     value={formData.repeatCount}
-                    onChange={((e: any) => setFormData(prev: any) => ({ ...prev, repeatCount: parseInt(e.target.value) || 1 }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, repeatCount: parseInt(e.target.value) || 1 }))}
                     className={errors.repeatCount ? 'border-red-500' : ''}
                   />
                   {errors.repeatCount && (
@@ -215,11 +215,11 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
               </h3>
               
               <div className="space-y-3">
-                {formData.originalLinks.map((link, index: any) => (
+                {formData.originalLinks.map((link, index) => (
                   <div key={index} className="flex items-center space-x-2">
                     <Input
                       value={link}
-                      onChange={((e: any): any) => updateLink(index, e.target.value)}
+                      onChange={(e) => updateLink(index, e.target.value)}
                       placeholder={`原始链接 ${index + 1}`}
                       className="flex-1"
                     />
@@ -228,7 +228,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={((: any): any) => removeLink(index)}
+                        onClick={() => removeLink(index)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -270,7 +270,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
                 </div>
                 <Switch
                   checked={formData.schedulingEnabled}
-                  onCheckedChange={((checked: boolean: any) => setFormData(prev: any) => ({ ...prev, schedulingEnabled: checked }))}
+                  onCheckedChange={(checked: boolean) => setFormData(prev => ({ ...prev, schedulingEnabled: checked }))}
                 />
               </div>
 
@@ -280,7 +280,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
                     <Label>执行频率</Label>
                     <Select
                       value={formData.scheduleType}
-                      onValueChange={((value: any) => setFormData(prev: any) => ({ ...prev, scheduleType: value as 'daily' | 'weekly' | 'monthly' | 'custom' | 'once' }))}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, scheduleType: value as 'daily' | 'weekly' | 'monthly' | 'custom' | 'once' }))}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -298,7 +298,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
                     <div className="flex space-x-2">
                       <Select
                         value={formData.scheduleHour.toString()}
-                        onValueChange={((value: any) => setFormData(prev: any) => ({ ...prev, scheduleHour: parseInt(value) }))}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, scheduleHour: parseInt(value) }))}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -314,7 +314,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
                       <span className="flex items-center">:</span>
                       <Select
                         value={formData.scheduleMinute.toString()}
-                        onValueChange={((value: any) => setFormData(prev: any) => ({ ...prev, scheduleMinute: parseInt(value) }))}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, scheduleMinute: parseInt(value) }))}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -335,7 +335,7 @@ export function ConfigurationForm({ onSave, onCancel, initialData }: Configurati
                       <Label>星期</Label>
                       <Select
                         value={formData.scheduleDayOfWeek.toString()}
-                        onValueChange={((value: any) => setFormData(prev: any) => ({ ...prev, scheduleDayOfWeek: parseInt(value) }))}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, scheduleDayOfWeek: parseInt(value) }))}
                       >
                         <SelectTrigger>
                           <SelectValue />

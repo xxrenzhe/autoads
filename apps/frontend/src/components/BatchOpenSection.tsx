@@ -573,19 +573,19 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
       <div className="flex justify-center gap-4 mb-8">
         <button
           className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${version === "basic" ? UI_CONSTANTS.buttons.primary : UI_CONSTANTS.buttons.outline}`}
-          onClick={((: any): any) => handleSwitchVersion("basic")}
+          onClick={() => handleSwitchVersion("basic")}
         >
           {getTranslation(t, "batchopen.basicVersion.title")}
         </button>
         <button
           className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${version === "silent" ? UI_CONSTANTS.buttons.primary : UI_CONSTANTS.buttons.outline}`}
-          onClick={((: any): any) => handleSwitchVersion("silent")}
+          onClick={() => handleSwitchVersion("silent")}
         >
           {getTranslation(t, "batchopen.silentVersion.title")}
         </button>
         <button
           className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${version === "autoclick" ? UI_CONSTANTS.buttons.primary : UI_CONSTANTS.buttons.outline} relative`}
-          onClick={((: any): any) => handleSwitchVersion("autoclick")}
+          onClick={() => handleSwitchVersion("autoclick")}
         >
           {getTranslation(t, "batchopen.autoclickVersion.title")}
           <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">

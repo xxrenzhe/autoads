@@ -240,7 +240,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
             Filters
           </Button>
           
-          <Button onClick={((: any): any) => exportData('usage')}>
+          <Button onClick={() => exportData('usage')}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -348,7 +348,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
           ].map(({ id, label, icon: Icon }: any) => (
             <button
               key={id}
-              onClick={((: any): any) => setActiveTab(id as any)}
+              onClick={() => setActiveTab(id as any)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
                   ? 'border-blue-500 text-blue-600'

@@ -249,7 +249,7 @@ export default function AdMappingConfig({
               <Button
                 type="button"
                 size="sm"
-                onClick={((: any): any) => addAdMapping(linkIndex)}
+                onClick={() => addAdMapping(linkIndex)}
                 disabled={googleAdsAccounts.length === 0}
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -274,7 +274,7 @@ export default function AdMappingConfig({
                         type="button"
                         size="sm"
                         variant="outline"
-                        onClick={((: any): any) => removeAdMapping(linkIndex, mappingIndex)}
+                        onClick={() => removeAdMapping(linkIndex, mappingIndex)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -285,7 +285,7 @@ export default function AdMappingConfig({
                         <Label>选择广告</Label>
                         <Select
                           value={mapping.adId}
-                          onValueChange={((value: any): any) => handleAdSelection(linkIndex, mappingIndex, value)}
+                          onValueChange={(value) => handleAdSelection(linkIndex, mappingIndex, value)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="选择要更新的广告" />

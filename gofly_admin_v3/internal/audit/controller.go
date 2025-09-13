@@ -1,12 +1,17 @@
 package audit
 
 import (
+    "context"
+    "encoding/json"
     "net/http"
+    "os"
     "strconv"
     "sync"
     "time"
 
     "github.com/gin-gonic/gin"
+    cfg "gofly-admin-v3/internal/config"
+    "gofly-admin-v3/internal/store"
 )
 
 // APIResponse 统一响应
@@ -139,6 +144,18 @@ type cacheEntry struct {
 var cacheStore sync.Map
 
 func cacheGet(key string) (interface{}, bool) {
+    // Redis first
+    if rc := redisClient(); rc != nil {
+        ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+        defer cancel()
+        v, err := rc.Get(ctx, redisKey(key))
+        if err == nil && v != "" {
+            var out interface{}
+            if json.Unmarshal([]byte(v), &out) == nil {
+                return out, true
+            }
+        }
+    }
     if v, ok := cacheStore.Load(key); ok {
         ce := v.(cacheEntry)
         if time.Now().Before(ce.exp) {
@@ -151,4 +168,56 @@ func cacheGet(key string) (interface{}, bool) {
 
 func cacheSet(key string, data interface{}, ttl time.Duration) {
     cacheStore.Store(key, cacheEntry{data: data, exp: time.Now().Add(ttl)})
+    if rc := redisClient(); rc != nil {
+        b, err := json.Marshal(data)
+        if err == nil {
+            ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+            defer cancel()
+            _ = rc.Set(ctx, redisKey(key), string(b), ttl)
+        }
+    }
 }
+
+// -------- Redis cache helpers (best-effort, optional) --------
+var (
+    redisOnce sync.Once
+    redisCli  *store.Redis
+)
+
+func redisClient() *store.Redis {
+    redisOnce.Do(func() {
+        // Prefer config manager
+        cm := cfg.GetConfigManager()
+        if cm != nil {
+            c := cm.GetConfig()
+            if c != nil && c.Redis.Enable {
+                if r, err := store.NewRedis(&c.Redis); err == nil {
+                    redisCli = r
+                    return
+                }
+            }
+        }
+        // Fallback to ENV
+        if os.Getenv("REDIS_ENABLE") == "true" || os.Getenv("REDIS_HOST") != "" {
+            host := os.Getenv("REDIS_HOST")
+            if host == "" { host = "127.0.0.1" }
+            portStr := os.Getenv("REDIS_PORT")
+            if portStr == "" { portStr = "6379" }
+            port, _ := strconv.Atoi(portStr)
+            pass := os.Getenv("REDIS_PASSWORD")
+            dbStr := os.Getenv("REDIS_DB")
+            db, _ := strconv.Atoi(dbStr)
+            poolStr := os.Getenv("REDIS_POOLSIZE")
+            pool, _ := strconv.Atoi(poolStr)
+            rc := &cfg.RedisConfig{Enable: true, Host: host, Port: port, Password: pass, DB: db, PoolSize: pool}
+            if r, err := store.NewRedis(rc); err == nil {
+                redisCli = r
+                return
+            }
+        }
+        redisCli = nil
+    })
+    return redisCli
+}
+
+func redisKey(k string) string { return "audit:cache:" + k }

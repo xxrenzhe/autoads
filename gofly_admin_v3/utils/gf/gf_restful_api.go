@@ -76,18 +76,23 @@ func Success() *R {
 func (r *R) Regin(ctx *GinCtx) {
 	if r.Token == "" {
 		//如果已经登录则刷新token
-		getuser, exists := ctx.Get("user") //当前用户
-		if exists {
-			userinfo := getuser.(*routeuse.UserClaims)
-			tokenouttime := gconv.Int64(appConf_arr["tokenouttime"])
-			if userinfo.ExpiresAt-gtime.Now().Unix() < tokenouttime*60/2 { //小设置的时间超时时间一半就刷新/单位秒
-				token := ctx.Request.Header.Get("Authorization")
-				tockenarr, err := routeuse.Refresh(token)
-				if err == nil {
-					r.Token = gconv.String(tockenarr)
-				}
-			}
-		}
+        getuser, exists := ctx.Get("user") //当前用户
+        if exists {
+            userinfo := getuser.(*routeuse.UserClaims)
+            tokenouttime := gconv.Int64(appConf_arr["tokenouttime"])
+            // 剩余时间（秒）
+            var remain int64 = 0
+            if userinfo.ExpiresAt != nil {
+                remain = userinfo.ExpiresAt.Time.Unix() - gtime.Now().Unix()
+            }
+            if remain < tokenouttime*60/2 { // 剩余时间小于配置一半则刷新
+                token := ctx.Request.Header.Get("Authorization")
+                tockenarr, err := routeuse.Refresh(token)
+                if err == nil {
+                    r.Token = gconv.String(tockenarr)
+                }
+            }
+        }
 	}
 	ctx.JSON(http.StatusOK, GinObj{
 		"code":    r.Code,

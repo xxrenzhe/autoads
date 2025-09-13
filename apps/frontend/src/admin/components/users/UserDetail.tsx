@@ -178,7 +178,7 @@ export function UserDetail({
           <Button
             variant="outline"
             size="sm"
-            onClick={((: any): any) => onEdit?.(user)}
+            onClick={() => onEdit?.(user)}
           >
             <Edit className="h-4 w-4 mr-2" />
             Edit
@@ -186,7 +186,7 @@ export function UserDetail({
           <Button
             variant="destructive"
             size="sm"
-            onClick={((: any): any) => onDelete?.(user.id)}
+            onClick={() => onDelete?.(user.id)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
@@ -233,7 +233,7 @@ export function UserDetail({
                       </Badge>
                       <select
                         value={user.status}
-                        onChange={((e: any): any) => handleStatusChange(e.target.value)}
+                        onChange={(e) => handleStatusChange(e.target.value)}
                         className="text-xs border border-gray-300 rounded px-2 py-1"
                       >
                         <option value="active">Active</option>
@@ -249,7 +249,7 @@ export function UserDetail({
                       <Badge variant="outline">{user.role}</Badge>
                       <select
                         value={user.role}
-                        onChange={((e: any): any) => handleRoleChange(e.target.value)}
+                        onChange={(e) => handleRoleChange(e.target.value)}
                         className="text-xs border border-gray-300 rounded px-2 py-1"
                       >
                         <option value="user">User</option>
@@ -288,7 +288,7 @@ export function UserDetail({
                 <Button
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={((: any): any) => handleStatusChange(user.status === 'active' ? 'inactive' : 'active')}
+                  onClick={() => handleStatusChange(user.status === 'active' ? 'inactive' : 'active')}
                 >
                   {user.status === 'active' ? (
                     <>
@@ -354,7 +354,7 @@ export function UserDetail({
               currentPeriodEnd: user.subscription.expiresAt || new Date().toISOString(),
               cancelAtPeriodEnd: false
             } : null}
-            onSubscriptionChange={((: any): any) => {
+            onSubscriptionChange={() => {
               // Refresh user data to show updated subscription
               window.location.reload()
             }}

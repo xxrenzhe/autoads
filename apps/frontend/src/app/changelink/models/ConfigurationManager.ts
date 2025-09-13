@@ -312,9 +312,13 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('google_ads');
     return configs
-      .filter((config: any: any) => config.key.startsWith('googleAdsAccount_'))
-      .map((config: any: any) => config.value as GoogleAdsAccount)
-      .sort((a: GoogleAdsAccount, b: GoogleAdsAccount) => b.createdAt.getTime() - a.createdAt.getTime());
+      .filter((config: any) => config.key.startsWith('googleAdsAccount_'))
+      .map((config: any) => config.value as GoogleAdsAccount)
+      .sort((a: GoogleAdsAccount, b: GoogleAdsAccount) => {
+        const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as any).getTime();
+        const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as any).getTime();
+        return bTime - aTime;
+      });
   }
 
   /**

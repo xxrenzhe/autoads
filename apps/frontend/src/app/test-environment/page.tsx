@@ -348,7 +348,7 @@ export default function EnvironmentTestPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={((: any): any) => window.open('/api/health', '_blank')}
+              onClick={() => window.open('/api/health', '_blank')}
               className="justify-start"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
@@ -356,7 +356,7 @@ export default function EnvironmentTestPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={((: any): any) => window.open('https://console.cloud.google.com/', '_blank')}
+              onClick={() => window.open('https://console.cloud.google.com/', '_blank')}
               className="justify-start"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
@@ -364,7 +364,7 @@ export default function EnvironmentTestPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={((: any): any) => window.open('https://vercel.com/dashboard', '_blank')}
+              onClick={() => window.open('https://vercel.com/dashboard', '_blank')}
               className="justify-start"
             >
               <ExternalLink className="h-4 w-4 mr-2" />

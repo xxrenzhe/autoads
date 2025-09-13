@@ -300,7 +300,7 @@ export function UserForm({
                   id="name"
                   type="text"
                   value={formData.name}
-                  onChange={((e: any): any) => handleInputChange('name', e.target.value)}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="Enter full name"
                   className={validationErrors.name ? 'border-red-300' : ''}
                 />
@@ -317,7 +317,7 @@ export function UserForm({
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={((e: any): any) => handleInputChange('email', e.target.value)}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
                   placeholder="Enter email address"
                   className={validationErrors.email ? 'border-red-300' : ''}
                 />
@@ -336,7 +336,7 @@ export function UserForm({
                 <select
                   id="role"
                   value={formData.role}
-                  onChange={((e: any): any) => handleInputChange('role', e.target.value)}
+                  onChange={(e) => handleInputChange('role', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {availableRoles.map((role: any) => (
@@ -357,7 +357,7 @@ export function UserForm({
                 <select
                   id="status"
                   value={formData.status}
-                  onChange={((e: any): any) => handleInputChange('status', e.target.value)}
+                  onChange={(e) => handleInputChange('status', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {availableStatuses.map((status: any) => (
@@ -379,7 +379,7 @@ export function UserForm({
                   <div key={key} className="flex items-center space-x-2">
                     <Input
                       value={key}
-                      onChange={((e: any): any) => {
+                      onChange={(e) => {
                         const newKey = e.target.value
                         const newMetadata = { ...formData.metadata }
                         delete newMetadata[key]
@@ -391,7 +391,7 @@ export function UserForm({
                     />
                     <Input
                       value={String(value)}
-                      onChange={((e: any): any) => handleMetadataChange(key, e.target.value)}
+                      onChange={(e) => handleMetadataChange(key, e.target.value)}
                       placeholder="Value"
                       className="flex-1"
                     />
@@ -399,7 +399,7 @@ export function UserForm({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={((: any): any) => {
+                      onClick={() => {
                         const newMetadata = { ...formData.metadata }
                         delete newMetadata[key]
                         handleInputChange('metadata', newMetadata)
@@ -413,7 +413,7 @@ export function UserForm({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     const newKey = `field_${Date.now()}`
                     handleMetadataChange(newKey, '')
                   }}

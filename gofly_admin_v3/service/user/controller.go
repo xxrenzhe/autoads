@@ -1,10 +1,11 @@
 package user
 
 import (
-	"net/http"
+    "fmt"
+    "net/http"
 
-	"github.com/gin-gonic/gin"
-	"gofly-admin-v3/utils/gf"
+    "github.com/gin-gonic/gin"
+    "gofly-admin-v3/utils/gf"
 )
 
 // RegisterRequest 注册请求
@@ -81,11 +82,8 @@ func (c *Controller) Login(ctx *gin.Context) {
 
 // Profile 获取用户信息
 func (c *Controller) Profile(ctx *gin.Context) {
-	userID := ctx.GetHeader("X-User-ID")
-	if userID == "" {
-		gf.Failed().SetMsg("用户ID不能为空").Regin(ctx)
-		return
-	}
+    userID := getUserIDFromCtx(ctx)
+    if userID == "" { gf.Failed().SetMsg("用户未认证").Regin(ctx); return }
 
 	user, err := c.service.GetUserByID(userID)
 	if err != nil {
@@ -98,11 +96,8 @@ func (c *Controller) Profile(ctx *gin.Context) {
 
 // UpdateProfile 更新用户资料
 func (c *Controller) UpdateProfile(ctx *gin.Context) {
-	userID := ctx.GetHeader("X-User-ID")
-	if userID == "" {
-		gf.Failed().SetMsg("用户ID不能为空").Regin(ctx)
-		return
-	}
+    userID := getUserIDFromCtx(ctx)
+    if userID == "" { gf.Failed().SetMsg("用户未认证").Regin(ctx); return }
 
 	var req UpdateProfileRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -121,11 +116,8 @@ func (c *Controller) UpdateProfile(ctx *gin.Context) {
 
 // ChangePassword 修改密码
 func (c *Controller) ChangePassword(ctx *gin.Context) {
-	userID := ctx.GetHeader("X-User-ID")
-	if userID == "" {
-		gf.Failed().SetMsg("用户ID不能为空").Regin(ctx)
-		return
-	}
+    userID := getUserIDFromCtx(ctx)
+    if userID == "" { gf.Failed().SetMsg("用户未认证").Regin(ctx); return }
 
 	var req ChangePasswordRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -144,11 +136,8 @@ func (c *Controller) ChangePassword(ctx *gin.Context) {
 
 // StartTrial 开始试用
 func (c *Controller) StartTrial(ctx *gin.Context) {
-	userID := ctx.GetHeader("X-User-ID")
-	if userID == "" {
-		gf.Failed().SetMsg("用户ID不能为空").Regin(ctx)
-		return
-	}
+    userID := getUserIDFromCtx(ctx)
+    if userID == "" { gf.Failed().SetMsg("用户未认证").Regin(ctx); return }
 
 	err := c.service.StartTrial(userID)
 	if err != nil {
@@ -161,11 +150,8 @@ func (c *Controller) StartTrial(ctx *gin.Context) {
 
 // RefreshToken 刷新令牌
 func (c *Controller) RefreshToken(ctx *gin.Context) {
-	userID := ctx.GetHeader("X-User-ID")
-	if userID == "" {
-		gf.Failed().SetMsg("用户ID不能为空").Regin(ctx)
-		return
-	}
+    userID := getUserIDFromCtx(ctx)
+    if userID == "" { gf.Failed().SetMsg("用户未认证").Regin(ctx); return }
 
 	token, err := c.service.RefreshToken(userID)
 	if err != nil {
@@ -178,11 +164,8 @@ func (c *Controller) RefreshToken(ctx *gin.Context) {
 
 // Logout 登出
 func (c *Controller) Logout(ctx *gin.Context) {
-	userID := ctx.GetHeader("X-User-ID")
-	if userID == "" {
-		gf.Failed().SetMsg("用户ID不能为空").Regin(ctx)
-		return
-	}
+    userID := getUserIDFromCtx(ctx)
+    if userID == "" { gf.Failed().SetMsg("用户未认证").Regin(ctx); return }
 
 	err := c.service.Logout(userID)
 	if err != nil {
@@ -195,8 +178,26 @@ func (c *Controller) Logout(ctx *gin.Context) {
 
 // GoogleLogin Google登录
 func (c *Controller) GoogleLogin(ctx *gin.Context) {
-	// TODO: 实现Google OAuth登录
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Google登录功能待实现",
-	})
+    // TODO: 实现Google OAuth登录
+    ctx.JSON(http.StatusOK, gin.H{
+        "message": "Google登录功能待实现",
+    })
+}
+
+// 从上下文获取字符串用户ID
+func getUserIDFromCtx(ctx *gin.Context) string {
+    if v := ctx.GetString("user_id"); v != "" {
+        return v
+    }
+    if vRaw, ok := ctx.Get("userID"); ok {
+        switch vv := vRaw.(type) {
+        case string:
+            return vv
+        case int64:
+            return fmt.Sprintf("%d", vv)
+        case int:
+            return fmt.Sprintf("%d", vv)
+        }
+    }
+    return ""
 }

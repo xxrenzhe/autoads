@@ -154,7 +154,7 @@ export default function AdminDocsPage() {
                 {allTags?.filter(Boolean)?.map((tag: any) => (
                   <button
                     key={tag}
-                    onClick={((: any): any) => toggleTag(tag)}
+                    onClick={() => toggleTag(tag)}
                     className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                       selectedTags.includes(tag)
                         ? 'bg-blue-100 text-blue-800 border border-blue-200'
@@ -167,7 +167,7 @@ export default function AdminDocsPage() {
               </div>
               {selectedTags.length > 0 && (
                 <button
-                  onClick={((: any): any) => setSelectedTags([])}
+                  onClick={() => setSelectedTags([])}
                   className="mt-3 text-sm text-blue-600 hover:text-blue-800"
                 >
                   清除筛选
@@ -264,7 +264,7 @@ export default function AdminDocsPage() {
                   尝试调整搜索关键词或清除筛选条件
                 </p>
                 <button
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     setSearchQuery('');
                     setSelectedTags([]);
                   }}

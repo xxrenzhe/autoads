@@ -218,7 +218,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
     }
   };
 
-  const renderStepContent = () => {
+  const renderStepContent = (): React.ReactNode => {
     switch (steps[currentStep].id) {
       case 'welcome':
         return (
@@ -258,10 +258,11 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                 <Input
                   id="username"
                   value={setupData.user.username}
-                  onChange={((e: any) => setSetupData(prev: any) => ({
-                    ...prev,
-                    user: { ...prev.user, username: e.target.value }
-                  }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setSetupData(prev => ({
+                      ...prev,
+                      user: { ...prev.user, username: e.target.value },
+                    }))}
                   placeholder="输入您的用户名"
                 />
               </div>
@@ -272,10 +273,11 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                   id="email"
                   type="email"
                   value={setupData.user.email}
-                  onChange={((e: any) => setSetupData(prev: any) => ({
-                    ...prev,
-                    user: { ...prev.user, email: e.target.value }
-                  }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setSetupData(prev => ({
+                      ...prev,
+                      user: { ...prev.user, email: e.target.value },
+                    }))}
                   placeholder="输入您的邮箱地址"
                 />
                 <p className="text-sm text-gray-500 mt-1">
@@ -300,10 +302,11 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                 <Input
                   id="apiUrl"
                   value={setupData.adspower.apiUrl}
-                  onChange={((e: any) => setSetupData(prev: any) => ({
-                    ...prev,
-                    adspower: { ...prev.adspower, apiUrl: e.target.value }
-                  }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setSetupData(prev => ({
+                      ...prev,
+                      adspower: { ...prev.adspower, apiUrl: e.target.value },
+                    }))}
                   placeholder="http://local.adspower.net:50325"
                 />
                 <p className="text-sm text-gray-500 mt-1">
@@ -316,10 +319,11 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                 <Input
                   id="testEnvironmentId"
                   value={setupData.adspower.testEnvironmentId}
-                  onChange={((e: any) => setSetupData(prev: any) => ({
-                    ...prev,
-                    adspower: { ...prev.adspower, testEnvironmentId: e.target.value }
-                  }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setSetupData(prev => ({
+                      ...prev,
+                      adspower: { ...prev.adspower, testEnvironmentId: e.target.value },
+                    }))}
                   placeholder="输入一个可用的环境 ID"
                 />
                 <p className="text-sm text-gray-500 mt-1">
@@ -360,10 +364,11 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                 <Input
                   id="clientId"
                   value={setupData.googleAds.clientId}
-                  onChange={((e: any) => setSetupData(prev: any) => ({
-                    ...prev,
-                    googleAds: { ...prev.googleAds, clientId: e.target.value }
-                  }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setSetupData(prev => ({
+                      ...prev,
+                      googleAds: { ...prev.googleAds, clientId: e.target.value },
+                    }))}
                   placeholder="输入 Google Ads API 客户端 ID"
                 />
               </div>
@@ -374,10 +379,11 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                   id="clientSecret"
                   type="password"
                   value={setupData.googleAds.clientSecret}
-                  onChange={((e: any) => setSetupData(prev: any) => ({
-                    ...prev,
-                    googleAds: { ...prev.googleAds, clientSecret: e.target.value }
-                  }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setSetupData(prev => ({
+                      ...prev,
+                      googleAds: { ...prev.googleAds, clientSecret: e.target.value },
+                    }))}
                   placeholder="输入 Google Ads API 客户端密钥"
                 />
               </div>
@@ -388,10 +394,11 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                   id="developerToken"
                   type="password"
                   value={setupData.googleAds.developerToken}
-                  onChange={((e: any) => setSetupData(prev: any) => ({
-                    ...prev,
-                    googleAds: { ...prev.googleAds, developerToken: e.target.value }
-                  }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setSetupData(prev => ({
+                      ...prev,
+                      googleAds: { ...prev.googleAds, developerToken: e.target.value },
+                    }))}
                   placeholder="输入 Google Ads 开发者令牌"
                 />
               </div>
@@ -446,7 +453,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
         );
 
       default:
-        return null as any;
+        return null;
     }
   };
 
@@ -465,7 +472,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
         {/* 步骤指示器 */}
         <div className="flex justify-center mb-8">
           <div className="flex space-x-4">
-            {steps.map((step, index: any) => {
+            {steps.map((step, index) => {
               const Icon = step.icon;
               const isActive = index === currentStep;
               const isCompleted = step.completed;

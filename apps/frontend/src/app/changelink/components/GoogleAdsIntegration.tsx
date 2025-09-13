@@ -374,7 +374,7 @@ export function GoogleAdsIntegration() {
           <p className="text-muted-foreground">实时管理Google Ads广告系列和优化</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={(async (): any) => {
+          <Button variant="outline" onClick={async () => {
             await loadCampaigns();
             await loadPerformance();
             await loadRecommendations();
@@ -482,8 +482,8 @@ export function GoogleAdsIntegration() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {campaigns.slice(0, 5).map((campaign: any) => (
-                  <div key={campaign.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    {campaigns.slice(0, 5).map((campaign) => (
+                      <div key={campaign.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
                       {getChannelTypeIcon(campaign.advertisingChannelType)}
                       <div>
@@ -501,7 +501,7 @@ export function GoogleAdsIntegration() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={((: any): any) => campaign.status === 'ENABLED' ? 
+                        onClick={() => campaign.status === 'ENABLED' ? 
                           pauseCampaign(campaign.id) : enableCampaign(campaign.id)}
                       >
                         {campaign.status === 'ENABLED' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -548,14 +548,14 @@ export function GoogleAdsIntegration() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => setSelectedCampaign(campaign.id)}
+                          onClick={() => setSelectedCampaign(campaign.id)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => campaign.status === 'ENABLED' ? 
+                          onClick={() => campaign.status === 'ENABLED' ? 
                             pauseCampaign(campaign.id) : enableCampaign(campaign.id)}
                         >
                           {campaign.status === 'ENABLED' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -588,7 +588,7 @@ export function GoogleAdsIntegration() {
                     id="startDate"
                     type="date"
                     value={dateRange.startDate}
-                    onChange={((e: any) => setDateRange(prev: any) => ({ ...prev, startDate: e.target.value }))}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
                   />
                 </div>
                 <div>
@@ -597,10 +597,10 @@ export function GoogleAdsIntegration() {
                     id="endDate"
                     type="date"
                     value={dateRange.endDate}
-                    onChange={((e: any) => setDateRange(prev: any) => ({ ...prev, endDate: e.target.value }))}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
                   />
                 </div>
-                <Button onClick={(async (): any) => await loadPerformance()}>
+                <Button onClick={async () => await loadPerformance()}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   更新数据
                 </Button>
@@ -678,7 +678,7 @@ export function GoogleAdsIntegration() {
                       </div>
                       <Button
                         size="sm"
-                        onClick={((: any): any) => applyRecommendation(recommendation)}
+                        onClick={() => applyRecommendation(recommendation)}
                       >
                         <Zap className="h-4 w-4 mr-2" />
                         应用建议
@@ -723,7 +723,7 @@ export function GoogleAdsIntegration() {
                     <SelectValue placeholder="选择广告系列" />
                   </SelectTrigger>
                   <SelectContent>
-                    {campaigns.map((campaign: any) => (
+                    {campaigns.map((campaign) => (
                       <SelectItem key={campaign.id} value={campaign.id}>
                         {campaign.name}
                       </SelectItem>
@@ -733,7 +733,7 @@ export function GoogleAdsIntegration() {
               </div>
 
               <div className="space-y-4">
-                {adGroups.map((adGroup: any) => (
+                {adGroups.map((adGroup) => (
                   <div key={adGroup.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
                       <h3 className="font-medium">{adGroup.name}</h3>
@@ -752,7 +752,7 @@ export function GoogleAdsIntegration() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => setSelectedAdGroup(adGroup.id)}
+                          onClick={() => setSelectedAdGroup(adGroup.id)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -783,7 +783,7 @@ export function GoogleAdsIntegration() {
                     <SelectValue placeholder="选择广告组" />
                   </SelectTrigger>
                   <SelectContent>
-                    {adGroups.map((adGroup: any) => (
+                    {adGroups.map((adGroup) => (
                       <SelectItem key={adGroup.id} value={adGroup.id}>
                         {adGroup.name}
                       </SelectItem>
@@ -793,7 +793,7 @@ export function GoogleAdsIntegration() {
               </div>
 
               <div className="space-y-4">
-                {ads.map((ad: any) => (
+                {ads.map((ad) => (
                   <div key={ad.id} className="border rounded-lg p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -812,7 +812,7 @@ export function GoogleAdsIntegration() {
                       <div className="mb-2">
                         <span className="text-sm text-muted-foreground">标题:</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {ad.headlines.map((headline, index: any) => (
+                          {ad.headlines.map((headline, index) => (
                             <Badge key={index} variant="outline" className="text-xs">
                               {headline}
                             </Badge>
@@ -825,7 +825,7 @@ export function GoogleAdsIntegration() {
                       <div className="mb-2">
                         <span className="text-sm text-muted-foreground">描述:</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {ad.descriptions.map((description, index: any) => (
+                          {ad.descriptions.map((description, index) => (
                             <Badge key={index} variant="outline" className="text-xs">
                               {description}
                             </Badge>

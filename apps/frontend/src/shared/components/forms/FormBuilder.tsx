@@ -169,7 +169,7 @@ function FieldRenderer<T extends FieldValues>({
                 max={numberField.max}
                 step={numberField.step}
                 className={clsx(error && "border-red-500", field.className)}
-                onChange={((e: any): any) => controllerField.onChange(Number(e.target.value))}
+                onChange={(e) => controllerField.onChange(Number(e.target.value))}
               />
             )}
           />
@@ -249,13 +249,13 @@ function FieldRenderer<T extends FieldValues>({
                         type="checkbox"
                         value={option.value}
                         checked={controllerField.value?.includes(option.value)}
-                        onChange={((e: any): any) => {
+                        onChange={(e) => {
                           const currentValue = controllerField.value || [];
                           if (e.target.checked) {
                             controllerField.onChange([...currentValue, option.value]);
                           } else {
                             controllerField.onChange(
-                              currentValue.filter((v: string: any) => v !== option.value)
+                              currentValue.filter((v: string) => v !== option.value)
                             );
                           }
                         }}
@@ -280,7 +280,7 @@ function FieldRenderer<T extends FieldValues>({
                   <input
                     type="checkbox"
                     checked={controllerField.value || false}
-                    onChange={((e: any): any) => controllerField.onChange(e.target.checked)}
+                    onChange={(e) => controllerField.onChange(e.target.checked)}
                     disabled={field.disabled}
                     className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
@@ -305,7 +305,7 @@ function FieldRenderer<T extends FieldValues>({
                       type="radio"
                       value={option.value}
                       checked={controllerField.value === option.value}
-                      onChange={((: any): any) => controllerField.onChange(option.value)}
+                      onChange={() => controllerField.onChange(option.value)}
                       disabled={field.disabled || option.disabled}
                       className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                     />
@@ -349,7 +349,7 @@ function FieldRenderer<T extends FieldValues>({
                 accept={fileField.accept}
                 multiple={fileField.multiple}
                 disabled={field.disabled}
-                onChange={((e: any): any) => {
+                onChange={(e) => {
                   const files = e.target.files;
                   controllerField.onChange(fileField.multiple ? files : files?.[0]);
                 }}
@@ -450,7 +450,7 @@ export function FormBuilder<T extends FieldValues = FieldValues>({
       onSubmit={handleSubmit(handleFormSubmit)}
       className={clsx("space-y-8", className)}
     >
-      {sections.map((section, sectionIndex: any) => (
+      {sections.map((section, sectionIndex: number) => (
         <div key={sectionIndex} className={clsx("space-y-6", section.className)}>
           {(section.title || section.description) && (
             <div>
@@ -482,7 +482,7 @@ export function FormBuilder<T extends FieldValues = FieldValues>({
           <Button
             type="button"
             variant="outline"
-            onClick={((: any): any) => reset()}
+            onClick={() => reset()}
             disabled={loading || isSubmitting}
           >
             {resetLabel}

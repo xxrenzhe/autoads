@@ -310,7 +310,7 @@ const InvitationModule: React.FC = () => {
                   <Box>
                     <Tooltip title={copied ? '已复制' : '复制邀请码'}>
                       <IconButton 
-                        onClick={((: any): any) => copyToClipboard(currentInvitation.code!)}
+                        onClick={() => copyToClipboard(currentInvitation.code!)}
                         color={copied ? 'success' : 'primary'}
                       >
                         <CopyAll />
@@ -462,7 +462,7 @@ const InvitationModule: React.FC = () => {
             </Typography>
           </DialogContent>
           <DialogActions sx={{ justifyContent: 'center' }}>
-            <Button onClick={((: any): any) => setShowSuccessDialog(false)} variant="contained">
+            <Button onClick={() => setShowSuccessDialog(false)} variant="contained">
               确定
             </Button>
           </DialogActions>

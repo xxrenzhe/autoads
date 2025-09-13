@@ -255,7 +255,7 @@ export default function ChangeLinkClient() {
         </Alert>
       )}
 
-      <Tabs value={currentTab} onValueChange={((value: any): any) => setCurrentTab(value as "accounts" | "configurations" | "executions" | "monitoring")} className="space-y-4">
+      <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as 'accounts' | 'configurations' | 'executions' | 'monitoring')} className="space-y-4">
         <TabsList>
           <TabsTrigger value="accounts">Google Ads 账户</TabsTrigger>
           <TabsTrigger value="configurations">配置管理</TabsTrigger>
@@ -268,7 +268,7 @@ export default function ChangeLinkClient() {
             <h2 className="text-xl font-semibold">Google Ads 账户管理</h2>
             <ProtectedButton 
               featureName="adscenter"
-              onClick={((: any): any) => setShowAddAccount(true)}
+              onClick={() => setShowAddAccount(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
               添加账户
@@ -286,7 +286,7 @@ export default function ChangeLinkClient() {
                   <Input
                     id="accountId"
                     value={newAccount.accountId}
-                    onChange={((e: any): any) => setNewAccount({ ...newAccount, accountId: e.target.value })}
+                    onChange={(e) => setNewAccount({ ...newAccount, accountId: e.target.value })}
                     placeholder="输入 Google Ads 账户 ID"
                   />
                 </div>
@@ -295,7 +295,7 @@ export default function ChangeLinkClient() {
                   <Input
                     id="accountName"
                     value={newAccount.accountName}
-                    onChange={((e: any): any) => setNewAccount({ ...newAccount, accountName: e.target.value })}
+                    onChange={(e) => setNewAccount({ ...newAccount, accountName: e.target.value })}
                     placeholder="输入账户名称"
                   />
                 </div>
@@ -306,14 +306,14 @@ export default function ChangeLinkClient() {
                   >
                     保存
                   </ProtectedButton>
-                  <Button variant="outline" onClick={((: any): any) => setShowAddAccount(false)}>取消</Button>
+                  <Button variant="outline" onClick={() => setShowAddAccount(false)}>取消</Button>
                 </div>
               </CardContent>
             </Card>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {accounts.map((account: any) => (
+            {accounts.map((account) => (
               <Card key={account.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -339,7 +339,7 @@ export default function ChangeLinkClient() {
             <h2 className="text-xl font-semibold">配置管理</h2>
             <ProtectedButton 
               featureName="adscenter"
-              onClick={((: any): any) => setShowAddConfig(true)}
+              onClick={() => setShowAddConfig(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
               添加配置
@@ -357,7 +357,7 @@ export default function ChangeLinkClient() {
                   <Input
                     id="configName"
                     value={newConfig.name}
-                    onChange={((e: any): any) => setNewConfig({ ...newConfig, name: e.target.value })}
+                    onChange={(e) => setNewConfig({ ...newConfig, name: e.target.value })}
                     placeholder="输入配置名称"
                   />
                 </div>
@@ -366,7 +366,7 @@ export default function ChangeLinkClient() {
                   <Textarea
                     id="configDescription"
                     value={newConfig.description}
-                    onChange={((e: any): any) => setNewConfig({ ...newConfig, description: e.target.value })}
+                    onChange={(e) => setNewConfig({ ...newConfig, description: e.target.value })}
                     placeholder="输入配置描述"
                   />
                 </div>
@@ -375,7 +375,7 @@ export default function ChangeLinkClient() {
                   <Textarea
                     id="configData"
                     value={newConfig.configData}
-                    onChange={((e: any): any) => setNewConfig({ ...newConfig, configData: e.target.value })}
+                    onChange={(e) => setNewConfig({ ...newConfig, configData: e.target.value })}
                     placeholder='{"key": "value"}'
                     rows={5}
                   />
@@ -387,14 +387,14 @@ export default function ChangeLinkClient() {
                   >
                     保存
                   </ProtectedButton>
-                  <Button variant="outline" onClick={((: any): any) => setShowAddConfig(false)}>取消</Button>
+                  <Button variant="outline" onClick={() => setShowAddConfig(false)}>取消</Button>
                 </div>
               </CardContent>
             </Card>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {configurations.map((config: any) => (
+            {configurations.map((config) => (
               <Card key={config.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -412,7 +412,7 @@ export default function ChangeLinkClient() {
                   <ProtectedButton 
                     featureName="adscenter"
                     size="sm" 
-                    onClick={((: any): any) => handleStartExecution(config.id)}
+                    onClick={() => handleStartExecution(config.id)}
                     className="w-full"
                   >
                     <Play className="h-4 w-4 mr-2" />
@@ -428,7 +428,7 @@ export default function ChangeLinkClient() {
           <h2 className="text-xl font-semibold">执行监控</h2>
           
           <div className="space-y-4">
-            {executions.map((execution: any) => (
+            {executions.map((execution) => (
               <Card key={execution.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">

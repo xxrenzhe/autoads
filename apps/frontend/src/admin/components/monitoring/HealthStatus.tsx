@@ -169,7 +169,7 @@ export function HealthStatus({
       {/* Services List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {isServicesLoading ? (
-          Array.from({ length: 4 }).map((_, index: any) => (
+          Array.from({ length: 4 }).map((_, index) => (
             <Card key={index} className="animate-pulse">
               <CardContent className="p-6">
                 <div className="space-y-4">
@@ -205,7 +205,7 @@ export function HealthStatus({
                 className={`transition-all hover:shadow-md ${
                   selectedService?.name === service.name ? 'ring-2 ring-blue-500' : ''
                 }`}
-                onClick={((: any): any) => setSelectedService(service)}
+                onClick={() => setSelectedService(service)}
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
@@ -267,7 +267,7 @@ export function HealthStatus({
                     <div className="mb-4">
                       <div className="text-sm text-gray-500 mb-2">Dependencies</div>
                       <div className="flex flex-wrap gap-1">
-                        {service.dependencies?.map((dep: string: any) => (
+                        {service.dependencies?.map((dep) => (
                           <Badge key={dep} variant="outline" className="text-xs">
                             {dep}
                           </Badge>
@@ -281,7 +281,7 @@ export function HealthStatus({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((e: any): any) => {
+                        onClick={(e) => {
                           e.stopPropagation()
                           handleRestartService(service.name)
                         }}
@@ -298,7 +298,7 @@ export function HealthStatus({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={((e: any): any) => {
+                          onClick={(e) => {
                             e.stopPropagation()
                             window.open(service.endpoint, '_blank')
                           }}
@@ -310,7 +310,7 @@ export function HealthStatus({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((e: any): any) => {
+                        onClick={(e) => {
                           e.stopPropagation()
                           // Open service details modal or navigate to service page
                         }}
@@ -338,7 +338,7 @@ export function HealthStatus({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={((: any): any) => setSelectedService(null)}
+                onClick={() => setSelectedService(null)}
               >
                 ×
               </Button>
@@ -386,7 +386,7 @@ export function HealthStatus({
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={((: any): any) => handleRestartService(selectedService.name)}
+                    onClick={() => handleRestartService(selectedService.name)}
                     disabled={isRestartingService}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
@@ -397,7 +397,7 @@ export function HealthStatus({
                     <Button
                       variant="outline"
                       className="w-full justify-start"
-                      onClick={((: any): any) => window.open(selectedService.endpoint, '_blank')}
+                      onClick={() => window.open(selectedService.endpoint, '_blank')}
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Open Endpoint

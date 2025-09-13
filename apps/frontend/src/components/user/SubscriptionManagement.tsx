@@ -257,7 +257,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
               <Button
                 variant="contained"
                 startIcon={<UpgradeIcon />}
-                onClick={((: any): any) => {
+                onClick={() => {
                   // Navigate to pricing page
                   window.location.href = '/pricing';
                 }}
@@ -271,7 +271,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
               {!isTrial && (
                 <Button
                   variant="outlined"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     // Navigate to subscription management
                     window.location.href = '/subscription/manage';
                   }}
@@ -284,7 +284,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
               {isTrial && (
                 <Button
                   variant="outlined"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     // Show trial benefits or FAQ
                     window.open('/pricing#faq', '_blank');
                   }}
@@ -304,7 +304,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
             <Button
               variant="contained"
               size="large"
-              onClick={((: any): any) => {
+              onClick={() => {
                 window.location.href = '/pricing';
               }}
               sx={{ width: '100%' }}

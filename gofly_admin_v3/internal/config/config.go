@@ -1,15 +1,15 @@
 package config
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"path/filepath"
-	"sync"
-	"time"
+    "fmt"
+    "log"
+    "os"
+    "path/filepath"
+    "sync"
+    "time"
 
-	"github.com/fsnotify/fsnotify"
-	"gopkg.in/yaml.v2"
+    "github.com/fsnotify/fsnotify"
+    "gopkg.in/yaml.v2"
 )
 
 // Config 配置结构体
@@ -102,9 +102,17 @@ type HTTPConfig struct {
 
 // RateLimitConfig 速率限制配置
 type RateLimitConfig struct {
-	Enabled           bool `yaml:"enabled"`
-	RequestsPerMinute int  `yaml:"requests_per_minute"`
-	Burst             int  `yaml:"burst"`
+    Enabled           bool `yaml:"enabled"`
+    RequestsPerMinute int  `yaml:"requests_per_minute"`
+    Burst             int  `yaml:"burst"`
+    Plans             map[string]PlanRate `yaml:"plans"`
+}
+
+// PlanRate 单套餐限流配置
+type PlanRate struct {
+    RPM   int     `yaml:"rpm"`  // 每分钟请求数（可选）
+    RPS   float64 `yaml:"rps"`  // 每秒请求数（可选）
+    Burst int     `yaml:"burst"`
 }
 
 // ProxyConfig 代理配置
@@ -197,13 +205,16 @@ func (cm *ConfigManager) LoadConfig(configPath string) error {
 		return fmt.Errorf("failed to read config file: %v", err)
 	}
 
-	// 解析YAML
-	config := &Config{}
-	if err := yaml.Unmarshal(data, config); err != nil {
-		return fmt.Errorf("failed to parse config file: %v", err)
-	}
+    // 解析YAML
+    config := &Config{}
+    if err := yaml.Unmarshal(data, config); err != nil {
+        return fmt.Errorf("failed to parse config file: %v", err)
+    }
 
-	// Note: Configuration validation is temporarily disabled
+    // 填充默认值并校验配置
+    if err := validateAndFillDefaults(config); err != nil {
+        return fmt.Errorf("invalid configuration: %v", err)
+    }
 
 	cm.config = config
 
@@ -213,6 +224,113 @@ func (cm *ConfigManager) LoadConfig(configPath string) error {
 	}
 
 	return nil
+}
+
+// validateAndFillDefaults 校验并填充默认值
+func validateAndFillDefaults(c *Config) error {
+    // App
+    if c.App.Port == 0 {
+        c.App.Port = 8080
+    }
+    if c.App.Version == "" {
+        c.App.Version = "3.0.0"
+    }
+
+    // DB
+    if c.DB.Type == "" {
+        c.DB.Type = "mysql"
+    }
+    if c.DB.Charset == "" {
+        c.DB.Charset = "utf8mb4"
+    }
+    if c.DB.Pool.MaxIdle == 0 {
+        c.DB.Pool.MaxIdle = 10
+    }
+    if c.DB.Pool.MaxOpen == 0 {
+        c.DB.Pool.MaxOpen = 100
+    }
+    if c.DB.Pool.MaxLifetime == 0 {
+        c.DB.Pool.MaxLifetime = 3600
+    }
+
+    // Redis
+    if c.Redis.PoolSize == 0 {
+        c.Redis.PoolSize = 100
+    }
+    if c.Redis.Prefix == "" {
+        c.Redis.Prefix = "autoads:"
+    }
+
+    // Cache
+    if c.Cache.DefaultExpire == 0 {
+        c.Cache.DefaultExpire = 3600
+    }
+    if c.Cache.RedisPrefix == "" {
+        c.Cache.RedisPrefix = "autoads:cache:"
+    }
+
+    // HTTP
+    if c.HTTP.Timeout == 0 {
+        c.HTTP.Timeout = 30
+    }
+    if c.HTTP.MaxIdleConns == 0 {
+        c.HTTP.MaxIdleConns = 100
+    }
+    if c.HTTP.MaxIdleConnsPerHost == 0 {
+        c.HTTP.MaxIdleConnsPerHost = 10
+    }
+    if c.HTTP.IdleConnTimeout == 0 {
+        c.HTTP.IdleConnTimeout = 90
+    }
+
+    // RateLimit
+    if c.RateLimit.Enabled && c.RateLimit.RequestsPerMinute == 0 {
+        c.RateLimit.RequestsPerMinute = 60
+    }
+    if c.RateLimit.Burst == 0 {
+        c.RateLimit.Burst = 10
+    }
+    // 规范化套餐限额：优先使用 RPS；若仅提供 RPM 则换算
+    if c.RateLimit.Plans == nil {
+        c.RateLimit.Plans = map[string]PlanRate{}
+    }
+    for name, pr := range c.RateLimit.Plans {
+        if pr.RPS == 0 && pr.RPM > 0 {
+            pr.RPS = float64(pr.RPM) / 60.0
+        }
+        if pr.Burst == 0 {
+            pr.Burst = c.RateLimit.Burst
+        }
+        c.RateLimit.Plans[name] = pr
+    }
+
+    // Upload
+    if c.Upload.MaxSize == 0 {
+        c.Upload.MaxSize = 10 * 1024 * 1024
+    }
+    if c.Upload.Path == "" {
+        c.Upload.Path = "uploads"
+    }
+
+    // TaskQueue
+    if c.TaskQueue.WorkerCount == 0 {
+        c.TaskQueue.WorkerCount = 10
+    }
+    if c.TaskQueue.QueueSize == 0 {
+        c.TaskQueue.QueueSize = 1000
+    }
+    if c.TaskQueue.RetryTimes == 0 {
+        c.TaskQueue.RetryTimes = 3
+    }
+    if c.TaskQueue.RetryInterval == 0 {
+        c.TaskQueue.RetryInterval = 60
+    }
+
+    // Basic checks
+    if c.App.Port < 1 || c.App.Port > 65535 {
+        return fmt.Errorf("app.port out of range: %d", c.App.Port)
+    }
+    return nil
 }
 
 // GetConfig 获取当前配置

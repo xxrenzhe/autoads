@@ -390,14 +390,14 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                   <Input
                     id="system-name"
                     value={config.general.systemName}
-                    onChange={((e: any): any) => updateConfig('general', 'systemName', e.target.value)}
+                    onChange={(e) => updateConfig('general', 'systemName', e.target.value)}
                   />
                 </div>
                 <div>
                   <Label htmlFor="timezone">Timezone</Label>
                   <Select
                     value={config.general.timezone}
-                    onValueChange={((value: any): any) => updateConfig('general', 'timezone', value)}
+                    onValueChange={(value) => updateConfig('general', 'timezone', value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -414,7 +414,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                   <Label htmlFor="language">Language</Label>
                   <Select
                     value={config.general.language}
-                    onValueChange={((value: any): any) => updateConfig('general', 'language', value)}
+                    onValueChange={(value) => updateConfig('general', 'language', value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -430,7 +430,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                   <Label htmlFor="date-format">Date Format</Label>
                   <Select
                     value={config.general.dateFormat}
-                    onValueChange={((value: any): any) => updateConfig('general', 'dateFormat', value)}
+                    onValueChange={(value) => updateConfig('general', 'dateFormat', value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -451,7 +451,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="auto-save"
                       checked={config.general.autoSave}
-                      onCheckedChange={((checked: boolean: any): any) => updateConfig('general', 'autoSave', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('general', 'autoSave', checked)}
                     />
                     <Label htmlFor="auto-save">Auto-save changes</Label>
                   </div>
@@ -459,7 +459,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="debug-mode"
                       checked={config.general.debugMode}
-                      onCheckedChange={((checked: boolean: any): any) => updateConfig('general', 'debugMode', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('general', 'debugMode', checked)}
                     />
                     <Label htmlFor="debug-mode">Debug mode</Label>
                   </div>
@@ -490,7 +490,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="5"
                     max="480"
                     value={config.security.sessionTimeout}
-                    onChange={((e: any): any) => updateConfig('security', 'sessionTimeout', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('security', 'sessionTimeout', parseInt(e.target.value))}
                   />
                 </div>
                 <div>
@@ -501,7 +501,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="3"
                     max="10"
                     value={config.security.maxLoginAttempts}
-                    onChange={((e: any): any) => updateConfig('security', 'maxLoginAttempts', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('security', 'maxLoginAttempts', parseInt(e.target.value))}
                   />
                 </div>
               </div>
@@ -517,7 +517,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       min="6"
                       max="20"
                       value={config.security.passwordPolicy.minLength}
-                      onChange={((e: any): any) => updateNestedConfig('security', 'passwordPolicy', 'minLength', parseInt(e.target.value))}
+                      onChange={(e) => updateNestedConfig('security', 'passwordPolicy', 'minLength', parseInt(e.target.value))}
                     />
                   </div>
                   <div className="space-y-3">
@@ -525,7 +525,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       <Switch
                         id="require-uppercase"
                         checked={config.security.passwordPolicy.requireUppercase}
-                        onCheckedChange={((checked: boolean: any): any) => updateNestedConfig('security', 'passwordPolicy', 'requireUppercase', checked)}
+                        onCheckedChange={(checked: boolean) => updateNestedConfig('security', 'passwordPolicy', 'requireUppercase', checked)}
                       />
                       <Label htmlFor="require-uppercase">Require uppercase letters</Label>
                     </div>
@@ -533,7 +533,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       <Switch
                         id="require-lowercase"
                         checked={config.security.passwordPolicy.requireLowercase}
-                        onCheckedChange={((checked: boolean: any): any) => updateNestedConfig('security', 'passwordPolicy', 'requireLowercase', checked)}
+                        onCheckedChange={(checked: boolean) => updateNestedConfig('security', 'passwordPolicy', 'requireLowercase', checked)}
                       />
                       <Label htmlFor="require-lowercase">Require lowercase letters</Label>
                     </div>
@@ -541,7 +541,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       <Switch
                         id="require-numbers"
                         checked={config.security.passwordPolicy.requireNumbers}
-                        onCheckedChange={((checked: boolean: any): any) => updateNestedConfig('security', 'passwordPolicy', 'requireNumbers', checked)}
+                        onCheckedChange={(checked: boolean) => updateNestedConfig('security', 'passwordPolicy', 'requireNumbers', checked)}
                       />
                       <Label htmlFor="require-numbers">Require numbers</Label>
                     </div>
@@ -549,7 +549,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       <Switch
                         id="require-special"
                         checked={config.security.passwordPolicy.requireSpecialChars}
-                        onCheckedChange={((checked: boolean: any): any) => updateNestedConfig('security', 'passwordPolicy', 'requireSpecialChars', checked)}
+                        onCheckedChange={(checked: boolean) => updateNestedConfig('security', 'passwordPolicy', 'requireSpecialChars', checked)}
                       />
                       <Label htmlFor="require-special">Require special characters</Label>
                     </div>
@@ -564,7 +564,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="two-factor"
                       checked={config.security.twoFactorAuth}
-                      onCheckedChange={((checked: boolean: any): any) => updateConfig('security', 'twoFactorAuth', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('security', 'twoFactorAuth', checked)}
                     />
                     <Label htmlFor="two-factor">Enable two-factor authentication</Label>
                   </div>
@@ -572,7 +572,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Label htmlFor="encryption-level">Encryption Level</Label>
                     <Select
                       value={config.security.encryptionLevel}
-                      onValueChange={((value: 'basic' | 'standard' | 'high': any): any) => updateConfig('security', 'encryptionLevel', value)}
+                      onValueChange={(value: 'basic' | 'standard' | 'high') => updateConfig('security', 'encryptionLevel', value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -611,7 +611,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="1"
                     max="20"
                     value={config.performance.maxConcurrentExecutions}
-                    onChange={((e: any): any) => updateConfig('performance', 'maxConcurrentExecutions', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('performance', 'maxConcurrentExecutions', parseInt(e.target.value))}
                   />
                 </div>
                 <div>
@@ -622,7 +622,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="30"
                     max="3600"
                     value={config.performance.executionTimeout}
-                    onChange={((e: any): any) => updateConfig('performance', 'executionTimeout', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('performance', 'executionTimeout', parseInt(e.target.value))}
                   />
                 </div>
                 <div>
@@ -633,7 +633,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="0"
                     max="10"
                     value={config.performance.retryAttempts}
-                    onChange={((e: any): any) => updateConfig('performance', 'retryAttempts', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('performance', 'retryAttempts', parseInt(e.target.value))}
                   />
                 </div>
                 <div>
@@ -644,7 +644,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="100"
                     max="10000"
                     value={config.performance.retryDelay}
-                    onChange={((e: any): any) => updateConfig('performance', 'retryDelay', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('performance', 'retryDelay', parseInt(e.target.value))}
                   />
                 </div>
               </div>
@@ -656,7 +656,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="cache-enabled"
                       checked={config.performance.cacheEnabled}
-                      onCheckedChange={((checked: boolean: any): any) => updateConfig('performance', 'cacheEnabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('performance', 'cacheEnabled', checked)}
                     />
                     <Label htmlFor="cache-enabled">Enable caching</Label>
                   </div>
@@ -668,14 +668,14 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       min="10"
                       max="1000"
                       value={config.performance.cacheSize}
-                      onChange={((e: any): any) => updateConfig('performance', 'cacheSize', parseInt(e.target.value))}
+                      onChange={(e) => updateConfig('performance', 'cacheSize', parseInt(e.target.value))}
                     />
                   </div>
                   <div>
                     <Label htmlFor="log-level">Log Level</Label>
                     <Select
                       value={config.performance.logLevel}
-                      onValueChange={((value: 'debug' | 'info' | 'warn' | 'error': any): any) => updateConfig('performance', 'logLevel', value)}
+                      onValueChange={(value: 'debug' | 'info' | 'warn' | 'error') => updateConfig('performance', 'logLevel', value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -698,7 +698,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="auto-cleanup"
                       checked={config.performance.autoCleanup}
-                      onCheckedChange={((checked: boolean: any): any) => updateConfig('performance', 'autoCleanup', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('performance', 'autoCleanup', checked)}
                     />
                     <Label htmlFor="auto-cleanup">Auto cleanup old data</Label>
                   </div>
@@ -710,7 +710,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       min="1"
                       max="168"
                       value={config.performance.cleanupInterval}
-                      onChange={((e: any): any) => updateConfig('performance', 'cleanupInterval', parseInt(e.target.value))}
+                      onChange={(e) => updateConfig('performance', 'cleanupInterval', parseInt(e.target.value))}
                     />
                   </div>
                 </div>
@@ -740,7 +740,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="5"
                     max="50"
                     value={config.database.connectionPool}
-                    onChange={((e: any): any) => updateConfig('database', 'connectionPool', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('database', 'connectionPool', parseInt(e.target.value))}
                   />
                 </div>
                 <div>
@@ -751,7 +751,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="5"
                     max="300"
                     value={config.database.queryTimeout}
-                    onChange={((e: any): any) => updateConfig('database', 'queryTimeout', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('database', 'queryTimeout', parseInt(e.target.value))}
                   />
                 </div>
               </div>
@@ -763,7 +763,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="backup-enabled"
                       checked={config.database.backupEnabled}
-                      onCheckedChange={((checked: boolean: any): any) => updateConfig('database', 'backupEnabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('database', 'backupEnabled', checked)}
                     />
                     <Label htmlFor="backup-enabled">Enable automatic backups</Label>
                   </div>
@@ -771,7 +771,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Label htmlFor="backup-frequency">Backup Frequency</Label>
                     <Select
                       value={config.database.backupFrequency}
-                      onValueChange={((value: 'daily' | 'weekly' | 'monthly': any): any) => updateConfig('database', 'backupFrequency', value)}
+                      onValueChange={(value: 'daily' | 'weekly' | 'monthly') => updateConfig('database', 'backupFrequency', value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -791,7 +791,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       min="1"
                       max="365"
                       value={config.database.backupRetention}
-                      onChange={((e: any): any) => updateConfig('database', 'backupRetention', parseInt(e.target.value))}
+                      onChange={(e) => updateConfig('database', 'backupRetention', parseInt(e.target.value))}
                     />
                   </div>
                 </div>
@@ -803,7 +803,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                   <Switch
                     id="auto-optimize"
                     checked={config.database.autoOptimize}
-                    onCheckedChange={((checked: boolean: any): any) => updateConfig('database', 'autoOptimize', checked)}
+                    onCheckedChange={(checked: boolean) => updateConfig('database', 'autoOptimize', checked)}
                   />
                   <Label htmlFor="auto-optimize">Auto-optimize database</Label>
                 </div>
@@ -812,7 +812,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
-                  onClick={((: any): any) => handleTestConnection('database')}
+                  onClick={() => handleTestConnection('database')}
                   disabled={isTesting}
                 >
                   {isTesting ? (
@@ -851,7 +851,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="email-enabled"
                       checked={config.notifications.emailEnabled}
-                      onCheckedChange={((checked: boolean: any): any) => updateConfig('notifications', 'emailEnabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('notifications', 'emailEnabled', checked)}
                     />
                     <Label htmlFor="email-enabled">Email notifications</Label>
                   </div>
@@ -859,7 +859,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="slack-enabled"
                       checked={config.notifications.slackEnabled}
-                      onCheckedChange={((checked: boolean: any): any) => updateConfig('notifications', 'slackEnabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('notifications', 'slackEnabled', checked)}
                     />
                     <Label htmlFor="slack-enabled">Slack notifications</Label>
                   </div>
@@ -867,7 +867,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="webhook-enabled"
                       checked={config.notifications.webhookEnabled}
-                      onCheckedChange={((checked: boolean: any): any) => updateConfig('notifications', 'webhookEnabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('notifications', 'webhookEnabled', checked)}
                     />
                     <Label htmlFor="webhook-enabled">Webhook notifications</Label>
                   </div>
@@ -878,7 +878,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                 <h4 className="font-medium">Default Recipients</h4>
                 <Textarea
                   value={config.notifications.defaultRecipients.join('\n')}
-                  onChange={((e: any) => updateConfig('notifications', 'defaultRecipients', e.target.value.split('\n').filter((r: any): any) => r.trim()))}
+                  onChange={(e) => updateConfig('notifications', 'defaultRecipients', e.target.value.split('\n').filter((r) => r.trim()))}
                   placeholder="Enter email addresses (one per line)"
                   rows={3}
                 />
@@ -893,7 +893,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     min="1"
                     max="100"
                     value={config.notifications.alertThreshold}
-                    onChange={((e: any): any) => updateConfig('notifications', 'alertThreshold', parseInt(e.target.value))}
+                    onChange={(e) => updateConfig('notifications', 'alertThreshold', parseInt(e.target.value))}
                   />
                 </div>
               </div>
@@ -905,7 +905,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Switch
                       id="quiet-hours-enabled"
                       checked={config.notifications.quietHours.enabled}
-                      onCheckedChange={((checked: boolean: any): any) => updateNestedConfig('notifications', 'quietHours', 'enabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateNestedConfig('notifications', 'quietHours', 'enabled', checked)}
                     />
                     <Label htmlFor="quiet-hours-enabled">Enable quiet hours</Label>
                   </div>
@@ -915,7 +915,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       id="quiet-start"
                       type="time"
                       value={config.notifications.quietHours.start}
-                      onChange={((e: any): any) => updateNestedConfig('notifications', 'quietHours', 'start', e.target.value)}
+                      onChange={(e) => updateNestedConfig('notifications', 'quietHours', 'start', e.target.value)}
                     />
                   </div>
                   <div>
@@ -924,7 +924,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       id="quiet-end"
                       type="time"
                       value={config.notifications.quietHours.end}
-                      onChange={((e: any): any) => updateNestedConfig('notifications', 'quietHours', 'end', e.target.value)}
+                      onChange={(e) => updateNestedConfig('notifications', 'quietHours', 'end', e.target.value)}
                     />
                   </div>
                 </div>

@@ -153,7 +153,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                       id="delay"
                       type="number"
                       value={delay}
-                      onChange={((e: any): any) => setDelay(e.target.value)}
+                      onChange={(e) => setDelay(e.target.value)}
                       min="100"
                       max="10000"
                       step="100"
@@ -203,7 +203,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                     id="proxy"
                     placeholder="http://proxy.example.com:8080"
                     value={proxyUrl}
-                    onChange={((e: any): any) => setProxyUrl(e.target.value)}
+                    onChange={(e) => setProxyUrl(e.target.value)}
                   />
                 </div>
               </CardContent>

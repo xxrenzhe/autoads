@@ -262,7 +262,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
-            onClick={((: any): any) => setShowAdvancedSettings(!showAdvancedSettings)}
+            onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
           >
             <Settings className="h-4 w-4 mr-2" />
             Advanced
@@ -280,7 +280,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             <ul className="list-disc list-inside">
-              {validationErrors.map((error, index: any) => (
+              {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>
               ))}
             </ul>
@@ -328,7 +328,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
-                      onClick={((: any): any) => onConfigurationSelect(config)}
+                      onClick={() => onConfigurationSelect(config)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
@@ -356,7 +356,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={((e: any): any) => {
+                              onClick={(e) => {
                                 e.stopPropagation();
                                 handleStopExecution((execution as any).executionId);
                               }}
@@ -366,7 +366,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                           ) : (
                             <Button
                               size="sm"
-                              onClick={((e: any): any) => {
+                              onClick={(e) => {
                                 e.stopPropagation();
                                 handleExecuteConfiguration(config.id);
                               }}
@@ -398,7 +398,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={((: any): any) => handleEditConfiguration(currentConfig)}
+                          onClick={() => handleEditConfiguration(currentConfig)}
                         >
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
@@ -406,7 +406,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={((: any): any) => handleDuplicateConfiguration(currentConfig)}
+                          onClick={() => handleDuplicateConfiguration(currentConfig)}
                         >
                           <Copy className="h-4 w-4 mr-1" />
                           Duplicate
@@ -414,7 +414,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={((: any): any) => handleExportConfiguration(currentConfig)}
+                          onClick={() => handleExportConfiguration(currentConfig)}
                         >
                           <Download className="h-4 w-4 mr-1" />
                           Export
@@ -422,7 +422,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={((: any): any) => handleTestConfiguration()}
+                          onClick={() => handleTestConfiguration()}
                           disabled={isTesting}
                         >
                           <TestTube className="h-4 w-4 mr-1" />
@@ -435,7 +435,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={((: any): any) => {
+                          onClick={() => {
                             setCurrentConfig(null);
                             setIsEditing(false);
                           }}
@@ -462,7 +462,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                       <Input
                         id="name"
                         value={currentConfig.name}
-                        onChange={((e: any) => setCurrentConfig(prev: any) => prev ? {...prev, name: e.target.value} : null)}
+                        onChange={(e) => setCurrentConfig(prev => prev ? {...prev, name: (e.target as any).value} : null)}
                         disabled={!isEditing}
                         placeholder="Enter configuration name"
                       />
@@ -472,7 +472,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                       <Input
                         id="environmentId"
                         value={currentConfig.environmentId}
-                        onChange={((e: any) => setCurrentConfig(prev: any) => prev ? {...prev, environmentId: e.target.value} : null)}
+                        onChange={(e) => setCurrentConfig(prev => prev ? {...prev, environmentId: (e.target as any).value} : null)}
                         disabled={!isEditing}
                         placeholder="Enter AdsPower environment ID"
                       />
@@ -484,7 +484,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                     <Input
                       id="adsPowerConfigId"
                       value={currentConfig.adsPowerConfigId}
-                      onChange={((e: any) => setCurrentConfig(prev: any) => prev ? {...prev, adsPowerConfigId: e.target.value} : null)}
+                      onChange={(e) => setCurrentConfig(prev => prev ? {...prev, adsPowerConfigId: (e.target as any).value} : null)}
                       disabled={!isEditing}
                       placeholder="Enter AdsPower configuration ID"
                     />
@@ -495,7 +495,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                     <Input
                       id="googleAdsConfigId"
                       value={currentConfig.googleAdsConfigId}
-                      onChange={((e: any) => setCurrentConfig(prev: any) => prev ? {...prev, googleAdsConfigId: e.target.value} : null)}
+                      onChange={(e) => setCurrentConfig(prev => prev ? {...prev, googleAdsConfigId: (e.target as any).value} : null)}
                       disabled={!isEditing}
                       placeholder="Enter Google Ads configuration ID"
                     />
@@ -507,7 +507,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                       id="repeatCount"
                       type="number"
                       value={currentConfig.repeatCount}
-                      onChange={((e: any) => setCurrentConfig(prev: any) => prev ? {...prev, repeatCount: parseInt(e.target.value)} : null)}
+                      onChange={(e) => setCurrentConfig(prev => prev ? {...prev, repeatCount: parseInt((e.target as any).value)} : null)}
                       disabled={!isEditing}
                       min="1"
                       max="100"
@@ -519,9 +519,9 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                     <Textarea
                       id="originalLinks"
                       value={currentConfig.originalLinks.join('\n')}
-                      onChange={((e: any) => setCurrentConfig(prev: any) => prev ? {
+                      onChange={(e) => setCurrentConfig(prev => prev ? {
                         ...prev,
-                        originalLinks: e.target.value.split('\n').filter((link: any) => link.trim())
+                        originalLinks: e.target.value.split('\n').filter((link) => link.trim())
                       } : null)}
                       disabled={!isEditing}
                       placeholder="Enter original links, one per line"
@@ -534,7 +534,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                     <select
                       id="status"
                       value={currentConfig.status}
-                      onChange={((e: any) => setCurrentConfig(prev: any) => prev ? {...prev, status: e.target.value as TrackingConfiguration['status']} : null)}
+                      onChange={(e) => setCurrentConfig(prev => prev ? {...prev, status: e.target.value as TrackingConfiguration['status']} : null)}
                       disabled={!isEditing}
                       className="border rounded px-2 py-1"
                     >
@@ -579,7 +579,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                   id="import-config"
                   type="file"
                   accept=".json"
-                  onChange={((event: any): any) => {
+                  onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (!file) return;
                     
@@ -601,7 +601,7 @@ const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
               <div className="flex items-end">
                 <Button
                   variant="outline"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     const dataStr = JSON.stringify(configurations, null, 2);
                     const dataBlob = new Blob([dataStr], { type: 'application/json' });
                     const url = URL.createObjectURL(dataBlob);

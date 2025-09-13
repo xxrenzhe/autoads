@@ -340,7 +340,7 @@ export function ConfigEditor({
                     id="key"
                     type="text"
                     value={formData.key}
-                    onChange={((e: any): any) => handleInputChange('key', e.target.value)}
+                    onChange={(e) => handleInputChange('key', (e.target as any).value)}
                     placeholder="e.g., DATABASE_URL, API_KEY"
                     className={validationErrors.key ? 'border-red-300' : ''}
                     disabled={isEditing} // Don't allow key changes when editing
@@ -358,7 +358,7 @@ export function ConfigEditor({
                   <textarea
                     id="description"
                     value={formData.description}
-                    onChange={((e: any): any) => handleInputChange('description', e.target.value)}
+                    onChange={(e) => handleInputChange('description', (e.target as any).value)}
                     placeholder="Describe what this configuration is used for"
                     rows={3}
                     className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -379,7 +379,7 @@ export function ConfigEditor({
                     <select
                       id="type"
                       value={formData.type}
-                      onChange={((e: any): any) => handleInputChange('type', e.target.value)}
+                      onChange={(e) => handleInputChange('type', (e.target as any).value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       {getTypeOptions()?.filter(Boolean)?.map((option: any) => (
@@ -397,7 +397,7 @@ export function ConfigEditor({
                     <select
                       id="category"
                       value={formData.category}
-                      onChange={((e: any): any) => handleInputChange('category', e.target.value)}
+                      onChange={(e) => handleInputChange('category', (e.target as any).value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       {categories?.filter(Boolean)?.map((category: any) => (
@@ -417,7 +417,7 @@ export function ConfigEditor({
                   <select
                     id="environment"
                     value={formData.environment}
-                    onChange={((e: any): any) => handleInputChange('environment', e.target.value)}
+                    onChange={(e) => handleInputChange('environment', (e.target as any).value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {getEnvironmentOptions()?.filter(Boolean)?.map((option: any) => (
@@ -434,7 +434,7 @@ export function ConfigEditor({
                     <input
                       type="checkbox"
                       checked={formData.isRequired}
-                      onChange={((e: any): any) => handleInputChange('isRequired', e.target.checked)}
+                      onChange={(e) => handleInputChange('isRequired', (e.target as any).checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-700">Required configuration</span>
@@ -444,7 +444,7 @@ export function ConfigEditor({
                     <input
                       type="checkbox"
                       checked={formData.isSecret}
-                      onChange={((e: any): any) => handleInputChange('isSecret', e.target.checked)}
+                      onChange={(e) => handleInputChange('isSecret', (e.target as any).checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-700 flex items-center">
@@ -472,7 +472,7 @@ export function ConfigEditor({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={((: any): any) => setShowValue(!showValue)}
+                        onClick={() => setShowValue((v) => !v)}
                       >
                         {showValue ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
@@ -484,7 +484,7 @@ export function ConfigEditor({
                       <textarea
                         id="value"
                         value={formatValueForDisplay()}
-                        onChange={((e: any): any) => handleValueChange(e.target.value)}
+                        onChange={(e) => handleValueChange((e.target as any).value)}
                         placeholder={formData.type === 'array' ? '[]' : '{}'}
                         rows={6}
                         className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm ${
@@ -502,7 +502,7 @@ export function ConfigEditor({
                     <select
                       id="value"
                       value={String(formData.value)}
-                      onChange={((e: any): any) => handleInputChange('value', e.target.value === 'true')}
+                      onChange={(e) => handleInputChange('value', (e.target as any).value === 'true')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="true">True</option>
@@ -513,7 +513,7 @@ export function ConfigEditor({
                       id="value"
                       type={formData.isSecret && !showValue ? 'password' : formData.type === 'number' ? 'number' : 'text'}
                       value={showValue ? String(formData.value) : '••••••••'}
-                      onChange={((e: any): any) => handleValueChange(e.target.value)}
+                      onChange={(e) => handleValueChange((e.target as any).value)}
                       placeholder={`Enter ${formData.type} value`}
                       className={validationErrors.value ? 'border-red-300' : ''}
                       readOnly={formData.isSecret && !showValue}
@@ -536,7 +536,7 @@ export function ConfigEditor({
                     id="defaultValue"
                     type="text"
                     value={String(formData.defaultValue || '')}
-                    onChange={((e: any): any) => handleInputChange('defaultValue', e.target.value)}
+                    onChange={(e) => handleInputChange('defaultValue', (e.target as any).value)}
                     placeholder="Optional default value"
                   />
                 </div>
@@ -552,7 +552,7 @@ export function ConfigEditor({
                           <Input
                             type="number"
                             value={formData.validation?.min || ''}
-                            onChange={((e: any): any) => handleValidationChange('min', e.target.value ? Number(e.target.value) : undefined)}
+                            onChange={(e) => handleValidationChange('min', (e.target as any).value ? Number((e.target as any).value) : undefined)}
                             placeholder="Min"
                             size="sm"
                           />
@@ -562,7 +562,7 @@ export function ConfigEditor({
                           <Input
                             type="number"
                             value={formData.validation?.max || ''}
-                            onChange={((e: any): any) => handleValidationChange('max', e.target.value ? Number(e.target.value) : undefined)}
+                            onChange={(e) => handleValidationChange('max', (e.target as any).value ? Number((e.target as any).value) : undefined)}
                             placeholder="Max"
                             size="sm"
                           />
@@ -576,7 +576,7 @@ export function ConfigEditor({
                         <Input
                           type="text"
                           value={formData.validation?.pattern || ''}
-                          onChange={((e: any): any) => handleValidationChange('pattern', e.target.value)}
+                          onChange={(e) => handleValidationChange('pattern', (e.target as any).value)}
                           placeholder="^[a-zA-Z0-9]+$"
                           size="sm"
                         />
@@ -588,7 +588,11 @@ export function ConfigEditor({
                       <Input
                         type="text"
                         value={formData.validation?.enum?.join(', ') || ''}
-                        onChange={((e: any) => handleValidationChange('enum', e.target.value ? e.target.value.split(',')?.filter(Boolean)?.map((v: any): any) => v.trim()) : undefined)}
+                        onChange={(e) => {
+                          const raw = (e.target as any).value as string
+                          const arr = raw ? raw.split(',').map((v) => v.trim()).filter(Boolean) : undefined
+                          handleValidationChange('enum', arr)
+                        }}
                         placeholder="value1, value2, value3"
                         size="sm"
                       />

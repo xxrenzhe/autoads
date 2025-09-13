@@ -256,7 +256,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
                     size="small"
                     variant="outlined"
                     startIcon={<Settings />}
-                    onClick={((: any): any) => handleManagePermissions(role)}
+                    onClick={() => handleManagePermissions(role)}
                     disabled={role.isSystem}
                   >
                     管理权限
@@ -265,7 +265,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
                     size="small"
                     variant="outlined"
                     startIcon={<Edit />}
-                    onClick={((: any): any) => handleEditRole(role)}
+                    onClick={() => handleEditRole(role)}
                     disabled={role.isSystem}
                   >
                     编辑
@@ -285,7 +285,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
             fullWidth
             label="角色名称"
             value={editForm.name || ''}
-            onChange={((e: any): any) => setEditForm({ ...editForm, name: e.target.value })}
+            onChange={(e) => setEditForm({ ...editForm, name: (e.target as any).value })}
             margin="normal"
             disabled={selectedRole?.isSystem}
           />
@@ -293,14 +293,14 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
             fullWidth
             label="角色描述"
             value={editForm.description || ''}
-            onChange={((e: any): any) => setEditForm({ ...editForm, description: e.target.value })}
+            onChange={(e) => setEditForm({ ...editForm, description: (e.target as any).value })}
             margin="normal"
             multiline
             rows={3}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={((: any): any) => setEditDialogOpen(false)}>取消</Button>
+          <Button onClick={() => setEditDialogOpen(false)}>取消</Button>
           <Button onClick={handleSaveRole} variant="contained" startIcon={<Save />}>
             保存
           </Button>
@@ -348,7 +348,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
                           borderColor: selectedPermissions.includes(permission.name) ? 'primary.main' : 'grey.300',
                           bgcolor: selectedPermissions.includes(permission.name) ? 'primary.50' : 'background.paper',
                         }}
-                        onClick={((: any): any) => togglePermission(permission.name)}
+                        onClick={() => togglePermission(permission.name)}
                       >
                         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -372,7 +372,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={((: any): any) => setPermissionDialogOpen(false)}>取消</Button>
+          <Button onClick={() => setPermissionDialogOpen(false)}>取消</Button>
           <Button 
             onClick={handleSavePermissions} 
             variant="contained" 

@@ -297,7 +297,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'dashboard' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'dashboard' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={((: any): any) => setActiveTab('dashboard')}
+            onClick={() => setActiveTab('dashboard')}
           >
             数据概览
           </Box>
@@ -311,7 +311,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'usage' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'usage' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={((: any): any) => setActiveTab('usage')}
+            onClick={() => setActiveTab('usage')}
           >
             使用报告
           </Box>
@@ -325,7 +325,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'recharge' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'recharge' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={((: any): any) => setActiveTab('recharge')}
+            onClick={() => setActiveTab('recharge')}
           >
             快速充值
           </Box>
@@ -339,7 +339,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'checkin' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'checkin' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={((: any): any) => setActiveTab('checkin')}
+            onClick={() => setActiveTab('checkin')}
           >
             每日签到
           </Box>
@@ -353,7 +353,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'transactions' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'transactions' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={((: any): any) => setActiveTab('transactions')}
+            onClick={() => setActiveTab('transactions')}
           >
             交易记录
           </Box>
@@ -367,7 +367,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'subscription' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'subscription' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={((: any): any) => setActiveTab('subscription')}
+            onClick={() => setActiveTab('subscription')}
           >
             订阅管理
           </Box>
@@ -381,7 +381,7 @@ const UserCenter: React.FC<UserCenterProps> = ({ user }) => {
               color: activeTab === 'invitation' ? 'white' : 'text.primary',
               '&:hover': { bgcolor: activeTab === 'invitation' ? 'primary.dark' : 'action.hover' }
             }}
-            onClick={((: any): any) => setActiveTab('invitation')}
+            onClick={() => setActiveTab('invitation')}
           >
             邀请好友
           </Box>

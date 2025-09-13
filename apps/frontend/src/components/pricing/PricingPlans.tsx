@@ -202,7 +202,7 @@ export default function PricingPlans() {
       <div className="flex items-center justify-center">
         <div className="flex items-center bg-gray-100 rounded-lg p-1">
           <button
-            onClick={((: any): any) => setIsYearly(false)}
+            onClick={() => setIsYearly(false)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               !isYearly
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -212,7 +212,7 @@ export default function PricingPlans() {
             月付
           </button>
           <button
-            onClick={((: any): any) => setIsYearly(true)}
+            onClick={() => setIsYearly(true)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               isYearly
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -298,7 +298,7 @@ export default function PricingPlans() {
 
                 {/* CTA Button */}
                 <button
-                  onClick={((: any): any) => handleSubscribe(plan)}
+                  onClick={() => handleSubscribe(plan)}
                   disabled={subscribingPlan === plan.id}
                   className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
                     plan.isPopular

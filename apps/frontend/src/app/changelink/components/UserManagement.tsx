@@ -526,7 +526,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                               ? 'border-primary bg-primary/5'
                               : 'border-border hover:border-primary/50'
                           }`}
-                          onClick={((: any): any) => setCurrentUser(user)}
+                          onClick={() => setCurrentUser(user)}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
@@ -559,7 +559,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={((e: any): any) => {
+                                onClick={(e) => {
                                   e.stopPropagation();
                                   handleEditUser(user);
                                 }}
@@ -569,7 +569,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={((e: any): any) => {
+                                onClick={(e) => {
                                   e.stopPropagation();
                                   handleDeleteUser(user.id);
                                 }}
@@ -603,7 +603,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         <Input
                           id="username"
                           value={currentUser.username}
-                          onChange={((e: any) => setCurrentUser(prev: any) => prev ? { ...prev, username: e.target.value } : null)}
+                          onChange={(e) => setCurrentUser(prev => prev ? { ...prev, username: e.target.value } : null)}
                           disabled={isEditing}
                         />
                       </div>
@@ -613,7 +613,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                           id="email"
                           type="email"
                           value={currentUser.email}
-                          onChange={((e: any) => setCurrentUser(prev: any) => prev ? { ...prev, email: e.target.value } : null)}
+                          onChange={(e) => setCurrentUser(prev => prev ? { ...prev, email: e.target.value } : null)}
                         />
                       </div>
                     </div>
@@ -623,7 +623,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <Input
                         id="fullName"
                         value={currentUser.fullName}
-                        onChange={((e: any) => setCurrentUser(prev: any) => prev ? { ...prev, fullName: e.target.value } : null)}
+                        onChange={(e) => setCurrentUser(prev => prev ? { ...prev, fullName: e.target.value } : null)}
                       />
                     </div>
 
@@ -632,7 +632,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         <Label htmlFor="role">Role</Label>
                         <Select
                           value={currentUser.role.id}
-                          onValueChange={((value: any): any) => {
+                          onValueChange={(value) => {
                             const role = roles.find((r: any) => r.id === value);
                             if (role) {
                               setCurrentUser(prev => prev ? { ...prev, role } : null);
@@ -653,7 +653,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         <Label htmlFor="status">Status</Label>
                         <Select
                           value={currentUser.status}
-                          onValueChange={((value: 'active' | 'inactive' | 'suspended': any): any) => 
+                          onValueChange={(value: 'active' | 'inactive' | 'suspended') => 
                             setCurrentUser(prev => prev ? { ...prev, status: value } : null)
                           }
                         >
@@ -674,7 +674,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <Input
                         id="department"
                         value={currentUser.department || ''}
-                        onChange={((e: any) => setCurrentUser(prev: any) => prev ? { ...prev, department: e.target.value } : null)}
+                        onChange={(e) => setCurrentUser(prev => prev ? { ...prev, department: e.target.value } : null)}
                       />
                     </div>
 
@@ -692,7 +692,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             variant="ghost"
                             size="sm"
                             className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={((: any): any) => setShowPassword(!showPassword)}
+                            onClick={() => setShowPassword(!showPassword)}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
@@ -826,7 +826,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <Input
                         id="role-name"
                         value={currentRole.name}
-                        onChange={((e: any) => setCurrentRole(prev: any) => prev ? { ...prev, name: e.target.value } : null)}
+                        onChange={(e) => setCurrentRole(prev => prev ? { ...prev, name: e.target.value } : null)}
                       />
                     </div>
 
@@ -835,7 +835,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <Textarea
                         id="role-description"
                         value={currentRole.description}
-                        onChange={((e: any) => setCurrentRole(prev: any) => prev ? { ...prev, description: e.target.value } : null)}
+                        onChange={(e) => setCurrentRole(prev => prev ? { ...prev, description: e.target.value } : null)}
                         rows={3}
                       />
                     </div>
@@ -844,7 +844,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <Switch
                         id="is-default"
                         checked={currentRole.isDefault}
-                        onCheckedChange={((checked: boolean: any) => setCurrentRole(prev: any) => prev ? { ...prev, isDefault: checked } : null)}
+                        onCheckedChange={(checked: boolean) => setCurrentRole(prev => prev ? { ...prev, isDefault: checked } : null)}
                       />
                       <Label htmlFor="is-default">Default role for new users</Label>
                     </div>

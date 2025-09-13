@@ -9,7 +9,6 @@ require (
 	github.com/chromedp/cdproto v0.0.0-20240127002248-bd7a66284627
 	github.com/chromedp/chromedp v0.9.4
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/didip/tollbooth v4.0.2+incompatible // indirect
 	github.com/disintegration/imaging v1.6.2
 	github.com/emirpasic/gods v1.18.1 // indirect

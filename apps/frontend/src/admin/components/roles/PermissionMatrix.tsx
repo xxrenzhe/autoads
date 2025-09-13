@@ -260,7 +260,7 @@ export function PermissionMatrix({
                 <Input
                   placeholder="Search permissions..."
                   value={searchTerm}
-                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm((e.target as any).value)}
                   className="pl-10"
                 />
               </div>
@@ -271,7 +271,7 @@ export function PermissionMatrix({
               <Filter className="h-4 w-4 text-gray-400" />
               <select
                 value={selectedCategory}
-                onChange={((e: any): any) => setSelectedCategory(e.target.value)}
+                onChange={(e) => setSelectedCategory((e.target as any).value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Categories</option>
@@ -289,14 +289,14 @@ export function PermissionMatrix({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={((: any): any) => handleSelectAll(selectedCategory === 'all' ? undefined : selectedCategory)}
+                  onClick={() => handleSelectAll(selectedCategory === 'all' ? undefined : selectedCategory)}
                 >
                   Select All
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={((: any): any) => handleDeselectAll(selectedCategory === 'all' ? undefined : selectedCategory)}
+                  onClick={() => handleDeselectAll(selectedCategory === 'all' ? undefined : selectedCategory)}
                 >
                   Deselect All
                 </Button>
@@ -385,14 +385,14 @@ export function PermissionMatrix({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={((: any): any) => handleSelectAll(category)}
+                          onClick={() => handleSelectAll(category)}
                         >
                           Select All
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={((: any): any) => handleDeselectAll(category)}
+                          onClick={() => handleDeselectAll(category)}
                         >
                           Deselect All
                         </Button>
@@ -423,7 +423,7 @@ export function PermissionMatrix({
                                 <input
                                   type="checkbox"
                                   checked={selectedPermissions.has(permission.id)}
-                                  onChange={((: any): any) => handlePermissionToggle(permission.id)}
+                                  onChange={() => handlePermissionToggle(permission.id)}
                                   className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
                               )}
@@ -460,7 +460,7 @@ export function PermissionMatrix({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={((: any): any) => toggleDetails(permission.id)}
+                              onClick={() => toggleDetails(permission.id)}
                             >
                               <Info className="h-4 w-4" />
                             </Button>
@@ -483,7 +483,7 @@ export function PermissionMatrix({
                                 <div className="mt-3">
                                   <label className="font-medium text-gray-500">Conditions</label>
                                   <div className="mt-1 space-y-1">
-                                    {Object.entries(permission.conditions).map(([key, value]: any) => (
+                                    {Object.entries(permission.conditions).map(([key, value]) => (
                                       <div key={key} className="flex items-center space-x-2">
                                         <Badge variant="outline" className="text-xs">
                                           {key}: {String(value)}
@@ -535,7 +535,7 @@ export function PermissionMatrix({
                         <input
                           type="checkbox"
                           checked={selectedPermissions.has(permission.id)}
-                          onChange={((: any): any) => handlePermissionToggle(permission.id)}
+                          onChange={() => handlePermissionToggle(permission.id)}
                           className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       )}

@@ -421,7 +421,7 @@ export default function UserTokensPage() {
               <Button
                 variant={includeBatchDetails ? "default" : "outline"}
                 size="sm"
-                onClick={((: any): any) => setIncludeBatchDetails(!includeBatchDetails)}
+                onClick={() => setIncludeBatchDetails(!includeBatchDetails)}
               >
                 <Info className="h-4 w-4 mr-2" />
                 {includeBatchDetails ? "隐藏详情" : "显示详情"}
@@ -492,7 +492,7 @@ export default function UserTokensPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={((: any): any) => handleBatchDetailsClick(usage.batchId!)}
+                                onClick={() => handleBatchDetailsClick(usage.batchId!)}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -583,7 +583,7 @@ export default function UserTokensPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={((: any): any) => handlePageChange(currentPage - 1)}
+                      onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage <= 1}
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -595,7 +595,7 @@ export default function UserTokensPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={((: any): any) => handlePageChange(currentPage + 1)}
+                      onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage >= apiData.data.pagination.totalPages}
                     >
                       下一页

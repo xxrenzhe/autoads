@@ -63,7 +63,7 @@ export function FeatureCards() {
               <p>分析网站在搜索引擎中的排名表现</p>
               <Button 
                 className="mt-4" 
-                onClick={((: any): any) => handleFeatureClick('siterank')}
+                onClick={() => handleFeatureClick('siterank')}
               >
                 使用工具
               </Button>
@@ -77,7 +77,7 @@ export function FeatureCards() {
               <p>批量处理和优化网站链接</p>
               <Button 
                 className="mt-4" 
-                onClick={((: any): any) => handleFeatureClick('adscenter')}
+                onClick={() => handleFeatureClick('adscenter')}
               >
                 使用工具
               </Button>
@@ -91,7 +91,7 @@ export function FeatureCards() {
               <p>一键批量打开多个网页链接</p>
               <Button 
                 className="mt-4" 
-                onClick={((: any): any) => handleFeatureClick('batch-open')}
+                onClick={() => handleFeatureClick('batch-open')}
               >
                 使用工具
               </Button>

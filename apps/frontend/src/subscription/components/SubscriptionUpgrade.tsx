@@ -258,7 +258,7 @@ export function SubscriptionUpgrade({
 
                     {/* Action Button */}
                     <Button
-                      onClick={((: any): any) => handlePlanSelect(plan.id, plan.price)}
+                      onClick={() => handlePlanSelect(plan.id, plan.price)}
                       className="w-full"
                       variant={isUpgradePlan ? 'default' : 'outline'}
                     >
@@ -368,7 +368,7 @@ export function SubscriptionUpgrade({
                       
                       <Button
                         variant="outline"
-                        onClick={((: any): any) => {
+                        onClick={() => {
                           setShowConfirmation(false)
                           setSelectedPlan(null)
                         }}

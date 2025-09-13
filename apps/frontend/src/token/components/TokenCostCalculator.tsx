@@ -132,7 +132,7 @@ export function TokenCostCalculator({ className }: TokenCostCalculatorProps) {
                   Quick Recommendations
                 </h4>
                 {(() => {
-                  const config = tokenConfigs.find((c: any: any) => c.id === selectedFeature)
+                  const config = tokenConfigs.find((c: any) => c.id === selectedFeature)
                   if (!config) return null
                   
                   const recommended = getRecommendedTokens(config)
@@ -141,7 +141,7 @@ export function TokenCostCalculator({ className }: TokenCostCalculatorProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((: any): any) => setTokenAmount(config.minimumTokens)}
+                        onClick={() => setTokenAmount(config.minimumTokens)}
                         className="mr-2"
                       >
                         Min ({config.minimumTokens})
@@ -149,7 +149,7 @@ export function TokenCostCalculator({ className }: TokenCostCalculatorProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((: any): any) => setTokenAmount(recommended)}
+                        onClick={() => setTokenAmount(recommended)}
                         className="mr-2"
                       >
                         Recommended ({recommended})
@@ -157,7 +157,7 @@ export function TokenCostCalculator({ className }: TokenCostCalculatorProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={((: any): any) => setTokenAmount(config.maximumTokens)}
+                        onClick={() => setTokenAmount(config.maximumTokens)}
                       >
                         Max ({config.maximumTokens})
                       </Button>

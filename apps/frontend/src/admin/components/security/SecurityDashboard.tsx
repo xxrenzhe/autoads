@@ -355,7 +355,7 @@ export default function SecurityDashboard() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={((: any): any) => blockIP(threat.ipAddress!, `Threat: ${threat.patternName}`)}
+                              onClick={() => blockIP(threat.ipAddress!, `Threat: ${threat.patternName}`)}
                             >
                               <Ban className="h-4 w-4 mr-1" />
                               Block IP
@@ -364,13 +364,13 @@ export default function SecurityDashboard() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={((: any): any) => resolveThreat(threat.id, 'false_positive')}
+                            onClick={() => resolveThreat(threat.id, 'false_positive')}
                           >
                             False Positive
                           </Button>
                           <Button
                             size="sm"
-                            onClick={((: any): any) => resolveThreat(threat.id, 'resolved')}
+                            onClick={() => resolveThreat(threat.id, 'resolved')}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Resolve

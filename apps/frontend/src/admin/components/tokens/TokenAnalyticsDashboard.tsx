@@ -501,7 +501,7 @@ export default function TokenAnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {insights.map((insight, index: any) => (
+              {insights.map((insight, index: number) => (
                 <div key={index} className={`p-4 rounded-lg border ${
                   insight.severity === 'success' ? 'bg-green-50 border-green-200' :
                   insight.severity === 'warning' ? 'bg-yellow-50 border-yellow-200' :
@@ -531,7 +531,7 @@ export default function TokenAnalyticsDashboard() {
             <label className="text-sm font-medium">Time Range:</label>
             <select
               value={dateRange}
-              onChange={((e: any): any) => setDateRange(e.target.value)}
+              onChange={(e) => setDateRange(e.target.value)}
               className="px-3 py-1 border rounded-md text-sm"
             >
               <option value="7">Last 7 days</option>
@@ -545,7 +545,7 @@ export default function TokenAnalyticsDashboard() {
             <label className="text-sm font-medium">Feature:</label>
             <select
               value={selectedFeature}
-              onChange={((e: any): any) => setSelectedFeature(e.target.value)}
+              onChange={(e) => setSelectedFeature(e.target.value)}
               className="px-3 py-1 border rounded-md text-sm"
             >
               <option value="all">All features</option>
@@ -560,7 +560,7 @@ export default function TokenAnalyticsDashboard() {
         <div className="flex items-center gap-2">
           <select
             value={pageSize}
-            onChange={((e: any): any) => {
+            onChange={(e) => {
               setPageSize(Number(e.target.value))
               setPage(1)
             }}
@@ -576,7 +576,7 @@ export default function TokenAnalyticsDashboard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={((: any) => setPage(p: any) => Math.max(1, p - 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
             >
               Previous
@@ -587,7 +587,7 @@ export default function TokenAnalyticsDashboard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={((: any) => setPage(p: any) => p + 1)}
+              onClick={() => setPage((p) => p + 1)}
               disabled={!analytics?.pagination?.hasMore}
             >
               Next
@@ -625,7 +625,7 @@ export default function TokenAnalyticsDashboard() {
                       dataKey="value"
                       label={({ name, percentage }) => `${name}: ${percentage}%`}
                     >
-                      {pieChartData.map((entry, index: any) => (
+                      {pieChartData.map((entry, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -643,7 +643,7 @@ export default function TokenAnalyticsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {analytics.records.slice(0, 5).map((record, index: any) => (
+                  {analytics.records.slice(0, 5).map((record, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium">{record.user.name || record.user.email}</p>
@@ -768,13 +768,13 @@ export default function TokenAnalyticsDashboard() {
                       type="text"
                       placeholder="Search users..."
                       value={searchTerm}
-                      onChange={((e: any): any) => setSearchTerm(e.target.value)}
+                      onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10 pr-4 py-2 border rounded-md text-sm"
                     />
                   </div>
                   <select
                     value={`${sortBy}-${sortOrder}`}
-                    onChange={((e: any): any) => {
+                    onChange={(e) => {
                       const [field, order] = e.target.value.split('-')
                       setSortBy(field as any)
                       setSortOrder(order as any)
@@ -793,7 +793,7 @@ export default function TokenAnalyticsDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filteredUserPatterns.slice(0, 20).map((user, index: any) => (
+                {filteredUserPatterns.slice(0, 20).map((user, index: number) => (
                   <div key={user.userId} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">

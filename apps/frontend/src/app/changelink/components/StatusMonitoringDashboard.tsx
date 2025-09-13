@@ -221,7 +221,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => onNavigateToDetails(exec.executionId)}
+                          onClick={() => onNavigateToDetails(exec.executionId)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Details
@@ -257,7 +257,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                              <Button
                                size="sm"
                                variant="outline"
-                               onClick={((: any): any) => onPauseExecution(exec.executionId)}
+                               onClick={() => onPauseExecution(exec.executionId)}
                              >
                                <Pause className="h-4 w-4 mr-1" />
                                Pause
@@ -265,7 +265,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                              <Button
                                size="sm"
                                variant="destructive"
-                               onClick={((: any): any) => onStopExecution(exec.executionId)}
+                               onClick={() => onStopExecution(exec.executionId)}
                              >
                                <Square className="h-4 w-4 mr-1" />
                                Stop
@@ -276,7 +276,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                            <>
                              <Button
                                size="sm"
-                               onClick={((: any): any) => onResumeExecution(exec.executionId)}
+                               onClick={() => onResumeExecution(exec.executionId)}
                              >
                                <Play className="h-4 w-4 mr-1" />
                                Resume
@@ -284,7 +284,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                              <Button
                                size="sm"
                                variant="destructive"
-                               onClick={((: any): any) => onStopExecution(exec.executionId)}
+                               onClick={() => onStopExecution(exec.executionId)}
                              >
                                <Square className="h-4 w-4 mr-1" />
                                Stop

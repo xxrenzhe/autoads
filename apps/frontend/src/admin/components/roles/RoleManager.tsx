@@ -177,7 +177,7 @@ export function RoleManager({
                 <Input
                   placeholder="Search roles..."
                   value={searchTerm}
-                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm((e.target as any).value)}
                   className="pl-10"
                 />
               </div>
@@ -201,7 +201,7 @@ export function RoleManager({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     selectedRoles.forEach((roleId: any) => {
                       const role = roles.find((r: any) => r.id === roleId)
                       if (role) handleDuplicateRole(role)
@@ -215,7 +215,7 @@ export function RoleManager({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={((: any): any) => {
+                  onClick={() => {
                     if (window.confirm(`Are you sure you want to delete ${selectedRoles.size} role(s)?`)) {
                       selectedRoles.forEach((roleId: any) => handleDeleteRole(roleId))
                       setSelectedRoles(new Set())
@@ -234,7 +234,7 @@ export function RoleManager({
       {/* Roles Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
-          Array.from({ length: 6 }).map((_, index: any) => (
+          Array.from({ length: 6 }).map((_, index) => (
             <Card key={index} className="animate-pulse">
               <CardContent className="p-6">
                 <div className="space-y-4">
@@ -276,7 +276,7 @@ export function RoleManager({
               className={`cursor-pointer transition-all hover:shadow-md ${
                 selectedRoles.has(role.id) ? 'ring-2 ring-blue-500' : ''
               }`}
-              onClick={((: any): any) => onRoleSelect?.(role)}
+              onClick={() => onRoleSelect?.(role)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
@@ -284,7 +284,7 @@ export function RoleManager({
                     <input
                       type="checkbox"
                       checked={selectedRoles.has(role.id)}
-                      onChange={((e: any): any) => {
+                      onChange={(e) => {
                         e.stopPropagation()
                         handleRoleSelect(role.id)
                       }}
@@ -301,7 +301,7 @@ export function RoleManager({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={((e: any): any) => {
+                      onClick={(e) => {
                         e.stopPropagation()
                         handleEditRole(role)
                       }}
@@ -311,7 +311,7 @@ export function RoleManager({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={((e: any): any) => {
+                      onClick={(e) => {
                         e.stopPropagation()
                         handleDuplicateRole(role)
                       }}
@@ -322,7 +322,7 @@ export function RoleManager({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={((e: any): any) => {
+                        onClick={(e) => {
                           e.stopPropagation()
                           handleDeleteRole(role.id)
                         }}
@@ -344,7 +344,7 @@ export function RoleManager({
                   <div className="mb-3">
                     <div className="text-xs text-gray-500 mb-1">Inherits from:</div>
                     <div className="flex items-center space-x-1">
-                      {getRoleHierarchy(role).slice(0, -1).map((parentRole, index: any) => (
+                      {getRoleHierarchy(role).slice(0, -1).map((parentRole, index) => (
                         <React.Fragment key={parentRole.id}>
                           {index > 0 && <span className="text-gray-400">→</span>}
                           <Badge variant="outline" className="text-xs">

@@ -295,12 +295,12 @@ func (a *AuditService) GetSecurityStats(days int) (map[string]interface{}, error
 func (a *AuditService) GetTopRiskyIPs(days int, limit int) ([]map[string]interface{}, error) {
 	since := time.Now().AddDate(0, 0, -days)
 
-	var results []struct {
-		IPAddress  string
-		EventCount int64
-		LastEvent  time.Time
-		Severities string
-	}
+    var results []struct {
+        IPAddress  string
+        EventCount int64
+        LastEvent  string
+        Severities string
+    }
 
 	err := a.db.Model(&SecurityEvent{}).
 		Select("ip_address, COUNT(*) as event_count, MAX(created_at) as last_event, GROUP_CONCAT(DISTINCT severity) as severities").
@@ -317,12 +317,12 @@ func (a *AuditService) GetTopRiskyIPs(days int, limit int) ([]map[string]interfa
 
 	var riskyIPs []map[string]interface{}
 	for _, result := range results {
-		riskyIPs = append(riskyIPs, map[string]interface{}{
-			"ip_address":  result.IPAddress,
-			"event_count": result.EventCount,
-			"last_event":  result.LastEvent,
-			"severities":  result.Severities,
-		})
+        riskyIPs = append(riskyIPs, map[string]interface{}{
+            "ip_address":  result.IPAddress,
+            "event_count": result.EventCount,
+            "last_event":  result.LastEvent,
+            "severities":  result.Severities,
+        })
 	}
 
 	return riskyIPs, nil
