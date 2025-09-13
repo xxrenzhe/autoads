@@ -597,7 +597,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
 
   // 解析输入的URL
   const parseUrls = useCallback((text: string) => {
-    const lines = text.split('\n').filter(line => {
+    const lines = text.split('\n').filter((line: any) => {
       const trimmed = line.trim();
       return trimmed && (trimmed.startsWith('http://') || trimmed.startsWith('https://'));
     });
@@ -809,7 +809,7 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
       dispatch({ type: 'SET_TASK_ID', payload: newTaskId });
 
       // 计算总访问次数
-      const urlVisits = parsedUrls.map(() => currentCycleCount);
+      const urlVisits = parsedUrls.map((: any) => currentCycleCount);
       const actualTotalVisits = parsedUrls.length * currentCycleCount;
       
       // 检查并消费 token

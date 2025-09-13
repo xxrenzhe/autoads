@@ -1,7 +1,7 @@
 package gf
 
 import (
-    "gofly-admin-v3/utils/tools/gconv"
+	"gofly-admin-v3/utils/tools/gconv"
 )
 
 // any数据类型转成int
@@ -96,11 +96,11 @@ func Floats(i interface{}) []float64 {
 
 // any数据类型转成 []interface{}  数组
 func Interfaces(i interface{}) []interface{} {
-    return gconv.Interfaces(i)
+	return gconv.Interfaces(i)
 }
 
 // StructToMap 将结构体转换为 map[string]interface{}
 func StructToMap(v interface{}) (map[string]interface{}, error) {
-    m := gconv.Map(v)
-    return m, nil
+	m := gconv.Map(v)
+	return m, nil
 }

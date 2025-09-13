@@ -146,7 +146,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
   }, [effectiveUserId]);
 
   // Get current active subscription
-  const activeSubscription = subscriptions.find(sub => sub.status === 'ACTIVE');
+  const activeSubscription = subscriptions.find((sub: any) => sub.status === 'ACTIVE');
 
   // Assign subscription
   const handleAssignSubscription = async () => {
@@ -263,7 +263,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
           <Button
             variant="contained"
             startIcon={<Assignment />}
-            onClick={() => setAssignDialogOpen(true)}
+            onClick={((: any): any) => setAssignDialogOpen(true)}
           >
             分配套餐
           </Button>
@@ -291,7 +291,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
                 <Tooltip title="修改套餐">
                   <IconButton 
                     size="small"
-                    onClick={() => {
+                    onClick={((: any): any) => {
                       setSelectedSubscription(activeSubscription);
                       setModifyDialogOpen(true);
                     }}
@@ -307,7 +307,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
       )}
 
       {/* Tabs */}
-      <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)}>
+      <Tabs value={activeTab} onChange={((e, v: any): any) => setActiveTab(v)}>
         <Tab label="套餐详情" />
         <Tab 
           label={
@@ -384,7 +384,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {subscriptions.map((sub) => (
+                  {subscriptions.map((sub: any) => (
                     <TableRow key={sub.id}>
                       <TableCell>{sub.plan.name}</TableCell>
                       <TableCell>
@@ -431,10 +431,10 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
               <InputLabel>选择套餐</InputLabel>
               <Select
                 value={selectedPlan}
-                onChange={(e) => setSelectedPlan(e.target.value)}
+                onChange={((e: any): any) => setSelectedPlan(e.target.value)}
                 label="选择套餐"
               >
-                {plans.map((plan) => (
+                {plans.map((plan: any) => (
                   <MenuItem key={plan.id} value={plan.id}>
                     <Box>
                       <Typography variant="subtitle1">
@@ -453,9 +453,9 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>套餐特性：</Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {plans.find(p => p.id === selectedPlan)?.features
-                    .filter(f => f.enabled)
-                    .map((feature) => (
+                  {plans.find((p: any) => p.id === selectedPlan)?.features
+                    .filter((f: any) => f.enabled)
+                    .map((feature: any) => (
                       <Chip 
                         key={feature.id}
                         label={`${feature.name}${feature.value ? `: ${feature.value} ${feature.unit || ''}` : ''}`}
@@ -472,14 +472,14 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
                 label="持续时间（月）"
                 type="number"
                 value={duration}
-                onChange={(e) => setDuration(parseInt(e.target.value) || 1)}
+                onChange={((e: any): any) => setDuration(parseInt(e.target.value) || 1)}
                 fullWidth
               />
               <TextField
                 label="自定义结束日期（可选）"
                 type="date"
                 value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
+                onChange={((e: any): any) => setCustomEndDate(e.target.value)}
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
@@ -490,14 +490,14 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
               multiline
               rows={3}
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={((e: any): any) => setNotes(e.target.value)}
               fullWidth
               placeholder="记录分配原因或其他信息..."
             />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {
+          <Button onClick={((: any): any) => {
             setAssignDialogOpen(false);
             resetForm();
           }}>
@@ -536,7 +536,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
                 label="延长天数"
                 type="number"
                 value={extendDays}
-                onChange={(e) => setExtendDays(parseInt(e.target.value) || 0)}
+                onChange={((e: any): any) => setExtendDays(parseInt(e.target.value) || 0)}
                 fullWidth
                 sx={{ mb: 1 }}
               />
@@ -546,7 +546,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
               <TextField
                 type="date"
                 value={newEndDate}
-                onChange={(e) => setNewEndDate(e.target.value)}
+                onChange={((e: any): any) => setNewEndDate(e.target.value)}
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
@@ -561,7 +561,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
                 multiline
                 rows={2}
                 value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
+                onChange={((e: any): any) => setCancelReason(e.target.value)}
                 fullWidth
                 placeholder="输入取消原因..."
                 sx={{ mt: 1 }}
@@ -570,7 +570,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {
+          <Button onClick={((: any): any) => {
             setModifyDialogOpen(false);
             resetModifyForm();
           }}>

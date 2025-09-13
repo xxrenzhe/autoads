@@ -203,7 +203,7 @@ export const ApiList: React.FC = () => {
     }
   };
 
-  const filteredApis = apis.filter(api => {
+  const filteredApis = apis.filter((api: any) => {
     const matchesSearch = api.path.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          api.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || api.category === selectedCategory;
@@ -212,7 +212,7 @@ export const ApiList: React.FC = () => {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const groupedApis = filteredApis.reduce((groups, api) => {
+  const groupedApis = filteredApis.reduce((groups, api: any) => {
     const category = api.category;
     if (!groups[category]) {
       groups[category] = [];
@@ -345,7 +345,7 @@ export const ApiList: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {api.parameters.map((param, index) => (
+                      {api.parameters.map((param, index: any) => (
                         <TableRow key={index}>
                           <TableCell>
                             <code>{param.name}</code>
@@ -379,7 +379,7 @@ export const ApiList: React.FC = () => {
                 <Typography variant="h6" gutterBottom>
                   响应格式
                 </Typography>
-                {api.responses.map((response, index) => (
+                {api.responses.map((response, index: any) => (
                   <Box key={index} sx={{ mb: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>
                       <Chip
@@ -410,7 +410,7 @@ export const ApiList: React.FC = () => {
                 <Typography variant="h6" gutterBottom>
                   使用示例
                 </Typography>
-                {api.examples.map((example, index) => (
+                {api.examples.map((example, index: any) => (
                   <Accordion key={index} sx={{ mb: 1 }}>
                     <AccordionSummary expandIcon={<ExpandMore />}>
                       <Typography variant="subtitle2">{example.title}</Typography>
@@ -526,9 +526,9 @@ export const ApiList: React.FC = () => {
                 select
                 label="分类"
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={((e: any): any) => setSelectedCategory(e.target.value)}
               >
-                {categories.map((category) => (
+                {categories.map((category: any) => (
                   <MenuItem key={category.value} value={category.value}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       {category.icon}
@@ -545,9 +545,9 @@ export const ApiList: React.FC = () => {
                 select
                 label="状态"
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={((e: any): any) => setSelectedStatus(e.target.value)}
               >
-                {statusOptions.map((status) => (
+                {statusOptions.map((status: any) => (
                   <MenuItem key={status.value} value={status.value}>
                     {status.label}
                   </MenuItem>
@@ -581,7 +581,7 @@ export const ApiList: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredApis.map((api) => (
+              {filteredApis.map((api: any) => (
                 <TableRow key={api.id} hover>
                   <TableCell>
                     <Typography variant="body2" component="code">
@@ -597,8 +597,8 @@ export const ApiList: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {categories.find(c => c.value === api.category)?.icon}
-                      {categories.find(c => c.value === api.category)?.label}
+                      {categories.find((c: any) => c.value === api.category)?.icon}
+                      {categories.find((c: any) => c.value === api.category)?.label}
                     </Box>
                   </TableCell>
                   <TableCell>{api.description}</TableCell>
@@ -621,7 +621,7 @@ export const ApiList: React.FC = () => {
                   <TableCell>
                     <IconButton
                       size="small"
-                      onClick={() => setExpandedApi(expandedApi === api.id ? null : api.id)}
+                      onClick={((: any): any) => setExpandedApi(expandedApi === api.id ? null : api.id)}
                     >
                       <Description />
                     </IconButton>
@@ -648,7 +648,7 @@ export const ApiList: React.FC = () => {
         {expandedApi && (
           <Paper variant="outlined" sx={{ mt: 2 }}>
             <Box sx={{ p: 2 }}>
-              {renderApiDetails(filteredApis.find(api => api.id === expandedApi)!)}
+              {renderApiDetails(filteredApis.find((api: any) => api.id === expandedApi)!)}
             </Box>
           </Paper>
         )}
@@ -656,13 +656,13 @@ export const ApiList: React.FC = () => {
 
       {/* Category View */}
       <TabPanel value={tabValue} index={1}>
-        {Object.entries(groupedApis).map(([category, categoryApis]) => (
+        {Object.entries(groupedApis).map(([category, categoryApis]: any) => (
           <Card key={category} sx={{ mb: 3 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                {categories.find(c => c.value === category)?.icon}
+                {categories.find((c: any) => c.value === category)?.icon}
                 <Typography variant="h6" sx={{ ml: 1 }}>
-                  {categories.find(c => c.value === category)?.label}
+                  {categories.find((c: any) => c.value === category)?.label}
                 </Typography>
                 <Badge
                   badgeContent={categoryApis.length}
@@ -671,7 +671,7 @@ export const ApiList: React.FC = () => {
                 />
               </Box>
 
-              {categoryApis.map((api) => (
+              {categoryApis.map((api: any) => (
                 <Accordion key={api.id}>
                   <AccordionSummary expandIcon={<ExpandMore />}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>

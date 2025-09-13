@@ -172,7 +172,7 @@ export class CacheWarmer {
    * 移除预热策略
    */
   removeStrategy(strategyId: string): void {
-    this.config.strategies = this.config.strategies.filter(s => s.id !== strategyId);
+    this.config.strategies = this.config.strategies.filter((s: any) => s.id !== strategyId);
     logger.info(`移除预热策略: ${strategyId}`);
   }
 
@@ -211,7 +211,7 @@ export class CacheWarmer {
       }
     }
     
-    tasksToDelete.forEach(taskId => this.tasks.delete(taskId));
+    tasksToDelete.forEach((taskId: any) => this.tasks.delete(taskId));
     
     if (tasksToDelete.length > 0) {
       logger.info(`清理了 ${tasksToDelete.length} 个已完成的预热任务`);
@@ -235,7 +235,7 @@ export class CacheWarmer {
 
     logger.info('开始执行缓存预热');
 
-    const enabledStrategies = this.config.strategies.filter(s => s.enabled);
+    const enabledStrategies = this.config.strategies.filter((s: any) => s.enabled);
     
     for (const strategy of enabledStrategies) {
       try {
@@ -401,7 +401,7 @@ export class CacheWarmer {
           })
         );
 
-        batchResults.forEach(result => {
+        batchResults.forEach((result: any) => {
           if (result.status === 'fulfilled' && result.value.success) {
             successCount++;
           } else {

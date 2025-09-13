@@ -111,7 +111,7 @@ export class EnhancedError extends Error {
     this.stackTrace = this.stack;
     
     // Copy any additional properties
-    Object.keys(options).forEach(key => {
+    Object.keys(options).forEach((key: any) => {
       if (key !== 'code' && key !== 'statusCode' && key !== 'details' && key !== 'timestamp') {
         (this as any)[key] = options[key];
       }

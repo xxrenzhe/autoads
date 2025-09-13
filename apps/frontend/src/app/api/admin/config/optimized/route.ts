@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const configs = await configService.getConfigs(category || undefined)
     
     // 过滤敏感信息
-    const filteredConfigs = configs.map(config => ({
+    const filteredConfigs = configs.map((config: any) => ({
       ...config,
       value: (config.isSecret && !includeSecrets) || 
              (config.isSecret && session.user.role !== 'SUPER_ADMIN')

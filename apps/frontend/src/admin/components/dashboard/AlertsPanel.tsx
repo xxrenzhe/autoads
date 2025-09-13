@@ -129,13 +129,13 @@ export function AlertsPanel({
     await onDismissAlert(alertId)
   }
 
-  const filteredAlerts = alerts.filter(alert => {
+  const filteredAlerts = alerts.filter((alert: any) => {
     if (filter === 'all') return true
     return alert.severity === filter
   })
 
   const displayedAlerts = filteredAlerts.slice(0, maxDisplayed)
-  const severityCounts = alerts.reduce((acc, alert) => {
+  const severityCounts = alerts.reduce((acc, alert: any) => {
     acc[alert.severity] = (acc[alert.severity] || 0) + 1
     return acc
   }, {} as Record<string, number>)
@@ -174,7 +174,7 @@ export function AlertsPanel({
             <Filter className="h-4 w-4 text-gray-400" />
             <select
               value={filter}
-              onChange={(e) => setFilter(e.target.value as any)}
+              onChange={((e: any): any) => setFilter(e.target.value as any)}
               className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All ({alerts.length})</option>
@@ -196,7 +196,7 @@ export function AlertsPanel({
       </CardHeader>
       <CardContent>
         <div className="space-y-3 max-h-96 overflow-y-auto">
-          {displayedAlerts.map((alert) => {
+          {displayedAlerts.map((alert: any) => {
             const SeverityIcon = getSeverityIcon(alert.severity)
             const colors = getSeverityColor(alert.severity)
             const isResolving = resolving.has(alert.id)
@@ -229,7 +229,7 @@ export function AlertsPanel({
                       </p>
                       {alert.metadata && Object.keys(alert.metadata).length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-2">
-                          {Object.entries(alert.metadata).map(([key, value]) => (
+                          {Object.entries(alert.metadata).map(([key, value]: any) => (
                             <Badge key={key} variant="outline" className="text-xs">
                               {key}: {String(value)}
                             </Badge>
@@ -241,7 +241,7 @@ export function AlertsPanel({
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleResolveAlert(alert.id)}
+                            onClick={((: any): any) => handleResolveAlert(alert.id)}
                             disabled={isResolving}
                             className="text-xs"
                           >
@@ -262,7 +262,7 @@ export function AlertsPanel({
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => window.open(alert.actionUrl, '_blank')}
+                            onClick={((: any): any) => window.open(alert.actionUrl, '_blank')}
                             className="text-xs"
                           >
                             <ExternalLink className="h-3 w-3 mr-1" />
@@ -273,7 +273,7 @@ export function AlertsPanel({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleDismissAlert(alert.id)}
+                            onClick={((: any): any) => handleDismissAlert(alert.id)}
                             className="text-xs text-gray-500 hover:text-gray-700"
                           >
                             <X className="h-3 w-3" />
@@ -297,7 +297,7 @@ export function AlertsPanel({
               variant="outline"
               size="sm"
               className="w-full mt-2"
-              onClick={() => {/* Navigate to full alerts page */}}
+              onClick={((: any): any) => {/* Navigate to full alerts page */}}
             >
               View All Alerts
             </Button>

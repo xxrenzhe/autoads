@@ -246,7 +246,7 @@ const TokenUsageAnalysis: React.FC = () => {
             <Select
               value={dateRange}
               label="时间范围"
-              onChange={(e) => setDateRange(e.target.value)}
+              onChange={((e: any): any) => setDateRange(e.target.value)}
             >
               <MenuItem value="7">最近7天</MenuItem>
               <MenuItem value="30">最近30天</MenuItem>
@@ -259,7 +259,7 @@ const TokenUsageAnalysis: React.FC = () => {
             <Select
               value={groupBy}
               label="分组方式"
-              onChange={(e) => setGroupBy(e.target.value)}
+              onChange={((e: any): any) => setGroupBy(e.target.value)}
             >
               <MenuItem value="day">按天</MenuItem>
               <MenuItem value="week">按周</MenuItem>
@@ -285,7 +285,7 @@ const TokenUsageAnalysis: React.FC = () => {
         </Box>
       </Box>
 
-      <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} sx={{ mb: 3 }}>
+      <Tabs value={tabValue} onChange={((e, newValue: any): any) => setTabValue(newValue)} sx={{ mb: 3 }}>
         <Tab icon={<Assessment />} label="总览" />
         <Tab icon={<People />} label="用户维度" />
         <Tab icon={<BarChart />} label="功能维度" />
@@ -417,7 +417,7 @@ const TokenUsageAnalysis: React.FC = () => {
                     <ResponsiveContainer width="100%" height={400}>
                       <RechartsPieChart>
                         <Pie
-                          data={featureUsage.map(item => ({
+                          data={featureUsage.map((item: any) => ({
                             name: item.feature,
                             value: item.totalTokens,
                           }))}
@@ -431,7 +431,7 @@ const TokenUsageAnalysis: React.FC = () => {
                           fill="#8884d8"
                           dataKey="value"
                         >
-                          {featureUsage.map((entry, index) => (
+                          {featureUsage.map((entry, index: any) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>

@@ -114,9 +114,9 @@ export default function ConfigurationsPage() {
           action: 'create',
           data: {
             ...formData,
-            originalLinks: formData.originalLinks.filter(link => link.trim()),
-            googleAdsAccounts: formData.googleAdsAccounts.filter(acc => acc.accountId.trim()),
-            adMappingConfig: formData.originalLinks.filter(link => link.trim())?.filter(Boolean)?.map(link => ({
+            originalLinks: formData.originalLinks.filter((link: any) => link.trim()),
+            googleAdsAccounts: formData.googleAdsAccounts.filter((acc: any) => acc.accountId.trim()),
+            adMappingConfig: formData.originalLinks.filter((link: any) => link.trim())?.filter(Boolean)?.map((link: any) => ({
               originalUrl: link,
               adMappings: []
             }))
@@ -152,9 +152,9 @@ export default function ConfigurationsPage() {
           id: selectedConfig.id,
           data: {
             ...formData,
-            originalLinks: formData.originalLinks.filter(link => link.trim()),
-            googleAdsAccounts: formData.googleAdsAccounts.filter(acc => acc.accountId.trim()),
-            adMappingConfig: formData.originalLinks.filter(link => link.trim())?.filter(Boolean)?.map(link => ({
+            originalLinks: formData.originalLinks.filter((link: any) => link.trim()),
+            googleAdsAccounts: formData.googleAdsAccounts.filter((acc: any) => acc.accountId.trim()),
+            adMappingConfig: formData.originalLinks.filter((link: any) => link.trim())?.filter(Boolean)?.map((link: any) => ({
               originalUrl: link,
               adMappings: []
             }))
@@ -297,14 +297,14 @@ export default function ConfigurationsPage() {
   const removeOriginalLink = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      originalLinks: prev.originalLinks.filter((_, i) => i !== index),
+      originalLinks: prev.originalLinks.filter((_, i: any) => i !== index),
     }));
   };
 
   const updateOriginalLink = (index: number, value: string) => {
     setFormData(prev => ({
       ...prev,
-      originalLinks: prev.originalLinks.map((link, i) => i === index ? value : link),
+      originalLinks: prev.originalLinks.map((link, i: any) => i === index ? value : link),
     }));
   };
 
@@ -318,14 +318,14 @@ export default function ConfigurationsPage() {
   const removeGoogleAdsAccount = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      googleAdsAccounts: prev.googleAdsAccounts.filter((_, i) => i !== index)
+      googleAdsAccounts: prev.googleAdsAccounts.filter((_, i: any) => i !== index)
     }));
   };
 
   const updateGoogleAdsAccount = (index: number, field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      googleAdsAccounts: prev.googleAdsAccounts.map((acc, i) => 
+      googleAdsAccounts: prev.googleAdsAccounts.map((acc, i: any) => 
         i === index ? { ...acc, [field]: value } : acc
       )
     }));
@@ -366,7 +366,7 @@ export default function ConfigurationsPage() {
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={((e: any) => setFormData(prev: any) => ({ ...prev, name: e.target.value }))}
               placeholder="输入配置名称"
             />
           </div>
@@ -375,7 +375,7 @@ export default function ConfigurationsPage() {
             <Input
               id="environmentId"
               value={formData.environmentId}
-              onChange={(e) => setFormData(prev => ({ ...prev, environmentId: e.target.value }))}
+              onChange={((e: any) => setFormData(prev: any) => ({ ...prev, environmentId: e.target.value }))}
               placeholder="输入环境ID"
             />
           </div>
@@ -390,7 +390,7 @@ export default function ConfigurationsPage() {
               min="1"
               max="10"
               value={formData.repeatCount}
-              onChange={(e) => setFormData(prev => ({ ...prev, repeatCount: parseInt(e.target.value) || 1 }))}
+              onChange={((e: any) => setFormData(prev: any) => ({ ...prev, repeatCount: parseInt(e.target.value) || 1 }))}
             />
           </div>
           <div>
@@ -399,7 +399,7 @@ export default function ConfigurationsPage() {
               id="notificationEmail"
               type="email"
               value={formData.notificationEmail}
-              onChange={(e) => setFormData(prev => ({ ...prev, notificationEmail: e.target.value }))}
+              onChange={((e: any) => setFormData(prev: any) => ({ ...prev, notificationEmail: e.target.value }))}
               placeholder="输入邮箱地址"
             />
           </div>
@@ -415,11 +415,11 @@ export default function ConfigurationsPage() {
               添加链接
             </Button>
           </div>
-          {formData.originalLinks.map((link, index) => (
+          {formData.originalLinks.map((link, index: any) => (
             <div key={index} className="flex gap-2">
               <Input
                 value={link}
-                onChange={(e) => updateOriginalLink(index, e.target.value)}
+                onChange={((e: any): any) => updateOriginalLink(index, e.target.value)}
                 placeholder="输入广告联盟链接"
               />
               {formData.originalLinks.length > 1 && (
@@ -427,7 +427,7 @@ export default function ConfigurationsPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => removeOriginalLink(index)}
+                  onClick={((: any): any) => removeOriginalLink(index)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -446,18 +446,18 @@ export default function ConfigurationsPage() {
               添加账户
             </Button>
           </div>
-          {formData.googleAdsAccounts.map((account, index) => (
+          {formData.googleAdsAccounts.map((account, index: any) => (
             <div key={index} className="grid grid-cols-2 gap-2">
               <Input
                 value={account.accountId}
-                onChange={(e) => updateGoogleAdsAccount(index, 'accountId', e.target.value)}
+                onChange={((e: any): any) => updateGoogleAdsAccount(index, 'accountId', e.target.value)}
                 placeholder="账户ID"
               />
               <div className="flex gap-2">
                 <div className="flex-1">
                   <Input
                     value={account.accountName}
-                    onChange={(e) => updateGoogleAdsAccount(index, 'accountName', e.target.value)}
+                    onChange={((e: any): any) => updateGoogleAdsAccount(index, 'accountName', e.target.value)}
                     placeholder="账户名称"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -472,7 +472,7 @@ export default function ConfigurationsPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => removeGoogleAdsAccount(index)}
+                    onClick={((: any): any) => removeGoogleAdsAccount(index)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -519,7 +519,7 @@ export default function ConfigurationsPage() {
               </Button>
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => { resetForm(); setShowCreateDialog(true); }}>
+                  <Button onClick={((: any): any) => { resetForm(); setShowCreateDialog(true); }}>
                     <Plus className="h-4 w-4 mr-2" />
                     新建配置
                   </Button>
@@ -533,7 +533,7 @@ export default function ConfigurationsPage() {
                   </DialogHeader>
                   <ConfigurationForm />
                   <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                    <Button variant="outline" onClick={((: any): any) => setShowCreateDialog(false)}>
                       取消
                     </Button>
                     <Button onClick={handleCreateConfiguration}>
@@ -555,12 +555,12 @@ export default function ConfigurationsPage() {
               <h3 className="text-lg font-medium mb-2">暂无配置</h3>
               <p className="text-gray-600 mb-4">创建您的第一个配置来开始自动化流程</p>
               <div className="flex gap-2">
-                <Button onClick={() => setShowCreateDialog(true)}>
+                <Button onClick={((: any): any) => setShowCreateDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   创建配置
                 </Button>
                 <Button 
-                  onClick={() => window.location.href = '/adscenter/setup'} 
+                  onClick={((: any): any) => window.location.href = '/adscenter/setup'} 
                   variant="outline"
                 >
                   <Settings className="h-4 w-4 mr-2" />
@@ -571,7 +571,7 @@ export default function ConfigurationsPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {configurations.map((config) => (
+            {configurations.map((config: any) => (
               <Card key={config.id} className={UI_CONSTANTS.cards.featured + " hover:shadow-xl transition-all duration-300"}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -610,21 +610,21 @@ export default function ConfigurationsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => openViewDialog(config)}
+                      onClick={((: any): any) => openViewDialog(config)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => openEditDialog(config)}
+                      onClick={((: any): any) => openEditDialog(config)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleExecuteConfiguration(config.id)}
+                      onClick={((: any): any) => handleExecuteConfiguration(config.id)}
                       disabled={config.status !== 'active'}
                     >
                       <Play className="h-4 w-4" />
@@ -633,7 +633,7 @@ export default function ConfigurationsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleUpdateStatus(config.id, 'paused')}
+                        onClick={((: any): any) => handleUpdateStatus(config.id, 'paused')}
                       >
                         <Pause className="h-4 w-4" />
                       </Button>
@@ -641,7 +641,7 @@ export default function ConfigurationsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleUpdateStatus(config.id, 'active')}
+                        onClick={((: any): any) => handleUpdateStatus(config.id, 'active')}
                       >
                         <Play className="h-4 w-4" />
                       </Button>
@@ -649,7 +649,7 @@ export default function ConfigurationsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDeleteConfiguration(config.id)}
+                      onClick={((: any): any) => handleDeleteConfiguration(config.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -673,7 +673,7 @@ export default function ConfigurationsPage() {
           </DialogHeader>
           <ConfigurationForm isEdit={true} />
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+            <Button variant="outline" onClick={((: any): any) => setShowEditDialog(false)}>
               取消
             </Button>
             <Button onClick={handleUpdateConfiguration}>
@@ -716,7 +716,7 @@ export default function ConfigurationsPage() {
               <div>
                 <Label>广告联盟链接</Label>
                 <div className="mt-1 space-y-1">
-                  {selectedConfig.originalLinks.map((link, index) => (
+                  {selectedConfig.originalLinks.map((link, index: any) => (
                     <p key={index} className="text-sm text-gray-600 break-all">{link}</p>
                   ))}
                 </div>
@@ -725,7 +725,7 @@ export default function ConfigurationsPage() {
               <div>
                 <Label>Google Ads 账户</Label>
                 <div className="mt-1 space-y-1">
-                  {selectedConfig.googleAdsAccounts.map((account, index) => (
+                  {selectedConfig.googleAdsAccounts.map((account, index: any) => (
                     <p key={index} className="text-sm text-gray-600">
                       {account.accountName} ({account.accountId})
                     </p>

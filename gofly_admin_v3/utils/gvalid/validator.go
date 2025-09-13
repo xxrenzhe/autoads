@@ -30,10 +30,10 @@ func NewValidatorManager() *ValidatorManager {
 	vm := &ValidatorManager{
 		rules: make(map[string]*ValidationRule),
 	}
-	
+
 	// 注册内置验证规则
 	vm.registerBuiltinRules()
-	
+
 	return vm
 }
 
@@ -67,7 +67,7 @@ func (vm *ValidatorManager) registerBuiltinRules() {
 			return true
 		},
 	})
-	
+
 	// 邮箱
 	vm.RegisterRule("email", &ValidationRule{
 		Name:    "email",
@@ -82,7 +82,7 @@ func (vm *ValidatorManager) registerBuiltinRules() {
 			return matched
 		},
 	})
-	
+
 	// 最小长度
 	vm.RegisterRule("min", &ValidationRule{
 		Name:    "min",
@@ -95,7 +95,7 @@ func (vm *ValidatorManager) registerBuiltinRules() {
 			if err != nil {
 				return false
 			}
-			
+
 			str, ok := value.(string)
 			if !ok {
 				return false
@@ -103,7 +103,7 @@ func (vm *ValidatorManager) registerBuiltinRules() {
 			return len(str) >= min
 		},
 	})
-	
+
 	// 最大长度
 	vm.RegisterRule("max", &ValidationRule{
 		Name:    "max",
@@ -116,7 +116,7 @@ func (vm *ValidatorManager) registerBuiltinRules() {
 			if err != nil {
 				return false
 			}
-			
+
 			str, ok := value.(string)
 			if !ok {
 				return false
@@ -124,7 +124,7 @@ func (vm *ValidatorManager) registerBuiltinRules() {
 			return len(str) <= max
 		},
 	})
-	
+
 	// 正则表达式
 	vm.RegisterRule("regex", &ValidationRule{
 		Name:    "regex",
@@ -141,7 +141,7 @@ func (vm *ValidatorManager) registerBuiltinRules() {
 			return matched
 		},
 	})
-	
+
 	// 数值范围
 	vm.RegisterRule("between", &ValidationRule{
 		Name:    "between",
@@ -155,7 +155,7 @@ func (vm *ValidatorManager) registerBuiltinRules() {
 			if err1 != nil || err2 != nil {
 				return false
 			}
-			
+
 			switch v := value.(type) {
 			case int:
 				return v >= min && v <= max
@@ -173,7 +173,7 @@ func (vm *ValidatorManager) registerBuiltinRules() {
 			return false
 		},
 	})
-	
+
 	// 枚举值
 	vm.RegisterRule("in", &ValidationRule{
 		Name:    "in",
@@ -182,12 +182,12 @@ func (vm *ValidatorManager) registerBuiltinRules() {
 			if len(params) == 0 {
 				return false
 			}
-			
+
 			str, ok := value.(string)
 			if !ok {
 				return false
 			}
-			
+
 			for _, param := range params {
 				if str == param {
 					return true
@@ -206,27 +206,27 @@ func (vm *ValidatorManager) RegisterRule(name string, rule *ValidationRule) {
 // Validate 验证数据
 func (vm *ValidatorManager) Validate(data map[string]interface{}, rules map[string]string) map[string]string {
 	errors := make(map[string]string)
-	
+
 	for field, ruleStr := range rules {
 		value := data[field]
-		
+
 		// 解析验证规则
 		ruleList := strings.Split(ruleStr, "|")
 		for _, rule := range ruleList {
 			parts := strings.SplitN(rule, ":", 2)
 			ruleName := parts[0]
 			var ruleParams []string
-			
+
 			if len(parts) > 1 {
 				ruleParams = strings.Split(parts[1], ",")
 			}
-			
+
 			// 获取验证规则
 			validationRule, exists := vm.rules[ruleName]
 			if !exists {
 				continue
 			}
-			
+
 			// 执行验证
 			if !validationRule.Validate(value, ruleParams) {
 				// 格式化错误消息
@@ -239,7 +239,7 @@ func (vm *ValidatorManager) Validate(data map[string]interface{}, rules map[stri
 			}
 		}
 	}
-	
+
 	return errors
 }
 
@@ -248,20 +248,20 @@ func (vm *ValidatorManager) ValidateStruct(obj interface{}, rules map[string]str
 	// 将结构体转换为map
 	data := make(map[string]interface{})
 	v := reflect.ValueOf(obj)
-	
+
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	
+
 	if v.Kind() != reflect.Struct {
 		return map[string]string{"error": "input must be a struct or pointer to struct"}
 	}
-	
+
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		fieldValue := v.Field(i)
-		
+
 		// 获取字段的json标签作为key
 		tag := field.Tag.Get("json")
 		if tag != "" {
@@ -273,7 +273,7 @@ func (vm *ValidatorManager) ValidateStruct(obj interface{}, rules map[string]str
 			data[strings.ToLower(field.Name)] = fieldValue.Interface()
 		}
 	}
-	
+
 	return vm.Validate(data, rules)
 }
 

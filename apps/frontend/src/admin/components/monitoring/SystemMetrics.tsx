@@ -89,7 +89,7 @@ export function SystemMetrics({
           <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
             {new Date(label).toLocaleTimeString()}
           </p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: any, index: number: any) => (
             <div key={index} className="flex items-center space-x-2">
               <div 
                 className="w-3 h-3 rounded-full"
@@ -361,7 +361,7 @@ export function SystemMetrics({
               </div>
               <div className="flex space-x-2">
                 <button
-                  onClick={() => setSelectedMetric('cpu')}
+                  onClick={((: any): any) => setSelectedMetric('cpu')}
                   className={`px-3 py-1 text-sm rounded ${
                     selectedMetric === 'cpu' 
                       ? 'bg-blue-100 text-blue-700' 
@@ -371,7 +371,7 @@ export function SystemMetrics({
                   CPU
                 </button>
                 <button
-                  onClick={() => setSelectedMetric('memory')}
+                  onClick={((: any): any) => setSelectedMetric('memory')}
                   className={`px-3 py-1 text-sm rounded ${
                     selectedMetric === 'memory' 
                       ? 'bg-blue-100 text-blue-700' 
@@ -381,7 +381,7 @@ export function SystemMetrics({
                   Memory
                 </button>
                 <button
-                  onClick={() => setSelectedMetric('disk')}
+                  onClick={((: any): any) => setSelectedMetric('disk')}
                   className={`px-3 py-1 text-sm rounded ${
                     selectedMetric === 'disk' 
                       ? 'bg-blue-100 text-blue-700' 

@@ -343,7 +343,7 @@ class EnvironmentManager {
         loggingEnabled: config.database.enableLogging
       },
       features: config.features,
-      integrations: Object.entries(config.integrations).reduce((acc, [key, value]) => {
+      integrations: Object.entries(config.integrations).reduce((acc, [key, value]: any) => {
         acc[key] = { enabled: value.enabled }
         return acc
       }, {} as Record<string, any>),
@@ -371,7 +371,7 @@ class EnvironmentManager {
           return process.env[varName] || match
         })
       } else if (Array.isArray(obj)) {
-        return obj?.filter(Boolean)?.map(item => interpolate(item))
+        return obj?.filter(Boolean)?.map((item: any) => interpolate(item))
       } else if (obj && typeof obj === 'object') {
         const result: any = {}
         for (const [key, value] of Object.entries(obj)) {
@@ -425,15 +425,15 @@ class EnvironmentManager {
       if (typeof obj === 'string') {
         const matches = obj.match(/\$\{([^}]+)\}/g)
         if (matches) {
-          matches.forEach(match => {
+          matches.forEach((match: any) => {
             const varName = match.slice(2, -1)
             variables.add(varName)
           })
         }
       } else if (Array.isArray(obj)) {
-        obj.forEach(item => extract(item))
+        obj.forEach((item: any) => extract(item))
       } else if (obj && typeof obj === 'object') {
-        Object.values(obj).forEach(value => extract(value))
+        Object.values(obj).forEach((value: any) => extract(value))
       }
     }
 

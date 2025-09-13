@@ -34,7 +34,7 @@ export function performStartupValidation(): void {
     const configValidation = validateConfig();
     if (!configValidation.isValid) {
       logger.error('❌ Configuration validation failed:');
-      configValidation.errors.forEach(error => logger.error(`  - ${error}`));
+      configValidation.errors.forEach((error: any) => logger.error(`  - ${error}`));
       throw new Error('Configuration validation failed');
     }
     logger.info('✅ Configuration is valid');
@@ -77,10 +77,10 @@ export function validateProductionSecurity(): void {
     'SESSION_SECRET'
   ];
   
-  const missingVars = requiredSecurityEnvVars.filter(varName => !process.env[varName]);
+  const missingVars = requiredSecurityEnvVars.filter((varName: any) => !process.env[varName]);
   if (missingVars.length > 0) {
     logger.error('❌ Missing required security environment variables in production:');
-    missingVars.forEach(varName => logger.error(`  - ${varName}`));
+    missingVars.forEach((varName: any) => logger.error(`  - ${varName}`));
     process.exit(1);
   }
   
@@ -137,7 +137,7 @@ export function checkSecurityRisks(): void {
   
   if (warnings.length > 0) {
     logger.warn('⚠️ Security warnings detected:');
-    warnings.forEach(warning => logger.warn(`  - ${warning}`));
+    warnings.forEach((warning: any) => logger.warn(`  - ${warning}`));
   } else {
     logger.info('✅ No security risks detected');
   }

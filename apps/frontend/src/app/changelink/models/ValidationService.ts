@@ -50,7 +50,7 @@ export class ValidationService {
           severity: 'error'
         });
       } else {
-        config.originalLinks.forEach((link: string, index: number) => {
+        config.originalLinks.forEach((link: string, index: number: any) => {
           if (!this.isValidUrl(link)) {
             errors.push({
               field: 'originalLinks',

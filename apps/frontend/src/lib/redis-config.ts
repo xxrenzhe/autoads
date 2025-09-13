@@ -302,7 +302,7 @@ export class RedisService {
   async pipeline(commands: Array<[string, ...string[]]>): Promise<[Error | null, any][]> {
     const pipeline = this.client.pipeline();
     
-    commands.forEach(([command, ...args]) => {
+    commands.forEach(([command, ...args]: any) => {
       (pipeline as any)[command](...args);
     });
     

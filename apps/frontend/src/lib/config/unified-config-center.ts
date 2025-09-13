@@ -565,7 +565,7 @@ export class UnifiedConfigCenter {
     const watchers = this.watchers.get('config');
     if (watchers) {
       const config = this.getConfig();
-      watchers.forEach(callback => {
+      watchers.forEach((callback: any) => {
         try {
           callback(config);
         } catch (error) {

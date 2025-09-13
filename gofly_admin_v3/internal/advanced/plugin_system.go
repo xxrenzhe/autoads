@@ -110,13 +110,13 @@ func GetPluginManager() *PluginManager {
 
 // AdvancedPluginSystem 高级插件系统
 type AdvancedPluginSystem struct {
-	plugins      map[string]Plugin
+	plugins       map[string]Plugin
 	pluginManager *PluginManager
-	auditService *audit.AuditService
-	db           *gorm.DB
-	eventBus     *EventBus
-	hooks        map[string][]HookFunc
-	mu           sync.RWMutex
+	auditService  *audit.AuditService
+	db            *gorm.DB
+	eventBus      *EventBus
+	hooks         map[string][]HookFunc
+	mu            sync.RWMutex
 }
 
 // HookFunc 钩子函数类型
@@ -141,12 +141,12 @@ type Event struct {
 func NewAdvancedPluginSystem(db *gorm.DB, auditService *audit.AuditService) *AdvancedPluginSystem {
 	pm := GetPluginManager()
 	return &AdvancedPluginSystem{
-		plugins:      pm.plugins,
+		plugins:       pm.plugins,
 		pluginManager: pm,
-		auditService: auditService,
-		db:           db,
-		eventBus:     NewEventBus(),
-		hooks:        make(map[string][]HookFunc),
+		auditService:  auditService,
+		db:            db,
+		eventBus:      NewEventBus(),
+		hooks:         make(map[string][]HookFunc),
 	}
 }
 

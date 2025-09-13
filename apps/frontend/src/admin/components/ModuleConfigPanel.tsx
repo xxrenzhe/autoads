@@ -81,7 +81,7 @@ const ModuleConfigPanel: React.FC<ModuleConfigPanelProps> = ({
             control={
               <Switch
                 checked={localConfig.enabled}
-                onChange={(e) => handleConfigUpdate({ enabled: e.target.checked })}
+                onChange={((e: any): any) => handleConfigUpdate({ enabled: e.target.checked })}
               />
             }
             label="Enabled"
@@ -101,7 +101,7 @@ const ModuleConfigPanel: React.FC<ModuleConfigPanelProps> = ({
               label="Max Concurrent Tasks"
               type="number"
               value={localConfig.maxConcurrentTasks}
-              onChange={(e) => handleConfigUpdate({ maxConcurrentTasks: parseInt(e.target.value) })}
+              onChange={((e: any): any) => handleConfigUpdate({ maxConcurrentTasks: parseInt(e.target.value) })}
               fullWidth
               margin="normal"
               disabled={!localConfig.enabled}
@@ -111,7 +111,7 @@ const ModuleConfigPanel: React.FC<ModuleConfigPanelProps> = ({
               label="Rate Limit (per minute)"
               type="number"
               value={localConfig.rateLimitPerMinute}
-              onChange={(e) => handleConfigUpdate({ rateLimitPerMinute: parseInt(e.target.value) })}
+              onChange={((e: any): any) => handleConfigUpdate({ rateLimitPerMinute: parseInt(e.target.value) })}
               fullWidth
               margin="normal"
               disabled={!localConfig.enabled}
@@ -121,7 +121,7 @@ const ModuleConfigPanel: React.FC<ModuleConfigPanelProps> = ({
               label="Timeout (seconds)"
               type="number"
               value={localConfig.timeoutSeconds}
-              onChange={(e) => handleConfigUpdate({ timeoutSeconds: parseInt(e.target.value) })}
+              onChange={((e: any): any) => handleConfigUpdate({ timeoutSeconds: parseInt(e.target.value) })}
               fullWidth
               margin="normal"
               disabled={!localConfig.enabled}
@@ -131,7 +131,7 @@ const ModuleConfigPanel: React.FC<ModuleConfigPanelProps> = ({
               label="Retry Attempts"
               type="number"
               value={localConfig.retryAttempts}
-              onChange={(e) => handleConfigUpdate({ retryAttempts: parseInt(e.target.value) })}
+              onChange={((e: any): any) => handleConfigUpdate({ retryAttempts: parseInt(e.target.value) })}
               fullWidth
               margin="normal"
               disabled={!localConfig.enabled}
@@ -148,7 +148,7 @@ const ModuleConfigPanel: React.FC<ModuleConfigPanelProps> = ({
               control={
                 <Switch
                   checked={localConfig.cacheEnabled}
-                  onChange={(e) => handleConfigUpdate({ cacheEnabled: e.target.checked })}
+                  onChange={((e: any): any) => handleConfigUpdate({ cacheEnabled: e.target.checked })}
                   disabled={!localConfig.enabled}
                 />
               }
@@ -159,7 +159,7 @@ const ModuleConfigPanel: React.FC<ModuleConfigPanelProps> = ({
               label="Cache TTL (minutes)"
               type="number"
               value={localConfig.cacheTtlMinutes}
-              onChange={(e) => handleConfigUpdate({ cacheTtlMinutes: parseInt(e.target.value) })}
+              onChange={((e: any): any) => handleConfigUpdate({ cacheTtlMinutes: parseInt(e.target.value) })}
               fullWidth
               margin="normal"
               disabled={!localConfig.enabled || !localConfig.cacheEnabled}
@@ -169,7 +169,7 @@ const ModuleConfigPanel: React.FC<ModuleConfigPanelProps> = ({
               control={
                 <Switch
                   checked={localConfig.debugMode}
-                  onChange={(e) => handleConfigUpdate({ debugMode: e.target.checked })}
+                  onChange={((e: any): any) => handleConfigUpdate({ debugMode: e.target.checked })}
                   disabled={!localConfig.enabled}
                 />
               }
@@ -183,7 +183,7 @@ const ModuleConfigPanel: React.FC<ModuleConfigPanelProps> = ({
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
           <Button
             variant="outlined"
-            onClick={() => setLocalConfig(config)}
+            onClick={((: any): any) => setLocalConfig(config)}
             disabled={saving}
           >
             Reset
@@ -264,10 +264,10 @@ export const BusinessModuleConfig: React.FC = () => {
 
       <Tabs
         value={activeTab}
-        onChange={(_, newValue) => setActiveTab(newValue)}
+        onChange={((_, newValue: any): any) => setActiveTab(newValue)}
         sx={{ mb: 3 }}
       >
-        {modules.map((module, index) => (
+        {modules.map((module, index: any) => (
           <Tab
             key={module}
             label={module.charAt(0).toUpperCase() + module.slice(1)}
@@ -276,7 +276,7 @@ export const BusinessModuleConfig: React.FC = () => {
         ))}
       </Tabs>
 
-      {modules.map((module, index) => (
+      {modules.map((module, index: any) => (
         <Box
           key={module}
           role="tabpanel"

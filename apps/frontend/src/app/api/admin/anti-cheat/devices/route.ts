@@ -70,8 +70,8 @@ export async function GET(request: NextRequest) {
       _count: true
     })
 
-    const suspiciousCount = stats.find(s => s.isSuspicious)?._count || 0
-    const normalCount = stats.find(s => !s.isSuspicious)?._count || 0
+    const suspiciousCount = stats.find((s: any) => s.isSuspicious)?._count || 0
+    const normalCount = stats.find((s: any) => !s.isSuspicious)?._count || 0
 
     return NextResponse.json({
       data: devices,

@@ -99,7 +99,7 @@ export class TrialService {
       // 使用SubscriptionHelper处理所有过期的订阅
       const results = await SubscriptionHelper.processExpiredSubscriptions();
       
-      const trialResults = results.filter(result => 
+      const trialResults = results.filter((result: any) => 
         result.status === 'expired' || result.status === 'error'
       );
 

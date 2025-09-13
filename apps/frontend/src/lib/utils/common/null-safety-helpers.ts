@@ -270,7 +270,7 @@ export function nullSafeMerge<T extends Record<string, any>>(
 ): T {
   const result = (target ?? {}) as T
   
-  sources.forEach(source => {
+  sources.forEach((source: any) => {
     if (source != null) {
       Object.assign(result, source)
     }

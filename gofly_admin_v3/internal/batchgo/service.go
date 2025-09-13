@@ -180,26 +180,28 @@ func (s *Service) startBasicTask(task *BatchTask) error {
 		return err
 	}
 
-    // 转换为字符串URL列表
-    strURLs := make([]string, 0, len(urls))
-    for _, u := range urls {
-        if u.URL != "" {
-            strURLs = append(strURLs, u.URL)
-        }
-    }
-    delay := 0
-    if config.Basic != nil { delay = config.Basic.Delay }
-    // 通过WebSocket发送给前端（Basic模式window.open指令）
-    message := map[string]interface{}{
-        "type": "batchgo_open_url",
-        "data": map[string]interface{}{
-            "task_id": task.ID,
-            "urls":    strURLs,
-            "delay":   delay,
-        },
-        "timestamp": time.Now().Unix(),
-    }
-    return s.wsManager.SendToUser(task.UserID, message)
+	// 转换为字符串URL列表
+	strURLs := make([]string, 0, len(urls))
+	for _, u := range urls {
+		if u.URL != "" {
+			strURLs = append(strURLs, u.URL)
+		}
+	}
+	delay := 0
+	if config.Basic != nil {
+		delay = config.Basic.Delay
+	}
+	// 通过WebSocket发送给前端（Basic模式window.open指令）
+	message := map[string]interface{}{
+		"type": "batchgo_open_url",
+		"data": map[string]interface{}{
+			"task_id": task.ID,
+			"urls":    strURLs,
+			"delay":   delay,
+		},
+		"timestamp": time.Now().Unix(),
+	}
+	return s.wsManager.SendToUser(task.UserID, message)
 }
 
 // startSilentTask 启动Silent模式任务
@@ -421,11 +423,11 @@ func (s *Service) calculateNextExecutionTime(config *AutoClickConfig) (time.Time
 		return time.Time{}, fmt.Errorf("开始时间格式错误: %v", err)
 	}
 
-    // 解析结束时间（仅校验格式）
-    _, err = time.Parse("15:04", config.EndTime)
-    if err != nil {
-        return time.Time{}, fmt.Errorf("结束时间格式错误: %v", err)
-    }
+	// 解析结束时间（仅校验格式）
+	_, err = time.Parse("15:04", config.EndTime)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("结束时间格式错误: %v", err)
+	}
 
 	// 计算今天的开始时间
 	todayStart := time.Date(now.Year(), now.Month(), now.Day(),

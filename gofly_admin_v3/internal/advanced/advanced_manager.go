@@ -10,15 +10,15 @@ import (
 	"gofly-admin-v3/internal/audit"
 	"gofly-admin-v3/internal/cache"
 	"gofly-admin-v3/internal/captcha"
-		"gofly-admin-v3/internal/dictionary"
+	"gofly-admin-v3/internal/dictionary"
 	"gofly-admin-v3/internal/email"
 	"gofly-admin-v3/internal/export"
 	"gofly-admin-v3/internal/i18n"
 	"gofly-admin-v3/internal/ratelimit"
 	"gofly-admin-v3/internal/security"
 	"gofly-admin-v3/internal/upload"
-	"gofly-admin-v3/service/user"
 	"gofly-admin-v3/internal/websocket"
+	"gofly-admin-v3/service/user"
 	"gofly-admin-v3/utils/gf"
 	"gofly-admin-v3/utils/tools/glog"
 	"gorm.io/gorm"
@@ -334,7 +334,7 @@ func (afm *AdvancedFeaturesManager) GetSystemStatus() map[string]interface{} {
 		// TODO: Fix plugin system - pluginList := afm.pluginSystem.ListPlugins()
 		pluginList := []map[string]interface{}{}
 		status["systems"].(map[string]interface{})["plugins"] = map[string]interface{}{
-			"total_plugins":  len(pluginList),
+			"total_plugins": len(pluginList),
 			// "active_plugins": countActivePlugins(pluginList),
 			"active_plugins": 0, // TODO: Fix plugins package
 			"plugin_list":    pluginList,

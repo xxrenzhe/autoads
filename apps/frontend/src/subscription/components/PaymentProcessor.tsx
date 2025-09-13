@@ -302,7 +302,7 @@ export function PaymentProcessor(props: PaymentProcessorProps) {
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             {error}
           </p>
-          <Button onClick={() => setError(null)} variant="outline">
+          <Button onClick={((: any): any) => setError(null)} variant="outline">
             Try Again
           </Button>
         </CardContent>

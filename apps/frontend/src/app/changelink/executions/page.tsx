@@ -315,7 +315,7 @@ export default function ExecutionsPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => openDetailDialog(execution.id)}
+              onClick={((: any): any) => openDetailDialog(execution.id)}
             >
               <Eye className="h-4 w-4 mr-1" />
               详情
@@ -324,7 +324,7 @@ export default function ExecutionsPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleCancelExecution(execution.id)}
+                onClick={((: any): any) => handleCancelExecution(execution.id)}
               >
                 <Square className="h-4 w-4 mr-1" />
                 取消
@@ -420,7 +420,7 @@ export default function ExecutionsPage() {
             <AlertDescription>暂无执行步骤记录</AlertDescription>
           </Alert>
         ) : (
-          execution.results.map((step, index) => (
+          execution.results.map((step, index: any) => (
             <Card key={index}>
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-center">
@@ -464,7 +464,7 @@ export default function ExecutionsPage() {
             <AlertDescription>无错误记录</AlertDescription>
           </Alert>
         ) : (
-          execution.errors.map((error, index) => (
+          execution.errors.map((error, index: any) => (
             <Alert key={index} variant="destructive">
               <XCircle className="h-4 w-4" />
               <AlertDescription>
@@ -530,7 +530,7 @@ export default function ExecutionsPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activeExecutions.map((execution) => (
+              {activeExecutions.map((execution: any) => (
                 <ExecutionCard key={execution.id} execution={execution} isActive={true} />
               ))}
             </div>
@@ -548,7 +548,7 @@ export default function ExecutionsPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {historyExecutions.map((execution) => (
+              {historyExecutions.map((execution: any) => (
                 <ExecutionCard key={execution.id} execution={execution} />
               ))}
             </div>

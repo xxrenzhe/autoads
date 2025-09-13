@@ -546,7 +546,7 @@ export class ObjectPool<T> {
         w => now - w.timestamp > this.config.acquisitionTimeout
       );
       
-      timedOutWaits.forEach(wait => {
+      timedOutWaits.forEach((wait: any) => {
         wait.reject(new Error('获取对象超时'));
         const index = this.waitingQueue.indexOf(wait);
         if (index > -1) {
@@ -583,7 +583,7 @@ export class ObjectPool<T> {
       idleTime: number;
     }>;
   } {
-    const objects = Array.from(this.pool.entries()).map(([id, poolObj]) => ({
+    const objects = Array.from(this.pool.entries()).map(([id, poolObj]: any) => ({
       id,
       inUse: poolObj.inUse,
       useCount: poolObj.useCount,
@@ -603,7 +603,7 @@ export class ObjectPool<T> {
    */
   async clear(): Promise<void> {
     // 销毁所有对象
-    const destroyPromises = Array.from(this.pool.entries()).map(([id, poolObj]) => 
+    const destroyPromises = Array.from(this.pool.entries()).map(([id, poolObj]: any) => 
       this.destroyObject(id, poolObj)
     );
     
@@ -612,7 +612,7 @@ export class ObjectPool<T> {
     // 清空等待队列
     const waitingTasks = [...this.waitingQueue];
     this.waitingQueue = [];
-    waitingTasks.forEach(wait => {
+    waitingTasks.forEach((wait: any) => {
       wait.reject(new Error('对象池已清理'));
     });
     

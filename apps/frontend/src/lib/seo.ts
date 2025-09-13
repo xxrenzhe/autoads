@@ -227,7 +227,7 @@ export const generateStructuredData = {
   breadcrumbList: (items: { name: string; url: string }[]) => ({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: items.map((item, index) => ({
+    itemListElement: items.map((item, index: any) => ({
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
@@ -239,7 +239,7 @@ export const generateStructuredData = {
   faqPage: (faqs: { question: string; answer: string }[]) => ({
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
+    mainEntity: faqs.map((faq: any) => ({
       "@type": "Question",
       name: faq.question,
       acceptedAnswer: {

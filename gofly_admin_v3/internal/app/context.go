@@ -20,7 +20,7 @@ import (
 	"gofly-admin-v3/internal/subscription"
 	// "gofly-admin-v3/internal/token"
 	"gofly-admin-v3/service/user"
-		)
+)
 
 // Context 应用上下文
 type Context struct {
@@ -38,7 +38,7 @@ type Context struct {
 	RateLimitManager *ratelimit.RateLimitManager
 
 	// 业务模块
-	BatchGoService       *batchgo.Service
+	BatchGoService *batchgo.Service
 	// AdminService         *admin.Service
 	// TokenService         *token.Service
 	// SiteRankGoService    *siterankgo.Service
@@ -64,7 +64,7 @@ func NewContext(cfg *Config) (*Context, error) {
 		portStr = "6379"
 	}
 	port, _ := strconv.Atoi(portStr)
-	
+
 	redisConfig := &config.RedisConfig{
 		Enable:   true,
 		Host:     host,
@@ -86,9 +86,9 @@ func NewContext(cfg *Config) (*Context, error) {
 		Redis: *redisConfig, // Copy the Redis config we created
 		// TODO: Map other config fields as needed
 	}
-	
+
 	rateLimitManager := ratelimit.NewRateLimitManager(configCfg, db, nil) // userService still needed
-	
+
 	ctx := &Context{
 		Config: cfg,
 		DB:     db,
@@ -100,7 +100,7 @@ func NewContext(cfg *Config) (*Context, error) {
 		SubService:       subscription.NewService(db),
 		RateLimitManager: rateLimitManager,
 
-		BatchGoService:       batchgo.NewService(db.DB, nil, nil),
+		BatchGoService: batchgo.NewService(db.DB, nil, nil),
 		// AdminService:         nil, // TODO: Initialize admin service
 		// TokenService:         nil, // TODO: Initialize token service
 		// SiteRankGoService:    nil, // TODO: Initialize siterankgo service

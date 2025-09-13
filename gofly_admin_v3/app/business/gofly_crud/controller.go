@@ -204,7 +204,7 @@ func (c *GoFlyCRUDController) GetAdsAccountList(ctx *gf.GinCtx) {
 func RegisterAutoCRUD() {
 	// TODO: Implement auto CRUD registration
 	// These are commented out because gf.RegisterAutoCRUD doesn't exist
-	// 
+	//
 	// 注册用户模块自动CRUD
 	// gf.RegisterAutoCRUD(&User{}, "/business/gofly-crud/user")
 	//

@@ -3,52 +3,51 @@
 package batchgo
 
 import (
-    "context"
-    "fmt"
-    "math/rand"
-    "net/http"
-    "sync"
-    "time"
+	"context"
+	"fmt"
+	"math/rand"
+	"net/http"
+	"sync"
+	"time"
 
-    "github.com/chromedp/chromedp"
-    "gofly-admin-v3/internal/store"
-    "gofly-admin-v3/pkg/concurrent"
-    "gofly-admin-v3/utils/gf"
-    
+	"github.com/chromedp/chromedp"
+	"gofly-admin-v3/internal/store"
+	"gofly-admin-v3/pkg/concurrent"
+	"gofly-admin-v3/utils/gf"
 )
 
 // EnhancedService 增强的BatchGo服务
 type EnhancedService struct {
-    *Service
+	*Service
 
 	// 并发控制
 	maxConcurrency int
-    taskQueue      chan *concurrent.ExecTask
+	taskQueue      chan *concurrent.ExecTask
 
 	// 代理管理
-    proxyPool *ProxyPool
+	proxyPool *ProxyPool
 
 	// 上下文
-    ctx    context.Context
-    cancel context.CancelFunc
-    wg     sync.WaitGroup
-    mu     sync.RWMutex
-    runningTasks map[string]*EnhancedTaskRunner
+	ctx          context.Context
+	cancel       context.CancelFunc
+	wg           sync.WaitGroup
+	mu           sync.RWMutex
+	runningTasks map[string]*EnhancedTaskRunner
 }
 
 // NewEnhancedService 创建增强的服务
 func NewEnhancedService(db *store.DB, redis *store.Redis) *EnhancedService {
 	ctx, cancel := context.WithCancel(context.Background())
 
-    s := &EnhancedService{
-        Service:        NewServiceAdv(db, redis),
-        maxConcurrency: 50,                     // 最大并发数
-        taskQueue:      make(chan *concurrent.ExecTask, 1000), // 任务队列
-        proxyPool:      NewProxyPool(),
-        ctx:            ctx,
-        cancel:         cancel,
-        runningTasks:   make(map[string]*EnhancedTaskRunner),
-    }
+	s := &EnhancedService{
+		Service:        NewServiceAdv(db, redis),
+		maxConcurrency: 50,                                    // 最大并发数
+		taskQueue:      make(chan *concurrent.ExecTask, 1000), // 任务队列
+		proxyPool:      NewProxyPool(),
+		ctx:            ctx,
+		cancel:         cancel,
+		runningTasks:   make(map[string]*EnhancedTaskRunner),
+	}
 
 	// 启动任务处理器
 	go s.startTaskProcessor()
@@ -58,7 +57,7 @@ func NewEnhancedService(db *store.DB, redis *store.Redis) *EnhancedService {
 
 // StartEnhancedTask 启动增强任务
 func (s *EnhancedService) StartEnhancedTask(taskID, userID string, mode string) error {
-    task, err := s.GetTaskAdv(taskID)
+	task, err := s.GetTaskAdv(taskID)
 	if err != nil {
 		return err
 	}
@@ -74,7 +73,7 @@ func (s *EnhancedService) StartEnhancedTask(taskID, userID string, mode string) 
 	}
 
 	// 检查用户套餐权限
-    // 简化：跳过用户权限与扣费，专注于任务执行流程编译
+	// 简化：跳过用户权限与扣费，专注于任务执行流程编译
 
 	// 将任务加入队列
 	task.Status = "queued"
@@ -164,7 +163,7 @@ func determineMode(task *concurrent.ExecTask) string {
 
 // EnhancedTaskRunner 增强的任务运行器
 type EnhancedTaskRunner struct {
-    task      *concurrent.ExecTask
+	task      *concurrent.ExecTask
 	service   *EnhancedService
 	workerID  int
 	mode      string
@@ -241,13 +240,13 @@ func (r *EnhancedTaskRunner) executeSilentMode() {
 			}
 
 			wg.Add(1)
-            go func(u string) {
-                defer wg.Done()
+			go func(u string) {
+				defer wg.Done()
 
 				semaphore <- struct{}{}
 				defer func() { <-semaphore }()
 
-                client := r.createHTTPClient()
+				client := r.createHTTPClient()
 
 				// 执行多次
 				for i := 0; i < r.task.OpenCount; i++ {
@@ -255,15 +254,15 @@ func (r *EnhancedTaskRunner) executeSilentMode() {
 						break
 					}
 
-                    result := r.executeHTTPRequest(client, u)
-                    r.saveResult(result)
+					result := r.executeHTTPRequest(client, u)
+					r.saveResult(result)
 
 					// 间隔
 					if i < r.task.OpenCount-1 {
 						time.Sleep(time.Duration(r.task.OpenInterval) * time.Second)
 					}
 				}
-            }(urlStr)
+			}(urlStr)
 		}
 
 		wg.Wait()
@@ -317,13 +316,13 @@ func (r *EnhancedTaskRunner) executeAutomatedMode() {
 
 // executeHTTPRequest 执行HTTP请求
 func (r *EnhancedTaskRunner) executeHTTPRequest(client *http.Client, urlStr string) *concurrent.ExecTaskResult {
-    result := &concurrent.ExecTaskResult{
-        ID:        gf.UUID(),
-        TaskID:    r.task.ID,
-        URL:       urlStr,
-        Status:    "pending",
-        CreatedAt: time.Now(),
-    }
+	result := &concurrent.ExecTaskResult{
+		ID:        gf.UUID(),
+		TaskID:    r.task.ID,
+		URL:       urlStr,
+		Status:    "pending",
+		CreatedAt: time.Now(),
+	}
 
 	start := time.Now()
 	result.StartTime = &start
@@ -364,13 +363,13 @@ func (r *EnhancedTaskRunner) executeHTTPRequest(client *http.Client, urlStr stri
 
 // executeBrowserAutomation 执行浏览器自动化
 func (r *EnhancedTaskRunner) executeBrowserAutomation(ctx context.Context, urlStr string) *concurrent.ExecTaskResult {
-    result := &concurrent.ExecTaskResult{
-        ID:        gf.UUID(),
-        TaskID:    r.task.ID,
-        URL:       urlStr,
-        Status:    "pending",
-        CreatedAt: time.Now(),
-    }
+	result := &concurrent.ExecTaskResult{
+		ID:        gf.UUID(),
+		TaskID:    r.task.ID,
+		URL:       urlStr,
+		Status:    "pending",
+		CreatedAt: time.Now(),
+	}
 
 	start := time.Now()
 	result.StartTime = &start
@@ -483,12 +482,12 @@ func (r *EnhancedTaskRunner) completeTask() {
 
 	// 计算统计
 	var total, successCount int64
-    r.service.db.Model(&concurrent.ExecTaskResult{}).
-        Where("task_id = ?", r.task.ID).
-        Count(&total)
-    r.service.db.Model(&concurrent.ExecTaskResult{}).
-        Where("task_id = ? AND status = ?", r.task.ID, "success").
-        Count(&successCount)
+	r.service.db.Model(&concurrent.ExecTaskResult{}).
+		Where("task_id = ?", r.task.ID).
+		Count(&total)
+	r.service.db.Model(&concurrent.ExecTaskResult{}).
+		Where("task_id = ? AND status = ?", r.task.ID, "success").
+		Count(&successCount)
 
 	failedCount := total - successCount
 

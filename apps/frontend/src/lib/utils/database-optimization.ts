@@ -70,7 +70,7 @@ export class BatchOperations {
     for (let i = 0; i < updates.length; i += chunkSize) {
       const chunk = updates.slice(i, i + chunkSize);
       
-      const promises = chunk.map(({ where, data }) => 
+      const promises = chunk.map(({ where, data }: any) => 
         model.update({ where, data })
       );
       
@@ -278,7 +278,7 @@ export class AnalyticsQueryOptimizer {
     }[groupBy];
     
     // Build aggregation selects
-    const selects = Object.entries(aggregations).map(([alias, type]) => {
+    const selects = Object.entries(aggregations).map(([alias, type]: any) => {
       switch (type) {
         case 'sum':
           return `SUM(COALESCE("${alias}", 0)) as "${alias}"`;
@@ -309,12 +309,12 @@ export class AnalyticsQueryOptimizer {
   }
   
   private static buildWhereClause(where: any): string {
-    const conditions = Object.entries(where).map(([key, value]) => {
+    const conditions = Object.entries(where).map(([key, value]: any) => {
       if (typeof value === 'object' && value !== null) {
         const val = value as Record<string, any>;
         if (val.gte) return `"${key}" >= '${val.gte}'`;
         if (val.lte) return `"${key}" <= '${val.lte}'`;
-        if (val.in) return `"${key}" IN (${val.in.map((v: any) => `'${v}'`).join(', ')})`;
+        if (val.in) return `"${key}" IN (${val.in.map((v: any: any) => `'${v}'`).join(', ')})`;
         if (val.contains) return `"${key}" ILIKE '%${val.contains}%'`;
       }
       return `"${key}" = '${value}'`;
@@ -375,7 +375,7 @@ export class UserAnalyticsQueries {
           total: usage._sum?.tokensConsumed || 0,
           items: usage._sum?.itemCount || 0,
           operations: usage._count || 0,
-          byFeature: byFeature.map((f: any) => ({
+          byFeature: byFeature.map((f: any: any) => ({
             feature: f.feature,
             tokens: f._sum.tokensConsumed || 0,
             items: f._sum.itemCount || 0,

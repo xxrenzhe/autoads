@@ -136,7 +136,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
     setFilters(prev => ({
       ...prev,
       features: prev.features.includes(feature)
-        ? prev.features.filter(f => f !== feature)
+        ? prev.features.filter((f: any) => f !== feature)
         : [...prev.features, feature]
     }));
   };
@@ -193,7 +193,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
                   <Select
                     value={filters.dateRange}
                     label="时间范围"
-                    onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                    onChange={((e: any): any) => handleFilterChange('dateRange', e.target.value)}
                   >
                     <MenuItem value="7">最近7天</MenuItem>
                     <MenuItem value="30">最近30天</MenuItem>
@@ -209,7 +209,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
                   <Select
                     value={filters.userSegment}
                     label="用户类型"
-                    onChange={(e) => handleFilterChange('userSegment', e.target.value)}
+                    onChange={((e: any): any) => handleFilterChange('userSegment', e.target.value)}
                   >
                     <MenuItem value="all">所有用户</MenuItem>
                     <MenuItem value="trial">试用用户</MenuItem>
@@ -223,12 +223,12 @@ export const SimplifiedStatsDashboard: React.FC = () => {
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>功能过滤:</Typography>
                 <Stack direction="row" spacing={1}>
-                  {['siterank', 'batchopen', 'adscenter'].map((feature) => (
+                  {['siterank', 'batchopen', 'adscenter'].map((feature: any) => (
                     <Chip
                       key={feature}
                       label={feature.toUpperCase()}
                       variant={filters.features.includes(feature) ? 'filled' : 'outlined'}
-                      onClick={() => handleFeatureToggle(feature)}
+                      onClick={((: any): any) => handleFeatureToggle(feature)}
                       color={filters.features.includes(feature) ? 'primary' : 'default'}
                       size="small"
                     />
@@ -388,7 +388,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
                             fill="#8884d8"
                             dataKey="_count.id"
                           >
-                            {(statistics.featurePopularity || []).map((entry: any, index: number) => (
+                            {(statistics.featurePopularity || []).map((entry: any, index: number: any) => (
                               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                           </Pie>
@@ -450,7 +450,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
                             fill="#8884d8"
                             dataKey="userCount"
                           >
-                            {(statistics.behaviorSegments?.userSegments || []).map((entry: any, index: number) => (
+                            {(statistics.behaviorSegments?.userSegments || []).map((entry: any, index: number: any) => (
                               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                           </Pie>

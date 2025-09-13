@@ -142,7 +142,7 @@ export default function TokenUsageAnalytics() {
 
   const convertToCSV = (records: any[]) => {
     const headers = ['Date', 'Feature', 'Operation', 'Tokens', 'Items', 'Batch', 'Efficiency']
-    const rows = records?.filter(Boolean)?.map(record => [
+    const rows = records?.filter(Boolean)?.map((record: any) => [
       new Date(record.createdAt).toLocaleDateString(),
       record.feature,
       record.operation,
@@ -152,7 +152,7 @@ export default function TokenUsageAnalytics() {
       (record.tokensConsumed / record.itemCount).toFixed(2)
     ])
     
-    return [headers, ...rows]?.filter(Boolean)?.map(row => row.join(',')).join('\n')
+    return [headers, ...rows]?.filter(Boolean)?.map((row: any) => row.join(',')).join('\n')
   }
 
   const downloadCSV = (csv: string, filename: string) => {
@@ -184,7 +184,7 @@ export default function TokenUsageAnalytics() {
     )
   }
 
-  const pieChartData = Object.entries(balance.analytics.byFeature).map(([feature, tokens]) => ({
+  const pieChartData = Object.entries(balance.analytics.byFeature).map(([feature, tokens]: any) => ({
     name: feature.charAt(0).toUpperCase() + feature.slice(1),
     value: tokens,
     percentage: ((tokens / balance.monthlyUsage) * 100).toFixed(1)
@@ -301,7 +301,7 @@ export default function TokenUsageAnalytics() {
           <label className="text-sm font-medium">Time Range:</label>
           <select
             value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
+            onChange={((e: any): any) => setDateRange(e.target.value)}
             className="px-3 py-1 border rounded-md text-sm"
           >
             <option value="7">Last 7 days</option>
@@ -315,7 +315,7 @@ export default function TokenUsageAnalytics() {
           <label className="text-sm font-medium">Feature:</label>
           <select
             value={selectedFeature}
-            onChange={(e) => setSelectedFeature(e.target.value)}
+            onChange={((e: any): any) => setSelectedFeature(e.target.value)}
             className="px-3 py-1 border rounded-md text-sm"
           >
             <option value="all">All features</option>
@@ -354,7 +354,7 @@ export default function TokenUsageAnalytics() {
                       dataKey="value"
                       label={({ name, percentage }) => `${name}: ${percentage}%`}
                     >
-                      {pieChartData.map((entry, index) => (
+                      {pieChartData.map((entry, index: any) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -372,7 +372,7 @@ export default function TokenUsageAnalytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {usage.records.slice(0, 5).map((record, index) => (
+                  {usage.records.slice(0, 5).map((record, index: any) => (
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium capitalize">{record.feature}</p>
@@ -429,7 +429,7 @@ export default function TokenUsageAnalytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {usage.batchSummaries.slice(0, 10).map((batch, index) => (
+                {usage.batchSummaries.slice(0, 10).map((batch, index: any) => (
                   <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
                       <p className="font-medium capitalize">{batch.feature}</p>
@@ -479,7 +479,7 @@ export default function TokenUsageAnalytics() {
 
               <div className="space-y-3">
                 <h4 className="font-medium">Forecast by Feature</h4>
-                {Object.entries(usage.forecast.breakdown).map(([feature, tokens]) => (
+                {Object.entries(usage.forecast.breakdown).map(([feature, tokens]: any) => (
                   <div key={feature} className="flex items-center justify-between">
                     <span className="capitalize">{feature}</span>
                     <span className="font-medium">{(tokens as number).toFixed(0)} tokens</span>

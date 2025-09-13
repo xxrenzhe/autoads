@@ -61,7 +61,7 @@ export class GoogleAdsApiClient extends UnifiedGoogleAdsService {
   // Legacy methods with different signatures - use new method names
   async getCampaignsLegacy(): Promise<CampaignInfo[]> {
     const campaigns = await super.getCampaigns();
-    return campaigns?.filter(Boolean)?.map(c => ({
+    return campaigns?.filter(Boolean)?.map((c: any) => ({
       ...c,
       // Remove targeting property that doesn't exist in legacy type
       status: c.status as any,
@@ -79,7 +79,7 @@ export class GoogleAdsApiClient extends UnifiedGoogleAdsService {
 
   async getAdGroupsLegacy(campaignId?: string): Promise<AdGroupInfo[]> {
     const adGroups = await super.getAdGroups({ campaignIds: campaignId ? [campaignId] : undefined });
-    return adGroups?.filter(Boolean)?.map(ag => ({
+    return adGroups?.filter(Boolean)?.map((ag: any) => ({
       ...ag,
       status: ag.status as any,
       type: ag.type as any
@@ -88,7 +88,7 @@ export class GoogleAdsApiClient extends UnifiedGoogleAdsService {
 
   async getAdsLegacy(campaignId?: string): Promise<AdInfo[]> {
     const ads = await super.getAds({ campaignIds: campaignId ? [campaignId] : undefined });
-    return ads?.filter(Boolean)?.map(ad => ({
+    return ads?.filter(Boolean)?.map((ad: any) => ({
       ...ad,
       type: ad.type as any,
       status: ad.status as any
@@ -122,7 +122,7 @@ export class GoogleAdsApiClient extends UnifiedGoogleAdsService {
     // Add missing errors property
     return {
       ...result,
-      errors: result.results.filter(r => !r.success)?.filter(Boolean)?.map(r => r.error || 'Unknown error')
+      errors: result.results.filter((r: any) => !r.success)?.filter(Boolean)?.map((r: any) => r.error || 'Unknown error')
     };
   }
 

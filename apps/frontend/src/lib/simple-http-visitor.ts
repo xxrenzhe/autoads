@@ -659,7 +659,7 @@ export class SimpleHttpVisitor {
       // 获取响应头
       const responseHeaders: Record<string, string> = {};
       if (response.headers) {
-        Object.entries(response.headers).forEach(([key, value]) => {
+        Object.entries(response.headers).forEach(([key, value]: any) => {
           if (Array.isArray(value)) {
             responseHeaders[key] = value.join(', ');
           } else {

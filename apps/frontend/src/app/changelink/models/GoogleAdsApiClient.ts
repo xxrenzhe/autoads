@@ -505,7 +505,7 @@ export class GoogleAdsApiClient { private oauth2Client: any;
         `;
     
              const response = await this.getReport(customerId, query);
-         return ((response as any).rows || []).map((row: any) => ({
+         return ((response as any).rows || []).map((row: any: any) => ({
           campaignId: row.campaign.id,
           campaignName: row.campaign.name,
           impressions: parseInt(row.metrics.impressions) || 0,
@@ -545,7 +545,7 @@ export class GoogleAdsApiClient { private oauth2Client: any;
     `;
 
         const response = await this.getReport(customerId, query);
-        return ((response as any).rows || []).map((row: any) => ({
+        return ((response as any).rows || []).map((row: any: any) => ({
           campaignId: row.campaign.id,
           campaignName: row.campaign.name,
           impressions: parseInt(row.metrics.impressions) || 0,
@@ -567,7 +567,7 @@ export class GoogleAdsApiClient { private oauth2Client: any;
   // Batch Operations
   async batchUpdateCampaigns(customerId: string, updates: Array<{ id: string; updates: any }>) {
     try {
-        const operations = updates.map(({ id, updates }) => ({
+        const operations = updates.map(({ id, updates }: any) => ({
           update: {
             resourceName: `customers/${customerId}/campaigns/${id}`,
             ...updates

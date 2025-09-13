@@ -157,7 +157,7 @@ const SubscriptionField: React.FC<{ label?: string }> = ({ label }) => {
   
   // Check if user has active subscription
   const hasActiveSubscription = record.subscriptions?.length > 0;
-  const activeSubscription = record.subscriptions?.find((sub: any) => sub.status === 'ACTIVE');
+  const activeSubscription = record.subscriptions?.find((sub: any: any) => sub.status === 'ACTIVE');
   
   if (!hasActiveSubscription) {
     return <Chip label="无订阅" size="small" color="default" />;
@@ -230,7 +230,7 @@ const BulkRoleButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = []
     try {
       // Update each user's role
       await Promise.all(
-        selectedIds.map((userId: string) =>
+        selectedIds.map((userId: string: any) =>
           fetch(`/api/admin/users/${userId}/role`, {
             method: 'PATCH',
             headers: {
@@ -254,7 +254,7 @@ const BulkRoleButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = []
     <>
       <Button 
         label="更改角色" 
-        onClick={() => setOpen(true)}
+        onClick={((: any): any) => setOpen(true)}
         disabled={!selectedIds.length}
       >
         <TrendingUp />
@@ -273,7 +273,7 @@ const BulkRoleButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = []
             { id: 'ADMIN', name: '管理员' },
           ]}
           value={selectedRole}
-          onChange={(e) => setSelectedRole(e.target.value)}
+          onChange={((e: any): any) => setSelectedRole(e.target.value)}
         />
       </Confirm>
     </>
@@ -296,7 +296,7 @@ const BulkStatusButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = 
     try {
       // Update each user's status
       await Promise.all(
-        selectedIds.map((userId: string) =>
+        selectedIds.map((userId: string: any) =>
           fetch(`/api/admin/users/${userId}/status`, {
             method: 'PATCH',
             headers: {
@@ -323,7 +323,7 @@ const BulkStatusButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = 
     <>
       <Button 
         label="更改状态" 
-        onClick={() => setOpen(true)}
+        onClick={((: any): any) => setOpen(true)}
         disabled={!selectedIds.length}
       >
         {selectedStatus === 'ACTIVE' ? <CheckCircle /> : <Block />}
@@ -343,7 +343,7 @@ const BulkStatusButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = 
             { id: 'BANNED', name: '封禁' },
           ]}
           value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
+          onChange={((e: any): any) => setSelectedStatus(e.target.value)}
         />
       </Confirm>
     </>
@@ -366,7 +366,7 @@ const BulkTokenRechargeButton: React.FC<{ selectedIds?: string[] }> = ({ selecte
     try {
       // Recharge tokens for each user
       await Promise.all(
-        selectedIds.map((userId: string) =>
+        selectedIds.map((userId: string: any) =>
           fetch(`/api/admin/users/${userId}/tokens/recharge`, {
             method: 'POST',
             headers: {
@@ -393,7 +393,7 @@ const BulkTokenRechargeButton: React.FC<{ selectedIds?: string[] }> = ({ selecte
     <>
       <Button 
         label="Token充值" 
-        onClick={() => setOpen(true)}
+        onClick={((: any): any) => setOpen(true)}
         disabled={!selectedIds.length}
       >
         <Add />
@@ -409,7 +409,7 @@ const BulkTokenRechargeButton: React.FC<{ selectedIds?: string[] }> = ({ selecte
           source="amount"
           label="充值数量"
           value={amount}
-          onChange={(e: any) => setAmount(e.target.value)}
+          onChange={((e: any: any): any) => setAmount(e.target.value)}
           min={1}
           max={10000}
         />
@@ -452,7 +452,7 @@ const BulkSubscriptionButton: React.FC<{ selectedIds?: string[] }> = ({ selected
     try {
       // Assign subscription to each user
       await Promise.all(
-        selectedIds.map((userId: string) =>
+        selectedIds.map((userId: string: any) =>
           fetch(`/api/admin/users/${userId}/subscription`, {
             method: 'POST',
             headers: {
@@ -461,13 +461,13 @@ const BulkSubscriptionButton: React.FC<{ selectedIds?: string[] }> = ({ selected
             body: JSON.stringify({ 
               planId: selectedPlan,
               duration,
-              notes: `批量分配: ${plans.find(p => p.id === selectedPlan)?.name}`
+              notes: `批量分配: ${plans.find((p: any) => p.id === selectedPlan)?.name}`
             }),
           })
         )
       );
       
-      const planName = plans.find(p => p.id === selectedPlan)?.name || 'selected plan';
+      const planName = plans.find((p: any) => p.id === selectedPlan)?.name || 'selected plan';
       notify(`已为 ${selectedIds.length} 个用户分配 ${planName} 套餐`, { type: 'success' });
       refresh();
       unselectAll();
@@ -481,7 +481,7 @@ const BulkSubscriptionButton: React.FC<{ selectedIds?: string[] }> = ({ selected
     <>
       <Button 
         label="分配套餐" 
-        onClick={() => setOpen(true)}
+        onClick={((: any): any) => setOpen(true)}
         disabled={!selectedIds.length}
       >
         <Subscriptions />
@@ -495,9 +495,9 @@ const BulkSubscriptionButton: React.FC<{ selectedIds?: string[] }> = ({ selected
       >
         <SelectInput
           source="plan"
-          choices={plans.map(p => ({ id: p.id, name: `${p.name} (¥${p.price}/${p.interval})` }))}
+          choices={plans.map((p: any) => ({ id: p.id, name: `${p.name} (¥${p.price}/${p.interval})` }))}
           value={selectedPlan}
-          onChange={(e) => setSelectedPlan(e.target.value)}
+          onChange={((e: any): any) => setSelectedPlan(e.target.value)}
           label="选择套餐"
           fullWidth
         />
@@ -505,7 +505,7 @@ const BulkSubscriptionButton: React.FC<{ selectedIds?: string[] }> = ({ selected
           source="duration"
           label="持续时间（月）"
           value={duration}
-          onChange={(e: any) => setDuration(parseInt(e.target.value) || 1)}
+          onChange={((e: any: any): any) => setDuration(parseInt(e.target.value) || 1)}
           min={1}
           max={12}
           fullWidth

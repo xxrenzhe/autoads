@@ -69,7 +69,7 @@ export const redisClient = {
   },
   keys: async (pattern: string) => {
     const regex = new RegExp(pattern.replace(/\*/g, '.*'))
-    return Array.from(cacheStore.keys()).filter(key => regex.test(key))
+    return Array.from(cacheStore.keys()).filter((key: any) => regex.test(key))
   },
   flushall: async () => {
     cacheStore.clear()

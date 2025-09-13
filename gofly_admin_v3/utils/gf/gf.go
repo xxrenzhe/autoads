@@ -1,15 +1,15 @@
 package gf
 
 import (
-    "context"
-    "errors"
-    "runtime"
-    "time"
-    "gofly-admin-v3/utils/tools/gmeta"
-    "gofly-admin-v3/utils/tools/gvar"
-    "gofly-admin-v3/utils/tools/guid"
+	"context"
+	"errors"
+	"gofly-admin-v3/utils/tools/gmeta"
+	"gofly-admin-v3/utils/tools/guid"
+	"gofly-admin-v3/utils/tools/gvar"
+	"runtime"
+	"time"
 
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 type (
@@ -55,6 +55,7 @@ type (
 	SliceStr = []string      // SliceStr is alias of frequently-used slice type []string.
 	SliceInt = []int         // SliceInt is alias of frequently-used slice type []int.
 )
+
 // Error 创建错误
 func Error(message string) error {
 	return errors.New(message)
@@ -72,17 +73,17 @@ var processStartTime = time.Now()
 
 // GetUptime 返回进程运行时长
 func GetUptime() time.Duration {
-    return time.Since(processStartTime)
+	return time.Since(processStartTime)
 }
 
 // GetGoroutineCount 返回当前 goroutine 数量
 func GetGoroutineCount() int {
-    return runtime.NumGoroutine()
+	return runtime.NumGoroutine()
 }
 
 // GetMemoryUsage 返回已分配内存字节数
 func GetMemoryUsage() uint64 {
-    var ms runtime.MemStats
-    runtime.ReadMemStats(&ms)
-    return ms.Alloc
+	var ms runtime.MemStats
+	runtime.ReadMemStats(&ms)
+	return ms.Alloc
 }

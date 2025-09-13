@@ -11,7 +11,7 @@ export async function GET() {
     
     return NextResponse.json({
       success: true,
-      data: tasks.map(task => ({
+      data: tasks.map((task: any) => ({
         id: task.id,
         name: task.name,
         schedule: task.schedule,

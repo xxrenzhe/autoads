@@ -210,13 +210,13 @@ export class TokenTransactionService {
 
       // Calculate totals
       const totalAcquired = transactions
-        .filter((t: { amount: number }) => t.amount > 0)
-        .reduce((sum: number, t: { amount: number }) => sum + t.amount, 0)
+        .filter((t: { amount: number }: any) => t.amount > 0)
+        .reduce((sum: number, t: { amount: number }: any) => sum + t.amount, 0)
 
       const totalConsumed = Math.abs(
         transactions
-          .filter((t: { amount: number }) => t.amount < 0)
-          .reduce((sum: number, t: { amount: number }) => sum + t.amount, 0)
+          .filter((t: { amount: number }: any) => t.amount < 0)
+          .reduce((sum: number, t: { amount: number }: any) => sum + t.amount, 0)
       )
 
       // Initialize type stats
@@ -229,7 +229,7 @@ export class TokenTransactionService {
         }
 
       // Fill type stats
-      typeStats.forEach((stat: { type: string; _sum: { amount: number | null } }) => {
+      typeStats.forEach((stat: { type: string; _sum: { amount: number | null } }: any) => {
         const amount = stat._sum.amount || 0
         if (amount > 0) {
           byType[stat.type as TokenType].acquired = amount
@@ -240,7 +240,7 @@ export class TokenTransactionService {
 
       // Fill source stats
       const bySource: Record<string, number> = {}
-      sourceStats.forEach((stat: { source: string; _sum: { amount: number | null } }) => {
+      sourceStats.forEach((stat: { source: string; _sum: { amount: number | null } }: any) => {
         bySource[stat.source] = Math.abs(stat._sum.amount || 0)
       })
 
@@ -305,7 +305,7 @@ export class TokenTransactionService {
       }
 
       // Process each transaction
-      transactions.forEach((transaction: { createdAt: Date; balanceBefore: number; balanceAfter: number; amount: number }) => {
+      transactions.forEach((transaction: { createdAt: Date; balanceBefore: number; balanceAfter: number; amount: number }: any) => {
         const date = transaction.createdAt.toISOString().split('T')[0]
         
         if (!dailyData[date]) {
@@ -425,13 +425,13 @@ export class TokenTransactionService {
 
       // Calculate totals
       const totalAcquired = allTransactions
-        .filter((t: { amount: number }) => t.amount > 0)
-        .reduce((sum: number, t: { amount: number }) => sum + t.amount, 0)
+        .filter((t: { amount: number }: any) => t.amount > 0)
+        .reduce((sum: number, t: { amount: number }: any) => sum + t.amount, 0)
 
       const totalConsumed = Math.abs(
         allTransactions
-          .filter((t: { amount: number }) => t.amount < 0)
-          .reduce((sum: number, t: { amount: number }) => sum + t.amount, 0)
+          .filter((t: { amount: number }: any) => t.amount < 0)
+          .reduce((sum: number, t: { amount: number }: any) => sum + t.amount, 0)
       )
 
       // Get current tokens in circulation
@@ -456,7 +456,7 @@ export class TokenTransactionService {
         }
 
       // Fill type stats
-      typeStats.forEach((stat: { type: string; _sum: { amount: number | null } }) => {
+      typeStats.forEach((stat: { type: string; _sum: { amount: number | null } }: any) => {
         const amount = stat._sum.amount || 0
         if (amount > 0) {
           byType[stat.type as TokenType].acquired = amount
@@ -466,18 +466,18 @@ export class TokenTransactionService {
       })
 
       // Get top users with emails
-      const userIds = userStats.map((u: { userId: string }) => u.userId)
+      const userIds = userStats.map((u: { userId: string }: any) => u.userId)
       const users = await prisma.user.findMany({
         where: { id: { in: userIds } },
         select: { id: true, email: true }
       })
 
-      const userEmailMap = users.reduce((acc: Record<string, string>, user: { id: string; email: string }) => {
+      const userEmailMap = users.reduce((acc: Record<string, string>, user: { id: string; email: string }: any) => {
         acc[user.id] = user.email
         return acc
       }, {} as Record<string, string>)
 
-      const topUsers = userStats.map((stat: any) => ({
+      const topUsers = userStats.map((stat: any: any) => ({
         userId: stat.userId,
         email: userEmailMap[stat.userId] || 'Unknown',
         netChange: stat._sum.amount || 0
@@ -554,7 +554,7 @@ export class TokenTransactionService {
       })
 
       // Format for export
-      const exportData = transactions.map((t: any) => ({
+      const exportData = transactions.map((t: any: any) => ({
         ID: t.id,
         User: t.user.email,
         UserName: t.user.name,

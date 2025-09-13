@@ -1,19 +1,19 @@
 package oauth
 
 import (
-    "context"
-    "crypto/rand"
-    "encoding/base64"
-    "encoding/json"
-    "errors"
-    "fmt"
-    "io/ioutil"
-    "net/http"
-    "net/url"
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 
-    "gofly-admin-v3/utils/gf"
-    "golang.org/x/oauth2"
-    "golang.org/x/oauth2/google"
+	"gofly-admin-v3/utils/gf"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 // Config OAuth配置
@@ -159,18 +159,18 @@ func (s *OAuthService) ValidateState(state, sessionState string) bool {
 
 // HandleGoogleOAuth 处理Google OAuth登录
 func (s *OAuthService) HandleGoogleOAuth(idToken string) (*GoogleUserInfo, string, error) {
-    // Note: 用户创建/更新逻辑由业务层实现，这里仅验证并返回用户信息占位
-    userInfo, err := s.VerifyIDToken(idToken)
-    if err != nil {
-        return nil, "", fmt.Errorf("failed to verify id token: %v", err)
-    }
-    // 返回占位token，实际签发由认证模块完成
-    token, _ := generateJWTToken(userInfo.ID, "USER", userInfo.Email)
-    return userInfo, token, nil
+	// Note: 用户创建/更新逻辑由业务层实现，这里仅验证并返回用户信息占位
+	userInfo, err := s.VerifyIDToken(idToken)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to verify id token: %v", err)
+	}
+	// 返回占位token，实际签发由认证模块完成
+	token, _ := generateJWTToken(userInfo.ID, "USER", userInfo.Email)
+	return userInfo, token, nil
 }
 
 // 辅助函数
 func generateJWTToken(userID, role, email string) (string, error) {
-    // 简化占位：返回UUID作为占位token，真实JWT由 auth 模块统一生成
-    return gf.UUID(), nil
+	// 简化占位：返回UUID作为占位token，真实JWT由 auth 模块统一生成
+	return gf.UUID(), nil
 }

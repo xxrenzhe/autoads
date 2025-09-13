@@ -107,7 +107,7 @@ const SubscriptionStats: React.FC = () => {
   if (isLoading || !data) return null;
   
   // Calculate statistics
-  const stats = data.reduce((acc, subscription) => {
+  const stats = data.reduce((acc, subscription: any) => {
     const planName = subscription.plan?.name || 'Unknown';
     const isTrial = subscription.provider === 'system' && 
                     subscription.providerSubscriptionId?.startsWith('trial_');
@@ -169,7 +169,7 @@ const SubscriptionStats: React.FC = () => {
                 套餐分布
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-                {Object.entries(stats.byPlan).map(([plan, count]) => (
+                {Object.entries(stats.byPlan).map(([plan, count]: any) => (
                   <Chip 
                     key={plan}
                     label={`${plan}: ${count}`}

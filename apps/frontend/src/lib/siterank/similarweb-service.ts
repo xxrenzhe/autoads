@@ -306,7 +306,7 @@ export class SimilarWebService {
           
           // 添加额外参数
           if (endpoint.params) {
-            Object.entries(endpoint.params).forEach(([key, value]) => {
+            Object.entries(endpoint.params).forEach(([key, value]: any) => {
               url.searchParams.append(key, value);
             });
           }
@@ -399,7 +399,7 @@ export class SimilarWebService {
     }
 
     // 处理无效域名
-    const invalidResults: SimilarWebData[] = invalidDomains.map(domain => ({
+    const invalidResults: SimilarWebData[] = invalidDomains.map((domain: any) => ({
       domain,
       globalRank: null,
       monthlyVisits: null,
@@ -444,7 +444,7 @@ export class SimilarWebService {
     );
 
     // 将AnalysisResult转换回SimilarWebData格式
-    const validResults: SimilarWebData[] = batchResult.results.map(result => ({
+    const validResults: SimilarWebData[] = batchResult.results.map((result: any) => ({
       domain: result.domain || result.域名 || '',
       globalRank: result.全球排名 === undefined || result.全球排名 === 'loading' ? null : result.全球排名,
       monthlyVisits: result.网站流量 || null,
@@ -463,7 +463,7 @@ export class SimilarWebService {
     
     for (const domain of domains) {
       if (invalidDomains.includes(domain)) {
-        const invalidResult = invalidResults.find(r => r.domain === domain);
+        const invalidResult = invalidResults.find((r: any) => r.domain === domain);
         if (invalidResult) {
           finalResults.push(invalidResult);
         }
@@ -476,8 +476,8 @@ export class SimilarWebService {
     }
 
     // 统计信息
-    const successCount = finalResults.filter(r => r.status === 'success').length;
-    const errorCount = finalResults.filter(r => r.status === 'error').length;
+    const successCount = finalResults.filter((r: any) => r.status === 'success').length;
+    const errorCount = finalResults.filter((r: any) => r.status === 'error').length;
 
     logger.info(`批量查询完成:`, {
       totalDomains: domains.length,
@@ -719,7 +719,7 @@ export class SimilarWebService {
     const stats = await SiteRankCacheService.getStats();
     return {
       cacheStats: stats,
-      endpoints: this.API_ENDPOINTS?.filter(Boolean)?.map(e => ({ url: e.url, weight: e.weight })),
+      endpoints: this.API_ENDPOINTS?.filter(Boolean)?.map((e: any) => ({ url: e.url, weight: e.weight })),
       lastRequestTime: this.lastRequestTime
     };
   }

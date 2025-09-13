@@ -40,14 +40,14 @@ func (c *GoFlyPanelController) Index(ctx *gf.GinCtx) {
 	// GoFly自动渲染管理面板首页
 	ctx.HTML(200, "admin/gofly_panel/index", gf.Map{
 		"title": "GoFly管理面板",
-        "modules": []gf.Map{
-            {"name": "用户管理", "icon": "users", "path": "/admin/gofly-panel/users"},
-            {"name": "任务管理", "icon": "tasks", "path": "/admin/gofly-panel/batch-tasks"},
-            {"name": "网站排名", "icon": "chart-line", "path": "/admin/gofly-panel/siterank-queries"},
-            {"name": "广告账户", "icon": "ad", "path": "/admin/gofly-panel/ads-accounts"},
-            {"name": "订阅管理", "icon": "credit-card", "path": "/admin/gofly-panel/subscriptions"},
-            {"name": "系统设置", "icon": "cog", "path": "/admin/gofly-panel/system"},
-        },
+		"modules": []gf.Map{
+			{"name": "用户管理", "icon": "users", "path": "/admin/gofly-panel/users"},
+			{"name": "任务管理", "icon": "tasks", "path": "/admin/gofly-panel/batch-tasks"},
+			{"name": "网站排名", "icon": "chart-line", "path": "/admin/gofly-panel/siterank-queries"},
+			{"name": "广告账户", "icon": "ad", "path": "/admin/gofly-panel/ads-accounts"},
+			{"name": "订阅管理", "icon": "credit-card", "path": "/admin/gofly-panel/subscriptions"},
+			{"name": "系统设置", "icon": "cog", "path": "/admin/gofly-panel/system"},
+		},
 	})
 }
 

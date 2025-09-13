@@ -141,7 +141,7 @@ export default function SubscriptionAnalyticsDashboard() {
 
   const convertToCSV = (data: any[]) => {
     const headers = ['Date', 'New Subscriptions', 'Cancellations', 'Revenue', 'Net Growth']
-    const rows = data.map(item => [
+    const rows = data.map((item: any) => [
       item.date,
       item.newSubscriptions,
       item.cancellations,
@@ -149,7 +149,7 @@ export default function SubscriptionAnalyticsDashboard() {
       item.netGrowth
     ])
     
-    return [headers, ...rows].map(row => row.join(',')).join('\n')
+    return [headers, ...rows].map((row: any) => row.join(',')).join('\n')
   }
 
   const downloadCSV = (csv: string, filename: string) => {
@@ -180,13 +180,13 @@ export default function SubscriptionAnalyticsDashboard() {
     )
   }
 
-  const planDistributionData = Object.entries(analytics.planDistribution).map(([plan, count]) => ({
+  const planDistributionData = Object.entries(analytics.planDistribution).map(([plan, count]: any) => ({
     name: plan,
     value: count,
     percentage: ((count / analytics.totalSubscribers) * 100).toFixed(1)
   }))
 
-  const revenueDistributionData = Object.entries(analytics.revenueByPlan).map(([plan, revenue]) => ({
+  const revenueDistributionData = Object.entries(analytics.revenueByPlan).map(([plan, revenue]: any) => ({
     name: plan,
     value: revenue,
     percentage: ((revenue / analytics.totalRevenue) * 100).toFixed(1)
@@ -204,7 +204,7 @@ export default function SubscriptionAnalyticsDashboard() {
         <div className="flex items-center gap-2">
           <select
             value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
+            onChange={((e: any): any) => setDateRange(e.target.value)}
             className="px-3 py-1 border rounded-md text-sm"
           >
             <option value="7">Last 7 days</option>
@@ -403,7 +403,7 @@ export default function SubscriptionAnalyticsDashboard() {
                       dataKey="value"
                       label={({ name, percentage }) => `${name}: ${percentage}%`}
                     >
-                      {planDistributionData.map((entry, index) => (
+                      {planDistributionData.map((entry, index: any) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -420,7 +420,7 @@ export default function SubscriptionAnalyticsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {planDistributionData.map((plan, index) => (
+                  {planDistributionData.map((plan, index: any) => (
                     <div key={plan.name} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center gap-3">
                         <div 
@@ -463,7 +463,7 @@ export default function SubscriptionAnalyticsDashboard() {
                       dataKey="value"
                       label={({ name, percentage }) => `${name}: ${percentage}%`}
                     >
-                      {revenueDistributionData.map((entry, index) => (
+                      {revenueDistributionData.map((entry, index: any) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>

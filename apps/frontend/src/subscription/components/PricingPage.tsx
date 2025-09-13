@@ -101,7 +101,7 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
             Monthly
           </span>
           <button
-            onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+            onClick={((: any): any) => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               billingCycle === 'yearly' ? 'bg-blue-600' : 'bg-gray-200'
             }`}
@@ -126,7 +126,7 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
 
       {/* Pricing Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-        {plans.map((plan) => {
+        {plans.map((plan: any) => {
           const price = billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly
           const isCurrentPlan = currentPlan === plan.id
           const savings = billingCycle === 'yearly' ? getYearlySavings(plan.price.monthly, plan.price.yearly) : 0
@@ -192,7 +192,7 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
               <CardContent>
                 {/* Features List */}
                 <ul className="space-y-3 mb-8">
-                  {plan.features?.map((feature, index) => (
+                  {plan.features?.map((feature, index: any) => (
                     <li key={index} className="flex items-start">
                       {feature.included ? (
                         <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
@@ -215,7 +215,7 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
 
                 {/* Action Button */}
                 <Button
-                  onClick={() => handleSelectPlan(plan.id)}
+                  onClick={((: any): any) => handleSelectPlan(plan.id)}
                   variant={isCurrentPlan ? 'outline' : plan.buttonVariant}
                   className="w-full"
                   disabled={isCurrentPlan}
@@ -251,7 +251,7 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
                 <th className="text-left py-4 px-4 font-medium text-gray-900 dark:text-white">
                   Features
                 </th>
-                {plans.map((plan) => (
+                {plans.map((plan: any) => (
                   <th key={plan.id} className="text-center py-4 px-4 font-medium text-gray-900 dark:text-white">
                     {plan.name}
                   </th>
@@ -260,13 +260,13 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
             </thead>
             <tbody>
               {/* Get all unique features */}
-              {Array.from(new Set(plans.flatMap(plan => plan.features?.filter(Boolean)?.map(f => f.name)))).map((featureName) => (
+              {Array.from(new Set(plans.flatMap(plan => plan.features?.filter(Boolean)?.map((f: any) => f.name)))).map((featureName: any) => (
                 <tr key={featureName} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                     {featureName}
                   </td>
-                  {plans.map((plan) => {
-                    const feature = plan.features?.find(f => f.name === featureName)
+                  {plans.map((plan: any) => {
+                    const feature = plan.features?.find((f: any) => f.name === featureName)
                     return (
                       <td key={plan.id} className="py-3 px-4 text-center">
                         {feature?.included ? (

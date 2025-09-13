@@ -197,7 +197,7 @@ func (s *Scheduler) RunJobNow(jobName string, createdBy string) (string, error) 
 
 	// 创建执行记录
 	execution := &JobExecution{
-        ID:        gf.UUID(),
+		ID:        gf.UUID(),
 		JobName:   jobName,
 		Status:    StatusPending,
 		StartTime: time.Now(),
@@ -286,7 +286,7 @@ func (s *Scheduler) wrapJob(cronJob *CronJob) func() {
 
 		// 创建执行记录
 		execution := &JobExecution{
-            ID:        gf.UUID(),
+			ID:        gf.UUID(),
 			JobName:   cronJob.Job.GetName(),
 			Status:    StatusPending,
 			StartTime: time.Now(),
@@ -368,7 +368,7 @@ func (s *Scheduler) executeJob(cronJob *CronJob, execution *JobExecution) {
 			gf.Map{
 				"job_name": cronJob.Job.GetName(),
 				"job_id":   execution.JobName,
-				"action":  audit.ActionExecute,
+				"action":   audit.ActionExecute,
 				"resource": audit.ResourceTask,
 			},
 		)

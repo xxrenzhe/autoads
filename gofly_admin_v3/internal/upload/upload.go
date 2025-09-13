@@ -179,7 +179,7 @@ func (us *UploadService) UploadFile(file *multipart.FileHeader, userID string) (
 
 	// 构建文件信息
 	fileInfo := &FileInfo{
-        ID:           gf.UUID(),
+		ID:           gf.UUID(),
 		OriginalName: file.Filename,
 		Filename:     filename,
 		Path:         filepath.Join(datePath, filename),

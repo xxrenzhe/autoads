@@ -31,7 +31,7 @@ export class LocalStorageCompatibility {
   async getById(key: string, id: string): Promise<StorageItem | null> {
     try {
       const items = await this.getAll(key);
-      return items.find(item => item.id === id) || null;
+      return items.find((item: any) => item.id === id) || null;
     } catch (error) {
       console.error('Failed to get item by ID:', error);
       return null as any;
@@ -93,7 +93,7 @@ export class LocalStorageCompatibility {
   async delete(key: string, id: string): Promise<boolean> {
     try {
       const items = await this.getAll(key);
-      const filteredItems = items.filter(item => item.id !== id);
+      const filteredItems = items.filter((item: any) => item.id !== id);
       
       if (filteredItems.length === items.length) {
         return false;

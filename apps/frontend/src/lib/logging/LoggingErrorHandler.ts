@@ -361,7 +361,7 @@ export function useLoggingCleanup() {
   };
 
   const cleanup = () => {
-    cleanupCallbacks.forEach(callback => {
+    cleanupCallbacks.forEach((callback: any) => {
       try {
         callback();
       } catch (error) {

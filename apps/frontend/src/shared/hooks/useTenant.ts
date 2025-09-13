@@ -180,7 +180,7 @@ export function useTenantUser() {
   };
 
   const getRoles = (): string[] => {
-    return currentUser?.roles?.filter(Boolean)?.map(role => role.name) || [];
+    return currentUser?.roles?.filter(Boolean)?.map((role: any) => role.name) || [];
   };
 
   const getPermissions = () => {

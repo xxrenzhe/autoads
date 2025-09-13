@@ -78,10 +78,10 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
 
   const calculateSystemMetrics = useCallback(() => {
     const total = activeExecutions.length;
-    const running = activeExecutions.filter(exec => (exec as any).status === 'running').length;
-    const paused = activeExecutions.filter(exec => (exec as any).status === 'paused').length;
-    const failed = activeExecutions.filter(exec => (exec as any).status === 'failed').length;
-    const completed = activeExecutions.filter(exec => (exec as any).status === 'completed').length;
+    const running = activeExecutions.filter((exec: any) => (exec as any).status === 'running').length;
+    const paused = activeExecutions.filter((exec: any) => (exec as any).status === 'paused').length;
+    const failed = activeExecutions.filter((exec: any) => (exec as any).status === 'failed').length;
+    const completed = activeExecutions.filter((exec: any) => (exec as any).status === 'completed').length;
 
     return {
       total,
@@ -191,7 +191,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {activeExecutions.map((execution, idx) => {
+              {activeExecutions.map((execution, idx: any) => {
                 const exec = execution as any;
                 const progress = executionProgress[exec.executionId] || 0;
                 
@@ -221,7 +221,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onNavigateToDetails(exec.executionId)}
+                          onClick={((: any): any) => onNavigateToDetails(exec.executionId)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Details
@@ -257,7 +257,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                              <Button
                                size="sm"
                                variant="outline"
-                               onClick={() => onPauseExecution(exec.executionId)}
+                               onClick={((: any): any) => onPauseExecution(exec.executionId)}
                              >
                                <Pause className="h-4 w-4 mr-1" />
                                Pause
@@ -265,7 +265,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                              <Button
                                size="sm"
                                variant="destructive"
-                               onClick={() => onStopExecution(exec.executionId)}
+                               onClick={((: any): any) => onStopExecution(exec.executionId)}
                              >
                                <Square className="h-4 w-4 mr-1" />
                                Stop
@@ -276,7 +276,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                            <>
                              <Button
                                size="sm"
-                               onClick={() => onResumeExecution(exec.executionId)}
+                               onClick={((: any): any) => onResumeExecution(exec.executionId)}
                              >
                                <Play className="h-4 w-4 mr-1" />
                                Resume
@@ -284,7 +284,7 @@ const StatusMonitoringDashboard: React.FC<StatusMonitoringDashboardProps> = ({
                              <Button
                                size="sm"
                                variant="destructive"
-                               onClick={() => onStopExecution(exec.executionId)}
+                               onClick={((: any): any) => onStopExecution(exec.executionId)}
                              >
                                <Square className="h-4 w-4 mr-1" />
                                Stop

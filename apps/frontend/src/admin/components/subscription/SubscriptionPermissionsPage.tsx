@@ -140,19 +140,19 @@ export default function SubscriptionPermissionsPage() {
   const handleFeatureToggle = async (planId: string, featureId: string, enabled: boolean) => {
     try {
       // In production, this would be an API call
-      setPlans(prev => prev.map(plan => {
+      setPlans(prev => prev.map((plan: any) => {
         if (plan.id === planId) {
-          const existingFeature = plan.features.find(f => f.featureId === featureId)
+          const existingFeature = plan.features.find((f: any) => f.featureId === featureId)
           if (existingFeature) {
             return {
               ...plan,
-              features: plan.features.map(f => 
+              features: plan.features.map((f: any) => 
                 f.featureId === featureId ? { ...f, enabled } : f
               )
             }
           } else if (enabled) {
             // Add new feature
-            const featureDef = features.find(f => f.featureId === featureId)
+            const featureDef = features.find((f: any) => f.featureId === featureId)
             if (featureDef) {
               return {
                 ...plan,
@@ -183,11 +183,11 @@ export default function SubscriptionPermissionsPage() {
     value: any
   ) => {
     try {
-      setPlans(prev => prev.map(plan => {
+      setPlans(prev => prev.map((plan: any) => {
         if (plan.id === planId) {
           return {
             ...plan,
-            features: plan.features.map(feature => {
+            features: plan.features.map((feature: any) => {
               if (feature.featureId === featureId) {
                 return {
                   ...feature,
@@ -236,7 +236,7 @@ export default function SubscriptionPermissionsPage() {
         
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            {Object.entries(limits).map(([key, value]) => (
+            {Object.entries(limits).map(([key, value]: any) => (
               <Typography key={key} variant="body2" sx={{ fontSize: '0.8rem' }}>
                 {key}: {String(value)}
               </Typography>
@@ -257,7 +257,7 @@ export default function SubscriptionPermissionsPage() {
       renderCell: (params: GridRenderCellParams<any>) => (
         <Switch
           checked={params.value}
-          onChange={(e) => {
+          onChange={((e: any): any) => {
             const planId = plans[selectedTab]?.id
             if (planId && params.row.featureId) {
               handleFeatureToggle(planId, params.row.featureId, e.target.checked)
@@ -279,7 +279,7 @@ export default function SubscriptionPermissionsPage() {
         
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {Object.entries(config).map(([key, value]) => (
+            {Object.entries(config).map(([key, value]: any) => (
               <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2" sx={{ minWidth: 100 }}>
                   {key}:
@@ -287,7 +287,7 @@ export default function SubscriptionPermissionsPage() {
                 <TextField
                   size="small"
                   value={value}
-                  onChange={(e) => handleFeatureLimitChange(planId, featureId, key, e.target.value)}
+                  onChange={((e: any): any) => handleFeatureLimitChange(planId, featureId, key, e.target.value)}
                   sx={{ width: 100 }}
                 />
               </Box>
@@ -317,9 +317,9 @@ export default function SubscriptionPermissionsPage() {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs 
           value={selectedTab} 
-          onChange={(e, newValue) => setSelectedTab(newValue)}
+          onChange={((e, newValue: any): any) => setSelectedTab(newValue)}
         >
-          {plans.map((plan) => (
+          {plans.map((plan: any) => (
             <Tab 
               key={plan.id} 
               label={`${plan.name} (${plan.price === 0 ? '免费' : `¥${plan.price}`})`} 
@@ -337,7 +337,7 @@ export default function SubscriptionPermissionsPage() {
             
             <Box sx={{ height: 600, mt: 2 }}>
               <DataGrid
-                rows={features.map(feature => {
+                rows={features.map((feature: any) => {
                   const planFeature = plans[selectedTab].features.find(
                     f => f.featureId === feature.featureId
                   )

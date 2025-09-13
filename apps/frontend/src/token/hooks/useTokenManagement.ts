@@ -161,14 +161,14 @@ export function useTokenManagement() {
 
   // Calculate token cost
   const calculateTokenCost = (feature: string, tokens: number): number => {
-    const config = tokenConfigs.find(c => c.feature === feature || c.id === feature)
+    const config = tokenConfigs.find((c: any) => c.feature === feature || c.id === feature)
     if (!config) return 0
     return tokens * config.costPerToken
   }
 
   // Get token configuration by feature
   const getConfigByFeature = (feature: string): TokenConfig | undefined => {
-    return tokenConfigs.find(c => c.feature === feature || c.id === feature)
+    return tokenConfigs.find((c: any) => c.feature === feature || c.id === feature)
   }
 
   // Validate token usage
@@ -208,16 +208,16 @@ export function useTokenManagement() {
 
   // Get active configurations
   const getActiveConfigs = (): TokenConfig[] => {
-    return tokenConfigs.filter(config => config.isActive)
+    return tokenConfigs.filter((config: any) => config.isActive)
   }
 
   // Get configuration statistics
   const getConfigStats = () => {
     const total = tokenConfigs.length
-    const active = tokenConfigs.filter(c => c.isActive).length
+    const active = tokenConfigs.filter((c: any) => c.isActive).length
     const inactive = total - active
     const averageCost = tokenConfigs.length > 0 
-      ? tokenConfigs.reduce((sum, c) => sum + c.costPerToken, 0) / tokenConfigs.length 
+      ? tokenConfigs.reduce((sum, c: any) => sum + c.costPerToken, 0) / tokenConfigs.length 
       : 0
 
     return {

@@ -156,7 +156,7 @@ class GmailService {
       'Content-Type: text/html; charset=utf-8',
       '',
       message.html || message.body
-    ].filter(line => line !== '')
+    ].filter((line: any) => line !== '')
 
     const email = emailLines.join('\r\n')
     const encodedEmail = Buffer.from(email).toString('base64url')
@@ -191,7 +191,7 @@ class GmailService {
       'Content-Type: text/html; charset=utf-8',
       '',
       message.html || message.body
-    ].filter(line => line !== '')
+    ].filter((line: any) => line !== '')
 
     const email = emailLines.join('\r\n')
     const encodedEmail = Buffer.from(email).toString('base64url')
@@ -217,7 +217,7 @@ class GmailService {
 
   async getUnreadCount() {
     const labels = await this.getLabels()
-    const inboxLabel = labels.find(label => label.id === 'INBOX')
+    const inboxLabel = labels.find((label: any) => label.id === 'INBOX')
     return inboxLabel?.messagesUnread || 0
   }
 

@@ -40,7 +40,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
   // Get unique categories
   const categories = useMemo(() => {
     if (!envVars) return []
-    const cats = Array.from(new Set(envVars.map(ev => getEnvVarCategory(ev.key))))
+    const cats = Array.from(new Set(envVars.map((ev: any) => getEnvVarCategory(ev.key))))
     return cats.sort()
   }, [envVars])
 
@@ -48,7 +48,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
   const filteredEnvVars = useMemo(() => {
     if (!envVars) return []
     
-    return envVars.filter(envVar => {
+    return envVars.filter((envVar: any) => {
       const matchesSearch = searchTerm === '' || 
         envVar.key.toLowerCase().includes(searchTerm.toLowerCase())
       
@@ -121,7 +121,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => refetch()}
+              onClick={((: any): any) => refetch()}
               disabled={isLoading}
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -143,7 +143,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
               <Input
                 placeholder="Search environment variables..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={((e: any): any) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -152,11 +152,11 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
           <div className="flex gap-2">
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={((e: any): any) => setSelectedCategory(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
               <option value="all">All Categories</option>
-              {categories.map(category => (
+              {categories.map((category: any) => (
                 <option key={category} value={category}>
                   {getEnvVarIcon(category)} {category}
                 </option>
@@ -166,7 +166,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
             <Button
               variant={showSecrets ? "default" : "outline"}
               size="sm"
-              onClick={() => setShowSecrets(!showSecrets)}
+              onClick={((: any): any) => setShowSecrets(!showSecrets)}
             >
               <Shield className="h-4 w-4 mr-2" />
               Show Secrets
@@ -195,7 +195,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
           </div>
         ) : (
           <div className="space-y-2">
-            {filteredEnvVars.map((envVar) => {
+            {filteredEnvVars.map((envVar: any) => {
               const category = getEnvVarCategory(envVar.key)
               const icon = getEnvVarIcon(category)
               
@@ -232,7 +232,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0"
-                              onClick={() => toggleSecretVisibility(envVar.id)}
+                              onClick={((: any): any) => toggleSecretVisibility(envVar.id)}
                             >
                               {showSecrets ? (
                                 <EyeOff className="h-3 w-3" />
@@ -245,7 +245,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0"
-                            onClick={() => handleCopy(envVar.value, envVar.id)}
+                            onClick={((: any): any) => handleCopy(envVar.value, envVar.id)}
                           >
                             <Copy className={`h-3 w-3 ${copiedId === envVar.id ? 'text-green-600' : ''}`} />
                           </Button>
@@ -269,7 +269,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => onEdit(envVar)}
+                          onClick={((: any): any) => onEdit(envVar)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -277,7 +277,7 @@ export function EnvVarList({ onEdit, onCreate }: EnvVarListProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDelete(envVar)}
+                        onClick={((: any): any) => handleDelete(envVar)}
                         disabled={deleteEnvVar.isPending}
                       >
                         <Trash2 className="h-4 w-4" />

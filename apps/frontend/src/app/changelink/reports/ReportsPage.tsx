@@ -129,8 +129,8 @@ export default function ReportsPage() {
   const generateReportData = (sessions: ExecutionSession[], timeRange: { start: Date; end: Date }): ReportData => {
     const summary = {
       totalSessions: sessions.length,
-      completedSessions: sessions.filter(s => s.status === 'completed').length,
-      failedSessions: sessions.filter(s => s.status === 'failed').length,
+      completedSessions: sessions.filter((s: any) => s.status === 'completed').length,
+      failedSessions: sessions.filter((s: any) => s.status === 'failed').length,
       successRate: 0,
       averageDuration: 0,
       totalExecutionTime: 0
@@ -141,18 +141,18 @@ export default function ReportsPage() {
       : 0;
     
     const durations = sessions
-      .filter(s => s.duration !== undefined)
-      ?.filter(Boolean)?.map(s => s.duration!);
+      .filter((s: any) => s.duration !== undefined)
+      ?.filter(Boolean)?.map((s: any) => s.duration!);
     
     summary.averageDuration = durations.length > 0 
-      ? durations.reduce((sum, d) => sum + d, 0) / durations.length 
+      ? durations.reduce((sum, d: any) => sum + d, 0) / durations.length 
       : 0;
     
-    summary.totalExecutionTime = durations.reduce((sum, d) => sum + d, 0);
+    summary.totalExecutionTime = durations.reduce((sum, d: any) => sum + d, 0);
 
     // 按类型统计
     const byType: Record<string, any> = {};
-    sessions.forEach(session => {
+    sessions.forEach((session: any) => {
       if (!byType[session.type]) {
         byType[session.type] = {
           count: 0,
@@ -171,24 +171,24 @@ export default function ReportsPage() {
     });
     
     // 计算平均时长
-    Object.keys(byType).forEach(type => {
-      const typeSessions = sessions.filter(s => s.type === type && s.duration);
+    Object.keys(byType).forEach((type: any) => {
+      const typeSessions = sessions.filter((s: any) => s.type === type && s.duration);
       const avgDuration = typeSessions.length > 0 
-        ? typeSessions.reduce((sum, s) => sum + (s.duration || 0), 0) / typeSessions.length 
+        ? typeSessions.reduce((sum, s: any) => sum + (s.duration || 0), 0) / typeSessions.length 
         : 0;
       byType[type].averageDuration = avgDuration;
     });
 
     // 按状态统计
     const byStatus: Record<string, number> = {};
-    sessions.forEach(session => {
+    sessions.forEach((session: any) => {
       byStatus[session.status] = (byStatus[session.status] || 0) + 1;
     });
 
     // 小时分布
     const hourlyDistribution = Array.from({ length: 24 }, (_, hour) => ({
       hour,
-      count: sessions.filter(s => s.startTime.getHours() === hour).length
+      count: sessions.filter((s: any) => s.startTime.getHours() === hour).length
     }));
 
     // 每日趋势
@@ -200,11 +200,11 @@ export default function ReportsPage() {
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
       
-      const daySessions = sessions.filter(s => 
+      const daySessions = sessions.filter((s: any) => 
         s.startTime.toISOString().split('T')[0] === dateStr
       );
       
-      const completed = daySessions.filter(s => s.status === 'completed').length;
+      const completed = daySessions.filter((s: any) => s.status === 'completed').length;
       const successRate = daySessions.length > 0 ? (completed / daySessions.length) * 100 : 0;
       
       dailyTrend.push({
@@ -233,7 +233,7 @@ export default function ReportsPage() {
     if (format === 'csv') {
       const csvContent = [
         ['会话ID', '名称', '类型', '状态', '开始时间', '结束时间', '执行时长', '进度', '错误信息'],
-        ...reportData.sessions?.filter(Boolean)?.map(session => [
+        ...reportData.sessions?.filter(Boolean)?.map((session: any) => [
           session.id,
           session.name,
           session.type,
@@ -244,7 +244,7 @@ export default function ReportsPage() {
           `${session.progress.current}/${session.progress.total}`,
           session.error || ''
         ])
-      ]?.filter(Boolean)?.map(row => row.join(',')).join('\n');
+      ]?.filter(Boolean)?.map((row: any) => row.join(',')).join('\n');
 
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -316,12 +316,12 @@ export default function ReportsPage() {
               
               <div className="flex items-center space-x-2">
                 <div className="flex bg-gray-100 rounded-lg p-1">
-                  {(['7d', '30d', '90d', 'all'] as const).map((range) => (
+                  {(['7d', '30d', '90d', 'all'] as const).map((range: any) => (
                     <Button
                       key={range}
                       variant={timeRange === range ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => setTimeRange(range)}
+                      onClick={((: any): any) => setTimeRange(range)}
                       className="text-xs"
                     >
                       {range === '7d' ? '7天' : range === '30d' ? '30天' : range === '90d' ? '90天' : '全部'}
@@ -401,10 +401,10 @@ export default function ReportsPage() {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button size="sm" onClick={() => exportReport('csv')} className={UI_CONSTANTS.buttons.primary}>
+                <Button size="sm" onClick={((: any): any) => exportReport('csv')} className={UI_CONSTANTS.buttons.primary}>
                   CSV
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => exportReport('json')}>
+                <Button size="sm" variant="outline" onClick={((: any): any) => exportReport('json')}>
                   JSON
                 </Button>
               </div>
@@ -413,7 +413,7 @@ export default function ReportsPage() {
 
           {/* 详细报告 */}
           <div className={UI_CONSTANTS.cards.default + " p-6"}>
-            <Tabs value={selectedReport} onValueChange={(value) => setSelectedReport(value as any)}>
+            <Tabs value={selectedReport} onValueChange={((value: any): any) => setSelectedReport(value as any)}>
               <TabsList className="grid w-full grid-cols-4 mb-6">
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
@@ -441,7 +441,7 @@ export default function ReportsPage() {
                     <span>按类型统计</span>
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Object.entries(reportData.performance.byType).map(([type, stats]) => (
+                    {Object.entries(reportData.performance.byType).map(([type, stats]: any) => (
                       <div key={type} className={UI_CONSTANTS.cards.default + " p-4"}>
                         <h4 className="font-semibold mb-4">{type}</h4>
                         <div className="space-y-3 text-sm">
@@ -480,7 +480,7 @@ export default function ReportsPage() {
                     <span>按状态统计</span>
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    {Object.entries(reportData.performance.byStatus).map(([status, count]) => (
+                    {Object.entries(reportData.performance.byStatus).map(([status, count]: any) => (
                       <div key={status} className={UI_CONSTANTS.cards.default + " p-6 text-center"}>
                         <div className="text-3xl font-bold mb-2">{count}</div>
                         <div className="text-sm text-gray-600">{status}</div>
@@ -501,14 +501,14 @@ export default function ReportsPage() {
                     24小时内执行会话分布情况
                   </p>
                   <div className="space-y-3">
-                    {reportData.performance.hourlyDistribution.map((hour) => (
+                    {reportData.performance.hourlyDistribution.map((hour: any) => (
                       <div key={hour.hour} className="flex items-center space-x-4">
                         <div className="w-16 text-sm font-medium">{hour.hour}:00</div>
                         <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
                           <div
                             className="bg-blue-600 h-6 rounded-full transition-all"
                             style={{ 
-                              width: `${(hour.count / Math.max(...reportData.performance.hourlyDistribution?.filter(Boolean)?.map(h => h.count))) * 100}%` 
+                              width: `${(hour.count / Math.max(...reportData.performance.hourlyDistribution?.filter(Boolean)?.map((h: any) => h.count))) * 100}%` 
                             }}
                           ></div>
                           <div className="absolute inset-0 flex items-center justify-center text-xs font-medium">
@@ -538,7 +538,7 @@ export default function ReportsPage() {
                     详细的执行会话记录
                   </p>
                   <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {reportData.sessions.map((session) => (
+                    {reportData.sessions.map((session: any) => (
                       <div key={session.id} className={UI_CONSTANTS.cards.default + " p-4"}>
                         <div className="flex items-center justify-between mb-3">
                           <div>
@@ -603,7 +603,7 @@ export default function ReportsPage() {
                     执行数量和成功率趋势
                   </p>
                   <div className="space-y-3">
-                    {reportData.performance.dailyTrend.map((day, index) => (
+                    {reportData.performance.dailyTrend.map((day, index: any) => (
                       <div key={day.date} className="flex items-center space-x-4">
                         <div className="w-24 text-sm font-medium">{day.date}</div>
                         <div className="flex-1 grid grid-cols-2 gap-4">

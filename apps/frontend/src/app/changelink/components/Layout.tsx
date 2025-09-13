@@ -126,7 +126,7 @@ export default function Layout({ children }: LayoutProps) {
 
   // 获取当前页面信息
   const getCurrentPage = () => {
-    const currentItem = navigationItems.find(item => 
+    const currentItem = navigationItems.find((item: any) => 
       pathname === item.href || (item.href !== '/adscenter' && pathname.startsWith(item.href))
     );
     return currentItem || navigationItems[0];
@@ -160,7 +160,7 @@ export default function Layout({ children }: LayoutProps) {
                 variant="ghost"
                 size="sm"
                 className="lg:hidden mr-2"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                onClick={((: any): any) => setIsSidebarOpen(!isSidebarOpen)}
                 aria-label="打开菜单"
               >
                 <Menu className="h-5 w-5" />
@@ -238,7 +238,7 @@ export default function Layout({ children }: LayoutProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsSidebarOpen(false)}
+                onClick={((: any): any) => setIsSidebarOpen(false)}
                 aria-label="关闭菜单"
               >
                 <X className="h-5 w-5" />
@@ -247,7 +247,7 @@ export default function Layout({ children }: LayoutProps) {
 
             {/* 导航菜单 */}
             <nav className="flex-1 px-4 py-6 space-y-2">
-              {navigationItems.map((item) => {
+              {navigationItems.map((item: any) => {
                 const isActive = pathname === item.href || 
                   (item.href !== '/adscenter' && pathname.startsWith(item.href));
                 
@@ -262,7 +262,7 @@ export default function Layout({ children }: LayoutProps) {
                         : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                       }
                     `}
-                    onClick={() => setIsSidebarOpen(false)}
+                    onClick={((: any): any) => setIsSidebarOpen(false)}
                   >
                     <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-blue-700' : 'text-gray-400'}`} />
                     <span className="flex-1">{item.label}</span>
@@ -316,7 +316,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="bg-white border-b border-gray-200">
             <div className="px-4 sm:px-6 lg:px-8 py-4">
               <nav className="flex items-center space-x-2 text-sm">
-                {breadcrumbs.map((crumb, index) => (
+                {breadcrumbs.map((crumb, index: any) => (
                   <div key={crumb.href} className="flex items-center">
                     {index > 0 && <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />}
                     <Link
@@ -362,7 +362,7 @@ export default function Layout({ children }: LayoutProps) {
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={((: any): any) => setIsSidebarOpen(false)}
         />
       )}
     </div>

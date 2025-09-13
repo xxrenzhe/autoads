@@ -123,7 +123,7 @@ export class MultiAccountManager {
     
         // 验证URL数量与广告数量的匹配
         const allAdMappings = this.getAllAdMappings(configuration);
-        const maxExecutionOrder = allAdMappings.length > 0 ? Math.max(...allAdMappings?.filter(Boolean)?.map(ad => ad.executionOrder)) : 0;
+        const maxExecutionOrder = allAdMappings.length > 0 ? Math.max(...allAdMappings?.filter(Boolean)?.map((ad: any) => ad.executionOrder)) : 0;
         const requiredUrls = maxExecutionOrder;
         
         if (extractedUrls.length < requiredUrls) {
@@ -177,7 +177,7 @@ export class MultiAccountManager {
 
     // 验证URL数量与广告数量的匹配
     const allAdMappings = this.getAllAdMappings(configuration);
-    const maxExecutionOrder = allAdMappings.length > 0 ? Math.max(...allAdMappings?.filter(Boolean)?.map(ad => ad.executionOrder)) : 0;
+    const maxExecutionOrder = allAdMappings.length > 0 ? Math.max(...allAdMappings?.filter(Boolean)?.map((ad: any) => ad.executionOrder)) : 0;
     const requiredUrls = maxExecutionOrder;
     
     if (extractedUrls.length < requiredUrls) {
@@ -233,12 +233,12 @@ export class MultiAccountManager {
         );
     
         for (const batch of accountBatches) {
-          const batchPromises = batch?.filter(Boolean)?.map(account => 
+          const batchPromises = batch?.filter(Boolean)?.map((account: any) => 
             this.updateSingleAccount(account, extractedUrls, configuration.originalLinks)
           );
           const batchResults = await Promise.allSettled(batchPromises);
           
-          batchResults.forEach((result, index) => {
+          batchResults.forEach((result, index: any) => {
             if (result.status === 'fulfilled') {
               accountResults.push(result.value);
             } else { // 处理失败的账户
@@ -264,9 +264,9 @@ export class MultiAccountManager {
         // 生成汇总信息
         const summary = {
           totalAccounts: accountResults.length,
-          successfulAccounts: accountResults.filter(r => r.success).length,
-          totalAdsUpdated: accountResults.reduce((sum, r) => sum + r.updatedAdsCount, 0),
-          totalErrors: accountResults.reduce((sum, r) => sum + r.errors.length, 0),
+          successfulAccounts: accountResults.filter((r: any) => r.success).length,
+          totalAdsUpdated: accountResults.reduce((sum, r: any) => sum + r.updatedAdsCount, 0),
+          totalErrors: accountResults.reduce((sum, r: any) => sum + r.errors.length, 0),
           executionTime: Date.now() - startTime
         };
     
@@ -382,7 +382,7 @@ export class MultiAccountManager {
     logger.info(`更新广告系列：${campaign.campaignName}`);
 
     // 检查原始链接匹配
-    const matchingLinks = originalLinks.filter(link => 
+    const matchingLinks = originalLinks.filter((link: any) => 
       campaign.originalUrlPattern && link.includes(campaign.originalUrlPattern)
     );
     if (matchingLinks.length === 0) {
@@ -511,7 +511,7 @@ export class MultiAccountManager {
     logger.info(`更新广告：${adMapping.adName} (执行顺序: ${adMapping.executionOrder})`);
 
     // 根据执行顺序找到对应的URL
-    const targetUrl = extractedUrls.find(url => url.executionOrder === adMapping.executionOrder);
+    const targetUrl = extractedUrls.find((url: any) => url.executionOrder === adMapping.executionOrder);
     
     if (!targetUrl) {
       throw new Error(`找不到执行顺序为 ${adMapping.executionOrder} 的URL`);
@@ -626,7 +626,7 @@ export class MultiAccountManager {
       }
     }
 
-    return Array.from(distribution.entries()).map(([executionOrder, data]) => ({
+    return Array.from(distribution.entries()).map(([executionOrder, data]: any) => ({
       executionOrder,
       assignedAdsCount: data.count,
       urls: data.urls
@@ -686,9 +686,9 @@ export class MultiAccountManager {
 
     // 汇总信息
     const totalAccounts = accountResults.length;
-    const successfulAccounts = accountResults.filter(r => r.success).length;
-    const totalAdsUpdated = accountResults.reduce((sum, r) => sum + r.updatedAdsCount, 0);
-    const totalErrors = accountResults.reduce((sum, r) => sum + r.errors.length, 0);
+    const successfulAccounts = accountResults.filter((r: any) => r.success).length;
+    const totalAdsUpdated = accountResults.reduce((sum, r: any) => sum + r.updatedAdsCount, 0);
+    const totalErrors = accountResults.reduce((sum, r: any) => sum + r.errors.length, 0);
 
     lines.push('=== 汇总信息 ===');
     lines.push(`总账户数: ${totalAccounts}`);
@@ -700,7 +700,7 @@ export class MultiAccountManager {
 
     // 详细结果
     lines.push('=== 详细结果 ===');
-    accountResults.forEach((result, index) => {
+    accountResults.forEach((result, index: any) => {
       lines.push(`${index + 1}. 账户: ${result.accountName} (${result.accountId})`);
       lines.push(`   状态: ${result.success ? '成功' : '失败'}`);
       lines.push(`   更新广告数: ${result.updatedAdsCount}`);
@@ -708,7 +708,7 @@ export class MultiAccountManager {
       
       if (result.errors.length > 0) {
         lines.push(`   错误信息:`);
-        result.errors.forEach(error => {
+        result.errors.forEach((error: any) => {
           lines.push(`     - ${error}`);
         });
       }

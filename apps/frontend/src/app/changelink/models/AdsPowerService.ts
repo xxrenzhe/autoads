@@ -547,9 +547,9 @@ export class AdsPowerService {
       }
       
       // 计算汇总统计
-      const successfulLinks = results.filter(r => r.success).length;
-      const failedLinks = results.filter(r => !r.success).length;
-      const averageExtractionTime = results.reduce((sum, r) => sum + r.extractionTime, 0) / results.length;
+      const successfulLinks = results.filter((r: any) => r.success).length;
+      const failedLinks = results.filter((r: any) => !r.success).length;
+      const averageExtractionTime = results.reduce((sum, r: any) => sum + r.extractionTime, 0) / results.length;
       
       const summary = {
         totalLinks: links.length,
@@ -565,10 +565,10 @@ export class AdsPowerService {
         performance = {
           browserStartupTime: performanceMetrics.browserStartupTime,
           averagePageLoadTime: performanceMetrics.pageLoadTimes.length > 0 
-            ? Math.round(performanceMetrics.pageLoadTimes.reduce((a, b) => a + b, 0) / performanceMetrics.pageLoadTimes.length)
+            ? Math.round(performanceMetrics.pageLoadTimes.reduce((a, b: any) => a + b, 0) / performanceMetrics.pageLoadTimes.length)
             : 0,
           networkLatency: performanceMetrics.networkLatencies.length > 0
-            ? Math.round(performanceMetrics.networkLatencies.reduce((a, b) => a + b, 0) / performanceMetrics.networkLatencies.length)
+            ? Math.round(performanceMetrics.networkLatencies.reduce((a, b: any) => a + b, 0) / performanceMetrics.networkLatencies.length)
             : 0
         };
       }
@@ -835,7 +835,7 @@ export class AdsPowerService {
       }
 
       // 转换为标准格式
-      return (data.data?.list || []).map((env: any) => ({
+      return (data.data?.list || []).map((env: any: any) => ({
         id: env.user_id,
         name: env.user_name || env.user_id,
         status: env.status || 'unknown',
@@ -872,7 +872,7 @@ export class AdsPowerService {
     
     const sessionIds = Array.from(this.activeSessions.keys());
     await Promise.all(
-      sessionIds?.filter(Boolean)?.map(id => this.stopBrowser(id))
+      sessionIds?.filter(Boolean)?.map((id: any) => this.stopBrowser(id))
     );
     
     logger.info('浏览器会话清理完成');

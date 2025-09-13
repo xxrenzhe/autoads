@@ -3,15 +3,15 @@
 package ratelimit
 
 import (
-    "context"
-    "fmt"
-    "sync"
-    "time"
+	"context"
+	"fmt"
+	"sync"
+	"time"
 
-    "gofly-admin-v3/internal/store"
-    "gofly-admin-v3/utils/gf"
-    "gofly-admin-v3/utils/gtime"
-    "gofly-admin-v3/utils/tools/glog"
+	"gofly-admin-v3/internal/store"
+	"gofly-admin-v3/utils/gf"
+	"gofly-admin-v3/utils/gtime"
+	"gofly-admin-v3/utils/tools/glog"
 )
 
 // StatsCollector 统计收集器
@@ -26,11 +26,11 @@ type StatsCollector struct {
 
 // UserUsageBuffer 用户使用缓冲区
 type UserUsageBuffer struct {
-    UserID   string
-    Plan     string
-    API      *UsageBuffer
-    SiteRank *UsageBuffer
-    Batch    *UsageBuffer
+	UserID   string
+	Plan     string
+	API      *UsageBuffer
+	SiteRank *UsageBuffer
+	Batch    *UsageBuffer
 }
 
 // UsageBuffer 使用缓冲区
@@ -62,21 +62,26 @@ func (sc *StatsCollector) RecordUsage(userID, feature string, count int) {
 	defer sc.mu.Unlock()
 
 	// 获取或创建用户缓冲区
-    buffer, exists := sc.buffer[userID]
-    if !exists {
-        userInfo, err := sc.manager.userService.GetUserByID(userID)
-        if err != nil {
-            return
-        }
+	buffer, exists := sc.buffer[userID]
+	if !exists {
+		userInfo, err := sc.manager.userService.GetUserByID(userID)
+		if err != nil {
+			return
+		}
 
-        buffer = &UserUsageBuffer{
-            UserID:   userID,
-            Plan:     func() string { if userInfo.Plan != "" { return userInfo.Plan }; return userInfo.PlanName }(),
-            API:      &UsageBuffer{},
-            SiteRank: &UsageBuffer{},
-            Batch:    &UsageBuffer{},
-        }
-        sc.buffer[userID] = buffer
+		buffer = &UserUsageBuffer{
+			UserID: userID,
+			Plan: func() string {
+				if userInfo.Plan != "" {
+					return userInfo.Plan
+				}
+				return userInfo.PlanName
+			}(),
+			API:      &UsageBuffer{},
+			SiteRank: &UsageBuffer{},
+			Batch:    &UsageBuffer{},
+		}
+		sc.buffer[userID] = buffer
 	}
 
 	// 更新对应特性的计数
@@ -170,13 +175,13 @@ func (sc *StatsCollector) flushUserBuffer(userID string) {
 
 	// API使用统计
 	if apiBuffer.MinuteCount > 0 {
-        usages = append(usages, RateLimitUsage{
-            ID:         gf.UUID(),
-            UserID:     userID,
-            Plan:       buffer.Plan,
-            Feature:    "API",
-            UsedCount:  apiBuffer.MinuteCount,
-            LimitCount: 0, // 将在保存时填充
+		usages = append(usages, RateLimitUsage{
+			ID:         gf.UUID(),
+			UserID:     userID,
+			Plan:       buffer.Plan,
+			Feature:    "API",
+			UsedCount:  apiBuffer.MinuteCount,
+			LimitCount: 0, // 将在保存时填充
 			Period:     "MINUTE",
 			RecordedAt: now,
 			CreatedAt:  now,
@@ -185,13 +190,13 @@ func (sc *StatsCollector) flushUserBuffer(userID string) {
 	}
 
 	if apiBuffer.HourCount > 0 {
-        usages = append(usages, RateLimitUsage{
-            ID:         gf.UUID(),
-            UserID:     userID,
-            Plan:       buffer.Plan,
-            Feature:    "API",
-            UsedCount:  apiBuffer.HourCount,
-            LimitCount: 0,
+		usages = append(usages, RateLimitUsage{
+			ID:         gf.UUID(),
+			UserID:     userID,
+			Plan:       buffer.Plan,
+			Feature:    "API",
+			UsedCount:  apiBuffer.HourCount,
+			LimitCount: 0,
 			Period:     "HOUR",
 			RecordedAt: now,
 			CreatedAt:  now,
@@ -201,13 +206,13 @@ func (sc *StatsCollector) flushUserBuffer(userID string) {
 
 	// SiteRank使用统计
 	if siteRankBuffer.MinuteCount > 0 {
-        usages = append(usages, RateLimitUsage{
-            ID:         gf.UUID(),
-            UserID:     userID,
-            Plan:       buffer.Plan,
-            Feature:    "SITE_RANK",
-            UsedCount:  siteRankBuffer.MinuteCount,
-            LimitCount: 0,
+		usages = append(usages, RateLimitUsage{
+			ID:         gf.UUID(),
+			UserID:     userID,
+			Plan:       buffer.Plan,
+			Feature:    "SITE_RANK",
+			UsedCount:  siteRankBuffer.MinuteCount,
+			LimitCount: 0,
 			Period:     "MINUTE",
 			RecordedAt: now,
 			CreatedAt:  now,
@@ -216,13 +221,13 @@ func (sc *StatsCollector) flushUserBuffer(userID string) {
 	}
 
 	if siteRankBuffer.HourCount > 0 {
-        usages = append(usages, RateLimitUsage{
-            ID:         gf.UUID(),
-            UserID:     userID,
-            Plan:       buffer.Plan,
-            Feature:    "SITE_RANK",
-            UsedCount:  siteRankBuffer.HourCount,
-            LimitCount: 0,
+		usages = append(usages, RateLimitUsage{
+			ID:         gf.UUID(),
+			UserID:     userID,
+			Plan:       buffer.Plan,
+			Feature:    "SITE_RANK",
+			UsedCount:  siteRankBuffer.HourCount,
+			LimitCount: 0,
 			Period:     "HOUR",
 			RecordedAt: now,
 			CreatedAt:  now,
@@ -232,13 +237,13 @@ func (sc *StatsCollector) flushUserBuffer(userID string) {
 
 	// Batch使用统计
 	if batchBuffer.MinuteCount > 0 {
-        usages = append(usages, RateLimitUsage{
-            ID:         gf.UUID(),
-            UserID:     userID,
-            Plan:       buffer.Plan,
-            Feature:    "BATCH",
-            UsedCount:  batchBuffer.MinuteCount,
-            LimitCount: 0,
+		usages = append(usages, RateLimitUsage{
+			ID:         gf.UUID(),
+			UserID:     userID,
+			Plan:       buffer.Plan,
+			Feature:    "BATCH",
+			UsedCount:  batchBuffer.MinuteCount,
+			LimitCount: 0,
 			Period:     "MINUTE",
 			RecordedAt: now,
 			CreatedAt:  now,
@@ -248,13 +253,13 @@ func (sc *StatsCollector) flushUserBuffer(userID string) {
 
 	// 批量保存
 	if len(usages) > 0 {
-        if err := sc.db.CreateInBatches(usages, 100).Error; err != nil {
-            glog.Error(context.Background(), "rate_limit_stats_save_failed", map[string]interface{}{
-                "user_id": userID,
-                "error":   err.Error(),
-            })
-        }
-    }
+		if err := sc.db.CreateInBatches(usages, 100).Error; err != nil {
+			glog.Error(context.Background(), "rate_limit_stats_save_failed", map[string]interface{}{
+				"user_id": userID,
+				"error":   err.Error(),
+			})
+		}
+	}
 }
 
 // Stop 停止统计收集器

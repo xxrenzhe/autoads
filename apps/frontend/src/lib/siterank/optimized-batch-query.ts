@@ -51,7 +51,7 @@ export class OptimizedBatchQueryService {
     const uncachedDomains: string[] = [];
     const domainToIndexMap = new Map<string, number>();
     
-    cacheResults.forEach(({ domain, cached }, index) => {
+    cacheResults.forEach(({ domain, cached }, index: any) => {
       domainToIndexMap.set(domain, index);
       
       if (cached) {
@@ -106,7 +106,7 @@ export class OptimizedBatchQueryService {
         const batchResults = await Promise.all(batchPromises);
         
         // 将API结果放到正确的位置
-        batchResults.forEach((result, batchIndex) => {
+        batchResults.forEach((result, batchIndex: any) => {
           const domain = batch[batchIndex];
           const originalIndex = domainToIndexMap.get(domain);
           if (originalIndex !== undefined) {
@@ -143,8 +143,8 @@ export class OptimizedBatchQueryService {
     const totalTime = Date.now() - startTime;
     
     // 统计信息
-    const successCount = finalResults.filter(r => r.status === 'success').length;
-    const errorCount = finalResults.filter(r => r.status === 'error').length;
+    const successCount = finalResults.filter((r: any) => r.status === 'success').length;
+    const errorCount = finalResults.filter((r: any) => r.status === 'error').length;
     
     logger.info(`批量查询完成:`, {
       totalDomains: domains.length,

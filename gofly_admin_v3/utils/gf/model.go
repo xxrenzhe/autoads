@@ -11,13 +11,13 @@ func GetTableName(model interface{}) string {
 	if model == nil {
 		return ""
 	}
-	
+
 	// 通过反射获取模型名称
 	val := reflect.ValueOf(model)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 	}
-	
+
 	if val.Kind() == reflect.Struct {
 		typeName := val.Type().Name()
 		// 简单的复数转换
@@ -29,7 +29,7 @@ func GetTableName(model interface{}) string {
 			return typeName + "s"
 		}
 	}
-	
+
 	return ""
 }
 
@@ -46,7 +46,7 @@ func GetColumnName(field reflect.StructField) string {
 			}
 		}
 	}
-	
+
 	// 默认使用蛇形命名
 	return toSnakeCase(field.Name)
 }

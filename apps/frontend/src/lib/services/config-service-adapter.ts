@@ -20,7 +20,7 @@ export const configService = {
     if (!filter) return configs
     
     // 应用过滤器
-    return configs.filter(config => {
+    return configs.filter((config: any) => {
       if (filter.type && config.type !== filter.type) return false
       if (filter.search && !config.key.includes(filter.search)) return false
       if (filter.hotReloadable !== undefined && config.isHotReload !== filter.hotReloadable) return false

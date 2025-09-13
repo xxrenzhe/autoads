@@ -22,7 +22,7 @@ export const AutomationStep = memo(() => {
             配置定时任务或手动执行任务，自动更新Google Ads链接
           </p>
           <Button
-            onClick={() => window.location.href = '/adscenter/scheduling'}
+            onClick={((: any): any) => window.location.href = '/adscenter/scheduling'}
             className="flex items-center mx-auto"
           >
             <Clock className="h-4 w-4 mr-2" />

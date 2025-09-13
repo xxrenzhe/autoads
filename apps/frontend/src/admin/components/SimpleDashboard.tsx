@@ -115,7 +115,7 @@ const SimpleAdminDashboard: React.FC = () => {
         <Button
           size="small"
           startIcon={<Refresh />}
-          onClick={() => window.location.reload()}
+          onClick={((: any): any) => window.location.reload()}
         >
           刷新
         </Button>

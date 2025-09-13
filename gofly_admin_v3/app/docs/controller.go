@@ -12,8 +12,8 @@ type Server struct {
 
 // SwaggerSpec Swagger规范
 type SwaggerSpec struct {
-	OpenAPI string            `json:"openapi"`
-	Servers []Server          `json:"servers"`
+	OpenAPI string                 `json:"openapi"`
+	Servers []Server               `json:"servers"`
 	Info    map[string]interface{} `json:"info"`
 	Paths   map[string]interface{} `json:"paths"`
 }

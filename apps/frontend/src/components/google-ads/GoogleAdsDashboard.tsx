@@ -189,7 +189,7 @@ export default function GoogleAdsDashboard() {
     );
   }
 
-  const currentAccount = accounts.find(acc => acc.id === selectedAccount);
+  const currentAccount = accounts.find((acc: any) => acc.id === selectedAccount);
   const totalImpressions = stats?.impressions || 0;
   const totalClicks = stats?.clicks || 0;
   const totalCost = stats?.cost || 0;
@@ -348,7 +348,7 @@ export default function GoogleAdsDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {accounts.map((account) => (
+                {accounts.map((account: any) => (
                   <div key={account.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-3">
                       {getStatusIcon(account.status)}
@@ -367,7 +367,7 @@ export default function GoogleAdsDashboard() {
                       <Button 
                         size="sm" 
                         variant={selectedAccount === account.id ? 'default' : 'outline'}
-                        onClick={() => setSelectedAccount(account.id)}
+                        onClick={((: any): any) => setSelectedAccount(account.id)}
                       >
                         选择
                       </Button>
@@ -390,7 +390,7 @@ export default function GoogleAdsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {currentAccount.campaigns.map((campaign) => (
+                  {currentAccount.campaigns.map((campaign: any) => (
                     <div key={campaign.id} className="p-4 border rounded-lg">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-3">

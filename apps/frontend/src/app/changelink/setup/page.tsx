@@ -227,9 +227,9 @@ export default function SetupPage() {
   ];
 
   // 计算完成进度 - memoized
-  const completedSteps = setupSteps.filter(step => step.status === 'completed').length;
-  const totalRequiredSteps = setupSteps.filter(step => step.required).length;
-  const completedRequiredSteps = setupSteps.filter(step => step.required && step.status === 'completed').length;
+  const completedSteps = setupSteps.filter((step: any) => step.status === 'completed').length;
+  const totalRequiredSteps = setupSteps.filter((step: any) => step.required).length;
+  const completedRequiredSteps = setupSteps.filter((step: any) => step.required && step.status === 'completed').length;
   const progressPercentage = totalRequiredSteps > 0 ? Math.round((completedRequiredSteps / totalRequiredSteps) * 100) : 0;
 
   // 加载现有配置和保存的进度
@@ -338,7 +338,7 @@ export default function SetupPage() {
           body: JSON.stringify({
             action: 'save',
             currentStep,
-            setupSteps: setupSteps?.filter(Boolean)?.map(step => ({
+            setupSteps: setupSteps?.filter(Boolean)?.map((step: any) => ({
               ...step,
               status: step.id === 'google-ads' && googleAdsAccounts.length > 0 ? 'completed' :
                      step.id === 'affiliate-links' && affiliateLinks.length > 0 ? 'completed' :
@@ -399,7 +399,7 @@ export default function SetupPage() {
         body: JSON.stringify({
           action: 'save',
           currentStep,
-          setupSteps: setupSteps?.filter(Boolean)?.map(step => ({
+          setupSteps: setupSteps?.filter(Boolean)?.map((step: any) => ({
             ...step,
             status: step.id === 'google-ads' && googleAdsAccounts.length > 0 ? 'completed' :
                    step.id === 'affiliate-links' && affiliateLinks.length > 0 ? 'completed' :
@@ -542,7 +542,7 @@ export default function SetupPage() {
       const result = await response.json();
       
       // 更新账号状态
-      setGoogleAdsAccounts(prev => prev?.filter(Boolean)?.map(account => 
+      setGoogleAdsAccounts(prev => prev?.filter(Boolean)?.map((account: any) => 
         account.id === accountId 
           ? { ...account, status: result.success ? 'connected' : 'error' }
           : account
@@ -615,7 +615,7 @@ export default function SetupPage() {
       const result = await response.json();
       
       // 更新链接状态
-      setAffiliateLinks(prev => prev?.filter(Boolean)?.map(link => 
+      setAffiliateLinks(prev => prev?.filter(Boolean)?.map((link: any) => 
         link.id === linkId 
           ? { ...link, status: result.success ? 'valid' : 'invalid' }
           : link
@@ -688,7 +688,7 @@ export default function SetupPage() {
       const result = await response.json();
       
       // 更新环境状态
-      setAdsPowerEnvironments(prev => prev?.filter(Boolean)?.map(env => 
+      setAdsPowerEnvironments(prev => prev?.filter(Boolean)?.map((env: any) => 
         env.id === envId 
           ? { ...env, status: result.success ? 'connected' : 'error' }
           : env
@@ -721,7 +721,7 @@ export default function SetupPage() {
           data: {
             ...newConfiguration,
             status: 'active',
-            adMappingConfig: newConfiguration.originalLinks?.filter(Boolean)?.map(linkId => ({
+            adMappingConfig: newConfiguration.originalLinks?.filter(Boolean)?.map((linkId: any) => ({
               originalUrl: linkId,
               adMappings: []
             })) || []
@@ -903,7 +903,7 @@ export default function SetupPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
+              onClick={((: any): any) => setShowKeyboardHelp(!showKeyboardHelp)}
               className="text-gray-600 hover:text-gray-800"
               aria-label="显示键盘快捷键帮助"
             >

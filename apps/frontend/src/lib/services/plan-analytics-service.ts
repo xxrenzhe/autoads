@@ -160,7 +160,7 @@ export class PlanAnalyticsService {
     });
 
     const metrics = await Promise.all(
-      plans.map((plan: any) => this.calculatePlanMetrics(plan.id))
+      plans.map((plan: any: any) => this.calculatePlanMetrics(plan.id))
     );
 
     return metrics;

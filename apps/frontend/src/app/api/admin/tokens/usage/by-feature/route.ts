@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       orderBy: { _sum: { tokensConsumed: 'desc' } }
     });
 
-    const totalTokens = features.reduce((sum, feature) => sum + (feature._sum.tokensConsumed || 0), 0);
+    const totalTokens = features.reduce((sum, feature: any) => sum + (feature._sum.tokensConsumed || 0), 0);
 
     // Get time series data for trends
     const timeSeries = await prisma.$queryRaw`
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const processedTimeSeries: any[] = [];
     const dateMap = new Map<string, any>();
     
-    timeSeries.forEach(item => {
+    timeSeries.forEach((item: any) => {
       const dateStr = item.date.toISOString().split('T')[0];
       if (!dateMap.has(dateStr)) {
         dateMap.set(dateStr, {
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       users: number;
     }>;
 
-    dailyUsers.forEach(item => {
+    dailyUsers.forEach((item: any) => {
       const dateStr = item.date.toISOString().split('T')[0];
       const entry = dateMap.get(dateStr);
       if (entry) {
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     processedTimeSeries.push(...Array.from(dateMap.values()));
 
     return NextResponse.json({
-      features: features.map(feature => ({
+      features: features.map((feature: any) => ({
         feature: feature.feature,
         totalTokens: feature._sum.tokensConsumed || 0,
         operations: feature._count._all,

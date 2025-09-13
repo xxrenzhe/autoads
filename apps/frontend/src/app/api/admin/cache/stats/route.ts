@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
 function parseRedisInfo(info: string): Record<string, string> {
   const result: Record<string, string> = {};
   
-  info.split('\n').forEach(line => {
+  info.split('\n').forEach((line: any) => {
     if (line.startsWith('#')) return; // 跳过注释
     
     const parts = line.split(':');

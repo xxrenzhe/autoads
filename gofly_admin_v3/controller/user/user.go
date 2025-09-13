@@ -20,10 +20,10 @@ func (c *Controller) Register(ctx *gf.GinCtx) {
 	var req RegisterRequest
 
 	// 参数绑定和验证
-    if err := ctx.ShouldBind(&req); err != nil {
-        gf.Failed().SetMsg(err.Error()).Regin(ctx)
-        return
-    }
+	if err := ctx.ShouldBind(&req); err != nil {
+		gf.Failed().SetMsg(err.Error()).Regin(ctx)
+		return
+	}
 
 	// 调用服务层处理
 	// userService := ctx.MustGet("userService").(*service.Service)
@@ -49,10 +49,10 @@ func (c *Controller) Register(ctx *gf.GinCtx) {
 func (c *Controller) Login(ctx *gf.GinCtx) {
 	var req LoginRequest
 
-    if err := ctx.ShouldBind(&req); err != nil {
-        gf.Failed().SetMsg(err.Error()).Regin(ctx)
-        return
-    }
+	if err := ctx.ShouldBind(&req); err != nil {
+		gf.Failed().SetMsg(err.Error()).Regin(ctx)
+		return
+	}
 
 	// 登录逻辑已在认证服务中实现
 

@@ -112,7 +112,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
           <p className="text-gray-600">Manage scheduled tasks and automation</p>
         </div>
         <Button
-          onClick={() => setSelectedConfiguration(configurations[0] || null)}
+          onClick={((: any): any) => setSelectedConfiguration(configurations[0] || null)}
           disabled={configurations.length === 0}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -136,7 +136,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
                 <select
                   id="frequency"
                   value={scheduleConfig.type}
-                  onChange={(e) => setScheduleConfig(prev => ({
+                  onChange={((e: any) => setScheduleConfig(prev: any) => ({
                     ...prev,
                     type: e.target.value as 'ONCE' | 'DAILY' | 'WEEKLY' | 'MONTHLY'
                   }))}
@@ -155,7 +155,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
                   id="time"
                   type="time"
                   value={scheduleConfig.time}
-                  onChange={(e) => setScheduleConfig(prev => ({
+                  onChange={((e: any) => setScheduleConfig(prev: any) => ({
                     ...prev,
                     time: e.target.value
                   }))}
@@ -167,7 +167,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
                 <select
                   id="timezone"
                   value={scheduleConfig.timezone}
-                  onChange={(e) => setScheduleConfig(prev => ({
+                  onChange={((e: any) => setScheduleConfig(prev: any) => ({
                     ...prev,
                     timezone: e.target.value
                   }))}
@@ -192,7 +192,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setSelectedConfiguration(null)}
+                onClick={((: any): any) => setSelectedConfiguration(null)}
               >
                 Cancel
               </Button>
@@ -221,7 +221,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {scheduledTasks.map((task, idx: number) => {
+              {scheduledTasks.map((task, idx: number: any) => {
                 const t = task as any;
                 return (
                   <div
@@ -270,7 +270,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleExecuteTask(t.id)}
+                        onClick={((: any): any) => handleExecuteTask(t.id)}
                         disabled={t.status === 'running'}
                       >
                         <Play className="h-4 w-4 mr-1" />
@@ -279,7 +279,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleDeleteTask(t.id)}
+                        onClick={((: any): any) => handleDeleteTask(t.id)}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
                         Delete
@@ -304,7 +304,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
             <Button
               variant="outline"
               className="h-20 flex flex-col items-center justify-center"
-              onClick={() => {
+              onClick={((: any): any) => {
                 // Enable all scheduled tasks
                 logger.info('Enable all tasks');
               }}
@@ -316,7 +316,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
             <Button
               variant="outline"
               className="h-20 flex flex-col items-center justify-center"
-              onClick={() => {
+              onClick={((: any): any) => {
                 // Disable all scheduled tasks
                 logger.info('Disable all tasks');
               }}
@@ -328,7 +328,7 @@ const SchedulingManager: React.FC<SchedulingManagerProps> = ({
             <Button
               variant="outline"
               className="h-20 flex flex-col items-center justify-center"
-              onClick={() => {
+              onClick={((: any): any) => {
                 // View scheduling logs
                 logger.info('View logs');
               }}

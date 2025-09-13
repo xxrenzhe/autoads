@@ -40,11 +40,11 @@ export async function POST(request: NextRequest) {
     // Calculate statistics
     const stats = {
       totalTransactions: transactions.length,
-      totalAcquired: transactions.filter(tx => tx.amount > 0).reduce((sum, tx) => sum + tx.amount, 0),
-      totalConsumed: Math.abs(transactions.filter(tx => tx.amount < 0).reduce((sum, tx) => sum + tx.amount, 0)),
+      totalAcquired: transactions.filter((tx: any) => tx.amount > 0).reduce((sum, tx: any) => sum + tx.amount, 0),
+      totalConsumed: Math.abs(transactions.filter((tx: any) => tx.amount < 0).reduce((sum, tx: any) => sum + tx.amount, 0)),
       byType: {} as Record<string, { acquired: number; consumed: number }>,
       bySource: {} as Record<string, number>,
-      recentTransactions: transactions.slice(0, 10).map(tx => ({
+      recentTransactions: transactions.slice(0, 10).map((tx: any) => ({
         id: tx.id,
         type: tx.type,
         amount: tx.amount,
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Group by type
-    transactions.forEach(tx => {
+    transactions.forEach((tx: any) => {
       const type = tx.type || 'UNKNOWN';
       if (!stats.byType[type]) {
         stats.byType[type] = { acquired: 0, consumed: 0 };
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Group by source
-    transactions.forEach(tx => {
+    transactions.forEach((tx: any) => {
       const source = tx.source || 'unknown';
       if (!stats.bySource[source]) {
         stats.bySource[source] = 0;

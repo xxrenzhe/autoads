@@ -97,20 +97,20 @@ class ResultService {
     
     // 按时间范围过滤
     if (query.startTime) {
-      results = results.filter(r => r.timestamp >= query.startTime!);
+      results = results.filter((r: any) => r.timestamp >= query.startTime!);
     }
     if (query.endTime) {
-      results = results.filter(r => r.timestamp <= query.endTime!);
+      results = results.filter((r: any) => r.timestamp <= query.endTime!);
     }
     
     // 按成功状态过滤
     if (query.success !== undefined) {
-      results = results.filter(r => r.success === query.success);
+      results = results.filter((r: any) => r.success === query.success);
     }
     
     // 按任务ID过滤
     if (query.taskId) {
-      results = results.filter(r => r.taskId === query.taskId);
+      results = results.filter((r: any) => r.taskId === query.taskId);
     }
     
     // 按时间倒序排序
@@ -179,17 +179,17 @@ class ResultService {
     
     // 按时间范围过滤
     if (startTime) {
-      results = results.filter(r => r.timestamp >= startTime);
+      results = results.filter((r: any) => r.timestamp >= startTime);
     }
     if (endTime) {
-      results = results.filter(r => r.timestamp <= endTime);
+      results = results.filter((r: any) => r.timestamp <= endTime);
     }
     
     const totalTasks = results.length;
-    const successfulTasks = results.filter(r => r.success).length;
+    const successfulTasks = results.filter((r: any) => r.success).length;
     const failedTasks = totalTasks - successfulTasks;
-    const totalVisits = results.reduce((sum, r) => sum + r.completed + r.failed, 0);
-    const totalDuration = results.reduce((sum, r) => sum + r.duration, 0);
+    const totalVisits = results.reduce((sum, r: any) => sum + r.completed + r.failed, 0);
+    const totalDuration = results.reduce((sum, r: any) => sum + r.duration, 0);
     const averageDuration = totalTasks > 0 ? totalDuration / totalTasks : 0;
     const successRate = totalTasks > 0 ? successfulTasks / totalTasks : 0;
     
@@ -220,7 +220,7 @@ class ResultService {
     }
 
     // 按类别统计错误
-    errors.forEach(error => {
+    errors.forEach((error: any) => {
       const category = this.categorizeErrorForSummary(error);
       summary.byCategory[category] = (summary.byCategory[category] || 0) + 1;
     });

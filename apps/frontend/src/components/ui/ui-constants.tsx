@@ -169,7 +169,7 @@ export const FeatureCard = ({
         {description}
       </p>
       <ul className={`${UI_CONSTANTS.typography.small} mb-8 space-y-2`}>
-        {features.map((feature, index) => (
+        {features.map((feature, index: any) => (
           <li key={index} className="flex items-center">
             <div className={`w-1.5 h-1.5 ${dotColor[color]} rounded-full mr-3`}></div>
             {feature}

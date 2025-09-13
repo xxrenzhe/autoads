@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Aggregate token usage by day
-    transactions.forEach(tx => {
+    transactions.forEach((tx: any) => {
       if (tx.amount < 0) { // Only count token consumption
         const date = format(tx.createdAt, 'yyyy-MM-dd');
         if (dailyUsage[date]) {
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Aggregate API calls by day
-    apiLogs.forEach(log => {
+    apiLogs.forEach((log: any) => {
       const date = format(log.createdAt, 'yyyy-MM-dd');
       if (dailyUsage[date]) {
         dailyUsage[date].apiCalls += 1;
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     // Convert to array format
     const dailyUsageArray = Object.entries(dailyUsage)
-      .map(([date, data]) => ({
+      .map(([date, data]: any) => ({
         date,
         tokensUsed: data.tokensUsed,
         apiCalls: data.apiCalls,
@@ -103,11 +103,11 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => a.date.localeCompare(b.date));
 
     // Calculate monthly stats
-    const totalTokensUsed = dailyUsageArray.reduce((sum, day) => sum + day.tokensUsed, 0);
-    const totalApiCalls = dailyUsageArray.reduce((sum, day) => sum + day.apiCalls, 0);
+    const totalTokensUsed = dailyUsageArray.reduce((sum, day: any) => sum + day.tokensUsed, 0);
+    const totalApiCalls = dailyUsageArray.reduce((sum, day: any) => sum + day.apiCalls, 0);
     const avgDailyUsage = totalTokensUsed / days;
     
-    const peakUsageDay = dailyUsageArray.reduce((peak, day) => 
+    const peakUsageDay = dailyUsageArray.reduce((peak, day: any) => 
       day.tokensUsed > peak.tokensUsed ? day : peak
     );
 
@@ -116,8 +116,8 @@ export async function GET(request: NextRequest) {
     const firstHalf = dailyUsageArray.slice(0, halfPoint);
     const secondHalf = dailyUsageArray.slice(halfPoint);
     
-    const firstHalfAvg = firstHalf.reduce((sum, day) => sum + day.tokensUsed, 0) / firstHalf.length;
-    const secondHalfAvg = secondHalf.reduce((sum, day) => sum + day.tokensUsed, 0) / secondHalf.length;
+    const firstHalfAvg = firstHalf.reduce((sum, day: any) => sum + day.tokensUsed, 0) / firstHalf.length;
+    const secondHalfAvg = secondHalf.reduce((sum, day: any) => sum + day.tokensUsed, 0) / secondHalf.length;
     
     const growthRate = firstHalfAvg > 0 ? 
       ((secondHalfAvg - firstHalfAvg) / firstHalfAvg * 100) : 0;

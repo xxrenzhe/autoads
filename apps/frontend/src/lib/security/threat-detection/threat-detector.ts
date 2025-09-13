@@ -133,7 +133,7 @@ export class ThreatDetector {
       take: limit
     })
 
-    return threats.map((threat: any) => ({
+    return threats.map((threat: any: any) => ({
       id: threat.id,
       patternId: threat.type, // Using type as pattern ID for now
       patternName: threat.type,
@@ -223,10 +223,10 @@ export class ThreatDetector {
       blockedIPs: blockedIPKeys.length,
       suspendedUsers,
       threatsByType: Object.fromEntries(
-        threatsByType.map((item: any) => [item.type, item._count])
+        threatsByType.map((item: any: any) => [item.type, item._count])
       ),
       threatsBySeverity: Object.fromEntries(
-        threatsBySeverity.map((item: any) => [item.severity, item._count])
+        threatsBySeverity.map((item: any: any) => [item.severity, item._count])
       )
     }
   }
@@ -532,7 +532,7 @@ export class ThreatDetector {
       evidence: context.evidence,
       status: 'active',
       detectedAt: threat.detectedAt,
-      actions: pattern.actions?.filter(Boolean)?.map(a => a.type)
+      actions: pattern.actions?.filter(Boolean)?.map((a: any) => a.type)
     }
   }
 

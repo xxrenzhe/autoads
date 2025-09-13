@@ -91,7 +91,6 @@ func GoogleOAuthCallback(c *gin.Context) {
 	})
 }
 
-
 // ListUsers 列出用户（管理员功能）
 func ListUsers(c *gin.Context) {
 	userService := c.MustGet("userService").(*user.Service)

@@ -238,7 +238,7 @@ export function SubscriptionCard({
               Plan Features
             </h4>
             <div className="space-y-1">
-              {subscription.features.slice(0, 4).map((feature, index) => (
+              {subscription.features.slice(0, 4).map((feature, index: any) => (
                 <div key={index} className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-3 w-3 text-green-500 mr-2 flex-shrink-0" />
                   {feature}

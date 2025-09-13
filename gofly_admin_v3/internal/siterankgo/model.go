@@ -3,10 +3,10 @@
 package siterankgo
 
 import (
-    "encoding/json"
-    "time"
+	"encoding/json"
+	"time"
 
-    "gofly-admin-v3/utils/gf"
+	"gofly-admin-v3/utils/gf"
 )
 
 // SiteRankTask 网站排名任务模型
@@ -233,22 +233,22 @@ func (t *SiteRankTask) CanCancel() bool {
 // Validate 验证任务配置
 func (t *SiteRankTask) Validate() error {
 	keywords := t.GetKeywords()
-    if len(keywords) == 0 {
-        return gf.Error("关键词不能为空")
-    }
+	if len(keywords) == 0 {
+		return gf.Error("关键词不能为空")
+	}
 
-    if len(keywords) > 100 {
-        return gf.Error("关键词数量不能超过100个")
-    }
+	if len(keywords) > 100 {
+		return gf.Error("关键词数量不能超过100个")
+	}
 
-    if t.SearchEngine != "google" && t.SearchEngine != "bing" && t.SearchEngine != "baidu" {
-        return gf.Error("搜索引擎必须是google、bing或baidu")
-    }
+	if t.SearchEngine != "google" && t.SearchEngine != "bing" && t.SearchEngine != "baidu" {
+		return gf.Error("搜索引擎必须是google、bing或baidu")
+	}
 
 	config := t.GetConfig()
-    if config.Depth < 1 || config.Depth > 10 {
-        return gf.Error("搜索深度必须在1-10之间")
-    }
+	if config.Depth < 1 || config.Depth > 10 {
+		return gf.Error("搜索深度必须在1-10之间")
+	}
 
 	return nil
 }

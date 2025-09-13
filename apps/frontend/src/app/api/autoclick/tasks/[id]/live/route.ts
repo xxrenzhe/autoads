@@ -111,11 +111,11 @@ async function getProgressData(taskId: string) {
   }
 
   const totalTarget = plan.task.dailyClicks;
-  const totalCompleted = plan.hourlyExecutions.reduce((sum: number, exec: any) => sum + exec.successCount, 0);
+  const totalCompleted = plan.hourlyExecutions.reduce((sum: number, exec: any: any) => sum + exec.successCount, 0);
   const currentHour = new Date().getHours();
   
   // 获取当前小时的执行情况
-  const currentExecution = plan.hourlyExecutions.find((exec: any) => exec.hour === currentHour);
+  const currentExecution = plan.hourlyExecutions.find((exec: any: any) => exec.hour === currentHour);
   const hourlyProgress = currentExecution ? {
     target: plan.hourlyClicks[currentHour] || 0,
     completed: currentExecution.successCount,

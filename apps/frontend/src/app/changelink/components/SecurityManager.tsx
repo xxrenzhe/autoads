@@ -321,7 +321,7 @@ export function SecurityManager() {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      setUsers(prev => prev?.filter(Boolean)?.map(user => 
+      setUsers(prev => prev?.filter(Boolean)?.map((user: any) => 
         user.id === userId ? { ...user, status } : user
       ));
     } catch (error) {
@@ -337,7 +337,7 @@ export function SecurityManager() {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      setUsers(prev => prev?.filter(Boolean)?.map(user => 
+      setUsers(prev => prev?.filter(Boolean)?.map((user: any) => 
         user.id === userId ? { ...user, twoFactorEnabled: true } : user
       ));
     } catch (error) {
@@ -509,7 +509,7 @@ export function SecurityManager() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {securityEvents.slice(0, 5).map((event) => (
+                    {securityEvents.slice(0, 5).map((event: any) => (
                       <div key={event.id} className="flex items-start space-x-3 p-3 border rounded-lg">
                         {getEventIcon(event.type)}
                         <div className="flex-1">
@@ -543,7 +543,7 @@ export function SecurityManager() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {users.map((user) => (
+                {users.map((user: any) => (
                   <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div>
@@ -582,7 +582,7 @@ export function SecurityManager() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setSelectedUser(user)}
+                          onClick={((: any): any) => setSelectedUser(user)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -590,7 +590,7 @@ export function SecurityManager() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleEnableTwoFactor(user.id)}
+                            onClick={((: any): any) => handleEnableTwoFactor(user.id)}
                             disabled={isLoading}
                           >
                             <Key className="h-4 w-4" />
@@ -599,7 +599,7 @@ export function SecurityManager() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleUserStatusChange(
+                          onClick={((: any): any) => handleUserStatusChange(
                             user.id, 
                             user.status === 'active' ? 'suspended' : 'active'
                           )}
@@ -619,7 +619,7 @@ export function SecurityManager() {
         {/* Roles Tab */}
         <TabsContent value="roles" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {roles.map((role) => (
+            {roles.map((role: any) => (
               <Card key={role.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -668,7 +668,7 @@ export function SecurityManager() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {permissions.map((permission) => (
+                {permissions.map((permission: any) => (
                   <div key={permission.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
                       <h3 className="font-medium">{permission.name}</h3>
@@ -720,7 +720,7 @@ export function SecurityManager() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {securityEvents.map((event) => (
+                {securityEvents.map((event: any) => (
                   <div key={event.id} className="border rounded-lg p-4">
                     <div className="flex items-start space-x-3">
                       {getEventIcon(event.type)}

@@ -136,7 +136,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
           <input
             type="text"
             value={proxyUrl}
-            onChange={(e) => handleProxyUrlChange(e.target.value)}
+            onChange={((e: any): any) => handleProxyUrlChange(e.target.value)}
             placeholder="https://api.iprocket.io/api?username=xxx&password=xxx&cc=ROW&ips=1&type=-res-&proxyType=http&responseType=txt"
             className={`flex-1 p-2 border rounded-lg ${proxyValidationSuccess ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}
             disabled={isOpening}
@@ -197,7 +197,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
               type="radio"
               value="social"
               checked={refererOption === "social"}
-              onChange={() => onRefererOptionChange("social")}
+              onChange={((: any): any) => onRefererOptionChange("social")}
               className="mr-2"
               disabled={isOpening}
             />
@@ -208,11 +208,11 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
               <span className="text-sm whitespace-nowrap">社交媒体</span>
               <select
                 value={selectedSocialMedia}
-                onChange={(e) => onSelectedSocialMediaChange(e.target.value)}
+                onChange={((e: any): any) => onSelectedSocialMediaChange(e.target.value)}
                 className="flex-1 p-2 border border-gray-300 rounded-lg"
                 disabled={isOpening}
               >
-                {SOCIAL_MEDIA_OPTIONS.map((option) => (
+                {SOCIAL_MEDIA_OPTIONS.map((option: any) => (
                   <option key={option.url} value={option.url}>
                     {option.name}
                   </option>
@@ -225,7 +225,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
               type="radio"
               value="custom"
               checked={refererOption === "custom"}
-              onChange={() => onRefererOptionChange("custom")}
+              onChange={((: any): any) => onRefererOptionChange("custom")}
               className="mr-2"
               disabled={isOpening}
             />
@@ -237,7 +237,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
             <input
               type="text"
               value={customReferer}
-              onChange={(e) => onCustomRefererChange(e.target.value)}
+              onChange={((e: any): any) => onCustomRefererChange(e.target.value)}
               placeholder="请输入自定义Referer，例如：https://www.google.com/（留空则不发送Referer）"
               className="w-full p-2 border border-gray-300 rounded-lg"
               disabled={isOpening}

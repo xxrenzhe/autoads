@@ -22,7 +22,7 @@ export default function SubscriptionManagementPage() {
 
         <Suspense fallback={
           <div className="space-y-6">
-            {[...Array(3)].map((_, i) => (
+            {[...Array(3)].map((_, i: any) => (
               <div key={i} className="bg-white rounded-lg shadow p-6">
                 <div className="animate-pulse space-y-4">
                   <div className="h-6 bg-gray-200 rounded w-1/4"></div>

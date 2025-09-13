@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       operations: number;
     }>;
 
-    const processedSeries = series.map(item => ({
+    const processedSeries = series.map((item: any) => ({
       date: item.date.toISOString().split('T')[0],
       tokens: Number(item.tokens),
       users: Number(item.users),

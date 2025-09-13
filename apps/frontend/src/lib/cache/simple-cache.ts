@@ -73,7 +73,7 @@ export class SimpleCacheService {
       // 设置标签索引（如果需要）
       if (options.tags && options.tags.length > 0) {
         const pipeline = redis.pipeline();
-        options.tags.forEach(tag => {
+        options.tags.forEach((tag: any) => {
           pipeline.sadd(`tag:${tag}`, key);
           // 标签索引也设置过期时间
           pipeline.expire(`tag:${tag}`, ttl);
@@ -105,7 +105,7 @@ export class SimpleCacheService {
     try {
       // 获取所有带标签的key
       const pipeline = redis.pipeline();
-      tags.forEach(tag => {
+      tags.forEach((tag: any) => {
         pipeline.smembers(`tag:${tag}`);
       });
       
@@ -113,9 +113,9 @@ export class SimpleCacheService {
       const keysToDelete = new Set<string>();
       
       if (results) {
-        results.forEach(([error, keys]: [Error | null, any]) => {
+        results.forEach(([error, keys]: [Error | null, any]: any) => {
           if (!error && Array.isArray(keys)) {
-            keys.forEach(key => keysToDelete.add(key));
+            keys.forEach((key: any) => keysToDelete.add(key));
           }
         });
       }
@@ -125,7 +125,7 @@ export class SimpleCacheService {
         await redis.del(...Array.from(keysToDelete));
         
         // 删除标签索引
-        tags.forEach(tag => {
+        tags.forEach((tag: any) => {
           redis.del(`tag:${tag}`);
         });
       }

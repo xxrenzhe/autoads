@@ -139,7 +139,7 @@ export class SimpleConcurrentExecutor {
           concurrentRounds: this.options.enableRoundConcurrency ?? false,
           concurrentUrls: this.options.enableUrlConcurrency ?? false,
           averageRoundTime: this.roundTimes.length > 0 ? 
-            this.roundTimes.reduce((a, b) => a + b, 0) / this.roundTimes.length : 0,
+            this.roundTimes.reduce((a, b: any) => a + b, 0) / this.roundTimes.length : 0,
           averageUrlTime: executionTime / (this.completed + this.failed)
         }
       };
@@ -201,7 +201,7 @@ export class SimpleConcurrentExecutor {
       if (results.length >= concurrencyLimit) {
         await Promise.race(results);
         // 移除已完成的
-        const settled = await Promise.allSettled(results?.filter(Boolean)?.map(p => p.then(() => true, () => false)));
+        const settled = await Promise.allSettled(results?.filter(Boolean)?.map((p: any) => p.then(() => true, () => false)));
         results.splice(0, settled.findIndex(s => s.status === 'fulfilled' && s.value) + 1);
       }
     }
@@ -276,11 +276,11 @@ export class SimpleConcurrentExecutor {
       if (this.isStopped) break;
       
       // 并发访问一批URL
-      const promises = batch?.filter(Boolean)?.map(url => this.visitSingleUrl(url, proxy, roundIndex));
+      const promises = batch?.filter(Boolean)?.map((url: any) => this.visitSingleUrl(url, proxy, roundIndex));
       const results = await Promise.allSettled(promises);
       
       // 处理结果
-      results.forEach(result => {
+      results.forEach((result: any) => {
         if (result.status === 'fulfilled') {
           if (result.value) {
             this.completed++;

@@ -287,7 +287,7 @@ export default function SecurityDashboard() {
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Critical Security Alert:</strong> {threats.filter(t => t.severity === 'critical').length} critical threats detected. Immediate attention required.
+            <strong>Critical Security Alert:</strong> {threats.filter((t: any) => t.severity === 'critical').length} critical threats detected. Immediate attention required.
           </AlertDescription>
         </Alert>
       )}
@@ -325,7 +325,7 @@ export default function SecurityDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {threats.map((threat) => (
+                  {threats.map((threat: any) => (
                     <div key={threat.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -355,7 +355,7 @@ export default function SecurityDashboard() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => blockIP(threat.ipAddress!, `Threat: ${threat.patternName}`)}
+                              onClick={((: any): any) => blockIP(threat.ipAddress!, `Threat: ${threat.patternName}`)}
                             >
                               <Ban className="h-4 w-4 mr-1" />
                               Block IP
@@ -364,13 +364,13 @@ export default function SecurityDashboard() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => resolveThreat(threat.id, 'false_positive')}
+                            onClick={((: any): any) => resolveThreat(threat.id, 'false_positive')}
                           >
                             False Positive
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => resolveThreat(threat.id, 'resolved')}
+                            onClick={((: any): any) => resolveThreat(threat.id, 'resolved')}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Resolve
@@ -395,7 +395,7 @@ export default function SecurityDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {auditEvents.map((event) => (
+                {auditEvents.map((event: any) => (
                   <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-3">
                       {getOutcomeIcon(event.outcome)}
@@ -435,7 +435,7 @@ export default function SecurityDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {threatMetrics && Object.entries(threatMetrics.threatsByType).map(([type, count]) => (
+                  {threatMetrics && Object.entries(threatMetrics.threatsByType).map(([type, count]: any) => (
                     <div key={type} className="flex items-center justify-between">
                       <span className="capitalize">{type.replace('_', ' ')}</span>
                       <Badge variant="outline">{count}</Badge>
@@ -452,7 +452,7 @@ export default function SecurityDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {threatMetrics && Object.entries(threatMetrics.threatsBySeverity).map(([severity, count]) => (
+                  {threatMetrics && Object.entries(threatMetrics.threatsBySeverity).map(([severity, count]: any) => (
                     <div key={severity} className="flex items-center justify-between">
                       <span className="capitalize">{severity}</span>
                       <Badge variant={getSeverityColor(severity) as any}>{count}</Badge>

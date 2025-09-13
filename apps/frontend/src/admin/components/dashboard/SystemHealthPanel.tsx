@@ -67,11 +67,11 @@ export const SystemHealthPanel: React.FC<SystemHealthPanelProps> = ({
           </h3>
         </div>
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          {alerts.map((alert) => (
+          {alerts.map((alert: any) => (
             <div
               key={alert.id}
               className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-              onClick={() => onAlertClick?.(alert.id)}
+              onClick={((: any): any) => onAlertClick?.(alert.id)}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3">

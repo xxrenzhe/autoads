@@ -16,16 +16,16 @@ export class UrlProcessor {
     let processed = [...urls];
 
     // Remove empty strings
-    processed = processed.filter(url => url && url.trim());
+    processed = processed.filter((url: any) => url && url.trim());
 
     // Normalize URLs
     if (options.normalize) {
-      processed = processed?.filter(Boolean)?.map(url => UrlValidator.normalize(url));
+      processed = processed?.filter(Boolean)?.map((url: any) => UrlValidator.normalize(url));
     }
 
     // Validate URLs
     if (options.validate) {
-      processed = processed.filter(url => UrlValidator.isValid(url));
+      processed = processed.filter((url: any) => UrlValidator.isValid(url));
     }
 
     // Remove duplicates
@@ -56,7 +56,7 @@ export class UrlProcessor {
   static groupByDomain(urls: string[]): Record<string, string[]> {
     const groups: Record<string, string[]> = {};
     
-    urls.forEach(url => {
+    urls.forEach((url: any) => {
       const domain = UrlValidator.extractDomain(url);
       if (!groups[domain]) {
         groups[domain] = [];

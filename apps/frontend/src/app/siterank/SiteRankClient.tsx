@@ -103,8 +103,8 @@ export default function SiteRankClient() {
   // 实时提取域名
   const urlList = urlInput
     .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+    .map((line: any) => line.trim())
+    .filter((line: any) => line.length > 0);
   const domainList = urlList?.filter(Boolean)?.map(UrlValidator.extractDomain);
   
   // 计算去重后的域名数量
@@ -142,7 +142,7 @@ export default function SiteRankClient() {
   // 分析引擎
   const { startAnalysis, rateLimitStatus, getEstimatedCompletionTime } = useAnalysisEngine({
     domains: fileDomains.length > 0 ? fileDomains : domainList,
-    originalData: fileDomains.length > 0 ? fileRows : domainList.map((domain) => ({ domain } as Record<string, string | number | null | undefined>)),
+    originalData: fileDomains.length > 0 ? fileRows : domainList.map((domain: any) => ({ domain } as Record<string, string | number | null | undefined>)),
     locale: displayLocale,
     onResultsUpdate: setAnalysisResults,
     onProgressUpdate: setProgressText,
@@ -283,7 +283,7 @@ export default function SiteRankClient() {
                         className="w-full border-2 border-gray-200 rounded-xl p-4 resize-none h-[140px] focus:border-blue-500 focus:outline-none transition-colors"
                         placeholder={getStr(t("siterank.inputPlaceholder") as string | string[] | undefined)}
                         value={urlInput}
-                        onChange={(e) => setUrlInput(e.target.value)}
+                        onChange={((e: any): any) => setUrlInput(e.target.value)}
                       />
                       <div className="text-sm text-gray-500 mt-3 h-6 flex items-center gap-2">
                         <span className="w-2 h-2 bg-blue-500 rounded-full inline-block"></span>

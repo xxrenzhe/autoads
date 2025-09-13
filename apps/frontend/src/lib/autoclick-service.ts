@@ -344,11 +344,11 @@ export class AutoClickService {
 
     if (todayPlan) {
       // 计算今日总目标
-      totalTarget = todayPlan.hourlyClicks.reduce((sum: number, clicks: number) => sum + clicks, 0);
+      totalTarget = todayPlan.hourlyClicks.reduce((sum: number, clicks: number: any) => sum + clicks, 0);
       
       // 计算已完成数量
       for (let i = 0; i <= currentHour; i++) {
-        const execution = todayPlan.hourlyExecutions.find((e: any) => e.hour === i);
+        const execution = todayPlan.hourlyExecutions.find((e: any: any) => e.hour === i);
         const target = todayPlan.hourlyClicks[i] || 0;
         
         hourlyProgress.push({
@@ -537,7 +537,7 @@ export class AutoClickService {
     const hourlyClicks = new Array(24).fill(0);
 
     // 简化的平均分配
-    activeHours.forEach(hour => {
+    activeHours.forEach((hour: any) => {
       hourlyClicks[hour] = Math.round(baseAvg);
     });
 

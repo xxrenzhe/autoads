@@ -163,7 +163,7 @@ export function getSafeEnvValue(key: string): string {
 export function getEnvSummary(): Record<string, string> {
   const summary: Record<string, string> = {};
   
-  [...REQUIRED_ENV_VARS, ...OPTIONAL_ENV_VARS].forEach(key => {
+  [...REQUIRED_ENV_VARS, ...OPTIONAL_ENV_VARS].forEach((key: any) => {
     summary[key] = getSafeEnvValue(key);
   });
   

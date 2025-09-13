@@ -147,7 +147,7 @@ export const TokenRulesList: React.FC = () => {
   };
 
   const handleEditSave = (ruleId: string) => {
-    const rule = rules.find(r => r.id === ruleId);
+    const rule = rules.find((r: any) => r.id === ruleId);
     const newCost = editValues[ruleId];
     
     if (!rule || newCost === undefined) return;
@@ -355,7 +355,7 @@ export const TokenRulesList: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rules.map((rule) => (
+                {rules.map((rule: any) => (
                   <TableRow key={rule.id} hover>
                     <TableCell>
                       <Box>
@@ -374,7 +374,7 @@ export const TokenRulesList: React.FC = () => {
                           size="small"
                           type="number"
                           value={editValues[rule.id] || rule.cost}
-                          onChange={(e) => setEditValues({
+                          onChange={((e: any): any) => setEditValues({
                             ...editValues,
                             [rule.id]: parseInt(e.target.value) || 0
                           })}
@@ -395,7 +395,7 @@ export const TokenRulesList: React.FC = () => {
                         control={
                           <Switch
                             checked={rule.isActive}
-                            onChange={() => handleToggleActive(rule.id, rule.isActive)}
+                            onChange={((: any): any) => handleToggleActive(rule.id, rule.isActive)}
                             size="small"
                           />
                         }
@@ -438,7 +438,7 @@ export const TokenRulesList: React.FC = () => {
                               <IconButton
                                 size="small"
                                 color="primary"
-                                onClick={() => handleEditSave(rule.id)}
+                                onClick={((: any): any) => handleEditSave(rule.id)}
                               >
                                 <Save />
                               </IconButton>
@@ -457,7 +457,7 @@ export const TokenRulesList: React.FC = () => {
                             <Tooltip title="编辑规则">
                               <IconButton
                                 size="small"
-                                onClick={() => handleEditRule(rule)}
+                                onClick={((: any): any) => handleEditRule(rule)}
                               >
                                 <Edit />
                               </IconButton>
@@ -465,7 +465,7 @@ export const TokenRulesList: React.FC = () => {
                             <Tooltip title="查看历史">
                               <IconButton
                                 size="small"
-                                onClick={() => handleShowHistory(rule.id)}
+                                onClick={((: any): any) => handleShowHistory(rule.id)}
                               >
                                 <History />
                               </IconButton>
@@ -518,7 +518,7 @@ export const TokenRulesList: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            onClick={() => setConfirmDialog({ open: false, ruleId: null, newCost: 0, oldCost: 0 })}
+            onClick={((: any): any) => setConfirmDialog({ open: false, ruleId: null, newCost: 0, oldCost: 0 })}
           >
             取消
           </Button>
@@ -559,7 +559,7 @@ export const TokenRulesList: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {ruleHistory.map((history) => (
+                  {ruleHistory.map((history: any) => (
                     <TableRow key={history.id}>
                       <TableCell>
                         {new Date(history.modifiedAt).toLocaleString()}
@@ -587,7 +587,7 @@ export const TokenRulesList: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setHistoryDialog({ open: false, ruleId: null })}>
+          <Button onClick={((: any): any) => setHistoryDialog({ open: false, ruleId: null })}>
             关闭
           </Button>
         </DialogActions>

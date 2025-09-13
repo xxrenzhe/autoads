@@ -163,7 +163,7 @@ const PlanTemplateSelector: React.FC<{ onSelect: (template: any) => void }> = ({
         选择套餐模板
       </Typography>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 2 }}>
-        {Object.entries(defaultPlans).map(([key, plan]) => (
+        {Object.entries(defaultPlans).map(([key, plan]: any) => (
           <Box key={key} sx={{ gridColumn: 'span 12', md: { gridColumn: 'span 4' } }}>
             <Card 
               sx={{ 
@@ -175,7 +175,7 @@ const PlanTemplateSelector: React.FC<{ onSelect: (template: any) => void }> = ({
                   boxShadow: 2
                 }
               }}
-              onClick={() => onSelect(plan)}
+              onClick={((: any): any) => onSelect(plan)}
             >
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography variant="h5" component="div" gutterBottom>
@@ -193,7 +193,7 @@ const PlanTemplateSelector: React.FC<{ onSelect: (template: any) => void }> = ({
                   />
                 )}
                 <Box sx={{ textAlign: 'left', mt: 2 }}>
-                  {plan.metadata?.highlightFeatures?.slice(0, 3).map((feature: string, index: number) => (
+                  {plan.metadata?.highlightFeatures?.slice(0, 3).map((feature: string, index: number: any) => (
                     <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
                       • {feature}
                     </Typography>
@@ -226,7 +226,7 @@ const PlanCreateToolbar = (props: any) => {
       {selectedTemplate && (
         <Button
           color="secondary"
-          onClick={() => setSelectedTemplate(null)}
+          onClick={((: any): any) => setSelectedTemplate(null)}
           sx={{ ml: 2 }}
         >
           清除模板

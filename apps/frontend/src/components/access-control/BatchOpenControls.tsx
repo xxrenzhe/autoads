@@ -57,7 +57,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
   }
 
   const getUrlsCount = () => {
-    return urls.split('\n').filter(url => url.trim()).length
+    return urls.split('\n').filter((url: any) => url.trim()).length
   }
 
   const isOverLimit = () => {
@@ -131,7 +131,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                 <Textarea
                   placeholder="https://example.com/page1&#10;https://example.com/page2&#10;https://example.com/page3"
                   value={urls}
-                  onChange={(e) => setUrls(e.target.value)}
+                  onChange={((e: any): any) => setUrls(e.target.value)}
                   rows={10}
                   className="font-mono text-sm"
                 />
@@ -153,7 +153,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                       id="delay"
                       type="number"
                       value={delay}
-                      onChange={(e) => setDelay(e.target.value)}
+                      onChange={((e: any): any) => setDelay(e.target.value)}
                       min="100"
                       max="10000"
                       step="100"
@@ -203,7 +203,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                     id="proxy"
                     placeholder="http://proxy.example.com:8080"
                     value={proxyUrl}
-                    onChange={(e) => setProxyUrl(e.target.value)}
+                    onChange={((e: any): any) => setProxyUrl(e.target.value)}
                   />
                 </div>
               </CardContent>
@@ -290,7 +290,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                       id="schedule"
                       placeholder="0 9 * * *"
                       value={schedule}
-                      onChange={(e) => setSchedule(e.target.value)}
+                      onChange={((e: any): any) => setSchedule(e.target.value)}
                     />
                     <p className="text-sm text-gray-500">
                       例如：0 9 * * * (每天9点执行)
@@ -319,7 +319,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                       id="script"
                       placeholder="// 在页面加载后执行的脚本&#10;console.log('Page loaded');&#10;document.querySelector('.button').click();"
                       value={script}
-                      onChange={(e) => setScript(e.target.value)}
+                      onChange={((e: any): any) => setScript(e.target.value)}
                       rows={8}
                       className="font-mono text-sm"
                     />

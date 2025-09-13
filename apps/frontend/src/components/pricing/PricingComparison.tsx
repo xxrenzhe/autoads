@@ -224,7 +224,7 @@ export default function PricingComparison() {
           </tr>
         </thead>
         <tbody>
-          {featureCategories.map((category, categoryIndex) => (
+          {featureCategories.map((category, categoryIndex: any) => (
             <React.Fragment key={category.name}>
               {/* Category Header */}
               <tr className="bg-gray-50">
@@ -237,7 +237,7 @@ export default function PricingComparison() {
               </tr>
               
               {/* Category Features */}
-              {category.features.map((feature, featureIndex) => (
+              {category.features.map((feature, featureIndex: any) => (
                 <tr
                   key={feature.name}
                   className={`border-b border-gray-100 ${
@@ -275,7 +275,7 @@ export default function PricingComparison() {
       {/* Mobile View */}
       <div className="md:hidden mt-8">
         <div className="space-y-8">
-          {['free', 'pro', 'max'].map((planType) => {
+          {['free', 'pro', 'max'].map((planType: any) => {
             const planNames = {
               free: '免费版',
               pro: 'Pro 版',
@@ -304,13 +304,13 @@ export default function PricingComparison() {
                 </div>
                 
                 <div className="space-y-6">
-                  {featureCategories.map((category) => (
+                  {featureCategories.map((category: any) => (
                     <div key={category.name}>
                       <h4 className="font-semibold text-gray-900 mb-3">
                         {category.name}
                       </h4>
                       <div className="space-y-2">
-                        {category.features.map((feature) => (
+                        {category.features.map((feature: any) => (
                           <div key={feature.name} className="flex items-center justify-between">
                             <span className="text-sm text-gray-700">
                               {feature.name}

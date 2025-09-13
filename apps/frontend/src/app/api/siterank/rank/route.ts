@@ -309,7 +309,7 @@ async function handlePOST(request: NextRequest, userId?: string) {
     }
 
     // API 层面的域名验证
-    const invalidDomains = domains.filter(domain => !isValidDomainFormat(domain));
+    const invalidDomains = domains.filter((domain: any) => !isValidDomainFormat(domain));
     if (invalidDomains.length > 0) {
       logger.warn(`API层批量查询检测到 ${invalidDomains.length} 个无效域名: ${invalidDomains.slice(0, 5).join(', ')}${invalidDomains.length > 5 ? '...' : ''}`, { 
         ip: isValidIP(clientIP) ? clientIP : 'anonymous' 
@@ -336,8 +336,8 @@ async function handlePOST(request: NextRequest, userId?: string) {
       concurrency
     });
 
-    const successful = results.filter(r => r.status === 'success').length;
-    const failed = results.filter(r => r.status === 'error').length;
+    const successful = results.filter((r: any) => r.status === 'success').length;
+    const failed = results.filter((r: any) => r.status === 'error').length;
 
     return NextResponse.json({ 
       success: true,

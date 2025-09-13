@@ -87,7 +87,7 @@ function generateDefaultKey(
   methodName: string,
   args: any[]
 ): string {
-  const serializedArgs = args.map(arg => {
+  const serializedArgs = args.map((arg: any) => {
     if (typeof arg === 'object' && arg !== null) {
       return JSON.stringify(arg);
     }
@@ -102,7 +102,7 @@ function generateDefaultKey(
  */
 export function createUserKeyGenerator(prefix: string) {
   return function (userId: string, ...args: any[]): string {
-    const serializedArgs = args.map(arg => {
+    const serializedArgs = args.map((arg: any) => {
       if (typeof arg === 'object' && arg !== null) {
         return JSON.stringify(arg);
       }
@@ -120,7 +120,7 @@ export function createTimeBasedKeyGenerator(prefix: string) {
   return function (...args: any[]): string {
     const now = new Date();
     const timeKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
-    const serializedArgs = args.map(arg => {
+    const serializedArgs = args.map((arg: any) => {
       if (typeof arg === 'object' && arg !== null) {
         return JSON.stringify(arg);
       }

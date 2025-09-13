@@ -140,7 +140,7 @@ class SimpleGoogleAdsService {
     let failedCount = 0;
 
     // 构建批量更新请求
-    const operations = ads?.filter(Boolean)?.map(ad => ({
+    const operations = ads?.filter(Boolean)?.map((ad: any) => ({
       update_mask: 'final_url,final_url_suffix',
       operation: {
         update: {

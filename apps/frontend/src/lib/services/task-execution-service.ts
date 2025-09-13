@@ -594,7 +594,7 @@ function generateErrorSummary(errors: string[]): ErrorSummary {
   }
 
   // 按类别统计错误
-  errors.forEach(error => {
+  errors.forEach((error: any) => {
     const category = categorizeErrorForSummary(error);
     summary.byCategory[category] = (summary.byCategory[category] || 0) + 1;
   });
@@ -676,7 +676,7 @@ export async function executeBatchTask(options: TaskExecutionOptions): Promise<T
   
   // 验证总访问次数的一致性
   if (options.isSilentMode && options.urlVisits) {
-    const calculatedTotal = options.urlVisits.reduce((sum, visits) => sum + visits, 0);
+    const calculatedTotal = options.urlVisits.reduce((sum, visits: any) => sum + visits, 0);
     if (calculatedTotal !== totalVisits) {
       logger.warn('总访问次数不一致，使用计算值', {
         taskId,
@@ -1341,7 +1341,7 @@ export async function executeBatchTask(options: TaskExecutionOptions): Promise<T
         });
         
         // 使用前置计算的访问次数或默认值
-        const urlVisits = options.urlVisits || urls.map(() => cycleCount);
+        const urlVisits = options.urlVisits || urls.map((: any) => cycleCount);
         
         // 执行批量访问
         const batchResult = await executeSilentBatchVisit({

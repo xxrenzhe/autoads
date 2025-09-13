@@ -96,10 +96,10 @@ class BatchProcessor {
       
       try {
         const results = await Promise.allSettled(
-          batch?.filter(Boolean)?.map(item => item.task())
+          batch?.filter(Boolean)?.map((item: any) => item.task())
         );
         
-        results.forEach((result, index) => {
+        results.forEach((result, index: any) => {
           const item = batch[index];
           if (result.status === 'fulfilled') {
             item.resolve(result.value);
@@ -115,7 +115,7 @@ class BatchProcessor {
         logger.error('Batch processing error:', error instanceof Error ? error : new Error(String(error)));
         
         // 拒绝当前批次的所有任务
-        batch.forEach(item => {
+        batch.forEach((item: any) => {
           item.reject(error);
         });
       }
@@ -193,7 +193,7 @@ class ImageOptimizer {
    */
   static generateSrcSet(baseUrl: string, widths: number[] = [320, 640, 960, 1280]): string {
     return widths
-      ?.filter(Boolean)?.map(width => `${baseUrl}?w=${width} ${width}w`)
+      ?.filter(Boolean)?.map((width: any) => `${baseUrl}?w=${width} ${width}w`)
       .join(', ');
   }
   
@@ -206,7 +206,7 @@ class ImageOptimizer {
     }
     
     const imageObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
+      entries.forEach((entry: any) => {
         if (entry.isIntersecting) {
           const img = entry.target as HTMLImageElement;
           const src = img.dataset.src;
@@ -271,7 +271,7 @@ class CodeSplitOptimizer {
   static preloadResources(urls: string[]): void {
     if (typeof window === 'undefined') return;
     
-    urls.forEach(url => {
+    urls.forEach((url: any) => {
       const link = document.createElement('link');
       link.rel = 'preload';
       link.href = url;
@@ -329,7 +329,7 @@ class PerformanceMonitor {
     
     const sorted = [...values].sort((a, b) => a - b);
     const count = sorted.length;
-    const sum = sorted.reduce((acc, val) => acc + val, 0);
+    const sum = sorted.reduce((acc, val: any) => acc + val, 0);
     const average = sum / count;
     const min = sorted[0];
     const max = sorted[count - 1];
@@ -435,7 +435,7 @@ class NetworkOptimizer {
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch?.filter(Boolean)?.map(url => this.fetchWithRetry(url, options).then(res => res.json()))
+        batch?.filter(Boolean)?.map((url: any) => this.fetchWithRetry(url, options).then(res => res.json()))
       );
       results.push(...batchResults);
     }

@@ -57,7 +57,7 @@ const EmailConfigToolbar = (props: any) => {
       <SaveButton />
       <Button
         label="测试邮件"
-        onClick={() => setOpenTestModal(true)}
+        onClick={((: any): any) => setOpenTestModal(true)}
         startIcon={<Test />}
         sx={{ ml: 1 }}
       >

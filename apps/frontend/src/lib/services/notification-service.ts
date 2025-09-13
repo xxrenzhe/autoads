@@ -55,7 +55,7 @@ export class NotificationService {
   }) {
     const { userIds, type, template, data, priority = 'MEDIUM' } = params;
 
-    const notifications = userIds.map(userId => ({
+    const notifications = userIds.map((userId: any) => ({
       userId,
       templateId: template,
       type: type.toLowerCase() as any,

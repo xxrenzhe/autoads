@@ -35,7 +35,7 @@ const handler = withMinimalSecurity(
         }
 
         // 这里调用实际的SiteRank服务
-        const results = domains.map(domain => ({
+        const results = domains.map((domain: any) => ({
           domain,
           globalRank: Math.floor(Math.random() * 1000000),
           monthlyVisits: Math.floor(Math.random() * 10000000),

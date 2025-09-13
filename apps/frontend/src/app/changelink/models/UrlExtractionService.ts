@@ -106,7 +106,7 @@ export class UrlExtractionService {
     const chunks = this.chunkArray(urls, concurrency);
     
     for (const chunk of chunks) { 
-      const chunkPromises = chunk?.filter(Boolean)?.map(url => 
+      const chunkPromises = chunk?.filter(Boolean)?.map((url: any) => 
         this.extractFinalUrl({
           environmentId,
           originalUrl: url,
@@ -145,7 +145,7 @@ export class UrlExtractionService {
     }
 
     const totalTime = Date.now() - startTime;
-    const successful = results.filter(r => r.success).length;
+    const successful = results.filter((r: any) => r.success).length;
     
     return {
       results,
@@ -579,7 +579,7 @@ export class UrlExtractionService {
     const params: Record<string, string> = {};
     try { 
       const urlObj = new URL(url);
-      urlObj.searchParams.forEach((value, key) => {
+      urlObj.searchParams.forEach((value, key: any) => {
         params[key] = value;
       });
     } catch {

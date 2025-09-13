@@ -156,7 +156,7 @@ export class PriorityFIFOQueue<T> {
     priority: number = this.options.defaultLevel,
     metadata?: Record<string, any>
   ): Promise<number> {
-    const queueItems = items?.filter(Boolean)?.map(item => ({
+    const queueItems = items?.filter(Boolean)?.map((item: any) => ({
       data: item,
       priority,
       timestamp: Date.now(),
@@ -230,7 +230,7 @@ export class PriorityFIFOQueue<T> {
    */
   private calculateAllocation(totalCount: number): Record<string, number> {
     const allocation: Record<string, number> = {};
-    const availableQueues = Array.from(this.queues.entries()).filter(([_, queue]) => !queue.isEmpty());
+    const availableQueues = Array.from(this.queues.entries()).filter(([_, queue]: any) => !queue.isEmpty());
     
     if (availableQueues.length === 0) {
       return allocation;
@@ -241,7 +241,7 @@ export class PriorityFIFOQueue<T> {
     const weights: Record<number, number> = {};
     
     for (const [level, queue] of availableQueues) {
-      const levelConfig = this.options.levels.find(l => l.level === level);
+      const levelConfig = this.options.levels.find((l: any) => l.level === level);
       const weight = levelConfig?.weight || 1;
       
       // 根据队列大小调整权重（防止大队列垄断）
@@ -271,7 +271,7 @@ export class PriorityFIFOQueue<T> {
     if (remaining > 0) {
       // 按优先级顺序分配
       const sortedLevels = availableQueues
-        .map(([level, _]) => level)
+        .map(([level, _]: any) => level)
         .sort((a, b) => a - b);
       
       for (const level of sortedLevels) {
@@ -324,7 +324,7 @@ export class PriorityFIFOQueue<T> {
    */
   private handleStarvation(priorityLevel: number): void {
     // 临时提高该优先级的权重
-    const levelConfig = this.options.levels.find(l => l.level === priorityLevel);
+    const levelConfig = this.options.levels.find((l: any) => l.level === priorityLevel);
     if (levelConfig) {
       const originalWeight = levelConfig.weight;
       levelConfig.weight = Math.min(levelConfig.weight * 2, 100);
@@ -435,7 +435,7 @@ export class PriorityFIFOQueue<T> {
       processingRate: number;
     }>;
   } {
-    const byLevel = this.options.levels?.filter(Boolean)?.map(levelConfig => {
+    const byLevel = this.options.levels?.filter(Boolean)?.map((levelConfig: any) => {
       const queue = this.queues.get(levelConfig.level);
       const size = queue ? queue.size() : 0;
       const queueStats = queue ? queue.getStats() : null;

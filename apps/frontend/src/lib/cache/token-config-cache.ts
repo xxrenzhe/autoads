@@ -80,7 +80,7 @@ class TokenConfigCache {
       }
     }
     
-    keysToDelete.forEach(key => this.cache.delete(key))
+    keysToDelete.forEach((key: any) => this.cache.delete(key))
   }
 
   // 订阅配置变更通知
@@ -99,7 +99,7 @@ class TokenConfigCache {
     this.clearRelatedCache(notification)
     
     // 通知所有订阅者
-    this.subscribers.forEach(callback => {
+    this.subscribers.forEach((callback: any) => {
       try {
         callback(notification)
       } catch (error) {
@@ -138,7 +138,7 @@ class TokenConfigCache {
       ttl: number
     }>
   } {
-    const entries = Array.from(this.cache.entries()).map(([key, entry]) => ({
+    const entries = Array.from(this.cache.entries()).map(([key, entry]: any) => ({
       key,
       size: entry.data.length,
       age: Date.now() - entry.timestamp,
@@ -147,7 +147,7 @@ class TokenConfigCache {
 
     return {
       totalEntries: this.cache.size,
-      totalSize: entries.reduce((sum, entry) => sum + entry.size, 0),
+      totalSize: entries.reduce((sum, entry: any) => sum + entry.size, 0),
       entries
     }
   }
@@ -159,7 +159,7 @@ class TokenConfigCache {
       this.set('all', configs)
       
       // 按功能分组缓存
-      const byFeature = configs.reduce((acc, config) => {
+      const byFeature = configs.reduce((acc, config: any) => {
         if (!acc[config.feature]) {
           acc[config.feature] = []
         }
@@ -167,7 +167,7 @@ class TokenConfigCache {
         return acc
       }, {} as Record<string, TokenConfig[]>)
       
-      Object.entries(byFeature).forEach(([feature, featureConfigs]) => {
+      Object.entries(byFeature).forEach(([feature, featureConfigs]: any) => {
         this.set(`feature:${feature}`, featureConfigs as TokenConfig[])
       })
       
@@ -265,7 +265,7 @@ export class ConfigChangeImpactAnalyzer {
       impact: ReturnType<typeof ConfigChangeImpactAnalyzer.analyzeImpact>
     }>
   } {
-    const details = notifications?.filter(Boolean)?.map(notification => ({
+    const details = notifications?.filter(Boolean)?.map((notification: any) => ({
       notification,
       impact: this.analyzeImpact(notification)
     }))
@@ -274,7 +274,7 @@ export class ConfigChangeImpactAnalyzer {
       new Set(details.flatMap(d => d.impact.affectedFeatures))
     )
 
-    const highImpactChanges = details.filter(d => d.impact.severity === 'high').length
+    const highImpactChanges = details.filter((d: any) => d.impact.severity === 'high').length
 
     return {
       summary: {

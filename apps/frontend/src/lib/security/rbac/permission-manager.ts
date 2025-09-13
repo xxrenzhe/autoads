@@ -89,7 +89,7 @@ export class PermissionManager {
     const rolePermissions = this.getRolePermissions(userRole)
     
     // Check if user has the required permission
-    const permission = rolePermissions.find(p => 
+    const permission = rolePermissions.find((p: any) => 
       p.resource === resource && p.action === action
     )
 
@@ -276,7 +276,7 @@ export class PermissionManager {
     permissions: Array<{ resource: string; action: string; context?: any }>
   ): Promise<boolean[]> {
     const results = await Promise.all(
-      permissions.map(({ resource, action, context }) =>
+      permissions.map(({ resource, action, context }: any) =>
         this.hasPermission(userId, resource, action, context)
       )
     )

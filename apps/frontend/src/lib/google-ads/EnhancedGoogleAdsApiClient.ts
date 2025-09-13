@@ -582,12 +582,12 @@ export class EnhancedGoogleAdsApiClient {
     }
 
     if (status && status.length > 0) {
-      const statusValues = status?.filter(Boolean)?.map(s => `'${s}'`).join(',');
+      const statusValues = status?.filter(Boolean)?.map((s: any) => `'${s}'`).join(',');
       whereConditions.push(`campaign.status IN (${statusValues})`);
     }
 
     if (advertisingChannelType && advertisingChannelType.length > 0) {
-      const channelTypes = advertisingChannelType?.filter(Boolean)?.map(t => `'${t}'`).join(',');
+      const channelTypes = advertisingChannelType?.filter(Boolean)?.map((t: any) => `'${t}'`).join(',');
       whereConditions.push(`campaign.advertising_channel_type IN (${channelTypes})`);
     }
 
@@ -595,13 +595,13 @@ export class EnhancedGoogleAdsApiClient {
       whereConditions.push(`segments.date BETWEEN '${dateRange.startDate}' AND '${dateRange.endDate}'`);
     }
 
-    whereConditions.forEach(condition => queryBuilder.where(condition));
+    whereConditions.forEach((condition: any) => queryBuilder.where(condition));
     queryBuilder.orderBy('campaign.name');
 
     const query = queryBuilder.build();
     const results = await this.executeQuery<any>(query, useCache);
 
-    return results?.filter(Boolean)?.map(row => this.mapToCampaignInfo(row));
+    return results?.filter(Boolean)?.map((row: any) => this.mapToCampaignInfo(row));
   }
 
   /**
@@ -683,7 +683,7 @@ export class EnhancedGoogleAdsApiClient {
       }>;
     }>
   ): Promise<BatchOperationResult<any>> {
-    const operations = updates.map(({ campaignId, updates: campaignUpdates }) => ({
+    const operations = updates.map(({ campaignId, updates: campaignUpdates }: any) => ({
       update: {
         resourceName: `customers/${this.customerId}/campaigns/${campaignId}`,
         ...campaignUpdates,
@@ -751,7 +751,7 @@ export class EnhancedGoogleAdsApiClient {
     const whereConditions: string[] = [];
 
     if (campaignIds && campaignIds.length > 0) {
-      const campaignResourceNames = campaignIds?.filter(Boolean)?.map(id => 
+      const campaignResourceNames = campaignIds?.filter(Boolean)?.map((id: any) => 
         `'customers/${this.customerId}/campaigns/${id}'`
       ).join(',');
       whereConditions.push(`ad_group.campaign IN (${campaignResourceNames})`);
@@ -762,7 +762,7 @@ export class EnhancedGoogleAdsApiClient {
     }
 
     if (status && status.length > 0) {
-      const statusValues = status?.filter(Boolean)?.map(s => `'${s}'`).join(',');
+      const statusValues = status?.filter(Boolean)?.map((s: any) => `'${s}'`).join(',');
       whereConditions.push(`ad_group.status IN (${statusValues})`);
     }
 
@@ -770,13 +770,13 @@ export class EnhancedGoogleAdsApiClient {
       whereConditions.push(`segments.date BETWEEN '${dateRange.startDate}' AND '${dateRange.endDate}'`);
     }
 
-    whereConditions.forEach(condition => queryBuilder.where(condition));
+    whereConditions.forEach((condition: any) => queryBuilder.where(condition));
     queryBuilder.orderBy('ad_group.name');
 
     const query = queryBuilder.build();
     const results = await this.executeQuery<any>(query, useCache);
 
-    return results?.filter(Boolean)?.map(row => this.mapToAdGroupInfo(row));
+    return results?.filter(Boolean)?.map((row: any) => this.mapToAdGroupInfo(row));
   }
 
   /**
@@ -886,14 +886,14 @@ export class EnhancedGoogleAdsApiClient {
     const whereConditions: string[] = ['ad_group_criterion.type = KEYWORD'];
 
     if (campaignIds && campaignIds.length > 0) {
-      const campaignResourceNames = campaignIds?.filter(Boolean)?.map(id => 
+      const campaignResourceNames = campaignIds?.filter(Boolean)?.map((id: any) => 
         `'customers/${this.customerId}/campaigns/${id}'`
       ).join(',');
       whereConditions.push(`campaign.id IN (${campaignIds.join(',')})`);
     }
 
     if (adGroupIds && adGroupIds.length > 0) {
-      const adGroupResourceNames = adGroupIds?.filter(Boolean)?.map(id => 
+      const adGroupResourceNames = adGroupIds?.filter(Boolean)?.map((id: any) => 
         `'customers/${this.customerId}/adGroups/${id}'`
       ).join(',');
       whereConditions.push(`ad_group.id IN (${adGroupIds.join(',')})`);
@@ -904,12 +904,12 @@ export class EnhancedGoogleAdsApiClient {
     }
 
     if (matchTypes && matchTypes.length > 0) {
-      const matchTypeValues = matchTypes?.filter(Boolean)?.map(mt => `'${mt}'`).join(',');
+      const matchTypeValues = matchTypes?.filter(Boolean)?.map((mt: any) => `'${mt}'`).join(',');
       whereConditions.push(`ad_group_criterion.keyword.match_type IN (${matchTypeValues})`);
     }
 
     if (status && status.length > 0) {
-      const statusValues = status?.filter(Boolean)?.map(s => `'${s}'`).join(',');
+      const statusValues = status?.filter(Boolean)?.map((s: any) => `'${s}'`).join(',');
       whereConditions.push(`ad_group_criterion.status IN (${statusValues})`);
     }
 
@@ -917,13 +917,13 @@ export class EnhancedGoogleAdsApiClient {
       whereConditions.push(`segments.date BETWEEN '${dateRange.startDate}' AND '${dateRange.endDate}'`);
     }
 
-    whereConditions.forEach(condition => queryBuilder.where(condition));
+    whereConditions.forEach((condition: any) => queryBuilder.where(condition));
     queryBuilder.orderBy('ad_group_criterion.keyword.text');
 
     const query = queryBuilder.build();
     const results = await this.executeQuery<any>(query, useCache);
 
-    return results?.filter(Boolean)?.map(row => this.mapToKeywordInfo(row));
+    return results?.filter(Boolean)?.map((row: any) => this.mapToKeywordInfo(row));
   }
 
   /**
@@ -938,7 +938,7 @@ export class EnhancedGoogleAdsApiClient {
       finalUrls?: string[];
     }>
   ): Promise<BatchOperationResult<any>> {
-    const operations = keywords?.filter(Boolean)?.map(keyword => ({
+    const operations = keywords?.filter(Boolean)?.map((keyword: any) => ({
       create: {
         adGroup: `customers/${this.customerId}/adGroups/${keyword.adGroupId}`,
         status: enums.AdGroupCriterionStatus.ENABLED,
@@ -1030,12 +1030,12 @@ export class EnhancedGoogleAdsApiClient {
     }
 
     if (adTypes && adTypes.length > 0) {
-      const typeValues = adTypes?.filter(Boolean)?.map(t => `'${t}'`).join(',');
+      const typeValues = adTypes?.filter(Boolean)?.map((t: any) => `'${t}'`).join(',');
       whereConditions.push(`ad_group_ad.ad.type IN (${typeValues})`);
     }
 
     if (status && status.length > 0) {
-      const statusValues = status?.filter(Boolean)?.map(s => `'${s}'`).join(',');
+      const statusValues = status?.filter(Boolean)?.map((s: any) => `'${s}'`).join(',');
       whereConditions.push(`ad_group_ad.status IN (${statusValues})`);
     }
 
@@ -1043,13 +1043,13 @@ export class EnhancedGoogleAdsApiClient {
       whereConditions.push(`segments.date BETWEEN '${dateRange.startDate}' AND '${dateRange.endDate}'`);
     }
 
-    whereConditions.forEach(condition => queryBuilder.where(condition));
+    whereConditions.forEach((condition: any) => queryBuilder.where(condition));
     queryBuilder.orderBy('ad_group_ad.ad.id');
 
     const query = queryBuilder.build();
     const results = await this.executeQuery<any>(query, useCache);
 
-    return results?.filter(Boolean)?.map(row => this.mapToAdInfo(row));
+    return results?.filter(Boolean)?.map((row: any) => this.mapToAdInfo(row));
   }
 
   // ==================== 批量操作通用方法 ==================== //
@@ -1082,7 +1082,7 @@ export class EnhancedGoogleAdsApiClient {
         const response = await this.executeMutation<any>(serviceName, batch);
         
         if (response.results) {
-          response.results.forEach((result: any, index: number) => {
+          response.results.forEach((result: any, index: number: any) => {
             successful.push({
               operation: batch[index],
               result: result as T,
@@ -1096,7 +1096,7 @@ export class EnhancedGoogleAdsApiClient {
           await this.delay(1000);
         }
       } catch (error) { // 处理批次失败
-        batch.forEach(operation => {
+        batch.forEach((operation: any) => {
           failed.push({
             operation,
             error: error instanceof Error ? error.message : "Unknown error" as any,
@@ -1129,7 +1129,7 @@ export class EnhancedGoogleAdsApiClient {
     campaignId: string,
     geoTargets: Array<{ locationId: string; isNegative?: boolean }>
   ): Promise<void> {
-    const operations = geoTargets?.filter(Boolean)?.map(target => ({
+    const operations = geoTargets?.filter(Boolean)?.map((target: any) => ({
       create: {
         campaign: `customers/${this.customerId}/campaigns/${campaignId}`,
         location: {
@@ -1149,7 +1149,7 @@ export class EnhancedGoogleAdsApiClient {
     campaignId: string,
     languageIds: string[]
   ): Promise<void> {
-    const operations = languageIds?.filter(Boolean)?.map(languageId => ({
+    const operations = languageIds?.filter(Boolean)?.map((languageId: any) => ({
       create: {
         campaign: `customers/${this.customerId}/campaigns/${campaignId}`,
         language: {

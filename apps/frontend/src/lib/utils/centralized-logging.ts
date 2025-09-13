@@ -375,7 +375,7 @@ export class CentralizedLogger {
       if (metrics.length === 0) continue;
 
       const sorted = [...metrics].sort((a, b) => a - b);
-      const sum = metrics.reduce((a, b) => a + b, 0);
+      const sum = metrics.reduce((a, b: any) => a + b, 0);
       
       result[op] = {
         count: metrics.length,
@@ -398,11 +398,11 @@ export class CentralizedLogger {
     let filtered = this.logEntries;
 
     if (level !== undefined) {
-      filtered = filtered.filter(entry => entry.level <= level);
+      filtered = filtered.filter((entry: any) => entry.level <= level);
     }
 
     if (category) {
-      filtered = filtered.filter(entry => entry.category === category);
+      filtered = filtered.filter((entry: any) => entry.category === category);
     }
 
     return filtered.slice(-limit);
@@ -424,35 +424,35 @@ export class CentralizedLogger {
     let filtered = this.logEntries;
 
     if (query.level !== undefined) {
-      filtered = filtered.filter(entry => entry.level <= query.level!);
+      filtered = filtered.filter((entry: any) => entry.level <= query.level!);
     }
 
     if (query.category) {
-      filtered = filtered.filter(entry => entry.category === query.category);
+      filtered = filtered.filter((entry: any) => entry.category === query.category);
     }
 
     if (query.message) {
-      filtered = filtered.filter(entry => 
+      filtered = filtered.filter((entry: any) => 
         entry.message.toLowerCase().includes(query.message!.toLowerCase())
       );
     }
 
     if (query.userId) {
-      filtered = filtered.filter(entry => entry.userId === query.userId);
+      filtered = filtered.filter((entry: any) => entry.userId === query.userId);
     }
 
     if (query.requestId) {
-      filtered = filtered.filter(entry => entry.requestId === query.requestId);
+      filtered = filtered.filter((entry: any) => entry.requestId === query.requestId);
     }
 
     if (query.startTime) {
-      filtered = filtered.filter(entry => 
+      filtered = filtered.filter((entry: any) => 
         new Date(entry.timestamp) >= query.startTime!
       );
     }
 
     if (query.endTime) {
-      filtered = filtered.filter(entry => 
+      filtered = filtered.filter((entry: any) => 
         new Date(entry.timestamp) <= query.endTime!
       );
     }
@@ -477,7 +477,7 @@ export class CentralizedLogger {
         'sessionId', 'requestId', 'duration', 'data'
       ];
       
-      const rows = logs.map(log => [
+      const rows = logs.map((log: any) => [
         log.timestamp,
         LogLevel[log.level],
         log.category,
@@ -489,7 +489,7 @@ export class CentralizedLogger {
         log.data ? `"${JSON.stringify(log.data).replace(/"/g, '""')}"` : ''
       ]);
 
-      return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+      return [headers.join(','), ...rows.map((row: any) => row.join(','))].join('\n');
     }
 
     throw new Error(`Unsupported export format: ${format}`);
@@ -514,14 +514,14 @@ export class CentralizedLogger {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - this.config.logRetentionDays);
 
-    this.logEntries = this.logEntries.filter(entry => 
+    this.logEntries = this.logEntries.filter((entry: any) => 
       new Date(entry.timestamp) > cutoffDate
     );
 
     // Clean up old performance metrics
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     for (const [operation, metrics] of this.performanceMetrics.entries()) {
-      const recentMetrics = metrics.filter(timestamp => timestamp > oneWeekAgo);
+      const recentMetrics = metrics.filter((timestamp: any) => timestamp > oneWeekAgo);
       if (recentMetrics.length !== metrics.length) {
         this.performanceMetrics.set(operation, recentMetrics);
       }

@@ -40,7 +40,7 @@ export class ObjectToQueryString {
 
     const params: string[] = []
 
-    Object.entries(obj).forEach(([key, value]) => {
+    Object.entries(obj).forEach(([key, value]: any) => {
       const fullKey = prefix ? `${prefix}[${key}]` : key
       const serialized = this.serializeValue(
         fullKey,
@@ -133,7 +133,7 @@ export class ObjectToQueryString {
 
     switch (arrayFormat) {
       case 'brackets':
-        return array?.filter(Boolean)?.map(item => 
+        return array?.filter(Boolean)?.map((item: any) => 
           this.formatParam(`${key}[]`, String(item), encode)
         )
       
@@ -143,7 +143,7 @@ export class ObjectToQueryString {
       
       case 'repeat':
       default:
-        return array?.filter(Boolean)?.map(item => 
+        return array?.filter(Boolean)?.map((item: any) => 
           this.formatParam(key, String(item), encode)
         )
     }
@@ -164,7 +164,7 @@ export class ObjectToQueryString {
   ): string[] {
     const params: string[] = []
 
-    Object.entries(obj).forEach(([nestedKey, nestedValue]) => {
+    Object.entries(obj).forEach(([nestedKey, nestedValue]: any) => {
       const fullKey = `${key}[${nestedKey}]`
       const serialized = this.serializeValue(fullKey, nestedValue, options)
       params.push(...serialized)
@@ -249,7 +249,7 @@ export class ObjectToQueryString {
     const result: Record<string, any> = {}
     const pairs = cleanQuery.split('&')
 
-    pairs.forEach(pair => {
+    pairs.forEach((pair: any) => {
       const [key, value = ''] = pair.split('=')
       
       if (!key) return

@@ -33,7 +33,7 @@ export class RateLimiter {
     const requests = await apiCache.get<number[]>(key) || [];
     
     // Filter out old requests
-    const validRequests = requests.filter(time => time > windowStart);
+    const validRequests = requests.filter((time: any) => time > windowStart);
     
     // Check if limit exceeded
     if (validRequests.length >= this.options.maxRequests) {

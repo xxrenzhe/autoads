@@ -203,7 +203,7 @@ const CheckInSuccessDialog: React.FC<CheckInSuccessDialogProps> = ({
                   分享到社交媒体，额外获得 10 Token 奖励！
                 </Typography>
                 <Stack direction="row" spacing={2} justifyContent="center">
-                  {sharePlatforms.map((platform) => (
+                  {sharePlatforms.map((platform: any) => (
                     <motion.div
                       key={platform.id}
                       whileHover={{ scale: 1.05 }}
@@ -211,7 +211,7 @@ const CheckInSuccessDialog: React.FC<CheckInSuccessDialogProps> = ({
                     >
                       <Button
                         variant="outlined"
-                        onClick={() => onShare(platform.id)}
+                        onClick={((: any): any) => onShare(platform.id)}
                         startIcon={<span style={{ fontSize: '1.2rem' }}>{platform.icon}</span>}
                         sx={{
                           borderRadius: 2,

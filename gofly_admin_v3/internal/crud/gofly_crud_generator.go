@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	
+
 	"github.com/gin-gonic/gin"
 	"gofly-admin-v3/internal/batchgo"
 	"gofly-admin-v3/internal/siterank"
@@ -82,7 +82,7 @@ func (g *GoFlyCRUDGenerator) GenerateListHandler(model interface{}) gin.HandlerF
 		page := ctx.DefaultQuery("page", "1")
 		pageSize := ctx.DefaultQuery("page_size", "20")
 
-	pagination := NewPagination(page, pageSize)
+		pagination := NewPagination(page, pageSize)
 		result, err := pagination.Paginate(query, model)
 		if err != nil {
 			glog.Error(ctx, "crud_list_failed", gform.Map{"error": err})
@@ -144,7 +144,10 @@ func (g *GoFlyCRUDGenerator) GenerateCreateHandler(model interface{}) gin.Handle
 		}
 
 		// 自动生成ID（如果是字符串类型）
-		if idField, ok := model.(interface{ GetID() string; SetID(string) }); ok {
+		if idField, ok := model.(interface {
+			GetID() string
+			SetID(string)
+		}); ok {
 			idField.SetID(gf.UUID())
 		}
 

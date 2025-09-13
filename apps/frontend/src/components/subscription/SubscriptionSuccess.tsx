@@ -86,13 +86,13 @@ export default function SubscriptionSuccess() {
           </p>
           <div className="flex justify-center space-x-4">
             <button
-              onClick={() => router.push('/subscribe')}
+              onClick={((: any): any) => router.push('/subscribe')}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
             >
               Try Again
             </button>
             <button
-              onClick={() => router.push('/contact')}
+              onClick={((: any): any) => router.push('/contact')}
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
             >
               Contact Support

@@ -187,7 +187,7 @@ export default function PricingPlans() {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {[...Array(3)].map((_, i) => (
+        {[...Array(3)].map((_, i: any) => (
           <div key={i} className="animate-pulse">
             <div className="bg-gray-200 rounded-2xl h-96"></div>
           </div>
@@ -202,7 +202,7 @@ export default function PricingPlans() {
       <div className="flex items-center justify-center">
         <div className="flex items-center bg-gray-100 rounded-lg p-1">
           <button
-            onClick={() => setIsYearly(false)}
+            onClick={((: any): any) => setIsYearly(false)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               !isYearly
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -212,7 +212,7 @@ export default function PricingPlans() {
             月付
           </button>
           <button
-            onClick={() => setIsYearly(true)}
+            onClick={((: any): any) => setIsYearly(true)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               isYearly
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -229,7 +229,7 @@ export default function PricingPlans() {
 
       {/* Plans Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {plans.map((plan) => {
+        {plans.map((plan: any) => {
           const currentPrice = isYearly ? plan.yearlyPrice : plan.price
           const savings = calculateSavings(plan.price, plan.yearlyPrice)
           
@@ -288,7 +288,7 @@ export default function PricingPlans() {
 
                 {/* Features */}
                 <div className="space-y-4 mb-8">
-                  {plan.features?.map((feature, index) => (
+                  {plan.features?.map((feature, index: any) => (
                     <div key={index} className="flex items-start">
                       <CheckIcon className="h-5 w-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
                       <span className="text-gray-700">{feature}</span>
@@ -298,7 +298,7 @@ export default function PricingPlans() {
 
                 {/* CTA Button */}
                 <button
-                  onClick={() => handleSubscribe(plan)}
+                  onClick={((: any): any) => handleSubscribe(plan)}
                   disabled={subscribingPlan === plan.id}
                   className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
                     plan.isPopular

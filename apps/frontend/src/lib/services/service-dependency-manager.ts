@@ -441,7 +441,7 @@ export class ServiceDependencyManager {
    * 获取排序后的服务列表
    */
   private getSortedServices(): ServiceMetadata[] {
-    const services = Array.from(this.services.values())?.filter(Boolean)?.map(s => s.metadata);
+    const services = Array.from(this.services.values())?.filter(Boolean)?.map((s: any) => s.metadata);
     
     // 拓扑排序
     const sorted: ServiceMetadata[] = [];

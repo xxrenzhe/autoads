@@ -322,7 +322,7 @@ export class InvitationService {
       const totalTokensEarned = 0; // No additional token rewards, only Pro plan subscription
 
       // Format recent invitations from activities
-      const recentInvitations: InvitationData[] = recentActivities.map((activity: any) => ({
+      const recentInvitations: InvitationData[] = recentActivities.map((activity: any: any) => ({
         id: activity.id,
         code: invitation?.code || 'N/A',
         inviterEmail: activity.user.email,
@@ -504,7 +504,7 @@ export class InvitationService {
         }
       });
 
-      const totalDays = queuedRewards.reduce((sum: number, reward: any) => sum + reward.daysToAdd, 0);
+      const totalDays = queuedRewards.reduce((sum: number, reward: any: any) => sum + reward.daysToAdd, 0);
 
       return {
         pending: queuedRewards,

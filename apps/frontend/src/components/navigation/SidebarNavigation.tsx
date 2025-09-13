@@ -172,12 +172,12 @@ export default function SidebarNavigation({ type, className }: SidebarNavigation
   const toggleExpanded = (href: string) => {
     setExpandedItems(prev => 
       prev.includes(href) 
-        ? prev.filter(item => item !== href)
+        ? prev.filter((item: any) => item !== href)
         : [...prev, href]
     )
   }
 
-  const filteredItems = navigationItems.filter(item => hasRole(item.requiresRole))
+  const filteredItems = navigationItems.filter((item: any) => hasRole(item.requiresRole))
 
   return (
     <div className={cn(
@@ -200,7 +200,7 @@ export default function SidebarNavigation({ type, className }: SidebarNavigation
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={((: any): any) => setCollapsed(!collapsed)}
           className="h-8 w-8 p-0"
         >
           {collapsed ? (
@@ -214,12 +214,12 @@ export default function SidebarNavigation({ type, className }: SidebarNavigation
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
         <nav className="space-y-2">
-          {filteredItems.map((item) => (
+          {filteredItems.map((item: any) => (
             <div key={item.href}>
               <div className="relative">
                 <Link
                   href={item.children ? '#' : item.href}
-                  onClick={(e) => {
+                  onClick={((e: any): any) => {
                     if (item.children) {
                       e.preventDefault()
                       toggleExpanded(item.href)
@@ -266,7 +266,7 @@ export default function SidebarNavigation({ type, className }: SidebarNavigation
               {/* Children */}
               {item.children && !collapsed && expandedItems.includes(item.href) && (
                 <div className="ml-6 mt-2 space-y-1">
-                  {item.children.map((child) => (
+                  {item.children.map((child: any) => (
                     <Link
                       key={child.href}
                       href={child.href}

@@ -242,7 +242,7 @@ class WebSocketManager {
       // Dispatch to type-specific handlers
       const handlers = this.messageHandlers.get(message.type);
       if (handlers) {
-        handlers.forEach(handler => handler(message));
+        handlers.forEach((handler: any) => handler(message));
       }
 
       // Call global message handler
@@ -407,7 +407,7 @@ export function useRealtimeNotifications() {
   }, []);
 
   const removeNotification = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications(prev => prev.filter((n: any) => n.id !== id));
   }, []);
 
   return {

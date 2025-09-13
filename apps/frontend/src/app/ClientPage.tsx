@@ -44,7 +44,7 @@ export default function ClientPage() {
       // Create new abort controller
       abortControllerRef.current = new AbortController();
 
-      const validUrls = urlList.filter((url) => url.trim() !== "");
+      const validUrls = urlList.filter((url: any) => url.trim() !== "");
 
       if (validUrls.length === 0) {
         const errorMsg = t("noValidUrls");
@@ -281,7 +281,7 @@ export default function ClientPage() {
             <div className={`${UI_CONSTANTS.cards.simple} p-8 mt-12`}>
               <h2 className={UI_CONSTANTS.typography.h3 + " mb-6"}>分析结果</h2>
               <div className="space-y-3">
-                {results.map((result) => (
+                {results.map((result: any) => (
                   <div
                     key={result.originalUrl}
                     className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"

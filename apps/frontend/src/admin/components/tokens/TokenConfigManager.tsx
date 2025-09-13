@@ -297,7 +297,7 @@ export default function TokenConfigManager() {
   }
 
   const getFieldError = (fieldPath: string): string | undefined => {
-    return validationErrors.find(error => error.field === fieldPath)?.message
+    return validationErrors.find((error: any) => error.field === fieldPath)?.message
   }
 
   const hasFieldError = (fieldPath: string): boolean => {
@@ -349,7 +349,7 @@ export default function TokenConfigManager() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => {
+            onClick={((: any): any) => {
               setShowHistory(!showHistory)
               if (!showHistory) fetchConfigHistory()
             }}
@@ -391,7 +391,7 @@ export default function TokenConfigManager() {
             <div className="space-y-1">
               <p className="font-medium">Please fix the following errors:</p>
               <ul className="list-disc list-inside space-y-1">
-                {validationErrors.map((error, index) => (
+                {validationErrors.map((error, index: any) => (
                   <li key={index} className="text-sm">
                     {error.field}: {error.message}
                   </li>
@@ -421,7 +421,7 @@ export default function TokenConfigManager() {
               </div>
             ) : configHistory.length > 0 ? (
               <div className="space-y-3">
-                {configHistory.map((record) => (
+                {configHistory.map((record: any) => (
                   <div key={record.id} className="border rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -485,7 +485,7 @@ export default function TokenConfigManager() {
               <Textarea
                 placeholder="Describe the reason for these changes..."
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={((e: any): any) => setReason(e.target.value)}
                 rows={3}
               />
             </CardContent>
@@ -512,7 +512,7 @@ export default function TokenConfigManager() {
                     min="0"
                     step="0.1"
                     value={config.siterank.costPerDomain}
-                    onChange={(e) => updateFeatureConfig('siterank', 'costPerDomain', parseFloat(e.target.value) || 0)}
+                    onChange={((e: any): any) => updateFeatureConfig('siterank', 'costPerDomain', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('siterank.costPerDomain') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('siterank.costPerDomain') && (
@@ -528,7 +528,7 @@ export default function TokenConfigManager() {
                     max="1"
                     step="0.01"
                     value={config.siterank.batchMultiplier}
-                    onChange={(e) => updateFeatureConfig('siterank', 'batchMultiplier', parseFloat(e.target.value) || 0)}
+                    onChange={((e: any): any) => updateFeatureConfig('siterank', 'batchMultiplier', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('siterank.batchMultiplier') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('siterank.batchMultiplier') && (
@@ -541,7 +541,7 @@ export default function TokenConfigManager() {
                 <Input
                   id="siterank-desc"
                   value={config.siterank.description || ''}
-                  onChange={(e) => updateFeatureConfig('siterank', 'description', e.target.value)}
+                  onChange={((e: any): any) => updateFeatureConfig('siterank', 'description', e.target.value)}
                   placeholder="Description of this feature's token usage"
                 />
               </div>
@@ -569,7 +569,7 @@ export default function TokenConfigManager() {
                     min="0"
                     step="0.1"
                     value={config.batchopen.costPerUrl}
-                    onChange={(e) => updateFeatureConfig('batchopen', 'costPerUrl', parseFloat(e.target.value) || 0)}
+                    onChange={((e: any): any) => updateFeatureConfig('batchopen', 'costPerUrl', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('batchopen.costPerUrl') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('batchopen.costPerUrl') && (
@@ -585,7 +585,7 @@ export default function TokenConfigManager() {
                     max="1"
                     step="0.01"
                     value={config.batchopen.batchMultiplier}
-                    onChange={(e) => updateFeatureConfig('batchopen', 'batchMultiplier', parseFloat(e.target.value) || 0)}
+                    onChange={((e: any): any) => updateFeatureConfig('batchopen', 'batchMultiplier', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('batchopen.batchMultiplier') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('batchopen.batchMultiplier') && (
@@ -598,7 +598,7 @@ export default function TokenConfigManager() {
                 <Input
                   id="batchopen-desc"
                   value={config.batchopen.description || ''}
-                  onChange={(e) => updateFeatureConfig('batchopen', 'description', e.target.value)}
+                  onChange={((e: any): any) => updateFeatureConfig('batchopen', 'description', e.target.value)}
                   placeholder="Description of this feature's token usage"
                 />
               </div>
@@ -626,7 +626,7 @@ export default function TokenConfigManager() {
                     min="0"
                     step="0.1"
                     value={config.adscenter.costPerLinkChange}
-                    onChange={(e) => updateFeatureConfig('adscenter', 'costPerLinkChange', parseFloat(e.target.value) || 0)}
+                    onChange={((e: any): any) => updateFeatureConfig('adscenter', 'costPerLinkChange', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('adscenter.costPerLinkChange') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('adscenter.costPerLinkChange') && (
@@ -642,7 +642,7 @@ export default function TokenConfigManager() {
                     max="1"
                     step="0.01"
                     value={config.adscenter.batchMultiplier}
-                    onChange={(e) => updateFeatureConfig('adscenter', 'batchMultiplier', parseFloat(e.target.value) || 0)}
+                    onChange={((e: any): any) => updateFeatureConfig('adscenter', 'batchMultiplier', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('adscenter.batchMultiplier') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('adscenter.batchMultiplier') && (
@@ -655,7 +655,7 @@ export default function TokenConfigManager() {
                 <Input
                   id="adscenter-desc"
                   value={config.adscenter.description || ''}
-                  onChange={(e) => updateFeatureConfig('adscenter', 'description', e.target.value)}
+                  onChange={((e: any): any) => updateFeatureConfig('adscenter', 'description', e.target.value)}
                   placeholder="Description of this feature's token usage"
                 />
               </div>
@@ -679,7 +679,7 @@ export default function TokenConfigManager() {
                     id="calc-feature"
                     className="w-full p-2 border rounded-md"
                     value={calcFeature}
-                    onChange={(e) => setCalcFeature(e.target.value as any)}
+                    onChange={((e: any): any) => setCalcFeature(e.target.value as any)}
                   >
                     <option value="siterank">SiteRank</option>
                     <option value="batchopen">BatchOpen</option>
@@ -693,7 +693,7 @@ export default function TokenConfigManager() {
                     type="number"
                     min="1"
                     value={calcItemCount}
-                    onChange={(e) => setCalcItemCount(parseInt(e.target.value) || 1)}
+                    onChange={((e: any): any) => setCalcItemCount(parseInt(e.target.value) || 1)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -703,7 +703,7 @@ export default function TokenConfigManager() {
                       id="calc-batch"
                       type="checkbox"
                       checked={calcIsBatch}
-                      onChange={(e) => setCalcIsBatch(e.target.checked)}
+                      onChange={((e: any): any) => setCalcIsBatch(e.target.checked)}
                     />
                     <Label htmlFor="calc-batch">Batch operation</Label>
                   </div>

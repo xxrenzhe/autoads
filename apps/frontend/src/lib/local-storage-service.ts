@@ -168,7 +168,7 @@ export class LocalStorageService {
     const keys = this.keys();
     const result: Record<string, T> = {};
 
-    keys.forEach(key => {
+    keys.forEach((key: any) => {
       const value = this.get<T>(key);
       if (value !== null) {
         result[key] = value;
@@ -183,7 +183,7 @@ export class LocalStorageService {
    */
   clear(): void {
     const keys = this.keys();
-    keys.forEach(key => this.remove(key));
+    keys.forEach((key: any) => this.remove(key));
   }
 
   /**
@@ -258,7 +258,7 @@ export class LocalStorageService {
    * 批量操作
    */
   batchSet<T>(items: Record<string, T>, options?: StorageOptions): void {
-    Object.entries(items).forEach(([key, value]) => {
+    Object.entries(items).forEach(([key, value]: any) => {
       this.set(key, value, options);
     });
   }
@@ -266,7 +266,7 @@ export class LocalStorageService {
   batchGet<T>(keys: string[]): Record<string, T | null> {
     const result: Record<string, T | null> = {};
     
-    keys.forEach(key => {
+    keys.forEach((key: any) => {
       result[key] = this.get<T>(key);
     });
 
@@ -274,7 +274,7 @@ export class LocalStorageService {
   }
 
   batchRemove(keys: string[]): void {
-    keys.forEach(key => this.remove(key));
+    keys.forEach((key: any) => this.remove(key));
   }
 }
 

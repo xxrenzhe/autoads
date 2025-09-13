@@ -142,8 +142,8 @@ export async function GET(request: NextRequest) {
       data: analysisResults,
       summary: {
         total: analysisResults.length,
-        suspicious: analysisResults.filter((d) => d.isSuspicious).length,
-        highRisk: analysisResults.filter((d) => d.suspiciousScore >= 80).length,
+        suspicious: analysisResults.filter((d: any) => d.isSuspicious).length,
+        highRisk: analysisResults.filter((d: any) => d.suspiciousScore >= 80).length,
       },
     })
   } catch (error) {
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
     // 记录安全事件
     if (isSuspicious) {
       await prisma.securityThreat.createMany({
-        data: deviceIds.map((deviceId: string) => ({
+        data: deviceIds.map((deviceId: string: any) => ({
           userId: '', // 这里需要根据deviceId查询userId
           type: 'DEVICE_BATCH_MARKED_SUSPICIOUS',
           severity: 'HIGH',

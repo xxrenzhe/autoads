@@ -98,7 +98,7 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
     }
     if (typeof value === "number") {
       const allPriorities = analysisResults
-        .map((r) => r.测试优先级)
+        .map((r: any) => r.测试优先级)
         .filter((p): p is number => typeof p === "number");
 
       const { level, color, borderColor, icon } = getPriorityLevel(

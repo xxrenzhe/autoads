@@ -142,7 +142,7 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
               <div className="border-t pt-4">
                 <h4 className="font-medium mb-2">包含功能：</h4>
                 <ul className="space-y-2">
-                  {features.map((feature: any, idx: number) => (
+                  {features.map((feature: any, idx: number: any) => (
                     <li key={idx} className="flex items-center text-sm text-gray-600">
                       <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
                       {typeof feature === 'object' ? feature.name : feature}

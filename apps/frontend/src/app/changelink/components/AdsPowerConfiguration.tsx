@@ -111,7 +111,7 @@ export default function AdsPowerConfiguration() {
       
       setConfig(prev => ({
         ...prev,
-        environments: prev.environments?.filter(Boolean)?.map(env => ({
+        environments: prev.environments?.filter(Boolean)?.map((env: any) => ({
           ...env,
           status: environments.some(e => e.id === env.id) ? 'connected' : 'disconnected'
         }))
@@ -129,7 +129,7 @@ export default function AdsPowerConfiguration() {
       
       setConfig(prev => ({
         ...prev,
-        environments: prev.environments?.filter(Boolean)?.map(env => 
+        environments: prev.environments?.filter(Boolean)?.map((env: any) => 
           env.id === environmentId 
             ? { 
                 ...env, 
@@ -144,7 +144,7 @@ export default function AdsPowerConfiguration() {
     } catch (error) {
       setConfig(prev => ({
         ...prev,
-        environments: prev.environments?.filter(Boolean)?.map(env => 
+        environments: prev.environments?.filter(Boolean)?.map((env: any) => 
           env.id === environmentId 
             ? { ...env, status: 'error' }
             : env
@@ -181,7 +181,7 @@ export default function AdsPowerConfiguration() {
   const updateEnvironment = async (environmentId: string, updates: Partial<AdsPowerEnvironment>) => {
     setConfig(prev => ({
       ...prev,
-      environments: prev.environments?.filter(Boolean)?.map(env => 
+      environments: prev.environments?.filter(Boolean)?.map((env: any) => 
         env.id === environmentId ? { ...env, ...updates } : env
       )
     }));
@@ -192,14 +192,14 @@ export default function AdsPowerConfiguration() {
   const deleteEnvironment = async (environmentId: string) => {
     setConfig(prev => ({
       ...prev,
-      environments: prev.environments.filter(env => env.id !== environmentId)
+      environments: prev.environments.filter((env: any) => env.id !== environmentId)
     }));
 
     await saveConfiguration();
   };
 
   const toggleEnvironmentActive = async (environmentId: string) => {
-    const environment = config.environments.find(env => env.id === environmentId);
+    const environment = config.environments.find((env: any) => env.id === environmentId);
     if (!environment) return;
 
     await updateEnvironment(environmentId, { isActive: !environment.isActive });
@@ -264,7 +264,7 @@ export default function AdsPowerConfiguration() {
               <Input
                 id="apiUrl"
                 value={config.defaultApiUrl}
-                onChange={(e) => setConfig(prev => ({ ...prev, defaultApiUrl: e.target.value }))}
+                onChange={((e: any) => setConfig(prev: any) => ({ ...prev, defaultApiUrl: e.target.value }))}
                 placeholder="http://local.adspower.net:50325"
               />
             </div>
@@ -275,7 +275,7 @@ export default function AdsPowerConfiguration() {
                 id="timeout"
                 type="number"
                 value={config.timeout}
-                onChange={(e) => setConfig(prev => ({ ...prev, timeout: parseInt(e.target.value) }))}
+                onChange={((e: any) => setConfig(prev: any) => ({ ...prev, timeout: parseInt(e.target.value) }))}
               />
             </div>
             
@@ -285,7 +285,7 @@ export default function AdsPowerConfiguration() {
                 id="maxRetries"
                 type="number"
                 value={config.maxRetries}
-                onChange={(e) => setConfig(prev => ({ ...prev, maxRetries: parseInt(e.target.value) }))}
+                onChange={((e: any) => setConfig(prev: any) => ({ ...prev, maxRetries: parseInt(e.target.value) }))}
               />
             </div>
             
@@ -295,7 +295,7 @@ export default function AdsPowerConfiguration() {
                 id="retryDelay"
                 type="number"
                 value={config.retryDelay}
-                onChange={(e) => setConfig(prev => ({ ...prev, retryDelay: parseInt(e.target.value) }))}
+                onChange={((e: any) => setConfig(prev: any) => ({ ...prev, retryDelay: parseInt(e.target.value) }))}
               />
             </div>
           </div>
@@ -335,7 +335,7 @@ export default function AdsPowerConfiguration() {
                 <Label>环境ID</Label>
                 <Input
                   value={newEnvironment.id || ''}
-                  onChange={(e) => setNewEnvironment(prev => ({ ...prev, id: e.target.value }))}
+                  onChange={((e: any) => setNewEnvironment(prev: any) => ({ ...prev, id: e.target.value }))}
                   placeholder="输入环境ID"
                 />
               </div>
@@ -344,7 +344,7 @@ export default function AdsPowerConfiguration() {
                 <Label>环境名称</Label>
                 <Input
                   value={newEnvironment.name || ''}
-                  onChange={(e) => setNewEnvironment(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={((e: any) => setNewEnvironment(prev: any) => ({ ...prev, name: e.target.value }))}
                   placeholder="输入环境名称"
                 />
               </div>
@@ -353,7 +353,7 @@ export default function AdsPowerConfiguration() {
                 <Label>API地址 (可选)</Label>
                 <Input
                   value={newEnvironment.apiUrl || ''}
-                  onChange={(e) => setNewEnvironment(prev => ({ ...prev, apiUrl: e.target.value }))}
+                  onChange={((e: any) => setNewEnvironment(prev: any) => ({ ...prev, apiUrl: e.target.value }))}
                   placeholder="使用默认地址"
                 />
               </div>
@@ -369,7 +369,7 @@ export default function AdsPowerConfiguration() {
 
           {/* 环境列表 */}
           <div className="space-y-4">
-            {config.environments.map((environment) => (
+            {config.environments.map((environment: any) => (
               <div key={environment.id} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
@@ -387,7 +387,7 @@ export default function AdsPowerConfiguration() {
                     
                     <Switch
                       checked={environment.isActive}
-                      onCheckedChange={() => toggleEnvironmentActive(environment.id)}
+                      onCheckedChange={((: any): any) => toggleEnvironmentActive(environment.id)}
                     />
                     
                     {testingEnvironment === environment.id ? (
@@ -398,7 +398,7 @@ export default function AdsPowerConfiguration() {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => testEnvironmentConnection(environment.id)}
+                        onClick={((: any): any) => testEnvironmentConnection(environment.id)}
                       >
                         <Beaker className="h-4 w-4" />
                       </Button>
@@ -407,7 +407,7 @@ export default function AdsPowerConfiguration() {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => setEditingEnvironment(
+                      onClick={((: any): any) => setEditingEnvironment(
                         editingEnvironment === environment.id ? null : environment.id
                       )}
                     >
@@ -417,7 +417,7 @@ export default function AdsPowerConfiguration() {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => deleteEnvironment(environment.id)}
+                      onClick={((: any): any) => deleteEnvironment(environment.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -452,7 +452,7 @@ export default function AdsPowerConfiguration() {
                             <Label>无头模式</Label>
                             <Switch
                               checked={environment.browserSettings?.headless || false}
-                              onCheckedChange={(checked: boolean) => 
+                              onCheckedChange={((checked: boolean: any): any) => 
                                 updateEnvironment(environment.id, {
                                   browserSettings: { 
                                     headless: checked,
@@ -470,7 +470,7 @@ export default function AdsPowerConfiguration() {
                             <Input
                               type="number"
                               value={environment.browserSettings?.openTabs || 1}
-                              onChange={(e) => 
+                              onChange={((e: any): any) => 
                                 updateEnvironment(environment.id, {
                                   browserSettings: { 
                                     headless: environment.browserSettings?.headless || false,
@@ -488,7 +488,7 @@ export default function AdsPowerConfiguration() {
                             <Input
                               type="number"
                               value={(environment.browserSettings?.timeout || 30) / 1000}
-                              onChange={(e) => 
+                              onChange={((e: any): any) => 
                                 updateEnvironment(environment.id, {
                                   browserSettings: { 
                                     headless: environment.browserSettings?.headless || false,
@@ -505,7 +505,7 @@ export default function AdsPowerConfiguration() {
                             <Label>自动恢复</Label>
                             <Switch
                               checked={environment.browserSettings?.autoRecover || false}
-                              onCheckedChange={(checked: boolean) => 
+                              onCheckedChange={((checked: boolean: any): any) => 
                                 updateEnvironment(environment.id, {
                                   browserSettings: { 
                                     headless: environment.browserSettings?.headless || false,
@@ -526,7 +526,7 @@ export default function AdsPowerConfiguration() {
                             <Label>启用代理</Label>
                             <Switch
                               checked={environment.proxyConfig?.enabled || false}
-                              onCheckedChange={(checked: boolean) => 
+                              onCheckedChange={((checked: boolean: any): any) => 
                                 updateEnvironment(environment.id, {
                                   proxyConfig: { 
                                     enabled: checked,
@@ -546,7 +546,7 @@ export default function AdsPowerConfiguration() {
                                 <Label>代理主机</Label>
                                 <Input
                                   value={environment.proxyConfig?.host || ''}
-                                  onChange={(e) => 
+                                  onChange={((e: any): any) => 
                                     updateEnvironment(environment.id, {
                                       proxyConfig: { 
                                         enabled: environment.proxyConfig?.enabled || false,
@@ -566,7 +566,7 @@ export default function AdsPowerConfiguration() {
                                 <Input
                                   type="number"
                                   value={environment.proxyConfig?.port || ''}
-                                  onChange={(e) => 
+                                  onChange={((e: any): any) => 
                                     updateEnvironment(environment.id, {
                                       proxyConfig: { 
                                         enabled: environment.proxyConfig?.enabled || false,
@@ -584,7 +584,7 @@ export default function AdsPowerConfiguration() {
                                 <Label>用户名</Label>
                                 <Input
                                   value={environment.proxyConfig?.username || ''}
-                                  onChange={(e) => 
+                                  onChange={((e: any): any) => 
                                     updateEnvironment(environment.id, {
                                       proxyConfig: { 
                                         enabled: environment.proxyConfig?.enabled || false,
@@ -603,7 +603,7 @@ export default function AdsPowerConfiguration() {
                                 <Input
                                   type="password"
                                   value={environment.proxyConfig?.password || ''}
-                                  onChange={(e) => 
+                                  onChange={((e: any): any) => 
                                     updateEnvironment(environment.id, {
                                       proxyConfig: { 
                                         enabled: environment.proxyConfig?.enabled || false,

@@ -319,7 +319,7 @@ export class NotificationService {
         ${report.errors && report.errors.length > 0 ? `
         <div class="errors">
             <h3>错误信息</h3>
-            ${report.errors?.filter(Boolean)?.map(error => `
+            ${report.errors?.filter(Boolean)?.map((error: any) => `
                 <p><strong>${error.step}:</strong> ${error.error}</p>
             `).join('')}
         </div>

@@ -81,8 +81,8 @@ export function TokenUsageTracker({
     
     if (older.length === 0) return 'stable'
     
-    const recentAvg = recent.reduce((sum, day) => sum + day.tokens, 0) / recent.length
-    const olderAvg = older.reduce((sum, day) => sum + day.tokens, 0) / older.length
+    const recentAvg = recent.reduce((sum, day: any) => sum + day.tokens, 0) / recent.length
+    const olderAvg = older.reduce((sum, day: any) => sum + day.tokens, 0) / older.length
     
     const change = ((recentAvg - olderAvg) / olderAvg) * 100
     
@@ -98,7 +98,7 @@ export function TokenUsageTracker({
           <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
             {label}
           </p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: any, index: number: any) => (
             <div key={index} className="flex items-center space-x-2">
               <div 
                 className="w-3 h-3 rounded-full"
@@ -151,7 +151,7 @@ export function TokenUsageTracker({
         <div className="flex items-center space-x-2">
           <select
             value={selectedTimeRange}
-            onChange={(e) => setSelectedTimeRange(e.target.value)}
+            onChange={((e: any): any) => setSelectedTimeRange(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="7d">Last 7 Days</option>
@@ -159,7 +159,7 @@ export function TokenUsageTracker({
             <option value="90d">Last 90 Days</option>
             <option value="1y">Last Year</option>
           </select>
-          <Button variant="outline" size="sm" onClick={() => exportUsageData('csv')}>
+          <Button variant="outline" size="sm" onClick={((: any): any) => exportUsageData('csv')}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -169,7 +169,7 @@ export function TokenUsageTracker({
       {/* Budget Alerts */}
       {showBudgetAlerts && budgetAlerts && budgetAlerts.length > 0 && (
         <div className="space-y-2">
-          {budgetAlerts.map((alert, index) => (
+          {budgetAlerts.map((alert, index: any) => (
             <div key={index} className={`p-4 rounded-lg border ${
               alert.severity === 'critical' ? 'bg-red-50 border-red-200' :
               alert.severity === 'warning' ? 'bg-yellow-50 border-yellow-200' :
@@ -288,7 +288,7 @@ export function TokenUsageTracker({
       {/* View Selector */}
       <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
         <button
-          onClick={() => setSelectedView('overview')}
+          onClick={((: any): any) => setSelectedView('overview')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             selectedView === 'overview'
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -298,7 +298,7 @@ export function TokenUsageTracker({
           Overview
         </button>
         <button
-          onClick={() => setSelectedView('features')}
+          onClick={((: any): any) => setSelectedView('features')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             selectedView === 'features'
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -308,7 +308,7 @@ export function TokenUsageTracker({
           By Features
         </button>
         <button
-          onClick={() => setSelectedView('batches')}
+          onClick={((: any): any) => setSelectedView('batches')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             selectedView === 'batches'
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -319,7 +319,7 @@ export function TokenUsageTracker({
         </button>
         {showForecast && (
           <button
-            onClick={() => setSelectedView('forecast')}
+            onClick={((: any): any) => setSelectedView('forecast')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               selectedView === 'forecast'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -388,7 +388,7 @@ export function TokenUsageTracker({
                       dataKey="tokens"
                       label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                     >
-                      {featureBreakdown?.map((entry, index) => (
+                      {featureBreakdown?.map((entry, index: any) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -408,7 +408,7 @@ export function TokenUsageTracker({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {featureBreakdown?.map((feature, index) => (
+              {featureBreakdown?.map((feature, index: any) => (
                 <div key={feature.name} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div 
@@ -446,7 +446,7 @@ export function TokenUsageTracker({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {batchOperations?.map((batch) => (
+              {batchOperations?.map((batch: any) => (
                 <div key={batch.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <h4 className="font-medium text-gray-900 dark:text-white">
@@ -539,7 +539,7 @@ export function TokenUsageTracker({
                       Recommendations
                     </h4>
                     <ul className="space-y-1">
-                      {forecast.recommendations.map((rec, index) => (
+                      {forecast.recommendations.map((rec, index: any) => (
                         <li key={index} className="text-sm text-gray-600">
                           • {rec}
                         </li>

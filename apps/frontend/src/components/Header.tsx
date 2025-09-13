@@ -103,7 +103,7 @@ export default function Header({
                     <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => setShowProfileModal(true)}
+                    onClick={((: any): any) => setShowProfileModal(true)}
                   >
                     <User className="h-4 w-4 mr-2" />
                     {session.user?.name || session.user?.email}
@@ -111,7 +111,7 @@ export default function Header({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => signOut()}
+                    onClick={((: any): any) => signOut()}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <LogOut className="h-4 w-4" />
@@ -133,7 +133,7 @@ export default function Header({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={((: any): any) => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="lg:hidden p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
               aria-label={
                 isMobileMenuOpen
@@ -165,14 +165,14 @@ export default function Header({
                   <Button 
                     variant="ghost" 
                     className="w-full justify-start"
-                    onClick={() => setShowProfileModal(true)}
+                    onClick={((: any): any) => setShowProfileModal(true)}
                   >
                     <User className="h-4 w-4 mr-2" />
                     个人中心
                   </Button>
                   <Button
                     variant="ghost"
-                    onClick={() => signOut()}
+                    onClick={((: any): any) => signOut()}
                     className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <LogOut className="h-4 w-4 mr-2" />

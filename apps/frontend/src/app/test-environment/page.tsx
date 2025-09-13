@@ -284,7 +284,7 @@ export default function EnvironmentTestPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {results.map((result, index) => (
+          {results.map((result, index: any) => (
             <Card key={index}>
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between">
@@ -325,7 +325,7 @@ export default function EnvironmentTestPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Button
               variant="outline"
-              onClick={async () => {
+              onClick={(async (): any) => {
                 try {
                   await copyToClipboard(envInfo?.baseUrl || '');
                 } catch (err) {
@@ -348,7 +348,7 @@ export default function EnvironmentTestPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => window.open('/api/health', '_blank')}
+              onClick={((: any): any) => window.open('/api/health', '_blank')}
               className="justify-start"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
@@ -356,7 +356,7 @@ export default function EnvironmentTestPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => window.open('https://console.cloud.google.com/', '_blank')}
+              onClick={((: any): any) => window.open('https://console.cloud.google.com/', '_blank')}
               className="justify-start"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
@@ -364,7 +364,7 @@ export default function EnvironmentTestPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => window.open('https://vercel.com/dashboard', '_blank')}
+              onClick={((: any): any) => window.open('https://vercel.com/dashboard', '_blank')}
               className="justify-start"
             >
               <ExternalLink className="h-4 w-4 mr-2" />

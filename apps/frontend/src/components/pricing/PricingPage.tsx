@@ -198,7 +198,7 @@ export default function PricingPage() {
 
       {/* Pricing Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-        {pricingPlans.map((plan) => {
+        {pricingPlans.map((plan: any) => {
           const price = getPrice(plan)
           const savings = getSavings(plan)
 
@@ -275,7 +275,7 @@ export default function PricingPage() {
 
               <CardContent className="px-8 pb-8">
                 <ul className="space-y-3 mb-8">
-                  {plan.features?.map((feature, index) => (
+                  {plan.features?.map((feature, index: any) => (
                     <li key={index} className="flex items-start gap-3">
                       <Check className={cn(
                         "h-5 w-5 mt-0.5 flex-shrink-0",
@@ -296,7 +296,7 @@ export default function PricingPage() {
                     plan.id === 'max' && "bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 hover:shadow-lg"
                   )}
                   size="lg"
-                  onClick={() => handleSubscribeClick(plan.id, plan.name)}
+                  onClick={((: any): any) => handleSubscribeClick(plan.id, plan.name)}
                 >
                   {plan.buttonText}
                   {plan.id !== 'free' && <ArrowRight className="w-5 h-5 ml-2" />}
@@ -325,14 +325,14 @@ export default function PricingPage() {
                 </tr>
               </thead>
               <tbody>
-                {featureComparison.map((category) => (
+                {featureComparison.map((category: any) => (
                   <React.Fragment key={category.category}>
                     <tr className="bg-gray-50">
                       <td colSpan={4} className="p-4 font-semibold text-gray-900">
                         {category.category}
                       </td>
                     </tr>
-                    {category.features.map((feature, index) => (
+                    {category.features.map((feature, index: any) => (
                       <tr key={index} className="border-t border-gray-100 hover:bg-gray-50">
                         <td className="p-4 text-gray-700">{feature.name}</td>
                         <td className="p-4 text-center">

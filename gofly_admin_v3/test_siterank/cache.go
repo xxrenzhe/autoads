@@ -3,8 +3,8 @@ package siterank
 import (
 	"time"
 
-	"gofly-admin-v3/utils/tools/gcache"
 	"gofly-admin-v3/internal/store"
+	"gofly-admin-v3/utils/tools/gcache"
 )
 
 // CacheWrapper 缓存包装器

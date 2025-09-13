@@ -159,7 +159,7 @@ class GCOptimizer {
       this.memoryReadings.shift();
     }
     
-    return this.memoryReadings.reduce((a, b) => a + b, 0) / this.memoryReadings.length;
+    return this.memoryReadings.reduce((a, b: any) => a + b, 0) / this.memoryReadings.length;
   }
 
   /**

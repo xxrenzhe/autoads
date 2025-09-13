@@ -51,7 +51,7 @@ func GetConfig(key string, def ...interface{}) interface{} {
 		}
 		return nil
 	}
-	
+
 	ctx := context.Background()
 	val, err := cfg.Get(ctx, key, def...)
 	if err != nil {

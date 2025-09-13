@@ -11,8 +11,18 @@ interface User {
   emailVerified: boolean;
 }
 
+interface LoginParams {
+  username: string;
+  password: string;
+}
+
+interface ErrorResponse {
+  status?: number;
+  message?: string;
+}
+
 export const autoAdsAuthProvider: AuthProvider = {
-  login: async ({ username, password }) => {
+  login: async ({ username, password }: LoginParams) => {
     try {
       const response = await apiClient.post('/auth/login', { email: username, password });
       const { user, token } = response.data;
@@ -21,7 +31,7 @@ export const autoAdsAuthProvider: AuthProvider = {
       localStorage.setItem('user', JSON.stringify(user));
       
       return Promise.resolve();
-    } catch (error) {
+    } catch (error: unknown) {
       return Promise.reject(error);
     }
   },
@@ -37,7 +47,7 @@ export const autoAdsAuthProvider: AuthProvider = {
     return token ? Promise.resolve() : Promise.reject();
   },
 
-  checkError: (error) => {
+  checkError: (error: ErrorResponse) => {
     const status = error.status;
     if (status === 401 || status === 403) {
       localStorage.removeItem('token');

@@ -122,7 +122,7 @@ export function getUserAccessibleFeatures(
   userRole?: string, 
   isAuthenticated: boolean = false
 ): AuthFeatureConfig[] {
-  return Object.values(AUTH_FEATURES).filter(feature => 
+  return Object.values(AUTH_FEATURES).filter((feature: any) => 
     hasFeatureAccess(feature.id, userRole, isAuthenticated)
   )
 }
@@ -150,5 +150,5 @@ export function getFeatureAuthInfo(featureId: string) {
  * 根据类别获取功能列表
  */
 export function getFeaturesByCategory(category: 'core' | 'premium' | 'admin'): AuthFeatureConfig[] {
-  return Object.values(AUTH_FEATURES).filter(feature => feature.category === category)
+  return Object.values(AUTH_FEATURES).filter((feature: any) => feature.category === category)
 }

@@ -138,7 +138,7 @@ export class PrismaConnectionPool {
     try {
       this.stats.active += operations.length;
       const results = await Promise.all(
-        operations.map(op => op(this.prisma))
+        operations.map((op: any) => op(this.prisma))
       );
       const duration = Date.now() - startTime;
       

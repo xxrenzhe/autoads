@@ -84,7 +84,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
               name="accessMode"
               value="http"
               checked={accessMode === "http"}
-              onChange={(e) => onAccessModeChange(e.target.value as "http" | "puppeteer")}
+              onChange={((e: any): any) => onAccessModeChange(e.target.value as "http" | "puppeteer")}
               disabled={isOpening}
               className="mr-2"
             />
@@ -96,7 +96,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
               name="accessMode"
               value="puppeteer"
               checked={accessMode === "puppeteer"}
-              onChange={(e) => onAccessModeChange(e.target.value as "http" | "puppeteer")}
+              onChange={((e: any): any) => onAccessModeChange(e.target.value as "http" | "puppeteer")}
               disabled={isOpening}
               className="mr-2"
             />
@@ -117,7 +117,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
             className="w-full border rounded px-2 py-1"
             placeholder="1-1000"
             value={cycleCountInput}
-            onChange={(e) => handleCycleCountInputChange(e.target.value)}
+            onChange={((e: any): any) => handleCycleCountInputChange(e.target.value)}
             onBlur={handleCycleCountBlur}
             disabled={isOpening}
           />

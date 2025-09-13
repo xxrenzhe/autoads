@@ -50,7 +50,7 @@ export const TestEmailModal: React.FC<TestEmailModalProps> = ({
       await onSend({
         to: email,
         template,
-        subject: templates.find(t => t.id === template)?.subject || '测试邮件',
+        subject: templates.find((t: any) => t.id === template)?.subject || '测试邮件',
       });
       onClose();
     } catch (error) {
@@ -73,7 +73,7 @@ export const TestEmailModal: React.FC<TestEmailModalProps> = ({
             label="收件人邮箱"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={((e: any): any) => setEmail(e.target.value)}
             fullWidth
             required
             helperText="请输入要接收测试邮件的邮箱地址"
@@ -84,9 +84,9 @@ export const TestEmailModal: React.FC<TestEmailModalProps> = ({
             <Select
               value={template}
               label="邮件模板"
-              onChange={(e) => setTemplate(e.target.value)}
+              onChange={((e: any): any) => setTemplate(e.target.value)}
             >
-              {templates.map((t) => (
+              {templates.map((t: any) => (
                 <MenuItem key={t.id} value={t.id}>
                   {t.name} - {t.subject}
                 </MenuItem>

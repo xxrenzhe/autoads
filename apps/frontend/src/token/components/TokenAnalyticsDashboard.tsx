@@ -226,7 +226,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
         <div className="flex items-center space-x-3">
           <select
             value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
+            onChange={((e: any): any) => setTimeRange(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="24h">Last 24 Hours</option>
@@ -240,7 +240,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
             Filters
           </Button>
           
-          <Button onClick={() => exportData('usage')}>
+          <Button onClick={((: any): any) => exportData('usage')}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -345,10 +345,10 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
             { id: 'patterns', label: 'Usage Patterns', icon: PieChart },
             { id: 'forecast', label: 'Forecasting', icon: TrendingUp },
             { id: 'alerts', label: 'Alerts', icon: AlertTriangle }
-          ].map(({ id, label, icon: Icon }) => (
+          ].map(({ id, label, icon: Icon }: any) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id as any)}
+              onClick={((: any): any) => setActiveTab(id as any)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
                   ? 'border-blue-500 text-blue-600'
@@ -357,9 +357,9 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
             >
               <Icon className="h-4 w-4 mr-2" />
               {label}
-              {id === 'alerts' && alerts.filter(a => !a.isRead).length > 0 && (
+              {id === 'alerts' && alerts.filter((a: any) => !a.isRead).length > 0 && (
                 <Badge variant="destructive" className="ml-2 text-xs">
-                  {alerts.filter(a => !a.isRead).length}
+                  {alerts.filter((a: any) => !a.isRead).length}
                 </Badge>
               )}
             </button>
@@ -397,7 +397,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
       {activeTab === 'patterns' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {patterns.map((pattern, index) => (
+            {patterns.map((pattern, index: any) => (
               <Card key={index}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -461,7 +461,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {forecasts.slice(0, 3).map((forecast, index) => (
+                {forecasts.slice(0, 3).map((forecast, index: any) => (
                   <div key={index} className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                     <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                       {new Date(forecast.date).toLocaleDateString()}
@@ -473,7 +473,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
                       {formatCurrency(forecast.predictedCost)} • {forecast.confidence}% confidence
                     </div>
                     <div className="mt-2">
-                      {forecast.factors.slice(0, 2).map((factor, i) => (
+                      {forecast.factors.slice(0, 2).map((factor, i: any) => (
                         <Badge key={i} variant="outline" className="mr-1 text-xs">
                           {factor}
                         </Badge>
@@ -490,7 +490,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
       {activeTab === 'alerts' && (
         <div className="space-y-4">
           {alerts.length > 0 ? (
-            alerts.map((alert) => (
+            alerts.map((alert: any) => (
               <Card key={alert.id} className={`${getSeverityColor(alert.severity)} ${!alert.isRead ? 'ring-2 ring-blue-200' : ''}`}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">

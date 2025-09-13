@@ -456,7 +456,7 @@ export class TokenConfigService {
     if (results.length > 0) {
       const notification: ConfigChangeNotification = {
         type: 'batch_update',
-        configIds: results.map((r: { config: TokenConfig; history: TokenConfigHistory }) => r.config.id),
+        configIds: results.map((r: { config: TokenConfig; history: TokenConfigHistory }: any) => r.config.id),
         changedBy,
         timestamp: Date.now()
       }
@@ -588,7 +588,7 @@ export class TokenConfigService {
       })
 
       // Transform records to match TokenConfigHistory interface
-      const transformedRecords = records.map(record => ({
+      const transformedRecords = records.map((record: any) => ({
         id: record.id,
         configId: record.configKey,
         field: 'token-config', // Default field since schema doesn't have it
@@ -664,15 +664,15 @@ export class TokenConfigService {
 
       return {
         totalChanges,
-        changesByFeature: changesByFeature.reduce((acc: Record<string, number>, item: any) => {
+        changesByFeature: changesByFeature.reduce((acc: Record<string, number>, item: any: any) => {
           acc[item.configKey] = (item._count as any).configKey || 0
           return acc
         }, {} as Record<string, number>),
-        changesByUser: changesByUser.reduce((acc: Record<string, number>, item: any) => {
+        changesByUser: changesByUser.reduce((acc: Record<string, number>, item: any: any) => {
           acc[item.changedBy] = (item._count as any).changedBy || 0
           return acc
         }, {} as Record<string, number>),
-        recentChanges: recentChanges.map(record => ({
+        recentChanges: recentChanges.map((record: any) => ({
           id: record.id,
           configId: record.configKey,
           field: 'token-config',

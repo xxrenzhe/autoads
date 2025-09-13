@@ -237,7 +237,7 @@ export function CustomPieChart({
             paddingAngle={2}
             dataKey={dataKey}
           >
-            {data.map((entry, index) => (
+            {data.map((entry, index: any) => (
               <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
             ))}
           </Pie>
@@ -290,7 +290,7 @@ export function MultiLineChart({
           <YAxis />
           {showTooltip && <Tooltip />}
           {showLegend && <Legend />}
-          {series.map((line) => (
+          {series.map((line: any) => (
             <Line
               key={line.key}
               type="monotone"

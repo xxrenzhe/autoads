@@ -54,7 +54,7 @@ export function generateQueryKey(
 ): string {
   const sortedParams = Object.keys(params)
     .sort()
-    .reduce((sorted, key) => {
+    .reduce((sorted, key: any) => {
       sorted[key] = params[key];
       return sorted;
     }, {} as Record<string, any>);

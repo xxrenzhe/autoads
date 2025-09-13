@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate suspicious scores
-    const devicesWithScores = suspiciousActivities.map(device => {
+    const devicesWithScores = suspiciousActivities.map((device: any) => {
       let score = 0;
       const reasons = [];
 
@@ -216,9 +216,9 @@ export async function GET(request: NextRequest) {
       ipStats,
       platformStats,
       summary: {
-        highRiskDevices: devicesWithScores.filter(d => d.suspiciousScore >= 80).length,
-        mediumRiskDevices: devicesWithScores.filter(d => d.suspiciousScore >= 50 && d.suspiciousScore < 80).length,
-        lowRiskDevices: devicesWithScores.filter(d => d.suspiciousScore < 50).length
+        highRiskDevices: devicesWithScores.filter((d: any) => d.suspiciousScore >= 80).length,
+        mediumRiskDevices: devicesWithScores.filter((d: any) => d.suspiciousScore >= 50 && d.suspiciousScore < 80).length,
+        lowRiskDevices: devicesWithScores.filter((d: any) => d.suspiciousScore < 50).length
       }
     });
   } catch (error) {

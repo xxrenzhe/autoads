@@ -49,7 +49,7 @@ export class SecureStorage {
         const encryptedBytes = new Uint8Array(
           atob(encryptedData)
             .split('')
-            ?.filter(Boolean)?.map(char => char.charCodeAt(0))
+            ?.filter(Boolean)?.map((char: any) => char.charCodeAt(0))
         );
         
         const keyBytes = new TextEncoder().encode(this.ENCRYPTION_KEY);
@@ -132,7 +132,7 @@ export class SecureStorage {
     }
 
     const keys = Object.keys(localStorage);
-    keys.forEach(key => {
+    keys.forEach((key: any) => {
       if (key.startsWith(this.SALT_PREFIX)) {
         localStorage.removeItem(key);
       }

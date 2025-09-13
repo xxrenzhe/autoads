@@ -71,7 +71,7 @@ const FeaturesField: React.FC = () => {
   
   return (
     <Box sx={{ maxWidth: 250 }}>
-      {features.slice(0, displayCount).map((feature: string, index: number) => (
+      {features.slice(0, displayCount).map((feature: string, index: number: any) => (
         <Chip
           key={index}
           label={feature}

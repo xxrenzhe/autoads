@@ -111,7 +111,7 @@ export class AdMappingManager {
 
     // Validate mapping rules
     if (config.mappingRules) {
-      const executionNumbers = config.mappingRules?.filter(Boolean)?.map(rule => rule.executionNumber);
+      const executionNumbers = config.mappingRules?.filter(Boolean)?.map((rule: any) => rule.executionNumber);
       const uniqueExecutionNumbers = new Set(executionNumbers);
       
       if (executionNumbers.length !== uniqueExecutionNumbers.size) {
@@ -147,7 +147,7 @@ export class AdMappingManager {
             adGroupName: adGroup.name,
             ads: adGroup.ads,
             totalAds: adGroup.ads.length,
-            availableAds: adGroup.ads.filter((ad: Advertisement) => ad.status === 'ENABLED').length
+            availableAds: adGroup.ads.filter((ad: Advertisement: any) => ad.status === 'ENABLED').length
           };
 
           hierarchies.push(hierarchy);
@@ -176,7 +176,7 @@ export class AdMappingManager {
     if (mappingStrategy === 'one-to-one') {
       // Sequential mapping: 1st execution → 1st ad, 2nd execution → 2nd ad, etc.
       for (let i = 0; i < Math.min(executionCount, adIds.length); i++) {
-        const ad = hierarchy.ads.find(a => a.id === adIds[i]);
+        const ad = hierarchy.ads.find((a: any) => a.id === adIds[i]);
         if (ad) {
           rules.push({
             executionNumber: i + 1,
@@ -200,7 +200,7 @@ export class AdMappingManager {
         const endAdIndex = Math.min(startAdIndex + adsPerExecution, adIds.length);
         
         for (let j = startAdIndex; j < endAdIndex; j++) {
-          const ad = hierarchy.ads.find(a => a.id === adIds[j]);
+          const ad = hierarchy.ads.find((a: any) => a.id === adIds[j]);
           if (ad) {
             rules.push({
               executionNumber: i + 1,

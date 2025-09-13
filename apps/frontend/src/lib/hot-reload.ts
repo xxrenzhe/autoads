@@ -185,7 +185,7 @@ export class HotReloadService extends EventEmitter {
    */
   clearQueue(): void {
     this.reloadQueue.clear()
-    this.debounceTimers.forEach(timer => clearTimeout(timer))
+    this.debounceTimers.forEach((timer: any) => clearTimeout(timer))
     this.debounceTimers.clear()
   }
 }

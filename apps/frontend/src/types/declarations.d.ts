@@ -32,8 +32,45 @@ declare module 'zod' {
     superRefine: (schema: any, refinement: any) => any
     safeParse: (data: any) => any
     parse: (data: any) => any
+    coerce: any
+    ZodError: any
   }
   export default z
+  
+  // Also export the methods directly on the module
+  export const string: () => any
+  export const number: () => any
+  export const boolean: () => any
+  export const object: (shape: any) => any
+  export const array: (schema: any) => any
+  export const enumFn: (values: any) => any
+  export const union: (schemas: any[]) => any
+  export const optional: (schema: any) => any
+  export const nullable: (schema: any) => any
+  export const record: (key: any, value: any) => any
+  export const any: () => any
+  export const unknown: () => any
+  export const never: () => any
+  export const voidFn: () => any
+  export const literal: (value: any) => any
+  export const tuple: (schemas: any[]) => any
+  export const set: (schema: any) => any
+  export const map: (keySchema: any, valueSchema: any) => any
+  export const date: () => any
+  export const bigint: () => any
+  export const nativeEnum: (enumValue: any) => any
+  export const pipeline: (schema: any, transformations: any) => any
+  export const discriminatedUnion: (discriminator: string, options: any[]) => any
+  export const intersection: (schemas: any[]) => any
+  export const defaultFn: (schema: any, defaultValue: any) => any
+  export const catchFn: (schema: any, defaultValue: any) => any
+  export const transform: (schema: any, transformer: any) => any
+  export const refine: (schema: any, refinement: any) => any
+  export const superRefine: (schema: any, refinement: any) => any
+  export const safeParse: (data: any) => any
+  export const parse: (data: any) => any
+  export const coerce: any
+  export const ZodError: any
 }
 
 declare module 'stripe' {
@@ -459,10 +496,32 @@ declare module 'react-admin' {
   export const useGetOne: any
   export const useTranslate: any
   export const usePermissions: any
+  export const useListContext: any
   export const fetchUtils: {
     fetchJson: (url: string, options?: any) => Promise<any>
     queryParameters: (params: any) => string
   }
+  
+  // Additional components
+  export const Pagination: any
+  export const ReferenceField: any
+  export const ChipField: any
+  export const SelectField: any
+  export const Create: any
+  export const Show: any
+  export const SimpleShowLayout: any
+  export const required: any
+  export const Filter: any
+  export const DateInput: any
+  export const ArrayInput: any
+  export const SimpleFormIterator: any
+  export const ReferenceInput: any
+  export const AutocompleteInput: any
+  export const RadioButtonGroupInput: any
+  export const useInput: any
+  
+  // Theme types
+  export type RaThemeOptions = any
   
   // Type definitions
   export type GetListParams = any
@@ -521,6 +580,15 @@ declare module '@types/react' {
     // More permissive FunctionComponent
     interface FunctionComponent<P = {}> {
       (props: P & { children?: React.ReactNode }, context?: any): ReactElement | null
+      displayName?: string
+      defaultProps?: Partial<P>
+      propTypes?: any
+      contextTypes?: any
+    }
+    
+    // Fix component type constraints
+    interface ComponentType<P = {}> {
+      (props: P, context?: any): ReactNode
       displayName?: string
       defaultProps?: Partial<P>
       propTypes?: any

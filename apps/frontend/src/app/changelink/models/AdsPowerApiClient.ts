@@ -282,7 +282,7 @@ export class AdsPowerApiClient {
 
     // 构建URL
     const url = new URL(`${this.baseUrl}${endpoint}`);
-    Object.entries(params).forEach(([key, value]) => {
+    Object.entries(params).forEach(([key, value]: any) => {
       if (value !== undefined && value !== null) {
         url.searchParams.append(key, String(value));
       }
@@ -552,7 +552,7 @@ export class AdsPowerApiClient {
 
       // 如果直接查询失败，回退到列表查询
       const environments = await this.getEnvironments({ useCache });
-      return environments.list.find(env => env.user_id === userId) || null;
+      return environments.list.find((env: any) => env.user_id === userId) || null;
     } catch (error) {
       throw new Error(`获取环境信息失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
@@ -572,7 +572,7 @@ export class AdsPowerApiClient {
       // 批量查询优化：先获取所有环境，然后过滤
       const allEnvironments = await this.getEnvironments({ page_size: 1000 });
       const environmentMap = new Map(
-        allEnvironments.list?.filter(Boolean)?.map(env => [env.user_id, env])
+        allEnvironments.list?.filter(Boolean)?.map((env: any) => [env.user_id, env])
       );
       for (const userId of userIds) {
         const environment = environmentMap.get(userId);
@@ -729,7 +729,7 @@ export class AdsPowerApiClient {
 
     try {
       // 使用RetryManager的批量执行功能
-      const operations = userIds?.filter(Boolean)?.map(userId => ({
+      const operations = userIds?.filter(Boolean)?.map((userId: any) => ({
         operation: () => this.startBrowser(userId),
         name: `startBrowser_${userId}`,
         errorType: ErrorType.BROWSER_ERROR
@@ -742,7 +742,7 @@ export class AdsPowerApiClient {
       const successful: Array<{ userId: string; session: BrowserSession }> = [];
       const failed: Array<{ userId: string; error: string }> = [];
 
-      results.forEach((result, index) => {
+      results.forEach((result, index: any) => {
         const userId = userIds[index];
         if (result.success && result.result) {
           successful.push({ userId, session: result.result });
@@ -776,7 +776,7 @@ export class AdsPowerApiClient {
 
     try {
       // 使用RetryManager的批量执行功能
-      const operations = userIds?.filter(Boolean)?.map(userId => ({
+      const operations = userIds?.filter(Boolean)?.map((userId: any) => ({
         operation: () => this.stopBrowser(userId),
         name: `stopBrowser_${userId}`,
         errorType: ErrorType.BROWSER_ERROR
@@ -789,7 +789,7 @@ export class AdsPowerApiClient {
       const successful: string[] = [];
       const failed: Array<{ userId: string; error: string }> = [];
 
-      results.forEach((result, index) => {
+      results.forEach((result, index: any) => {
         const userId = userIds[index];
         if (result.success) {
           successful.push(userId);
@@ -834,7 +834,7 @@ export class AdsPowerApiClient {
       });
 
       const statusResults = await Promise.all(statusPromises);
-      activeBrowsers = statusResults.reduce((sum: number, count: number) => sum + count, 0);
+      activeBrowsers = statusResults.reduce((sum: number, count: number: any) => sum + count, 0);
 
       return {
         total_environments: environments.list.length,
@@ -992,7 +992,7 @@ export class AdsPowerApiClient {
 
     try {
       // 使用RetryManager的批量执行功能
-      const operations = userIds?.filter(Boolean)?.map(userId => ({
+      const operations = userIds?.filter(Boolean)?.map((userId: any) => ({
         operation: () => this.recoverBrowserEnvironment(userId),
         name: `recoverEnvironment_${userId}`,
         errorType: ErrorType.BROWSER_ERROR
@@ -1002,7 +1002,7 @@ export class AdsPowerApiClient {
         timeout: 120000, // 2分钟超时
         failFast: false
       });
-      results.forEach((result, index) => {
+      results.forEach((result, index: any) => {
         const userId = userIds[index];
         if (result.success && result.result?.success) {
           successful.push(userId);

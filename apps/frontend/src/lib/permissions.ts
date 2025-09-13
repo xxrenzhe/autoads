@@ -61,7 +61,7 @@ export function getResourcePermissions(permissions: Permission[] | string[], res
   }
 
   return permissions
-    .filter(permission => {
+    .filter((permission: any) => {
       if (typeof permission === 'string') {
         return permission.startsWith(`${resource}:`)
       }
@@ -72,7 +72,7 @@ export function getResourcePermissions(permissions: Permission[] | string[], res
       
       return false
     })
-    .map(permission => {
+    .map((permission: any) => {
       if (typeof permission === 'string') {
         return permission.split(':')[1] || ''
       }
@@ -100,7 +100,7 @@ export function hasResourcePermission(permissions: Permission[] | string[], reso
 export function getAvailableVersions(permissions: Permission[] | string[], feature: string): string[] {
   const versions = ['basic', 'silent', 'automated']
   
-  return versions.filter(version => {
+  return versions.filter((version: any) => {
     const requiredPermission = `${feature}:${version}`
     return hasPermission(permissions, requiredPermission)
   })

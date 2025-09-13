@@ -92,7 +92,7 @@ export default function AdminDocsPage() {
     // 文本搜索
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(section =>
+      filtered = filtered.filter((section: any) =>
         section.title.toLowerCase().includes(query) ||
         section.description.toLowerCase().includes(query) ||
         section.tags.some(tag => tag.toLowerCase().includes(query))
@@ -101,7 +101,7 @@ export default function AdminDocsPage() {
 
     // 标签筛选
     if (selectedTags.length > 0) {
-      filtered = filtered.filter(section =>
+      filtered = filtered.filter((section: any) =>
         selectedTags.every(tag => section.tags.includes(tag))
       );
     }
@@ -112,7 +112,7 @@ export default function AdminDocsPage() {
   const toggleTag = (tag: string) => {
     setSelectedTags(prev =>
       prev.includes(tag)
-        ? prev.filter(t => t !== tag)
+        ? prev.filter((t: any) => t !== tag)
         : [...prev, tag]
     );
   };
@@ -142,7 +142,7 @@ export default function AdminDocsPage() {
                 type="text"
                 placeholder="搜索文档内容..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={((e: any): any) => setSearchQuery(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -151,10 +151,10 @@ export default function AdminDocsPage() {
             <div className="bg-white rounded-lg shadow p-6 mb-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">按标签筛选</h3>
               <div className="flex flex-wrap gap-2">
-                {allTags?.filter(Boolean)?.map(tag => (
+                {allTags?.filter(Boolean)?.map((tag: any) => (
                   <button
                     key={tag}
-                    onClick={() => toggleTag(tag)}
+                    onClick={((: any): any) => toggleTag(tag)}
                     className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                       selectedTags.includes(tag)
                         ? 'bg-blue-100 text-blue-800 border border-blue-200'
@@ -167,7 +167,7 @@ export default function AdminDocsPage() {
               </div>
               {selectedTags.length > 0 && (
                 <button
-                  onClick={() => setSelectedTags([])}
+                  onClick={((: any): any) => setSelectedTags([])}
                   className="mt-3 text-sm text-blue-600 hover:text-blue-800"
                 >
                   清除筛选
@@ -179,7 +179,7 @@ export default function AdminDocsPage() {
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">快速链接</h3>
               <div className="space-y-2">
-                {QUICK_LINKS?.filter(Boolean)?.map(link => (
+                {QUICK_LINKS?.filter(Boolean)?.map((link: any) => (
                   <Link
                     key={link.path}
                     href={link.path}
@@ -208,7 +208,7 @@ export default function AdminDocsPage() {
 
             {/* 文档卡片网格 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredSections?.filter(Boolean)?.map(section => (
+              {filteredSections?.filter(Boolean)?.map((section: any) => (
                 <Link
                   key={section.id}
                   href={section.path}
@@ -227,7 +227,7 @@ export default function AdminDocsPage() {
                         
                         {/* 标签 */}
                         <div className="flex flex-wrap gap-1 mb-3">
-                          {section.tags.slice(0, 3)?.filter(Boolean)?.map(tag => (
+                          {section.tags.slice(0, 3)?.filter(Boolean)?.map((tag: any) => (
                             <span
                               key={tag}
                               className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
@@ -264,7 +264,7 @@ export default function AdminDocsPage() {
                   尝试调整搜索关键词或清除筛选条件
                 </p>
                 <button
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     setSearchQuery('');
                     setSelectedTags([]);
                   }}

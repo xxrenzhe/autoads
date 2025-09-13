@@ -306,7 +306,7 @@ export class StripeService {
     try {
       const previewParams: any = {
         subscription: options.subscriptionId,
-        subscription_items: options.subscriptionItems?.filter(Boolean)?.map(item => ({
+        subscription_items: options.subscriptionItems?.filter(Boolean)?.map((item: any) => ({
           id: item.id,
           price: item.priceId
         })),

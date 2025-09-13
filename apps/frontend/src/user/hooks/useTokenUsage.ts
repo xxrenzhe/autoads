@@ -233,8 +233,8 @@ export function useTokenUsage(userId: string) {
     const recent = usageHistory.slice(-days)
     const older = usageHistory.slice(-days * 2, -days)
     
-    const recentAvg = recent.reduce((sum, day) => sum + day.tokens, 0) / recent.length
-    const olderAvg = older.reduce((sum, day) => sum + day.tokens, 0) / older.length
+    const recentAvg = recent.reduce((sum, day: any) => sum + day.tokens, 0) / recent.length
+    const olderAvg = older.reduce((sum, day: any) => sum + day.tokens, 0) / older.length
     
     const change = ((recentAvg - olderAvg) / olderAvg) * 100
     
@@ -259,7 +259,7 @@ export function useTokenUsage(userId: string) {
 
   const getTotalCost = useCallback(() => {
     if (!usageHistory) return 0
-    return usageHistory.reduce((sum, day) => sum + (day.cost || 0), 0)
+    return usageHistory.reduce((sum, day: any) => sum + (day.cost || 0), 0)
   }, [usageHistory])
 
   const getAverageDailyCost = useCallback(() => {
@@ -293,8 +293,8 @@ export function useTokenUsage(userId: string) {
     if (!featureBreakdown || featureBreakdown.length === 0) return 0
     
     // Calculate efficiency based on tokens per request ratio
-    const totalTokens = featureBreakdown.reduce((sum, f) => sum + f.tokens, 0)
-    const totalRequests = featureBreakdown.reduce((sum, f) => sum + f.requests, 0)
+    const totalTokens = featureBreakdown.reduce((sum, f: any) => sum + f.tokens, 0)
+    const totalRequests = featureBreakdown.reduce((sum, f: any) => sum + f.requests, 0)
     
     if (totalRequests === 0) return 0
     

@@ -71,7 +71,7 @@ export class SimpleMonitor {
     
     // 计算平均响应时间
     this.metrics.averageResponseTime = Math.round(
-      this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length
+      this.responseTimes.reduce((a, b: any) => a + b, 0) / this.responseTimes.length
     );
 
     // 记录状态码

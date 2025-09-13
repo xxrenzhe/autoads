@@ -44,7 +44,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: PlanSelecto
     }
   }
 
-  const filteredPlans = plans.filter(plan => plan.interval === billingInterval)
+  const filteredPlans = plans.filter((plan: any) => plan.interval === billingInterval)
 
   const formatPrice = (price: number, interval: string) => {
     if (interval === 'year') {
@@ -79,7 +79,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: PlanSelecto
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
+            {[...Array(3)].map((_, i: any) => (
               <div key={i} className="h-96 bg-gray-200 rounded-lg"></div>
             ))}
           </div>
@@ -99,7 +99,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: PlanSelecto
         <div className="flex items-center justify-center mb-6">
           <div className="bg-gray-100 p-1 rounded-lg">
             <button
-              onClick={() => setBillingInterval('month')}
+              onClick={((: any): any) => setBillingInterval('month')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 billingInterval === 'month'
                   ? 'bg-white text-gray-900 shadow-sm'
@@ -109,7 +109,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: PlanSelecto
               Monthly
             </button>
             <button
-              onClick={() => setBillingInterval('year')}
+              onClick={((: any): any) => setBillingInterval('year')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors relative ${
                 billingInterval === 'year'
                   ? 'bg-white text-gray-900 shadow-sm'
@@ -120,8 +120,8 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: PlanSelecto
               {plans.length > 0 && (
                 <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
                   Save {calculateSavings(
-                    plans.find(p => p.interval === 'month')?.price || 0,
-                    plans.find(p => p.interval === 'year')?.price || 0
+                    plans.find((p: any) => p.interval === 'month')?.price || 0,
+                    plans.find((p: any) => p.interval === 'year')?.price || 0
                   )}%
                 </span>
               )}
@@ -132,7 +132,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: PlanSelecto
 
       {/* Plans Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        {filteredPlans.map((plan) => (
+        {filteredPlans.map((plan: any) => (
           <div
             key={plan.id}
             className={`relative rounded-lg border-2 p-6 cursor-pointer transition-all ${
@@ -142,7 +142,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: PlanSelecto
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
-            onClick={() => onPlanSelect(plan)}
+            onClick={((: any): any) => onPlanSelect(plan)}
           >
             {plan.popular && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -178,7 +178,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: PlanSelecto
               </div>
 
               <ul className="space-y-3 mb-8">
-                {plan.features?.map((feature, index) => (
+                {plan.features?.map((feature, index: any) => (
                   <li key={index} className="flex items-start">
                     <CheckIcon className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
                     <span className="text-sm text-gray-700">{feature}</span>
@@ -187,7 +187,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: PlanSelecto
               </ul>
 
               <button
-                onClick={() => onPlanSelect(plan)}
+                onClick={((: any): any) => onPlanSelect(plan)}
                 className={`w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md transition-colors ${
                   plan.popular
                     ? 'text-white bg-blue-600 hover:bg-blue-700'

@@ -98,7 +98,7 @@ export class ConnectionPool<T = any> {
    */
   async release(resource: T): Promise<void> {
     const connection = Array.from(this.connections.values())
-      .find(conn => conn.resource === resource);
+      .find((conn: any) => conn.resource === resource);
     
     if (!connection) {
       // Connection not found in pool, destroy it
@@ -128,7 +128,7 @@ export class ConnectionPool<T = any> {
     
     // Try to find an idle connection
     const idleConnection = Array.from(this.connections.values())
-      .find(conn => conn.state === 'idle');
+      .find((conn: any) => conn.state === 'idle');
     
     if (idleConnection) {
       const pending = this.pendingQueue.shift();
@@ -189,7 +189,7 @@ export class ConnectionPool<T = any> {
     
     this.healthCheckTimer = setInterval(async () => {
       const connections = Array.from(this.connections.values())
-        .filter(conn => conn.state === 'idle');
+        .filter((conn: any) => conn.state === 'idle');
       
       for (const connection of connections) {
         try {
@@ -212,12 +212,12 @@ export class ConnectionPool<T = any> {
     this.cleanupTimer = setInterval(() => {
       const now = Date.now();
       const idleConnections = Array.from(this.connections.values())
-        .filter(conn => 
+        .filter((conn: any) => 
           conn.state === 'idle' && 
           now - conn.lastUsed > this.config.idleTimeout
         );
       
-      idleConnections.forEach(connection => {
+      idleConnections.forEach((connection: any) => {
         this.destroyConnectionInfo(connection);
       });
     }, this.config.idleTimeout / 2); // Check twice as often as timeout
@@ -257,8 +257,8 @@ export class ConnectionPool<T = any> {
   private updateStats(): void {
     this.stats = {
       total: this.connections.size,
-      active: Array.from(this.connections.values()).filter(c => c.state === 'active').length,
-      idle: Array.from(this.connections.values()).filter(c => c.state === 'idle').length,
+      active: Array.from(this.connections.values()).filter((c: any) => c.state === 'active').length,
+      idle: Array.from(this.connections.values()).filter((c: any) => c.state === 'idle').length,
       pending: this.pendingQueue.length,
       destroyed: this.stats.destroyed
     };
@@ -293,13 +293,13 @@ export class ConnectionPool<T = any> {
     // Reject all pending requests
     const pendingRequests = [...this.pendingQueue];
     this.pendingQueue.length = 0;
-    pendingRequests.forEach(pending => {
+    pendingRequests.forEach((pending: any) => {
       pending.reject(new Error('Pool is draining'));
     });
     
     // Destroy all connections
     const destroyPromises = Array.from(this.connections.values())
-      ?.filter(Boolean)?.map(connection => this.destroyConnectionInfo(connection));
+      ?.filter(Boolean)?.map((connection: any) => this.destroyConnectionInfo(connection));
     
     await Promise.allSettled(destroyPromises);
   }

@@ -144,7 +144,7 @@ export function truncateData(data: any, maxLength: number): any {
   }
   
   if (Array.isArray(data)) {
-    return data.map(item => truncateData(item, maxLength));
+    return data.map((item: any) => truncateData(item, maxLength));
   }
   
   if (typeof data === 'object' && data !== null) {

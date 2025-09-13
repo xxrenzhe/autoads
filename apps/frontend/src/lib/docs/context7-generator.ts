@@ -658,7 +658,7 @@ const user = await UserService.createUser({
 
   private extractDependencies(content: string): string[] {
     const imports = content.match(/import\s+.+?\s+from\s+['"](.+?)['"]/g) || []
-    return imports?.filter(Boolean)?.map(imp => {
+    return imports?.filter(Boolean)?.map((imp: any) => {
       const match = imp.match(/from\s+['"](.+?)['"]/)
       return match ? match[1] : ''
     }).filter(Boolean)
@@ -757,7 +757,7 @@ const user = await UserService.createUser({
 
   private extractServiceMethods(content: string): string[] {
     const methods = content.match(/static\s+async\s+(\w+)/g) || []
-    return methods?.filter(Boolean)?.map(m => m.replace('static async ', ''))
+    return methods?.filter(Boolean)?.map((m: any) => m.replace('static async ', ''))
   }
 
   private extractServiceExamples(content: string, serviceName: string): CodeExample[] {
@@ -1292,7 +1292,7 @@ class AdminSystemDocsServer {
     for (const category of categories) {
       const docs = await this.getDocumentation(category)
       if (docs) {
-        const matches = docs.filter(doc => 
+        const matches = docs.filter((doc: any) => 
           doc.metadata.title.toLowerCase().includes(query.toLowerCase()) ||
           doc.metadata.description.toLowerCase().includes(query.toLowerCase()) ||
           doc.metadata.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))

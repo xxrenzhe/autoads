@@ -107,12 +107,12 @@ async function handleGET(request: NextRequest, { validatedData, user }: { valida
 
   // Calculate summary statistics
   const summary = {
-    totalTokens: usageRecords.reduce((sum: number, record: any) => sum + record.tokensConsumed, 0),
-    totalItems: usageRecords.reduce((sum: number, record: any) => sum + (record.itemCount || 0), 0),
+    totalTokens: usageRecords.reduce((sum: number, record: any: any) => sum + record.tokensConsumed, 0),
+    totalItems: usageRecords.reduce((sum: number, record: any: any) => sum + (record.itemCount || 0), 0),
     totalOperations: usageRecords.length,
     averageTokensPerOperation: 0,
     efficiency: 0,
-    batchOperations: usageRecords.filter((record: any) => record.isBatch).length,
+    batchOperations: usageRecords.filter((record: any: any) => record.isBatch).length,
     batchEfficiency: 0
   }
 
@@ -125,10 +125,10 @@ async function handleGET(request: NextRequest, { validatedData, user }: { valida
   }
 
   // Calculate batch efficiency
-  const batchRecords = usageRecords.filter((record: any) => record.isBatch)
+  const batchRecords = usageRecords.filter((record: any: any) => record.isBatch)
   if (batchRecords.length > 0) {
-    const batchTokens = batchRecords.reduce((sum: number, record: any) => sum + record.tokensConsumed, 0)
-    const batchItems = batchRecords.reduce((sum: number, record: any) => sum + (record.itemCount || 0), 0)
+    const batchTokens = batchRecords.reduce((sum: number, record: any: any) => sum + record.tokensConsumed, 0)
+    const batchItems = batchRecords.reduce((sum: number, record: any: any) => sum + (record.itemCount || 0), 0)
     summary.batchEfficiency = batchItems > 0 ? batchTokens / batchItems : 0
   }
 
@@ -146,7 +146,7 @@ async function handleGET(request: NextRequest, { validatedData, user }: { valida
   })
 
   const breakdown = {
-    byFeature: byFeature.reduce((acc: any, item: any) => {
+    byFeature: byFeature.reduce((acc: any, item: any: any) => {
       acc[item.feature] = item._sum.tokensConsumed || 0
       return acc
     }, {} as Record<string, number>),
@@ -173,14 +173,14 @@ async function handleGET(request: NextRequest, { validatedData, user }: { valida
   })
 
   // Enrich top users with user information
-  const userIds = topUsers.map((user: any) => user.userId)
+  const userIds = topUsers.map((user: any: any) => user.userId)
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
     select: { id: true, name: true, email: true }
   })
 
-  breakdown.topUsers = topUsers.map((userStats: any) => {
-    const userInfo = users.find((u: any) => u.id === userStats.userId)
+  breakdown.topUsers = topUsers.map((userStats: any: any) => {
+    const userInfo = users.find((u: any: any) => u.id === userStats.userId)
     return {
       userId: userStats.userId,
       userName: userInfo?.name,

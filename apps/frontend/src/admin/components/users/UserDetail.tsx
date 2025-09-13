@@ -178,7 +178,7 @@ export function UserDetail({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onEdit?.(user)}
+            onClick={((: any): any) => onEdit?.(user)}
           >
             <Edit className="h-4 w-4 mr-2" />
             Edit
@@ -186,7 +186,7 @@ export function UserDetail({
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => onDelete?.(user.id)}
+            onClick={((: any): any) => onDelete?.(user.id)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
@@ -233,7 +233,7 @@ export function UserDetail({
                       </Badge>
                       <select
                         value={user.status}
-                        onChange={(e) => handleStatusChange(e.target.value)}
+                        onChange={((e: any): any) => handleStatusChange(e.target.value)}
                         className="text-xs border border-gray-300 rounded px-2 py-1"
                       >
                         <option value="active">Active</option>
@@ -249,7 +249,7 @@ export function UserDetail({
                       <Badge variant="outline">{user.role}</Badge>
                       <select
                         value={user.role}
-                        onChange={(e) => handleRoleChange(e.target.value)}
+                        onChange={((e: any): any) => handleRoleChange(e.target.value)}
                         className="text-xs border border-gray-300 rounded px-2 py-1"
                       >
                         <option value="user">User</option>
@@ -288,7 +288,7 @@ export function UserDetail({
                 <Button
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={() => handleStatusChange(user.status === 'active' ? 'inactive' : 'active')}
+                  onClick={((: any): any) => handleStatusChange(user.status === 'active' ? 'inactive' : 'active')}
                 >
                   {user.status === 'active' ? (
                     <>
@@ -326,7 +326,7 @@ export function UserDetail({
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  {Object.entries(user.metadata).map(([key, value]) => (
+                  {Object.entries(user.metadata).map(([key, value]: any) => (
                     <div key={key}>
                       <label className="text-sm font-medium text-gray-500 capitalize">
                         {key.replace(/([A-Z])/g, ' $1').trim()}
@@ -354,7 +354,7 @@ export function UserDetail({
               currentPeriodEnd: user.subscription.expiresAt || new Date().toISOString(),
               cancelAtPeriodEnd: false
             } : null}
-            onSubscriptionChange={() => {
+            onSubscriptionChange={((: any): any) => {
               // Refresh user data to show updated subscription
               window.location.reload()
             }}
@@ -378,7 +378,7 @@ export function UserDetail({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {payments.map((payment) => (
+                  {payments.map((payment: any) => (
                     <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">
@@ -421,7 +421,7 @@ export function UserDetail({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {activities.map((activity) => (
+                  {activities.map((activity: any) => (
                     <div key={activity.id} className="flex items-start space-x-3 p-4 border rounded-lg">
                       <div className="flex-shrink-0">
                         <Activity className="h-5 w-5 text-gray-400" />

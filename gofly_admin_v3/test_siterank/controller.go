@@ -376,11 +376,11 @@ func (c *Controller) LegacyBatchQuery(ctx *gin.Context) {
 
 	// 返回兼容格式
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":      true,
-		"batch_id":     batchQuery.ID,
+		"success":       true,
+		"batch_id":      batchQuery.ID,
 		"total_domains": len(req.Domains),
-		"batch_size":   batchQuery.BatchSize,
-		"message":      "批量查询已启动",
+		"batch_size":    batchQuery.BatchSize,
+		"message":       "批量查询已启动",
 	})
 }
 

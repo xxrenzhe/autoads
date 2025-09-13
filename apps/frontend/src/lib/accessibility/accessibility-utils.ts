@@ -227,7 +227,7 @@ export class AccessibilityManager {
 
     // Restore focus when modal closes
     const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
+      mutations.forEach((mutation: any) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'aria-hidden') {
           const target = mutation.target as HTMLElement
           if (target.getAttribute('role') === 'dialog' && target.getAttribute('aria-hidden') === 'true') {
@@ -319,19 +319,19 @@ export class AccessibilityManager {
   private handleEscapeKey(): void {
     // Close open menus
     const openMenus = document.querySelectorAll('[role="menu"]:not([aria-hidden="true"])')
-    openMenus.forEach(menu => {
+    openMenus.forEach((menu: any) => {
       menu.setAttribute('aria-hidden', 'true')
     })
 
     // Close modals
     const openModals = document.querySelectorAll('[role="dialog"]:not([aria-hidden="true"])')
-    openModals.forEach(modal => {
+    openModals.forEach((modal: any) => {
       modal.setAttribute('aria-hidden', 'true')
     })
 
     // Clear focus from search inputs
     const searchInputs = document.querySelectorAll('input[type="search"]:focus')
-    searchInputs.forEach(input => {
+    searchInputs.forEach((input: any) => {
       (input as HTMLInputElement).blur()
     })
   }
@@ -472,7 +472,7 @@ export class AccessibilityManager {
   private enhanceFormAccessibility(): void {
     // Add required indicators
     const requiredInputs = document.querySelectorAll('input[required], select[required], textarea[required]')
-    requiredInputs.forEach(input => {
+    requiredInputs.forEach((input: any) => {
       const label = document.querySelector(`label[for="${input.id}"]`)
       if (label && !label.textContent?.includes('*')) {
         label.innerHTML += ' <span aria-label="required">*</span>'
@@ -481,7 +481,7 @@ export class AccessibilityManager {
 
     // Enhance error messages
     const errorMessages = document.querySelectorAll('[role="alert"]')
-    errorMessages.forEach(error => {
+    errorMessages.forEach((error: any) => {
       if (!error.getAttribute('aria-live')) {
         error.setAttribute('aria-live', 'assertive')
       }

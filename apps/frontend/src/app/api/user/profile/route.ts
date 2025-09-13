@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const tokensBySource = tokenBreakdown.reduce((acc, item) => {
+    const tokensBySource = tokenBreakdown.reduce((acc, item: any) => {
       acc[item.type.toLowerCase()] = item._sum.amount || 0;
       return acc;
     }, {} as Record<string, number>);
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
         },
         currentPeriodEnd: user.subscriptions[0].currentPeriodEnd?.toISOString(),
       } : null,
-      recentTransactions: recentTransactions.map(tx => ({
+      recentTransactions: recentTransactions.map((tx: any) => ({
         id: tx.id,
         type: tx.type,
         amount: tx.amount,

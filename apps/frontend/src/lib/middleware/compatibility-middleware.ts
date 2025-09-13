@@ -72,7 +72,7 @@ export function compatibilityMiddleware(options: CompatibilityOptions = {}) {
     
     // 检查已知的废弃端点
     const deprecatedEndpoints = getDeprecatedEndpoints(apiVersion);
-    const matchedDeprecation = deprecatedEndpoints.find(dep => 
+    const matchedDeprecation = deprecatedEndpoints.find((dep: any) => 
       endpoint.match(dep.pattern) && dep.methods.includes(method)
     );
     
@@ -148,7 +148,7 @@ export function compatibilityMiddleware(options: CompatibilityOptions = {}) {
           });
           
           // 复制原有头部
-          response.headers.forEach((value, key) => {
+          response.headers.forEach((value, key: any) => {
             newResponse.headers.set(key, value);
           });
           
@@ -186,7 +186,7 @@ function addCompatibilityHeaders(
     response.headers.set('Deprecation', 'true');
     
     const warnings = deprecatedFeatures
-      ?.filter(Boolean)?.map(featureName => {
+      ?.filter(Boolean)?.map((featureName: any) => {
         // Create a temporary DeprecatedFeature object for warning generation
         const feature: DeprecatedFeature = {
           name: featureName,
@@ -198,7 +198,7 @@ function addCompatibilityHeaders(
         return DeprecationWarningManager.generateWarningMessage(feature);
       })
       .filter(Boolean)
-      ?.filter(Boolean)?.map(warning => `299 - "${warning}"`)
+      ?.filter(Boolean)?.map((warning: any) => `299 - "${warning}"`)
       .join(', ');
     
     if (warnings) {
@@ -206,7 +206,7 @@ function addCompatibilityHeaders(
     }
     
     const migrationGuides = deprecatedFeatures
-      ?.filter(Boolean)?.map(featureName => {
+      ?.filter(Boolean)?.map((featureName: any) => {
         // For now, return a generic migration guide
         return `/docs/migration/${featureName}`;
       })
@@ -323,7 +323,7 @@ export function createVersionedHandler(handlers: Record<string, Function>) {
         {
           error: 'No Handler Available',
           message: `没有可用的处理器处理版本 ${apiVersion}`,
-          supportedVersions: Object.keys(handlers).filter(v => v !== 'default')
+          supportedVersions: Object.keys(handlers).filter((v: any) => v !== 'default')
         },
         { status: 501 }
       );

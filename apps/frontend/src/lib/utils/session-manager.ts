@@ -99,7 +99,7 @@ export class SessionManager {
 
     // 保存相关头信息
     const headers: Record<string, string> = {};
-    response.headers.forEach((value, key) => {
+    response.headers.forEach((value, key: any) => {
       if (key.toLowerCase().includes('auth') || 
           key.toLowerCase().includes('session') ||
           key.toLowerCase().includes('csrf') ||
@@ -128,7 +128,7 @@ export class SessionManager {
     // 添加Cookie头
     if (session.session.cookies.length > 0) {
       headers['Cookie'] = session.session.cookies
-        .map(cookie => `${cookie.name}=${cookie.value}`)
+        .map((cookie: any) => `${cookie.name}=${cookie.value}`)
         .join('; ');
     }
 
@@ -188,13 +188,13 @@ export class SessionManager {
   clearProxySessions(proxy: string): void {
     const keysToDelete: string[] = [];
     
-    this.sessions.forEach((session, key) => {
+    this.sessions.forEach((session, key: any) => {
       if (session.proxy === proxy) {
         keysToDelete.push(key);
       }
     });
 
-    keysToDelete.forEach(key => this.sessions.delete(key));
+    keysToDelete.forEach((key: any) => this.sessions.delete(key));
   }
 
   /**
@@ -203,13 +203,13 @@ export class SessionManager {
   clearRoundSessions(round: number): void {
     const keysToDelete: string[] = [];
     
-    this.sessions.forEach((session, key) => {
+    this.sessions.forEach((session, key: any) => {
       if (session.round === round) {
         keysToDelete.push(key);
       }
     });
 
-    keysToDelete.forEach(key => this.sessions.delete(key));
+    keysToDelete.forEach((key: any) => this.sessions.delete(key));
   }
 
   /**
@@ -220,14 +220,14 @@ export class SessionManager {
     const expireTime = 2 * 60 * 60 * 1000; // 2小时
     const keysToDelete: string[] = [];
 
-    this.sessions.forEach((session, key) => {
+    this.sessions.forEach((session, key: any) => {
       const lastUsed = session.session.lastUsed.getTime();
       if (now - lastUsed > expireTime) {
         keysToDelete.push(key);
       }
     });
 
-    keysToDelete.forEach(key => this.sessions.delete(key));
+    keysToDelete.forEach((key: any) => this.sessions.delete(key));
     
     if (keysToDelete.length > 0) {
       console.log(`Cleaned up ${keysToDelete.length} expired sessions`);
@@ -253,7 +253,7 @@ export class SessionManager {
     const now = Date.now();
     const activeThreshold = 30 * 60 * 1000; // 30分钟内活跃
 
-    this.sessions.forEach(session => {
+    this.sessions.forEach((session: any) => {
       const lastUsed = session.session.lastUsed.getTime();
       if (now - lastUsed < activeThreshold) {
         stats.activeSessions++;
@@ -296,7 +296,7 @@ export class SessionManager {
     const activeThreshold = 30 * 60 * 1000; // 30分钟内活跃
     let activeCount = 0;
     
-    this.sessions.forEach(session => {
+    this.sessions.forEach((session: any) => {
       const lastUsed = session.session.lastUsed.getTime();
       if (now - lastUsed < activeThreshold) {
         activeCount++;

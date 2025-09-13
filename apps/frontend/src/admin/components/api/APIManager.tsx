@@ -239,14 +239,14 @@ export function APIManager({ className }: APIManagerProps) {
         
         <div className="flex space-x-3">
           <Button 
-            onClick={() => setShowCreateEndpoint(true)}
+            onClick={((: any): any) => setShowCreateEndpoint(true)}
             aria-label="Add new API endpoint"
           >
             <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
             Add Endpoint
           </Button>
           <Button 
-            onClick={() => setShowCreateKey(true)}
+            onClick={((: any): any) => setShowCreateKey(true)}
             aria-label="Create new API key"
           >
             <Key className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -292,9 +292,9 @@ export function APIManager({ className }: APIManagerProps) {
                   </p>
                   <p 
                     className="text-2xl font-bold text-gray-900 dark:text-white"
-                    aria-label={`${apiKeys.filter(key => key.isActive).length} active API keys`}
+                    aria-label={`${apiKeys.filter((key: any) => key.isActive).length} active API keys`}
                   >
-                    {apiKeys.filter(key => key.isActive).length}
+                    {apiKeys.filter((key: any) => key.isActive).length}
                   </p>
                 </div>
               </div>
@@ -352,7 +352,7 @@ export function APIManager({ className }: APIManagerProps) {
             { id: 'endpoints', label: 'Endpoints', icon: Globe },
             { id: 'keys', label: 'API Keys', icon: Key },
             { id: 'analytics', label: 'Analytics', icon: Activity }
-          ].map(({ id, label, icon: Icon }) => (
+          ].map(({ id, label, icon: Icon }: any) => (
             <button
               key={id}
               ref={(el) => {
@@ -367,7 +367,7 @@ export function APIManager({ className }: APIManagerProps) {
               aria-controls={`${id}-panel`}
               id={`${id}-tab`}
               tabIndex={activeTab === id ? 0 : -1}
-              onClick={() => handleTabChange(id as any)}
+              onClick={((: any): any) => handleTabChange(id as any)}
               onKeyDown={(e) => handleTabKeyDown(e, id)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                 activeTab === id
@@ -398,7 +398,7 @@ export function APIManager({ className }: APIManagerProps) {
                 {isEndpointsLoading ? (
                   <div role="status" aria-label="Loading API endpoints">
                     <div className="animate-pulse space-y-4">
-                      {Array.from({ length: 3 }).map((_, index) => (
+                      {Array.from({ length: 3 }).map((_, index: any) => (
                         <Card key={index} aria-hidden="true">
                           <CardContent className="p-6">
                             <div className="space-y-3">
@@ -425,7 +425,7 @@ export function APIManager({ className }: APIManagerProps) {
                     </CardContent>
                   </Card>
                 ) : (
-                  endpoints.map((endpoint) => (
+                  endpoints.map((endpoint: any) => (
                     <Card key={endpoint.id}>
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between">
@@ -537,7 +537,7 @@ export function APIManager({ className }: APIManagerProps) {
                 {isKeysLoading ? (
                   <div role="status" aria-label="Loading API keys">
                     <div className="animate-pulse space-y-4">
-                      {Array.from({ length: 3 }).map((_, index) => (
+                      {Array.from({ length: 3 }).map((_, index: any) => (
                         <Card key={index} aria-hidden="true">
                           <CardContent className="p-6">
                             <div className="space-y-3">
@@ -564,7 +564,7 @@ export function APIManager({ className }: APIManagerProps) {
                     </CardContent>
                   </Card>
                 ) : (
-                  apiKeys.map((key) => (
+                  apiKeys.map((key: any) => (
                     <Card key={key.id}>
                       <CardHeader>
                         <CardTitle className="flex items-center justify-between">
@@ -729,7 +729,7 @@ export function APIManager({ className }: APIManagerProps) {
                     {isAnalyticsLoading ? (
                       <div role="status" aria-label="Loading top endpoints">
                         <div className="animate-pulse space-y-3">
-                          {Array.from({ length: 5 }).map((_, index) => (
+                          {Array.from({ length: 5 }).map((_, index: any) => (
                             <div key={index} className="flex justify-between" aria-hidden="true">
                               <div className="h-4 bg-gray-300 rounded w-1/2"></div>
                               <div className="h-4 bg-gray-300 rounded w-1/4"></div>
@@ -744,7 +744,7 @@ export function APIManager({ className }: APIManagerProps) {
                       </p>
                     ) : (
                       <div className="space-y-3" role="list" aria-label="Top 5 most used API endpoints">
-                        {endpoints.slice(0, 5).map((endpoint, index) => (
+                        {endpoints.slice(0, 5).map((endpoint, index: any) => (
                           <div 
                             key={endpoint.id} 
                             className="flex items-center justify-between"

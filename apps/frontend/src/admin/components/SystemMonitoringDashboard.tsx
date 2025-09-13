@@ -205,7 +205,7 @@ const ModuleStatsTable: React.FC<{ stats: ModuleStats[] }> = ({ stats }) => (
             </TableRow>
           </TableHead>
           <TableBody>
-            {stats.map((stat) => (
+            {stats.map((stat: any) => (
               <TableRow key={stat.name}>
                 <TableCell component="th" scope="row">
                   {stat.name.charAt(0).toUpperCase() + stat.name.slice(1)}

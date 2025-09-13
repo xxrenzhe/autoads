@@ -130,23 +130,23 @@ type BatchTaskURL struct {
 
 // BatchTaskResult 任务结果
 type BatchTaskResult struct {
-    TaskID         string          `json:"task_id"`
-    Status         BatchTaskStatus `json:"status"`
-    ProcessedCount int             `json:"processed_count"`
-    SuccessCount   int             `json:"success_count"`
-    FailedCount    int             `json:"failed_count"`
-    URLs           []BatchTaskURL  `json:"urls"`
-    StartTime      *time.Time      `json:"start_time"`
-    EndTime        *time.Time      `json:"end_time"`
-    Duration       int64           `json:"duration"` // 执行时长（秒）
-    ErrorMessage   string          `json:"error_message"`
-    // Advanced fields
-    URL           string     `json:"url" gorm:"-"`
-    StatusCode    int        `json:"status_code" gorm:"-"`
-    ResponseTime  int        `json:"response_time" gorm:"-"`
-    Error         string     `json:"error" gorm:"-"`
-    Data          string     `json:"data" gorm:"-"`
-    CreatedAt     time.Time  `json:"created_at" gorm:"-"`
+	TaskID         string          `json:"task_id"`
+	Status         BatchTaskStatus `json:"status"`
+	ProcessedCount int             `json:"processed_count"`
+	SuccessCount   int             `json:"success_count"`
+	FailedCount    int             `json:"failed_count"`
+	URLs           []BatchTaskURL  `json:"urls"`
+	StartTime      *time.Time      `json:"start_time"`
+	EndTime        *time.Time      `json:"end_time"`
+	Duration       int64           `json:"duration"` // 执行时长（秒）
+	ErrorMessage   string          `json:"error_message"`
+	// Advanced fields
+	URL          string    `json:"url" gorm:"-"`
+	StatusCode   int       `json:"status_code" gorm:"-"`
+	ResponseTime int       `json:"response_time" gorm:"-"`
+	Error        string    `json:"error" gorm:"-"`
+	Data         string    `json:"data" gorm:"-"`
+	CreatedAt    time.Time `json:"created_at" gorm:"-"`
 }
 
 // ToResult 转换为结果格式
@@ -225,7 +225,7 @@ func (t *BatchTask) GetURLs() []string {
 	if len(t.URLs) > 0 {
 		json.Unmarshal(t.URLs, &urls)
 	}
-	
+
 	result := make([]string, len(urls))
 	for i, url := range urls {
 		result[i] = url.URL
@@ -240,22 +240,22 @@ func (t *BatchTask) GetConfig() *BatchConfig {
 		Silent    *SilentConfig    `json:"silent"`
 		AutoClick *AutoClickConfig `json:"autoclick"`
 	}
-	
+
 	if len(t.Config) > 0 {
 		json.Unmarshal(t.Config, &taskConfig)
 	}
-	
+
 	// 根据任务模式返回对应的配置
 	switch t.Mode {
-case ModeBasic:
-    if taskConfig.Basic != nil {
-        return &BatchConfig{
-            AccessMethod: "basic",
-            Timeout:      30,
-            RetryCount:   3,
-            Headers:      nil,
-        }
-    }
+	case ModeBasic:
+		if taskConfig.Basic != nil {
+			return &BatchConfig{
+				AccessMethod: "basic",
+				Timeout:      30,
+				RetryCount:   3,
+				Headers:      nil,
+			}
+		}
 	case ModeSilent:
 		if taskConfig.Silent != nil {
 			return &BatchConfig{
@@ -274,7 +274,7 @@ case ModeBasic:
 			}
 		}
 	}
-	
+
 	// 默认配置
 	return &BatchConfig{
 		AccessMethod: string(t.Mode),

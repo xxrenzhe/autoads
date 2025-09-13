@@ -9,7 +9,7 @@ import (
 	"image/png"
 	"math"
 	"math/big"
-		"strings"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"

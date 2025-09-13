@@ -191,7 +191,7 @@ export class UnifiedSimilarWebService {
     const results: SimilarWebData[] = [];
 
     // Add cached results
-    cachedResults.forEach(result => results.push(result));
+    cachedResults.forEach((result: any) => results.push(result));
 
     // Query uncached domains
     if (uncachedDomains.length > 0) {
@@ -204,15 +204,15 @@ export class UnifiedSimilarWebService {
           results.push(...scrapedResults);
           
           // Cache scraped results
-          scrapedResults.forEach(result => {
+          scrapedResults.forEach((result: any) => {
             this.setCachedResult(result.domain, result);
           });
         } else {
           // Fallback to individual API queries
-          const apiPromises = uncachedDomains?.filter(Boolean)?.map(domain => this.queryViaAPI(domain));
+          const apiPromises = uncachedDomains?.filter(Boolean)?.map((domain: any) => this.queryViaAPI(domain));
           const apiResults = await Promise.allSettled(apiPromises);
           
-          apiResults.forEach((promiseResult, index) => {
+          apiResults.forEach((promiseResult, index: any) => {
             if (promiseResult.status === 'fulfilled') {
               const result = promiseResult.value;
               results.push(result);
@@ -386,7 +386,7 @@ export class UnifiedSimilarWebService {
   private async queryMultipleViaScraping(domains: string[]): Promise<SimilarWebData[]> {
     logger.info(`Batch scraping ${domains.length} domains`);
 
-    const urls = domains?.filter(Boolean)?.map(domain => `https://www.similarweb.com/website/${domain}/`);
+    const urls = domains?.filter(Boolean)?.map((domain: any) => `https://www.similarweb.com/website/${domain}/`);
     
     const results: any[] = [];
     for (const url of urls) {
@@ -399,7 +399,7 @@ export class UnifiedSimilarWebService {
       results.push(result);
     }
 
-    return results.map((result: any, index: any) => {
+    return results.map((result: any, index: any: any) => {
       const domain = domains[index];
       
       if (result.success) {
@@ -701,7 +701,7 @@ export class UnifiedSimilarWebService {
     const now = Date.now();
     const expiredDomains: string[] = [];
     
-    this.cache.forEach((cached, domain) => {
+    this.cache.forEach((cached, domain: any) => {
       const cacheTime = cached.data.status === 'error' 
         ? this.config.errorCacheTTL! 
         : this.config.cacheTTL!;
@@ -711,7 +711,7 @@ export class UnifiedSimilarWebService {
       }
     });
     
-    expiredDomains.forEach(domain => {
+    expiredDomains.forEach((domain: any) => {
       this.cache.delete(domain);
       logger.debug(`Cleaned expired cache: ${domain}`);
     });

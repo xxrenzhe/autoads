@@ -70,7 +70,7 @@ export class ApiLimitService {
       //   ]
       // })
 
-      // return rules?.map((rule: any) => ({
+      // return rules?.map((rule: any: any) => ({
       //   id: rule.id,
       //   endpoint: rule.endpoint,
       //   method: rule.method,
@@ -407,7 +407,7 @@ export class ApiLimitService {
       })
 
       // Combine the data
-      const endpointStats = requestsByEndpoint?.map((item: any) => {
+      const endpointStats = requestsByEndpoint?.map((item: any: any) => {
         const errorData = errorsByEndpoint.find(
           (e: any) => e.endpoint === item.endpoint && e.method === item.method
         )
@@ -442,7 +442,7 @@ export class ApiLimitService {
         totalRequests,
         requestsByEndpoint: endpointStats,
         rateLimitViolations,
-        topEndpoints: topEndpoints?.map((item: any) => ({
+        topEndpoints: topEndpoints?.map((item: any: any) => ({
           endpoint: item.endpoint,
           count: item._count.endpoint
         }))

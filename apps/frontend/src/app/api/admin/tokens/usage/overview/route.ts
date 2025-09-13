@@ -148,39 +148,39 @@ export async function GET(request: NextRequest) {
         efficiency: 0 // TODO: Calculate batch operation efficiency
       },
       byDimension: dimension === 'feature' 
-        ? byDimension.map(item => ({
+        ? byDimension.map((item: any) => ({
             dimension: item.feature,
             totalTokens: item._sum.tokensConsumed || 0,
             totalOperations: item._count._all,
             averageTokensPerOperation: item._count._all > 0 ? (item._sum.tokensConsumed || 0) / item._count._all : 0,
             growth: 0
           }))
-        : byDimension.map(user => ({
+        : byDimension.map((user: any) => ({
             dimension: user.email,
-            totalTokens: user.token_usage.reduce((sum: number, usage: any) => sum + usage.tokensConsumed, 0),
+            totalTokens: user.token_usage.reduce((sum: number, usage: any: any) => sum + usage.tokensConsumed, 0),
             totalOperations: user.token_usage.length,
             averageTokensPerOperation: user.token_usage.length > 0 
-              ? user.token_usage.reduce((sum: number, usage: any) => sum + usage.tokensConsumed, 0) / user.token_usage.length 
+              ? user.token_usage.reduce((sum: number, usage: any: any) => sum + usage.tokensConsumed, 0) / user.token_usage.length 
               : 0,
             growth: 0
           })),
-      topUsers: topUsers.map(user => ({
+      topUsers: topUsers.map((user: any) => ({
         userId: user.id,
         userName: user.name || user.email,
         userEmail: user.email,
-        totalTokens: user.token_usage.reduce((sum: number, usage: any) => sum + usage.tokensConsumed, 0),
+        totalTokens: user.token_usage.reduce((sum: number, usage: any: any) => sum + usage.tokensConsumed, 0),
         operations: user.token_usage.length,
         averageTokens: user.token_usage.length > 0 
-          ? user.token_usage.reduce((sum: number, usage: any) => sum + usage.tokensConsumed, 0) / user.token_usage.length 
+          ? user.token_usage.reduce((sum: number, usage: any: any) => sum + usage.tokensConsumed, 0) / user.token_usage.length 
           : 0,
         lastActivity: user.token_usage.length > 0 
-          ? user.token_usage.reduce((latest: Date, usage: any) => 
+          ? user.token_usage.reduce((latest: Date, usage: any: any) => 
               usage.createdAt > latest ? usage.createdAt : latest, 
               user.token_usage[0].createdAt
             ).toISOString()
           : null
       })),
-      featureUsage: featureUsage.map(item => ({
+      featureUsage: featureUsage.map((item: any) => ({
         feature: item.feature,
         totalTokens: item._sum.tokensConsumed || 0,
         operations: item._count._all,

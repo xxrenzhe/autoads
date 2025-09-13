@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
       message: 'Subscription expiration check completed',
       results: {
         processedSubscriptions: results.length,
-        successful: results.filter(r => r.status === 'expired_and_downgraded').length,
-        errors: results.filter(r => r.status === 'error').length
+        successful: results.filter((r: any) => r.status === 'expired_and_downgraded').length,
+        errors: results.filter((r: any) => r.status === 'error').length
       },
       stats: {
         before: statsBefore,

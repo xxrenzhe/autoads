@@ -101,8 +101,8 @@ export default function SiteRankPageRefactored() {
   // 实时提取域名
   const urlList = urlInput
     .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+    .map((line: any) => line.trim())
+    .filter((line: any) => line.length > 0);
   const domainList = urlList?.filter(Boolean)?.map(extractDomain);
   
   // 获取需要分析的域名总数
@@ -133,7 +133,7 @@ export default function SiteRankPageRefactored() {
   // 分析引擎
   const { startAnalysis } = useAnalysisEngine({
     domains: fileDomains.length > 0 ? fileDomains : domainList,
-    originalData: fileDomains.length > 0 ? fileRows : domainList.map((domain) => ({ domain })),
+    originalData: fileDomains.length > 0 ? fileRows : domainList.map((domain: any) => ({ domain })),
     locale,
     onResultsUpdate: setAnalysisResults,
     onProgressUpdate: setProgressText,
@@ -325,7 +325,7 @@ export default function SiteRankPageRefactored() {
                   className="w-full h-32 border rounded p-2"
                   placeholder={getStr(t("siterank.inputPlaceholder") as string | string[] | undefined)}
                   value={urlInput}
-                  onChange={(e) => {
+                  onChange={((e: any): any) => {
                     setUrlInput(e.target.value);
                     if (urlError) setUrlError("");
                     if (tokenError) setTokenError("");

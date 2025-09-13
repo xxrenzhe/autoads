@@ -273,7 +273,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
     username: '',
     email: '',
     fullName: '',
-    role: roles.find(r => r.isDefault) || roles[0],
+    role: roles.find((r: any) => r.isDefault) || roles[0],
     status: 'active',
     permissions: [],
     createdAt: new Date(),
@@ -320,7 +320,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
           ...currentUser,
           updatedAt: new Date()
         };
-        setUsers(prev => prev?.filter(Boolean)?.map(user => user.id === updatedUser.id ? updatedUser : user));
+        setUsers(prev => prev?.filter(Boolean)?.map((user: any) => user.id === updatedUser.id ? updatedUser : user));
         onUserUpdated?.(updatedUser);
       }
 
@@ -340,7 +340,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
     }
   }, [currentUser, isCreating, onUserCreated, onUserUpdated]);
   const handleDeleteUser = useCallback((userId: string) => { if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      setUsers(prev => prev.filter(user => user.id !== userId));
+      setUsers(prev => prev.filter((user: any) => user.id !== userId));
       onUserDeleted?.(userId);
       setOperationResult({
         success: true,
@@ -374,7 +374,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
         setRoles(prev => [...prev, newRole]);
         onRoleCreated?.(newRole);
       } else {
-        setRoles(prev => prev?.filter(Boolean)?.map(role => role.id === currentRole.id ? currentRole : role));
+        setRoles(prev => prev?.filter(Boolean)?.map((role: any) => role.id === currentRole.id ? currentRole : role));
         onRoleUpdated?.(currentRole);
       }
 
@@ -394,7 +394,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
     }
   }, [currentRole, isCreating, onRoleCreated, onRoleUpdated]);
   const handleDeleteRole = useCallback((roleId: string) => { if (confirm('Are you sure you want to delete this role? This action cannot be undone.')) {
-      setRoles(prev => prev.filter(role => role.id !== roleId));
+      setRoles(prev => prev.filter((role: any) => role.id !== roleId));
       onRoleDeleted?.(roleId);
       setOperationResult({
         success: true,
@@ -410,7 +410,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
     setOperationResult(null);
   }, []);
 
-  const filteredUsers = users.filter(user => { 
+  const filteredUsers = users.filter((user: any) => { 
     const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.fullName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -467,7 +467,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 <Input
                   placeholder="Search users..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
                   className="pl-10 w-64"
                 />
               </div>
@@ -477,7 +477,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
-                  {roles?.filter(Boolean)?.map(role => (
+                  {roles?.filter(Boolean)?.map((role: any) => (
                     <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -518,7 +518,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         <p>No users found</p>
                       </div>
                     ) : (
-                      filteredUsers.map((user) => (
+                      filteredUsers.map((user: any) => (
                         <div
                           key={user.id}
                           className={`p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -526,7 +526,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                               ? 'border-primary bg-primary/5'
                               : 'border-border hover:border-primary/50'
                           }`}
-                          onClick={() => setCurrentUser(user)}
+                          onClick={((: any): any) => setCurrentUser(user)}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
@@ -559,7 +559,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={(e) => {
+                                onClick={((e: any): any) => {
                                   e.stopPropagation();
                                   handleEditUser(user);
                                 }}
@@ -569,7 +569,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={(e) => {
+                                onClick={((e: any): any) => {
                                   e.stopPropagation();
                                   handleDeleteUser(user.id);
                                 }}
@@ -603,7 +603,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         <Input
                           id="username"
                           value={currentUser.username}
-                          onChange={(e) => setCurrentUser(prev => prev ? { ...prev, username: e.target.value } : null)}
+                          onChange={((e: any) => setCurrentUser(prev: any) => prev ? { ...prev, username: e.target.value } : null)}
                           disabled={isEditing}
                         />
                       </div>
@@ -613,7 +613,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                           id="email"
                           type="email"
                           value={currentUser.email}
-                          onChange={(e) => setCurrentUser(prev => prev ? { ...prev, email: e.target.value } : null)}
+                          onChange={((e: any) => setCurrentUser(prev: any) => prev ? { ...prev, email: e.target.value } : null)}
                         />
                       </div>
                     </div>
@@ -623,7 +623,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <Input
                         id="fullName"
                         value={currentUser.fullName}
-                        onChange={(e) => setCurrentUser(prev => prev ? { ...prev, fullName: e.target.value } : null)}
+                        onChange={((e: any) => setCurrentUser(prev: any) => prev ? { ...prev, fullName: e.target.value } : null)}
                       />
                     </div>
 
@@ -632,8 +632,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         <Label htmlFor="role">Role</Label>
                         <Select
                           value={currentUser.role.id}
-                          onValueChange={(value) => {
-                            const role = roles.find(r => r.id === value);
+                          onValueChange={((value: any): any) => {
+                            const role = roles.find((r: any) => r.id === value);
                             if (role) {
                               setCurrentUser(prev => prev ? { ...prev, role } : null);
                             }
@@ -643,7 +643,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {roles?.filter(Boolean)?.map(role => (
+                            {roles?.filter(Boolean)?.map((role: any) => (
                               <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -653,7 +653,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         <Label htmlFor="status">Status</Label>
                         <Select
                           value={currentUser.status}
-                          onValueChange={(value: 'active' | 'inactive' | 'suspended') => 
+                          onValueChange={((value: 'active' | 'inactive' | 'suspended': any): any) => 
                             setCurrentUser(prev => prev ? { ...prev, status: value } : null)
                           }
                         >
@@ -674,7 +674,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <Input
                         id="department"
                         value={currentUser.department || ''}
-                        onChange={(e) => setCurrentUser(prev => prev ? { ...prev, department: e.target.value } : null)}
+                        onChange={((e: any) => setCurrentUser(prev: any) => prev ? { ...prev, department: e.target.value } : null)}
                       />
                     </div>
 
@@ -692,7 +692,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             variant="ghost"
                             size="sm"
                             className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowPassword(!showPassword)}
+                            onClick={((: any): any) => setShowPassword(!showPassword)}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
@@ -754,7 +754,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {roles.map((role) => (
+                    {roles.map((role: any) => (
                       <div
                         key={role.id}
                         className={`p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -762,7 +762,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             ? 'border-primary bg-primary/5'
                             : 'border-border hover:border-primary/50'
                         }`}
-                        onClick={() => setCurrentRole(role)}
+                        onClick={((: any): any) => setCurrentRole(role)}
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
@@ -783,7 +783,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={(e) => {
+                              onClick={((e: any): any) => {
                                 e.stopPropagation();
                                 handleEditRole(role);
                               }}
@@ -793,7 +793,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={(e) => {
+                              onClick={((e: any): any) => {
                                 e.stopPropagation();
                                 handleDeleteRole(role.id);
                               }}
@@ -826,7 +826,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <Input
                         id="role-name"
                         value={currentRole.name}
-                        onChange={(e) => setCurrentRole(prev => prev ? { ...prev, name: e.target.value } : null)}
+                        onChange={((e: any) => setCurrentRole(prev: any) => prev ? { ...prev, name: e.target.value } : null)}
                       />
                     </div>
 
@@ -835,7 +835,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <Textarea
                         id="role-description"
                         value={currentRole.description}
-                        onChange={(e) => setCurrentRole(prev => prev ? { ...prev, description: e.target.value } : null)}
+                        onChange={((e: any) => setCurrentRole(prev: any) => prev ? { ...prev, description: e.target.value } : null)}
                         rows={3}
                       />
                     </div>
@@ -844,7 +844,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <Switch
                         id="is-default"
                         checked={currentRole.isDefault}
-                        onCheckedChange={(checked: boolean) => setCurrentRole(prev => prev ? { ...prev, isDefault: checked } : null)}
+                        onCheckedChange={((checked: boolean: any) => setCurrentRole(prev: any) => prev ? { ...prev, isDefault: checked } : null)}
                       />
                       <Label htmlFor="is-default">Default role for new users</Label>
                     </div>
@@ -852,13 +852,13 @@ const UserManagement: React.FC<UserManagementProps> = ({
                     <div className="space-y-4">
                       <h4 className="font-medium">Permissions</h4>
                       <div className="space-y-3">
-                        {mockPermissions.map((permission) => (
+                        {mockPermissions.map((permission: any) => (
                           <div key={permission.id} className="flex items-center space-x-2">
                             <input
                               type="checkbox"
                               id={permission.id}
                               checked={currentRole.permissions.some(p => p.id === permission.id)}
-                              onChange={(e) => {
+                              onChange={((e: any): any) => {
                                 if (e.target.checked) {
                                   setCurrentRole(prev => prev ? {
                                     ...prev,
@@ -867,7 +867,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                 } else {
                                   setCurrentRole(prev => prev ? {
                                     ...prev,
-                                    permissions: prev.permissions.filter(p => p.id !== permission.id)
+                                    permissions: prev.permissions.filter((p: any) => p.id !== permission.id)
                                   } : null);
                                 }
                               }}
@@ -924,13 +924,13 @@ const UserManagement: React.FC<UserManagementProps> = ({
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {['system', 'configuration', 'execution', 'analytics', 'administration'].map((category) => (
+                {['system', 'configuration', 'execution', 'analytics', 'administration'].map((category: any) => (
                   <div key={category} className="space-y-3">
                     <h4 className="font-medium capitalize">{category} Permissions</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {mockPermissions
-                        .filter(permission => permission.category === category)
-                        .map((permission) => (
+                        .filter((permission: any) => permission.category === category)
+                        .map((permission: any) => (
                           <div key={permission.id} className="p-3 border rounded-lg">
                             <div className="flex items-center justify-between mb-2">
                               <h5 className="font-medium">{permission.name}</h5>
@@ -966,7 +966,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             <div className="font-medium">{operationResult.message}</div>
             {Boolean(operationResult.details) && (
               <div className="mt-2 text-sm">
-                {Object.entries(operationResult.details as Record<string, unknown>).map(([key, value]) => (
+                {Object.entries(operationResult.details as Record<string, unknown>).map(([key, value]: any) => (
                   <div key={key} className="flex justify-between">
                     <span className="capitalize">{key}:</span>
                     <span>{String(value)}</span>

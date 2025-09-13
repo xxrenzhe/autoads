@@ -6,28 +6,28 @@ import (
 	"fmt"
 	"time"
 
-	"gorm.io/gorm"
 	"gofly-admin-v3/utils/gf"
+	"gorm.io/gorm"
 )
 
 // Audit actions
 const (
-	ActionExecute   = "execute"
-	ActionCreate    = "create"
-	ActionUpdate    = "update"
-	ActionDelete    = "delete"
-	ActionRead      = "read"
-	ActionLogin     = "login"
-	ActionLogout    = "logout"
+	ActionExecute = "execute"
+	ActionCreate  = "create"
+	ActionUpdate  = "update"
+	ActionDelete  = "delete"
+	ActionRead    = "read"
+	ActionLogin   = "login"
+	ActionLogout  = "logout"
 )
 
 // Audit resources
 const (
-	ResourceTask     = "task"
-	ResourceUser     = "user"
-	ResourceSystem   = "system"
-	ResourceConfig   = "config"
-	ResourceAPI      = "api"
+	ResourceTask   = "task"
+	ResourceUser   = "user"
+	ResourceSystem = "system"
+	ResourceConfig = "config"
+	ResourceAPI    = "api"
 )
 
 var defaultAuditService *AuditService

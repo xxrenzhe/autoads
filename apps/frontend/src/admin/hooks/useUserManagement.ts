@@ -269,17 +269,17 @@ export function useUserManagement() {
 
   // Get user by ID
   const getUserById = useCallback((userId: string): User | undefined => {
-    return usersData?.users?.find((user: User) => user.id === userId)
+    return usersData?.users?.find((user: User: any) => user.id === userId)
   }, [usersData])
 
   // Get users by role
   const getUsersByRole = useCallback((role: string): User[] => {
-    return usersData?.users?.filter((user: User) => user.role === role) || []
+    return usersData?.users?.filter((user: User: any) => user.role === role) || []
   }, [usersData])
 
   // Get users by status
   const getUsersByStatus = useCallback((status: string): User[] => {
-    return usersData?.users?.filter((user: User) => user.status === status) || []
+    return usersData?.users?.filter((user: User: any) => user.status === status) || []
   }, [usersData])
 
   return {

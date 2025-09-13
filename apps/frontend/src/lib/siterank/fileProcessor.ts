@@ -15,7 +15,7 @@ export interface ProcessedFileData {
 
 function getDomainCol(headers: string[]): string | null {
   for (const candidate of DOMAIN_HEADER_CANDIDATES) {
-    const found = headers.find(header => 
+    const found = headers.find((header: any) => 
       header.toLowerCase().includes(candidate.toLowerCase())
     );
     if (found) {
@@ -37,8 +37,8 @@ export async function processFile(
   if (file.name.endsWith(".csv")) {
     const text = new TextDecoder("utf-8").decode(data);
     const lines = text.split(/\r?\n/).filter(Boolean);
-    headers = lines[0].split(",")?.filter(Boolean)?.map(h => h.trim());
-    rows = lines.slice(1)?.filter(Boolean)?.map(line => line.split(","));
+    headers = lines[0].split(",")?.filter(Boolean)?.map((h: any) => h.trim());
+    rows = lines.slice(1)?.filter(Boolean)?.map((line: any) => line.split(","));
   } else {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(data);
@@ -91,9 +91,9 @@ export async function processFile(
   const processedRows: Record<string, string>[] = [];
   const extractedDomains: string[] = [];
 
-  rows.forEach((row, rowIndex) => {
+  rows.forEach((row, rowIndex: any) => {
     const obj: Record<string, string> = {};
-    headers.forEach((header, index) => { 
+    headers.forEach((header, index: any) => { 
       obj[header] = row[index]?.toString() || ""; 
     });
     

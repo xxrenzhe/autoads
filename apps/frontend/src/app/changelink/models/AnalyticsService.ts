@@ -26,10 +26,10 @@ export class AnalyticsService {
    */
   static analyzeExecutions(executions: ExecutionResult[]): ExecutionAnalytics {
     const totalExecutions = executions.length;
-    const successfulExecutions = executions.filter(e => e.status === 'SUCCESS').length;
+    const successfulExecutions = executions.filter((e: any) => e.status === 'SUCCESS').length;
     const failedExecutions = totalExecutions - successfulExecutions;
     
-    const totalProcessingTime = executions.reduce((sum, e) => {
+    const totalProcessingTime = executions.reduce((sum, e: any) => {
       return sum + (e.processingTime || 0);
     }, 0);
     
@@ -51,10 +51,10 @@ export class AnalyticsService {
    */
   static analyzeLinks(links: LinkResult[]): LinkAnalytics {
     const totalLinks = links.length;
-    const successfulLinks = links.filter(l => l.status === 'success').length;
+    const successfulLinks = links.filter((l: any) => l.status === 'success').length;
     const failedLinks = totalLinks - successfulLinks;
     
-    const totalProcessingTime = links.reduce((sum, l) => {
+    const totalProcessingTime = links.reduce((sum, l: any) => {
       return sum + (l.processingTime || 0);
     }, 0);
     
@@ -62,7 +62,7 @@ export class AnalyticsService {
     
     // 分析域名
     const domains = new Map<string, number>();
-    links.forEach(link => {
+    links.forEach((link: any) => {
       try {
         const url = new URL(link.originalUrl);
         const domain = url.hostname;
@@ -72,7 +72,7 @@ export class AnalyticsService {
     });
     const uniqueDomains = domains.size;
     const topDomains = Array.from(domains.entries())
-      .map(([domain, count]) => ({ domain, count }))
+      .map(([domain, count]: any) => ({ domain, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
     return {
@@ -179,11 +179,11 @@ export class AnalyticsService {
       `  涉及域名: ${linkAnalytics.uniqueDomains}个`,
       '',
       '热门域名:',
-      ...linkAnalytics.topDomains?.filter(Boolean)?.map(d => `  ${d.domain}: ${d.count}次`),
+      ...linkAnalytics.topDomains?.filter(Boolean)?.map((d: any) => `  ${d.domain}: ${d.count}次`),
       '',
       '优化建议:',
       ...this.generateOptimizationSuggestions(executionAnalytics, linkAnalytics)
-        ?.filter(Boolean)?.map(s => `  - ${s}`),
+        ?.filter(Boolean)?.map((s: any) => `  - ${s}`),
       ''
     ];
     

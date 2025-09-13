@@ -233,7 +233,7 @@ export class SimpleHttpClient {
    */
   private parseHeaders(headers: Headers): Record<string, string> {
     const result: Record<string, string> = {};
-    headers.forEach((value, key) => {
+    headers.forEach((value, key: any) => {
       result[key] = value;
     });
     return result;

@@ -59,7 +59,7 @@ export class LogFileManager {
       await this.ensureLogDirectory();
       
       const files = await fs.readdir(this.logDirectory);
-      const logFiles = files.filter(file => 
+      const logFiles = files.filter((file: any) => 
         file.endsWith('.log') && 
         (file === this.baseFileName || file.startsWith(this.baseFileName.replace('.log', '-')))
       );
@@ -165,7 +165,7 @@ export class LogFileManager {
   async getLastLines(filename: string, lineCount: number = 100): Promise<string[]> {
     try {
       const content = await this.readLogFile(filename);
-      const lines = content.split('\n').filter(line => line.trim() !== '');
+      const lines = content.split('\n').filter((line: any) => line.trim() !== '');
       
       return lines.slice(-lineCount);
     } catch (error) {
@@ -193,7 +193,7 @@ export class LogFileManager {
         options?.caseSensitive ? 'g' : 'gi'
       );
 
-      const matchingLines = lines.filter(line => searchRegex.test(line));
+      const matchingLines = lines.filter((line: any) => searchRegex.test(line));
       
       if (options?.maxResults) {
         return matchingLines.slice(0, options.maxResults);
@@ -252,19 +252,19 @@ export class LogFileManager {
     try {
       const logFiles = await this.getLogFiles();
       
-      const totalSize = logFiles.reduce((sum, file) => sum + file.size, 0);
+      const totalSize = logFiles.reduce((sum, file: any) => sum + file.size, 0);
       const fileCount = logFiles.length;
       
       let oldestFile: Date | undefined;
       let newestFile: Date | undefined;
       
       if (logFiles.length > 0) {
-        oldestFile = logFiles.reduce((oldest, file) => 
+        oldestFile = logFiles.reduce((oldest, file: any) => 
           file.modifiedAt < oldest ? file.modifiedAt : oldest, 
           logFiles[0].modifiedAt
         );
         
-        newestFile = logFiles.reduce((newest, file) => 
+        newestFile = logFiles.reduce((newest, file: any) => 
           file.modifiedAt > newest ? file.modifiedAt : newest, 
           logFiles[0].modifiedAt
         );
@@ -380,7 +380,7 @@ export async function readLogFile(filename: string, lines?: number, filter?: str
       if (filter) {
         // 应用过滤器
         const filterRegex = new RegExp(filter, 'i');
-        return lastLines.filter(line => filterRegex.test(line)).join('\n');
+        return lastLines.filter((line: any) => filterRegex.test(line)).join('\n');
       }
       
       return lastLines.join('\n');
@@ -391,7 +391,7 @@ export async function readLogFile(filename: string, lines?: number, filter?: str
       if (filter) {
         // 应用过滤器
         const filterRegex = new RegExp(filter, 'i');
-        return content.split('\n').filter(line => filterRegex.test(line)).join('\n');
+        return content.split('\n').filter((line: any) => filterRegex.test(line)).join('\n');
       }
       
       return content;

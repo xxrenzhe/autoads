@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         })
 
         // Calculate days remaining for each trial
-        const trialsWithDaysRemaining = activeTrials.map(trial => {
+        const trialsWithDaysRemaining = activeTrials.map((trial: any) => {
           const now = new Date()
           const daysRemaining = Math.max(0, Math.ceil(
             (trial.currentPeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)

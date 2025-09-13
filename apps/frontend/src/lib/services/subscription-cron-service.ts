@@ -18,7 +18,7 @@ export class SubscriptionCronService {
       
       // Process monthly token allocation for invitation subscriptions
       const tokenResults = await SubscriptionHelper.processMonthlyTokenAllocation();
-      console.log(`Processed monthly tokens for ${tokenResults.filter(r => r.status === 'allocated').length} subscriptions`);
+      console.log(`Processed monthly tokens for ${tokenResults.filter((r: any) => r.status === 'allocated').length} subscriptions`);
       
       // Process expired tokens
       const expiredTokens = await TokenExpirationService.processExpiredSubscriptionTokens();
@@ -26,7 +26,7 @@ export class SubscriptionCronService {
       
       return {
         expiredSubscriptions: expiredResults.length,
-        monthlyTokens: tokenResults?.filter(r => r.status === 'allocated').length || 0,
+        monthlyTokens: tokenResults?.filter((r: any) => r.status === 'allocated').length || 0,
         expiredTokens: expiredTokens?.processed?.length || 0
       };
     } catch (error) {
@@ -60,7 +60,7 @@ export class SubscriptionCronService {
     
     try {
       const results = await SubscriptionHelper.processMonthlyTokenAllocation();
-      console.log(`Monthly allocation completed: ${results.filter(r => r.status === 'allocated').length} users received tokens`);
+      console.log(`Monthly allocation completed: ${results.filter((r: any) => r.status === 'allocated').length} users received tokens`);
       
       return results;
     } catch (error) {

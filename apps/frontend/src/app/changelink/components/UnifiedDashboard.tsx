@@ -386,7 +386,7 @@ export default function SimpleUnifiedDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentActivities.map((activity) => (
+                  {recentActivities.map((activity: any) => (
                     <div key={activity.id} className="flex items-start space-x-3">
                       {getStatusIcon(activity.status)}
                       <div className="flex-1">

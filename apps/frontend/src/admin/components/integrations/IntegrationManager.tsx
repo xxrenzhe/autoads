@@ -227,10 +227,10 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
   }
 
   // Calculate summary statistics
-  const connectedIntegrations = integrations.filter(i => i.status === 'connected').length
-  const errorIntegrations = integrations.filter(i => i.status === 'error').length
-  const totalRequests = integrations.reduce((sum, i) => sum + i.usage.requestsToday, 0)
-  const healthyIntegrations = integrations.filter(i => i.healthStatus.healthy).length
+  const connectedIntegrations = integrations.filter((i: any) => i.status === 'connected').length
+  const errorIntegrations = integrations.filter((i: any) => i.status === 'error').length
+  const totalRequests = integrations.reduce((sum, i: any) => sum + i.usage.requestsToday, 0)
+  const healthyIntegrations = integrations.filter((i: any) => i.healthStatus.healthy).length
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -250,7 +250,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
             <RefreshCw className="h-4 w-4 mr-2" />
             Sync All
           </Button>
-          <Button onClick={() => setShowSetupModal(true)}>
+          <Button onClick={((: any): any) => setShowSetupModal(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Integration
           </Button>
@@ -340,10 +340,10 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
             { id: 'integrations', label: 'Active Integrations', icon: Settings },
             { id: 'templates', label: 'Available Services', icon: Plus },
             { id: 'health', label: 'Health Monitor', icon: Activity }
-          ].map(({ id, label, icon: Icon }) => (
+          ].map(({ id, label, icon: Icon }: any) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id as any)}
+              onClick={((: any): any) => setActiveTab(id as any)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
                   ? 'border-blue-500 text-blue-600'
@@ -366,9 +366,9 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {['analytics', 'payment', 'communication', 'advertising']?.filter(Boolean)?.map(category => {
-                  const categoryIntegrations = integrations.filter(i => i.category === category)
-                  const connected = categoryIntegrations.filter(i => i.status === 'connected').length
+                {['analytics', 'payment', 'communication', 'advertising']?.filter(Boolean)?.map((category: any) => {
+                  const categoryIntegrations = integrations.filter((i: any) => i.category === category)
+                  const connected = categoryIntegrations.filter((i: any) => i.status === 'connected').length
                   
                   return (
                     <div key={category} className="flex items-center justify-between">
@@ -402,7 +402,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {integrations.slice(0, 5)?.filter(Boolean)?.map(integration => (
+                {integrations.slice(0, 5)?.filter(Boolean)?.map((integration: any) => (
                   <div key={integration.id} className="flex items-center justify-between">
                     <div className="flex items-center">
                       {getStatusIcon(integration.status)}
@@ -423,12 +423,12 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
         <div className="space-y-4">
           {/* Category Filter */}
           <div className="flex space-x-2">
-            {['all', 'analytics', 'payment', 'communication', 'advertising', 'storage']?.filter(Boolean)?.map(category => (
+            {['all', 'analytics', 'payment', 'communication', 'advertising', 'storage']?.filter(Boolean)?.map((category: any) => (
               <Button
                 key={category}
                 variant={selectedCategory === category ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setSelectedCategory(category)}
+                onClick={((: any): any) => setSelectedCategory(category)}
               >
                 {category === 'all' ? 'All' : category.charAt(0).toUpperCase() + category.slice(1)}
               </Button>
@@ -437,7 +437,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
 
           {/* Integrations Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {integrations.map((integration) => (
+            {integrations.map((integration: any) => (
               <Card key={integration.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -495,7 +495,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => testIntegrationMutation.mutate(integration.id)}
+                        onClick={((: any): any) => testIntegrationMutation.mutate(integration.id)}
                         disabled={testIntegrationMutation.isPending}
                       >
                         <Play className="h-3 w-3 mr-1" />
@@ -505,7 +505,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => toggleIntegrationMutation.mutate(integration.id)}
+                        onClick={((: any): any) => toggleIntegrationMutation.mutate(integration.id)}
                         disabled={toggleIntegrationMutation.isPending}
                       >
                         {integration.isActive ? 
@@ -537,7 +537,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
 
       {activeTab === 'templates' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {templates.map((template) => (
+          {templates.map((template: any) => (
             <Card key={template.id}>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -560,7 +560,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
                   <div className="flex space-x-2">
                     <Button
                       size="sm"
-                      onClick={() => handleSetupIntegration(template)}
+                      onClick={((: any): any) => handleSetupIntegration(template)}
                       className="flex-1"
                     >
                       <Plus className="h-3 w-3 mr-1" />
@@ -585,7 +585,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
 
       {activeTab === 'health' && (
         <div className="space-y-4">
-          {integrations.map((integration) => (
+          {integrations.map((integration: any) => (
             <Card key={integration.id}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -638,7 +638,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
             </h3>
             
             <div className="space-y-4">
-              {selectedTemplate.requiredFields.map((field) => (
+              {selectedTemplate.requiredFields.map((field: any) => (
                 <div key={field.name}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {field.label}
@@ -647,7 +647,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
                   <Input
                     type={field.type === 'password' ? 'password' : 'text'}
                     value={setupData[field.name] || ''}
-                    onChange={(e) => setSetupData({ ...setupData, [field.name]: e.target.value })}
+                    onChange={((e: any): any) => setSetupData({ ...setupData, [field.name]: e.target.value })}
                     placeholder={field.description}
                   />
                 </div>
@@ -664,7 +664,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => {
+                onClick={((: any): any) => {
                   setShowSetupModal(false)
                   setSelectedTemplate(null)
                   setSetupData({})

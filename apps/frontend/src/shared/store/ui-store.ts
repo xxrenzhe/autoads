@@ -143,7 +143,7 @@ export const useUIStore = create<UIState>()(
 
           // Modal actions
           openModal: (id, component, props, options) =>
-            set((state) => {
+            set((state: any) => {
               // Close existing modal with same ID
               const existingIndex = state.modals.findIndex(m => m.id === id);
               if (existingIndex !== -1) {
@@ -161,28 +161,28 @@ export const useUIStore = create<UIState>()(
             }),
 
           closeModal: (id) =>
-            set((state) => {
-              const modal = state.modals.find(m => m.id === id);
+            set((state: any) => {
+              const modal = state.modals.find((m: any) => m.id === id);
               if (modal) {
                 modal.isOpen = false;
               }
               // Remove closed modals after animation
               setTimeout(() => {
                 const currentState = get();
-                set((state) => {
-                  state.modals = state.modals.filter(m => m.id !== id);
+                set((state: any) => {
+                  state.modals = state.modals.filter((m: any) => m.id !== id);
                 });
               }, 300);
             }),
 
           closeAllModals: () =>
-            set((state) => {
-              state.modals.forEach(modal => {
+            set((state: any) => {
+              state.modals.forEach((modal: any) => {
                 modal.isOpen = false;
               });
               // Clear all modals after animation
               setTimeout(() => {
-                set((state) => {
+                set((state: any) => {
                   state.modals = [];
                 });
               }, 300);
@@ -190,12 +190,12 @@ export const useUIStore = create<UIState>()(
 
           // Sidebar actions
           setSidebarOpen: (isOpen) =>
-            set((state) => {
+            set((state: any) => {
               state.sidebar.isOpen = isOpen;
             }),
 
           setSidebarCollapsed: (isCollapsed) =>
-            set((state) => {
+            set((state: any) => {
               state.sidebar.isCollapsed = isCollapsed;
               state.sidebar.width = isCollapsed 
                 ? state.layout.sidebarCollapsedWidth 
@@ -203,23 +203,23 @@ export const useUIStore = create<UIState>()(
             }),
 
           setSidebarWidth: (width) =>
-            set((state) => {
+            set((state: any) => {
               state.sidebar.width = width;
             }),
 
           setActiveSection: (section) =>
-            set((state) => {
+            set((state: any) => {
               state.sidebar.activeSection = section;
             }),
 
           // Loading actions
           setGlobalLoading: (loading) =>
-            set((state) => {
+            set((state: any) => {
               state.loading.global = loading;
             }),
 
           setComponentLoading: (component, loading) =>
-            set((state) => {
+            set((state: any) => {
               if (loading) {
                 state.loading.components[component] = true;
               } else {
@@ -228,44 +228,44 @@ export const useUIStore = create<UIState>()(
             }),
 
           clearComponentLoading: () =>
-            set((state) => {
+            set((state: any) => {
               state.loading.components = {};
             }),
 
           // Page actions
           setPageTitle: (title) =>
-            set((state) => {
+            set((state: any) => {
               state.page.title = title;
             }),
 
           setPageSubtitle: (subtitle) =>
-            set((state) => {
+            set((state: any) => {
               state.page.subtitle = subtitle;
             }),
 
           setBreadcrumbs: (breadcrumbs) =>
-            set((state) => {
+            set((state: any) => {
               state.page.breadcrumbs = breadcrumbs;
             }),
 
           setPageActions: (actions) =>
-            set((state) => {
+            set((state: any) => {
               state.page.actions = actions;
             }),
 
           setPageState: (pageState) =>
-            set((state) => {
+            set((state: any) => {
               state.page = { ...state.page, ...pageState };
             }),
 
           // Layout actions
           updateLayout: (config) =>
-            set((state) => {
+            set((state: any) => {
               state.layout = { ...state.layout, ...config };
             }),
 
           setBreakpoints: (isMobile, isTablet, isDesktop) =>
-            set((state) => {
+            set((state: any) => {
               state.isMobile = isMobile;
               state.isTablet = isTablet;
               state.isDesktop = isDesktop;
@@ -279,7 +279,7 @@ export const useUIStore = create<UIState>()(
       ),
       {
         name: 'ui-store',
-        partialize: (state) => ({
+        partialize: (state: any) => ({
           sidebar: {
             isCollapsed: state.sidebar.isCollapsed,
             width: state.sidebar.width
@@ -296,7 +296,7 @@ export const useUIStore = create<UIState>()(
 
 // Selectors
 export const selectModals = (state: UIState) => state.modals;
-export const selectOpenModals = (state: UIState) => state.modals.filter(m => m.isOpen);
+export const selectOpenModals = (state: UIState) => state.modals.filter((m: any) => m.isOpen);
 export const selectSidebar = (state: UIState) => state.sidebar;
 export const selectLoading = (state: UIState) => state.loading;
 export const selectGlobalLoading = (state: UIState) => state.loading.global;

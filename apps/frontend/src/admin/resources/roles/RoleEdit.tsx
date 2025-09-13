@@ -92,14 +92,14 @@ const RolePermissions: React.FC = () => {
         选择此角色可以访问的权限
       </Typography>
       
-      {permissionCategories.map((category) => (
+      {permissionCategories.map((category: any) => (
         <Box key={category.title} sx={{ mb: 3 }}>
           <Typography variant="h6" gutterBottom>
             {category.title}
           </Typography>
           
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {category.permissions.map((permission) => (
+            {category.permissions.map((permission: any) => (
               <BooleanInput
                 key={permission.id}
                 source={`permissions.${permission.id}`}

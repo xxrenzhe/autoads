@@ -251,7 +251,7 @@ export function validateSilentModeConfig(config: SilentModeConfig): {
   }
   
   // 验证评分权重
-  const totalWeight = Object.values(config.selection.scoringWeights).reduce((sum, weight) => sum + weight, 0);
+  const totalWeight = Object.values(config.selection.scoringWeights).reduce((sum, weight: any) => sum + weight, 0);
   if (Math.abs(totalWeight - 1.0) > 0.01) {
     errors.push('代理评分权重总和必须等于1.0');
   }

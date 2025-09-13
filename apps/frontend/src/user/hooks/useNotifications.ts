@@ -223,24 +223,24 @@ export function useNotifications(userId: string) {
 
   // Helper functions
   const getUnreadCount = useCallback(() => {
-    return notifications.filter(n => !n.read).length
+    return notifications.filter((n: any) => !n.read).length
   }, [notifications])
 
   const getNotificationsByType = useCallback((type: string) => {
-    return notifications.filter(n => n.type === type)
+    return notifications.filter((n: any) => n.type === type)
   }, [notifications])
 
   const getNotificationsByCategory = useCallback((category: string) => {
-    return notifications.filter(n => n.category === category)
+    return notifications.filter((n: any) => n.category === category)
   }, [notifications])
 
   const getUrgentNotifications = useCallback(() => {
-    return notifications.filter(n => n.priority === 'urgent' && !n.read)
+    return notifications.filter((n: any) => n.priority === 'urgent' && !n.read)
   }, [notifications])
 
   const getRecentNotifications = useCallback((hours: number = 24) => {
     const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000)
-    return notifications.filter(n => new Date(n.createdAt) > cutoff)
+    return notifications.filter((n: any) => new Date(n.createdAt) > cutoff)
   }, [notifications])
 
   const hasUnreadNotifications = useCallback(() => {
@@ -250,11 +250,11 @@ export function useNotifications(userId: string) {
   const getNotificationStats = useCallback(() => {
     const total = notifications.length
     const unread = getUnreadCount()
-    const byType = notifications.reduce((acc, n) => {
+    const byType = notifications.reduce((acc, n: any) => {
       acc[n.type] = (acc[n.type] || 0) + 1
       return acc
     }, {} as Record<string, number>)
-    const byPriority = notifications.reduce((acc, n) => {
+    const byPriority = notifications.reduce((acc, n: any) => {
       acc[n.priority] = (acc[n.priority] || 0) + 1
       return acc
     }, {} as Record<string, number>)
@@ -380,7 +380,7 @@ export function useNotifications(userId: string) {
   useEffect(() => {
     if (realTimeEnabled && notifications.length > 0) {
       const urgentUnread = getUrgentNotifications()
-      urgentUnread.forEach(notification => {
+      urgentUnread.forEach((notification: any) => {
         showBrowserNotification(notification)
       })
     }

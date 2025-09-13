@@ -188,7 +188,7 @@ export class AdminAuthService {
       }
 
       const adminPermissions = this.getAdminPermissions(admin.role)
-      const missingPermissions = requiredPermissions.filter(perm => !adminPermissions.includes(perm))
+      const missingPermissions = requiredPermissions.filter((perm: any) => !adminPermissions.includes(perm))
 
       return {
         hasAllPermissions: missingPermissions.length === 0,

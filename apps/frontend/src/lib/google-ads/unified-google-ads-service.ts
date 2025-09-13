@@ -594,7 +594,7 @@ export class UnifiedGoogleAdsService {
     }
 
     if (status && status.length > 0) {
-      const statusValues = status?.filter(Boolean)?.map(s => `'${s}'`).join(',');
+      const statusValues = status?.filter(Boolean)?.map((s: any) => `'${s}'`).join(',');
       whereConditions.push(`campaign.status IN (${statusValues})`);
     }
 
@@ -602,13 +602,13 @@ export class UnifiedGoogleAdsService {
       whereConditions.push(`segments.date BETWEEN '${dateRange.startDate}' AND '${dateRange.endDate}'`);
     }
 
-    whereConditions.forEach(condition => queryBuilder.where(condition));
+    whereConditions.forEach((condition: any) => queryBuilder.where(condition));
     queryBuilder.orderBy('campaign.name');
 
     const query = queryBuilder.build();
     const results = await this.executeQuery<any>(query, useCache);
 
-    return results?.filter(Boolean)?.map(row => this.mapToCampaignInfo(row));
+    return results?.filter(Boolean)?.map((row: any) => this.mapToCampaignInfo(row));
   }
 
   async createCampaign(campaignData: {
@@ -704,7 +704,7 @@ export class UnifiedGoogleAdsService {
     const whereConditions: string[] = [];
 
     if (campaignIds && campaignIds.length > 0) {
-      const campaignResourceNames = campaignIds?.filter(Boolean)?.map(id => 
+      const campaignResourceNames = campaignIds?.filter(Boolean)?.map((id: any) => 
         `'customers/${this.customerId}/campaigns/${id}'`
       ).join(',');
       whereConditions.push(`ad_group.campaign IN (${campaignResourceNames})`);
@@ -715,17 +715,17 @@ export class UnifiedGoogleAdsService {
     }
 
     if (status && status.length > 0) {
-      const statusValues = status?.filter(Boolean)?.map(s => `'${s}'`).join(',');
+      const statusValues = status?.filter(Boolean)?.map((s: any) => `'${s}'`).join(',');
       whereConditions.push(`ad_group.status IN (${statusValues})`);
     }
 
-    whereConditions.forEach(condition => queryBuilder.where(condition));
+    whereConditions.forEach((condition: any) => queryBuilder.where(condition));
     queryBuilder.orderBy('ad_group.name');
 
     const query = queryBuilder.build();
     const results = await this.executeQuery<any>(query, useCache);
 
-    return results?.filter(Boolean)?.map(row => this.mapToAdGroupInfo(row));
+    return results?.filter(Boolean)?.map((row: any) => this.mapToAdGroupInfo(row));
   }
 
   // ==================== Ad Management ==================== //
@@ -789,17 +789,17 @@ export class UnifiedGoogleAdsService {
     }
 
     if (status && status.length > 0) {
-      const statusValues = status?.filter(Boolean)?.map(s => `'${s}'`).join(',');
+      const statusValues = status?.filter(Boolean)?.map((s: any) => `'${s}'`).join(',');
       whereConditions.push(`ad_group_ad.status IN (${statusValues})`);
     }
 
-    whereConditions.forEach(condition => queryBuilder.where(condition));
+    whereConditions.forEach((condition: any) => queryBuilder.where(condition));
     queryBuilder.orderBy('ad_group_ad.ad.id');
 
     const query = queryBuilder.build();
     const results = await this.executeQuery<any>(query, useCache);
 
-    return results?.filter(Boolean)?.map(row => this.mapToAdInfo(row));
+    return results?.filter(Boolean)?.map((row: any) => this.mapToAdInfo(row));
   }
 
   async updateAdFinalUrl(adId: string, finalUrl: string, finalUrlSuffix?: string): Promise<{ success: boolean; adId: string; error?: string }> {
@@ -834,7 +834,7 @@ export class UnifiedGoogleAdsService {
     failureCount: number;
     results: Array<{ success: boolean; adId: string; error?: string }>;
   }> {
-    const operations = updates?.filter(Boolean)?.map(update => ({
+    const operations = updates?.filter(Boolean)?.map((update: any) => ({
       update: {
         resourceName: `customers/${this.customerId}/adGroupAds/${update.adId}`,
         finalUrls: [update.finalUrl],
@@ -849,8 +849,8 @@ export class UnifiedGoogleAdsService {
       successCount: batchResult.summary.successCount,
       failureCount: batchResult.summary.failureCount,
       results: [
-        ...batchResult.successful?.filter(Boolean)?.map(s => ({ success: true as const, adId: s.resourceName?.split('/')?.pop() || '' })),
-        ...batchResult.failed?.filter(Boolean)?.map(f => ({ 
+        ...batchResult.successful?.filter(Boolean)?.map((s: any) => ({ success: true as const, adId: s.resourceName?.split('/')?.pop() || '' })),
+        ...batchResult.failed?.filter(Boolean)?.map((f: any) => ({ 
           success: false as const, 
           adId: f.operation.resourceName?.split('/')?.pop() || '', 
           error: f.error 
@@ -886,7 +886,7 @@ export class UnifiedGoogleAdsService {
         const response = await this.executeMutation<any>(serviceName, batch);
         
         if (response.results) {
-          response.results.forEach((result: any, index: number) => {
+          response.results.forEach((result: any, index: number: any) => {
             successful.push({
               operation: batch[index],
               result: result as T,
@@ -900,7 +900,7 @@ export class UnifiedGoogleAdsService {
           await this.delay(1000);
         }
       } catch (error) {
-        batch.forEach(operation => {
+        batch.forEach((operation: any) => {
           failed.push({
             operation,
             error: error instanceof Error ? error.message : "Unknown error" as any,

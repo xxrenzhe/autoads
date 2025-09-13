@@ -163,7 +163,7 @@ export class CompatibilityChecker {
 
     // 检查是否使用了废弃版本
     if (apiVersion === 'v1') {
-      issues.push(...this.knownIssues.filter(issue => 
+      issues.push(...this.knownIssues.filter((issue: any) => 
         issue.affectedVersions.includes('v1')
       ));
     }
@@ -188,9 +188,9 @@ export class CompatibilityChecker {
       'legacy-token-format'
     ];
 
-    featuresUsed.forEach(feature => {
+    featuresUsed.forEach((feature: any) => {
       if (deprecatedFeatures.includes(feature)) {
-        const relatedIssue = this.knownIssues.find(issue => 
+        const relatedIssue = this.knownIssues.find((issue: any) => 
           issue.component.toLowerCase().includes(feature.replace('-', ' '))
         );
         if (relatedIssue) {
@@ -218,9 +218,9 @@ export class CompatibilityChecker {
       '/api/v2/batch/sync'
     ];
 
-    endpointsAccessed.forEach(endpoint => {
+    endpointsAccessed.forEach((endpoint: any) => {
       if (deprecatedEndpoints.some(deprecated => endpoint.includes(deprecated))) {
-        const relatedIssue = this.knownIssues.find(issue => 
+        const relatedIssue = this.knownIssues.find((issue: any) => 
           issue.description.toLowerCase().includes('auth') ||
           issue.description.toLowerCase().includes('token') ||
           issue.description.toLowerCase().includes('batch')
@@ -285,8 +285,8 @@ export class CompatibilityChecker {
     const recommendations: string[] = [];
 
     // 基于问题严重程度生成建议
-    const criticalIssues = issues.filter(issue => issue.severity === 'critical');
-    const highIssues = issues.filter(issue => issue.severity === 'high');
+    const criticalIssues = issues.filter((issue: any) => issue.severity === 'critical');
+    const highIssues = issues.filter((issue: any) => issue.severity === 'high');
 
     if (criticalIssues.length > 0) {
       recommendations.push('立即处理关键兼容性问题以确保系统安全');
@@ -319,8 +319,8 @@ export class CompatibilityChecker {
    * 确定整体状态
    */
   private static determineOverallStatus(issues: CompatibilityIssue[]): 'compatible' | 'warning' | 'incompatible' {
-    const criticalIssues = issues.filter(issue => issue.severity === 'critical');
-    const highIssues = issues.filter(issue => issue.severity === 'high');
+    const criticalIssues = issues.filter((issue: any) => issue.severity === 'critical');
+    const highIssues = issues.filter((issue: any) => issue.severity === 'high');
 
     if (criticalIssues.length > 0) {
       return 'incompatible';
@@ -337,8 +337,8 @@ export class CompatibilityChecker {
    * 估算工作量
    */
   private static estimateEffort(issues: CompatibilityIssue[]): 'low' | 'medium' | 'high' {
-    const criticalCount = issues.filter(issue => issue.severity === 'critical').length;
-    const highCount = issues.filter(issue => issue.severity === 'high').length;
+    const criticalCount = issues.filter((issue: any) => issue.severity === 'critical').length;
+    const highCount = issues.filter((issue: any) => issue.severity === 'high').length;
     const totalIssues = issues.length;
 
     if (criticalCount > 2 || totalIssues > 10) {

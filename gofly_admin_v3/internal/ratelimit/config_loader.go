@@ -3,12 +3,12 @@
 package ratelimit
 
 import (
-    "fmt"
-    "sync"
-    "time"
+	"fmt"
+	"sync"
+	"time"
 
-    "gofly-admin-v3/internal/store"
-    "gofly-admin-v3/utils/gtime"
+	"gofly-admin-v3/internal/store"
+	"gofly-admin-v3/utils/gtime"
 )
 
 // DatabaseConfigLoader 数据库配置加载器

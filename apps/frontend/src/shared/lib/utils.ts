@@ -99,7 +99,7 @@ export function chunk<T>(array: T[], size: number): T[][] {
 // Object utilities
 export function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
   const result = {} as Pick<T, K>
-  keys.forEach(key => {
+  keys.forEach((key: any) => {
     if (key in obj) {
       result[key] = obj[key]
     }
@@ -109,7 +109,7 @@ export function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pi
 
 export function omit<T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {
   const result = { ...obj }
-  keys.forEach(key => {
+  keys.forEach((key: any) => {
     delete result[key]
   })
   return result

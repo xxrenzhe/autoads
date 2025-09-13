@@ -280,7 +280,7 @@ export default function ManualPage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature) => (
+            {features.map((feature: any) => (
               <Card
                 key={feature.title}
                 className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
@@ -317,7 +317,7 @@ export default function ManualPage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {useCases.map((useCase) => (
+            {useCases.map((useCase: any) => (
               <Card
                 key={useCase.title}
                 className="hover:shadow-lg transition-shadow"

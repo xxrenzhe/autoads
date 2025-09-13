@@ -84,7 +84,7 @@ export function ConfigList({
 
   // Filter configs based on search and filters
   const filteredConfigs = useMemo(() => {
-    return configs.filter(config => {
+    return configs.filter((config: any) => {
       const matchesSearch = searchTerm === '' || 
         config.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
         config.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -114,7 +114,7 @@ export function ConfigList({
     if (selectedConfigs.size === filteredConfigs.length) {
       setSelectedConfigs(new Set())
     } else {
-      setSelectedConfigs(new Set(filteredConfigs?.filter(Boolean)?.map(config => config.id)))
+      setSelectedConfigs(new Set(filteredConfigs?.filter(Boolean)?.map((config: any) => config.id)))
     }
   }
 
@@ -215,7 +215,7 @@ export function ConfigList({
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={() => handleExportConfigs('json')}>
+          <Button variant="outline" size="sm" onClick={((: any): any) => handleExportConfigs('json')}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -245,7 +245,7 @@ export function ConfigList({
                 <Input
                   placeholder="Search configurations..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -255,11 +255,11 @@ export function ConfigList({
             <div className="flex gap-2 flex-wrap">
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={((e: any): any) => setSelectedCategory(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Categories</option>
-                {categories?.filter(Boolean)?.map(category => (
+                {categories?.filter(Boolean)?.map((category: any) => (
                   <option key={category} value={category}>
                     {category.charAt(0).toUpperCase() + category.slice(1)}
                   </option>
@@ -268,10 +268,10 @@ export function ConfigList({
               
               <select
                 value={selectedEnvironment}
-                onChange={(e) => setSelectedEnvironment(e.target.value)}
+                onChange={((e: any): any) => setSelectedEnvironment(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {environments?.filter(Boolean)?.map(env => (
+                {environments?.filter(Boolean)?.map((env: any) => (
                   <option key={env} value={env}>
                     {env.charAt(0).toUpperCase() + env.slice(1)}
                   </option>
@@ -280,10 +280,10 @@ export function ConfigList({
               
               <select
                 value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
+                onChange={((e: any): any) => setSelectedType(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {types?.filter(Boolean)?.map(type => (
+                {types?.filter(Boolean)?.map((type: any) => (
                   <option key={type} value={type}>
                     {type.charAt(0).toUpperCase() + type.slice(1)}
                   </option>
@@ -294,7 +294,7 @@ export function ConfigList({
                 <input
                   type="checkbox"
                   checked={showSecrets}
-                  onChange={(e) => setShowSecrets(e.target.checked)}
+                  onChange={((e: any): any) => setShowSecrets(e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm">Show Secrets</span>
@@ -316,7 +316,7 @@ export function ConfigList({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleExportConfigs('json')}
+                  onClick={((: any): any) => handleExportConfigs('json')}
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Export Selected
@@ -324,9 +324,9 @@ export function ConfigList({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    selectedConfigs.forEach(configId => {
-                      const config = configs.find(c => c.id === configId)
+                  onClick={((: any): any) => {
+                    selectedConfigs.forEach((configId: any) => {
+                      const config = configs.find((c: any) => c.id === configId)
                       if (config) handleDuplicateConfig(config)
                     })
                     setSelectedConfigs(new Set())
@@ -338,9 +338,9 @@ export function ConfigList({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     if (window.confirm(`Are you sure you want to delete ${selectedConfigs.size} configuration(s)?`)) {
-                      selectedConfigs.forEach(configId => handleDeleteConfig(configId))
+                      selectedConfigs.forEach((configId: any) => handleDeleteConfig(configId))
                       setSelectedConfigs(new Set())
                     }
                   }}
@@ -419,20 +419,20 @@ export function ConfigList({
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredConfigs.map((config) => {
+                  {filteredConfigs.map((config: any) => {
                     const CategoryIcon = getCategoryIcon(config.category)
                     
                     return (
                       <tr 
                         key={config.id} 
                         className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                        onClick={() => onConfigSelect?.(config)}
+                        onClick={((: any): any) => onConfigSelect?.(config)}
                       >
                         <td className="px-6 py-4">
                           <input
                             type="checkbox"
                             checked={selectedConfigs.has(config.id)}
-                            onChange={(e) => {
+                            onChange={((e: any): any) => {
                               e.stopPropagation()
                               handleConfigSelect(config.id)
                             }}
@@ -492,7 +492,7 @@ export function ConfigList({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => {
+                              onClick={((e: any): any) => {
                                 e.stopPropagation()
                                 onConfigSelect?.(config)
                               }}
@@ -502,7 +502,7 @@ export function ConfigList({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => {
+                              onClick={((e: any): any) => {
                                 e.stopPropagation()
                                 onConfigEdit?.(config)
                               }}
@@ -512,7 +512,7 @@ export function ConfigList({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => {
+                              onClick={((e: any): any) => {
                                 e.stopPropagation()
                                 handleDuplicateConfig(config)
                               }}
@@ -522,7 +522,7 @@ export function ConfigList({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => {
+                              onClick={((e: any): any) => {
                                 e.stopPropagation()
                                 handleDeleteConfig(config.id)
                               }}
@@ -563,7 +563,7 @@ export function ConfigList({
               <Shield className="h-5 w-5 text-red-600" />
               <div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {configs.filter(c => c.isSecret).length}
+                  {configs.filter((c: any) => c.isSecret).length}
                 </div>
                 <div className="text-sm text-gray-600">Secret Configs</div>
               </div>
@@ -577,7 +577,7 @@ export function ConfigList({
               <AlertTriangle className="h-5 w-5 text-yellow-600" />
               <div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {configs.filter(c => c.isRequired).length}
+                  {configs.filter((c: any) => c.isRequired).length}
                 </div>
                 <div className="text-sm text-gray-600">Required Configs</div>
               </div>

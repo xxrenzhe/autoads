@@ -106,7 +106,7 @@ class SimilarWebService {
 
     // Add API key to params
     if (options.params) {
-      Object.entries(options.params).forEach(([key, value]) => {
+      Object.entries(options.params).forEach(([key, value]: any) => {
         url.searchParams.append(key, value)
       })
     }

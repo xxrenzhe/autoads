@@ -54,14 +54,14 @@ export const GoogleAdsStep = memo(({
           <div>
             <h4 className="font-medium mb-3">已配置的账号</h4>
             <div className="space-y-2">
-              {accounts?.filter(Boolean)?.map(account => (
+              {accounts?.filter(Boolean)?.map((account: any) => (
                 <div key={account.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <div className="font-medium">{account.name}</div>
                     <div className="text-sm text-gray-600">Customer ID: {account.customerId}</div>
                     {account.loginCustomerId && (
                       <div className="text-sm text-gray-500">
-                        Login Customer ID: {account.loginCustomerId.split('\n').filter(id => id.trim()).join(', ')}
+                        Login Customer ID: {account.loginCustomerId.split('\n').filter((id: any) => id.trim()).join(', ')}
                       </div>
                     )}
                   </div>
@@ -72,7 +72,7 @@ export const GoogleAdsStep = memo(({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => onTestConnection(account.id)}
+                      onClick={((: any): any) => onTestConnection(account.id)}
                       disabled={loading}
                     >
                       <TestTube className="h-4 w-4 mr-1" />
@@ -94,7 +94,7 @@ export const GoogleAdsStep = memo(({
               <input
                 type="text"
                 value={newAccount.name || ''}
-                onChange={(e) => handleInputChange('name', e.target.value)}
+                onChange={((e: any): any) => handleInputChange('name', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="我的Google Ads账号"
               />
@@ -105,7 +105,7 @@ export const GoogleAdsStep = memo(({
               <input
                 type="text"
                 value={newAccount.loginCustomerId || ''}
-                onChange={(e) => handleInputChange('loginCustomerId', e.target.value)}
+                onChange={((e: any): any) => handleInputChange('loginCustomerId', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="123-456-7890"
               />
@@ -116,7 +116,7 @@ export const GoogleAdsStep = memo(({
               <input
                 type="text"
                 value={newAccount.clientId || ''}
-                onChange={(e) => handleInputChange('clientId', e.target.value)}
+                onChange={((e: any): any) => handleInputChange('clientId', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="123456789-abc123def456.apps.googleusercontent.com"
               />
@@ -127,7 +127,7 @@ export const GoogleAdsStep = memo(({
               <input
                 type="password"
                 value={newAccount.clientSecret || ''}
-                onChange={(e) => handleInputChange('clientSecret', e.target.value)}
+                onChange={((e: any): any) => handleInputChange('clientSecret', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="请输入Client Secret"
               />
@@ -138,7 +138,7 @@ export const GoogleAdsStep = memo(({
               <input
                 type="text"
                 value={newAccount.developerToken || ''}
-                onChange={(e) => handleInputChange('developerToken', e.target.value)}
+                onChange={((e: any): any) => handleInputChange('developerToken', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="ABcdeFG1234567"
               />
@@ -149,7 +149,7 @@ export const GoogleAdsStep = memo(({
               <input
                 type="password"
                 value={newAccount.refreshToken || ''}
-                onChange={(e) => handleInputChange('refreshToken', e.target.value)}
+                onChange={((e: any): any) => handleInputChange('refreshToken', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="请输入Refresh Token（可选）"
               />
@@ -159,7 +159,7 @@ export const GoogleAdsStep = memo(({
               <label className="block text-sm font-medium mb-2">客户ID列表（Customer IDs）*<br/><span className="text-xs text-gray-500">要管理的客户账户ID，每行一个</span></label>
               <textarea
                 value={newAccount.customerId || ''}
-                onChange={(e) => handleInputChange('customerId', e.target.value)}
+                onChange={((e: any): any) => handleInputChange('customerId', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="123-456-7890&#10;234-567-8901&#10;345-678-9012"
                 rows={3}

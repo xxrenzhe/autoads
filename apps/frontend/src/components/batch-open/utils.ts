@@ -28,8 +28,8 @@ export const validateAndCleanUrl = (url: string): string | null => {
 export const parseUrls = (input: string): string[] => {
   return input
     .split('\n')
-    ?.filter(Boolean)?.map(line => line.trim())
-    .filter(line => line.length > 0)
+    ?.filter(Boolean)?.map((line: any) => line.trim())
+    .filter((line: any) => line.length > 0)
     ?.filter(Boolean)?.map(validateAndCleanUrl)
     .filter((url): url is string => url !== null);
 };

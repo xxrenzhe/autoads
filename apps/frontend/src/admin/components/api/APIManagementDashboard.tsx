@@ -190,7 +190,7 @@ export default function APIManagementDashboard() {
                     { path: '/api/siterank/batch', requests: 28943, success: 98.5 },
                     { path: '/api/user/tokens/balance', requests: 23421, success: 100 },
                     { path: '/api/subscription/subscribe', requests: 19876, success: 97.2 }
-                  ].map((endpoint, index) => (
+                  ].map((endpoint, index: any) => (
                     <div key={index} className="flex items-center justify-between">
                       <span className="text-sm truncate flex-1">{endpoint.path}</span>
                       <div className="flex items-center gap-2">

@@ -63,7 +63,7 @@ export class EnvironmentValidator {
     ];
     
     // Check required variables
-    requiredVars.forEach(varName => {
+    requiredVars.forEach((varName: any) => {
       if (!process.env[varName]) {
         errors.push(`Missing required environment variable: ${varName}`);
       }
@@ -76,7 +76,7 @@ export class EnvironmentValidator {
         'GOOGLE_CLIENT_SECRET'
       ];
       
-      productionRequired.forEach(varName => {
+      productionRequired.forEach((varName: any) => {
         if (!process.env[varName]) {
           errors.push(`Missing required production environment variable: ${varName}`);
         }
@@ -108,7 +108,7 @@ export class EnvironmentValidator {
       'NEXTAUTH_SECRET'
     ];
     
-    recommendedVars.forEach(varName => {
+    recommendedVars.forEach((varName: any) => {
       if (!process.env[varName]) {
         warnings.push(`Recommended environment variable not set: ${varName}`);
       }
@@ -117,13 +117,13 @@ export class EnvironmentValidator {
     // Log results
     if (errors.length > 0) {
       console.error('Environment validation errors:');
-      errors.forEach(error => console.error(`  - ${error}`));
+      errors.forEach((error: any) => console.error(`  - ${error}`));
       throw new Error(`Environment validation failed with ${errors.length} errors`);
     }
     
     if (warnings.length > 0 && process.env.NODE_ENV !== 'test') {
       console.warn('Environment validation warnings:');
-      warnings.forEach(warning => console.warn(`  - ${warning}`));
+      warnings.forEach((warning: any) => console.warn(`  - ${warning}`));
     }
     
     // Return validated config

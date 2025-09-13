@@ -218,7 +218,7 @@ export class LogRotationManager {
       if (logFiles.length > this.config.maxFiles) {
         const filesToDelete = logFiles.slice(this.config.maxFiles);
         await Promise.allSettled(
-          filesToDelete?.filter(Boolean)?.map(file => fs.unlink(file.path))
+          filesToDelete?.filter(Boolean)?.map((file: any) => fs.unlink(file.path))
         );
       }
     } catch (error) {
@@ -292,8 +292,8 @@ export class LogRotationManager {
     
     try {
       const files = await this.getLogFiles();
-      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-      const currentFile = files.find(f => f.name === this.baseFilename);
+      const totalSize = files.reduce((sum, file: any) => sum + file.size, 0);
+      const currentFile = files.find((f: any) => f.name === this.baseFilename);
       
       return {
         totalFiles: files.length,

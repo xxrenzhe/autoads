@@ -42,7 +42,7 @@ export async function GET() {
     });
 
     // Format plans with their features
-    const formattedPlans = plans.map((plan: any) => ({
+    const formattedPlans = plans.map((plan: any: any) => ({
       id: plan.id,
       name: plan.name,
       description: plan.description,
@@ -53,7 +53,7 @@ export async function GET() {
       tokenQuota: plan.tokenQuota,
       trialDays: plan.trialDays,
       yearlyDiscount: plan.yearlyDiscount,
-      features: plan.planFeatures.map((feature: any) => ({
+      features: plan.planFeatures.map((feature: any: any) => ({
         id: feature.featureId,
         name: feature.name,
         enabled: feature.enabled,

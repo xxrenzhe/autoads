@@ -176,7 +176,7 @@ class AdvancedMemoryOptimizer {
     if (this.memoryHistory.length < 3) return;
 
     const recent = this.memoryHistory.slice(-3);
-    const trend = recent.map(stat => stat.heapUsed);
+    const trend = recent.map((stat: any) => stat.heapUsed);
     
     // 检查是否持续增长
     const isIncreasing = trend.every((val, i) => i === 0 || val > trend[i - 1]);
@@ -262,7 +262,7 @@ class AdvancedMemoryOptimizer {
         const cacheKeys = Object.keys(require.cache);
         let cleared = 0;
         
-        cacheKeys.forEach(key => {
+        cacheKeys.forEach((key: any) => {
           // 只清理非核心模块
           if (!key.includes('node_modules') && !key.includes('next')) {
             delete require.cache[key];
@@ -334,7 +334,7 @@ class AdvancedMemoryOptimizer {
       let cleared = 0;
       
       if (typeof require !== 'undefined' && require.cache) {
-        Object.keys(require.cache).forEach(key => {
+        Object.keys(require.cache).forEach((key: any) => {
           if (largeModules.some(module => key.includes(module))) {
             delete require.cache[key];
             cleared++;
@@ -422,7 +422,7 @@ class AdvancedMemoryOptimizer {
       // 清理可能的内存泄漏源
       if (typeof global !== 'undefined') {
         // 清理临时全局变量
-        Object.keys(global).forEach(key => {
+        Object.keys(global).forEach((key: any) => {
           if (key.startsWith('temp_') || key.startsWith('cache_')) {
             delete (global as any)[key];
           }
@@ -476,7 +476,7 @@ class AdvancedMemoryOptimizer {
     }
     
     if (this.memoryHistory.length >= 3) {
-      const trend = this.memoryHistory.slice(-3).map(s => s.heapUsed);
+      const trend = this.memoryHistory.slice(-3).map((s: any) => s.heapUsed);
       const isIncreasing = trend.every((val, i) => i === 0 || val > trend[i - 1]);
       
       if (isIncreasing) {

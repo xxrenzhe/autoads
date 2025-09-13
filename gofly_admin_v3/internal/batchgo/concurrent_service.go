@@ -3,27 +3,27 @@
 package batchgo
 
 import (
-    "context"
-    "fmt"
-    "sync"
-    "time"
+	"context"
+	"fmt"
+	"sync"
+	"time"
 
-    "gofly-admin-v3/internal/store"
-    "gofly-admin-v3/pkg/cache"
-    "gofly-admin-v3/pkg/concurrent"
-    "gofly-admin-v3/utils/gf"
-    "gofly-admin-v3/utils/gform"
-    "gofly-admin-v3/utils/tools/glog"
+	"gofly-admin-v3/internal/store"
+	"gofly-admin-v3/pkg/cache"
+	"gofly-admin-v3/pkg/concurrent"
+	"gofly-admin-v3/utils/gf"
+	"gofly-admin-v3/utils/gform"
+	"gofly-admin-v3/utils/tools/glog"
 )
 
 // ConcurrentBatchService 并发批量服务
 type ConcurrentBatchService struct {
-    db             *store.DB
-    cache          *cache.AdvancedCache
-    workerPool     *concurrent.WorkerPool
-    rateLimiter    *concurrent.RateLimiter
-    circuitBreaker *concurrent.CircuitBreaker
-    concurrency    *concurrent.ConcurrencyLimiter
+	db             *store.DB
+	cache          *cache.AdvancedCache
+	workerPool     *concurrent.WorkerPool
+	rateLimiter    *concurrent.RateLimiter
+	circuitBreaker *concurrent.CircuitBreaker
+	concurrency    *concurrent.ConcurrencyLimiter
 }
 
 // NewConcurrentBatchService 创建并发批量服务
@@ -86,7 +86,7 @@ func (s *ConcurrentBatchService) ExecuteBatchTask(ctx context.Context, task *Bat
 
 			// 创建子任务
 			subTask := &BatchSubTask{
-            ID:         gf.UUID(),
+				ID:         gf.UUID(),
 				TaskID:     task.ID,
 				URL:        url,
 				Config:     task.GetConfig(),
@@ -139,10 +139,10 @@ func (s *ConcurrentBatchService) ExecuteBatchTask(ctx context.Context, task *Bat
 	}
 
 	// 更新任务状态
-    task.Status = BatchTaskStatus("COMPLETED")
-    task.SuccessCount = successCount
-    task.FailedCount = failureCount
-    task.UpdatedAt = time.Now()
+	task.Status = BatchTaskStatus("COMPLETED")
+	task.SuccessCount = successCount
+	task.FailedCount = failureCount
+	task.UpdatedAt = time.Now()
 
 	// 保存结果
 	if err := s.saveTaskResults(ctx, task, allResults); err != nil {
@@ -189,13 +189,13 @@ func (s *ConcurrentBatchService) processURL(ctx context.Context, task *BatchSubT
 			}
 
 			// 保存结果到数据库
-            if err := s.saveTaskResult(ctx, task, taskResult); err != nil {
-                glog.Warning(ctx, "save_task_result_failed", gform.Map{
-                    "task_id": task.ID,
-                    "url":     task.URL,
-                    "error":   err,
-                })
-            }
+			if err := s.saveTaskResult(ctx, task, taskResult); err != nil {
+				glog.Warning(ctx, "save_task_result_failed", gform.Map{
+					"task_id": task.ID,
+					"url":     task.URL,
+					"error":   err,
+				})
+			}
 
 			return nil
 		})
@@ -208,7 +208,7 @@ func (s *ConcurrentBatchService) processURL(ctx context.Context, task *BatchSubT
 
 // executeURL 执行URL处理
 func (s *ConcurrentBatchService) executeURL(ctx context.Context, task *BatchSubTask) (*BatchTaskResult, error) {
-    // start := time.Now()
+	// start := time.Now()
 
 	// 根据访问方式选择处理器
 	var accessor TaskAccessor
@@ -228,7 +228,7 @@ func (s *ConcurrentBatchService) executeURL(ctx context.Context, task *BatchSubT
 	}
 
 	// 记录处理时间
-    // result processing time not persisted in current model; skip storing
+	// result processing time not persisted in current model; skip storing
 
 	// 更新统计信息
 	s.updateMetrics(ctx, result)
@@ -304,14 +304,16 @@ func (s *ConcurrentBatchService) updateMetrics(ctx context.Context, result *Batc
 	cacheKey := fmt.Sprintf("batchgo:metrics:daily:%s", time.Now().Format("2006-01-02"))
 
 	_, err := s.cache.Increment(ctx, cacheKey, 1)
-    if err != nil { glog.Warning(ctx, "update_metrics_failed", gform.Map{"error": err}) }
+	if err != nil {
+		glog.Warning(ctx, "update_metrics_failed", gform.Map{"error": err})
+	}
 
 	// 记录到日志
-    glog.Info(ctx, "batchgo_url_processed", gform.Map{
-        "status":        result.Status,
-        "response_time": result.ResponseTime,
-        "cache_hit":     false,
-    })
+	glog.Info(ctx, "batchgo_url_processed", gform.Map{
+		"status":        result.Status,
+		"response_time": result.ResponseTime,
+		"cache_hit":     false,
+	})
 }
 
 // GetMetrics 获取服务统计信息
@@ -355,35 +357,35 @@ type BatchSubTask struct {
 
 // WorkerTask 工作池任务
 type WorkerTask struct {
-    ID     string
-    Task   *BatchSubTask
-    Result chan *BatchTaskResult
-    Error  chan error
-    processor func(context.Context, *BatchSubTask) (*BatchTaskResult, error)
+	ID        string
+	Task      *BatchSubTask
+	Result    chan *BatchTaskResult
+	Error     chan error
+	processor func(context.Context, *BatchSubTask) (*BatchTaskResult, error)
 }
 
 // NewWorkerTask 创建工作池任务
 func NewWorkerTask(task *BatchSubTask, processor func(context.Context, *BatchSubTask) (*BatchTaskResult, error)) *WorkerTask {
-    workerTask := &WorkerTask{
-        ID:     gf.UUID(),
-        Task:   task,
-        Result: make(chan *BatchTaskResult, 1),
-        Error:  make(chan error, 1),
-    }
+	workerTask := &WorkerTask{
+		ID:     gf.UUID(),
+		Task:   task,
+		Result: make(chan *BatchTaskResult, 1),
+		Error:  make(chan error, 1),
+	}
 
-    // 设置执行函数
-    workerTask.processor = processor
+	// 设置执行函数
+	workerTask.processor = processor
 
 	return workerTask
 }
 
 // Execute 实现Task接口
 func (wt *WorkerTask) Execute(ctx context.Context) error {
-    result, err := wt.processor(ctx, wt.Task)
-    if err != nil {
-        wt.Error <- err
-        return err
-    }
+	result, err := wt.processor(ctx, wt.Task)
+	if err != nil {
+		wt.Error <- err
+		return err
+	}
 
 	wt.Result <- result
 	return nil

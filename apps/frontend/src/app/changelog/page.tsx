@@ -161,7 +161,7 @@ export default function ChangelogPage() {
           </p>
         </div>
         <div className="space-y-6">
-          {changelog.map((log, idx) => (
+          {changelog.map((log, idx: any) => (
             <div key={log.version} className={UI_CONSTANTS.cards.featured + " p-6 hover:scale-[1.01] transition-transform duration-300"}>
               <div className="flex flex-row items-center justify-between pb-3 mb-4 border-b border-gray-100">
                 <div className="flex items-center gap-3">
@@ -184,7 +184,7 @@ export default function ChangelogPage() {
                 </div>
               </div>
               <div className="space-y-3">
-                {log.features.map((f, featureIdx) => (
+                {log.features.map((f, featureIdx: any) => (
                   <div
                     key={featureIdx}
                     className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"

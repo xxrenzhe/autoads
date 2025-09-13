@@ -5,7 +5,7 @@
 export class GoogleAdsService {
   async updateAds(requests: any[]): Promise<any[]> {
     // 简化实现用于构建
-    return requests?.filter(Boolean)?.map(req => ({
+    return requests?.filter(Boolean)?.map((req: any) => ({
       adId: req.adId,
       success: true,
       processingTime: 100

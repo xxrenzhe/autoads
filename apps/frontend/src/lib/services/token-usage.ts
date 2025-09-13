@@ -117,7 +117,7 @@ export async function recordBatchTokenUsage(
 ) {
   try {
     // 计算总Token消耗
-    const totalTokens = items.reduce((sum, item) => sum + item.tokensUsed, 0)
+    const totalTokens = items.reduce((sum, item: any) => sum + item.tokensUsed, 0)
 
     // 生成批次ID
     const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -163,7 +163,7 @@ export async function recordBatchTokenUsage(
       let remainingTokens = updatedUser.tokenBalance
       const planId = user.subscriptions?.[0]?.planId || ''
       const usageRecords = await tx.token_usage.createMany({
-        data: items.map((item, index) => {
+        data: items.map((item, index: any) => {
           remainingTokens -= item.tokensUsed
           return {
             userId,
@@ -266,7 +266,7 @@ export async function getTokenUsageStats(userId: string, days: number = 30) {
   return {
     totalTokens: totalUsage._sum.tokensConsumed || 0,
     totalOperations: totalUsage._count,
-    featureBreakdown: featureBreakdown.map(item => ({
+    featureBreakdown: featureBreakdown.map((item: any) => ({
       feature: item.feature,
       tokens: item._sum.tokensConsumed || 0,
       operations: item._count

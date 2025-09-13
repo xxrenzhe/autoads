@@ -116,7 +116,7 @@ export const RoleCreate: React.FC = () => {
             权限配置
           </Typography>
           
-          {permissionCategories.map((category) => (
+          {permissionCategories.map((category: any) => (
             <Box key={category.category} sx={{ mb: 2 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
                 {category.category}
@@ -127,7 +127,7 @@ export const RoleCreate: React.FC = () => {
               >
                 <SimpleFormIterator
                   getItemLabel={(item: number) => {
-                    const perm = category.permissions.find(p => p.id === String(item));
+                    const perm = category.permissions.find((p: any) => p.id === String(item));
                     return perm ? perm.name : String(item);
                   }}
                 >

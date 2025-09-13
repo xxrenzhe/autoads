@@ -85,7 +85,7 @@ export function UserBehaviorAnalytics({
   const generateDataSummary = useCallback((data: any[], type: string) => {
     if (!data || data.length === 0) return `No ${type} data available`
     
-    const total = data.reduce((sum, item) => sum + (item.value || item.sessions || item.activity || 0), 0)
+    const total = data.reduce((sum, item: any) => sum + (item.value || item.sessions || item.activity || 0), 0)
     const average = Math.round(total / data.length)
     
     return `${type} chart with ${data.length} data points. Total: ${formatNumber(total)}, Average: ${formatNumber(average)}`
@@ -119,7 +119,7 @@ export function UserBehaviorAnalytics({
           <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
             {label}
           </p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: any, index: number: any) => (
             <div key={index} className="flex items-center space-x-2">
               <div 
                 className="w-3 h-3 rounded-full"
@@ -186,7 +186,7 @@ export function UserBehaviorAnalytics({
           <select
             id="time-range-select"
             value={selectedTimeRange}
-            onChange={(e) => setSelectedTimeRange(e.target.value)}
+            onChange={((e: any): any) => setSelectedTimeRange(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-labelledby={timeRangeLabelId}
           >
@@ -198,7 +198,7 @@ export function UserBehaviorAnalytics({
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => exportAnalytics('csv')}
+            onClick={((: any): any) => exportAnalytics('csv')}
             aria-label="Export analytics data as CSV"
           >
             <Download className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -316,14 +316,14 @@ export function UserBehaviorAnalytics({
           { key: 'features', label: 'Feature Adoption', icon: Zap },
           { key: 'journey', label: 'User Journey', icon: Target },
           { key: 'retention', label: 'Retention', icon: Users }
-        ].map(({ key, label, icon: Icon }) => (
+        ].map(({ key, label, icon: Icon }: any) => (
           <button
             key={key}
             role="tab"
             aria-selected={selectedView === key}
             aria-controls={`${key}-panel`}
             tabIndex={selectedView === key ? 0 : -1}
-            onClick={() => handleViewChange(key)}
+            onClick={((: any): any) => handleViewChange(key)}
             onKeyDown={(e) => handleKeyDown(e, () => handleViewChange(key))}
             className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               selectedView === key
@@ -409,7 +409,7 @@ export function UserBehaviorAnalytics({
                       dataKey="sessions"
                       label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                     >
-                      {(behaviorData?.deviceBreakdown || []).map((entry, index) => (
+                      {(behaviorData?.deviceBreakdown || []).map((entry, index: any) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -454,7 +454,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {activityPatterns?.weeklyActivity?.map((day, index) => (
+                  {activityPatterns?.weeklyActivity?.map((day, index: any) => (
                     <div key={day.day} className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {day.day}
@@ -463,7 +463,7 @@ export function UserBehaviorAnalytics({
                         <div className="w-32 bg-gray-200 rounded-full h-2">
                           <div 
                             className="bg-blue-600 h-2 rounded-full"
-                            style={{ width: `${(day.activity / Math.max(...(activityPatterns?.weeklyActivity?.filter(Boolean)?.map(d => d.activity) || [1]))) * 100}%` }}
+                            style={{ width: `${(day.activity / Math.max(...(activityPatterns?.weeklyActivity?.filter(Boolean)?.map((d: any) => d.activity) || [1]))) * 100}%` }}
                           />
                         </div>
                         <span className="text-sm text-gray-600 w-12 text-right">
@@ -482,7 +482,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {activityPatterns?.peakTimes?.map((peak, index) => (
+                  {activityPatterns?.peakTimes?.map((peak, index: any) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">
@@ -522,7 +522,7 @@ export function UserBehaviorAnalytics({
                     />
                     <YAxis className="text-xs" />
                     <Tooltip content={<CustomTooltip />} />
-                    {featureAdoption?.features?.map((feature, index) => (
+                    {featureAdoption?.features?.map((feature, index: any) => (
                       <Line
                         key={feature.name}
                         type="monotone"
@@ -545,7 +545,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {featureAdoption?.features?.map((feature, index) => (
+                  {featureAdoption?.features?.map((feature, index: any) => (
                     <div key={feature.name} className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="text-lg font-bold text-gray-400">
@@ -578,7 +578,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {featureAdoption?.discoveryMethods?.map((method, index) => (
+                  {featureAdoption?.discoveryMethods?.map((method, index: any) => (
                     <div key={method.method} className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {method.method}
@@ -611,7 +611,7 @@ export function UserBehaviorAnalytics({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {userJourney?.journeySteps?.map((step, index) => (
+                {userJourney?.journeySteps?.map((step, index: any) => (
                   <div key={step.step} className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
@@ -661,7 +661,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {userJourney?.dropOffPoints?.map((point, index) => (
+                  {userJourney?.dropOffPoints?.map((point, index: any) => (
                     <div key={point.step} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                       <div>
                         <p className="font-medium text-red-800 dark:text-red-200">
@@ -686,7 +686,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {userJourney?.successPaths?.map((path, index) => (
+                  {userJourney?.successPaths?.map((path, index: any) => (
                     <div key={path.path} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                       <div>
                         <p className="font-medium text-green-800 dark:text-green-200">

@@ -296,7 +296,7 @@ export class TaskQueue extends EventEmitter {
 
   // 获取用户的任务列表
   getUserTasks(userId: string): Task[] {
-    return Array.from(this.tasks.values()).filter(task => task.userId === userId);
+    return Array.from(this.tasks.values()).filter((task: any) => task.userId === userId);
   }
 
   // 获取用户正在运行的任务数

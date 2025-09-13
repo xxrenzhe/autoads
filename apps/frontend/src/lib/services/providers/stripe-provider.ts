@@ -218,7 +218,7 @@ export class StripeProvider extends PaymentProvider {
 
       return {
         success: true,
-        data: paymentMethods.data?.filter(Boolean)?.map(pm => this.mapStripePaymentMethod(pm))
+        data: paymentMethods.data?.filter(Boolean)?.map((pm: any) => this.mapStripePaymentMethod(pm))
       }
     } catch (error) {
       return {
@@ -569,7 +569,7 @@ export class StripeProvider extends PaymentProvider {
 
       return {
         success: true,
-        data: invoices.data?.filter(Boolean)?.map(invoice => this.mapStripeInvoice(invoice))
+        data: invoices.data?.filter(Boolean)?.map((invoice: any) => this.mapStripeInvoice(invoice))
       }
     } catch (error) {
       return {

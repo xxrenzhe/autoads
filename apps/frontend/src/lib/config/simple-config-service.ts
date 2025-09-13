@@ -19,7 +19,7 @@ export class SimpleConfigurationService {
         orderBy: { key: 'asc' }
       })
       
-      return configs.map((config: any) => ({
+      return configs.map((config: any: any) => ({
         id: config.id,
         key: config.key,
         value: config.value,
@@ -80,9 +80,9 @@ export class SimpleConfigurationService {
     return {
       total: all.length,
       categories: 1, // Since category is not in schema, default to 1
-      secretConfigs: all.filter(c => c.isSecret).length,
+      secretConfigs: all.filter((c: any) => c.isSecret).length,
       hotReloadConfigs: 0, // Since isHotReload is not in schema
-      lastUpdated: all.reduce((latest, config) => 
+      lastUpdated: all.reduce((latest, config: any) => 
         config.updatedAt > latest ? config.updatedAt : latest, 
         new Date(0)
       )

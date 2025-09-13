@@ -466,9 +466,9 @@ export class AutomationExecutionEngine {
    * 生成执行报告
    */
   private generateExecutionReport(context: ExecutionContext, linkResults: LinkProcessingResult[]): any {
-    const totalExtractions = linkResults.reduce((sum, result) => sum + result.extractionResults.length, 0);
+    const totalExtractions = linkResults.reduce((sum, result: any) => sum + result.extractionResults.length, 0);
     const successfulExtractions = linkResults.reduce(
-      (sum, result) => sum + result.extractionResults.filter(r => r.success).length, 0
+      (sum, result) => sum + result.extractionResults.filter((r: any) => r.success).length, 0
     );
 
     return {
@@ -484,7 +484,7 @@ export class AutomationExecutionEngine {
         successfulUpdates: context.metadata.successfulUpdates,
         failedUpdates: context.metadata.failedUpdates
       },
-      errors: context.errors?.filter(Boolean)?.map(err => ({
+      errors: context.errors?.filter(Boolean)?.map((err: any) => ({
         step: err.step || 'unknown',
         error: err.error,
         timestamp: err.timestamp || new Date()

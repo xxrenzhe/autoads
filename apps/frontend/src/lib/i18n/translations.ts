@@ -285,7 +285,7 @@ export class TranslationManager {
 
     // Handle interpolation
     if (options.interpolation) {
-      Object.entries(options.interpolation).forEach(([key, value]) => {
+      Object.entries(options.interpolation).forEach(([key, value]: any) => {
         const placeholder = new RegExp(`{{\\s*${key}\\s*}}`, 'g')
         result = result.replace(placeholder, String(value))
       })

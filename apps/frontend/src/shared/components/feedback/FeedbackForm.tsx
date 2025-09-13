@@ -127,7 +127,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           </label>
           <select
             value={formData.type}
-            onChange={(e) => handleInputChange('type', e.target.value)}
+            onChange={((e: any): any) => handleInputChange('type', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
@@ -145,7 +145,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           </label>
           <select
             value={formData.module}
-            onChange={(e) => handleInputChange('module', e.target.value)}
+            onChange={((e: any): any) => handleInputChange('module', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="general">General</option>
@@ -163,7 +163,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           <Input
             type="text"
             value={formData.title}
-            onChange={(e) => handleInputChange('title', e.target.value)}
+            onChange={((e: any): any) => handleInputChange('title', e.target.value)}
             placeholder="Brief description of your feedback"
             maxLength={200}
             required
@@ -177,7 +177,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           </label>
           <textarea
             value={formData.description}
-            onChange={(e) => handleInputChange('description', e.target.value)}
+            onChange={((e: any): any) => handleInputChange('description', e.target.value)}
             placeholder="Detailed description of your feedback, including steps to reproduce if reporting a bug"
             rows={4}
             maxLength={2000}
@@ -196,7 +196,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           </label>
           <select
             value={formData.priority}
-            onChange={(e) => handleInputChange('priority', e.target.value)}
+            onChange={((e: any): any) => handleInputChange('priority', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="low">Low</option>
@@ -214,7 +214,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           <Input
             type="email"
             value={formData.email}
-            onChange={(e) => handleInputChange('email', e.target.value)}
+            onChange={((e: any): any) => handleInputChange('email', e.target.value)}
             placeholder="Your email for follow-up"
           />
         </div>

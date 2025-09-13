@@ -148,7 +148,7 @@ export function BillingHistory({
         </div>
         
         <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, index) => (
+          {Array.from({ length: 5 }).map((_, index: any) => (
             <Card key={index} className="animate-pulse">
               <CardContent className="p-4">
                 <div className="space-y-3">
@@ -179,7 +179,7 @@ export function BillingHistory({
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               {error.message}
             </p>
-            <Button onClick={() => refetch()} variant="outline">
+            <Button onClick={((: any): any) => refetch()} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
               Try Again
             </Button>
@@ -202,7 +202,7 @@ export function BillingHistory({
           </p>
         </div>
         
-        <Button onClick={() => refetch()} variant="outline" size="sm">
+        <Button onClick={((: any): any) => refetch()} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
@@ -222,7 +222,7 @@ export function BillingHistory({
               
               <select
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={((e: any): any) => setSelectedStatus(e.target.value)}
                 className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
@@ -234,7 +234,7 @@ export function BillingHistory({
               
               <select
                 value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
+                onChange={((e: any): any) => setSelectedPeriod(e.target.value)}
                 className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Time</option>
@@ -250,7 +250,7 @@ export function BillingHistory({
       {/* Billing Records */}
       <div className="space-y-4">
         {billingHistory && billingHistory.length > 0 ? (
-          billingHistory.map((record) => {
+          billingHistory.map((record: any) => {
             const StatusIcon = getStatusIcon(record.status)
             
             return (
@@ -300,7 +300,7 @@ export function BillingHistory({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDownloadInvoice(record.id)}
+                          onClick={((: any): any) => handleDownloadInvoice(record.id)}
                         >
                           <Download className="h-4 w-4 mr-1" />
                           Invoice
@@ -311,7 +311,7 @@ export function BillingHistory({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDownloadReceipt(record.id)}
+                          onClick={((: any): any) => handleDownloadReceipt(record.id)}
                         >
                           <Receipt className="h-4 w-4 mr-1" />
                           Receipt
@@ -360,7 +360,7 @@ export function BillingHistory({
               
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">
-                  {billingHistory.filter(r => r.status === 'paid').length}
+                  {billingHistory.filter((r: any) => r.status === 'paid').length}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Paid
@@ -369,7 +369,7 @@ export function BillingHistory({
               
               <div className="text-center">
                 <p className="text-2xl font-bold text-yellow-600">
-                  {billingHistory.filter(r => r.status === 'pending').length}
+                  {billingHistory.filter((r: any) => r.status === 'pending').length}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Pending
@@ -378,7 +378,7 @@ export function BillingHistory({
               
               <div className="text-center">
                 <p className="text-2xl font-bold text-red-600">
-                  {billingHistory.filter(r => r.status === 'failed').length}
+                  {billingHistory.filter((r: any) => r.status === 'failed').length}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Failed

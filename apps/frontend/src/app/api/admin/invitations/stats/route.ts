@@ -148,12 +148,12 @@ export async function GET(request: NextRequest) {
     ]);
 
     // 计算邀请成功率
-    const statusCounts = invitationRate.reduce((acc, item) => {
+    const statusCounts = invitationRate.reduce((acc, item: any) => {
       acc[item.status] = item._count._all;
       return acc;
     }, {} as Record<string, number>);
 
-    const totalWithStatus = Object.values(statusCounts).reduce((sum, count) => sum + count, 0);
+    const totalWithStatus = Object.values(statusCounts).reduce((sum, count: any) => sum + count, 0);
     const acceptanceRate = totalWithStatus > 0 
       ? ((statusCounts.ACCEPTED || 0) / totalWithStatus) * 100 
       : 0;

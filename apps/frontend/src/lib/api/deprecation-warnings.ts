@@ -76,7 +76,7 @@ export class DeprecationWarningManager {
     const pathname = request.nextUrl.pathname;
     const deprecatedFeatures: DeprecatedFeature[] = [];
 
-    Object.values(DEPRECATED_FEATURES).forEach(feature => {
+    Object.values(DEPRECATED_FEATURES).forEach((feature: any) => {
       if (feature.affectedEndpoints.some(endpoint => pathname.includes(endpoint))) {
         deprecatedFeatures.push(feature);
       }
@@ -124,7 +124,7 @@ export class DeprecationWarningManager {
     response.headers.set('Deprecation', 'true');
     
     // 添加警告详情
-    const warnings = features?.filter(Boolean)?.map(feature => {
+    const warnings = features?.filter(Boolean)?.map((feature: any) => {
       const code = this.getSeverityCode(feature.severity);
       const message = this.generateWarningMessage(feature);
       return `${code} - "${message}"`;
@@ -134,8 +134,8 @@ export class DeprecationWarningManager {
 
     // 添加迁移指南链接
     const migrationGuides = features
-      .filter(f => f.migrationGuide)
-      ?.filter(Boolean)?.map(f => f.migrationGuide)
+      .filter((f: any) => f.migrationGuide)
+      ?.filter(Boolean)?.map((f: any) => f.migrationGuide)
       .join(', ');
     
     if (migrationGuides) {
@@ -144,7 +144,7 @@ export class DeprecationWarningManager {
 
     // 添加移除日期
     const earliestRemoval = features
-      .filter(f => f.removalDate)
+      .filter((f: any) => f.removalDate)
       .sort((a, b) => (a.removalDate!.getTime() - b.removalDate!.getTime()))[0];
     
     if (earliestRemoval?.removalDate) {
@@ -181,7 +181,7 @@ export class DeprecationWarningManager {
     const responseData: any = {
       data,
       warnings: deprecatedFeatures.length > 0 ? {
-        deprecated_features: deprecatedFeatures?.filter(Boolean)?.map(feature => ({
+        deprecated_features: deprecatedFeatures?.filter(Boolean)?.map((feature: any) => ({
           name: feature.name,
           message: this.generateWarningMessage(feature),
           severity: feature.severity,
@@ -228,12 +228,12 @@ export class DeprecationWarningManager {
   } {
     const features = Object.values(DEPRECATED_FEATURES);
     
-    const bySeverity = features.reduce((acc, feature) => {
+    const bySeverity = features.reduce((acc, feature: any) => {
       acc[feature.severity] = (acc[feature.severity] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    const nearRemoval = features.filter(feature => 
+    const nearRemoval = features.filter((feature: any) => 
       this.isFeatureNearRemoval(feature.name)
     );
 

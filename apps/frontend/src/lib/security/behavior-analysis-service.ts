@@ -83,21 +83,21 @@ export class BehaviorAnalysisService {
       description: '分析用户的使用频率是否异常',
       category: 'usage',
       analyzeFunction: (activities) => {
-        const last7Days = activities.filter(a => 
+        const last7Days = activities.filter((a: any) => 
           new Date(a.timestamp).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
         );
         
         const dailyUsage = new Array(7).fill(0);
-        last7Days.forEach(activity => {
+        last7Days.forEach((activity: any) => {
           const dayIndex = Math.floor((Date.now() - new Date(activity.timestamp).getTime()) / (24 * 60 * 60 * 1000));
           if (dayIndex >= 0 && dayIndex < 7) {
             dailyUsage[6 - dayIndex]++;
           }
         });
 
-        const avgDailyUsage = dailyUsage.reduce((a, b) => a + b, 0) / 7;
+        const avgDailyUsage = dailyUsage.reduce((a, b: any) => a + b, 0) / 7;
         const maxDailyUsage = Math.max(...dailyUsage);
-        const usageVariance = dailyUsage.reduce((sum, usage) => sum + Math.pow(usage - avgDailyUsage, 2), 0) / 7;
+        const usageVariance = dailyUsage.reduce((sum, usage: any) => sum + Math.pow(usage - avgDailyUsage, 2), 0) / 7;
 
         const detected = maxDailyUsage > avgDailyUsage * 3 || usageVariance > avgDailyUsage * 2;
         const confidence = Math.min((maxDailyUsage / (avgDailyUsage + 1)) / 3, 1);
@@ -129,21 +129,21 @@ export class BehaviorAnalysisService {
       category: 'timing',
       analyzeFunction: (activities) => {
         const hourDistribution = new Array(24).fill(0);
-        activities.forEach(activity => {
+        activities.forEach((activity: any) => {
           const hour = new Date(activity.timestamp).getHours();
           hourDistribution[hour]++;
         });
 
         // 计算活跃时段
         const peakHours = hourDistribution
-          .map((count, hour) => ({ hour, count }))
-          .filter(item => item.count > 0)
+          .map((count, hour: any) => ({ hour, count }))
+          .filter((item: any) => item.count > 0)
           .sort((a, b) => b.count - a.count)
           .slice(0, 3);
 
         // 检测夜间活跃（凌晨2-6点）
-        const nightActivity = hourDistribution.slice(2, 7).reduce((a, b) => a + b, 0);
-        const totalActivity = hourDistribution.reduce((a, b) => a + b, 0);
+        const nightActivity = hourDistribution.slice(2, 7).reduce((a, b: any) => a + b, 0);
+        const totalActivity = hourDistribution.reduce((a, b: any) => a + b, 0);
         const nightActivityRatio = totalActivity > 0 ? nightActivity / totalActivity : 0;
 
         const detected = nightActivityRatio > 0.3; // 30%以上活动在夜间
@@ -155,7 +155,7 @@ export class BehaviorAnalysisService {
           confidence,
           severity: detected && confidence > 0.5 ? 'medium' : 'low',
           insights: [
-            `主要活跃时段: ${peakHours.map(h => `${h.hour}:00`).join(', ')}`,
+            `主要活跃时段: ${peakHours.map((h: any) => `${h.hour}:00`).join(', ')}`,
             `夜间活动比例: ${(nightActivityRatio * 100).toFixed(1)}%`
           ],
           recommendations: detected ? [
@@ -181,8 +181,8 @@ export class BehaviorAnalysisService {
 
         // 提取功能使用序列
         const featureSequence = sortedActivities
-          .map(a => a.resource.split('/')[0])
-          .filter((feature, index, arr) => feature && feature !== arr[index - 1]);
+          .map((a: any) => a.resource.split('/')[0])
+          .filter((feature, index, arr: any) => feature && feature !== arr[index - 1]);
 
         // 检测快速切换
         let rapidSwitches = 0;
@@ -223,8 +223,8 @@ export class BehaviorAnalysisService {
       category: 'performance',
       analyzeFunction: (activities) => {
         const responseTimes = activities
-          .filter(a => a.metadata && typeof a.metadata === 'object' && 'responseTime' in a.metadata)
-          .map(a => (a.metadata as any).responseTime as number);
+          .filter((a: any) => a.metadata && typeof a.metadata === 'object' && 'responseTime' in a.metadata)
+          .map((a: any) => (a.metadata as any).responseTime as number);
 
         if (responseTimes.length === 0) {
           return {
@@ -237,9 +237,9 @@ export class BehaviorAnalysisService {
           };
         }
 
-        const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+        const avgResponseTime = responseTimes.reduce((a, b: any) => a + b, 0) / responseTimes.length;
         const maxResponseTime = Math.max(...responseTimes);
-        const slowResponses = responseTimes.filter(t => t > avgResponseTime * 2).length;
+        const slowResponses = responseTimes.filter((t: any) => t > avgResponseTime * 2).length;
         
         const detected = slowResponses > responseTimes.length * 0.2; // 20%的请求响应异常慢
         const confidence = Math.min(slowResponses / responseTimes.length * 3, 1);
@@ -270,13 +270,13 @@ export class BehaviorAnalysisService {
       description: '分析用户的错误类型和频率',
       category: 'usage',
       analyzeFunction: (activities) => {
-        const errorActivities = activities.filter(a => 
+        const errorActivities = activities.filter((a: any) => 
           a.action.includes('error') || 
           a.action.includes('failed') ||
           (a.metadata && typeof a.metadata === 'object' && 'error' in a.metadata)
         );
 
-        const totalActivities = activities.filter(a => 
+        const totalActivities = activities.filter((a: any) => 
           a.action.includes('consume') || 
           a.action.includes('access') ||
           a.action.includes('query')
@@ -297,7 +297,7 @@ export class BehaviorAnalysisService {
         
         // 分析错误类型
         const errorTypes = new Map<string, number>();
-        errorActivities.forEach(activity => {
+        errorActivities.forEach((activity: any) => {
           const errorType = (activity.metadata && typeof activity.metadata === 'object' && 'errorType' in activity.metadata) 
             ? (activity.metadata as any).errorType 
             : 'unknown';
@@ -317,7 +317,7 @@ export class BehaviorAnalysisService {
             `主要错误类型: ${Array.from(errorTypes.entries())
               .sort((a, b) => b[1] - a[1])
               .slice(0, 3)
-              .map(([type, count]) => `${type}(${count}次)`)
+              .map(([type, count]: any) => `${type}(${count}次)`)
               .join(', ')}`
           ],
           recommendations: detected ? [
@@ -353,7 +353,7 @@ export class BehaviorAnalysisService {
       });
 
       // 转换为UserActivity格式
-      const userActivities: UserActivity[] = activities.map((a: any) => ({
+      const userActivities: UserActivity[] = activities.map((a: any: any) => ({
         userId: a.userId,
         action: a.action,
         resource: a.resource,
@@ -387,14 +387,14 @@ export class BehaviorAnalysisService {
         typicalUsageHours: this.calculateTypicalUsageHours(userActivities),
         averageSessionDuration: this.calculateAverageSessionDuration(userActivities),
         favoriteFeatures: this.getMostFrequentFeatures(
-          userActivities.map(a => a.resource.split('/')[0]).filter(Boolean),
+          userActivities.map((a: any) => a.resource.split('/')[0]).filter(Boolean),
           5
         ),
         lastUpdated: new Date()
       };
 
       // 记录模式检测结果
-      analysisResults.forEach(result => {
+      analysisResults.forEach((result: any) => {
         if (result.detected) {
           profile.patterns[result.patternId] = {
             frequency: result.confidence,
@@ -450,18 +450,18 @@ export class BehaviorAnalysisService {
 
       // 分析导航路径
       const navigationPath = activities
-        .filter((a: any) => a.resource && !a.resource.startsWith('/api/'))
-        .map((a: any) => a.resource);
+        .filter((a: any: any) => a.resource && !a.resource.startsWith('/api/'))
+        .map((a: any: any) => a.resource);
 
       // 分析使用的功能
       const featuresUsed: string[] = [...new Set(
         activities
-          .map((a: any) => a.resource.split('/')[0])
+          .map((a: any: any) => a.resource.split('/')[0])
           .filter(Boolean)
       ) as Set<string>];
 
       // 转换为UserActivity格式进行分析
-      const userActivities: UserActivity[] = activities.map((a: any) => ({
+      const userActivities: UserActivity[] = activities.map((a: any: any) => ({
         userId: a.userId,
         action: a.action,
         resource: a.resource,
@@ -559,16 +559,16 @@ export class BehaviorAnalysisService {
    */
   private calculateTypicalUsageHours(activities: UserActivity[]): number[] {
     const hourCount = new Array(24).fill(0);
-    activities.forEach(activity => {
+    activities.forEach((activity: any) => {
       const hour = new Date(activity.timestamp).getHours();
       hourCount[hour]++;
     });
 
     const maxCount = Math.max(...hourCount);
     return hourCount
-      .map((count, hour) => ({ hour, count }))
-      .filter(item => item.count >= maxCount * 0.5)
-      .map(item => item.hour);
+      .map((count, hour: any) => ({ hour, count }))
+      .filter((item: any) => item.count >= maxCount * 0.5)
+      .map((item: any) => item.hour);
   }
 
   /**
@@ -583,7 +583,7 @@ export class BehaviorAnalysisService {
 
     activities.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-    activities.forEach(activity => {
+    activities.forEach((activity: any) => {
       if (currentSession.length === 0) {
         currentSession.push(activity);
       } else {
@@ -606,14 +606,14 @@ export class BehaviorAnalysisService {
       sessions.push(currentSession);
     }
 
-    const durations = sessions.map(session => {
+    const durations = sessions.map((session: any) => {
       if (session.length < 2) return 0;
       return new Date(session[session.length - 1].timestamp).getTime() - 
              new Date(session[0].timestamp).getTime();
     });
 
     return durations.length > 0 
-      ? durations.reduce((sum, duration) => sum + duration, 0) / durations.length
+      ? durations.reduce((sum, duration: any) => sum + duration, 0) / durations.length
       : 0;
   }
 
@@ -622,14 +622,14 @@ export class BehaviorAnalysisService {
    */
   private getMostFrequentFeatures(features: string[], limit: number): string[] {
     const featureCount = new Map<string, number>();
-    features.forEach(feature => {
+    features.forEach((feature: any) => {
       featureCount.set(feature, (featureCount.get(feature) || 0) + 1);
     });
 
     return Array.from(featureCount.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
-      .map(([feature]) => feature);
+      .map(([feature]: any) => feature);
   }
 
   /**

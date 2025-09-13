@@ -116,8 +116,8 @@ export async function GET(request: NextRequest) {
     });
 
     // Map subscription stats by plan name
-    const subscriptionByPlan = subscriptionStats.reduce((acc, stat) => {
-      const plan = plans.find(p => p.id === stat.planId);
+    const subscriptionByPlan = subscriptionStats.reduce((acc, stat: any) => {
+      const plan = plans.find((p: any) => p.id === stat.planId);
       if (plan) {
         acc[plan.name] = stat._count;
       }
@@ -364,11 +364,11 @@ export async function GET(request: NextRequest) {
           thisMonth: avgResponseTimeMonth._avg?.responseTime || 0
         },
         topEndpoints: {
-          today: topEndpointsToday.map(ep => ({
+          today: topEndpointsToday.map((ep: any) => ({
             endpoint: ep.endpoint,
             count: ep._count
           })),
-          thisMonth: topEndpointsMonth.map(ep => ({
+          thisMonth: topEndpointsMonth.map((ep: any) => ({
             endpoint: ep.endpoint,
             count: ep._count
           }))

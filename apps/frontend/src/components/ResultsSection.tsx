@@ -109,14 +109,14 @@ const ResultsSection = ({
     return <Badge variant={config.variant}>{config.text}</Badge>;
   };
 
-  const successfulResults = results.filter((r) => {
+  const successfulResults = results.filter((r: any) => {
     const status = r.status;
     if (typeof status === "number") {
       return status >= 200 && status < 400;
     }
     return status === "success" || status === "opened";
   });
-  const failedResults = results.filter((r) => {
+  const failedResults = results.filter((r: any) => {
     const status = r.status;
     if (typeof status === "number") {
       return status >= 400 || status === null;
@@ -189,7 +189,7 @@ const ResultsSection = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results.map((result, index) => (
+                {results.map((result, index: any) => (
                   <TableRow key={result.originalUrl}>
                     <TableCell className="font-mono text-sm max-w-xs truncate">
                       {result.originalUrl}
@@ -201,11 +201,11 @@ const ResultsSection = ({
                           <input
                             type="text"
                             value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
+                            onChange={((e: any): any) => setEditValue(e.target.value)}
                             className="flex-1 px-2 py-1 text-sm border rounded"
                             autoFocus
                           />
-                          <Button size="sm" onClick={() => handleSave(index)}>
+                          <Button size="sm" onClick={((: any): any) => handleSave(index)}>
                             <Check className="w-3 h-3" />
                           </Button>
                           <Button
@@ -226,7 +226,7 @@ const ResultsSection = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() =>
+                                onClick={((: any): any) =>
                                   result.finalUrl &&
                                   copyToClipboard(result.finalUrl, index)
                                 }
@@ -240,7 +240,7 @@ const ResultsSection = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() =>
+                                onClick={((: any): any) =>
                                   window.open(result.finalUrl, "_blank")
                                 }
                               >
@@ -256,7 +256,7 @@ const ResultsSection = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() =>
+                          onClick={((: any): any) =>
                             handleEdit(index, result.finalUrl || "")
                           }
                         >
@@ -286,7 +286,7 @@ const ResultsSection = ({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {successfulResults.map((result, index) => (
+              {successfulResults.map((result, index: any) => (
                 <div key={result.originalUrl} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-sm">
@@ -323,7 +323,7 @@ const ResultsSection = ({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {failedResults.map((result, index) => (
+              {failedResults.map((result, index: any) => (
                 <div
                   key={result.originalUrl}
                   className="border rounded-lg p-4 bg-red-50"

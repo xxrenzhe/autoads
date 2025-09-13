@@ -194,7 +194,7 @@ export class PermissionService implements IPermissionService {
 
   private deduplicatePermissions(permissions: Permission[]): Permission[] {
     const seen = new Set<string>()
-    return permissions.filter(permission => {
+    return permissions.filter((permission: any) => {
       const key = `${permission.resource}:${permission.action}`
       if (seen.has(key)) {
         return false

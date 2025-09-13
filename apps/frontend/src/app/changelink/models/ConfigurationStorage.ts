@@ -286,12 +286,12 @@ export class ConfigurationStorage {
       const allConfigs = await this.getAllConfigurations();
       const configurations = allConfigs.configurations || [];
 
-      const activeCount = configurations.filter(c => c.status === 'active').length;
-      const pausedCount = configurations.filter(c => c.status === 'paused').length;
+      const activeCount = configurations.filter((c: any) => c.status === 'active').length;
+      const pausedCount = configurations.filter((c: any) => c.status === 'paused').length;
 
       // 计算备份数量
       const keys = await this.storageManager.getAllKeys(this.options.namespace);
-      const backupCount = keys.filter(key => key.startsWith('backup:')).length;
+      const backupCount = keys.filter((key: any) => key.startsWith('backup:')).length;
 
       // 计算总大小（近似值）
       let totalSize = 0;
@@ -394,7 +394,7 @@ export class ConfigurationStorage {
       const allConfigs = await this.getAllConfigurations();
       const configurations = allConfigs.configurations || [];
 
-      const filtered = configurations.filter(config => 
+      const filtered = configurations.filter((config: any) => 
         config.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         config.originalLinks.some(link => link.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (config.notificationEmail && config.notificationEmail.toLowerCase().includes(searchTerm.toLowerCase()))

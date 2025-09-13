@@ -141,7 +141,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Array.from({ length: 4 }).map((_, index) => (
+          {Array.from({ length: 4 }).map((_, index: any) => (
             <Card key={index} className="animate-pulse">
               <CardContent className="p-6">
                 <div className="space-y-4">
@@ -170,7 +170,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
           </p>
         </div>
         
-        <Button onClick={() => refetch()} variant="outline" size="sm">
+        <Button onClick={((: any): any) => refetch()} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
@@ -189,7 +189,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
             
             <select
               value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
+              onChange={((e: any): any) => setSelectedPeriod(e.target.value)}
               className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="7">Last 7 days</option>
@@ -201,7 +201,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
             
             <select
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+              onChange={((e: any): any) => setSelectedType(e.target.value)}
               className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Types</option>
@@ -221,7 +221,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {reportTypes.map((type) => (
+            {reportTypes.map((type: any) => (
               <div key={type.id} className="p-4 border rounded-lg">
                 <div className="flex items-center mb-2">
                   {getReportIcon(type.id)}
@@ -234,7 +234,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
                 </p>
                 <Button
                   size="sm"
-                  onClick={() => generateReport(type.id, selectedPeriod)}
+                  onClick={((: any): any) => generateReport(type.id, selectedPeriod)}
                   disabled={generatingReports.has(`${type.id}-${selectedPeriod}`)}
                   className="w-full"
                 >
@@ -264,7 +264,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
         <CardContent>
           {reports && reports.length > 0 ? (
             <div className="space-y-4">
-              {reports.map((report) => (
+              {reports.map((report: any) => (
                 <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     {getReportIcon(report.type)}
@@ -292,7 +292,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => downloadReport(report.id)}
+                        onClick={((: any): any) => downloadReport(report.id)}
                       >
                         <Download className="h-3 w-3 mr-2" />
                         Download
@@ -365,7 +365,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
                   Ready Reports
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {reports?.filter(r => r.status === 'ready').length || 0}
+                  {reports?.filter((r: any) => r.status === 'ready').length || 0}
                 </p>
               </div>
             </div>

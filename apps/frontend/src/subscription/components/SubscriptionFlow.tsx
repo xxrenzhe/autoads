@@ -135,7 +135,7 @@ export function SubscriptionFlow({
       {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex items-center justify-center space-x-8">
-          {steps.map((step, index) => {
+          {steps.map((step, index: any) => {
             const StepIcon = step.icon
             const isActive = index === currentStepIndex
             const isCompleted = index < currentStepIndex

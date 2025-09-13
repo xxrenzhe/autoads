@@ -252,7 +252,7 @@ export const SystemTaskStatusDashboard: React.FC = () => {
                   <TableBody>
                     {data?.recentExecutions
                       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                      .map((execution) => (
+                      .map((execution: any) => (
                         <TableRow key={execution.id}>
                           <TableCell>{formatTime(execution.timestamp)}</TableCell>
                           <TableCell>
@@ -330,13 +330,13 @@ export const SystemTaskStatusDashboard: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {data?.serviceStarts.map((start) => (
+                    {data?.serviceStarts.map((start: any) => (
                       <TableRow key={start.id}>
                         <TableCell>{formatTime(start.timestamp)}</TableCell>
                         <TableCell>{start.metadata?.tasksCount || 0}</TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {start.metadata?.enabledTasks?.map((taskId: string) => (
+                            {start.metadata?.enabledTasks?.map((taskId: string: any) => (
                               <Chip 
                                 key={taskId}
                                 label={taskId}
@@ -376,7 +376,7 @@ export const SystemTaskStatusDashboard: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {data?.taskStats.map((stat) => (
+                    {data?.taskStats.map((stat: any) => (
                       <TableRow key={stat.action}>
                         <TableCell>{stat.action}</TableCell>
                         <TableCell>

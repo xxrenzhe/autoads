@@ -314,7 +314,7 @@ export class AdsPowerApiClient {
   async getActiveTab(profileId: string): Promise<BrowserTab | null> {
     try {
       const tabs = await this.getTabs(profileId);
-      return tabs.find(tab => tab.active) || null;
+      return tabs.find((tab: any) => tab.active) || null;
     } catch (error) {
       console.error('Failed to get active tab from AdsPower browser:', error);
       return null as any;

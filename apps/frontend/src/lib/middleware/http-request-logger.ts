@@ -143,7 +143,7 @@ function getClientIp(req: IncomingMessage): string {
     const value = req.headers[header];
     if (typeof value === 'string') {
       // x-forwarded-for可能包含多个IP，取第一个
-      const ips = value.split(',')?.filter(Boolean)?.map(ip => ip.trim());
+      const ips = value.split(',')?.filter(Boolean)?.map((ip: any) => ip.trim());
       if (ips.length > 0 && ips[0]) {
         return ips[0];
       }

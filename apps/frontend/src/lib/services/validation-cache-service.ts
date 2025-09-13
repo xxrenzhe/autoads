@@ -100,7 +100,7 @@ export class ValidationCacheService {
    * 初始化统计信息
    */
   private initializeStatistics(): void {
-    Object.values(CACHE_PREFIXES).forEach(prefix => {
+    Object.values(CACHE_PREFIXES).forEach((prefix: any) => {
       this.statistics.set(prefix, {
         hits: 0,
         misses: 0,
@@ -390,7 +390,7 @@ export class ValidationCacheService {
   getCacheStatistics(): Record<string, CacheStatistics> {
     const result: Record<string, CacheStatistics> = {};
     
-    this.statistics.forEach((stats, prefix) => {
+    this.statistics.forEach((stats, prefix: any) => {
       result[prefix] = { ...stats };
     });
     
@@ -417,7 +417,7 @@ export class ValidationCacheService {
     let totalHits = 0;
     let totalMisses = 0;
     
-    const cacheTypes = Array.from(this.statistics.entries()).map(([prefix, stats]) => {
+    const cacheTypes = Array.from(this.statistics.entries()).map(([prefix, stats]: any) => {
       totalRequests += stats.totalRequests;
       totalHits += stats.hits;
       totalMisses += stats.misses;
@@ -506,7 +506,7 @@ export class ValidationCacheService {
       let cleanedCount = 0;
       
       // 检查每个缓存类型的统计信息
-      this.statistics.forEach((stats, prefix) => {
+      this.statistics.forEach((stats, prefix: any) => {
         if (now - stats.lastCleanup > 30 * 60 * 1000) { // 30分钟
           stats.lastCleanup = now;
           cleanedCount++;

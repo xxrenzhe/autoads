@@ -14,19 +14,19 @@ export const calculatePriority = (
   const visitsNumber = parseTrafficToNumber(monthlyVisits || undefined);
 
   // 获取有效数据用于相对比较
-  const validGlobalRanks = allGlobalRanks.filter(r => r !== null && r !== undefined) as number[];
-  const validVisitsNumbers = allMonthlyVisits?.filter(Boolean)?.map(v => parseTrafficToNumber(v || undefined)).filter(v => v > 0);
+  const validGlobalRanks = allGlobalRanks.filter((r: any) => r !== null && r !== undefined) as number[];
+  const validVisitsNumbers = allMonthlyVisits?.filter(Boolean)?.map((v: any) => parseTrafficToNumber(v || undefined)).filter((v: any) => v > 0);
 
   // 优先使用百分位排名算法
   if (validGlobalRanks.length > 1 || validVisitsNumbers.length > 1) {
     // 计算GlobalRank百分位（越小越好）
     const rankPercentile = globalRank && validGlobalRanks.length > 1 
-      ? 1 - validGlobalRanks.filter(r => r <= globalRank).length / validGlobalRanks.length 
+      ? 1 - validGlobalRanks.filter((r: any) => r <= globalRank).length / validGlobalRanks.length 
       : 0;
 
     // 计算MonthlyVisits百分位（越大越好）
     const visitsPercentile = visitsNumber > 0 && validVisitsNumbers.length > 1 
-      ? validVisitsNumbers.filter(v => v <= visitsNumber).length / validVisitsNumbers.length 
+      ? validVisitsNumbers.filter((v: any) => v <= visitsNumber).length / validVisitsNumbers.length 
       : 0;
 
     // 综合得分：GlobalRank 60% + MonthlyVisits 40%
@@ -61,17 +61,17 @@ export const calculatePriorityLegacy = (
   if (allRanks.length > 1 && allPageRanks.length > 1) {
     // 计算排名百分位（越小越好，所以用1减去）
     const rankPercentile =
-      1 - allRanks.filter((r) => r <= rank).length / allRanks.length;
+      1 - allRanks.filter((r: any) => r <= rank).length / allRanks.length;
     const pageRankPercentile =
-      allPageRanks.filter((pr) => pr <= pageRank).length /
+      allPageRanks.filter((pr: any) => pr <= pageRank).length /
       allPageRanks.length;
 
     // 计算流量百分位（越大越好）
     let trafficPercentile = 0;
     if (allTraffics.length > 1 && trafficNumber > 0) {
-      const trafficNumbers = allTraffics?.filter(Boolean)?.map(parseTrafficToNumber).filter(t => t > 0);
+      const trafficNumbers = allTraffics?.filter(Boolean)?.map(parseTrafficToNumber).filter((t: any) => t > 0);
       if (trafficNumbers.length > 1) {
-        trafficPercentile = trafficNumbers.filter((t) => t <= trafficNumber).length / trafficNumbers.length;
+        trafficPercentile = trafficNumbers.filter((t: any) => t <= trafficNumber).length / trafficNumbers.length;
       }
     }
 

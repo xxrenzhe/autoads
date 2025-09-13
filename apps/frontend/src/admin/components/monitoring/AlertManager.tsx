@@ -78,7 +78,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
   const [showCreateForm, setShowCreateForm] = useState(false)
 
   // Filter alerts
-  const filteredAlerts = alerts.filter(alert => {
+  const filteredAlerts = alerts.filter((alert: any) => {
     const matchesSearch = searchTerm === '' || 
       alert.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       alert.message.toLowerCase().includes(searchTerm.toLowerCase())
@@ -141,9 +141,9 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
     console.log('Acknowledging alert:', alertId)
   }
 
-  const criticalAlerts = alerts.filter(a => a.severity === 'critical' && !a.resolved)
-  const highAlerts = alerts.filter(a => a.severity === 'high' && !a.resolved)
-  const activeAlerts = alerts.filter(a => !a.resolved)
+  const criticalAlerts = alerts.filter((a: any) => a.severity === 'critical' && !a.resolved)
+  const highAlerts = alerts.filter((a: any) => a.severity === 'high' && !a.resolved)
+  const activeAlerts = alerts.filter((a: any) => !a.resolved)
 
   if (alertsError) {
     return (
@@ -210,7 +210,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
               <Check className="h-5 w-5 text-green-600" />
               <div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {alerts.filter(a => a.resolved).length}
+                  {alerts.filter((a: any) => a.resolved).length}
                 </div>
                 <div className="text-sm text-gray-600">Resolved Today</div>
               </div>
@@ -230,7 +230,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
                 <Input
                   placeholder="Search alerts..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -240,7 +240,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
             <div className="flex gap-2">
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={((e: any): any) => setStatusFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
@@ -250,7 +250,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
               
               <select
                 value={severityFilter}
-                onChange={(e) => setSeverityFilter(e.target.value)}
+                onChange={((e: any): any) => setSeverityFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Severity</option>
@@ -262,7 +262,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
               
               <select
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
+                onChange={((e: any): any) => setTypeFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Types</option>
@@ -280,7 +280,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowCreateForm(true)}
+                onClick={((: any): any) => setShowCreateForm(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Alert
@@ -297,7 +297,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
       {/* Alerts List */}
       <div className="space-y-4">
         {isAlertsLoading ? (
-          Array.from({ length: 3 }).map((_, index) => (
+          Array.from({ length: 3 }).map((_, index: any) => (
             <Card key={index} className="animate-pulse">
               <CardContent className="p-6">
                 <div className="space-y-4">
@@ -323,7 +323,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
             </CardContent>
           </Card>
         ) : (
-          filteredAlerts.map((alert) => {
+          filteredAlerts.map((alert: any) => {
             const AlertIcon = getAlertIcon(alert.type)
             
             return (
@@ -399,14 +399,14 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleAcknowledgeAlert(alert.id)}
+                            onClick={((: any): any) => handleAcknowledgeAlert(alert.id)}
                           >
                             <Check className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleResolveAlert(alert.id)}
+                            onClick={((: any): any) => handleResolveAlert(alert.id)}
                             disabled={isResolvingAlert}
                           >
                             <X className="h-4 w-4" />
@@ -416,7 +416,7 @@ export function AlertManager({ showRules = true, maxAlerts = 50 }: AlertManagerP
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setSelectedAlert(alert)}
+                        onClick={((: any): any) => setSelectedAlert(alert)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>

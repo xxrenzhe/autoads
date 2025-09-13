@@ -107,13 +107,13 @@ export function NavigationLinks() {
     return pathname.startsWith(href)
   }
 
-  const filteredNavigationItems = navigationItems.filter(item => {
+  const filteredNavigationItems = navigationItems.filter((item: any) => {
     if (item.requiresAuth && !session) return false
     if (item.requiresRole && !hasRole(item.requiresRole)) return false
     return true
   })
 
-  const filteredAdminItems = adminNavigationItems.filter(item => {
+  const filteredAdminItems = adminNavigationItems.filter((item: any) => {
     if (item.requiresRole && !hasRole(item.requiresRole)) return false
     return true
   })
@@ -121,7 +121,7 @@ export function NavigationLinks() {
   return (
     <NavigationMenu className="hidden md:flex">
       <NavigationMenuList>
-        {filteredNavigationItems.map((item) => (
+        {filteredNavigationItems.map((item: any) => (
           <NavigationMenuItem key={item.href}>
             <Link href={item.href} legacyBehavior passHref>
               <NavigationMenuLink
@@ -147,7 +147,7 @@ export function NavigationLinks() {
             </NavigationMenuTrigger>
             <NavigationMenuContent>
               <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                {filteredAdminItems.map((item) => (
+                {filteredAdminItems.map((item: any) => (
                   <li key={item.href}>
                     <NavigationMenuLink asChild>
                       <Link

@@ -244,8 +244,8 @@ func SetUserLanguage(c *gin.Context) {
 		return
 	}
 
-    // TODO: 保存到数据库
-    // 这里可以扩展User模型添加Language字段
+	// TODO: 保存到数据库
+	// 这里可以扩展User模型添加Language字段
 
 	response.Success(c, gin.H{
 		"language": lang,
@@ -255,11 +255,11 @@ func SetUserLanguage(c *gin.Context) {
 
 // GetLanguageList 获取语言列表API
 func GetLanguageList(c *gin.Context) {
-    current, _ := c.Get("language")
-    response.Success(c, gin.H{
-        "languages": GetSupportedLanguages(),
-        "current":   current,
-    })
+	current, _ := c.Get("language")
+	response.Success(c, gin.H{
+		"languages": GetSupportedLanguages(),
+		"current":   current,
+	})
 }
 
 // RegisterI18nRoutes 注册国际化路由

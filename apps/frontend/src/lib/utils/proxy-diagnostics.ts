@@ -222,7 +222,7 @@ export class ProxyDiagnostics {
       differences.push('测试结果数量不同');
     }
     
-    productionResult.testResults.forEach((prodTest, index) => {
+    productionResult.testResults.forEach((prodTest, index: any) => {
       const prevTest = previewResult.testResults[index];
       if (!prevTest) return;
       

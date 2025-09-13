@@ -12,7 +12,7 @@ function convertPlanFeaturesToLegacyFormat(planFeatures: any[]) {
     adscenter: { enabled: false }
   };
 
-  planFeatures.forEach(feature => {
+  planFeatures.forEach((feature: any) => {
     const value = feature.metadata?.value ?? feature.limit;
     
     switch (feature.featureName) {

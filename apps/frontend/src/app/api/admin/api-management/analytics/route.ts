@@ -149,11 +149,11 @@ async function handleGET(request: NextRequest, { validatedData, user }: { valida
   // Calculate summary statistics
   const summary = {
     totalRequests: usageRecords.length,
-    totalErrors: usageRecords.filter(r => r.statusCode >= 400).length,
-    averageResponseTime: usageRecords.reduce((sum, r) => sum + (r.responseTime || 0), 0) / usageRecords.length || 0,
-    successRate: ((usageRecords.filter(r => r.statusCode < 400).length / usageRecords.length) * 100) || 0,
+    totalErrors: usageRecords.filter((r: any) => r.statusCode >= 400).length,
+    averageResponseTime: usageRecords.reduce((sum, r: any) => sum + (r.responseTime || 0), 0) / usageRecords.length || 0,
+    successRate: ((usageRecords.filter((r: any) => r.statusCode < 400).length / usageRecords.length) * 100) || 0,
     requestsPerSecond: usageRecords.length / ((endDate.getTime() - startDate.getTime()) / 1000),
-    uniqueUsers: new Set(usageRecords.map(r => r.userId).filter(Boolean)).size
+    uniqueUsers: new Set(usageRecords.map((r: any) => r.userId).filter(Boolean)).size
   }
 
   // Get hourly data for charts
@@ -172,7 +172,7 @@ async function handleGET(request: NextRequest, { validatedData, user }: { valida
 
   // Format hourly data
   const requestsByHour = Array.from({ length: 24 }, (_, i) => {
-    const hourData = hourlyData.find((h: any) => parseInt(h.hour) === i)
+    const hourData = hourlyData.find((h: any: any) => parseInt(h.hour) === i)
     return {
       hour: `${i}:00`,
       requests: hourData?.requests || 0,
@@ -198,9 +198,9 @@ async function handleGET(request: NextRequest, { validatedData, user }: { valida
   ` as unknown as Array<{ userAgent: string; requests: number; percentage: number }>
 
   // Process top endpoints with error rates
-  const processedTopEndpoints = topEndpoints.map((ep: any) => {
-    const endpointRecords = usageRecords.filter(r => r.endpoint === ep.endpoint)
-    const errors = endpointRecords.filter(r => r.statusCode >= 400).length
+  const processedTopEndpoints = topEndpoints.map((ep: any: any) => {
+    const endpointRecords = usageRecords.filter((r: any) => r.endpoint === ep.endpoint)
+    const errors = endpointRecords.filter((r: any) => r.statusCode >= 400).length
     return {
       endpoint: ep.endpoint,
       requests: ep._count.id,
@@ -211,7 +211,7 @@ async function handleGET(request: NextRequest, { validatedData, user }: { valida
   })
 
   // Process error breakdown
-  const errorsByType = errorBreakdown.reduce((acc: Record<string, number>, error: any) => {
+  const errorsByType = errorBreakdown.reduce((acc: Record<string, number>, error: any: any) => {
     const statusCode = error.statusCode.toString()
     const statusCategory = statusCode.charAt(0) + 'xx'
     acc[statusCategory] = (acc[statusCategory] || 0) + error._count.id

@@ -254,7 +254,7 @@ export async function requireRole(
     hasRequiredRole = roles.includes(context.user.role)
   } else {
     // Hierarchical role check - higher roles can access lower role resources
-    const minRequiredRoleIndex = Math.min(...roles?.filter(Boolean)?.map(role => roleHierarchy.indexOf(role)))
+    const minRequiredRoleIndex = Math.min(...roles?.filter(Boolean)?.map((role: any) => roleHierarchy.indexOf(role)))
     hasRequiredRole = userRoleIndex >= minRequiredRoleIndex
   }
 

@@ -74,7 +74,7 @@ export default function AccountsPage() {
       
       // 从配置管理器获取Google Ads账号
       const accountsData = await configManager.getGoogleAdsAccounts();
-      const accountList: GoogleAdsAccount[] = accountsData?.filter(Boolean)?.map(account => ({
+      const accountList: GoogleAdsAccount[] = accountsData?.filter(Boolean)?.map((account: any) => ({
         id: account.id,
         accountId: account.customerId,
         accountName: account.name,
@@ -287,7 +287,7 @@ export default function AccountsPage() {
           <Input
             id="accountName"
             value={formData.accountName}
-            onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
+            onChange={((e: any) => setFormData(prev: any) => ({ ...prev, accountName: e.target.value }))}
             placeholder="输入账户名称"
           />
         </div>
@@ -296,7 +296,7 @@ export default function AccountsPage() {
           <Input
             id="accountId"
             value={formData.accountId}
-            onChange={(e) => setFormData(prev => ({ ...prev, accountId: e.target.value }))}
+            onChange={((e: any) => setFormData(prev: any) => ({ ...prev, accountId: e.target.value }))}
             placeholder="10位数字账户ID"
           />
         </div>
@@ -307,7 +307,7 @@ export default function AccountsPage() {
         <Input
           id="clientId"
           value={formData.clientId}
-          onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value }))}
+          onChange={((e: any) => setFormData(prev: any) => ({ ...prev, clientId: e.target.value }))}
           placeholder="从 Google Cloud Console 获取"
         />
       </div>
@@ -318,7 +318,7 @@ export default function AccountsPage() {
           id="clientSecret"
           type="password"
           value={formData.clientSecret}
-          onChange={(e) => setFormData(prev => ({ ...prev, clientSecret: e.target.value }))}
+          onChange={((e: any) => setFormData(prev: any) => ({ ...prev, clientSecret: e.target.value }))}
           placeholder="从 Google Cloud Console 获取"
         />
       </div>
@@ -329,7 +329,7 @@ export default function AccountsPage() {
           id="developerToken"
           type="password"
           value={formData.developerToken}
-          onChange={(e) => setFormData(prev => ({ ...prev, developerToken: e.target.value }))}
+          onChange={((e: any) => setFormData(prev: any) => ({ ...prev, developerToken: e.target.value }))}
           placeholder="从 Google Ads API 中心获取"
         />
       </div>
@@ -365,7 +365,7 @@ export default function AccountsPage() {
         </div>
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
-            <Button onClick={() => { resetForm(); setShowCreateDialog(true); }}>
+            <Button onClick={((: any): any) => { resetForm(); setShowCreateDialog(true); }}>
               <Plus className="h-4 w-4 mr-2" />
               添加账号
             </Button>
@@ -379,7 +379,7 @@ export default function AccountsPage() {
             </DialogHeader>
             <AccountForm />
             <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              <Button variant="outline" onClick={((: any): any) => setShowCreateDialog(false)}>
                 取消
               </Button>
               <Button onClick={handleCreateAccount}>
@@ -396,7 +396,7 @@ export default function AccountsPage() {
             <Key className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium mb-2">暂无 Google Ads 账号</h3>
             <p className="text-gray-600 mb-4">添加您的第一个 Google Ads 账号来开始使用</p>
-            <Button onClick={() => setShowCreateDialog(true)}>
+            <Button onClick={((: any): any) => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               添加账号
             </Button>
@@ -404,7 +404,7 @@ export default function AccountsPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {accounts.map((account) => (
+          {accounts.map((account: any) => (
             <Card key={account.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -449,7 +449,7 @@ export default function AccountsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => toggleShowSecret(account.id, 'clientId')}
+                          onClick={((: any): any) => toggleShowSecret(account.id, 'clientId')}
                         >
                           {showSecrets[`${account.id}_clientId`] ? 
                             <EyeOff className="h-3 w-3" /> : 
@@ -472,7 +472,7 @@ export default function AccountsPage() {
                     {account.status === 'expired' || !account.refreshToken ? (
                       <Button
                         size="sm"
-                        onClick={() => handleOAuthAuthorization(account)}
+                        onClick={((: any): any) => handleOAuthAuthorization(account)}
                         className="flex-1"
                       >
                         <ExternalLink className="h-4 w-4 mr-1" />
@@ -482,7 +482,7 @@ export default function AccountsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleRefreshToken(account)}
+                        onClick={((: any): any) => handleRefreshToken(account)}
                         className="flex-1"
                       >
                         <RefreshCw className="h-4 w-4 mr-1" />
@@ -493,7 +493,7 @@ export default function AccountsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleSyncAccountData(account)}
+                      onClick={((: any): any) => handleSyncAccountData(account)}
                     >
                       <RefreshCw className="h-4 w-4 mr-1" />
                       同步数据
@@ -502,7 +502,7 @@ export default function AccountsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => openEditDialog(account)}
+                      onClick={((: any): any) => openEditDialog(account)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -510,7 +510,7 @@ export default function AccountsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDeleteAccount(account.id)}
+                      onClick={((: any): any) => handleDeleteAccount(account.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -533,7 +533,7 @@ export default function AccountsPage() {
           </DialogHeader>
           <AccountForm />
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+            <Button variant="outline" onClick={((: any): any) => setShowEditDialog(false)}>
               取消
             </Button>
             <Button onClick={handleUpdateAccount}>

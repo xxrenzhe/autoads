@@ -116,7 +116,7 @@ export class RBACGuard extends BaseService implements IRBACService {
       return false;
     }
 
-    const permission = this.permissions.find(p => 
+    const permission = this.permissions.find((p: any) => 
       p.resource === resource && p.action === action
     );
 
@@ -137,8 +137,8 @@ export class RBACGuard extends BaseService implements IRBACService {
     }
 
     return this.permissions
-      .filter(permission => permission.roles.includes(user.role))
-      ?.filter(Boolean)?.map(permission => permission.name);
+      .filter((permission: any) => permission.roles.includes(user.role))
+      ?.filter(Boolean)?.map((permission: any) => permission.name);
   }
 
   /**
@@ -149,7 +149,7 @@ export class RBACGuard extends BaseService implements IRBACService {
       return false;
     }
 
-    const permission = this.permissions.find(p => p.name === permissionName);
+    const permission = this.permissions.find((p: any) => p.name === permissionName);
     if (!permission) {
       return !this.strictMode;
     }
@@ -203,7 +203,7 @@ export class RBACGuard extends BaseService implements IRBACService {
         );
       }
 
-      const missingPermissions = requiredPermissions.filter(permission => 
+      const missingPermissions = requiredPermissions.filter((permission: any) => 
         !this.checkPermission(user, permission)
       );
 
@@ -302,7 +302,7 @@ export class RBACGuard extends BaseService implements IRBACService {
         // Apply permission-based checks
         if (options?.permissions) {
           const requiredPermissions = Array.isArray(options.permissions) ? options.permissions : [options.permissions];
-          const missingPermissions = requiredPermissions.filter(permission => 
+          const missingPermissions = requiredPermissions.filter((permission: any) => 
             !self.checkPermission(user, permission)
           );
 
@@ -430,7 +430,7 @@ export class RBACGuard extends BaseService implements IRBACService {
 
         if (options?.permissions) {
           const requiredPermissions = Array.isArray(options.permissions) ? options.permissions : [options.permissions];
-          const missingPermissions = requiredPermissions.filter(permission => 
+          const missingPermissions = requiredPermissions.filter((permission: any) => 
             !checkPermission(user, permission)
           );
 
@@ -472,7 +472,7 @@ export class RBACGuard extends BaseService implements IRBACService {
         return false;
       }
 
-      const permission = permissions.find(p => p.name === permissionName);
+      const permission = permissions.find((p: any) => p.name === permissionName);
       if (!permission) {
         return !strictMode;
       }
@@ -485,7 +485,7 @@ export class RBACGuard extends BaseService implements IRBACService {
         return false;
       }
 
-      const permission = permissions.find(p => 
+      const permission = permissions.find((p: any) => 
         p.resource === resource && p.action === action
       );
 
@@ -542,7 +542,7 @@ export class RBACGuard extends BaseService implements IRBACService {
    * Get permissions by role
    */
   getPermissionsByRole(role: UserRole): Permission[] {
-    return this.permissions.filter(permission => permission.roles.includes(role));
+    return this.permissions.filter((permission: any) => permission.roles.includes(role));
   }
 
   /**

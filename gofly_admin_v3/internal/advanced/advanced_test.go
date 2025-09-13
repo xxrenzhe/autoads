@@ -134,7 +134,7 @@ func TestNotificationSystem(t *testing.T) {
 func TestSecuritySystem(t *testing.T) {
 	// 创建内存数据库
 	_, _ = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	
+
 	// 创建缓存 - 跳过测试以避免类型转换问题
 	t.Skip("Skipping security system test due to cache type issues")
 }

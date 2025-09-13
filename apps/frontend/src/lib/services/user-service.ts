@@ -219,7 +219,7 @@ export class UserService {
         ((newThisMonth - lastMonthUsers) / lastMonthUsers) * 100 : 0
 
       // Convert role stats to object
-      const byRole = roleStats.reduce((acc: Record<string, number>, stat: RoleGroupResult) => {
+      const byRole = roleStats.reduce((acc: Record<string, number>, stat: RoleGroupResult: any) => {
         acc[stat.role] = stat._count.role
         return acc
       }, {} as Record<string, number>)
@@ -448,12 +448,12 @@ export class UserService {
         })
       ])
 
-      const byFeature = featureStats.reduce((acc: Record<string, number>, stat: ActionGroupResult) => {
+      const byFeature = featureStats.reduce((acc: Record<string, number>, stat: ActionGroupResult: any) => {
         acc[stat.action] = stat._count.action
         return acc
       }, {} as Record<string, number>)
 
-      const byAction = actionStats.reduce((acc: Record<string, number>, stat: ActionGroupResult) => {
+      const byAction = actionStats.reduce((acc: Record<string, number>, stat: ActionGroupResult: any) => {
         acc[stat.action] = stat._count.action
         return acc
       }, {} as Record<string, number>)
@@ -525,7 +525,7 @@ export class UserService {
         take: limit
       })
 
-      return users.map(user => ({ ...user, isActive: user.status === 'ACTIVE' }))
+      return users.map((user: any) => ({ ...user, isActive: user.status === 'ACTIVE' }))
     } catch (error) {
       console.error('Failed to search users:', error)
       return []

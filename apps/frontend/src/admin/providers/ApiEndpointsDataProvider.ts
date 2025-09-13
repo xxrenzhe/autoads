@@ -109,7 +109,7 @@ export const ApiEndpointsDataProvider: DataProvider = {
     // Apply filters
     if (filter.q) {
       const searchLower = filter.q.toLowerCase();
-      filteredData = filteredData.filter(item => 
+      filteredData = filteredData.filter((item: any) => 
         item.name.toLowerCase().includes(searchLower) ||
         item.endpoint.toLowerCase().includes(searchLower) ||
         item.description.toLowerCase().includes(searchLower)
@@ -117,11 +117,11 @@ export const ApiEndpointsDataProvider: DataProvider = {
     }
     
     if (filter.method) {
-      filteredData = filteredData.filter(item => item.method === filter.method);
+      filteredData = filteredData.filter((item: any) => item.method === filter.method);
     }
     
     if (filter.authRequired !== undefined) {
-      filteredData = filteredData.filter(item => 
+      filteredData = filteredData.filter((item: any) => 
         item.authRequired === (filter.authRequired === 'true')
       );
     }
@@ -160,7 +160,7 @@ export const ApiEndpointsDataProvider: DataProvider = {
   },
   
   getOne: (resource, params) => {
-    const api = apiEndpoints.find(item => item.id === params.id);
+    const api = apiEndpoints.find((item: any) => item.id === params.id);
     if (!api) {
       return Promise.reject(new Error('API endpoint not found'));
     }
@@ -168,7 +168,7 @@ export const ApiEndpointsDataProvider: DataProvider = {
   },
   
   getMany: (resource, params) => {
-    const data = apiEndpoints.filter(item => params.ids.includes(item.id));
+    const data = apiEndpoints.filter((item: any) => params.ids.includes(item.id));
     return Promise.resolve({ data } as any);
   },
   

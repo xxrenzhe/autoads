@@ -218,7 +218,7 @@ export function validateWithZod<T>(schema: z.ZodSchema<T>, data: any): T {
     return schema.parse(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const formattedErrors = error.errors.map(err => ({
+      const formattedErrors = error.errors.map((err: any) => ({
         field: err.path.join('.'),
         message: err.message,
         code: err.code
@@ -287,7 +287,7 @@ export function withValidation(
         return NextResponse.json(
           {
             error: 'Validation failed',
-            details: error.map(e => ({
+            details: error.map((e: any) => ({
               field: e.field,
               message: e.message,
               value: e.value
@@ -367,7 +367,7 @@ export const securityHeaders = {
  * Apply security headers to response
  */
 export function applySecurityHeaders(response: NextResponse): NextResponse {
-  Object.entries(securityHeaders).forEach(([key, value]) => {
+  Object.entries(securityHeaders).forEach(([key, value]: any) => {
     response.headers.set(key, value);
   });
   return response;

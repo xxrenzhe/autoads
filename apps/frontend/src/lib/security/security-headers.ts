@@ -151,7 +151,7 @@ export class SecurityHeadersManager {
     }
 
     return Object.entries(directives)
-      .map(([directive, sources]) => 
+      .map(([directive, sources]: any) => 
         sources.length > 0 
           ? `${directive} ${sources.join(' ')}`
           : directive
@@ -194,7 +194,7 @@ export class SecurityHeadersManager {
     }
 
     return Object.entries(policies)
-      .map(([feature, allowlist]) => `${feature}=${allowlist}`)
+      .map(([feature, allowlist]: any) => `${feature}=${allowlist}`)
       .join(', ')
   }
 

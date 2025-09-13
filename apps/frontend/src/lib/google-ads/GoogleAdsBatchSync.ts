@@ -187,7 +187,7 @@ export class GoogleAdsBatchSync {
       this.progress.delete(configId);
       
       // Remove from queue
-      this.syncQueue = this.syncQueue.filter(item => item.configId !== configId);
+      this.syncQueue = this.syncQueue.filter((item: any) => item.configId !== configId);
 
       await this.deleteBatchConfigFromStorage(configId);
 
@@ -469,7 +469,7 @@ export class GoogleAdsBatchSync {
    * Get sync queue
    */
   getSyncQueue(): Array<{ configId: string; config: BatchSyncConfig; position: number }> {
-    return this.syncQueue.map((item, index) => ({
+    return this.syncQueue.map((item, index: any) => ({
       configId: item.configId,
       config: this.configs.get(item.configId)!,
       position: index + 1,
@@ -491,15 +491,15 @@ export class GoogleAdsBatchSync {
     totalAdsUpdated: number;
   } {
     const configs = Array.from(this.configs.values());
-    const enabledConfigs = configs.filter(c => c.enabled).length;
+    const enabledConfigs = configs.filter((c: any) => c.enabled).length;
     const runningSyncs = this.runningSyncs.size;
     const queuedSyncs = this.syncQueue.length;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const todaySyncs = configs.reduce((count, config) => {
-      return count + config.syncHistory.filter(sync => {
+    const todaySyncs = configs.reduce((count, config: any) => {
+      return count + config.syncHistory.filter((sync: any) => {
         const syncDate = new Date(sync.startTime);
         syncDate.setHours(0, 0, 0, 0);
         return syncDate.getTime() === today.getTime();
@@ -507,15 +507,15 @@ export class GoogleAdsBatchSync {
     }, 0);
 
     const allSyncs = configs.flatMap(c => c.syncHistory);
-    const successfulSyncs = allSyncs.filter(s => s.status === 'completed').length;
+    const successfulSyncs = allSyncs.filter((s: any) => s.status === 'completed').length;
     const successRate = allSyncs.length > 0 ? (successfulSyncs / allSyncs.length) * 100 : 0;
 
     const averageProcessingTime = allSyncs.length > 0 
-      ? allSyncs.reduce((sum, s) => sum + s.processingTime, 0) / allSyncs.length 
+      ? allSyncs.reduce((sum, s: any) => sum + s.processingTime, 0) / allSyncs.length 
       : 0;
 
-    const totalAccountsSynced = allSyncs.reduce((sum, s) => sum + s.processedAccounts, 0);
-    const totalAdsUpdated = allSyncs.reduce((sum, s) => sum + s.updatedAds, 0);
+    const totalAccountsSynced = allSyncs.reduce((sum, s: any) => sum + s.processedAccounts, 0);
+    const totalAdsUpdated = allSyncs.reduce((sum, s: any) => sum + s.updatedAds, 0);
 
     return {
       totalConfigs: configs.length,
@@ -629,9 +629,9 @@ export class GoogleAdsBatchSync {
       ...syncResult,
       status: this.determineSyncStatus(accountResults),
       processedAccounts: accountResults.length,
-      successfulAccounts: accountResults.filter(r => r.status === 'completed').length,
-      failedAccounts: accountResults.filter(r => r.status === 'failed').length,
-      skippedAccounts: accountResults.filter(r => r.status === 'skipped').length,
+      successfulAccounts: accountResults.filter((r: any) => r.status === 'completed').length,
+      failedAccounts: accountResults.filter((r: any) => r.status === 'failed').length,
+      skippedAccounts: accountResults.filter((r: any) => r.status === 'skipped').length,
       totalAds,
       updatedAds,
       failedAds,
@@ -669,7 +669,7 @@ export class GoogleAdsBatchSync {
           processedAccounts: chunkIndex * config.maxConcurrentAccounts,
         });
 
-        const chunkPromises = chunk?.filter(Boolean)?.map(accountId => 
+        const chunkPromises = chunk?.filter(Boolean)?.map((accountId: any) => 
           this.syncAccount(config, accountId, options)
         );
 
@@ -705,9 +705,9 @@ export class GoogleAdsBatchSync {
       ...syncResult,
       status: this.determineSyncStatus(accountResults),
       processedAccounts: accountResults.length,
-      successfulAccounts: accountResults.filter(r => r.status === 'completed').length,
-      failedAccounts: accountResults.filter(r => r.status === 'failed').length,
-      skippedAccounts: accountResults.filter(r => r.status === 'skipped').length,
+      successfulAccounts: accountResults.filter((r: any) => r.status === 'completed').length,
+      failedAccounts: accountResults.filter((r: any) => r.status === 'failed').length,
+      skippedAccounts: accountResults.filter((r: any) => r.status === 'skipped').length,
       totalAds,
       updatedAds,
       failedAds,
@@ -751,7 +751,7 @@ export class GoogleAdsBatchSync {
         const chunkStartTime = Date.now();
         
         if (currentMode === 'parallel') {
-          const chunkPromises = chunk?.filter(Boolean)?.map(accountId => 
+          const chunkPromises = chunk?.filter(Boolean)?.map((accountId: any) => 
             this.syncAccount(config, accountId, options)
           );
           const chunkResults = await Promise.allSettled(chunkPromises);
@@ -806,9 +806,9 @@ export class GoogleAdsBatchSync {
       ...syncResult,
       status: this.determineSyncStatus(accountResults),
       processedAccounts: accountResults.length,
-      successfulAccounts: accountResults.filter(r => r.status === 'completed').length,
-      failedAccounts: accountResults.filter(r => r.status === 'failed').length,
-      skippedAccounts: accountResults.filter(r => r.status === 'skipped').length,
+      successfulAccounts: accountResults.filter((r: any) => r.status === 'completed').length,
+      failedAccounts: accountResults.filter((r: any) => r.status === 'failed').length,
+      skippedAccounts: accountResults.filter((r: any) => r.status === 'skipped').length,
       totalAds,
       updatedAds,
       failedAds,
@@ -997,21 +997,21 @@ export class GoogleAdsBatchSync {
 
   private calculateAverageConfidence(results: AccountSyncResult[]): number {
     if (results.length === 0) return 0;
-    const totalConfidence = results.reduce((sum, r) => sum + r.confidence, 0);
+    const totalConfidence = results.reduce((sum, r: any) => sum + r.confidence, 0);
     return totalConfidence / results.length;
   }
 
   private calculateSuccessRate(results: AccountSyncResult[]): number {
     if (results.length === 0) return 0;
-    const successful = results.filter(r => r.status === 'completed').length;
+    const successful = results.filter((r: any) => r.status === 'completed').length;
     return (successful / results.length) * 100;
   }
 
   private getTopErrors(results: AccountSyncResult[]): Array<{ error: string; count: number; accounts: string[] }> {
     const errorMap = new Map<string, { count: number; accounts: string[] }>();
 
-    results.forEach(result => {
-      result.errors.forEach(error => {
+    results.forEach((result: any) => {
+      result.errors.forEach((error: any) => {
         const existing = errorMap.get(error) || { count: 0, accounts: [] };
         existing.count++;
         existing.accounts.push(result.accountId);
@@ -1020,7 +1020,7 @@ export class GoogleAdsBatchSync {
     });
 
     return Array.from(errorMap.entries())
-      .map(([error, data]) => ({ error, count: data.count, accounts: data.accounts }))
+      .map(([error, data]: any) => ({ error, count: data.count, accounts: data.accounts }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   }

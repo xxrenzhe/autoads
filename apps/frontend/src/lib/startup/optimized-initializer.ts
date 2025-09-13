@@ -310,7 +310,7 @@ class OptimizedInitializer {
 
       // 3. 环境变量检查
       const requiredEnvVars = ['DATABASE_URL', 'NEXTAUTH_SECRET'];
-      const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+      const missingVars = requiredEnvVars.filter((varName: any) => !process.env[varName]);
       
       if (missingVars.length > 0) {
         this.errors.push(`缺少必要环境变量: ${missingVars.join(', ')}`);

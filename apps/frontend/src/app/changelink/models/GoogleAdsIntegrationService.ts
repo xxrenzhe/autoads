@@ -277,7 +277,7 @@ export class GoogleAdsIntegrationService {
         id: `mapping_${Date.now()}`,
         name: name || `Mapping for ${originalUrl}`,
         originalUrl,
-        adMappings: adSelections?.filter(Boolean)?.map(selection => ({
+        adMappings: adSelections?.filter(Boolean)?.map((selection: any) => ({
           adId: selection.adId,
           adName: `Ad ${selection.adId}`,
           executionNumber: selection.executionNumber,
@@ -331,7 +331,7 @@ export class GoogleAdsIntegrationService {
     }
 
     // 执行次数验证
-    const executionNumbers = mapping.adMappings?.filter(Boolean)?.map(m => m.executionNumber);
+    const executionNumbers = mapping.adMappings?.filter(Boolean)?.map((m: any) => m.executionNumber);
     const uniqueNumbers = new Set(executionNumbers);
     
     if (uniqueNumbers.size !== executionNumbers.length) {
@@ -557,8 +557,8 @@ export class GoogleAdsIntegrationService {
               successRate: batchResult.successfulUpdates / batchResult.totalUpdates,
               executionTime: batchResult.executionTime,
               errors: batchResult.results
-                .filter(r => !r.success)
-                ?.filter(Boolean)?.map(r => r.error || '未知错误')
+                .filter((r: any) => !r.success)
+                ?.filter(Boolean)?.map((r: any) => r.error || '未知错误')
              });
           }
         } catch (error) { 
@@ -618,18 +618,18 @@ export class GoogleAdsIntegrationService {
    * 将Google Ads账户信息转换为配置格式
    */
   convertAccountToConfig(accountInfo: AccountInfo, credentials: GoogleAdsCredentials): GoogleAdsAccount {
-    const campaignMappings: CampaignMapping[] = accountInfo.campaigns?.filter(Boolean)?.map(campaign => ({
+    const campaignMappings: CampaignMapping[] = accountInfo.campaigns?.filter(Boolean)?.map((campaign: any) => ({
       id: `campaign_${campaign.id}`,
       name: campaign.name,
       campaignId: campaign.id,
       campaignName: campaign.name,
       originalUrlPattern: '*', // 默认匹配所有URL
-      adGroupMappings: campaign.adGroups?.filter(Boolean)?.map(adGroup => ({
+      adGroupMappings: campaign.adGroups?.filter(Boolean)?.map((adGroup: any) => ({
         id: `adgroup_${adGroup.id}`,
         name: adGroup.name,
         adGroupId: adGroup.id,
         adGroupName: adGroup.name,
-        adMappings: adGroup.ads?.filter(Boolean)?.map(ad => ({
+        adMappings: adGroup.ads?.filter(Boolean)?.map((ad: any) => ({
           id: `ad_${ad.id}`,
           name: ad.name,
           adId: ad.id,

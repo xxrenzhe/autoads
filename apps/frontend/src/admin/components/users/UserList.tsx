@@ -74,7 +74,7 @@ export function UserList({
 
   // Filter and sort users
   const filteredAndSortedUsers = useMemo(() => {
-    let filtered = users.filter((user: User) => {
+    let filtered = users.filter((user: User: any) => {
       const matchesSearch = searchTerm === '' || 
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -122,7 +122,7 @@ export function UserList({
     if (selectedUsers.size === filteredAndSortedUsers.length) {
       setSelectedUsers(new Set())
     } else {
-      setSelectedUsers(new Set(filteredAndSortedUsers.map((user: User) => user.id)))
+      setSelectedUsers(new Set(filteredAndSortedUsers.map((user: User: any) => user.id)))
     }
   }
 
@@ -152,8 +152,8 @@ export function UserList({
     })
   }
 
-  const uniqueRoles = Array.from(new Set(users.map((user: User) => user.role)))
-  const uniqueStatuses = Array.from(new Set(users.map((user: User) => user.status)))
+  const uniqueRoles = Array.from(new Set(users.map((user: User: any) => user.role)))
+  const uniqueStatuses = Array.from(new Set(users.map((user: User: any) => user.status)))
 
   if (error) {
     return (
@@ -209,7 +209,7 @@ export function UserList({
                 <Input
                   placeholder="Search users by name or email..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -219,11 +219,11 @@ export function UserList({
             <div className="flex gap-2">
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={((e: any): any) => setStatusFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
-                {uniqueStatuses?.filter(Boolean)?.map(status => (
+                {uniqueStatuses?.filter(Boolean)?.map((status: any) => (
                   <option key={status as string} value={status as string}>
                     {(status as string).charAt(0).toUpperCase() + (status as string).slice(1)}
                   </option>
@@ -232,11 +232,11 @@ export function UserList({
               
               <select
                 value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
+                onChange={((e: any): any) => setRoleFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Roles</option>
-                {uniqueRoles?.filter(Boolean)?.map(role => (
+                {uniqueRoles?.filter(Boolean)?.map((role: any) => (
                   <option key={role as string} value={role as string}>
                     {(role as string).charAt(0).toUpperCase() + (role as string).slice(1)}
                   </option>
@@ -245,7 +245,7 @@ export function UserList({
               
               <select
                 value={`${sortBy}-${sortOrder}`}
-                onChange={(e) => {
+                onChange={((e: any): any) => {
                   const [field, order] = e.target.value.split('-')
                   setSortBy(field as any)
                   setSortOrder(order as any)
@@ -275,7 +275,7 @@ export function UserList({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleBulkAction('activate')}
+                  onClick={((: any): any) => handleBulkAction('activate')}
                 >
                   <UserCheck className="h-4 w-4 mr-2" />
                   Activate
@@ -283,7 +283,7 @@ export function UserList({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleBulkAction('deactivate')}
+                  onClick={((: any): any) => handleBulkAction('deactivate')}
                 >
                   <UserX className="h-4 w-4 mr-2" />
                   Deactivate
@@ -291,7 +291,7 @@ export function UserList({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleBulkAction('email')}
+                  onClick={((: any): any) => handleBulkAction('email')}
                 >
                   <Mail className="h-4 w-4 mr-2" />
                   Send Email
@@ -299,7 +299,7 @@ export function UserList({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => handleBulkAction('delete')}
+                  onClick={((: any): any) => handleBulkAction('delete')}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
@@ -366,17 +366,17 @@ export function UserList({
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredAndSortedUsers.map((user: User) => (
+                  {filteredAndSortedUsers.map((user: User: any) => (
                     <tr 
                       key={user.id} 
                       className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                      onClick={() => onUserSelect?.(user)}
+                      onClick={((: any): any) => onUserSelect?.(user)}
                     >
                       <td className="px-6 py-4">
                         <input
                           type="checkbox"
                           checked={selectedUsers.has(user.id)}
-                          onChange={(e) => {
+                          onChange={((e: any): any) => {
                             e.stopPropagation()
                             handleSelectUser(user.id)
                           }}
@@ -446,7 +446,7 @@ export function UserList({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
+                            onClick={((e: any): any) => {
                               e.stopPropagation()
                               onUserEdit?.(user)
                             }}
@@ -456,7 +456,7 @@ export function UserList({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
+                            onClick={((e: any): any) => {
                               e.stopPropagation()
                               onUserDelete?.(user.id)
                             }}
@@ -487,7 +487,7 @@ export function UserList({
               variant="outline"
               size="sm"
               disabled={pagination.page === 1}
-              onClick={() => updatePagination({ page: pagination.page - 1 })}
+              onClick={((: any): any) => updatePagination({ page: pagination.page - 1 })}
             >
               Previous
             </Button>
@@ -498,7 +498,7 @@ export function UserList({
               variant="outline"
               size="sm"
               disabled={pagination.page >= Math.ceil(totalUsers / pagination.limit)}
-              onClick={() => updatePagination({ page: pagination.page + 1 })}
+              onClick={((: any): any) => updatePagination({ page: pagination.page + 1 })}
             >
               Next
             </Button>

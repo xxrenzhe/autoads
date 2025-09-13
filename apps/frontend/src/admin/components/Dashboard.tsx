@@ -247,7 +247,7 @@ const AdminDashboard: React.FC = () => {
           <Button
             size="small"
             startIcon={<Refresh />}
-            onClick={() => window.location.reload()}
+            onClick={((: any): any) => window.location.reload()}
             title="刷新数据 (快捷键: Alt+R)"
           >
             刷新
@@ -255,7 +255,7 @@ const AdminDashboard: React.FC = () => {
           <Button
             size="small"
             startIcon={<Keyboard />}
-            onClick={() => {
+            onClick={((: any): any) => {
               alert('快捷键说明:\\n\\nAlt+U: 用户管理\\nAlt+P: 套餐管理\\nAlt+T: 试用管理\\nAlt+B: 支付配置\\nAlt+A: API统计\\nAlt+K: Token使用\\nAlt+S: 用户统计\\nAlt+C: 系统配置\\nAlt+R: 刷新页面');
             }}
             title="查看快捷键说明"
@@ -285,8 +285,8 @@ const AdminDashboard: React.FC = () => {
             color="#388e3c"
             subtitle={stats?.subscriptionByPlan ? 
               Object.entries(stats.subscriptionByPlan)
-                .filter(([plan]) => plan !== 'Trial')
-                .map(([plan, count]) => `${plan}: ${count}`)
+                .filter(([plan]: any) => plan !== 'Trial')
+                .map(([plan, count]: any) => `${plan}: ${count}`)
                 .join(', ')
               : undefined
             }
@@ -440,7 +440,7 @@ const AdminDashboard: React.FC = () => {
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
                       热门端点 (今日)
                     </Typography>
-                    {stats.apiUsage.topEndpoints.today.slice(0, 3).map((endpoint, index) => (
+                    {stats.apiUsage.topEndpoints.today.slice(0, 3).map((endpoint, index: any) => (
                       <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ 
                           overflow: 'hidden', 
@@ -757,7 +757,7 @@ const AdminDashboard: React.FC = () => {
                 <Button 
                   size="small" 
                   startIcon={<People />}
-                  onClick={() => navigate('/admin-dashboard/users')}
+                  onClick={((: any): any) => navigate('/admin-dashboard/users')}
                   sx={{ justifyContent: 'flex-start' }}
                   title="管理用户账户和权限 (快捷键: Alt+U)"
                 >
@@ -766,7 +766,7 @@ const AdminDashboard: React.FC = () => {
                 <Button 
                   size="small" 
                   startIcon={<Subscriptions />}
-                  onClick={() => navigate('/admin-dashboard/plans')}
+                  onClick={((: any): any) => navigate('/admin-dashboard/plans')}
                   sx={{ justifyContent: 'flex-start' }}
                   title="管理订阅套餐和定价 (快捷键: Alt+P)"
                 >
@@ -775,7 +775,7 @@ const AdminDashboard: React.FC = () => {
                 <Button 
                   size="small" 
                   startIcon={<CardGiftcard />}
-                  onClick={() => navigate('/admin-dashboard/trials')}
+                  onClick={((: any): any) => navigate('/admin-dashboard/trials')}
                   sx={{ justifyContent: 'flex-start' }}
                   title="管理试用用户和转化 (快捷键: Alt+T)"
                   color={stats?.trialStats?.expiringThisWeek ? 'warning' : 'primary'}
@@ -784,7 +784,7 @@ const AdminDashboard: React.FC = () => {
                 <Button 
                   size="small" 
                   startIcon={<Payment />}
-                  onClick={() => navigate('/admin-dashboard/payment-providers')}
+                  onClick={((: any): any) => navigate('/admin-dashboard/payment-providers')}
                   sx={{ justifyContent: 'flex-start' }}
                   title="配置支付方式和账单 (快捷键: Alt+B)"
                 >
@@ -793,7 +793,7 @@ const AdminDashboard: React.FC = () => {
                 <Button 
                   size="small" 
                   startIcon={<Assessment />}
-                  onClick={() => navigate('/admin-dashboard/api-analytics')}
+                  onClick={((: any): any) => navigate('/admin-dashboard/api-analytics')}
                   sx={{ justifyContent: 'flex-start' }}
                   title="查看API使用统计和性能 (快捷键: Alt+A)"
                   color={(stats?.apiUsage.successRate?.today || 0) < 95 ? 'warning' : 'primary'}
@@ -803,7 +803,7 @@ const AdminDashboard: React.FC = () => {
                 <Button 
                   size="small" 
                   startIcon={<Token />}
-                  onClick={() => navigate('/admin-dashboard/token-usage')}
+                  onClick={((: any): any) => navigate('/admin-dashboard/token-usage')}
                   sx={{ justifyContent: 'flex-start' }}
                   title="监控Token消耗和配额 (快捷键: Alt+K)"
                 >
@@ -812,7 +812,7 @@ const AdminDashboard: React.FC = () => {
                 <Button 
                   size="small" 
                   startIcon={<Analytics />}
-                  onClick={() => navigate('/admin-dashboard/user-statistics')}
+                  onClick={((: any): any) => navigate('/admin-dashboard/user-statistics')}
                   sx={{ justifyContent: 'flex-start' }}
                   title="查看用户行为和增长数据 (快捷键: Alt+S)"
                 >
@@ -821,7 +821,7 @@ const AdminDashboard: React.FC = () => {
                 <Button 
                   size="small" 
                   startIcon={<Settings />}
-                  onClick={() => navigate('/admin-dashboard/system-configs')}
+                  onClick={((: any): any) => navigate('/admin-dashboard/system-configs')}
                   sx={{ justifyContent: 'flex-start' }}
                   title="系统配置和环境变量 (快捷键: Alt+C)"
                 >

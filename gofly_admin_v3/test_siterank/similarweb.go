@@ -12,8 +12,8 @@ import (
 
 // SimilarWebClient SimilarWeb API客户端
 type SimilarWebClient struct {
-	config     *SimilarWebConfig
-	httpClient *http.Client
+	config      *SimilarWebConfig
+	httpClient  *http.Client
 	rateLimiter *RateLimiter
 }
 
@@ -36,7 +36,7 @@ func NewRateLimiter(maxRequests int, window time.Duration) *RateLimiter {
 // Allow 检查是否允许请求
 func (rl *RateLimiter) Allow() bool {
 	now := time.Now()
-	
+
 	// 清理过期的请求记录
 	cutoff := now.Add(-rl.window)
 	validRequests := make([]time.Time, 0)
@@ -46,12 +46,12 @@ func (rl *RateLimiter) Allow() bool {
 		}
 	}
 	rl.requests = validRequests
-	
+
 	// 检查是否超过限制
 	if len(rl.requests) >= rl.maxRequests {
 		return false
 	}
-	
+
 	// 记录新请求
 	rl.requests = append(rl.requests, now)
 	return true
@@ -69,7 +69,7 @@ func NewSimilarWebClient(config *SimilarWebConfig) *SimilarWebClient {
 	if config == nil {
 		config = DefaultSimilarWebConfig()
 	}
-	
+
 	return &SimilarWebClient{
 		config: config,
 		httpClient: &http.Client{
@@ -83,10 +83,10 @@ func NewSimilarWebClient(config *SimilarWebConfig) *SimilarWebClient {
 func (c *SimilarWebClient) GetDomainRank(domain, country string) (*SiteRankData, error) {
 	// 速率限制
 	c.rateLimiter.Wait()
-	
+
 	// 构建API URL
 	apiURL := fmt.Sprintf("%s/website/%s/total-traffic-and-engagement/visits", c.config.BaseURL, domain)
-	
+
 	// 添加查询参数
 	params := url.Values{}
 	params.Add("api_key", c.config.APIKey)
@@ -96,33 +96,33 @@ func (c *SimilarWebClient) GetDomainRank(domain, country string) (*SiteRankData,
 	if country != "" {
 		params.Add("country", country)
 	}
-	
+
 	fullURL := fmt.Sprintf("%s?%s", apiURL, params.Encode())
-	
+
 	// 发送请求
 	resp, err := c.makeRequest("GET", fullURL, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	// 读取响应
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("读取响应失败: %w", err)
 	}
-	
+
 	// 检查HTTP状态码
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API请求失败: %d - %s", resp.StatusCode, string(body))
 	}
-	
+
 	// 解析响应
 	var apiResponse SimilarWebAPIResponse
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
 		return nil, fmt.Errorf("解析响应失败: %w", err)
 	}
-	
+
 	// 转换为标准格式
 	return c.convertToSiteRankData(&apiResponse, domain), nil
 }
@@ -131,40 +131,40 @@ func (c *SimilarWebClient) GetDomainRank(domain, country string) (*SiteRankData,
 func (c *SimilarWebClient) GetDomainInfo(domain string) (*SiteRankData, error) {
 	// 速率限制
 	c.rateLimiter.Wait()
-	
+
 	// 构建API URL
 	apiURL := fmt.Sprintf("%s/website/%s/general-data/overview", c.config.BaseURL, domain)
-	
+
 	// 添加查询参数
 	params := url.Values{}
 	params.Add("api_key", c.config.APIKey)
-	
+
 	fullURL := fmt.Sprintf("%s?%s", apiURL, params.Encode())
-	
+
 	// 发送请求
 	resp, err := c.makeRequest("GET", fullURL, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	// 读取响应
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("读取响应失败: %w", err)
 	}
-	
+
 	// 检查HTTP状态码
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API请求失败: %d - %s", resp.StatusCode, string(body))
 	}
-	
+
 	// 解析响应
 	var apiResponse SimilarWebOverviewResponse
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
 		return nil, fmt.Errorf("解析响应失败: %w", err)
 	}
-	
+
 	// 转换为标准格式
 	return c.convertOverviewToSiteRankData(&apiResponse), nil
 }
@@ -175,35 +175,35 @@ func (c *SimilarWebClient) makeRequest(method, url string, body io.Reader) (*htt
 	if err != nil {
 		return nil, fmt.Errorf("创建请求失败: %w", err)
 	}
-	
+
 	// 设置请求头
 	req.Header.Set("User-Agent", "AutoAds-SaaS/1.0")
 	req.Header.Set("Accept", "application/json")
-	
+
 	// 发送请求
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("发送请求失败: %w", err)
 	}
-	
+
 	return resp, nil
 }
 
 // convertToSiteRankData 转换API响应为标准格式
 func (c *SimilarWebClient) convertToSiteRankData(apiResp *SimilarWebAPIResponse, domain string) *SiteRankData {
 	data := &SiteRankData{}
-	
+
 	// 处理访问量数据
 	if len(apiResp.Visits) > 0 {
 		// 取最新月份的数据
 		latestVisit := apiResp.Visits[len(apiResp.Visits)-1]
 		data.Visits = &latestVisit.Visits
 	}
-	
+
 	// 模拟其他数据（实际项目中需要调用相应的API）
 	data.Category = "Unknown"
 	data.Country = "world"
-	
+
 	return data
 }
 
@@ -218,7 +218,7 @@ func (c *SimilarWebClient) convertOverviewToSiteRankData(apiResp *SimilarWebOver
 		PagesPerVisit: apiResp.PagesPerVisit,
 		AvgDuration:   apiResp.AvgDuration,
 	}
-	
+
 	return data
 }
 
@@ -228,22 +228,22 @@ func (c *SimilarWebClient) ValidateDomain(domain string) error {
 	if domain == "" {
 		return fmt.Errorf("域名不能为空")
 	}
-	
+
 	// 移除协议前缀
 	domain = strings.TrimPrefix(domain, "http://")
 	domain = strings.TrimPrefix(domain, "https://")
 	domain = strings.TrimPrefix(domain, "www.")
-	
+
 	// 检查域名格式
 	if !strings.Contains(domain, ".") {
 		return fmt.Errorf("无效的域名格式")
 	}
-	
+
 	// 检查长度
 	if len(domain) > 253 {
 		return fmt.Errorf("域名长度不能超过253个字符")
 	}
-	
+
 	return nil
 }
 
@@ -251,15 +251,15 @@ func (c *SimilarWebClient) ValidateDomain(domain string) error {
 func (c *SimilarWebClient) NormalizeDomain(domain string) string {
 	// 转换为小写
 	domain = strings.ToLower(domain)
-	
+
 	// 移除协议前缀
 	domain = strings.TrimPrefix(domain, "http://")
 	domain = strings.TrimPrefix(domain, "https://")
 	domain = strings.TrimPrefix(domain, "www.")
-	
+
 	// 移除尾部斜杠
 	domain = strings.TrimSuffix(domain, "/")
-	
+
 	return domain
 }
 

@@ -255,7 +255,7 @@ export default function ChangeLinkClient() {
         </Alert>
       )}
 
-      <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as "accounts" | "configurations" | "executions" | "monitoring")} className="space-y-4">
+      <Tabs value={currentTab} onValueChange={((value: any): any) => setCurrentTab(value as "accounts" | "configurations" | "executions" | "monitoring")} className="space-y-4">
         <TabsList>
           <TabsTrigger value="accounts">Google Ads 账户</TabsTrigger>
           <TabsTrigger value="configurations">配置管理</TabsTrigger>
@@ -268,7 +268,7 @@ export default function ChangeLinkClient() {
             <h2 className="text-xl font-semibold">Google Ads 账户管理</h2>
             <ProtectedButton 
               featureName="adscenter"
-              onClick={() => setShowAddAccount(true)}
+              onClick={((: any): any) => setShowAddAccount(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
               添加账户
@@ -286,7 +286,7 @@ export default function ChangeLinkClient() {
                   <Input
                     id="accountId"
                     value={newAccount.accountId}
-                    onChange={(e) => setNewAccount({ ...newAccount, accountId: e.target.value })}
+                    onChange={((e: any): any) => setNewAccount({ ...newAccount, accountId: e.target.value })}
                     placeholder="输入 Google Ads 账户 ID"
                   />
                 </div>
@@ -295,7 +295,7 @@ export default function ChangeLinkClient() {
                   <Input
                     id="accountName"
                     value={newAccount.accountName}
-                    onChange={(e) => setNewAccount({ ...newAccount, accountName: e.target.value })}
+                    onChange={((e: any): any) => setNewAccount({ ...newAccount, accountName: e.target.value })}
                     placeholder="输入账户名称"
                   />
                 </div>
@@ -306,14 +306,14 @@ export default function ChangeLinkClient() {
                   >
                     保存
                   </ProtectedButton>
-                  <Button variant="outline" onClick={() => setShowAddAccount(false)}>取消</Button>
+                  <Button variant="outline" onClick={((: any): any) => setShowAddAccount(false)}>取消</Button>
                 </div>
               </CardContent>
             </Card>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {accounts.map((account) => (
+            {accounts.map((account: any) => (
               <Card key={account.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -339,7 +339,7 @@ export default function ChangeLinkClient() {
             <h2 className="text-xl font-semibold">配置管理</h2>
             <ProtectedButton 
               featureName="adscenter"
-              onClick={() => setShowAddConfig(true)}
+              onClick={((: any): any) => setShowAddConfig(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
               添加配置
@@ -357,7 +357,7 @@ export default function ChangeLinkClient() {
                   <Input
                     id="configName"
                     value={newConfig.name}
-                    onChange={(e) => setNewConfig({ ...newConfig, name: e.target.value })}
+                    onChange={((e: any): any) => setNewConfig({ ...newConfig, name: e.target.value })}
                     placeholder="输入配置名称"
                   />
                 </div>
@@ -366,7 +366,7 @@ export default function ChangeLinkClient() {
                   <Textarea
                     id="configDescription"
                     value={newConfig.description}
-                    onChange={(e) => setNewConfig({ ...newConfig, description: e.target.value })}
+                    onChange={((e: any): any) => setNewConfig({ ...newConfig, description: e.target.value })}
                     placeholder="输入配置描述"
                   />
                 </div>
@@ -375,7 +375,7 @@ export default function ChangeLinkClient() {
                   <Textarea
                     id="configData"
                     value={newConfig.configData}
-                    onChange={(e) => setNewConfig({ ...newConfig, configData: e.target.value })}
+                    onChange={((e: any): any) => setNewConfig({ ...newConfig, configData: e.target.value })}
                     placeholder='{"key": "value"}'
                     rows={5}
                   />
@@ -387,14 +387,14 @@ export default function ChangeLinkClient() {
                   >
                     保存
                   </ProtectedButton>
-                  <Button variant="outline" onClick={() => setShowAddConfig(false)}>取消</Button>
+                  <Button variant="outline" onClick={((: any): any) => setShowAddConfig(false)}>取消</Button>
                 </div>
               </CardContent>
             </Card>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {configurations.map((config) => (
+            {configurations.map((config: any) => (
               <Card key={config.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -412,7 +412,7 @@ export default function ChangeLinkClient() {
                   <ProtectedButton 
                     featureName="adscenter"
                     size="sm" 
-                    onClick={() => handleStartExecution(config.id)}
+                    onClick={((: any): any) => handleStartExecution(config.id)}
                     className="w-full"
                   >
                     <Play className="h-4 w-4 mr-2" />
@@ -428,7 +428,7 @@ export default function ChangeLinkClient() {
           <h2 className="text-xl font-semibold">执行监控</h2>
           
           <div className="space-y-4">
-            {executions.map((execution) => (
+            {executions.map((execution: any) => (
               <Card key={execution.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -516,7 +516,7 @@ export default function ChangeLinkClient() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {executions.filter(e => e.status === 'running').length}
+                  {executions.filter((e: any) => e.status === 'running').length}
                 </div>
                 <p className="text-sm text-muted-foreground">正在运行</p>
               </CardContent>
@@ -543,7 +543,7 @@ export default function ChangeLinkClient() {
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-purple-600">
-                    {executions.filter(e => e.status === 'completed').length}
+                    {executions.filter((e: any) => e.status === 'completed').length}
                   </div>
                   <p className="text-sm text-muted-foreground">成功执行</p>
                 </div>

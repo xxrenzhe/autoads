@@ -397,7 +397,7 @@ export default function BackgroundOpenInstallPage() {
                   </p>
                 </div>
                 <Button
-                  onClick={() =>
+                  onClick={((: any): any) =>
                     window.open(
                       "https://chromewebstore.google.com/detail/auto-refresh-plus-page-mo/hgeljhfekpckiiplhkigfehkdpldcggm",
                       "_blank",

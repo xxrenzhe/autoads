@@ -152,7 +152,7 @@ export function SubscriptionManager({ userId, onPlanChange, onCancel }: Subscrip
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             You're currently on the free plan. Upgrade to unlock premium features.
           </p>
-          <Button onClick={() => setShowUpgradeOptions(true)}>
+          <Button onClick={((: any): any) => setShowUpgradeOptions(true)}>
             <ArrowUp className="h-4 w-4 mr-2" />
             View Plans
           </Button>
@@ -228,7 +228,7 @@ export function SubscriptionManager({ userId, onPlanChange, onCancel }: Subscrip
                 Plan Features
               </h4>
               <ul className="space-y-2">
-                {subscription.plan?.features.slice(0, 5).map((feature: any, index: number) => (
+                {subscription.plan?.features.slice(0, 5).map((feature: any, index: number: any) => (
                   <li key={index} className="flex items-center text-sm">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
                     {feature}
@@ -249,7 +249,7 @@ export function SubscriptionManager({ userId, onPlanChange, onCancel }: Subscrip
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Button
           variant="outline"
-          onClick={() => setShowUpgradeOptions(true)}
+          onClick={((: any): any) => setShowUpgradeOptions(true)}
           disabled={isUpgrading}
         >
           <ArrowUp className="h-4 w-4 mr-2" />
@@ -258,7 +258,7 @@ export function SubscriptionManager({ userId, onPlanChange, onCancel }: Subscrip
         
         <Button
           variant="outline"
-          onClick={() => subscription.plan?.id ? handleDowngrade(subscription.plan.id) : undefined}
+          onClick={((: any): any) => subscription.plan?.id ? handleDowngrade(subscription.plan.id) : undefined}
           disabled={isDowngrading}
         >
           <ArrowDown className="h-4 w-4 mr-2" />
@@ -290,7 +290,7 @@ export function SubscriptionManager({ userId, onPlanChange, onCancel }: Subscrip
         {!subscription.cancelAtPeriodEnd && (
           <Button
             variant="destructive"
-            onClick={() => setShowCancelConfirm(true)}
+            onClick={((: any): any) => setShowCancelConfirm(true)}
             disabled={isCancelling}
           >
             <X className="h-4 w-4 mr-2" />
@@ -310,7 +310,7 @@ export function SubscriptionManager({ userId, onPlanChange, onCancel }: Subscrip
         <CardContent>
           {billingHistory && billingHistory.length > 0 ? (
             <div className="space-y-4">
-              {billingHistory.slice(0, 5).map((invoice: any) => (
+              {billingHistory.slice(0, 5).map((invoice: any: any) => (
                 <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">
@@ -332,7 +332,7 @@ export function SubscriptionManager({ userId, onPlanChange, onCancel }: Subscrip
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => downloadInvoice(invoice.id)}
+                      onClick={((: any): any) => downloadInvoice(invoice.id)}
                     >
                       <Download className="h-4 w-4" />
                     </Button>
@@ -366,7 +366,7 @@ export function SubscriptionManager({ userId, onPlanChange, onCancel }: Subscrip
               <div className="flex items-center justify-end space-x-3">
                 <Button
                   variant="outline"
-                  onClick={() => setShowCancelConfirm(false)}
+                  onClick={((: any): any) => setShowCancelConfirm(false)}
                 >
                   Keep Subscription
                 </Button>

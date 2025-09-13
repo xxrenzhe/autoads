@@ -25,7 +25,7 @@ export async function exampleBatchQuery() {
     });
     
     console.log('查询结果:');
-    results.forEach(result => {
+    results.forEach((result: any) => {
       console.log(`- ${result.domain}: ${result.status}`);
       if (result.status === 'success') {
         console.log(`  排名: ${result.globalRank}, 访问量: ${result.monthlyVisits}`);
@@ -75,7 +75,7 @@ export async function exampleOptimizedBatchQuery() {
     console.log(`缓存命中: ${cacheHits}, API调用: ${apiCalls}`);
     console.log(`缓存命中率: ${((cacheHits / domains.length) * 100).toFixed(1)}%`);
     
-    results.forEach(result => {
+    results.forEach((result: any) => {
       console.log(`- ${result.domain}: ${result.status}`);
     });
     

@@ -310,18 +310,18 @@ export const useNotification = () => {
     setNotifications(prev => [...prev, notification]);
     if (duration > 0) {
       setTimeout(() => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
+        setNotifications(prev => prev.filter((n: any) => n.id !== id));
       }, duration);
     }
   }, []);
 
   const removeNotification = React.useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications(prev => prev.filter((n: any) => n.id !== id));
   }, []);
 
   const NotificationContainer = React.useCallback(() => (
     <div className="fixed top-4 right-4 z-50 space-y-2">
-      {notifications?.filter(Boolean)?.map(notification => {
+      {notifications?.filter(Boolean)?.map((notification: any) => {
         const AlertComponent = {
           success: SuccessAlert,
           error: ErrorAlert,

@@ -161,7 +161,7 @@ export default function SchedulingPage() {
     try {
       const newStatus = currentStatus === 'active' ? 'paused' : 'active';
       setScheduledTasks(prev => 
-        prev?.filter(Boolean)?.map(task => 
+        prev?.filter(Boolean)?.map((task: any) => 
           task.id === taskId ? { ...task, status: newStatus as any } : task
         )
       );
@@ -174,7 +174,7 @@ export default function SchedulingPage() {
     if (!confirm('确定要删除这个定时任务吗？')) return;
 
     try {
-      setScheduledTasks(prev => prev.filter(task => task.id !== taskId));
+      setScheduledTasks(prev => prev.filter((task: any) => task.id !== taskId));
     } catch (error) {
       console.error('删除任务失败:', error);
     }
@@ -275,7 +275,7 @@ export default function SchedulingPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => {
+              onClick={((: any): any) => {
                 setSelectedTask(task);
                 setShowDetailDialog(true);
               }}
@@ -286,7 +286,7 @@ export default function SchedulingPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => handleToggleTask(task.id, task.status)}
+              onClick={((: any): any) => handleToggleTask(task.id, task.status)}
             >
               {task.status === 'active' ? (
                 <>
@@ -303,7 +303,7 @@ export default function SchedulingPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => handleDeleteTask(task.id)}
+              onClick={((: any): any) => handleDeleteTask(task.id)}
             >
               <Trash2 className="h-4 w-4 mr-1" />
               删除
@@ -386,7 +386,7 @@ export default function SchedulingPage() {
             <AlertDescription>暂无执行历史</AlertDescription>
           </Alert>
         ) : (
-          task.executionHistory.map((execution, index) => (
+          task.executionHistory.map((execution, index: any) => (
             <Card key={index}>
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-center">
@@ -474,7 +474,7 @@ export default function SchedulingPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             刷新
           </Button>
-          <Button onClick={() => setShowCreateDialog(true)}>
+          <Button onClick={((: any): any) => setShowCreateDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             创建任务
           </Button>
@@ -484,10 +484,10 @@ export default function SchedulingPage() {
       <Tabs defaultValue="active" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="active">
-            活跃任务 ({scheduledTasks.filter(t => t.status === 'active').length})
+            活跃任务 ({scheduledTasks.filter((t: any) => t.status === 'active').length})
           </TabsTrigger>
           <TabsTrigger value="paused">
-            已暂停 ({scheduledTasks.filter(t => t.status === 'paused').length})
+            已暂停 ({scheduledTasks.filter((t: any) => t.status === 'paused').length})
           </TabsTrigger>
           <TabsTrigger value="all">
             全部任务 ({scheduledTasks.length})
@@ -495,7 +495,7 @@ export default function SchedulingPage() {
         </TabsList>
 
         <TabsContent value="active" className="space-y-6">
-          {scheduledTasks.filter(t => t.status === 'active').length === 0 ? (
+          {scheduledTasks.filter((t: any) => t.status === 'active').length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Calendar className="h-12 w-12 text-gray-400 mb-4" />
@@ -505,7 +505,7 @@ export default function SchedulingPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {scheduledTasks.filter(t => t.status === 'active').map((task) => (
+              {scheduledTasks.filter((t: any) => t.status === 'active').map((task: any) => (
                 <TaskCard key={task.id} task={task} />
               ))}
             </div>
@@ -513,7 +513,7 @@ export default function SchedulingPage() {
         </TabsContent>
 
         <TabsContent value="paused" className="space-y-6">
-          {scheduledTasks.filter(t => t.status === 'paused').length === 0 ? (
+          {scheduledTasks.filter((t: any) => t.status === 'paused').length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Pause className="h-12 w-12 text-gray-400 mb-4" />
@@ -523,7 +523,7 @@ export default function SchedulingPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {scheduledTasks.filter(t => t.status === 'paused').map((task) => (
+              {scheduledTasks.filter((t: any) => t.status === 'paused').map((task: any) => (
                 <TaskCard key={task.id} task={task} />
               ))}
             </div>
@@ -541,7 +541,7 @@ export default function SchedulingPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {scheduledTasks.map((task) => (
+              {scheduledTasks.map((task: any) => (
                 <TaskCard key={task.id} task={task} />
               ))}
             </div>

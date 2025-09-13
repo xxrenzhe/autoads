@@ -111,7 +111,7 @@ class SimpleExecutionService {
       logs.push(`获取到 ${adsResult.ads.length} 个广告`);
       
       // 准备更新数据
-      const adsToUpdate: AdToUpdate[] = adsResult.ads?.filter(Boolean)?.map(ad => ({
+      const adsToUpdate: AdToUpdate[] = adsResult.ads?.filter(Boolean)?.map((ad: any) => ({
         adId: ad.adId,
         finalUrl: adsPowerResult.finalUrl!,
         finalUrlSuffix: adsPowerResult.finalUrlSuffix
@@ -130,7 +130,7 @@ class SimpleExecutionService {
       
       if (updateResult.errors.length > 0) {
         logs.push('错误详情:');
-        updateResult.errors.forEach(error => logs.push(`  - ${error}`));
+        updateResult.errors.forEach((error: any) => logs.push(`  - ${error}`));
       }
       
       // 6. 更新执行记录
@@ -176,7 +176,7 @@ class SimpleExecutionService {
       // 更新执行记录为失败状态
       try {
         const executions = localStorageService.getExecutions();
-        const execution = executions.find(e => e.id === executionId);
+        const execution = executions.find((e: any) => e.id === executionId);
         
         if (execution) {
           localStorageService.updateExecution(execution.id, {
@@ -223,7 +223,7 @@ class SimpleExecutionService {
    */
   async getExecutionDetails(executionId: string): Promise<ExecutionRecord | null> {
     const executions = localStorageService.getExecutions();
-    return executions.find(e => e.id === executionId) || null;
+    return executions.find((e: any) => e.id === executionId) || null;
   }
 
   /**
@@ -232,7 +232,7 @@ class SimpleExecutionService {
   async stopExecution(executionId: string): Promise<boolean> {
     try {
       const executions = localStorageService.getExecutions();
-      const execution = executions.find(e => e.id === executionId);
+      const execution = executions.find((e: any) => e.id === executionId);
       
       if (execution && execution.status === 'running') {
         localStorageService.updateExecution(executionId, {
@@ -263,13 +263,13 @@ class SimpleExecutionService {
     const executions = localStorageService.getExecutions();
     
     const totalExecutions = executions.length;
-    const successfulExecutions = executions.filter(e => e.status === 'completed').length;
-    const failedExecutions = executions.filter(e => e.status === 'failed').length;
+    const successfulExecutions = executions.filter((e: any) => e.status === 'completed').length;
+    const failedExecutions = executions.filter((e: any) => e.status === 'failed').length;
     
     // 计算平均执行时间
-    const completedExecutions = executions.filter(e => e.endTime);
+    const completedExecutions = executions.filter((e: any) => e.endTime);
     const averageExecutionTime = completedExecutions.length > 0
-      ? completedExecutions.reduce((sum, e) => {
+      ? completedExecutions.reduce((sum, e: any) => {
           const duration = new Date(e.endTime!).getTime() - new Date(e.startTime).getTime();
           return sum + duration;
         }, 0) / completedExecutions.length

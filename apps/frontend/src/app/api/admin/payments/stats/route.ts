@@ -100,13 +100,13 @@ export async function GET(request: NextRequest) {
     ]);
 
     // 处理统计数据
-    const revenueByMethod = paymentStatsByMethod.map(stat => ({
+    const revenueByMethod = paymentStatsByMethod.map((stat: any) => ({
       method: stat.provider,
       amount: stat._sum.amount || 0,
       count: stat._count._all,
     }));
 
-    const revenueByStatus = paymentStatsByStatus.map(stat => ({
+    const revenueByStatus = paymentStatsByStatus.map((stat: any) => ({
       status: stat.status,
       amount: stat._sum.amount || 0,
       count: stat._count._all,
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
       averageAmount: totalPayments > 0 ? (totalRevenue._sum.amount || 0) / successfulPayments : 0,
       revenueByMethod,
       revenueByStatus,
-      dailyRevenue: dailyRevenue.map((day: any) => ({
+      dailyRevenue: dailyRevenue.map((day: any: any) => ({
         date: day.date,
         amount: Number(day.amount),
         count: day.count,

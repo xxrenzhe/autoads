@@ -2,7 +2,7 @@ package advanced
 
 import (
 	"context"
-		"fmt"
+	"fmt"
 	"sync"
 	"time"
 
@@ -175,7 +175,7 @@ func (uns *UnifiedNotificationSystem) registerChannels() {
 func (uns *UnifiedNotificationSystem) SendNotification(notification *Notification) error {
 	// 设置默认值
 	if notification.ID == "" {
-        notification.ID = gf.UUID()
+		notification.ID = gf.UUID()
 	}
 	if notification.CreatedAt.IsZero() {
 		notification.CreatedAt = time.Now()

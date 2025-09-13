@@ -162,7 +162,7 @@ export class StatisticsCacheService {
 
         return {
           overallTrends: overallTrends as any[],
-          featurePopularity: featurePopularity.map(fp => ({
+          featurePopularity: featurePopularity.map((fp: any) => ({
             feature: (fp.metadata as any)?.feature || 'unknown',
             _count: { id: fp._count?.id || 0 },
             totalTokens: Math.abs(fp._sum?.amount || 0)
@@ -255,7 +255,7 @@ export class StatisticsCacheService {
             userSegments: userSegments as any[]
           },
           featureEngagement: {
-            featureStats: featureEngagement.map(fe => ({
+            featureStats: featureEngagement.map((fe: any) => ({
               feature: (fe.metadata as any)?.feature || 'unknown',
               totalUsage: fe._count?.id || 0,
               avgTokensPerUse: Math.round(Math.abs(fe._avg?.amount || 0)),

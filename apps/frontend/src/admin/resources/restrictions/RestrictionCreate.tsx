@@ -143,7 +143,7 @@ export const RestrictionCreate = () => {
               control={
                 <Checkbox
                   checked={customDuration}
-                  onChange={(e) => setCustomDuration(e.target.checked)}
+                  onChange={((e: any): any) => setCustomDuration(e.target.checked)}
                 />
               }
               label="自定义过期时间"
@@ -156,13 +156,13 @@ export const RestrictionCreate = () => {
                 选择预设时长：
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                {durationPresets.map((preset) => (
+                {durationPresets.map((preset: any) => (
                   <FormControlLabel
                     key={preset.value}
                     control={
                       <Checkbox
                         checked={selectedPreset === preset.value}
-                        onChange={() => setSelectedPreset(preset.value)}
+                        onChange={((: any): any) => setSelectedPreset(preset.value)}
                       />
                     }
                     label={preset.label}

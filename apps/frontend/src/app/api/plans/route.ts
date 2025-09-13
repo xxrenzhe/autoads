@@ -18,14 +18,14 @@ export async function GET(request: NextRequest) {
     const allPlans = await PlanService.getAllPlans(false)
 
     // Filter by currency and interval if specified
-    let filteredPlans = allPlans.filter(plan => plan.currency === currency)
+    let filteredPlans = allPlans.filter((plan: any) => plan.currency === currency)
     
     if (interval) {
-      filteredPlans = filteredPlans.filter(plan => plan.interval === interval)
+      filteredPlans = filteredPlans.filter((plan: any) => plan.interval === interval)
     }
 
     // Format plans for public consumption (remove sensitive data)
-    const publicPlans = filteredPlans?.filter(Boolean)?.map(plan => {
+    const publicPlans = filteredPlans?.filter(Boolean)?.map((plan: any) => {
       // Safely extract features from JSON
       const features = plan.features as Record<string, unknown> || {};
       

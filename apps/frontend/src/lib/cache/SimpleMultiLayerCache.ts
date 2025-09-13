@@ -146,7 +146,7 @@ export class SimpleMultiLayerCache implements ICache {
    * 获取统计信息
    */
   getStatistics() {
-    const totalHits = Object.values(this.statistics.hits).reduce((sum, hits) => sum + hits, 0);
+    const totalHits = Object.values(this.statistics.hits).reduce((sum, hits: any) => sum + hits, 0);
     const hitRate = this.statistics.totalRequests > 0 ? totalHits / this.statistics.totalRequests : 0;
 
     return {
@@ -171,7 +171,7 @@ export class SimpleMultiLayerCache implements ICache {
       }
     }
 
-    expiredKeys.forEach(key => this.l1Cache.delete(key));
+    expiredKeys.forEach((key: any) => this.l1Cache.delete(key));
   }
 }
 

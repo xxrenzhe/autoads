@@ -174,9 +174,9 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
   }
 
   // Calculate summary statistics
-  const totalTokensInSystem = balances.reduce((sum, b) => sum + b.totalTokens, 0)
-  const totalUsedTokens = balances.reduce((sum, b) => sum + b.usedTokens, 0)
-  const totalRemainingTokens = balances.reduce((sum, b) => sum + b.remainingTokens, 0)
+  const totalTokensInSystem = balances.reduce((sum, b: any) => sum + b.totalTokens, 0)
+  const totalUsedTokens = balances.reduce((sum, b: any) => sum + b.usedTokens, 0)
+  const totalRemainingTokens = balances.reduce((sum, b: any) => sum + b.remainingTokens, 0)
   const averageUsagePercentage = balances.length > 0 
     ? (totalUsedTokens / totalTokensInSystem) * 100 
     : 0
@@ -194,7 +194,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
           </p>
         </div>
         
-        <Button onClick={() => setShowTopUpModal(true)}>
+        <Button onClick={((: any): any) => setShowTopUpModal(true)}>
           <CreditCard className="h-4 w-4 mr-2" />
           Process Top-Up
         </Button>
@@ -282,10 +282,10 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
             { id: 'balances', label: 'User Balances', icon: Coins },
             { id: 'transactions', label: 'Transactions', icon: History },
             { id: 'topup', label: 'Manual Adjustment', icon: Plus }
-          ].map(({ id, label, icon: Icon }) => (
+          ].map(({ id, label, icon: Icon }: any) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id as any)}
+              onClick={((: any): any) => setActiveTab(id as any)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
                   ? 'border-blue-500 text-blue-600'
@@ -302,7 +302,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
       {/* Tab Content */}
       {activeTab === 'balances' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {balances.map((balance) => {
+          {balances.map((balance: any) => {
             const status = getBalanceStatus(balance)
             const usagePercentage = (balance.usedTokens / balance.totalTokens) * 100
             
@@ -381,7 +381,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
 
       {activeTab === 'transactions' && (
         <div className="space-y-4">
-          {transactions.map((transaction) => (
+          {transactions.map((transaction: any) => (
             <Card key={transaction.id}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -440,11 +440,11 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
                 </label>
                 <select
                   value={selectedUser}
-                  onChange={(e) => setSelectedUser(e.target.value)}
+                  onChange={((e: any): any) => setSelectedUser(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Choose a user...</option>
-                  {balances.map((balance) => (
+                  {balances.map((balance: any) => (
                     <option key={balance.userId} value={balance.userId}>
                       User {balance.userId.slice(0, 8)}... ({balance.subscriptionPlan})
                     </option>
@@ -459,7 +459,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
                 <Input
                   type="number"
                   value={adjustmentAmount}
-                  onChange={(e) => setAdjustmentAmount(parseInt(e.target.value) || 0)}
+                  onChange={((e: any): any) => setAdjustmentAmount(parseInt(e.target.value) || 0)}
                   placeholder="Enter positive or negative amount"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -473,7 +473,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
                 </label>
                 <Input
                   value={adjustmentReason}
-                  onChange={(e) => setAdjustmentReason(e.target.value)}
+                  onChange={((e: any): any) => setAdjustmentReason(e.target.value)}
                   placeholder="e.g., Refund for service issue, Bonus tokens, etc."
                 />
               </div>

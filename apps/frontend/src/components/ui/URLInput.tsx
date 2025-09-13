@@ -48,7 +48,7 @@ export function URLInput({
 
   // 解析和验证URLs
   const parseURLs = useCallback((text: string): ParsedURL[] => {
-    const lines = text.split('\n').filter(line => line.trim());
+    const lines = text.split('\n').filter((line: any) => line.trim());
     const result: ParsedURL[] = [];
     
     for (let i = 0; i < lines.length; i++) {
@@ -127,8 +127,8 @@ export function URLInput({
       const parsed = parseURLs(text);
       setParsedURLs(parsed);
       
-      const validURLs = parsed.filter(u => u.valid)?.filter(Boolean)?.map(u => u.normalized);
-      const invalidURLs = parsed.filter(u => !u.valid);
+      const validURLs = parsed.filter((u: any) => u.valid)?.filter(Boolean)?.map((u: any) => u.normalized);
+      const invalidURLs = parsed.filter((u: any) => !u.valid);
       
       // 检查数量限制
       if (validURLs.length > maxUrls) {
@@ -203,8 +203,8 @@ export function URLInput({
   }, [onChange]);
 
   // 统计信息
-  const validCount = parsedURLs.filter(u => u.valid).length;
-  const invalidCount = parsedURLs.filter(u => !u.valid).length;
+  const validCount = parsedURLs.filter((u: any) => u.valid).length;
+  const invalidCount = parsedURLs.filter((u: any) => !u.valid).length;
 
   return (
     <Card className={className}>
@@ -258,7 +258,7 @@ export function URLInput({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={((: any): any) => fileInputRef.current?.click()}
             >
               <FileText className="w-4 h-4 mr-2" />
               选择文件
@@ -270,7 +270,7 @@ export function URLInput({
         <div className="space-y-2">
           <Textarea
             value={inputText}
-            onChange={(e) => handleInputChange(e.target.value)}
+            onChange={((e: any): any) => handleInputChange(e.target.value)}
             placeholder={placeholder}
             className="min-h-[200px] font-mono text-sm"
             disabled={isProcessing}
@@ -316,7 +316,7 @@ export function URLInput({
         {showStats && parsedURLs.length > 0 && (
           <div className="border rounded-lg p-3 max-h-40 overflow-y-auto">
             <div className="space-y-1">
-              {parsedURLs.slice(0, 10).map((url, index) => (
+              {parsedURLs.slice(0, 10).map((url, index: any) => (
                 <div
                   key={index}
                   className="flex items-center space-x-2 text-sm"

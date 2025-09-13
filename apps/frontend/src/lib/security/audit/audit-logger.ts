@@ -282,13 +282,13 @@ export class AuditLogger {
       })
     ])
 
-    const topUsers = topUsersData.map((item: any) => ({
+    const topUsers = topUsersData.map((item: any: any) => ({
       userId: item.userId || 'unknown',
       userEmail: item.userEmail || 'unknown',
       eventCount: item._count
     }))
 
-    const topActions = topActionsData.map((item: any) => ({
+    const topActions = topActionsData.map((item: any: any) => ({
       action: item.action,
       count: item._count
     }))
@@ -371,7 +371,7 @@ export class AuditLogger {
 
     try {
       await prisma.auditLog.createMany({
-        data: events?.filter(Boolean)?.map(event => ({
+        data: events?.filter(Boolean)?.map((event: any) => ({
           userId: event.userId,
           userEmail: event.userEmail,
           action: event.action,
@@ -442,10 +442,10 @@ export class AuditLogger {
     ])
 
     return {
-      byCategory: Object.fromEntries(byCategory.map((item: any) => [item.category, item._count])),
-      bySeverity: Object.fromEntries(bySeverity.map((item: any) => [item.severity, item._count])),
-      byOutcome: Object.fromEntries(byOutcome.map((item: any) => [item.outcome, item._count])),
-      byUser: Object.fromEntries(byUser.map((item: any) => [item.userId || 'unknown', item._count]))
+      byCategory: Object.fromEntries(byCategory.map((item: any: any) => [item.category, item._count])),
+      bySeverity: Object.fromEntries(bySeverity.map((item: any: any) => [item.severity, item._count])),
+      byOutcome: Object.fromEntries(byOutcome.map((item: any: any) => [item.outcome, item._count])),
+      byUser: Object.fromEntries(byUser.map((item: any: any) => [item.userId || 'unknown', item._count]))
     }
   }
 
@@ -464,8 +464,8 @@ export class AuditLogger {
     const headers = Object.keys(events[0])
     const csvRows = [
       headers.join(','),
-      ...events?.filter(Boolean)?.map(event =>
-        headers?.filter(Boolean)?.map(header => {
+      ...events?.filter(Boolean)?.map((event: any) =>
+        headers?.filter(Boolean)?.map((header: any) => {
           const value = event[header]
           return typeof value === 'object' ? JSON.stringify(value) : String(value)
         }).join(',')

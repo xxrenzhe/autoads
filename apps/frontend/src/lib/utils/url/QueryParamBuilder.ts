@@ -34,7 +34,7 @@ export class QueryParamBuilder {
     
     const searchParams = new URLSearchParams()
     
-    Object.entries(params).forEach(([key, value]) => {
+    Object.entries(params).forEach(([key, value]: any) => {
       const serializedValue = this.serializeValue(
         key, 
         value, 
@@ -44,7 +44,7 @@ export class QueryParamBuilder {
       if (serializedValue !== null) {
         if (Array.isArray(serializedValue)) {
           // Handle array values by adding multiple entries
-          serializedValue.forEach(val => {
+          serializedValue.forEach((val: any) => {
             searchParams.append(key, val)
           })
         } else {
@@ -107,9 +107,9 @@ export class QueryParamBuilder {
     // Handle arrays
     if (Array.isArray(value)) {
       return value
-        .filter(item => item !== undefined || includeUndefined)
-        ?.filter(Boolean)?.map(item => this.serializeValue(key, item, options))
-        .filter(item => item !== null) as string[]
+        .filter((item: any) => item !== undefined || includeUndefined)
+        ?.filter(Boolean)?.map((item: any) => this.serializeValue(key, item, options))
+        .filter((item: any) => item !== null) as string[]
     }
 
     // Handle objects
@@ -141,7 +141,7 @@ export class QueryParamBuilder {
     const { parseJSON = true } = options
     const result: Record<string, any> = {}
 
-    searchParams.forEach((value, key) => {
+    searchParams.forEach((value, key: any) => {
       // Handle multiple values for the same key
       if (result[key] !== undefined) {
         if (!Array.isArray(result[key])) {

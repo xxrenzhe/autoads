@@ -323,7 +323,7 @@ class AuditService {
         prisma.auditLog.count({ where })
       ])
 
-      const mappedLogs: AuditLogEntry[] = logs?.filter(Boolean)?.map((log: any) => ({
+      const mappedLogs: AuditLogEntry[] = logs?.filter(Boolean)?.map((log: any: any) => ({
         id: log.id,
         userId: log.userId || undefined,
         userEmail: log.userEmail || undefined,
@@ -434,32 +434,32 @@ class AuditService {
 
       return {
         totalEntries,
-        entriesByCategory: entriesByCategory.reduce((acc: any, item: any) => {
+        entriesByCategory: entriesByCategory.reduce((acc: any, item: any: any) => {
           acc[item.category] = item._count.category
           return acc
         }, {} as Record<string, number>),
-        entriesBySeverity: entriesBySeverity.reduce((acc: any, item: any) => {
+        entriesBySeverity: entriesBySeverity.reduce((acc: any, item: any: any) => {
           acc[item.severity] = item._count.severity
           return acc
         }, {} as Record<string, number>),
-        entriesByOutcome: entriesByOutcome.reduce((acc: any, item: any) => {
+        entriesByOutcome: entriesByOutcome.reduce((acc: any, item: any: any) => {
           acc[item.outcome] = item._count.outcome
           return acc
         }, {} as Record<string, number>),
-        topUsers: topUsersData?.filter(Boolean)?.map((item: any) => ({
+        topUsers: topUsersData?.filter(Boolean)?.map((item: any: any) => ({
           userId: item.userId!,
           userEmail: item.userEmail || 'Unknown',
           count: item._count.userId
         })),
-        topActions: topActionsData?.filter(Boolean)?.map((item: any) => ({
+        topActions: topActionsData?.filter(Boolean)?.map((item: any: any) => ({
           action: item.action,
           count: item._count.action
         })),
-        topResources: topResourcesData?.filter(Boolean)?.map((item: any) => ({
+        topResources: topResourcesData?.filter(Boolean)?.map((item: any: any) => ({
           resource: item.resource || 'unknown',
           count: item._count.resource
         })),
-        recentActivity: recentActivityData?.filter(Boolean)?.map((log: any) => ({
+        recentActivity: recentActivityData?.filter(Boolean)?.map((log: any: any) => ({
           id: log.id,
           userId: log.userId || undefined,
           userEmail: log.userEmail || undefined,
@@ -558,7 +558,7 @@ class AuditService {
       ])
 
       // Calculate risk score based on actions
-      const riskScore = this.calculateUserRiskScore(recentActions?.filter(Boolean)?.map((log: any) => ({
+      const riskScore = this.calculateUserRiskScore(recentActions?.filter(Boolean)?.map((log: any: any) => ({
         action: log.action,
         severity: log.severity as any,
         outcome: log.outcome as any
@@ -566,11 +566,11 @@ class AuditService {
 
       return {
         totalActions,
-        actionsByCategory: actionsByCategory.reduce((acc: any, item: any) => {
+        actionsByCategory: actionsByCategory.reduce((acc: any, item: any: any) => {
           acc[item.category] = item._count.category
           return acc
         }, {} as Record<string, number>),
-        recentActions: recentActions?.filter(Boolean)?.map((log: any) => ({
+        recentActions: recentActions?.filter(Boolean)?.map((log: any: any) => ({
           id: log.id,
           userId: log.userId || undefined,
           userEmail: log.userEmail || undefined,
@@ -655,7 +655,7 @@ class AuditService {
       'Resource ID', 'Category', 'Severity', 'Outcome', 'IP Address', 'User Agent'
     ]
 
-    const rows = logs?.filter(Boolean)?.map(log => [
+    const rows = logs?.filter(Boolean)?.map((log: any) => [
       log.id || '',
       log.timestamp?.toISOString() || '',
       log.userId || '',
@@ -671,7 +671,7 @@ class AuditService {
     ])
 
     return [headers, ...rows]
-      ?.filter(Boolean)?.map(row => row?.filter(Boolean)?.map(cell => `"${cell}"`).join(','))
+      ?.filter(Boolean)?.map((row: any) => row?.filter(Boolean)?.map((cell: any) => `"${cell}"`).join(','))
       .join('\n')
   }
 

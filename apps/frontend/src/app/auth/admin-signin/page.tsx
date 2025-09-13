@@ -87,7 +87,7 @@ export default function AdminSignIn() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={((e: any): any) => setEmail(e.target.value)}
                   required
                   className="mt-1"
                   placeholder="请输入管理员邮箱"
@@ -101,7 +101,7 @@ export default function AdminSignIn() {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={((e: any): any) => setPassword(e.target.value)}
                     required
                     placeholder="请输入密码"
                     className="pr-10"
@@ -109,7 +109,7 @@ export default function AdminSignIn() {
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={((: any): any) => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4 text-gray-400" />

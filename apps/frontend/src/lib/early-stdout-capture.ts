@@ -121,7 +121,7 @@ if (typeof process !== 'undefined' && process.stdout && !(globalThis as any).__E
   // 格式化日志条目
   function formatLogEntry(type: string, args: any[]): string {
     const timestamp = new Date().toISOString();
-    const message = args?.filter(Boolean)?.map(arg => {
+    const message = args?.filter(Boolean)?.map((arg: any) => {
       if (typeof arg === 'object') {
         try {
           return JSON.stringify(arg);

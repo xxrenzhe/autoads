@@ -35,7 +35,7 @@ export class TypeSafeURLParams {
       this.searchParams = new URLSearchParams(init)
     } else if (init && typeof init === 'object') {
       this.searchParams = new URLSearchParams()
-      Object.entries(init).forEach(([key, value]) => {
+      Object.entries(init).forEach(([key, value]: any) => {
         if (value !== undefined && value !== null) {
           this.searchParams.set(key, String(value))
         }
@@ -232,7 +232,7 @@ export class TypeSafeURLParams {
     const { parseNumbers = false, parseBooleans = false, parseDates = false } = options
     const result: Record<string, any> = {}
 
-    this.searchParams.forEach((value, key) => {
+    this.searchParams.forEach((value, key: any) => {
       let parsedValue: any = value
 
       if (parseNumbers && /^\d+(\.\d+)?$/.test(value)) {
@@ -342,7 +342,7 @@ export class TypeSafeURLParams {
   merge(other: TypeSafeURLParams): TypeSafeURLParams {
     const merged = this.clone()
     
-    other.searchParams.forEach((value, key) => {
+    other.searchParams.forEach((value, key: any) => {
       merged.set(key, value)
     })
 
@@ -358,7 +358,7 @@ export class TypeSafeURLParams {
   filter(predicate: (key: string, value: string) => boolean): TypeSafeURLParams {
     const filtered = new TypeSafeURLParams('', this.schema)
     
-    this.searchParams.forEach((value, key) => {
+    this.searchParams.forEach((value, key: any) => {
       if (predicate(key, value)) {
         filtered.set(key, value)
       }

@@ -141,16 +141,16 @@ export class MultiLevelCacheService {
     try {
       // 获取所有带标签的key
       const pipeline = redis.pipeline();
-      tags.forEach(tag => {
+      tags.forEach((tag: any) => {
         pipeline.smembers(`tag:${tag}`);
       });
       
       const results = await pipeline.exec();
       const keysToDelete = new Set<string>();
       
-      results?.forEach(([error, keys]: [any, any]) => {
+      results?.forEach(([error, keys]: [any, any]: any) => {
         if (!error && Array.isArray(keys)) {
-          keys.forEach(key => keysToDelete.add(key));
+          keys.forEach((key: any) => keysToDelete.add(key));
         }
       });
       
@@ -159,7 +159,7 @@ export class MultiLevelCacheService {
         await redis.del(...Array.from(keysToDelete));
         
         // 删除标签索引
-        tags.forEach(tag => {
+        tags.forEach((tag: any) => {
           redis.del(`tag:${tag}`);
         });
       }
@@ -280,7 +280,7 @@ export class MultiLevelCacheService {
       // 设置标签索引
       if (options.tags && options.tags.length > 0) {
         const pipeline = redis.pipeline();
-        options.tags.forEach(tag => {
+        options.tags.forEach((tag: any) => {
           pipeline.sadd(`tag:${tag}`, key);
           // 标签索引也设置过期时间
           pipeline.expire(`tag:${tag}`, options.ttl || 3600);

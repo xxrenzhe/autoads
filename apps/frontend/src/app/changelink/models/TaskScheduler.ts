@@ -214,7 +214,7 @@ export class TaskScheduler {
    */
   getTasks(userId?: string): ScheduledTask[] {
     const tasks = Array.from(this.scheduledTasks.values());
-    return userId ? tasks.filter(task => task.userId === userId) : tasks;
+    return userId ? tasks.filter((task: any) => task.userId === userId) : tasks;
   }
 
   /**
@@ -283,22 +283,22 @@ export class TaskScheduler {
     
     const stats = {
       total: tasks.length,
-      active: tasks.filter(t => t.status === 'active').length,
-      paused: tasks.filter(t => t.status === 'paused').length,
-      stopped: tasks.filter(t => t.status === 'stopped').length,
-      totalExecutions: tasks.reduce((sum, t) => sum + t.executionCount, 0),
+      active: tasks.filter((t: any) => t.status === 'active').length,
+      paused: tasks.filter((t: any) => t.status === 'paused').length,
+      stopped: tasks.filter((t: any) => t.status === 'stopped').length,
+      totalExecutions: tasks.reduce((sum, t: any) => sum + t.executionCount, 0),
       successRate: 0,
       nextExecution: undefined as Date | undefined
     };
 
     const totalExecutions = stats.totalExecutions;
-    const totalSuccesses = tasks.reduce((sum, t) => sum + t.successCount, 0);
+    const totalSuccesses = tasks.reduce((sum, t: any) => sum + t.successCount, 0);
     stats.successRate = totalExecutions > 0 ? (totalSuccesses / totalExecutions) * 100 : 0;
 
     // 找到下一个执行时间
-    const activeTasks = tasks.filter(t => t.status === 'active');
+    const activeTasks = tasks.filter((t: any) => t.status === 'active');
     if (activeTasks.length > 0) {
-      stats.nextExecution = activeTasks.reduce((earliest, task) => 
+      stats.nextExecution = activeTasks.reduce((earliest, task: any) => 
         !earliest || task.nextRun < earliest ? task.nextRun : earliest
       , null as Date | null) || undefined;
     }
@@ -568,7 +568,7 @@ export class TaskScheduler {
     return {
       isRunning: this.isRunning,
       totalTasks: this.scheduledTasks.size,
-      activeTasks: Array.from(this.scheduledTasks.values()).filter(t => t.status === 'active').length,
+      activeTasks: Array.from(this.scheduledTasks.values()).filter((t: any) => t.status === 'active').length,
       activeTimers: this.taskTimers.size,
       uptime: process.uptime ? process.uptime() * 1000 : 0
     };

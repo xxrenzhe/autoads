@@ -81,8 +81,8 @@ export function UserActivityChart({
   const dataSummary = useMemo(() => {
     if (!data || data.length === 0) return ''
     
-    const totalActiveUsers = data.reduce((sum, point) => sum + point.activeUsers, 0)
-    const totalNewUsers = data.reduce((sum, point) => sum + point.newUsers, 0)
+    const totalActiveUsers = data.reduce((sum, point: any) => sum + point.activeUsers, 0)
+    const totalNewUsers = data.reduce((sum, point: any) => sum + point.newUsers, 0)
     const avgActiveUsers = Math.round(totalActiveUsers / data.length)
     const avgNewUsers = Math.round(totalNewUsers / data.length)
     
@@ -100,7 +100,7 @@ export function UserActivityChart({
           <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
             {formatDate(label)}
           </p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: any, index: number: any) => (
             <div key={index} className="flex items-center space-x-2">
               <div 
                 className="w-3 h-3 rounded-full"

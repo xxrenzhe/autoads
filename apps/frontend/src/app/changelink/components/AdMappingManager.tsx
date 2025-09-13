@@ -60,7 +60,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
     setMappingData([...(mappingData || []), newMapping]);
   }, [mappingData]);
   const handleRemoveMapping = useCallback((index: number) => {
-    setMappingData(mappingData.filter((_: unknown, i: number) => i !== index));
+    setMappingData(mappingData.filter((_: unknown, i: number: any) => i !== index));
   }, [mappingData]);
   const handleAddAdMapping = useCallback((mappingIndex: number) => { const updatedMapping = [...mappingData];
     updatedMapping[mappingIndex].adMappings.push({
@@ -74,7 +74,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
   const handleRemoveAdMapping = useCallback((mappingIndex: number, adIndex: number) => { const updatedMapping = [...mappingData];
     updatedMapping[mappingIndex].adMappings.splice(adIndex, 1);
     // Update execution numbers
-    updatedMapping[mappingIndex].adMappings.forEach((ad: any, index: number) => {
+    updatedMapping[mappingIndex].adMappings.forEach((ad: any, index: number: any) => {
       ad.executionNumber = index + 1;
     });
     setMappingData(updatedMapping);
@@ -111,7 +111,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
-            onClick={ () => {
+            onClick={( (): any) => {
               // Export mapping configuration
               if (selectedConfiguration) {
                 const dataStr = JSON.stringify(selectedConfiguration.adMappingConfig, null, 2);
@@ -133,7 +133,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
           </Button>
           <Button
             variant="outline"
-            onClick={() => {
+            onClick={((: any): any) => {
               // Import mapping configuration
               const input = document.createElement('input');
               input.type = 'file';
@@ -170,7 +170,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {configurations.map((config) => (
+            {configurations.map((config: any) => (
               <div
                 key={config.id}
                 className={`p-4 border rounded-lg cursor-pointer transition-colors ${
@@ -178,7 +178,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
-                onClick={() => onConfigurationSelect(config)}
+                onClick={((: any): any) => onConfigurationSelect(config)}
               >
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-gray-900">{config.name}</h4>
@@ -220,7 +220,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
+                      onClick={((: any): any) => {
                         setIsEditing(false);
                         setMappingData([]);
                       }}
@@ -246,7 +246,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
           <CardContent>
             {!isEditing ? (
               <div className="space-y-4">
-                {selectedConfiguration.adMappingConfig.map((mapping, index) => (
+                {selectedConfiguration.adMappingConfig.map((mapping, index: any) => (
                   <div key={index} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-medium text-gray-900">
@@ -257,7 +257,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
                   </Badge>
                     </div>
                     <div className="space-y-2">
-                      {mapping.adMappings.map((adMapping, adIndex) => (
+                      {mapping.adMappings.map((adMapping, adIndex: any) => (
                         <div key={adIndex} className="flex items-center space-x-4 text-sm">
                           <span className="text-gray-500">Execution {adMapping.executionNumber}:</span>
                           <span className="font-medium">Ad ID: {adMapping.adId}</span>
@@ -275,7 +275,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
             </div>
             ) : (
               <div className="space-y-4">
-                {mappingData?.map((mapping: any, mappingIndex: number) => (
+                {mappingData?.map((mapping: any, mappingIndex: number: any) => (
                   <div key={mappingIndex} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1">
@@ -283,7 +283,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
             <Input
                           id={`originalUrl-${mappingIndex}`}
                           value={mapping.originalUrl}
-                          onChange={(e) => updateMappingField(mappingIndex, 'originalUrl', e.target.value)}
+                          onChange={((e: any): any) => updateMappingField(mappingIndex, 'originalUrl', e.target.value)}
                           placeholder="Enter original URL"
             />
           </div>
@@ -291,7 +291,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleAddAdMapping(mappingIndex)}
+                          onClick={((: any): any) => handleAddAdMapping(mappingIndex)}
                         >
                           <Plus className="h-4 w-4 mr-1" />
                           Add Ad
@@ -299,7 +299,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
             <Button
               size="sm"
                           variant="destructive"
-                          onClick={() => handleRemoveMapping(mappingIndex)}
+                          onClick={((: any): any) => handleRemoveMapping(mappingIndex)}
                         >
                           <Trash2 className="h-4 w-4" />
             </Button>
@@ -308,7 +308,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
 
                     <div className="space-y-3">
                       <Label>Ad Mappings</Label>
-                      {mapping.adMappings.map((adMapping: any, adIndex: number) => (
+                      {mapping.adMappings.map((adMapping: any, adIndex: number: any) => (
                         <div key={adIndex} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 border rounded">
                           <div>
                             <Label htmlFor={`execution-${mappingIndex}-${adIndex}`}>Execution #</Label>
@@ -316,7 +316,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
                               id={`execution-${mappingIndex}-${adIndex}`}
                               type="number"
                               value={adMapping.executionNumber}
-                              onChange={(e) => updateAdMappingField(mappingIndex, adIndex, 'executionNumber', e.target.value)}
+                              onChange={((e: any): any) => updateAdMappingField(mappingIndex, adIndex, 'executionNumber', e.target.value)}
                               min="1"
                             />
                           </div>
@@ -325,7 +325,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
                             <Input
                               id={`adId-${mappingIndex}-${adIndex}`}
                               value={adMapping.adId}
-                              onChange={(e) => updateAdMappingField(mappingIndex, adIndex, 'adId', e.target.value)}
+                              onChange={((e: any): any) => updateAdMappingField(mappingIndex, adIndex, 'adId', e.target.value)}
                               placeholder="Enter Ad ID"
                             />
                           </div>
@@ -334,7 +334,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
                             <Input
                               id={`campaignId-${mappingIndex}-${adIndex}`}
                               value={adMapping.campaignId || ''}
-                              onChange={(e) => updateAdMappingField(mappingIndex, adIndex, 'campaignId', e.target.value)}
+                              onChange={((e: any): any) => updateAdMappingField(mappingIndex, adIndex, 'campaignId', e.target.value)}
                               placeholder="Optional"
                             />
                           </div>
@@ -342,7 +342,7 @@ const AdMappingManager: React.FC<AdMappingManagerProps> = ({
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleRemoveAdMapping(mappingIndex, adIndex)}
+                              onClick={((: any): any) => handleRemoveAdMapping(mappingIndex, adIndex)}
                               disabled={mapping.adMappings.length === 1}
                             >
                   <Trash2 className="h-4 w-4" />

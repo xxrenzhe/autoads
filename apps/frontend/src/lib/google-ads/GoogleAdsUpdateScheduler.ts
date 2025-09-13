@@ -326,7 +326,7 @@ export class GoogleAdsUpdateScheduler {
    */
   getSchedules(accountId?: string): ScheduleConfig[] {
     const schedules = Array.from(this.schedules.values());
-    return accountId ? schedules.filter(s => s.accountId === accountId) : schedules;
+    return accountId ? schedules.filter((s: any) => s.accountId === accountId) : schedules;
   }
 
   /**
@@ -348,7 +348,7 @@ export class GoogleAdsUpdateScheduler {
    */
   getManualTriggers(accountId?: string): TriggerResult[] {
     const triggers = Array.from(this.manualTriggers.values());
-    return accountId ? triggers.filter(t => t.accountId === accountId) : triggers;
+    return accountId ? triggers.filter((t: any) => t.accountId === accountId) : triggers;
   }
 
   /**
@@ -393,14 +393,14 @@ export class GoogleAdsUpdateScheduler {
     averageProcessingTime: number;
   } {
     const schedules = Array.from(this.schedules.values());
-    const enabledSchedules = schedules.filter(s => s.enabled).length;
+    const enabledSchedules = schedules.filter((s: any) => s.enabled).length;
     const runningJobs = this.runningJobs.size;
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const todayRuns = schedules.reduce((count, schedule) => {
-      return count + schedule.runHistory.filter(run => {
+    const todayRuns = schedules.reduce((count, schedule: any) => {
+      return count + schedule.runHistory.filter((run: any) => {
         const runDate = new Date(run.startTime);
         runDate.setHours(0, 0, 0, 0);
         return runDate.getTime() === today.getTime();
@@ -408,11 +408,11 @@ export class GoogleAdsUpdateScheduler {
     }, 0);
 
     const allRuns = schedules.flatMap(s => s.runHistory);
-    const successfulRuns = allRuns.filter(r => r.status === 'completed').length;
+    const successfulRuns = allRuns.filter((r: any) => r.status === 'completed').length;
     const successRate = allRuns.length > 0 ? (successfulRuns / allRuns.length) * 100 : 0;
     
     const averageProcessingTime = allRuns.length > 0 
-      ? allRuns.reduce((sum, r) => sum + r.processingTime, 0) / allRuns.length 
+      ? allRuns.reduce((sum, r: any) => sum + r.processingTime, 0) / allRuns.length 
       : 0;
 
     return {
@@ -434,7 +434,7 @@ export class GoogleAdsUpdateScheduler {
     this.loadSchedules();
     
     // Schedule all enabled jobs
-    this.schedules.forEach(schedule => {
+    this.schedules.forEach((schedule: any) => {
       if (schedule.enabled) {
         this.scheduleJob(schedule);
       }

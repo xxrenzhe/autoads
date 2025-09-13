@@ -116,9 +116,9 @@ class PermissionChecker {
 
   // Get all permissions for a specific resource
   getResourcePermissions(resource: string): Permission[] {
-    const directPermissions = this.permissions.filter(p => p.resource === resource);
+    const directPermissions = this.permissions.filter((p: any) => p.resource === resource);
     const rolePermissions = this.roles.flatMap(role => 
-      role.permissions.filter(p => p.resource === resource)
+      role.permissions.filter((p: any) => p.resource === resource)
     );
 
     return [...directPermissions, ...rolePermissions];
@@ -127,7 +127,7 @@ class PermissionChecker {
   // Get all available actions for a resource
   getResourceActions(resource: string): string[] {
     const permissions = this.getResourcePermissions(resource);
-    return [...new Set(permissions?.filter(Boolean)?.map(p => p.action))];
+    return [...new Set(permissions?.filter(Boolean)?.map((p: any) => p.action))];
   }
 
   // Check permission conditions

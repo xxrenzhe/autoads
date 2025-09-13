@@ -198,7 +198,7 @@ export class IPRateLimitManager {
    */
   private calculateSlidingWindowCount(requests: IPRequestRecord[], now: number, windowSize: number): number {
     const windowStart = now - windowSize;
-    return requests.filter(req => req.timestamp > windowStart).length;
+    return requests.filter((req: any) => req.timestamp > windowStart).length;
   }
 
   /**
@@ -206,7 +206,7 @@ export class IPRateLimitManager {
    */
   private findOldestValidRequest(requests: IPRequestRecord[], now: number, windowSize: number, maxRequests: number): IPRequestRecord | null {
     const windowStart = now - windowSize;
-    const validRequests = requests.filter(req => req.timestamp > windowStart);
+    const validRequests = requests.filter((req: any) => req.timestamp > windowStart);
     
     if (validRequests.length <= maxRequests) {
       return null as any;
@@ -235,7 +235,7 @@ export class IPRateLimitManager {
       invalidRequests.push({ timestamp: now, domain });
       
       // 保留最近10分钟的记录
-      const recentRequests = invalidRequests.filter(req => now - req.timestamp < 10 * 60 * 1000);
+      const recentRequests = invalidRequests.filter((req: any) => now - req.timestamp < 10 * 60 * 1000);
       
       await MultiLevelCacheService.set(key, recentRequests, {
       ttl: 10 * 60 * 1000,
@@ -249,7 +249,7 @@ export class IPRateLimitManager {
         logger.warn(`IP因频繁无效请求被自动封禁: ${ip}`, {
           endpoint,
           invalidCount: recentRequests.length,
-          recentDomains: recentRequests.slice(-5)?.filter(Boolean)?.map(r => r.domain)
+          recentDomains: recentRequests.slice(-5)?.filter(Boolean)?.map((r: any) => r.domain)
         });
       }
 
@@ -280,7 +280,7 @@ export class IPRateLimitManager {
     try {
       // 统计最近1小时的请求
       const oneHourAgo = Date.now() - 60 * 60 * 1000;
-      const recentRequests = requests.filter(req => req.timestamp > oneHourAgo);
+      const recentRequests = requests.filter((req: any) => req.timestamp > oneHourAgo);
       
       // 检查是否达到封禁阈值
       for (const threshold of this.banConfig.thresholds) {
@@ -307,7 +307,7 @@ export class IPRateLimitManager {
    */
   private async autoBanIP(ip: string, reason: string, level: number): Promise<void> {
     try {
-      const threshold = this.banConfig.thresholds.find(t => t.level === level);
+      const threshold = this.banConfig.thresholds.find((t: any) => t.level === level);
       if (!threshold) return;
 
       const banInfo: IPBanInfo = {
@@ -378,7 +378,7 @@ export class IPRateLimitManager {
    */
   async banIP(ip: string, reason: string, level: number = 1, duration?: number): Promise<void> {
     try {
-      const threshold = this.banConfig.thresholds.find(t => t.level === level);
+      const threshold = this.banConfig.thresholds.find((t: any) => t.level === level);
       const banDuration = duration || (threshold?.duration || 60 * 60 * 1000);
 
       const banInfo: IPBanInfo = {

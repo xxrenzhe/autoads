@@ -149,7 +149,7 @@ const AppNotificationListActions = () => {
   return (
     <TopToolbar>
       <Button
-        onClick={() => setOpenBulkModal(true)}
+        onClick={((: any): any) => setOpenBulkModal(true)}
         startIcon={<PushPin />}
         sx={{ mr: 1 }}
       >

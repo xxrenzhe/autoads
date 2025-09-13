@@ -45,7 +45,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   progressText
 }) => {
   // 过滤搜索结果
-  const filteredResults = results.filter((result) => {
+  const filteredResults = results.filter((result: any) => {
     const domain = result.domain || result.域名;
     return (
       domain &&
@@ -86,7 +86,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
           (key) => !["originalUrl"].includes(key),
         );
     
-        const exportData = results.map((row) => {
+        const exportData = results.map((row: any) => {
           const exportRow: Record<string, string | number | null | undefined> = {};
           for (const header of headers) {
             const value = row[header];
@@ -102,11 +102,11 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("分析结果");
-        worksheet.columns = Object.keys(exportData[0]).map((key) => ({ header: key, key }));
-        exportData.forEach((row) => worksheet.addRow(row));
+        worksheet.columns = Object.keys(exportData[0]).map((key: any) => ({ header: key, key }));
+        exportData.forEach((row: any) => worksheet.addRow(row));
     
         // 自动宽度
-        worksheet.columns.forEach((column) => {
+        worksheet.columns.forEach((column: any) => {
           let maxLength = 10;
           column.eachCell?.({ includeEmpty: true }, (cell) => { 
             const len = cell.value ? cell.value.toString().length : 0;
@@ -175,7 +175,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             <Input
               placeholder={"搜索域名..."}
               value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
+              onChange={((e: any): any) => onSearchChange(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -196,11 +196,11 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
           <table className="w-full border-collapse bg-white">
             <thead className="bg-slate-50">
               <tr>
-                {displayColumns.map((col) => (
+                {displayColumns.map((col: any) => (
                   <th
                     key={col}
                     className={`py-3 px-4 text-left text-sm font-semibold text-slate-700 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors ${sortField === col ? "bg-blue-50" : ""} ${getColumnWidth(col)} ${getColumnClass(col)}`}
-                    onClick={() => onSort(col)}
+                    onClick={((: any): any) => onSort(col)}
                   >
                     <div className="flex items-center justify-between">
                       <span>{getColumnDisplayName(col, locale)}</span>
@@ -215,12 +215,12 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               </tr>
             </thead>
             <tbody>
-              {sortedResults.map((row, index) => (
+              {sortedResults.map((row, index: any) => (
                 <tr
                   key={`${row.domain || row.域名}-${index}`}
                   className="hover:bg-slate-50 transition-colors"
                 >
-                  {displayColumns.map((col) => (
+                  {displayColumns.map((col: any) => (
                     <td
                       key={col}
                       className={`py-2 px-4 align-middle text-[15px] ${getColumnClass(col)} border-r border-gray-100 last:border-r-0`}

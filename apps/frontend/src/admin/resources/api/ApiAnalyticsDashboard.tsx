@@ -187,7 +187,7 @@ const ApiAnalyticsDashboard: React.FC = () => {
                         fill="#8884d8"
                         dataKey="count"
                       >
-                        {stats?.statusCodes?.map((entry, index) => (
+                        {stats?.statusCodes?.map((entry, index: any) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -250,7 +250,7 @@ const ApiAnalyticsDashboard: React.FC = () => {
                   状态码详细分布
                 </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                  {stats?.statusCodes?.map((item, index) => (
+                  {stats?.statusCodes?.map((item, index: any) => (
                     <Box key={item.code} sx={{ textAlign: 'center' }}>
                       <Typography variant="h4" sx={{ color: COLORS[index % COLORS.length] }}>
                         {item.count}

@@ -126,7 +126,7 @@ export function SubscriptionUpgrade({
   }
 
   const getSelectedPlanDetails = () => {
-    return availablePlans.find(plan => plan.id === selectedPlan)
+    return availablePlans.find((plan: any) => plan.id === selectedPlan)
   }
 
   const calculateProration = (newPlanPrice: number) => {
@@ -187,8 +187,8 @@ export function SubscriptionUpgrade({
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {availablePlans
-            .filter(plan => plan.id !== currentPlan.id)
-            .map((plan) => {
+            .filter((plan: any) => plan.id !== currentPlan.id)
+            .map((plan: any) => {
               const isUpgradePlan = isUpgrade(plan.price)
               const isDowngradePlan = isDowngrade(plan.price)
               
@@ -243,7 +243,7 @@ export function SubscriptionUpgrade({
 
                     {/* Features */}
                     <ul className="space-y-2 mb-6">
-                      {plan.features?.slice(0, 4).map((feature, index) => (
+                      {plan.features?.slice(0, 4).map((feature, index: any) => (
                         <li key={index} className="flex items-center text-sm">
                           <CheckCircle className="h-3 w-3 text-green-500 mr-2 flex-shrink-0" />
                           {feature}
@@ -258,7 +258,7 @@ export function SubscriptionUpgrade({
 
                     {/* Action Button */}
                     <Button
-                      onClick={() => handlePlanSelect(plan.id, plan.price)}
+                      onClick={((: any): any) => handlePlanSelect(plan.id, plan.price)}
                       className="w-full"
                       variant={isUpgradePlan ? 'default' : 'outline'}
                     >
@@ -368,7 +368,7 @@ export function SubscriptionUpgrade({
                       
                       <Button
                         variant="outline"
-                        onClick={() => {
+                        onClick={((: any): any) => {
                           setShowConfirmation(false)
                           setSelectedPlan(null)
                         }}

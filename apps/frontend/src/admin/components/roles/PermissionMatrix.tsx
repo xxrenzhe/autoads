@@ -92,7 +92,7 @@ export function PermissionMatrix({
     // Filter by search term
     if (searchTerm) {
       const lowercaseSearch = searchTerm.toLowerCase()
-      filtered = filtered.filter(permission =>
+      filtered = filtered.filter((permission: any) =>
         permission.name.toLowerCase().includes(lowercaseSearch) ||
         permission.description.toLowerCase().includes(lowercaseSearch) ||
         permission.category.toLowerCase().includes(lowercaseSearch) ||
@@ -103,7 +103,7 @@ export function PermissionMatrix({
 
     // Filter by category
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(permission => permission.category === selectedCategory)
+      filtered = filtered.filter((permission: any) => permission.category === selectedCategory)
     }
 
     return filtered
@@ -177,7 +177,7 @@ export function PermissionMatrix({
       : filteredPermissions
 
     const newPermissions = new Set(selectedPermissions)
-    permissionsToSelect.forEach(permission => {
+    permissionsToSelect.forEach((permission: any) => {
       newPermissions.add(permission.id)
     })
     
@@ -192,7 +192,7 @@ export function PermissionMatrix({
       : filteredPermissions
 
     const newPermissions = new Set(selectedPermissions)
-    permissionsToDeselect.forEach(permission => {
+    permissionsToDeselect.forEach((permission: any) => {
       newPermissions.delete(permission.id)
     })
     
@@ -260,7 +260,7 @@ export function PermissionMatrix({
                 <Input
                   placeholder="Search permissions..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -271,11 +271,11 @@ export function PermissionMatrix({
               <Filter className="h-4 w-4 text-gray-400" />
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={((e: any): any) => setSelectedCategory(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Categories</option>
-                {categories?.filter(Boolean)?.map(category => (
+                {categories?.filter(Boolean)?.map((category: any) => (
                   <option key={category} value={category}>
                     {category.charAt(0).toUpperCase() + category.slice(1)}
                   </option>
@@ -289,14 +289,14 @@ export function PermissionMatrix({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleSelectAll(selectedCategory === 'all' ? undefined : selectedCategory)}
+                  onClick={((: any): any) => handleSelectAll(selectedCategory === 'all' ? undefined : selectedCategory)}
                 >
                   Select All
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleDeselectAll(selectedCategory === 'all' ? undefined : selectedCategory)}
+                  onClick={((: any): any) => handleDeselectAll(selectedCategory === 'all' ? undefined : selectedCategory)}
                 >
                   Deselect All
                 </Button>
@@ -358,8 +358,8 @@ export function PermissionMatrix({
       {/* Permissions by Category */}
       {selectedCategory === 'all' ? (
         <div className="space-y-6">
-          {categories?.filter(Boolean)?.map(category => {
-            const categoryPermissions = permissionsByCategory[category].filter(permission =>
+          {categories?.filter(Boolean)?.map((category: any) => {
+            const categoryPermissions = permissionsByCategory[category].filter((permission: any) =>
               !searchTerm || 
               permission.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
               permission.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -385,14 +385,14 @@ export function PermissionMatrix({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleSelectAll(category)}
+                          onClick={((: any): any) => handleSelectAll(category)}
                         >
                           Select All
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeselectAll(category)}
+                          onClick={((: any): any) => handleDeselectAll(category)}
                         >
                           Deselect All
                         </Button>
@@ -402,7 +402,7 @@ export function PermissionMatrix({
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {categoryPermissions?.filter(Boolean)?.map(permission => {
+                    {categoryPermissions?.filter(Boolean)?.map((permission: any) => {
                       const status = getPermissionStatus(permission.id)
                       const ActionIcon = getActionIcon(permission.action)
 
@@ -423,7 +423,7 @@ export function PermissionMatrix({
                                 <input
                                   type="checkbox"
                                   checked={selectedPermissions.has(permission.id)}
-                                  onChange={() => handlePermissionToggle(permission.id)}
+                                  onChange={((: any): any) => handlePermissionToggle(permission.id)}
                                   className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
                               )}
@@ -460,7 +460,7 @@ export function PermissionMatrix({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => toggleDetails(permission.id)}
+                              onClick={((: any): any) => toggleDetails(permission.id)}
                             >
                               <Info className="h-4 w-4" />
                             </Button>
@@ -483,7 +483,7 @@ export function PermissionMatrix({
                                 <div className="mt-3">
                                   <label className="font-medium text-gray-500">Conditions</label>
                                   <div className="mt-1 space-y-1">
-                                    {Object.entries(permission.conditions).map(([key, value]) => (
+                                    {Object.entries(permission.conditions).map(([key, value]: any) => (
                                       <div key={key} className="flex items-center space-x-2">
                                         <Badge variant="outline" className="text-xs">
                                           {key}: {String(value)}
@@ -515,7 +515,7 @@ export function PermissionMatrix({
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filteredPermissions?.filter(Boolean)?.map(permission => {
+              {filteredPermissions?.filter(Boolean)?.map((permission: any) => {
                 const status = getPermissionStatus(permission.id)
                 const ActionIcon = getActionIcon(permission.action)
 
@@ -535,7 +535,7 @@ export function PermissionMatrix({
                         <input
                           type="checkbox"
                           checked={selectedPermissions.has(permission.id)}
-                          onChange={() => handlePermissionToggle(permission.id)}
+                          onChange={((: any): any) => handlePermissionToggle(permission.id)}
                           className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       )}

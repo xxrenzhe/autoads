@@ -180,7 +180,7 @@ export class SystemMonitoringService {
 
     return {
       timeRange,
-      data: relevantHistory?.filter(Boolean)?.map(status => ({
+      data: relevantHistory?.filter(Boolean)?.map((status: any) => ({
         timestamp: status.timestamp,
         metrics: {
           responseTime: this.simulateResponseTime(),
@@ -245,7 +245,7 @@ export class SystemMonitoringService {
       startTime: new Date(this.startTime),
       uptime: Date.now() - this.startTime,
       collectedMetrics: this.statusHistory.length,
-      activeAlerts: this.alerts.filter(alert => !alert.resolved).length
+      activeAlerts: this.alerts.filter((alert: any) => !alert.resolved).length
     };
   }
 
@@ -253,7 +253,7 @@ export class SystemMonitoringService {
    * 解决告警
    */
   resolveAlert(alertId: string): boolean {
-    const alert = this.alerts.find(a => a.id === alertId);
+    const alert = this.alerts.find((a: any) => a.id === alertId);
     if (alert && !alert.resolved) {
       alert.resolved = true;
       alert.resolvedAt = new Date();
@@ -275,7 +275,7 @@ export class SystemMonitoringService {
     );
 
     // 清理已解决的告警
-    this.alerts = this.alerts.filter(alert => 
+    this.alerts = this.alerts.filter((alert: any) => 
       !alert.resolved || (alert.resolvedAt && alert.resolvedAt.getTime() > cutoffTime)
     );
 
@@ -303,7 +303,7 @@ export class SystemMonitoringService {
 
     // 如果告警过多，清理旧告警
     if (this.alerts.length > 100) {
-      this.alerts = this.alerts.filter(a => !a.resolved).slice(-50);
+      this.alerts = this.alerts.filter((a: any) => !a.resolved).slice(-50);
     }
   }
 
@@ -467,7 +467,7 @@ export class SystemMonitoringService {
    */
   private calculateErrorRate(): number {
     const recentStatus = this.statusHistory.slice(-10);
-    const errorCount = recentStatus.filter(s => s.status === 'error').length;
+    const errorCount = recentStatus.filter((s: any) => s.status === 'error').length;
     return recentStatus.length > 0 ? (errorCount / recentStatus.length) * 100 : 0;
   }
 

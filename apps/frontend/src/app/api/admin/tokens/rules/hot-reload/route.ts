@@ -93,11 +93,11 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         totalRules: rules.length,
-        environmentRules: rules.filter(r => r.source === 'environment').length,
-        databaseRules: rules.filter(r => r.source === 'database').length,
-        activeRules: rules.filter(r => r.isActive).length,
+        environmentRules: rules.filter((r: any) => r.source === 'environment').length,
+        databaseRules: rules.filter((r: any) => r.source === 'database').length,
+        activeRules: rules.filter((r: any) => r.isActive).length,
         lastUpdate: new Date().toISOString(),
-        rules: rules.map(rule => ({
+        rules: rules.map((rule: any) => ({
           id: rule.id,
           feature: rule.feature,
           method: rule.method,

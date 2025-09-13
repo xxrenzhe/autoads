@@ -56,7 +56,7 @@ export class SessionCookieManager {
       
       // 获取相关头信息
       const headers: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
+      response.headers.forEach((value, key: any) => {
         if (key.toLowerCase().includes('auth') || 
             key.toLowerCase().includes('session') ||
             key.toLowerCase().includes('csrf')) {
@@ -112,7 +112,7 @@ export class SessionCookieManager {
     // 添加Cookie头
     if (session.cookies.length > 0) {
       headers['Cookie'] = session.cookies
-        .map(cookie => `${cookie.name}=${cookie.value}`)
+        .map((cookie: any) => `${cookie.name}=${cookie.value}`)
         .join('; ');
     }
 
@@ -136,12 +136,12 @@ export class SessionCookieManager {
     const cookieMap = new Map<string, HttpCookie>();
     
     // 先添加现有Cookie
-    session.cookies.forEach(cookie => {
+    session.cookies.forEach((cookie: any) => {
       cookieMap.set(`${cookie.name}:${cookie.domain || ''}:${cookie.path || '/'}`, cookie);
     });
     
     // 添加新Cookie
-    newCookies.forEach(cookie => {
+    newCookies.forEach((cookie: any) => {
       cookieMap.set(`${cookie.name}:${cookie.domain || ''}:${cookie.path || '/'}`, cookie);
     });
     
@@ -236,7 +236,7 @@ export class SessionCookieManager {
     age: number;
   }> {
     const now = Date.now();
-    return Array.from(this.sessions.entries()).map(([id, session]) => ({
+    return Array.from(this.sessions.entries()).map(([id, session]: any) => ({
       id,
       lastUsed: session.lastUsed,
       cookiesCount: session.cookies.length,

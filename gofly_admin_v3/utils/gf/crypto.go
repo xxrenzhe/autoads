@@ -14,8 +14,8 @@ func MD5(data string) string {
 // Raw 创建Raw查询
 func Raw(sql string, args ...interface{}) interface{} {
 	return map[string]interface{}{
-		"type":  "raw",
-		"sql":   sql,
-		"args":  args,
+		"type": "raw",
+		"sql":  sql,
+		"args": args,
 	}
 }

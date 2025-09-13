@@ -67,16 +67,16 @@ export async function apiMiddleware(request: NextRequest, handler: () => Promise
     ];
     
     // Check for multiple proxy headers that might indicate IP spoofing
-    const proxyHeaderCount = suspiciousHeaders.filter(header => 
+    const proxyHeaderCount = suspiciousHeaders.filter((header: any) => 
       request.headers.get(header)
     ).length;
     
     // Check for common legitimate proxy combinations
-    const headers = Array.from(request.headers.entries()).filter(([key]) => 
+    const headers = Array.from(request.headers.entries()).filter(([key]: any) => 
       suspiciousHeaders.includes(key.toLowerCase())
     );
     
-    const headerKeys = headers.map(([key]) => key.toLowerCase());
+    const headerKeys = headers.map(([key]: any) => key.toLowerCase());
     
     // Common legitimate combinations from hosting providers (Vercel, Cloudflare, etc.)
     const legitimateCombinations = [
@@ -219,7 +219,7 @@ export async function apiMiddleware(request: NextRequest, handler: () => Promise
     const response = await handler();
     
     // Add headers to response
-    Object.entries(securityHeaders).forEach(([key, value]) => {
+    Object.entries(securityHeaders).forEach(([key, value]: any) => {
       response.headers.set(key, value);
     });
     

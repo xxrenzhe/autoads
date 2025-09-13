@@ -58,7 +58,7 @@ export default function ConfigurationList({
   const [activeTab, setActiveTab] = useState('grid');
 
   // 过滤配置
-  const filteredConfigurations = configurations.filter(config => {
+  const filteredConfigurations = configurations.filter((config: any) => {
     // 搜索过滤
     const matchesSearch = searchQuery === '' || 
       config.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -73,7 +73,7 @@ export default function ConfigurationList({
   const handleSelectConfig = (configId: string) => {
     setSelectedConfigs(prev => {
       if (prev.includes(configId)) {
-        return prev.filter(id => id !== configId);
+        return prev.filter((id: any) => id !== configId);
       } else {
         return [...prev, configId];
       }
@@ -85,15 +85,15 @@ export default function ConfigurationList({
     if (selectedConfigs.length === filteredConfigurations.length) {
       setSelectedConfigs([]);
     } else {
-      setSelectedConfigs(filteredConfigurations?.filter(Boolean)?.map(config => config.id));
+      setSelectedConfigs(filteredConfigurations?.filter(Boolean)?.map((config: any) => config.id));
     }
   };
 
   // 获取总广告数
   const getTotalAds = (config: TrackingConfiguration) => {
-    return config.googleAdsAccounts.reduce((total, account) => {
-      return total + (account.campaignMappings?.reduce((campaignTotal, campaign) => {
-        return campaignTotal + (campaign.adGroupMappings?.reduce((adGroupTotal, adGroup) => {
+    return config.googleAdsAccounts.reduce((total, account: any) => {
+      return total + (account.campaignMappings?.reduce((campaignTotal, campaign: any) => {
+        return campaignTotal + (campaign.adGroupMappings?.reduce((adGroupTotal, adGroup: any) => {
           return adGroupTotal + (adGroup.adMappings?.length || 0);
         }, 0) || 0);
       }, 0) || 0);
@@ -121,7 +121,7 @@ export default function ConfigurationList({
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredConfigurations?.filter(Boolean)?.map(config => (
+        {filteredConfigurations?.filter(Boolean)?.map((config: any) => (
           <Card 
             key={config.id} 
             className={`hover:shadow-md transition-shadow ${selectedConfigs.includes(config.id) ? 'ring-2 ring-blue-500' : ''}`}
@@ -131,7 +131,7 @@ export default function ConfigurationList({
                 <div className="flex items-start space-x-2">
                   <Checkbox
                     checked={selectedConfigs.includes(config.id)}
-                    onCheckedChange={() => handleSelectConfig(config.id)}
+                    onCheckedChange={((: any): any) => handleSelectConfig(config.id)}
                     className="mt-1"
                   />
                   <div>
@@ -194,7 +194,7 @@ export default function ConfigurationList({
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => onEdit(config)}
+                      onClick={((: any): any) => onEdit(config)}
                     >
                       <Edit className="h-3 w-3 mr-1" />
                       编辑
@@ -207,16 +207,16 @@ export default function ConfigurationList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onExecute(config)}>
+                        <DropdownMenuItem onClick={((: any): any) => onExecute(config)}>
                           <Play className="h-4 w-4 mr-2" />
                           执行
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDuplicate(config)}>
+                        <DropdownMenuItem onClick={((: any): any) => onDuplicate(config)}>
                           <Copy className="h-4 w-4 mr-2" />
                           复制
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => onDelete(config)}
+                          onClick={((: any): any) => onDelete(config)}
                           className="text-red-600"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
@@ -274,7 +274,7 @@ export default function ConfigurationList({
             </tr>
           </thead>
           <tbody className="divide-y">
-            {filteredConfigurations?.filter(Boolean)?.map(config => (
+            {filteredConfigurations?.filter(Boolean)?.map((config: any) => (
               <tr 
                 key={config.id} 
                 className={`hover:bg-slate-50 ${selectedConfigs.includes(config.id) ? 'bg-blue-50' : ''}`}
@@ -282,7 +282,7 @@ export default function ConfigurationList({
                 <td className="p-2">
                   <Checkbox
                     checked={selectedConfigs.includes(config.id)}
-                    onCheckedChange={() => handleSelectConfig(config.id)}
+                    onCheckedChange={((: any): any) => handleSelectConfig(config.id)}
                   />
                 </td>
                 <td className="p-2">
@@ -325,7 +325,7 @@ export default function ConfigurationList({
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => onEdit(config)}
+                      onClick={((: any): any) => onEdit(config)}
                     >
                       <Edit className="h-3 w-3" />
                     </Button>
@@ -337,16 +337,16 @@ export default function ConfigurationList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onExecute(config)}>
+                        <DropdownMenuItem onClick={((: any): any) => onExecute(config)}>
                           <Play className="h-4 w-4 mr-2" />
                           执行
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDuplicate(config)}>
+                        <DropdownMenuItem onClick={((: any): any) => onDuplicate(config)}>
                           <Copy className="h-4 w-4 mr-2" />
                           复制
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => onDelete(config)}
+                          onClick={((: any): any) => onDelete(config)}
                           className="text-red-600"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
@@ -397,7 +397,7 @@ export default function ConfigurationList({
             <Input
               placeholder="搜索配置名称或环境ID..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={((e: any): any) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>

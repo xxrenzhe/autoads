@@ -87,7 +87,7 @@ const GenericStepsSection = ({
         <div className={`max-w-6xl mx-auto grid ${
           isHorizontal ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"
         } gap-6`}>
-          {steps.map((step) => (
+          {steps.map((step: any) => (
             <Card
               key={step.number}
               className="w-full p-4 hover:shadow-md transition-all duration-300 border-0 bg-white/95 backdrop-blur-sm hover:scale-[1.02]"

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"gofly-admin-v3/utils/gform"
 	"gofly-admin-v3/utils/gf"
+	"gofly-admin-v3/utils/gform"
 )
 
 // Model 用户模型
@@ -115,7 +115,7 @@ func (s *Service) GetUserByID(id string) (*Model, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &Model{
 		ID:            record["id"].String(),
 		Email:         record["email"].String(),
@@ -194,16 +194,16 @@ func (s *Service) UpdateProfile(userID string, req *UpdateProfileRequest) (*Mode
 	if req.AvatarURL != "" {
 		updates["avatar_url"] = req.AvatarURL
 	}
-	
+
 	if len(updates) == 0 {
 		return s.GetUserByID(userID)
 	}
-	
+
 	_, err := s.db.Model(&Model{}).Where("id = ?", userID).Update(updates)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return s.GetUserByID(userID)
 }
 
@@ -214,17 +214,17 @@ func (s *Service) ChangePassword(userID, oldPassword, newPassword string) error 
 	if err != nil {
 		return err
 	}
-	
+
 	// 验证旧密码
 	if !verifyPassword(user.PasswordHash, oldPassword) {
 		return errors.New("原密码错误")
 	}
-	
+
 	// 更新密码
 	_, err = s.db.Model(&Model{}).
 		Where("id = ?", userID).
 		Update(gform.Map{"password_hash": hashPassword(newPassword)})
-	
+
 	return err
 }
 
@@ -244,7 +244,7 @@ func (s *Service) RefreshToken(userID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	// 生成新的JWT token
 	user, _ := s.GetUserByID(userID)
 	return generateJWTToken(user.ID, user.Role), nil

@@ -254,7 +254,7 @@ export class GoogleAdsErrorHandler {
   ): T {
     const resilientClient: any = {};
 
-    Object.keys(apiClient).forEach(methodName => {
+    Object.keys(apiClient).forEach((methodName: any) => {
       if (typeof apiClient[methodName as keyof T] === 'function') {
         resilientClient[methodName as keyof T] = async (...args: any[]) => {
           return this.executeWithRetry(
@@ -296,31 +296,31 @@ export class GoogleAdsErrorHandler {
     let filtered = [...this.errorHistory];
 
     if (filters.accountId) {
-      filtered = filtered.filter(error => error.accountId === filters.accountId);
+      filtered = filtered.filter((error: any) => error.accountId === filters.accountId);
     }
 
     if (filters.operation) {
-      filtered = filtered.filter(error => error.operation === filters.operation);
+      filtered = filtered.filter((error: any) => error.operation === filters.operation);
     }
 
     if (filters.category) {
-      filtered = filtered.filter(error => error.category === filters.category);
+      filtered = filtered.filter((error: any) => error.category === filters.category);
     }
 
     if (filters.severity) {
-      filtered = filtered.filter(error => error.severity === filters.severity);
+      filtered = filtered.filter((error: any) => error.severity === filters.severity);
     }
 
     if (filters.retryable !== undefined) {
-      filtered = filtered.filter(error => error.retryable === filters.retryable);
+      filtered = filtered.filter((error: any) => error.retryable === filters.retryable);
     }
 
     if (filters.startTime) {
-      filtered = filtered.filter(error => error.timestamp >= filters.startTime!);
+      filtered = filtered.filter((error: any) => error.timestamp >= filters.startTime!);
     }
 
     if (filters.endTime) {
-      filtered = filtered.filter(error => error.timestamp <= filters.endTime!);
+      filtered = filtered.filter((error: any) => error.timestamp <= filters.endTime!);
     }
 
     if (filters.limit) {
@@ -714,7 +714,7 @@ export class GoogleAdsErrorHandler {
     setInterval(() => {
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
       
-      this.errorHistory = this.errorHistory.filter(error => error.timestamp > oneHourAgo);
+      this.errorHistory = this.errorHistory.filter((error: any) => error.timestamp > oneHourAgo);
       
       // Clean up old circuit breaker states
       for (const [accountId, state] of this.circuitBreakers) {

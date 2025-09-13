@@ -151,7 +151,7 @@ async function handleGET(request: NextRequest, { validatedData, user }: { valida
   ])
 
   // Calculate metrics
-  const responseTimes = allResponseTimes.map(r => r.responseTime || 0).filter(rt => rt > 0)
+  const responseTimes = allResponseTimes.map((r: any) => r.responseTime || 0).filter((rt: any) => rt > 0)
   const errorCount = errorStats._count.id
   const errorRate = totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0
   

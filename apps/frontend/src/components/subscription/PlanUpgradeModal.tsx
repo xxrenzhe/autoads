@@ -43,9 +43,9 @@ export default function PlanUpgradeModal({
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
 
   // Filter plans by interval and categorize
-  const samePeriodPlans = availablePlans.filter(plan => plan.interval === currentPlan.interval)
-  const upgradePlans = samePeriodPlans.filter(plan => plan.price > currentPlan.price)
-  const downgradePlans = samePeriodPlans.filter(plan => plan.price < currentPlan.price)
+  const samePeriodPlans = availablePlans.filter((plan: any) => plan.interval === currentPlan.interval)
+  const upgradePlans = samePeriodPlans.filter((plan: any) => plan.price > currentPlan.price)
+  const downgradePlans = samePeriodPlans.filter((plan: any) => plan.price < currentPlan.price)
 
   const handlePlanSelect = async () => {
     if (selectedPlan) {
@@ -73,7 +73,7 @@ export default function PlanUpgradeModal({
 
     return (
       <div
-        onClick={() => setSelectedPlan(plan)}
+        onClick={((: any): any) => setSelectedPlan(plan)}
         className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all ${
           isSelected
             ? 'border-blue-500 bg-blue-50'
@@ -122,7 +122,7 @@ export default function PlanUpgradeModal({
         </div>
 
         <ul className="space-y-2">
-          {plan.features?.slice(0, 3).map((feature, index) => (
+          {plan.features?.slice(0, 3).map((feature, index: any) => (
             <li key={index} className="flex items-start text-sm text-gray-600">
               <CheckIcon className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
               {feature}
@@ -179,7 +179,7 @@ export default function PlanUpgradeModal({
                   Upgrade Options
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {upgradePlans.map((plan) => (
+                  {upgradePlans.map((plan: any) => (
                     <PlanCard key={plan.id} plan={plan} isUpgrade={true} />
                   ))}
                 </div>
@@ -194,7 +194,7 @@ export default function PlanUpgradeModal({
                   Downgrade Options
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {downgradePlans.map((plan) => (
+                  {downgradePlans.map((plan: any) => (
                     <PlanCard key={plan.id} plan={plan} isUpgrade={false} />
                   ))}
                 </div>

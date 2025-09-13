@@ -159,14 +159,14 @@ export class FeaturePermissionService {
   }> {
     try {
       // 1. 获取功能定义
-      const feature = this.FEATURE_PERMISSIONS.find(f => f.featureId === featureId);
+      const feature = this.FEATURE_PERMISSIONS.find((f: any) => f.featureId === featureId);
       if (!feature) {
         return { hasAccess: false, reason: 'Feature not found' };
       }
 
       // 2. 检查基础权限
       const hasPermission = await Promise.all(
-        feature.requiredPermissions.map(permission => {
+        feature.requiredPermissions.map((permission: any) => {
           const [resource, action] = permission.split(':');
           return PermissionService.hasPermission(userId, resource, action);
         })
@@ -349,7 +349,7 @@ export class FeaturePermissionService {
     const planHierarchy = { free: 0, pro: 1, max: 2 };
     const planLevel = planHierarchy[planId as keyof typeof planHierarchy] || 0;
 
-    return this.FEATURE_PERMISSIONS.filter(feature => {
+    return this.FEATURE_PERMISSIONS.filter((feature: any) => {
       const requiredLevel = planHierarchy[feature.requiredPlan as keyof typeof planHierarchy];
       return planLevel >= requiredLevel;
     });

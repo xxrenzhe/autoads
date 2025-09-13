@@ -105,7 +105,7 @@ class BatchHotReloadManager {
     this.pendingReloads.clear()
     
     // 只对关键配置执行热重载
-    const hotReloadableConfigs = configsToReload.filter(key => 
+    const hotReloadableConfigs = configsToReload.filter((key: any) => 
       /^features\./.test(key) || 
       /^limits\./.test(key) || 
       /^cache\./.test(key)
@@ -146,7 +146,7 @@ export class OptimizedConfigurationService {
       orderBy: { key: 'asc' }
     })
 
-    return configs.map(config => {
+    return configs.map((config: any) => {
       const result = this.mapToOptimizedConfig(config)
       cacheManager.set(config.key, result)
       return result
@@ -298,21 +298,21 @@ export class OptimizedConfigurationService {
       }
     })
 
-    const categories = configs.reduce((acc, config) => {
+    const categories = configs.reduce((acc, config: any) => {
       acc[config.category] = (acc[config.category] || 0) + 1
       return acc
     }, {} as Record<string, number>)
 
-    const hotReloadConfigs = configs.filter(config => 
+    const hotReloadConfigs = configs.filter((config: any) => 
       this.isHotReloadable(config.key)
     ).length
 
     return {
       total: configs.length,
       categories,
-      secretConfigs: configs.filter(c => c.isSecret).length,
+      secretConfigs: configs.filter((c: any) => c.isSecret).length,
       hotReloadConfigs,
-      lastUpdated: configs.reduce((latest, config) => 
+      lastUpdated: configs.reduce((latest, config: any) => 
         config.updatedAt > latest ? config.updatedAt : latest, 
         new Date(0)
       )

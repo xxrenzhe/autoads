@@ -153,7 +153,7 @@ class SimpleConfigManager {
         warnings.push('没有配置 Google Ads 账号');
       }
 
-      accounts.forEach(account => {
+      accounts.forEach((account: any) => {
         if (!account.customerId || !account.developerToken || !account.refreshToken) {
           errors.push(`账号 "${account.name}" 缺少必要配置`);
         }
@@ -170,7 +170,7 @@ class SimpleConfigManager {
       }
 
       // 检查配置完整性
-      configs.forEach(config => {
+      configs.forEach((config: any) => {
         const accountExists = accounts.some(a => a.id === config.googleAdsAccountId);
         const environmentExists = environments.some(e => e.id === config.adsPowerEnvironmentId);
 
@@ -201,19 +201,19 @@ class SimpleConfigManager {
   // 获取配置详情
   async getConfigDetails(id: string): Promise<SimpleConfig | null> {
     const configs = localStorageService.getConfigs();
-    return configs.find(c => c.id === id) || null;
+    return configs.find((c: any) => c.id === id) || null;
   }
 
   // 获取账号详情
   async getAccountDetails(id: string): Promise<GoogleAdsAccount | null> {
     const accounts = localStorageService.getAccounts();
-    return accounts.find(a => a.id === id) || null;
+    return accounts.find((a: any) => a.id === id) || null;
   }
 
   // 获取环境详情
   async getEnvironmentDetails(id: string): Promise<AdsPowerEnvironment | null> {
     const environments = localStorageService.getEnvironments();
-    return environments.find(e => e.id === id) || null;
+    return environments.find((e: any) => e.id === id) || null;
   }
 }
 

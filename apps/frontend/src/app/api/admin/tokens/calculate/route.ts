@@ -37,10 +37,10 @@ async function handlePOST(request: NextRequest, { validatedData, user }: any) {
   })
 
   const baseCostPerItem = parseFloat(
-    config.find(c => c.key === `TOKEN_COST_${feature.toUpperCase()}`)?.value || '1'
+    config.find((c: any) => c.key === `TOKEN_COST_${feature.toUpperCase()}`)?.value || '1'
   )
   const batchMultiplier = parseFloat(
-    config.find(c => c.key === `TOKEN_BATCH_MULTIPLIER_${feature.toUpperCase()}`)?.value || '0.8'
+    config.find((c: any) => c.key === `TOKEN_BATCH_MULTIPLIER_${feature.toUpperCase()}`)?.value || '0.8'
   )
 
   // Calculate costs

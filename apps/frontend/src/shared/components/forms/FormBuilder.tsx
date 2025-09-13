@@ -169,7 +169,7 @@ function FieldRenderer<T extends FieldValues>({
                 max={numberField.max}
                 step={numberField.step}
                 className={clsx(error && "border-red-500", field.className)}
-                onChange={(e) => controllerField.onChange(Number(e.target.value))}
+                onChange={((e: any): any) => controllerField.onChange(Number(e.target.value))}
               />
             )}
           />
@@ -219,7 +219,7 @@ function FieldRenderer<T extends FieldValues>({
                 )}
               >
                 <option value="">{field.placeholder || 'Select an option'}</option>
-                {selectField.options.map((option) => (
+                {selectField.options.map((option: any) => (
                   <option
                     key={option.value}
                     value={option.value}
@@ -243,19 +243,19 @@ function FieldRenderer<T extends FieldValues>({
               control={control}
               render={({ field: controllerField }) => (
                 <div className="space-y-2">
-                  {checkboxField.options!.map((option) => (
+                  {checkboxField.options!.map((option: any) => (
                     <label key={option.value} className="flex items-center">
                       <input
                         type="checkbox"
                         value={option.value}
                         checked={controllerField.value?.includes(option.value)}
-                        onChange={(e) => {
+                        onChange={((e: any): any) => {
                           const currentValue = controllerField.value || [];
                           if (e.target.checked) {
                             controllerField.onChange([...currentValue, option.value]);
                           } else {
                             controllerField.onChange(
-                              currentValue.filter((v: string) => v !== option.value)
+                              currentValue.filter((v: string: any) => v !== option.value)
                             );
                           }
                         }}
@@ -280,7 +280,7 @@ function FieldRenderer<T extends FieldValues>({
                   <input
                     type="checkbox"
                     checked={controllerField.value || false}
-                    onChange={(e) => controllerField.onChange(e.target.checked)}
+                    onChange={((e: any): any) => controllerField.onChange(e.target.checked)}
                     disabled={field.disabled}
                     className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
@@ -299,13 +299,13 @@ function FieldRenderer<T extends FieldValues>({
             control={control}
             render={({ field: controllerField }) => (
               <div className="space-y-2">
-                {radioField.options.map((option) => (
+                {radioField.options.map((option: any) => (
                   <label key={option.value} className="flex items-center">
                     <input
                       type="radio"
                       value={option.value}
                       checked={controllerField.value === option.value}
-                      onChange={() => controllerField.onChange(option.value)}
+                      onChange={((: any): any) => controllerField.onChange(option.value)}
                       disabled={field.disabled || option.disabled}
                       className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                     />
@@ -349,7 +349,7 @@ function FieldRenderer<T extends FieldValues>({
                 accept={fileField.accept}
                 multiple={fileField.multiple}
                 disabled={field.disabled}
-                onChange={(e) => {
+                onChange={((e: any): any) => {
                   const files = e.target.files;
                   controllerField.onChange(fileField.multiple ? files : files?.[0]);
                 }}
@@ -450,7 +450,7 @@ export function FormBuilder<T extends FieldValues = FieldValues>({
       onSubmit={handleSubmit(handleFormSubmit)}
       className={clsx("space-y-8", className)}
     >
-      {sections.map((section, sectionIndex) => (
+      {sections.map((section, sectionIndex: any) => (
         <div key={sectionIndex} className={clsx("space-y-6", section.className)}>
           {(section.title || section.description) && (
             <div>
@@ -464,7 +464,7 @@ export function FormBuilder<T extends FieldValues = FieldValues>({
           )}
           
           <div className="space-y-4">
-            {section.fields.map((field) => (
+            {section.fields.map((field: any) => (
               <FieldRenderer
                 key={field.name}
                 field={field}
@@ -482,7 +482,7 @@ export function FormBuilder<T extends FieldValues = FieldValues>({
           <Button
             type="button"
             variant="outline"
-            onClick={() => reset()}
+            onClick={((: any): any) => reset()}
             disabled={loading || isSubmitting}
           >
             {resetLabel}

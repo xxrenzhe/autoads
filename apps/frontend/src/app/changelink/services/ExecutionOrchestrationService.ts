@@ -138,8 +138,8 @@ export class ExecutionOrchestrationService {
       execution.processedItems = results.length;
 
       // 6. 统计结果
-      const successCount = results.filter(r => r.status === 'SUCCESS').length;
-      const failedCount = results.filter(r => r.status === 'FAILED').length;
+      const successCount = results.filter((r: any) => r.status === 'SUCCESS').length;
+      const failedCount = results.filter((r: any) => r.status === 'FAILED').length;
 
       this.addLog(executionId, 'INFO', `执行完成: 成功 ${successCount} 个, 失败 ${failedCount} 个`);
 
@@ -216,7 +216,7 @@ export class ExecutionOrchestrationService {
     
     try {
       const configs = await db.query('adspower_configs');
-      const config = configs.find(c => c.data.id === execution.config.adsPowerConfigId && c.data.isActive);
+      const config = configs.find((c: any) => c.data.id === execution.config.adsPowerConfigId && c.data.isActive);
       
       if (!config) {
         throw new Error(`未找到有效的 AdsPower 配置: ${execution.config.adsPowerConfigId}`);
@@ -241,7 +241,7 @@ export class ExecutionOrchestrationService {
       const allConfigs = await db.query('google_ads_configs');
       
       for (const configId of execution.config.googleAdsConfigIds) {
-        const config = allConfigs.find(c => c.data.id === configId && c.data.isActive);
+        const config = allConfigs.find((c: any) => c.data.id === configId && c.data.isActive);
         if (config) {
           configs.push(config.data);
           this.addLog(executionId, 'INFO', `加载 Google Ads 配置: ${config.data.accountName}`);
@@ -278,7 +278,7 @@ export class ExecutionOrchestrationService {
     for (let i = 0; i < mappings.length; i += maxConcurrent) {
       const batch = mappings.slice(i, i + maxConcurrent);
       const batchResults = await Promise.allSettled(
-        batch?.filter(Boolean)?.map(mapping => this.processSingleMapping(
+        batch?.filter(Boolean)?.map((mapping: any) => this.processSingleMapping(
           mapping,
           adsPowerConfig,
           googleAdsConfigs,
@@ -288,7 +288,7 @@ export class ExecutionOrchestrationService {
       );
 
       // 处理批处理结果
-      batchResults.forEach((result, index) => {
+      batchResults.forEach((result, index: any) => {
         if (result.status === 'fulfilled') {
           results.push(result.value);
         } else {
@@ -370,7 +370,7 @@ export class ExecutionOrchestrationService {
         }
 
         // 2. 查找对应的 Google Ads 配置
-        const googleAdsConfig = googleAdsConfigs.find(c => c.id === mapping.googleAdsConfigId);
+        const googleAdsConfig = googleAdsConfigs.find((c: any) => c.id === mapping.googleAdsConfigId);
         if (!googleAdsConfig) {
           throw new Error(`未找到对应的 Google Ads 配置: ${mapping.googleAdsConfigId}`);
         }
@@ -623,7 +623,7 @@ export class ExecutionOrchestrationService {
    * 获取所有活动执行
    */
   getActiveExecutions(): ExecutionProgress[] {
-    return Array.from(this.activeExecutions.values())?.filter(Boolean)?.map(execution => ({
+    return Array.from(this.activeExecutions.values())?.filter(Boolean)?.map((execution: any) => ({
       executionId: execution.id,
       status: execution.status as 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED',
       progress: execution.progress,

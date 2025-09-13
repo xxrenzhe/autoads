@@ -53,10 +53,10 @@ export class AutoAdsDataProvider implements DataProvider {
       });
 
       // Add filters to query parameters
-      Object.entries(filter).forEach(([key, value]) => {
+      Object.entries(filter).forEach(([key, value]: any) => {
         if (value !== undefined && value !== null && value !== '') {
           if (Array.isArray(value)) {
-            value.forEach(v => queryParams.append(`${key}[]`, v.toString()));
+            value.forEach((v: any) => queryParams.append(`${key}[]`, v.toString()));
           } else {
             queryParams.append(key, value.toString());
           }
@@ -131,7 +131,7 @@ export class AutoAdsDataProvider implements DataProvider {
       });
 
       // Add additional filters
-      Object.entries(filter).forEach(([key, value]) => {
+      Object.entries(filter).forEach(([key, value]: any) => {
         if (value !== undefined && value !== null && value !== '') {
           queryParams.append(key, value.toString());
         }
@@ -248,7 +248,7 @@ export class AutoAdsDataProvider implements DataProvider {
 
     // Transform dates to ISO strings
     const transformed = { ...data };
-    Object.keys(transformed).forEach(key => {
+    Object.keys(transformed).forEach((key: any) => {
       if (transformed[key] instanceof Date) {
         transformed[key] = transformed[key].toISOString();
       }
@@ -265,7 +265,7 @@ export class AutoAdsDataProvider implements DataProvider {
 
     // Transform ISO date strings back to Date objects
     const transformed = { ...data };
-    Object.keys(transformed).forEach(key => {
+    Object.keys(transformed).forEach((key: any) => {
       if (typeof transformed[key] === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(transformed[key])) {
         transformed[key] = new Date(transformed[key]);
       }

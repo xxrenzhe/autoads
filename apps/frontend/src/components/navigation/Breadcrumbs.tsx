@@ -70,7 +70,7 @@ export default function Breadcrumbs({ items, className }: BreadcrumbsProps) {
       className={cn("flex items-center space-x-1 text-sm text-muted-foreground", className)}
     >
       <ol className="flex items-center space-x-1">
-        {breadcrumbItems.map((item, index) => {
+        {breadcrumbItems.map((item, index: any) => {
           const isLast = index === breadcrumbItems.length - 1
           
           return (

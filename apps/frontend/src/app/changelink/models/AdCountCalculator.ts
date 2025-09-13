@@ -42,10 +42,10 @@ export class AdCountCalculator {
     distribution: Record<string, number>;
   } {
     const totalAds = ads.length;
-    const activeAds = ads.filter(ad => ad.status === 'active').length;
+    const activeAds = ads.filter((ad: any) => ad.status === 'active').length;
     
     const distribution: Record<string, number> = {};
-    ads.forEach(ad => { 
+    ads.forEach((ad: any) => { 
       const status = ad.status || 'unknown';
       distribution[status] = (distribution[status] || 0) + 1;
     });

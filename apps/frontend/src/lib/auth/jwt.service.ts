@@ -290,7 +290,7 @@ export class JWTService extends BaseService {
       return null as any;
     }
 
-    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+    const cookies = cookieHeader.split(';').reduce((acc, cookie: any) => {
       const [name, value] = cookie.trim().split('=');
       acc[name] = value;
       return acc;

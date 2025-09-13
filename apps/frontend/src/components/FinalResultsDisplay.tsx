@@ -63,7 +63,7 @@ const FinalResultsDisplay = ({
     return <Badge variant={config.variant}>{config.text}</Badge>;
   };
 
-  const successfulResults = results.filter((r) => {
+  const successfulResults = results.filter((r: any) => {
     const status = r.status;
     if (typeof status === "number") {
       return status >= 200 && status < 400;
@@ -72,9 +72,9 @@ const FinalResultsDisplay = ({
   });
 
   const finalUrls = successfulResults
-    .map((r) => r.finalUrl || r.originalUrl)
+    .map((r: any) => r.finalUrl || r.originalUrl)
     .filter((url): url is string => !!url)
-    .filter((url, index, arr) => arr.indexOf(url) === index); // Remove duplicates
+    .filter((url, index, arr: any) => arr.indexOf(url) === index); // Remove duplicates
 
   return (
     <div className="space-y-6">
@@ -141,7 +141,7 @@ const FinalResultsDisplay = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {finalUrls.map((url, index) => (
+            {finalUrls.map((url, index: any) => (
               <div
                 key={url}
                 className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
@@ -156,14 +156,14 @@ const FinalResultsDisplay = ({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => navigator.clipboard.writeText(url)}
+                    onClick={((: any): any) => navigator.clipboard.writeText(url)}
                   >
                     <Copy className="w-3 h-3" />
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => window.open(url, "_blank")}
+                    onClick={((: any): any) => window.open(url, "_blank")}
                   >
                     <ExternalLink className="w-3 h-3" />
                   </Button>
@@ -186,7 +186,7 @@ const FinalResultsDisplay = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {results.map((result, index) => (
+            {results.map((result, index: any) => (
               <div key={result.originalUrl} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-sm truncate flex-1">

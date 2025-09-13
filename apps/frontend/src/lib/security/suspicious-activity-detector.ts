@@ -74,7 +74,7 @@ export class SuspiciousActivityDetector {
       severity: 'high',
       weight: 30,
       checkFunction: (activities) => {
-        const lastHour = activities.filter(a => 
+        const lastHour = activities.filter((a: any) => 
           new Date(a.timestamp).getTime() > Date.now() - 60 * 60 * 1000
         );
         return lastHour.length > 1000; // 1小时内超过1000次操作
@@ -89,7 +89,7 @@ export class SuspiciousActivityDetector {
       severity: 'medium',
       weight: 20,
       checkFunction: (activities) => {
-        const offHours = activities.filter(a => {
+        const offHours = activities.filter((a: any) => {
           const hour = new Date(a.timestamp).getHours();
           return hour >= 2 && hour <= 6;
         });
@@ -105,7 +105,7 @@ export class SuspiciousActivityDetector {
       severity: 'high',
       weight: 25,
       checkFunction: (activities) => {
-        const batchOps = activities.filter(a => 
+        const batchOps = activities.filter((a: any) => 
           a.resource.includes('batch') || a.metadata?.batchSize > 100
         );
         // 检查是否有异常大的批量操作
@@ -121,10 +121,10 @@ export class SuspiciousActivityDetector {
       severity: 'high',
       weight: 35,
       checkFunction: (activities) => {
-        const last24Hours = activities.filter(a => 
+        const last24Hours = activities.filter((a: any) => 
           new Date(a.timestamp).getTime() > Date.now() - 24 * 60 * 60 * 1000
         );
-        const uniqueIPs = new Set(last24Hours.map(a => a.ip).filter(Boolean));
+        const uniqueIPs = new Set(last24Hours.map((a: any) => a.ip).filter(Boolean));
         return uniqueIPs.size > 10; // 24小时内超过10个不同IP
       }
     });
@@ -137,7 +137,7 @@ export class SuspiciousActivityDetector {
       severity: 'critical',
       weight: 40,
       checkFunction: (activities) => {
-        const tokenOps = activities.filter(a => a.action === 'token_consumed');
+        const tokenOps = activities.filter((a: any) => a.action === 'token_consumed');
         if (tokenOps.length < 10) return false;
         
         // 计算平均消耗速度
@@ -156,10 +156,10 @@ export class SuspiciousActivityDetector {
       severity: 'medium',
       weight: 15,
       checkFunction: (activities) => {
-        const last30Min = activities.filter(a => 
+        const last30Min = activities.filter((a: any) => 
           new Date(a.timestamp).getTime() > Date.now() - 30 * 60 * 1000
         );
-        const features = new Set(last30Min.map(a => a.resource.split('/')[0]));
+        const features = new Set(last30Min.map((a: any) => a.resource.split('/')[0]));
         return features.size > 5; // 30分钟内使用超过5个不同功能
       }
     });
@@ -172,8 +172,8 @@ export class SuspiciousActivityDetector {
       severity: 'medium',
       weight: 20,
       checkFunction: (activities) => {
-        const errorOps = activities.filter(a => a.action.includes('error') || a.action.includes('failed'));
-        const totalOps = activities.filter(a => a.action.includes('consume') || a.action.includes('access'));
+        const errorOps = activities.filter((a: any) => a.action.includes('error') || a.action.includes('failed'));
+        const totalOps = activities.filter((a: any) => a.action.includes('consume') || a.action.includes('access'));
         
         if (totalOps.length === 0) return false;
         return (errorOps.length / totalOps.length) > 0.3; // 错误率超过30%

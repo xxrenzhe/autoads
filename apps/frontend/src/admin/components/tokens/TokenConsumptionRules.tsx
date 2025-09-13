@@ -217,7 +217,7 @@ const TokenConsumptionRules: React.FC = () => {
         </Button>
       </Box>
 
-      <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} sx={{ mb: 3 }}>
+      <Tabs value={tabValue} onChange={((e, newValue: any): any) => setTabValue(newValue)} sx={{ mb: 3 }}>
         <Tab label="基础配置" />
         <Tab label="详细规则" />
         <Tab label="计算示例" />
@@ -239,7 +239,7 @@ const TokenConsumptionRules: React.FC = () => {
                       label="每个域名消耗Token"
                       type="number"
                       value={config.siterank.costPerDomain}
-                      onChange={(e) => updateConfig('siterank', 'costPerDomain', Number(e.target.value))}
+                      onChange={((e: any): any) => updateConfig('siterank', 'costPerDomain', Number(e.target.value))}
                       margin="normal"
                     />
                     <TextField
@@ -247,7 +247,7 @@ const TokenConsumptionRules: React.FC = () => {
                       label="批量操作倍率"
                       type="number"
                       value={config.siterank.batchMultiplier}
-                      onChange={(e) => updateConfig('siterank', 'batchMultiplier', Number(e.target.value))}
+                      onChange={((e: any): any) => updateConfig('siterank', 'batchMultiplier', Number(e.target.value))}
                       margin="normal"
                       helperText="批量操作时的折扣倍率，如0.8表示20%折扣"
                     />
@@ -271,7 +271,7 @@ const TokenConsumptionRules: React.FC = () => {
                       label="HTTP模式 - 每个URL消耗Token"
                       type="number"
                       value={config.batchopen.costPerUrl}
-                      onChange={(e) => updateConfig('batchopen', 'costPerUrl', Number(e.target.value))}
+                      onChange={((e: any): any) => updateConfig('batchopen', 'costPerUrl', Number(e.target.value))}
                       margin="normal"
                     />
                     <TextField
@@ -279,7 +279,7 @@ const TokenConsumptionRules: React.FC = () => {
                       label="Puppeteer模式 - 每个URL消耗Token"
                       type="number"
                       value={config.batchopen.puppeteerCostPerUrl || 2}
-                      onChange={(e) => updateConfig('batchopen', 'puppeteerCostPerUrl', Number(e.target.value))}
+                      onChange={((e: any): any) => updateConfig('batchopen', 'puppeteerCostPerUrl', Number(e.target.value))}
                       margin="normal"
                     />
                     <TextField
@@ -287,7 +287,7 @@ const TokenConsumptionRules: React.FC = () => {
                       label="批量操作倍率"
                       type="number"
                       value={config.batchopen.batchMultiplier}
-                      onChange={(e) => updateConfig('batchopen', 'batchMultiplier', Number(e.target.value))}
+                      onChange={((e: any): any) => updateConfig('batchopen', 'batchMultiplier', Number(e.target.value))}
                       margin="normal"
                     />
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
@@ -316,7 +316,7 @@ const TokenConsumptionRules: React.FC = () => {
       {/* Detailed Rules Tab */}
       <TabPanel value={tabValue} index={1}>
         <Grid container spacing={3}>
-          {rules.map((rule) => (
+          {rules.map((rule: any) => (
             <Grid item xs={12} md={6} key={rule.id}>
               <Card>
                 <CardContent>
@@ -333,7 +333,7 @@ const TokenConsumptionRules: React.FC = () => {
                       />
                     </Box>
                     <IconButton
-                      onClick={() => handleEditRule(rule)}
+                      onClick={((: any): any) => handleEditRule(rule)}
                       size="small"
                     >
                       <Edit />
@@ -433,14 +433,14 @@ const TokenConsumptionRules: React.FC = () => {
             label="基础消耗"
             type="number"
             value={editForm.baseCost || ''}
-            onChange={(e) => setEditForm({ ...editForm, baseCost: Number(e.target.value) })}
+            onChange={((e: any): any) => setEditForm({ ...editForm, baseCost: Number(e.target.value) })}
             margin="normal"
           />
           <TextField
             fullWidth
             label="描述"
             value={editForm.description || ''}
-            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+            onChange={((e: any): any) => setEditForm({ ...editForm, description: e.target.value })}
             margin="normal"
             multiline
             rows={3}
@@ -450,7 +450,7 @@ const TokenConsumptionRules: React.FC = () => {
             <Select
               value={editForm.isActive ? 'active' : 'inactive'}
               label="状态"
-              onChange={(e) => setEditForm({ ...editForm, isActive: e.target.value === 'active' })}
+              onChange={((e: any): any) => setEditForm({ ...editForm, isActive: e.target.value === 'active' })}
             >
               <MenuItem value="active">启用</MenuItem>
               <MenuItem value="inactive">禁用</MenuItem>
@@ -458,7 +458,7 @@ const TokenConsumptionRules: React.FC = () => {
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>取消</Button>
+          <Button onClick={((: any): any) => setEditDialogOpen(false)}>取消</Button>
           <Button onClick={handleSaveRule} variant="contained">
             保存
           </Button>

@@ -392,17 +392,17 @@ export async function GET(request: NextRequest) {
       metadata: {
         totalApis: apisWithStats.length,
         categories: {
-          auth: apisWithStats.filter(api => api.category === 'auth').length,
-          admin: apisWithStats.filter(api => api.category === 'admin').length,
-          user: apisWithStats.filter(api => api.category === 'user').length,
-          payment: apisWithStats.filter(api => api.category === 'payment').length,
-          core: apisWithStats.filter(api => api.category === 'core').length,
+          auth: apisWithStats.filter((api: any) => api.category === 'auth').length,
+          admin: apisWithStats.filter((api: any) => api.category === 'admin').length,
+          user: apisWithStats.filter((api: any) => api.category === 'user').length,
+          payment: apisWithStats.filter((api: any) => api.category === 'payment').length,
+          core: apisWithStats.filter((api: any) => api.category === 'core').length,
         },
         statusDistribution: {
-          active: apisWithStats.filter(api => api.status === 'active').length,
-          deprecated: apisWithStats.filter(api => api.status === 'deprecated').length,
-          beta: apisWithStats.filter(api => api.status === 'beta').length,
-          maintenance: apisWithStats.filter(api => api.status === 'maintenance').length,
+          active: apisWithStats.filter((api: any) => api.status === 'active').length,
+          deprecated: apisWithStats.filter((api: any) => api.status === 'deprecated').length,
+          beta: apisWithStats.filter((api: any) => api.status === 'beta').length,
+          maintenance: apisWithStats.filter((api: any) => api.status === 'maintenance').length,
         },
       },
     });

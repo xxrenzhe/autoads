@@ -34,18 +34,18 @@ func NewDatabaseInitializer(cfg *config.Config, stdLogger *log.Logger) (*Databas
 		cfg.DB.Port,
 	)
 
-    db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-        Logger: logger.Default.LogMode(logger.Warn),
-    })
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Warn),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("连接数据库失败: %w", err)
 	}
 
-    return &DatabaseInitializer{
-        db:     db,
-        config: cfg,
-        logger: stdLogger,
-    }, nil
+	return &DatabaseInitializer{
+		db:     db,
+		config: cfg,
+		logger: stdLogger,
+	}, nil
 }
 
 // Initialize 执行完整的数据库初始化
@@ -187,9 +187,9 @@ func (di *DatabaseInitializer) connectToDatabase() error {
 		di.config.DB.Database,
 	)
 
-    db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-        Logger: logger.Default.LogMode(logger.Warn),
-    })
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Warn),
+	})
 	if err != nil {
 		return err
 	}

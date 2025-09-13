@@ -222,7 +222,7 @@ func Bind(c *gin.Engine) {
 			c.PUT(route.Path, minHandler(route), gf.PathMatch(route.Path, route))
 		}
 	}
-	
+
 	// 绑定手动注册的路由
 	for _, route := range gf.GetManualRoutes() {
 		switch route.Method {

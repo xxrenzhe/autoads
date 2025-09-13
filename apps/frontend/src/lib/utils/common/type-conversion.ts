@@ -274,7 +274,7 @@ export function convertToArray<T = any>(
       
       // Split by comma if it contains commas
       if (value.includes(',')) {
-        const arrayValue = value.split(',')?.filter(Boolean)?.map(item => item.trim()) as unknown as T[]
+        const arrayValue = value.split(',')?.filter(Boolean)?.map((item: any) => item.trim()) as unknown as T[]
         return throwOnError ? arrayValue : { success: true, value: arrayValue }
       }
       
@@ -407,7 +407,7 @@ export function batchConvert<T extends Record<string, any>>(
   const errors: Record<string, string> = {}
   let success = true
 
-  Object.entries(schema).forEach(([key, config]) => {
+  Object.entries(schema).forEach(([key, config]: any) => {
     const value = values[key]
     
     // Check required fields

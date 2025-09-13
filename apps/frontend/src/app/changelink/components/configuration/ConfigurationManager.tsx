@@ -105,7 +105,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
   // 处理删除配置
   const handleDelete = (config: TrackingConfiguration) => {
     setConfigurations((prev) =>
-      prev.filter((c) => c !== config)
+      prev.filter((c: any) => c !== config)
     );
   };
 
@@ -174,12 +174,12 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
 
         console.error(error);
 
-        return links?.filter(Boolean)?.map(url => ({ url, valid: false, error: '测试失败' }));
+        return links?.filter(Boolean)?.map((url: any) => ({ url, valid: false, error: '测试失败' }));
 
       }
     } catch (error) { 
       logger.error('Link testing failed:', new EnhancedError('Link testing failed:', { error: error instanceof Error ? error.message : String(error)  }));
-      return links?.filter(Boolean)?.map(url => ({ url, valid: false, error: '测试失败' }));
+      return links?.filter(Boolean)?.map((url: any) => ({ url, valid: false, error: '测试失败' }));
     }
   };
 
@@ -219,7 +219,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
   const handleStartExecution = async (configId: string) => {
     try {
       // 更新配置状态为运行中
-      const config = configurations.find(c => c.id === configId);
+      const config = configurations.find((c: any) => c.id === configId);
       if (config) {
         const updatedConfig = { ...config, status: 'active' as const };
         await configStorage.saveConfiguration(updatedConfig);
@@ -232,7 +232,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
 
   const handlePauseExecution = async (configId: string) => {
     try {
-      const config = configurations.find(c => c.id === configId);
+      const config = configurations.find((c: any) => c.id === configId);
       if (config) {
         const updatedConfig = { ...config, status: 'stopped' as const };
         await configStorage.saveConfiguration(updatedConfig);
@@ -245,7 +245,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
 
   const handleStopExecution = async (configId: string) => {
     try {
-      const config = configurations.find(c => c.id === configId);
+      const config = configurations.find((c: any) => c.id === configId);
       if (config) {
         const updatedConfig = { ...config, status: 'stopped' as const };
         await configStorage.saveConfiguration(updatedConfig);
@@ -259,7 +259,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
   // 定时执行相关处理函数
   const handleUpdateScheduling = async (configId: string, scheduling: ScheduleConfig) => {
     try {
-      const config = configurations.find(c => c.id === configId);
+      const config = configurations.find((c: any) => c.id === configId);
       if (config) {
         const updatedConfig = { 
           ...config, 
@@ -283,7 +283,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
   const handleManualExecute = async (configId: string) => {
     try {
       // 手动执行配置
-      const config = configurations.find(c => c.id === configId);
+      const config = configurations.find((c: any) => c.id === configId);
       if (config) {
         const updatedConfig = { 
           ...config, 
@@ -355,7 +355,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-green-600">
-                    {configurations.filter(c => c.status === 'active').length}
+                    {configurations.filter((c: any) => c.status === 'active').length}
                   </div>
                 </CardContent>
               </Card>
@@ -366,7 +366,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-blue-600">
-                    {configurations.filter(c => c.status === 'active').length}
+                    {configurations.filter((c: any) => c.status === 'active').length}
                   </div>
                 </CardContent>
               </Card>
@@ -377,7 +377,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-red-600">
-                    {configurations.filter(c => c.status === 'stopped').length}
+                    {configurations.filter((c: any) => c.status === 'stopped').length}
                   </div>
                 </CardContent>
               </Card>
@@ -435,10 +435,10 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
           <AdsPowerConfigForm
             initialData={editingConfig ? {
               ...editingConfig,
-              adMappingConfig: (editingConfig.adMappingConfig || [])?.filter(Boolean)?.map(m => ({
+              adMappingConfig: (editingConfig.adMappingConfig || [])?.filter(Boolean)?.map((m: any) => ({
                 originalUrl: m.originalUrl,
                 adMappings: Array.isArray(m.adMappings)
-                  ? m.adMappings?.filter(Boolean)?.map(ad => ({
+                  ? m.adMappings?.filter(Boolean)?.map((ad: any) => ({
                       adId: ad.adId,
                       finalUrl: ad.finalUrl || '',
                       finalUrlSuffix: ad.finalUrlSuffix,
@@ -450,7 +450,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
               })),
             } : undefined}
             googleAdsAccounts={editingConfig?.googleAdsAccounts || []}
-            onSubmit={(formData) => {
+            onSubmit={((formData: any): any) => {
               const configData: TrackingConfiguration = {
                 id: editingConfig?.id || '',
                 ...formData,

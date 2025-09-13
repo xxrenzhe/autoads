@@ -21,8 +21,8 @@ export class BrowserPoolService {
   public getStats(): BrowserPoolStats {
     return {
       totalInstances: this.instances.length,
-      idleInstances: this.instances.filter(i => i.status === 'idle').length,
-      activeInstances: this.instances.filter(i => i.status === 'active').length,
+      idleInstances: this.instances.filter((i: any) => i.status === 'idle').length,
+      activeInstances: this.instances.filter((i: any) => i.status === 'active').length,
     };
   }
 
@@ -31,12 +31,12 @@ export class BrowserPoolService {
   }
 
   public async closeInstance(id: string): Promise<void> {
-    this.instances = this.instances.filter(i => i.id !== id);
+    this.instances = this.instances.filter((i: any) => i.id !== id);
   }
 
   public async publicCleanup(): Promise<number> {
     const beforeCount = this.instances.length;
-    this.instances = this.instances.filter(i => i.status === 'idle');
+    this.instances = this.instances.filter((i: any) => i.status === 'idle');
     return beforeCount - this.instances.length;
   }
 

@@ -54,18 +54,18 @@ async function handleGET(request: NextRequest, { user }: any) {
   // Transform to expected format
   const tokenConfig = {
     siterank: {
-      costPerDomain: parseFloat(config.find(c => c.key === 'TOKEN_COST_SITERANK')?.value || '1'),
-      batchMultiplier: parseFloat(config.find(c => c.key === 'TOKEN_BATCH_MULTIPLIER_SITERANK')?.value || '0.8'),
+      costPerDomain: parseFloat(config.find((c: any) => c.key === 'TOKEN_COST_SITERANK')?.value || '1'),
+      batchMultiplier: parseFloat(config.find((c: any) => c.key === 'TOKEN_BATCH_MULTIPLIER_SITERANK')?.value || '0.8'),
       description: 'Website ranking analysis - cost per domain'
     },
     batchopen: {
-      costPerUrl: parseFloat(config.find(c => c.key === 'TOKEN_COST_BATCHOPEN')?.value || '1'),
-      batchMultiplier: parseFloat(config.find(c => c.key === 'TOKEN_BATCH_MULTIPLIER_BATCHOPEN')?.value || '0.8'),
+      costPerUrl: parseFloat(config.find((c: any) => c.key === 'TOKEN_COST_BATCHOPEN')?.value || '1'),
+      batchMultiplier: parseFloat(config.find((c: any) => c.key === 'TOKEN_BATCH_MULTIPLIER_BATCHOPEN')?.value || '0.8'),
       description: 'Batch URL opening - cost per URL'
     },
     adscenter: {
-      costPerLinkChange: parseFloat(config.find(c => c.key === 'TOKEN_COST_CHANGELINK')?.value || '2'),
-      batchMultiplier: parseFloat(config.find(c => c.key === 'TOKEN_BATCH_MULTIPLIER_CHANGELINK')?.value || '0.8'),
+      costPerLinkChange: parseFloat(config.find((c: any) => c.key === 'TOKEN_COST_CHANGELINK')?.value || '2'),
+      batchMultiplier: parseFloat(config.find((c: any) => c.key === 'TOKEN_BATCH_MULTIPLIER_CHANGELINK')?.value || '0.8'),
       description: 'Google Ads link changes - cost per link change'
     }
   }
@@ -105,16 +105,16 @@ async function handlePUT(request: NextRequest, { validatedData, user }: any) {
 
   const oldConfig = {
     siterank: {
-      costPerDomain: parseFloat(currentConfig.find(c => c.key === 'TOKEN_COST_SITERANK')?.value || '1'),
-      batchMultiplier: parseFloat(currentConfig.find(c => c.key === 'TOKEN_BATCH_MULTIPLIER_SITERANK')?.value || '0.8'),
+      costPerDomain: parseFloat(currentConfig.find((c: any) => c.key === 'TOKEN_COST_SITERANK')?.value || '1'),
+      batchMultiplier: parseFloat(currentConfig.find((c: any) => c.key === 'TOKEN_BATCH_MULTIPLIER_SITERANK')?.value || '0.8'),
     },
     batchopen: {
-      costPerUrl: parseFloat(currentConfig.find(c => c.key === 'TOKEN_COST_BATCHOPEN')?.value || '1'),
-      batchMultiplier: parseFloat(currentConfig.find(c => c.key === 'TOKEN_BATCH_MULTIPLIER_BATCHOPEN')?.value || '0.8'),
+      costPerUrl: parseFloat(currentConfig.find((c: any) => c.key === 'TOKEN_COST_BATCHOPEN')?.value || '1'),
+      batchMultiplier: parseFloat(currentConfig.find((c: any) => c.key === 'TOKEN_BATCH_MULTIPLIER_BATCHOPEN')?.value || '0.8'),
     },
     adscenter: {
-      costPerLinkChange: parseFloat(currentConfig.find(c => c.key === 'TOKEN_COST_CHANGELINK')?.value || '2'),
-      batchMultiplier: parseFloat(currentConfig.find(c => c.key === 'TOKEN_BATCH_MULTIPLIER_CHANGELINK')?.value || '0.8'),
+      costPerLinkChange: parseFloat(currentConfig.find((c: any) => c.key === 'TOKEN_COST_CHANGELINK')?.value || '2'),
+      batchMultiplier: parseFloat(currentConfig.find((c: any) => c.key === 'TOKEN_BATCH_MULTIPLIER_CHANGELINK')?.value || '0.8'),
     }
   }
 

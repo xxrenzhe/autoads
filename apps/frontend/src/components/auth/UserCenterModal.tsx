@@ -194,12 +194,12 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
         <div className="flex flex-col h-[calc(80vh-120px)]">
           {/* Tabs */}
           <div className="flex space-x-1 p-1 bg-gray-100 rounded-lg mb-4">
-            {menuItems.map((item) => {
+            {menuItems.map((item: any) => {
               const Icon = item.icon
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id as any)}
+                  onClick={((: any): any) => setActiveTab(item.id as any)}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                     activeTab === item.id
                       ? 'bg-white text-blue-600 shadow-sm'
@@ -300,7 +300,7 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
                         <p>暂无使用记录</p>
                       </div>
                     ) : (
-                      tokenUsage.map((record) => (
+                      tokenUsage.map((record: any) => (
                         <div key={record.id} className="p-3 bg-gray-50 rounded-lg">
                           <div className="flex items-center justify-between">
                             <div>
@@ -472,7 +472,7 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
                   <div className="space-y-3">
                     <h3 className="font-medium text-gray-900">最近邀请</h3>
                     <div className="space-y-2">
-                      {invitationData.stats.recentInvitations.slice(0, 5).map((inv: any) => (
+                      {invitationData.stats.recentInvitations.slice(0, 5).map((inv: any: any) => (
                         <div key={inv.id} className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <Users className="h-5 w-5 text-gray-400" />
@@ -502,7 +502,7 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.open('/settings', '_blank')}
+              onClick={((: any): any) => window.open('/settings', '_blank')}
               className="text-gray-600"
             >
               <Settings className="h-4 w-4 mr-2" />

@@ -90,23 +90,23 @@ export class ExecutionStorage {
       }
 
       // 转换日期字符串为Date对象
-      return executions?.filter(Boolean)?.map(execution => ({
+      return executions?.filter(Boolean)?.map((execution: any) => ({
         ...execution,
         startTime: execution.startTime ? new Date(execution.startTime) : new Date(),
         endTime: execution.endTime ? new Date(execution.endTime) : undefined,
-        errors: execution.errors?.filter(Boolean)?.map(error => ({
+        errors: execution.errors?.filter(Boolean)?.map((error: any) => ({
           ...error,
           timestamp: new Date(error.timestamp)
         })) || [],
-        adUpdateResults: execution.adUpdateResults?.filter(Boolean)?.map(result => ({
+        adUpdateResults: execution.adUpdateResults?.filter(Boolean)?.map((result: any) => ({
           ...result,
           timestamp: new Date(result.timestamp)
         })) || [],
-        googleAdsUpdates: execution.googleAdsUpdates?.filter(Boolean)?.map(update => ({
+        googleAdsUpdates: execution.googleAdsUpdates?.filter(Boolean)?.map((update: any) => ({
           ...update,
           timestamp: new Date(update.timestamp)
         })) || [],
-        stepResults: execution.stepResults?.filter(Boolean)?.map(step => ({
+        stepResults: execution.stepResults?.filter(Boolean)?.map((step: any) => ({
           ...step,
           startTime: new Date(step.startTime),
           endTime: new Date(step.endTime)
@@ -151,7 +151,7 @@ export class ExecutionStorage {
   async getExecution(executionId: string): Promise<ExecutionResult | null> {
     try {
       const executions = await this.loadExecutions();
-      const execution = executions.find(e => e.executionId === executionId);
+      const execution = executions.find((e: any) => e.executionId === executionId);
       return execution ? deepClone(execution) : null;
     } catch (error) { 
       logger.error('获取执行结果失败:', new EnhancedError('获取执行结果失败:', { error: error instanceof Error ? error.message : String(error)  }));
@@ -169,9 +169,9 @@ export class ExecutionStorage {
     try {
       const executions = await this.loadExecutions();
       return executions
-        .filter(e => e.configurationId === configurationId)
+        .filter((e: any) => e.configurationId === configurationId)
         .slice(0, limit)
-        ?.filter(Boolean)?.map(e => deepClone(e));
+        ?.filter(Boolean)?.map((e: any) => deepClone(e));
     } catch (error) { 
       logger.error('根据配置ID获取执行结果失败:', new EnhancedError('根据配置ID获取执行结果失败:', { error: error instanceof Error ? error.message : String(error)  }));
       return [];
@@ -186,7 +186,7 @@ export class ExecutionStorage {
       const executions = await this.loadExecutions();
       return executions
         .slice(0, limit)
-        ?.filter(Boolean)?.map(e => deepClone(e));
+        ?.filter(Boolean)?.map((e: any) => deepClone(e));
     } catch (error) { 
       logger.error('获取最近执行结果失败:', new EnhancedError('获取最近执行结果失败:', { error: error instanceof Error ? error.message : String(error)  }));
       return [];
@@ -200,8 +200,8 @@ export class ExecutionStorage {
     try {
       const executions = await this.loadExecutions();
       return executions
-        .filter(e => e.status === 'running')
-        ?.filter(Boolean)?.map(e => deepClone(e));
+        .filter((e: any) => e.status === 'running')
+        ?.filter(Boolean)?.map((e: any) => deepClone(e));
     } catch (error) { 
       logger.error('获取运行中执行结果失败:', new EnhancedError('获取运行中执行结果失败:', { error: error instanceof Error ? error.message : String(error)  }));
       return [];
@@ -217,7 +217,7 @@ export class ExecutionStorage {
   }> {
     try {
       const executions = await this.loadExecutions();
-      const filteredExecutions = executions.filter(e => e.executionId !== executionId);
+      const filteredExecutions = executions.filter((e: any) => e.executionId !== executionId);
 
       if (filteredExecutions.length === executions.length) {
         return {
@@ -254,7 +254,7 @@ export class ExecutionStorage {
     try {
       const executions = await this.loadExecutions();
       const idsToDelete = new Set(executionIds);
-      const filteredExecutions = executions.filter(e => !idsToDelete.has(e.executionId!));
+      const filteredExecutions = executions.filter((e: any) => !idsToDelete.has(e.executionId!));
 
       const deletedCount = executions.length - filteredExecutions.length;
 
@@ -306,7 +306,7 @@ export class ExecutionStorage {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - this.options.retentionDays);
 
-      const validExecutions = executions.filter(execution => {
+      const validExecutions = executions.filter((execution: any) => {
         // 保留正在运行的执行记录
         if (execution.status === 'running') return Promise.resolve(true);
         
@@ -375,29 +375,29 @@ export class ExecutionStorage {
     try {
       const executions = await this.loadExecutions();
       const filteredExecutions = configurationId 
-        ? executions.filter(e => e.configurationId === configurationId)
+        ? executions.filter((e: any) => e.configurationId === configurationId)
         : executions;
 
       const total = filteredExecutions.length;
-      const completed = filteredExecutions.filter(e => e.status === 'completed' || e.status === 'SUCCESS').length;
-      const failed = filteredExecutions.filter(e => e.status === 'FAILED').length;
-      const running = filteredExecutions.filter(e => e.status === 'running').length;
-      const pending = filteredExecutions.filter(e => e.status === 'pending').length;
+      const completed = filteredExecutions.filter((e: any) => e.status === 'completed' || e.status === 'SUCCESS').length;
+      const failed = filteredExecutions.filter((e: any) => e.status === 'FAILED').length;
+      const running = filteredExecutions.filter((e: any) => e.status === 'running').length;
+      const pending = filteredExecutions.filter((e: any) => e.status === 'pending').length;
 
       // 计算成功率
       const successRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
       // 计算平均执行时间
-      const completedExecutions = filteredExecutions.filter(e => 
+      const completedExecutions = filteredExecutions.filter((e: any) => 
         (e.status === 'completed' || e.status === 'SUCCESS') && e.metrics?.totalExecutionTime && e.metrics.totalExecutionTime > 0
       );
       const avgExecutionTime = completedExecutions.length > 0
-        ? Math.round(completedExecutions.reduce((sum, e) => sum + (e.metrics?.totalExecutionTime || 0), 0) / completedExecutions.length)
+        ? Math.round(completedExecutions.reduce((sum, e: any) => sum + (e.metrics?.totalExecutionTime || 0), 0) / completedExecutions.length)
         : 0;
 
       // 计算总处理链接数
-      const totalProcessedLinks = filteredExecutions.reduce((sum, e) => sum + (e.metrics?.totalLinks || 0), 0);
-      const totalSuccessfulLinks = filteredExecutions.reduce((sum, e) => 
+      const totalProcessedLinks = filteredExecutions.reduce((sum, e: any) => sum + (e.metrics?.totalLinks || 0), 0);
+      const totalSuccessfulLinks = filteredExecutions.reduce((sum, e: any) => 
         sum + (e.metrics?.successfulLinks || 0), 0);
 
       return {
@@ -459,15 +459,15 @@ export class ExecutionStorage {
 
       // 按配置ID筛选
       if (configurationId) {
-        executions = executions.filter(e => e.configurationId === configurationId);
+        executions = executions.filter((e: any) => e.configurationId === configurationId);
       }
 
       // 按日期范围筛选
       if (startDate) {
-        executions = executions.filter(e => e.startTime && e.startTime >= startDate);
+        executions = executions.filter((e: any) => e.startTime && e.startTime >= startDate);
       }
       if (endDate) {
-        executions = executions.filter(e => e.startTime && e.startTime <= endDate);
+        executions = executions.filter((e: any) => e.startTime && e.startTime <= endDate);
       }
 
       const metadata: Record<string, unknown> = {
@@ -489,7 +489,7 @@ export class ExecutionStorage {
       return {
         success: true,
         data: {
-          executions: executions?.filter(Boolean)?.map(e => deepClone(e)),
+          executions: executions?.filter(Boolean)?.map((e: any) => deepClone(e)),
           metadata: metadata as { exportTime: string; configurationId?: string; dateRange?: { start: string; end: string; }; count: number; }
         }
       };

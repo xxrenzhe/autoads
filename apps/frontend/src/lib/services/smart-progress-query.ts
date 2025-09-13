@@ -394,7 +394,7 @@ class SmartProgressQueryService {
    * 通知所有回调
    */
   private notifyCallbacks(result: ProgressQueryResult): void {
-    this.callbacks.forEach(callback => {
+    this.callbacks.forEach((callback: any) => {
       try {
         callback(result);
       } catch (callbackError) {

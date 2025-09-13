@@ -149,7 +149,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Array.from({ length: 2 }).map((_, index) => (
+          {Array.from({ length: 2 }).map((_, index: any) => (
             <Card key={index} className="animate-pulse">
               <CardContent className="p-6">
                 <div className="space-y-4">
@@ -177,7 +177,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               {error.message}
             </p>
-            <Button onClick={() => refetch()} variant="outline">
+            <Button onClick={((: any): any) => refetch()} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
               Try Again
             </Button>
@@ -206,7 +206,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
         
         <div className="flex items-center space-x-3">
           <Button
-            onClick={() => healthCheckMutation.mutate()}
+            onClick={((: any): any) => healthCheckMutation.mutate()}
             variant="outline"
             size="sm"
             disabled={healthCheckMutation.isPending}
@@ -228,7 +228,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                   Configuration Issues
                 </h3>
                 <ul className="mt-2 text-sm text-red-700 dark:text-red-300 space-y-1">
-                  {providerStatus.validation.errors.map((error, index) => (
+                  {providerStatus.validation.errors.map((error, index: any) => (
                     <li key={index}>• {error}</li>
                   ))}
                 </ul>
@@ -249,7 +249,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                   Configuration Warnings
                 </h3>
                 <ul className="mt-2 text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
-                  {providerStatus.validation.warnings.map((warning, index) => (
+                  {providerStatus.validation.warnings.map((warning, index: any) => (
                     <li key={index}>• {warning}</li>
                   ))}
                 </ul>
@@ -261,7 +261,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
 
       {/* Provider Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {Object.entries(providerStatus.providers).map(([name, provider]) => (
+        {Object.entries(providerStatus.providers).map(([name, provider]: any) => (
           <Card key={name} className={`${provider.isDefault ? 'ring-2 ring-blue-500' : ''}`}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -321,7 +321,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => toggleSecretVisibility(`${name}-publishable`)}
+                              onClick={((: any): any) => toggleSecretVisibility(`${name}-publishable`)}
                             >
                               {showSecrets[`${name}-publishable`] ? (
                                 <EyeOff className="h-3 w-3" />
@@ -362,7 +362,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => toggleSecretVisibility(`${name}-client`)}
+                              onClick={((: any): any) => toggleSecretVisibility(`${name}-client`)}
                             >
                               {showSecrets[`${name}-client`] ? (
                                 <EyeOff className="h-3 w-3" />
@@ -390,7 +390,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setDefaultMutation.mutate(name)}
+                      onClick={((: any): any) => setDefaultMutation.mutate(name)}
                       disabled={setDefaultMutation.isPending}
                     >
                       Set as Default
@@ -400,7 +400,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => window.open(
+                    onClick={((: any): any) => window.open(
                       name === 'stripe' 
                         ? 'https://dashboard.stripe.com' 
                         : 'https://developer.paypal.com',
@@ -434,7 +434,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                 </div>
               )}
               
-              {providerStatus.recommendations.issues.map((issue, index) => (
+              {providerStatus.recommendations.issues.map((issue, index: any) => (
                 <div key={index} className="flex items-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <AlertCircle className="h-4 w-4 text-yellow-600 mr-2" />
                   <span className="text-sm text-yellow-800">{issue}</span>

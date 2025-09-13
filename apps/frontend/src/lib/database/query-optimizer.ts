@@ -75,7 +75,7 @@ export class QueryOptimizer {
    * 获取查询统计
    */
   static getQueryStats() {
-    const stats = Array.from(this.queryStats.entries()).map(([name, data]) => ({
+    const stats = Array.from(this.queryStats.entries()).map(([name, data]: any) => ({
       name,
       ...data,
       slowQueryRate: data.slowQueries.length / data.count
@@ -93,12 +93,12 @@ export class QueryOptimizer {
     const stats = this.getQueryStats();
 
     // 分析慢查询
-    const slowQueries = stats.filter(s => s.avgTime > 500);
+    const slowQueries = stats.filter((s: any) => s.avgTime > 500);
     if (slowQueries.length > 0) {
       recommendations.push(
         `发现 ${slowQueries.length} 个慢查询，建议添加索引或优化SQL`
       );
-      slowQueries.forEach(query => {
+      slowQueries.forEach((query: any) => {
         recommendations.push(
           `- ${query.name}: 平均执行时间 ${query.avgTime.toFixed(2)}ms`
         );
@@ -106,7 +106,7 @@ export class QueryOptimizer {
     }
 
     // 分析高频查询
-    const frequentQueries = stats.filter(s => s.count > 1000);
+    const frequentQueries = stats.filter((s: any) => s.count > 1000);
     if (frequentQueries.length > 0) {
       recommendations.push(
         `发现 ${frequentQueries.length} 个高频查询，建议考虑缓存`
@@ -114,9 +114,9 @@ export class QueryOptimizer {
     }
 
     // 分析查询分布
-    const totalQueries = stats.reduce((sum, s) => sum + s.count, 0);
+    const totalQueries = stats.reduce((sum, s: any) => sum + s.count, 0);
     const top10Queries = stats.slice(0, 10);
-    const top10Ratio = top10Queries.reduce((sum, s) => sum + s.count, 0) / totalQueries;
+    const top10Ratio = top10Queries.reduce((sum, s: any) => sum + s.count, 0) / totalQueries;
 
     if (top10Ratio > 0.8) {
       recommendations.push(

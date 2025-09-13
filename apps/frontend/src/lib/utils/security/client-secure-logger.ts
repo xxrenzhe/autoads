@@ -71,7 +71,7 @@ export class ClientSecureLogger {
       ];
 
       let sanitized = data;
-      sensitivePatterns.forEach(pattern => {
+      sensitivePatterns.forEach((pattern: any) => {
         sanitized = sanitized.replace(pattern, '[REDACTED]');
       });
       return sanitized;
@@ -79,7 +79,7 @@ export class ClientSecureLogger {
 
     if (typeof data === 'object') {
       if (Array.isArray(data)) {
-        return data?.filter(Boolean)?.map(item => this.sanitizeData(item));
+        return data?.filter(Boolean)?.map((item: any) => this.sanitizeData(item));
       }
 
       const sanitized: Record<string, unknown> = {};

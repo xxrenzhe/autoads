@@ -453,7 +453,7 @@ export class EnhancedProgressManager {
     
     const observers = this.observers.get(taskId) || [];
     
-    observers.forEach(observer => {
+    observers.forEach((observer: any) => {
       try {
         switch (eventType) {
           case 'progressUpdate':

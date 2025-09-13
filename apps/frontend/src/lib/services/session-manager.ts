@@ -37,7 +37,7 @@ export class SessionManager {
       const activeSessions = await this.getUserActiveSessions(userId)
       
       // 如果当前会话已在列表中，更新访问时间
-      const currentSession = activeSessions.find(s => s.id === currentSessionId)
+      const currentSession = activeSessions.find((s: any) => s.id === currentSessionId)
       if (currentSession) {
         await this.updateSessionAccess(currentSessionId)
         return { allowed: true, activeSessions }
@@ -93,7 +93,7 @@ export class SessionManager {
         orderBy: { expires: 'desc' }
       })
 
-      const sessionInfos: SessionInfo[] = sessions.map(session => ({
+      const sessionInfos: SessionInfo[] = sessions.map((session: any) => ({
         id: session.id,
         sessionToken: session.sessionToken,
         expires: session.expires,
@@ -279,7 +279,7 @@ export class SessionManager {
             (await prisma.session.findMany({ 
               select: { userId: true },
               distinct: ['userId']
-            })).map(s => s.userId) : []
+            })).map((s: any) => s.userId) : []
           }
         }
       })
@@ -308,7 +308,7 @@ export class SessionManager {
       const sessions = await this.getUserActiveSessions(userId)
       
       // 简单的设备类型检测
-      const deviceTypes = sessions.reduce((acc, session) => {
+      const deviceTypes = sessions.reduce((acc, session: any) => {
         const userAgent = session.userAgent.toLowerCase()
         let type = 'unknown'
         
@@ -322,8 +322,8 @@ export class SessionManager {
 
       return {
         totalSessions: sessions.length,
-        activeSessions: sessions.filter(s => s.isActive).length,
-        devices: Object.entries(deviceTypes).map(([type, count]) => ({ type, count })),
+        activeSessions: sessions.filter((s: any) => s.isActive).length,
+        devices: Object.entries(deviceTypes).map(([type, count]: any) => ({ type, count })),
         locations: [] // 需要IP地理位置服务
       }
     } catch (error) {

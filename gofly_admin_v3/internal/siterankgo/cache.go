@@ -33,7 +33,7 @@ func (c *RedisCache) Get(ctx context.Context, key string) (interface{}, bool) {
 		return nil, false
 	}
 
-    val, err := c.client.Get(ctx, key)
+	val, err := c.client.Get(ctx, key)
 	if err != nil {
 		return nil, false
 	}
@@ -70,7 +70,7 @@ func (c *RedisCache) Set(ctx context.Context, key string, value interface{}) err
 		}
 	}
 
-    return c.client.Set(ctx, key, data, c.ttl)
+	return c.client.Set(ctx, key, data, c.ttl)
 }
 
 // Delete 删除缓存
@@ -79,7 +79,7 @@ func (c *RedisCache) Delete(ctx context.Context, key string) error {
 		return nil
 	}
 
-    return c.client.Delete(ctx, key)
+	return c.client.Delete(ctx, key)
 }
 
 // CacheWrapper 缓存包装器
@@ -139,13 +139,13 @@ func (cw *CacheWrapper) Delete(key string) {
 
 // buildKey 构建缓存键
 func (cw *CacheWrapper) buildKey(key string) string {
-    return cw.prefix + key
+	return cw.prefix + key
 }
 
 // GetTaskWithCache 带缓存的获取任务
 func (s *Service) GetTaskWithCache(taskID string) (*SiteRankTask, error) {
 	// 尝试从缓存获取
-    cacheKey := "task:" + taskID
+	cacheKey := "task:" + taskID
 	if val, ok := s.cache.Get(cacheKey); ok {
 		if task, ok := val.(*SiteRankTask); ok {
 			return task, nil
@@ -167,7 +167,7 @@ func (s *Service) GetTaskWithCache(taskID string) (*SiteRankTask, error) {
 // CacheRankingResult 缓存排名结果
 func (s *Service) CacheRankingResult(domain, keyword, engine string, result *RankingResult) {
 	// 构建缓存键
-    cacheKey := "ranking:" + domain + ":" + keyword + ":" + engine
+	cacheKey := "ranking:" + domain + ":" + keyword + ":" + engine
 
 	// 设置缓存，有效期1小时
 	cacheData := map[string]interface{}{
@@ -184,7 +184,7 @@ func (s *Service) CacheRankingResult(domain, keyword, engine string, result *Ran
 
 // GetCachedRankingResult 获取缓存的排名结果
 func (s *Service) GetCachedRankingResult(domain, keyword, engine string) (*RankingResult, bool) {
-    cacheKey := "ranking:" + domain + ":" + keyword + ":" + engine
+	cacheKey := "ranking:" + domain + ":" + keyword + ":" + engine
 
 	val, ok := s.cache.Get(cacheKey)
 	if !ok {

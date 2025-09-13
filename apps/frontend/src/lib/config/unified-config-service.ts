@@ -272,7 +272,7 @@ export class UnifiedConfigService {
     }]);
 
     // Feature flags validation
-    Object.keys(this.config.features).forEach(key => {
+    Object.keys(this.config.features).forEach((key: any) => {
       this.validationRules.set(`features.${key}`, [{
         validate: (value: boolean) => typeof value === 'boolean',
         message: `Feature flag ${key} must be boolean`
@@ -374,7 +374,7 @@ export class UnifiedConfigService {
       'DEPRECATED_FEATURE_FLAG'
     ];
 
-    deprecatedVars.forEach(envVar => {
+    deprecatedVars.forEach((envVar: any) => {
       if (process.env[envVar]) {
         warnings.push(`Deprecated environment variable: ${envVar}`);
       }
@@ -417,7 +417,7 @@ export class UnifiedConfigService {
   private notifyWatchers(path: string, newValue: any, oldValue: any): void {
     const watchers = this.watchers.get(path);
     if (watchers) {
-      watchers.forEach(callback => {
+      watchers.forEach((callback: any) => {
         try {
           callback(newValue, oldValue);
         } catch (error) {

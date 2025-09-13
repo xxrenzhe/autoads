@@ -39,7 +39,7 @@ const CheckInActions = () => {
   return (
     <TopToolbar>
       <Button
-        onClick={() => refresh()}
+        onClick={((: any): any) => refresh()}
         label="刷新"
         startIcon={<RefreshIcon />}
       />

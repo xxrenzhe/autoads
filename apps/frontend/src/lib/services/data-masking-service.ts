@@ -27,7 +27,7 @@ class DataMaskingService {
     }
 
     if (Array.isArray(data)) {
-      return data?.filter(Boolean)?.map(item => this.maskObject(item, options))
+      return data?.filter(Boolean)?.map((item: any) => this.maskObject(item, options))
     }
 
     const masked = { ...data }
@@ -344,7 +344,7 @@ class DataMaskingService {
     }
 
     if (Array.isArray(data)) {
-      return data?.filter(Boolean)?.map(item => this.autoMaskObject(item))
+      return data?.filter(Boolean)?.map((item: any) => this.autoMaskObject(item))
     }
 
     const masked = { ...data }

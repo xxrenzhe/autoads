@@ -1,10 +1,20 @@
 import { AuthProvider } from 'react-admin';
 import { useSession } from 'next-auth/react';
 
+interface LoginParams {
+  username: string;
+  password: string;
+}
+
+interface ErrorResponse {
+  status?: number;
+  message?: string;
+}
+
 // 创建一个自定义的 Auth Provider，使用 NextAuth 会话
 export const createNextAuthAuthProvider = (): AuthProvider => {
   return {
-    login: async ({ username, password }) => {
+    login: async ({ username, password }: LoginParams) => {
       // React Admin 的 login 方法不应该被调用，因为我们使用 NextAuth
       // 如果用户到达这里，说明 NextAuth 会话已经过期
       return Promise.reject(new Error('Please use NextAuth for authentication'));
@@ -22,7 +32,7 @@ export const createNextAuthAuthProvider = (): AuthProvider => {
       return Promise.resolve();
     },
 
-    checkError: (error) => {
+    checkError: (error: ErrorResponse) => {
       const status = error.status;
       if (status === 401 || status === 403) {
         // 如果 API 返回 401/403，重定向到登录页面

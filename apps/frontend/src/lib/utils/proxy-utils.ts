@@ -259,7 +259,7 @@ export function parseProxyResponse(
     ];
     
     const lowerText = text.toLowerCase();
-    const foundErrors = errorKeywords.filter(keyword => lowerText.includes(keyword));
+    const foundErrors = errorKeywords.filter((keyword: any) => lowerText.includes(keyword));
     
     if (foundErrors.length > 0) {
       logger.warn('检测到可能的错误消息:', {
@@ -939,7 +939,7 @@ export function parseMultipleProxiesResponse(
     }
     
     // 尝试按行分割
-    const lines = text.split(/[\r\n]+/).filter(line => line.trim());
+    const lines = text.split(/[\r\n]+/).filter((line: any) => line.trim());
     if (lines.length > 1) {
       logger.info(`检测到${lines.length}行文本，尝试逐行解析`);
       
@@ -957,7 +957,7 @@ export function parseMultipleProxiesResponse(
     
     // 尝试按逗号分割
     if (text.includes(',')) {
-      const parts = text.split(',').filter(part => part.trim());
+      const parts = text.split(',').filter((part: any) => part.trim());
       if (parts.length > 1) {
         logger.info(`检测到${parts.length}个逗号分隔的部分，尝试逐个解析`);
         
@@ -1269,8 +1269,8 @@ export async function testMultipleProxyConnections(
   }
   
   // 统计结果
-  const successCount = results.filter(r => r.result.success).length;
-  const avgResponseTime = results.reduce((sum, r) => sum + r.result.responseTime, 0) / results.length;
+  const successCount = results.filter((r: any) => r.result.success).length;
+  const avgResponseTime = results.reduce((sum, r: any) => sum + r.result.responseTime, 0) / results.length;
   
   logger.info('批量代理验证完成', {
     total: proxies.length,

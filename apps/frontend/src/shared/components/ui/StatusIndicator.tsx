@@ -222,11 +222,11 @@ export function BatchStatusIndicator({
   size = 'md',
   className
 }: BatchStatusIndicatorProps) {
-  const total = statuses.reduce((sum, item) => sum + item.count, 0);
+  const total = statuses.reduce((sum, item: any) => sum + item.count, 0);
 
   return (
     <div className={clsx("flex flex-wrap gap-2", className)}>
-      {statuses.map((item, index) => (
+      {statuses.map((item, index: any) => (
         <StatusIndicator
           key={index}
           status={item.status}

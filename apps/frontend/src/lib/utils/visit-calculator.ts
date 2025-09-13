@@ -26,5 +26,5 @@ export function calculateUrlVisitsForRound(
   urls: string[]
 ): number[] {
   // 每个URL访问1次
-  return urls.map(() => 1);
+  return urls.map((: any) => 1);
 }

@@ -218,12 +218,12 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
             <input
               type="checkbox"
               checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
+              onChange={((e: any): any) => setAutoRefresh(e.target.checked)}
               className="rounded"
             />
             <select
               value={refreshInterval}
-              onChange={(e) => setRefreshInterval(parseInt(e.target.value))}
+              onChange={((e: any): any) => setRefreshInterval(parseInt(e.target.value))}
               disabled={!autoRefresh}
               className="px-2 py-1 text-sm border border-gray-300 rounded"
             >
@@ -282,10 +282,10 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
             { id: 'services', label: 'Services', icon: Server },
             { id: 'infrastructure', label: 'Infrastructure', icon: Cpu },
             { id: 'errors', label: 'Error Logs', icon: AlertTriangle }
-          ].map(({ id, label, icon: Icon }) => (
+          ].map(({ id, label, icon: Icon }: any) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id as any)}
+              onClick={((: any): any) => setActiveTab(id as any)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
                   ? 'border-blue-500 text-blue-600'
@@ -294,9 +294,9 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
             >
               <Icon className="h-4 w-4 mr-2" />
               {label}
-              {id === 'errors' && errorLogs.filter(e => e.level === 'error').length > 0 && (
+              {id === 'errors' && errorLogs.filter((e: any) => e.level === 'error').length > 0 && (
                 <Badge variant="destructive" className="ml-2 text-xs">
-                  {errorLogs.filter(e => e.level === 'error').length}
+                  {errorLogs.filter((e: any) => e.level === 'error').length}
                 </Badge>
               )}
             </button>
@@ -313,7 +313,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(systemHealth.infrastructure).map(([key, value]) => (
+                {Object.entries(systemHealth.infrastructure).map(([key, value]: any) => (
                   <div key={key} className="flex items-center justify-between">
                     <div className="flex items-center">
                       {key === 'cpu' && <Cpu className="h-4 w-4 mr-2" />}
@@ -381,7 +381,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
 
       {activeTab === 'services' && systemHealth && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {systemHealth.services.map((service, index) => (
+          {systemHealth.services.map((service, index: any) => (
             <Card key={index}>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
@@ -419,7 +419,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
 
       {activeTab === 'infrastructure' && systemHealth && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Object.entries(systemHealth.infrastructure).map(([key, value]) => (
+          {Object.entries(systemHealth.infrastructure).map(([key, value]: any) => (
             <Card key={key}>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -465,7 +465,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
       {activeTab === 'errors' && (
         <div className="space-y-4">
           {errorLogs.length > 0 ? (
-            errorLogs.map((error) => (
+            errorLogs.map((error: any) => (
               <Card key={error.id}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">

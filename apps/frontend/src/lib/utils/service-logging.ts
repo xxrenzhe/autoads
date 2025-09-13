@@ -20,7 +20,7 @@ export function logServiceOperation(category: string = 'Service') {
       const operationId = crypto.randomUUID();
       
       // 获取用户信息（如果有）
-      const userId = args.find(arg => arg?.user?.id)?.user?.id || 'system';
+      const userId = args.find((arg: any) => arg?.user?.id)?.user?.id || 'system';
       
       logger.info(`Operation Started: ${propertyName}`, {
         operation: propertyName,
@@ -29,7 +29,7 @@ export function logServiceOperation(category: string = 'Service') {
         argsCount: args.length,
         timestamp: new Date().toISOString(),
         // 记录参数摘要（避免敏感信息）
-        argsSummary: args.map((arg, index) => ({
+        argsSummary: args.map((arg, index: any) => ({
           index,
           type: typeof arg,
           hasValue: arg !== undefined && arg !== null,

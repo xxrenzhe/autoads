@@ -283,12 +283,12 @@ export function useBehaviorAnalytics(userId: string, timeRange: string = '30d') 
 
   const getUnusedFeatures = useCallback(() => {
     if (!featureAdoption?.features) return []
-    return featureAdoption.features.filter(f => f.usage === 0)
+    return featureAdoption.features.filter((f: any) => f.usage === 0)
   }, [featureAdoption])
 
   const getPeakActivityTime = useCallback(() => {
     if (!activityPatterns?.hourlyActivity) return null
-    return activityPatterns.hourlyActivity.reduce((peak, current) => 
+    return activityPatterns.hourlyActivity.reduce((peak, current: any) => 
       current.activity > peak.activity ? current : peak
     )
   }, [activityPatterns])
@@ -301,8 +301,8 @@ export function useBehaviorAnalytics(userId: string, timeRange: string = '30d') 
     
     if (older.length === 0) return 'stable'
     
-    const recentAvg = recent.reduce((sum, day) => sum + day.sessions, 0) / recent.length
-    const olderAvg = older.reduce((sum, day) => sum + day.sessions, 0) / older.length
+    const recentAvg = recent.reduce((sum, day: any) => sum + day.sessions, 0) / recent.length
+    const olderAvg = older.reduce((sum, day: any) => sum + day.sessions, 0) / older.length
     
     const change = ((recentAvg - olderAvg) / olderAvg) * 100
     
@@ -321,19 +321,19 @@ export function useBehaviorAnalytics(userId: string, timeRange: string = '30d') 
 
   const getFeatureAdoptionRate = useCallback(() => {
     if (!featureAdoption?.features || !behaviorData?.totalFeatures) return 0
-    const adoptedFeatures = featureAdoption.features.filter(f => f.usage > 0).length
+    const adoptedFeatures = featureAdoption.features.filter((f: any) => f.usage > 0).length
     return (adoptedFeatures / behaviorData.totalFeatures) * 100
   }, [featureAdoption, behaviorData])
 
   const getAverageSessionsPerDay = useCallback(() => {
     if (!behaviorData?.sessionHistory) return 0
-    const totalSessions = behaviorData.sessionHistory.reduce((sum, day) => sum + day.sessions, 0)
+    const totalSessions = behaviorData.sessionHistory.reduce((sum, day: any) => sum + day.sessions, 0)
     return totalSessions / behaviorData.sessionHistory.length
   }, [behaviorData])
 
   const getMostActiveDay = useCallback(() => {
     if (!activityPatterns?.weeklyActivity) return null
-    return activityPatterns.weeklyActivity.reduce((max, current) => 
+    return activityPatterns.weeklyActivity.reduce((max, current: any) => 
       current.activity > max.activity ? current : max
     )
   }, [activityPatterns])
@@ -341,7 +341,7 @@ export function useBehaviorAnalytics(userId: string, timeRange: string = '30d') 
   const getJourneyCompletionRate = useCallback(() => {
     if (!userJourney?.journeySteps) return 0
     const totalSteps = userJourney.journeySteps.length
-    const completedSteps = userJourney.journeySteps.filter(step => step.completionRate > 50).length
+    const completedSteps = userJourney.journeySteps.filter((step: any) => step.completionRate > 50).length
     return (completedSteps / totalSteps) * 100
   }, [userJourney])
 

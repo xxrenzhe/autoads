@@ -65,7 +65,7 @@ export function DataTable<T extends Record<string, any>>({
 
     // Global search
     if (searchTerm) {
-      filtered = filtered.filter(row =>
+      filtered = filtered.filter((row: any) =>
         Object.values(row).some(value =>
           String(value).toLowerCase().includes(searchTerm.toLowerCase())
         )
@@ -73,9 +73,9 @@ export function DataTable<T extends Record<string, any>>({
     }
 
     // Column-specific filters
-    Object.entries(columnFilters).forEach(([columnKey, filterValue]) => {
+    Object.entries(columnFilters).forEach(([columnKey, filterValue]: any) => {
       if (filterValue) {
-        filtered = filtered.filter(row =>
+        filtered = filtered.filter((row: any) =>
           String(row[columnKey]).toLowerCase().includes(filterValue.toLowerCase())
         );
       }
@@ -189,7 +189,7 @@ export function DataTable<T extends Record<string, any>>({
             type="text"
             placeholder={searchPlaceholder}
             value={searchTerm}
-            onChange={(e) => {
+            onChange={((e: any): any) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
@@ -215,7 +215,7 @@ export function DataTable<T extends Record<string, any>>({
           )}
           <thead className="bg-gray-50">
             <tr role="row">
-              {columns.map((column) => (
+              {columns.map((column: any) => (
                 <th
                   key={String(column.key)}
                   scope="col"
@@ -224,7 +224,7 @@ export function DataTable<T extends Record<string, any>>({
                     column.sortable && "cursor-pointer hover:bg-gray-100 focus:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset",
                     column.width && `w-${column.width}`
                   )}
-                  onClick={() => column.sortable && handleSort(column.key)}
+                  onClick={((: any): any) => column.sortable && handleSort(column.key)}
                   onKeyDown={(e) => column.sortable && handleKeyDown(e, () => handleSort(column.key))}
                   tabIndex={column.sortable ? 0 : undefined}
                   role={column.sortable ? "columnheader button" : "columnheader"}
@@ -244,7 +244,7 @@ export function DataTable<T extends Record<string, any>>({
             </tr>
             {/* Column Filters Row */}
             <tr className="bg-gray-25" role="row">
-              {columns.map((column) => {
+              {columns.map((column: any) => {
                 const filterId = `filter-${String(column.key)}-${tableId}`;
                 return (
                   <th key={`filter-${String(column.key)}`} className="px-6 py-2" scope="col">
@@ -258,7 +258,7 @@ export function DataTable<T extends Record<string, any>>({
                           type="text"
                           placeholder={`Filter ${column.header.toLowerCase()}...`}
                           value={columnFilters[String(column.key)] || ''}
-                          onChange={(e) => handleColumnFilter(String(column.key), e.target.value)}
+                          onChange={((e: any): any) => handleColumnFilter(String(column.key), e.target.value)}
                           className="text-sm h-8"
                           aria-label={`Filter ${column.header}`}
                         />
@@ -281,7 +281,7 @@ export function DataTable<T extends Record<string, any>>({
                 </td>
               </tr>
             ) : (
-              paginatedData.map((row, index) => (
+              paginatedData.map((row, index: any) => (
                 <tr
                   key={index}
                   role="row"
@@ -289,12 +289,12 @@ export function DataTable<T extends Record<string, any>>({
                     "hover:bg-gray-50",
                     onRowClick && "cursor-pointer focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
                   )}
-                  onClick={() => onRowClick?.(row)}
+                  onClick={((: any): any) => onRowClick?.(row)}
                   onKeyDown={(e) => onRowClick && handleKeyDown(e, () => onRowClick(row))}
                   tabIndex={onRowClick ? 0 : undefined}
                   aria-label={onRowClick ? `Row ${index + 1}, click to select` : undefined}
                 >
-                  {columns.map((column) => (
+                  {columns.map((column: any) => (
                     <td
                       key={String(column.key)}
                       className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
@@ -337,7 +337,7 @@ export function DataTable<T extends Record<string, any>>({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              onClick={((: any) => setCurrentPage(prev: any) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
               aria-label="Go to previous page"
             >
@@ -353,7 +353,7 @@ export function DataTable<T extends Record<string, any>>({
                     key={pageNum}
                     variant={currentPage === pageNum ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setCurrentPage(pageNum)}
+                    onClick={((: any): any) => setCurrentPage(pageNum)}
                     aria-label={`Go to page ${pageNum}`}
                     aria-current={currentPage === pageNum ? "page" : undefined}
                   >
@@ -367,7 +367,7 @@ export function DataTable<T extends Record<string, any>>({
                   <Button
                     variant={currentPage === totalPages ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setCurrentPage(totalPages)}
+                    onClick={((: any): any) => setCurrentPage(totalPages)}
                     aria-label={`Go to page ${totalPages}`}
                     aria-current={currentPage === totalPages ? "page" : undefined}
                   >
@@ -380,7 +380,7 @@ export function DataTable<T extends Record<string, any>>({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              onClick={((: any) => setCurrentPage(prev: any) => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
               aria-label="Go to next page"
             >

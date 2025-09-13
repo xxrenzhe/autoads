@@ -98,7 +98,7 @@ class LocalStorageService {
 
   deleteConfig(id: string): boolean {
     const configs = this.getConfigs();
-    const filtered = configs.filter(c => c.id !== id);
+    const filtered = configs.filter((c: any) => c.id !== id);
     
     if (filtered.length === configs.length) return false;
     
@@ -148,7 +148,7 @@ class LocalStorageService {
 
   deleteAccount(id: string): boolean {
     const accounts = this.getAccounts();
-    const filtered = accounts.filter(a => a.id !== id);
+    const filtered = accounts.filter((a: any) => a.id !== id);
     
     if (filtered.length === accounts.length) return false;
     
@@ -198,7 +198,7 @@ class LocalStorageService {
 
   deleteEnvironment(id: string): boolean {
     const environments = this.getEnvironments();
-    const filtered = environments.filter(e => e.id !== id);
+    const filtered = environments.filter((e: any) => e.id !== id);
     
     if (filtered.length === environments.length) return false;
     
@@ -280,12 +280,12 @@ class LocalStorageService {
     
     return {
       totalConfigs: configs.length,
-      activeConfigs: configs.filter(c => c.isActive).length,
+      activeConfigs: configs.filter((c: any) => c.isActive).length,
       totalAccounts: accounts.length,
-      activeAccounts: accounts.filter(a => a.isActive).length,
+      activeAccounts: accounts.filter((a: any) => a.isActive).length,
       totalEnvironments: environments.length,
-      activeEnvironments: environments.filter(e => e.isActive).length,
-      recentExecutions: executions.filter(e => new Date(e.startTime) > oneWeekAgo).length
+      activeEnvironments: environments.filter((e: any) => e.isActive).length,
+      recentExecutions: executions.filter((e: any) => new Date(e.startTime) > oneWeekAgo).length
     };
   }
 

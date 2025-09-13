@@ -271,7 +271,7 @@ class CacheService {
 
       // Delete all keys with this tag
       const pipeline = this.redis!.pipeline()
-      keys.forEach(key => pipeline.del(key))
+      keys.forEach((key: any) => pipeline.del(key))
       pipeline.del(tagKey) // Remove the tag set itself
       
       const results = await pipeline.exec()
@@ -437,7 +437,7 @@ class CacheService {
     if (!this.redis || !this.isConnected) return
 
     const pipeline = this.redis.pipeline()
-    tags.forEach(tag => {
+    tags.forEach((tag: any) => {
       pipeline.sadd(`tags:${tag}`, key)
     })
     await pipeline.exec()

@@ -267,7 +267,7 @@ const InvitationModule: React.FC = () => {
 
         {/* Tabs */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)}>
+          <Tabs value={tabValue} onChange={((e, v: any): any) => setTabValue(v)}>
             <Tab label="我的邀请码" />
             <Tab label="使用邀请码" />
             <Tab label="邀请记录" />
@@ -310,7 +310,7 @@ const InvitationModule: React.FC = () => {
                   <Box>
                     <Tooltip title={copied ? '已复制' : '复制邀请码'}>
                       <IconButton 
-                        onClick={() => copyToClipboard(currentInvitation.code!)}
+                        onClick={((: any): any) => copyToClipboard(currentInvitation.code!)}
                         color={copied ? 'success' : 'primary'}
                       >
                         <CopyAll />
@@ -353,7 +353,7 @@ const InvitationModule: React.FC = () => {
                 fullWidth
                 label="邀请码"
                 value={invitationCode}
-                onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
+                onChange={((e: any): any) => setInvitationCode(e.target.value.toUpperCase())}
                 placeholder="请输入8位邀请码"
                 inputProps={{ maxLength: 8, style: { textTransform: 'uppercase' } }}
               />
@@ -400,7 +400,7 @@ const InvitationModule: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {stats.recentInvitations.map((invitation) => (
+                    {stats.recentInvitations.map((invitation: any) => (
                       <TableRow key={invitation.id}>
                         <TableCell>
                           <Typography variant="body2" fontWeight={600}>
@@ -462,7 +462,7 @@ const InvitationModule: React.FC = () => {
             </Typography>
           </DialogContent>
           <DialogActions sx={{ justifyContent: 'center' }}>
-            <Button onClick={() => setShowSuccessDialog(false)} variant="contained">
+            <Button onClick={((: any): any) => setShowSuccessDialog(false)} variant="contained">
               确定
             </Button>
           </DialogActions>

@@ -65,7 +65,7 @@ export default function DebugAccessModePage() {
                   ? "bg-blue-50 border-blue-500 text-blue-700"
                   : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
-              onClick={() => handleAccessModeChange("http")}
+              onClick={((: any): any) => handleAccessModeChange("http")}
             >
               HTTP 访问
             </button>
@@ -75,7 +75,7 @@ export default function DebugAccessModePage() {
                   ? "bg-purple-50 border-purple-500 text-purple-700"
                   : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
-              onClick={() => handleAccessModeChange("puppeteer")}
+              onClick={((: any): any) => handleAccessModeChange("puppeteer")}
             >
               Puppeteer 访问
             </button>
@@ -109,7 +109,7 @@ export default function DebugAccessModePage() {
             {logs.length === 0 ? (
               <p className="text-gray-500">暂无日志</p>
             ) : (
-              logs.map((log, index) => (
+              logs.map((log, index: any) => (
                 <div key={index} className="mb-1">
                   {log}
                 </div>

@@ -228,7 +228,7 @@ export class CacheMonitor {
     }
     
     const cutoffTime = now - periodMs;
-    return this.metrics.filter(m => new Date(m.timestamp).getTime() > cutoffTime);
+    return this.metrics.filter((m: any) => new Date(m.timestamp).getTime() > cutoffTime);
   }
 
   /**
@@ -258,7 +258,7 @@ export class CacheMonitor {
    * 获取活跃告警
    */
   getActiveAlerts(): AlertEvent[] {
-    return Array.from(this.alertEvents.values()).filter(alert => !alert.resolved);
+    return Array.from(this.alertEvents.values()).filter((alert: any) => !alert.resolved);
   }
 
   /**
@@ -285,7 +285,7 @@ export class CacheMonitor {
     
     const cutoffTime = now - periodMs;
     return Array.from(this.alertEvents.values())
-      .filter(alert => alert.timestamp.getTime() > cutoffTime)
+      .filter((alert: any) => alert.timestamp.getTime() > cutoffTime)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
@@ -490,7 +490,7 @@ export class CacheMonitor {
     const cutoffTime = now - (24 * 60 * 60 * 1000); // 保留24小时的数据
     
     // 清理旧的指标数据
-    this.metrics = this.metrics.filter(m => new Date(m.timestamp).getTime() > cutoffTime);
+    this.metrics = this.metrics.filter((m: any) => new Date(m.timestamp).getTime() > cutoffTime);
     
     // 清理已解决的告警
     const resolvedAlertsToDelete: string[] = [];
@@ -501,7 +501,7 @@ export class CacheMonitor {
       }
     }
     
-    resolvedAlertsToDelete.forEach(id => this.alertEvents.delete(id));
+    resolvedAlertsToDelete.forEach((id: any) => this.alertEvents.delete(id));
   }
 
   private calculateAverageResponseTime(responseTime: number): number {
@@ -529,9 +529,9 @@ export class CacheMonitor {
       };
     }
 
-    const totalHits = metrics.reduce((sum, m) => sum + (m.hitRate * 100), 0);
-    const totalMisses = metrics.reduce((sum, m) => sum + ((1 - m.hitRate) * 100), 0);
-    const avgResponseTime = metrics.reduce((sum, m) => 
+    const totalHits = metrics.reduce((sum, m: any) => sum + (m.hitRate * 100), 0);
+    const totalMisses = metrics.reduce((sum, m: any) => sum + ((1 - m.hitRate) * 100), 0);
+    const avgResponseTime = metrics.reduce((sum, m: any) => 
       sum + (m.responseTime.l1 + m.responseTime.l2 + m.responseTime.l3 + m.responseTime.l4) / 4, 0
     ) / metrics.length;
 
@@ -556,28 +556,28 @@ export class CacheMonitor {
 
     return {
       l1: {
-        hits: metrics.reduce((sum, m) => sum + m.hitRate * 25, 0), // 假设L1占25%
-        misses: metrics.reduce((sum, m) => sum + (1 - m.hitRate) * 25, 0),
-        hitRate: metrics.reduce((sum, m) => sum + m.hitRate, 0) / metrics.length,
-        avgResponseTime: metrics.reduce((sum, m) => sum + m.responseTime.l1, 0) / metrics.length
+        hits: metrics.reduce((sum, m: any) => sum + m.hitRate * 25, 0), // 假设L1占25%
+        misses: metrics.reduce((sum, m: any) => sum + (1 - m.hitRate) * 25, 0),
+        hitRate: metrics.reduce((sum, m: any) => sum + m.hitRate, 0) / metrics.length,
+        avgResponseTime: metrics.reduce((sum, m: any) => sum + m.responseTime.l1, 0) / metrics.length
       },
       l2: {
-        hits: metrics.reduce((sum, m) => sum + m.hitRate * 25, 0), // 假设L2占25%
-        misses: metrics.reduce((sum, m) => sum + (1 - m.hitRate) * 25, 0),
-        hitRate: metrics.reduce((sum, m) => sum + m.hitRate, 0) / metrics.length,
-        avgResponseTime: metrics.reduce((sum, m) => sum + m.responseTime.l2, 0) / metrics.length
+        hits: metrics.reduce((sum, m: any) => sum + m.hitRate * 25, 0), // 假设L2占25%
+        misses: metrics.reduce((sum, m: any) => sum + (1 - m.hitRate) * 25, 0),
+        hitRate: metrics.reduce((sum, m: any) => sum + m.hitRate, 0) / metrics.length,
+        avgResponseTime: metrics.reduce((sum, m: any) => sum + m.responseTime.l2, 0) / metrics.length
       },
       l3: {
-        hits: metrics.reduce((sum, m) => sum + m.hitRate * 25, 0), // 假设L3占25%
-        misses: metrics.reduce((sum, m) => sum + (1 - m.hitRate) * 25, 0),
-        hitRate: metrics.reduce((sum, m) => sum + m.hitRate, 0) / metrics.length,
-        avgResponseTime: metrics.reduce((sum, m) => sum + m.responseTime.l3, 0) / metrics.length
+        hits: metrics.reduce((sum, m: any) => sum + m.hitRate * 25, 0), // 假设L3占25%
+        misses: metrics.reduce((sum, m: any) => sum + (1 - m.hitRate) * 25, 0),
+        hitRate: metrics.reduce((sum, m: any) => sum + m.hitRate, 0) / metrics.length,
+        avgResponseTime: metrics.reduce((sum, m: any) => sum + m.responseTime.l3, 0) / metrics.length
       },
       l4: {
-        hits: metrics.reduce((sum, m) => sum + m.hitRate * 25, 0), // 假设L4占25%
-        misses: metrics.reduce((sum, m) => sum + (1 - m.hitRate) * 25, 0),
-        hitRate: metrics.reduce((sum, m) => sum + m.hitRate, 0) / metrics.length,
-        avgResponseTime: metrics.reduce((sum, m) => sum + m.responseTime.l4, 0) / metrics.length
+        hits: metrics.reduce((sum, m: any) => sum + m.hitRate * 25, 0), // 假设L4占25%
+        misses: metrics.reduce((sum, m: any) => sum + (1 - m.hitRate) * 25, 0),
+        hitRate: metrics.reduce((sum, m: any) => sum + m.hitRate, 0) / metrics.length,
+        avgResponseTime: metrics.reduce((sum, m: any) => sum + m.responseTime.l4, 0) / metrics.length
       }
     };
   }
@@ -592,8 +592,8 @@ export class CacheMonitor {
     
     if (metrics.length === 0) return recommendations;
     
-    const avgHitRate = metrics.reduce((sum, m) => sum + m.hitRate, 0) / metrics.length;
-    const avgResponseTime = metrics.reduce((sum, m) => 
+    const avgHitRate = metrics.reduce((sum, m: any) => sum + m.hitRate, 0) / metrics.length;
+    const avgResponseTime = metrics.reduce((sum, m: any) => 
       sum + (m.responseTime.l1 + m.responseTime.l2 + m.responseTime.l3 + m.responseTime.l4) / 4, 0
     ) / metrics.length;
     
@@ -672,7 +672,7 @@ export class CacheMonitor {
       }
     ];
 
-    defaultRules.forEach(rule => this.addAlertRule(rule));
+    defaultRules.forEach((rule: any) => this.addAlertRule(rule));
   }
 }
 

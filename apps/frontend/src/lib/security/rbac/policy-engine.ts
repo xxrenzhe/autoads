@@ -203,7 +203,7 @@ export class PolicyEngine {
       }
     ]
 
-    return policies.filter(policy => 
+    return policies.filter((policy: any) => 
       (policy.isActive !== false) && 
       (policy.resource === '*' || policy.resource === resource) &&
       (policy.action === '*' || policy.action === action)
@@ -231,7 +231,7 @@ export class PolicyEngine {
       requestCount: await this.getRecentRequestCount(user.id)
     }
 
-    const conditionResults = policy.conditions?.filter(Boolean)?.map(condition => {
+    const conditionResults = policy.conditions?.filter(Boolean)?.map((condition: any) => {
       const contextValue = evaluationContext[condition.field as keyof typeof evaluationContext]
       return this.evaluateCondition(condition, contextValue)
     })

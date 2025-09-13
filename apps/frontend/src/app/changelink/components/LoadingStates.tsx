@@ -64,7 +64,7 @@ export const CardLoading: React.FC<{
         )}
         
         <div className="space-y-3">
-          {Array.from({ length: rows }).map((_, index) => (
+          {Array.from({ length: rows }).map((_, index: any) => (
             <div key={index} className="flex items-center space-x-3">
               <div className="h-4 bg-gray-200 rounded animate-pulse flex-1"></div>
               <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
@@ -86,7 +86,7 @@ export const TableLoading: React.FC<{
       {/* 表头 */}
       <div className="border-b p-4">
         <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
-          {Array.from({ length: columns }).map((_, index) => (
+          {Array.from({ length: columns }).map((_, index: any) => (
             <div key={index} className="h-4 bg-gray-200 rounded animate-pulse"></div>
           ))}
         </div>
@@ -94,10 +94,10 @@ export const TableLoading: React.FC<{
       
       {/* 表格行 */}
       <div className="divide-y">
-        {Array.from({ length: rows }).map((_, rowIndex) => (
+        {Array.from({ length: rows }).map((_, rowIndex: any) => (
           <div key={rowIndex} className="p-4">
             <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
-              {Array.from({ length: columns }).map((_, colIndex) => (
+              {Array.from({ length: columns }).map((_, colIndex: any) => (
                 <div key={colIndex} className="h-4 bg-gray-200 rounded animate-pulse"></div>
               ))}
             </div>
@@ -253,9 +253,9 @@ export const BatchOperationLoading: React.FC<{
     progress?: number;
   }>;
 }> = ({ operations }) => {
-  const completedCount = operations.filter(op => op.status === 'completed').length;
-  const failedCount = operations.filter(op => op.status === 'failed').length;
-  const runningCount = operations.filter(op => op.status === 'running').length;
+  const completedCount = operations.filter((op: any) => op.status === 'completed').length;
+  const failedCount = operations.filter((op: any) => op.status === 'failed').length;
+  const runningCount = operations.filter((op: any) => op.status === 'running').length;
 
   return (
     <Card>
@@ -284,7 +284,7 @@ export const BatchOperationLoading: React.FC<{
         </div>
 
         <div className="space-y-2 max-h-60 overflow-y-auto">
-          {operations.map((operation) => (
+          {operations.map((operation: any) => (
             <div key={operation.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
               <span className="text-sm text-gray-700 truncate flex-1 mr-2">
                 {operation.name}

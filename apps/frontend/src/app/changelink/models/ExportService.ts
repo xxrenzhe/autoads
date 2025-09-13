@@ -18,7 +18,7 @@ export class ExportService {
       // 模拟导出逻辑
       const exportData = {
         timestamp: new Date().toISOString(),
-        configurations: configurationIds?.filter(Boolean)?.map(id => ({
+        configurations: configurationIds?.filter(Boolean)?.map((id: any) => ({
           id,
           name: `Configuration ${id}`,
           status: 'active',
@@ -61,7 +61,7 @@ export class ExportService {
   ): Promise<{ data: string; filename: string }> {
     try {
       // 模拟获取执行结果
-      const results = configurationIds?.filter(Boolean)?.map(id => ({
+      const results = configurationIds?.filter(Boolean)?.map((id: any) => ({
         configurationId: id,
         executionDate: new Date().toISOString(),
         status: 'completed',
@@ -170,8 +170,8 @@ export class ExportService {
     const headers = Object.keys(data[0]);
     const csvRows = [
       headers.join(','),
-      ...data?.filter(Boolean)?.map(row => 
-        headers?.filter(Boolean)?.map(header => 
+      ...data?.filter(Boolean)?.map((row: any) => 
+        headers?.filter(Boolean)?.map((header: any) => 
           JSON.stringify(row[header] || '')
         ).join(',')
       )

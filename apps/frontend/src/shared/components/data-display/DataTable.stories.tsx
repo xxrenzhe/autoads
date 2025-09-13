@@ -353,7 +353,7 @@ export const WithActions: Story = {
           <div className="flex space-x-2">
             <button 
               className="text-blue-600 hover:text-blue-800 text-sm"
-              onClick={(e) => {
+              onClick={((e: any): any) => {
                 e.stopPropagation();
                 console.log('Edit:', row);
               }}
@@ -362,7 +362,7 @@ export const WithActions: Story = {
             </button>
             <button 
               className="text-red-600 hover:text-red-800 text-sm"
-              onClick={(e) => {
+              onClick={((e: any): any) => {
                 e.stopPropagation();
                 console.log('Delete:', row);
               }}
@@ -382,7 +382,7 @@ export const WithActions: Story = {
 export const AccessibilityDemo: Story = {
   args: {
     data: sampleData.slice(0, 4),
-    columns: basicColumns?.filter(Boolean)?.map(col => ({
+    columns: basicColumns?.filter(Boolean)?.map((col: any) => ({
       ...col,
       ariaLabel: `${col.header} column - ${col.sortable ? 'sortable' : 'not sortable'}${col.filterable ? ', filterable' : ''}`,
     })),

@@ -56,7 +56,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
       <nav className="hidden lg:flex items-center space-x-6">
         <div className="flex items-center space-x-6 text-sm text-slate-600">
           <div className="flex items-center space-x-4">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4].map((i: any) => (
               <div key={i} className="flex items-center space-x-1 px-3 py-2">
                 <div className="w-4 h-4 bg-gray-300 rounded animate-pulse" />
                 <div className="w-16 h-4 bg-gray-300 rounded animate-pulse" />
@@ -161,7 +161,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
         <div className="flex items-center space-x-6 text-sm text-slate-600">
           {/* Navigation Links */}
           <div className="flex items-center">
-            {navItems.map((item) => {
+            {navItems.map((item: any) => {
               const Icon = item.icon;
               const isActive =
                 pathname === item.href || (item.href === "/" && pathname === "/");
@@ -172,7 +172,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                   href={item.href}
                   className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 ${getColorClasses(item.color, isActive)}`}
                   title={getStr(item.label)}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={((: any): any) => setIsMobileMenuOpen(false)}
                 >
                   <Icon className="h-4 w-4" />
                   <span className="font-medium">{getStr(item.label)}</span>
@@ -198,7 +198,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {dropdownItems.map((item, index) => {
+                {dropdownItems.map((item, index: any) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
                   
@@ -250,7 +250,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                     <span>个人中心</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()}>
+                  <DropdownMenuItem onClick={((: any): any) => signOut()}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>退出登录</span>
                   </DropdownMenuItem>
@@ -260,7 +260,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => openLoginModal(undefined, pathname)}
+                onClick={((: any): any) => openLoginModal(undefined, pathname)}
                 className="flex items-center space-x-2"
               >
                 <LogIn className="h-4 w-4" />
@@ -279,7 +279,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          onClick={((: any): any) => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
           aria-label={
             isMobileMenuOpen
@@ -301,7 +301,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
           <div className="max-w-6xl mx-auto px-4 py-4">
             <div className="grid grid-cols-1 gap-2">
               {/* 主要导航项目 */}
-              {navItems.map((item) => {
+              {navItems.map((item: any) => {
                 const Icon = item.icon;
                 const isActive =
                   pathname === item.href ||
@@ -312,7 +312,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                     key={item.href}
                     href={item.href}
                     className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 hover:scale-105 ${getMobileColorClasses(item.color)} ${isActive ? "ring-2 ring-blue-200" : ""}`}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={((: any): any) => setIsMobileMenuOpen(false)}
                   >
                     <Icon className="h-5 w-5" />
                     <div>
@@ -336,7 +336,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
               <div className="border-t border-gray-200 my-2"></div>
               
               {/* 下拉菜单项目 */}
-              {dropdownItems.map((item) => {
+              {dropdownItems.map((item: any) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
 
@@ -345,7 +345,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                     key={item.href}
                     href={item.href}
                     className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 hover:scale-105 ${getMobileColorClasses(item.color)} ${isActive ? "ring-2 ring-blue-200" : ""}`}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={((: any): any) => setIsMobileMenuOpen(false)}
                   >
                     <Icon className="h-5 w-5" />
                     <div>
@@ -387,7 +387,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center space-x-2"
-                  onClick={() => signOut()}
+                  onClick={((: any): any) => signOut()}
                 >
                   <LogOut className="h-4 w-4" />
                   <span>退出登录</span>
@@ -398,7 +398,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center space-x-2"
-                  onClick={() => openLoginModal(undefined, pathname)}
+                  onClick={((: any): any) => openLoginModal(undefined, pathname)}
                 >
                   <LogIn className="h-4 w-4" />
                   <span>使用 Google 登录</span>

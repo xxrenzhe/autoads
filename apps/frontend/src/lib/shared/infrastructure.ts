@@ -364,7 +364,7 @@ export class HealthCheckService {
   }
 
   private async runAllChecks(): Promise<void> {
-    const promises = Array.from(this.checks.values())?.filter(Boolean)?.map(check => 
+    const promises = Array.from(this.checks.values())?.filter(Boolean)?.map((check: any) => 
       this.runCheck(check)
     );
     
@@ -419,7 +419,7 @@ export class HealthCheckService {
     let unhealthyCount = 0;
     const details: Record<string, any> = {};
 
-    results.forEach(([name, result]) => {
+    results.forEach(([name, result]: any) => {
       const check = this.checks.get(name);
       const age = now - result.timestamp;
       
@@ -467,7 +467,7 @@ export class HealthCheckService {
   getCheckResults(): Record<string, any> {
     const results: Record<string, any> = {};
     
-    this.results.forEach((result, name) => {
+    this.results.forEach((result, name: any) => {
       results[name] = result;
     });
     
@@ -513,7 +513,7 @@ export class ServiceRegistry {
     this.dependencyGraph.delete(name);
     
     // Remove from other services' dependencies
-    this.dependencyGraph.forEach((deps, serviceName) => {
+    this.dependencyGraph.forEach((deps, serviceName: any) => {
       deps.delete(name);
     });
 
@@ -589,7 +589,7 @@ export class ServiceRegistry {
       
       const dependencies = this.dependencyGraph.get(serviceName);
       if (dependencies) {
-        dependencies.forEach(dep => visit(dep));
+        dependencies.forEach((dep: any) => visit(dep));
       }
       
       visiting.delete(serviceName);
@@ -597,7 +597,7 @@ export class ServiceRegistry {
       resolved.push(serviceName);
     };
 
-    this.services.forEach((_, serviceName) => {
+    this.services.forEach((_, serviceName: any) => {
       if (!visited.has(serviceName)) {
         visit(serviceName);
       }
@@ -683,7 +683,7 @@ export class EventAggregator {
     // Regular handlers
     const handlers = this.events.get(event);
     if (handlers) {
-      handlers.forEach(handler => {
+      handlers.forEach((handler: any) => {
         try {
           const result = handler(data);
           if (result instanceof Promise) {
@@ -701,7 +701,7 @@ export class EventAggregator {
     // Once handlers
     const onceHandlers = this.onceEvents.get(event);
     if (onceHandlers) {
-      onceHandlers.forEach(handler => {
+      onceHandlers.forEach((handler: any) => {
         try {
           const result = handler(data);
           if (result instanceof Promise) {

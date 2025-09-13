@@ -252,7 +252,7 @@ export class ActivityTracker {
     }>
   ): Promise<void> {
     try {
-      const activitiesWithTimestamp = activities?.filter(Boolean)?.map(activity => ({
+      const activitiesWithTimestamp = activities?.filter(Boolean)?.map((activity: any) => ({
         userId: activity.userId,
         action: activity.action,
         resource: activity.resource,

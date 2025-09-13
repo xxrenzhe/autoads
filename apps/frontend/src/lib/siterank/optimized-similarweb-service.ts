@@ -214,7 +214,7 @@ export class OptimizedSimilarWebService {
         
       } catch (error) {
         // Update failure count for endpoint
-        const endpoint = this.API_ENDPOINTS.find(e => e.url === this.baseUrl);
+        const endpoint = this.API_ENDPOINTS.find((e: any) => e.url === this.baseUrl);
         if (endpoint) {
           endpoint.failureCount = (endpoint.failureCount || 0) + 1;
         }
@@ -250,7 +250,7 @@ export class OptimizedSimilarWebService {
    * Batch process multiple domains
    */
   async getMultipleDomainsData(domains: string[]): Promise<OptimizedSimilarWebData[]> {
-    const promises = domains.map(domain => 
+    const promises = domains.map((domain: any) => 
       this.batchProcessor.add(domain)
     );
     
@@ -312,7 +312,7 @@ export class OptimizedSimilarWebService {
    */
   private selectBestEndpoint(): ApiEndpoint {
     // Calculate scores based on weight, failure rate, and last used time
-    const scoredEndpoints = this.API_ENDPOINTS.map(endpoint => {
+    const scoredEndpoints = this.API_ENDPOINTS.map((endpoint: any) => {
       const failureRate = (endpoint.failureCount || 0) / Math.max(1, (endpoint.lastUsed || 0) / 1000 / 60);
       const timeSinceLastUse = endpoint.lastUsed ? Date.now() - endpoint.lastUsed : Infinity;
       
@@ -397,7 +397,7 @@ export class OptimizedSimilarWebService {
    */
   getStats() {
     return {
-      endpoints: this.API_ENDPOINTS.map(e => ({
+      endpoints: this.API_ENDPOINTS.map((e: any) => ({
         url: e.url,
         weight: e.weight,
         failureCount: e.failureCount || 0,

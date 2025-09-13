@@ -287,7 +287,7 @@ export class AdvancedAdsReportingService {
     size: number;
     entries: Array<{ key: string; timestamp: number; age: number }>;
   } {
-    const entries = Array.from(this.cache.entries()).map(([key, value]) => ({
+    const entries = Array.from(this.cache.entries()).map(([key, value]: any) => ({
       key,
       timestamp: value.timestamp,
       age: Date.now() - value.timestamp
@@ -383,13 +383,13 @@ export class AdvancedAdsReportingService {
   private analyzeAdData(adData: AdData[]): AnalyticsResult {
     // 计算汇总数据
     const summary = {
-      totalImpressions: adData.reduce((sum, d) => sum + d.impressions, 0),
-      totalClicks: adData.reduce((sum, d) => sum + d.clicks, 0),
-      totalCost: adData.reduce((sum, d) => sum + d.cost, 0),
-      totalConversions: adData.reduce((sum, d) => sum + d.conversions, 0),
-      averageCtr: adData.reduce((sum, d) => sum + d.ctr, 0) / adData.length,
-      averageCpc: adData.reduce((sum, d) => sum + d.cpc, 0) / adData.length,
-      averageConversionRate: adData.reduce((sum, d) => sum + d.conversionRate, 0) / adData.length
+      totalImpressions: adData.reduce((sum, d: any) => sum + d.impressions, 0),
+      totalClicks: adData.reduce((sum, d: any) => sum + d.clicks, 0),
+      totalCost: adData.reduce((sum, d: any) => sum + d.cost, 0),
+      totalConversions: adData.reduce((sum, d: any) => sum + d.conversions, 0),
+      averageCtr: adData.reduce((sum, d: any) => sum + d.ctr, 0) / adData.length,
+      averageCpc: adData.reduce((sum, d: any) => sum + d.cpc, 0) / adData.length,
+      averageConversionRate: adData.reduce((sum, d: any) => sum + d.conversionRate, 0) / adData.length
     };
 
     // 计算趋势数据
@@ -402,7 +402,7 @@ export class AdvancedAdsReportingService {
       cpc: number;
     }>();
 
-    adData.forEach(d => {
+    adData.forEach((d: any) => {
       const existing = trendsByDate.get(d.date) || {
         impressions: 0,
         clicks: 0,
@@ -422,7 +422,7 @@ export class AdvancedAdsReportingService {
       trendsByDate.set(d.date, existing);
     });
 
-    const trends = Array.from(trendsByDate.entries()).map(([date, metrics]) => ({
+    const trends = Array.from(trendsByDate.entries()).map(([date, metrics]: any) => ({
       date,
       impressions: metrics.impressions,
       clicks: metrics.clicks,
@@ -444,7 +444,7 @@ export class AdvancedAdsReportingService {
       cpc: number;
     }>();
 
-    adData.forEach(d => {
+    adData.forEach((d: any) => {
       const existing = campaignStats.get(d.campaignId) || {
         id: d.campaignId,
         name: d.campaignName,
@@ -469,7 +469,7 @@ export class AdvancedAdsReportingService {
     const topPerformers = Array.from(campaignStats.values())
       .sort((a, b) => b.conversions - a.conversions)
       .slice(0, 10)
-      ?.filter(Boolean)?.map(p => ({ ...p, type: 'campaign' as const }));
+      ?.filter(Boolean)?.map((p: any) => ({ ...p, type: 'campaign' as const }));
 
     // 生成洞察
     const insights = this.generateInsightsFromData(adData, summary);
@@ -525,7 +525,7 @@ export class AdvancedAdsReportingService {
    */
   private convertToCSV(analytics: AnalyticsResult): string {
     const headers = ['Date', 'Impressions', 'Clicks', 'Cost', 'Conversions', 'CTR', 'CPC'];
-    const rows = analytics.trends?.filter(Boolean)?.map(t => [
+    const rows = analytics.trends?.filter(Boolean)?.map((t: any) => [
       t.date,
       t.impressions.toString(),
       t.clicks.toString(),
@@ -535,7 +535,7 @@ export class AdvancedAdsReportingService {
       t.cpc.toFixed(2)
     ]);
 
-    return [headers, ...rows]?.filter(Boolean)?.map(row => row.join(',')).join('\n');
+    return [headers, ...rows]?.filter(Boolean)?.map((row: any) => row.join(',')).join('\n');
   }
 
   /**

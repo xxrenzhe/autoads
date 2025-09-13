@@ -251,7 +251,7 @@ class ConfigService {
       take: limit
     })
 
-    return logs?.filter(Boolean)?.map((log: any) => ({
+    return logs?.filter(Boolean)?.map((log: any: any) => ({
       id: log.id,
       action: log.action,
       key: (log.details as any)?.key || '',
@@ -470,7 +470,7 @@ class ConfigService {
   } {
     const now = Date.now()
     const expiredKeys = Array.from(this.cacheExpiry.entries())
-      .filter(([, expiry]) => expiry < now).length
+      .filter(([, expiry]: any) => expiry < now).length
 
     return {
       size: this.configCache.size,

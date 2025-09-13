@@ -92,7 +92,7 @@ export function createOptimizedPrismaClient(options?: {
     datasources: {
       db: {
         url: `${process.env.DATABASE_URL}${Object.entries(connectionParams)
-          .map(([key, value]) => `&${key}=${value}`)
+          .map(([key, value]: any) => `&${key}=${value}`)
           .join('')}`
       }
     }
@@ -101,13 +101,13 @@ export function createOptimizedPrismaClient(options?: {
   // 创建读副本客户端（如果配置了）
   const replicaClients: PrismaClient[] = [];
   if (READ_REPLICA_CONFIG.readReplicas.length > 0) {
-    READ_REPLICA_CONFIG.readReplicas.forEach((replicaUrl, index) => {
+    READ_REPLICA_CONFIG.readReplicas.forEach((replicaUrl, index: any) => {
       const replicaClient = new PrismaClient({
         log: ['warn', 'error'],
         datasources: {
           db: {
             url: `${replicaUrl}${Object.entries(connectionParams)
-              .map(([key, value]) => `&${key}=${value}`)
+              .map(([key, value]: any) => `&${key}=${value}`)
               .join('')}`
           }
         }
@@ -169,7 +169,7 @@ export function createOptimizedPrismaClient(options?: {
         config: poolConfig,
         status: 'active'
       },
-      replicas: replicaClients.map((_, index) => ({
+      replicas: replicaClients.map((_, index: any) => ({
         id: index,
         config: poolConfig,
         status: 'active'
@@ -196,12 +196,12 @@ export function createOptimizedPrismaClient(options?: {
       try {
         await primaryClient.$queryRaw`SELECT 1`;
         const replicaChecks = await Promise.allSettled(
-          replicaClients.map(client => client.$queryRaw`SELECT 1`)
+          replicaClients.map((client: any) => client.$queryRaw`SELECT 1`)
         );
         
         return {
           primary: 'healthy',
-          replicas: replicaChecks.map((result, index) => ({
+          replicas: replicaChecks.map((result, index: any) => ({
             id: index,
             status: result.status === 'fulfilled' ? 'healthy' : 'unhealthy'
           }))
@@ -209,7 +209,7 @@ export function createOptimizedPrismaClient(options?: {
       } catch (error) {
         return {
           primary: 'unhealthy',
-          replicas: replicaClients.map((_, index) => ({
+          replicas: replicaClients.map((_, index: any) => ({
             id: index,
             status: 'unknown'
           }))
@@ -223,7 +223,7 @@ export function createOptimizedPrismaClient(options?: {
     async disconnect() {
       await Promise.all([
         primaryClient.$disconnect(),
-        ...replicaClients.map(client => client.$disconnect())
+        ...replicaClients.map((client: any) => client.$disconnect())
       ]);
     }
   };
@@ -305,8 +305,8 @@ export class BatchOperationOptimizer {
             break;
           case 'update':
             // 使用upsert处理冲突
-            const upsertPromises = batch.map(item => {
-              const where = uniqueFields.reduce((acc, field) => {
+            const upsertPromises = batch.map((item: any) => {
+              const where = uniqueFields.reduce((acc, field: any) => {
                 acc[field as string] = item[field];
                 return acc;
               }, {} as Record<string, any>);
@@ -355,7 +355,7 @@ export class BatchOperationOptimizer {
     for (let i = 0; i < updates.length; i += batchSize) {
       const batch = updates.slice(i, i + batchSize);
       
-      const updatePromises = batch.map(({ where, data }) =>
+      const updatePromises = batch.map(({ where, data }: any) =>
         model.update({ where, data })
       );
       

@@ -3,15 +3,15 @@
 package batchgo
 
 import (
-    "context"
-    "fmt"
-    "math"
-    "sort"
-    "strings"
-    "time"
+	"context"
+	"fmt"
+	"math"
+	"sort"
+	"strings"
+	"time"
 
-    "gofly-admin-v3/internal/store"
-    "gofly-admin-v3/utils/gtime"
+	"gofly-admin-v3/internal/store"
+	"gofly-admin-v3/utils/gtime"
 )
 
 // AnalyticsService BatchGo数据分析服务
@@ -190,20 +190,20 @@ func (as *AnalyticsService) GenerateTaskAnalytics(ctx context.Context, userID st
 		return nil, err
 	}
 
-    for _, task := range taskResults {
-        urls := task.GetURLs()
-        analytics.TotalURLs += int64(len(urls))
-        analytics.SuccessURLs += int64(task.SuccessCount)
-        analytics.FailedURLs += int64(task.FailedCount)
+	for _, task := range taskResults {
+		urls := task.GetURLs()
+		analytics.TotalURLs += int64(len(urls))
+		analytics.SuccessURLs += int64(task.SuccessCount)
+		analytics.FailedURLs += int64(task.FailedCount)
 
 		// 任务类型统计
-        tType := string(task.Mode)
-        if _, exists := analytics.TaskTypeStats[tType]; !exists {
-            analytics.TaskTypeStats[tType] = &TaskTypeStat{
-                Type: tType,
-            }
-        }
-        stat := analytics.TaskTypeStats[tType]
+		tType := string(task.Mode)
+		if _, exists := analytics.TaskTypeStats[tType]; !exists {
+			analytics.TaskTypeStats[tType] = &TaskTypeStat{
+				Type: tType,
+			}
+		}
+		stat := analytics.TaskTypeStats[tType]
 		stat.Count++
 		if task.Status == "COMPLETED" {
 			stat.SuccessCount++
@@ -211,11 +211,11 @@ func (as *AnalyticsService) GenerateTaskAnalytics(ctx context.Context, userID st
 			stat.FailedCount++
 		}
 
-        // 获取执行时间
-        if task.StartTime != nil && task.EndTime != nil {
-            duration := task.EndTime.Sub(*task.StartTime).Seconds()
-            stat.AverageTime = (stat.AverageTime*float64(stat.Count-1) + duration) / float64(stat.Count)
-        }
+		// 获取执行时间
+		if task.StartTime != nil && task.EndTime != nil {
+			duration := task.EndTime.Sub(*task.StartTime).Seconds()
+			stat.AverageTime = (stat.AverageTime*float64(stat.Count-1) + duration) / float64(stat.Count)
+		}
 		stat.TotalURLs += int64(len(urls))
 
 		// 时间分布
@@ -258,12 +258,12 @@ func (as *AnalyticsService) analyzeErrorDistribution(ctx context.Context, userID
 		return
 	}
 
-    for _, task := range failedTasks {
-        if task.ErrorMessage != "" {
-            errorType := as.categorizeError(task.ErrorMessage)
-            analytics.ErrorDistribution[errorType]++
-        }
-    }
+	for _, task := range failedTasks {
+		if task.ErrorMessage != "" {
+			errorType := as.categorizeError(task.ErrorMessage)
+			analytics.ErrorDistribution[errorType]++
+		}
+	}
 }
 
 // categorizeError 分类错误
@@ -385,12 +385,12 @@ func (as *AnalyticsService) calculateConcurrencyStats(ctx context.Context, userI
 
 	// 简化：计算最大并发数
 	concurrentCount := make(map[int64]int64)
-    for _, task := range tasks {
-        if task.StartTime != nil {
-            timestamp := task.StartTime.Unix()
-            concurrentCount[timestamp]++
-        }
-    }
+	for _, task := range tasks {
+		if task.StartTime != nil {
+			timestamp := task.StartTime.Unix()
+			concurrentCount[timestamp]++
+		}
+	}
 
 	var maxConcurrent int64
 	for _, count := range concurrentCount {
@@ -463,14 +463,14 @@ func (as *AnalyticsService) GetTrendAnalysis(ctx context.Context, userID string,
 		}
 	}
 
-    for _, task := range tasks {
-        hour := task.CreatedAt.Hour()
-        hourlyData[hour].TaskCount++
-        if string(task.Status) == "completed" || string(task.Status) == "COMPLETED" {
-            pattern := hourlyData[hour]
-            pattern.SuccessRate = (pattern.SuccessRate*float64(pattern.TaskCount-1) + 100) / float64(pattern.TaskCount)
-        }
-    }
+	for _, task := range tasks {
+		hour := task.CreatedAt.Hour()
+		hourlyData[hour].TaskCount++
+		if string(task.Status) == "completed" || string(task.Status) == "COMPLETED" {
+			pattern := hourlyData[hour]
+			pattern.SuccessRate = (pattern.SuccessRate*float64(pattern.TaskCount-1) + 100) / float64(pattern.TaskCount)
+		}
+	}
 
 	for _, pattern := range hourlyData {
 		analysis.HourlyPatterns = append(analysis.HourlyPatterns, pattern)

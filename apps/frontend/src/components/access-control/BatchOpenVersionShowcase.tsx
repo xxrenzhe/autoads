@@ -73,7 +73,7 @@ export function BatchOpenVersionShowcase() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        {VERSION_CONFIG.map((config) => {
+        {VERSION_CONFIG.map((config: any) => {
           const version = permissions.versions[config.id as keyof typeof permissions.versions]
           const Icon = config.icon
           const hasAccess = version.available
@@ -113,7 +113,7 @@ export function BatchOpenVersionShowcase() {
                 </div>
 
                 <ul className="space-y-2">
-                  {version.features.map((feature, index) => (
+                  {version.features.map((feature, index: any) => (
                     <li key={index} className="flex items-center gap-2 text-sm">
                       <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
                       {feature}
@@ -124,7 +124,7 @@ export function BatchOpenVersionShowcase() {
                 <div className="pt-4">
                   {hasAccess ? (
                     <Button 
-                      onClick={() => handleUseVersion(config.id)}
+                      onClick={((: any): any) => handleUseVersion(config.id)}
                       className="w-full"
                     >
                       使用 {version.name}

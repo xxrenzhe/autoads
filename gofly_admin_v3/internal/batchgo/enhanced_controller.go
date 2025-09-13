@@ -3,12 +3,12 @@
 package batchgo
 
 import (
-    "net/http"
-    "time"
+	"net/http"
+	"time"
 
-    "github.com/gin-gonic/gin"
-    "gofly-admin-v3/internal/store"
-    "gofly-admin-v3/utils/gf"
+	"github.com/gin-gonic/gin"
+	"gofly-admin-v3/internal/store"
+	"gofly-admin-v3/utils/gf"
 )
 
 // EnhancedController 增强的BatchGo控制器
@@ -38,16 +38,16 @@ func (c *EnhancedController) StartEnhancedTask(ctx *gin.Context) {
 	mode := ctx.DefaultQuery("mode", "basic")
 
 	// 验证模式
-    if mode != "basic" && mode != "silent" && mode != "automated" {
-        gf.Failed().SetMsg("无效的执行模式").Regin(ctx)
-        return
-    }
+	if mode != "basic" && mode != "silent" && mode != "automated" {
+		gf.Failed().SetMsg("无效的执行模式").Regin(ctx)
+		return
+	}
 
 	// 启动增强任务
-    if err := c.service.StartEnhancedTask(taskID, userID, mode); err != nil {
-        gf.Failed().SetMsg(err.Error()).Regin(ctx)
-        return
-    }
+	if err := c.service.StartEnhancedTask(taskID, userID, mode); err != nil {
+		gf.Failed().SetMsg(err.Error()).Regin(ctx)
+		return
+	}
 
 	gf.Success().SetData(gf.Map{
 		"message": "任务已开始执行",
@@ -67,10 +67,10 @@ func (c *EnhancedController) StartEnhancedTask(ctx *gin.Context) {
 // @Router /api/v1/batchgo/proxies [post]
 func (c *EnhancedController) AddProxy(ctx *gin.Context) {
 	var req ProxyRequest
-    if err := ctx.ShouldBind(&req); err != nil {
-        gf.Failed().SetMsg(err.Error()).Regin(ctx)
-        return
-    }
+	if err := ctx.ShouldBind(&req); err != nil {
+		gf.Failed().SetMsg(err.Error()).Regin(ctx)
+		return
+	}
 
 	// 添加代理
 	c.service.proxyPool.AddProxy(req.Proxy)
@@ -104,18 +104,18 @@ func (c *EnhancedController) ListProxies(ctx *gin.Context) {
 // @Success 200 {object} gf.Response
 // @Router /api/v1/batchgo/permissions [get]
 func (c *EnhancedController) GetModePermissions(ctx *gin.Context) {
-    _ = ctx.MustGet("user_id").(string)
-    // 简化：默认仅支持 basic，其他根据实际付费策略再开放
-    permissions := map[string]bool{
-        "basic":     true,
-        "silent":    false,
-        "automated": false,
-    }
+	_ = ctx.MustGet("user_id").(string)
+	// 简化：默认仅支持 basic，其他根据实际付费策略再开放
+	permissions := map[string]bool{
+		"basic":     true,
+		"silent":    false,
+		"automated": false,
+	}
 
-    gf.Success().SetData(gf.Map{
-        "subscription": "free",
-        "permissions":  permissions,
-    }).Regin(ctx)
+	gf.Success().SetData(gf.Map{
+		"subscription": "free",
+		"permissions":  permissions,
+	}).Regin(ctx)
 }
 
 // GetRunningTasks 获取运行中的任务
@@ -129,25 +129,25 @@ func (c *EnhancedController) GetRunningTasks(ctx *gin.Context) {
 	userID := ctx.MustGet("user_id").(string)
 
 	// 获取运行中的任务
-    c.service.mu.RLock()
-    resp := make([]gf.Map, 0)
-    for _, runner := range c.service.runningTasks {
-        if runner.task.UserID == userID {
-            resp = append(resp, gf.Map{
-                "id":        runner.task.ID,
-                "name":      runner.task.Name,
-                "status":    runner.task.Status,
-                "created_at": runner.task.CreatedAt,
-                "updated_at": runner.task.UpdatedAt,
-            })
-        }
-    }
-    c.service.mu.RUnlock()
+	c.service.mu.RLock()
+	resp := make([]gf.Map, 0)
+	for _, runner := range c.service.runningTasks {
+		if runner.task.UserID == userID {
+			resp = append(resp, gf.Map{
+				"id":         runner.task.ID,
+				"name":       runner.task.Name,
+				"status":     runner.task.Status,
+				"created_at": runner.task.CreatedAt,
+				"updated_at": runner.task.UpdatedAt,
+			})
+		}
+	}
+	c.service.mu.RUnlock()
 
-    gf.Success().SetData(gf.Map{
-        "running_tasks": resp,
-        "count":         len(resp),
-    }).Regin(ctx)
+	gf.Success().SetData(gf.Map{
+		"running_tasks": resp,
+		"count":         len(resp),
+	}).Regin(ctx)
 }
 
 // StopAllTasks 停止所有任务
@@ -190,14 +190,14 @@ func (c *EnhancedController) ClearCompletedTasks(ctx *gin.Context) {
 	// 删除30天前的已完成任务
 	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
 
-    result := c.service.db.Where("user_id = ? AND status IN (?, ?) AND completed_at < ?",
-        userID, "completed", "completed_with_errors", thirtyDaysAgo).
-        Delete(&BatchTask{})
+	result := c.service.db.Where("user_id = ? AND status IN (?, ?) AND completed_at < ?",
+		userID, "completed", "completed_with_errors", thirtyDaysAgo).
+		Delete(&BatchTask{})
 
-    if result.Error != nil {
-        gf.Failed().SetMsg("清理任务失败").Regin(ctx)
-        return
-    }
+	if result.Error != nil {
+		gf.Failed().SetMsg("清理任务失败").Regin(ctx)
+		return
+	}
 
 	gf.Success().SetData(gf.Map{
 		"message": "任务清理成功",
@@ -218,33 +218,33 @@ func (c *EnhancedController) GetTaskProgress(ctx *gin.Context) {
 	userID := ctx.MustGet("user_id").(string)
 
 	// 获取任务
-    task, err := c.service.GetTask(userID, taskID)
-    if err != nil {
-        gf.Failed().SetMsg("任务不存在").Regin(ctx)
-        return
-    }
+	task, err := c.service.GetTask(userID, taskID)
+	if err != nil {
+		gf.Failed().SetMsg("任务不存在").Regin(ctx)
+		return
+	}
 
 	// 检查权限
-    if task.UserID != userID {
-        gf.Failed().SetCode(http.StatusForbidden).SetMsg("无权限访问此任务").Regin(ctx)
-        return
-    }
+	if task.UserID != userID {
+		gf.Failed().SetCode(http.StatusForbidden).SetMsg("无权限访问此任务").Regin(ctx)
+		return
+	}
 
 	// 获取最新的进度信息
-    progress := map[string]interface{}{
-        "task_id":      task.ID,
-        "status":       string(task.Status),
-        "processed":    task.ProcessedCount,
-        "success_urls": task.SuccessCount,
-        "failed_urls":  task.FailedCount,
-        "total_urls":   task.URLCount,
-        "started_at":   task.StartTime,
-        "completed_at": task.EndTime,
-        "error":        task.ErrorMessage,
-    }
+	progress := map[string]interface{}{
+		"task_id":      task.ID,
+		"status":       string(task.Status),
+		"processed":    task.ProcessedCount,
+		"success_urls": task.SuccessCount,
+		"failed_urls":  task.FailedCount,
+		"total_urls":   task.URLCount,
+		"started_at":   task.StartTime,
+		"completed_at": task.EndTime,
+		"error":        task.ErrorMessage,
+	}
 
 	// 如果任务正在运行，获取更多详细信息
-    if string(task.Status) == "running" || string(task.Status) == "RUNNING" {
+	if string(task.Status) == "running" || string(task.Status) == "RUNNING" {
 		c.service.mu.RLock()
 		if runner, exists := c.service.runningTasks[taskID]; exists {
 			progress["worker_id"] = runner.workerID

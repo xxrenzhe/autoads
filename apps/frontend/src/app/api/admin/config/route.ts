@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const configurations = await service.getConfigs(category || undefined)
     
     // Filter out secrets unless explicitly requested and user is SUPER_ADMIN
-    const filteredConfigs = configurations.map(config => ({
+    const filteredConfigs = configurations.map((config: any) => ({
       ...config,
       value: (config.isSecret && !includeSecrets) || (config.isSecret && session.user.role !== 'SUPER_ADMIN') 
         ? '***HIDDEN***' 

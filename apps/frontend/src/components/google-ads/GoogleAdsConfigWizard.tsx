@@ -166,7 +166,7 @@ export function GoogleAdsConfigWizard({
   const removeAffiliateLink = useCallback((linkId: string) => {
     setConfig(prev => ({
       ...prev,
-      affiliateLinks: prev.affiliateLinks.filter(link => link.id !== linkId),
+      affiliateLinks: prev.affiliateLinks.filter((link: any) => link.id !== linkId),
     }));
   }, []);
 
@@ -220,7 +220,7 @@ export function GoogleAdsConfigWizard({
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between mb-6">
-            {['auth', 'account', 'basic', 'links', 'schedule', 'review'].map((step, index) => (
+            {['auth', 'account', 'basic', 'links', 'schedule', 'review'].map((step, index: any) => (
               <div key={step} className="flex items-center">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -251,7 +251,7 @@ export function GoogleAdsConfigWizard({
             </Alert>
           )}
 
-          <Tabs value={activeStep} onValueChange={(value) => setActiveStep(value as any)}>
+          <Tabs value={activeStep} onValueChange={((value: any): any) => setActiveStep(value as any)}>
             <TabsList className="hidden">
               <TabsTrigger value="auth">认证</TabsTrigger>
               <TabsTrigger value="account">账户</TabsTrigger>
@@ -300,8 +300,8 @@ export function GoogleAdsConfigWizard({
                   <Label htmlFor="accountSelect">选择账户</Label>
                   <Select
                     value={config.accountId}
-                    onValueChange={(value) => {
-                      const selectedAccount = availableAccounts.find(acc => acc.id === value);
+                    onValueChange={((value: any): any) => {
+                      const selectedAccount = availableAccounts.find((acc: any) => acc.id === value);
                       setConfig(prev => ({
                         ...prev,
                         accountId: value,
@@ -313,7 +313,7 @@ export function GoogleAdsConfigWizard({
                       <SelectValue placeholder="选择 Google Ads 账户" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableAccounts.map((account) => (
+                      {availableAccounts.map((account: any) => (
                         <SelectItem key={account.id} value={account.id}>
                           {account.name} ({account.id})
                         </SelectItem>
@@ -329,7 +329,7 @@ export function GoogleAdsConfigWizard({
                       id="accountName"
                       placeholder="为此配置输入一个友好的名称"
                       value={config.accountName}
-                      onChange={(e) => setConfig(prev => ({
+                      onChange={((e: any) => setConfig(prev: any) => ({
                         ...prev,
                         accountName: e.target.value
                       }))}
@@ -359,7 +359,7 @@ export function GoogleAdsConfigWizard({
                   <Label htmlFor="executionOrder">执行顺序</Label>
                   <Select
                     value={config.executionOrder}
-                    onValueChange={(value) => setConfig(prev => ({
+                    onValueChange={((value: any) => setConfig(prev: any) => ({
                       ...prev,
                       executionOrder: value as 'priority' | 'random' | 'roundrobin'
                     }))}
@@ -384,7 +384,7 @@ export function GoogleAdsConfigWizard({
                     id="defaultUrlSuffix"
                     placeholder="例如: ?utm_source=google&utm_medium=cpc"
                     value={config.defaultUrlSuffix}
-                    onChange={(e) => setConfig(prev => ({
+                    onChange={((e: any) => setConfig(prev: any) => ({
                       ...prev,
                       defaultUrlSuffix: e.target.value
                     }))}
@@ -400,7 +400,7 @@ export function GoogleAdsConfigWizard({
                     id="globalTrackingParams"
                     placeholder={`{"utm_source": "google", "utm_medium": "cpc"}`}
                     value={config.globalTrackingParams}
-                    onChange={(e) => setConfig(prev => ({
+                    onChange={((e: any) => setConfig(prev: any) => ({
                       ...prev,
                       globalTrackingParams: e.target.value
                     }))}
@@ -435,7 +435,7 @@ export function GoogleAdsConfigWizard({
                       id="linkName"
                       placeholder="例如: Amazon产品链接"
                       value={newLink.name}
-                      onChange={(e) => setNewLink(prev => ({
+                      onChange={((e: any) => setNewLink(prev: any) => ({
                         ...prev,
                         name: e.target.value
                       }))}
@@ -450,7 +450,7 @@ export function GoogleAdsConfigWizard({
                       min="1"
                       max="10"
                       value={newLink.priority}
-                      onChange={(e) => setNewLink(prev => ({
+                      onChange={((e: any) => setNewLink(prev: any) => ({
                         ...prev,
                         priority: parseInt(e.target.value) || 1
                       }))}
@@ -465,7 +465,7 @@ export function GoogleAdsConfigWizard({
                       id="originalUrl"
                       placeholder="例如: https://example.com/product/.*"
                       value={newLink.originalUrl}
-                      onChange={(e) => setNewLink(prev => ({
+                      onChange={((e: any) => setNewLink(prev: any) => ({
                         ...prev,
                         originalUrl: e.target.value
                       }))}
@@ -481,7 +481,7 @@ export function GoogleAdsConfigWizard({
                       id="affiliateUrl"
                       placeholder="例如: https://affiliate.com/product?id=123"
                       value={newLink.affiliateUrl}
-                      onChange={(e) => setNewLink(prev => ({
+                      onChange={((e: any) => setNewLink(prev: any) => ({
                         ...prev,
                         affiliateUrl: e.target.value
                       }))}
@@ -496,7 +496,7 @@ export function GoogleAdsConfigWizard({
                       id="trackingParams"
                       placeholder="例如: utm_campaign=spring_sale"
                       value={newLink.trackingParameters}
-                      onChange={(e) => setNewLink(prev => ({
+                      onChange={((e: any) => setNewLink(prev: any) => ({
                         ...prev,
                         trackingParameters: e.target.value
                       }))}
@@ -509,7 +509,7 @@ export function GoogleAdsConfigWizard({
                       id="urlSuffix"
                       placeholder="例如: ?ref=affiliate123"
                       value={newLink.urlSuffix}
-                      onChange={(e) => setNewLink(prev => ({
+                      onChange={((e: any) => setNewLink(prev: any) => ({
                         ...prev,
                         urlSuffix: e.target.value
                       }))}
@@ -521,7 +521,7 @@ export function GoogleAdsConfigWizard({
                   <Switch
                     id="isActive"
                     checked={newLink.isActive}
-                    onCheckedChange={(checked: boolean) => setNewLink(prev => ({
+                    onCheckedChange={((checked: boolean: any) => setNewLink(prev: any) => ({
                       ...prev,
                       isActive: checked
                     }))}
@@ -538,7 +538,7 @@ export function GoogleAdsConfigWizard({
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">已配置的链接 ({config.affiliateLinks.length})</h3>
                   <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {config.affiliateLinks.map((link) => (
+                    {config.affiliateLinks.map((link: any) => (
                       <div key={link.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex-1">
                           <div className="font-medium">{link.name}</div>
@@ -555,7 +555,7 @@ export function GoogleAdsConfigWizard({
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => removeAffiliateLink(link.id)}
+                          onClick={((: any): any) => removeAffiliateLink(link.id)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -586,7 +586,7 @@ export function GoogleAdsConfigWizard({
                   <Switch
                     id="scheduleEnabled"
                     checked={config.updateSchedule.enabled}
-                    onCheckedChange={(checked: boolean) => setConfig(prev => ({
+                    onCheckedChange={((checked: boolean: any) => setConfig(prev: any) => ({
                       ...prev,
                       updateSchedule: {
                         ...prev.updateSchedule,
@@ -603,7 +603,7 @@ export function GoogleAdsConfigWizard({
                       <Label htmlFor="frequency">更新频率</Label>
                       <Select
                         value={config.updateSchedule.frequency}
-                        onValueChange={(value) => setConfig(prev => ({
+                        onValueChange={((value: any) => setConfig(prev: any) => ({
                           ...prev,
                           updateSchedule: {
                             ...prev.updateSchedule,
@@ -628,7 +628,7 @@ export function GoogleAdsConfigWizard({
                         id="time"
                         type="time"
                         value={config.updateSchedule.time}
-                        onChange={(e) => setConfig(prev => ({
+                        onChange={((e: any) => setConfig(prev: any) => ({
                           ...prev,
                           updateSchedule: {
                             ...prev.updateSchedule,
@@ -642,7 +642,7 @@ export function GoogleAdsConfigWizard({
                       <Label htmlFor="timezone">时区</Label>
                       <Select
                         value={config.updateSchedule.timezone}
-                        onValueChange={(value) => setConfig(prev => ({
+                        onValueChange={((value: any) => setConfig(prev: any) => ({
                           ...prev,
                           updateSchedule: {
                             ...prev.updateSchedule,
@@ -739,7 +739,7 @@ export function GoogleAdsConfigWizard({
                 <div>
                   <Label>联盟链接配置 ({config.affiliateLinks.length})</Label>
                   <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
-                    {config.affiliateLinks.map((link) => (
+                    {config.affiliateLinks.map((link: any) => (
                       <div key={link.id} className="p-2 bg-gray-50 rounded text-sm">
                         <div className="font-medium">{link.name}</div>
                         <div className="text-gray-600 truncate">

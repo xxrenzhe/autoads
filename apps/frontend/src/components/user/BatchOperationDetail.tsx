@@ -186,7 +186,7 @@ export default function BatchOperationDetail({ batchId, onClose }: BatchOperatio
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(details.summary.operationTypes).map(([type, count]) => (
+              {Object.entries(details.summary.operationTypes).map(([type, count]: any) => (
                 <div key={type} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">{type}</p>
@@ -222,7 +222,7 @@ export default function BatchOperationDetail({ batchId, onClose }: BatchOperatio
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {details.operations.map((operation) => (
+                {details.operations.map((operation: any) => (
                   <TableRow key={operation.index}>
                     <TableCell className="font-mono">
                       {operation.index}
@@ -239,7 +239,7 @@ export default function BatchOperationDetail({ batchId, onClose }: BatchOperatio
                       {operation.metadata && (
                         <div className="text-xs text-muted-foreground font-mono">
                           {typeof operation.metadata === 'object' 
-                            ? Object.entries(operation.metadata).map(([key, value]) => (
+                            ? Object.entries(operation.metadata).map(([key, value]: any) => (
                                 <div key={key}>
                                   {key}: {String(value)}
                                 </div>

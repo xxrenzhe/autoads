@@ -16,7 +16,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
   height = 300
 }) => {
   // Simple placeholder chart - in real implementation would use a charting library
-  const maxRevenue = Math.max(...data?.filter(Boolean)?.map(d => d.revenue))
+  const maxRevenue = Math.max(...data?.filter(Boolean)?.map((d: any) => d.revenue))
   
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -24,7 +24,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
         Revenue Overview
       </h3>
       <div className="space-y-2" style={{ height }}>
-        {data.map((point, index) => (
+        {data.map((point, index: any) => (
           <div key={index} className="flex items-center space-x-4">
             <span className="text-sm text-gray-600 dark:text-gray-400 w-20">
               {point.date}

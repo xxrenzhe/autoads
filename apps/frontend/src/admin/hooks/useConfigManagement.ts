@@ -235,19 +235,19 @@ export function useConfigManagement() {
 
   // Helper functions
   const getConfigById = useCallback((configId: string): ConfigItem | undefined => {
-    return configs.find(config => config.id === configId)
+    return configs.find((config: any) => config.id === configId)
   }, [configs])
 
   const getConfigByKey = useCallback((key: string): ConfigItem | undefined => {
-    return configs.find(config => config.key === key)
+    return configs.find((config: any) => config.key === key)
   }, [configs])
 
   const getConfigsByCategory = useCallback((category: string): ConfigItem[] => {
-    return configs.filter(config => config.category === category)
+    return configs.filter((config: any) => config.category === category)
   }, [configs])
 
   const getConfigsByEnvironment = useCallback((environment: string): ConfigItem[] => {
-    return configs.filter(config => 
+    return configs.filter((config: any) => 
       config.environment === 'all' || config.environment === environment
     )
   }, [configs])
@@ -316,7 +316,7 @@ export function useConfigManagement() {
     if (!query.trim()) return configs
     
     const lowercaseQuery = query.toLowerCase()
-    return configs.filter(config =>
+    return configs.filter((config: any) =>
       config.key.toLowerCase().includes(lowercaseQuery) ||
       config.description.toLowerCase().includes(lowercaseQuery) ||
       config.category.toLowerCase().includes(lowercaseQuery) ||
@@ -325,7 +325,7 @@ export function useConfigManagement() {
   }, [configs])
 
   const getConfigHistory = useCallback((configId: string): ConfigHistory[] => {
-    return configHistory.filter(history => history.configId === configId)
+    return configHistory.filter((history: any) => history.configId === configId)
   }, [configHistory])
 
   // Action functions

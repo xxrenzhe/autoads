@@ -151,7 +151,7 @@ export class LocalDatabaseService {
     const store = transaction.objectStore('systemConfig');
     const allConfigs = await this.promisifyRequest(store.getAll()) as SystemConfig[];
     
-    return allConfigs?.filter(Boolean)?.map(config => config.key);
+    return allConfigs?.filter(Boolean)?.map((config: any) => config.key);
   }
 
   /**
@@ -219,12 +219,12 @@ export class LocalDatabaseService {
    * 创建数据存储
    */
   private createStores(db: IDBDatabase): void {
-    Object.entries(this.dbConfig.stores).forEach(([storeName, config]) => {
+    Object.entries(this.dbConfig.stores).forEach(([storeName, config]: any) => {
       if (!db.objectStoreNames.contains(storeName)) {
         const store = db.createObjectStore(storeName, { keyPath: config.keyPath });
         // 创建索引
         if (config.indexes) {
-          Object.entries(config.indexes).forEach(([indexName, keyPath]) => {
+          Object.entries(config.indexes).forEach(([indexName, keyPath]: any) => {
             store.createIndex(indexName, keyPath, { unique: false });
           });
         }
@@ -243,7 +243,7 @@ export class LocalDatabaseService {
     const transaction = this.db!.transaction(['adPerformance'], 'readwrite');
     const store = transaction.objectStore('adPerformance');
     
-    const promises = records?.filter(Boolean)?.map(record => {
+    const promises = records?.filter(Boolean)?.map((record: any) => {
       const recordWithTimestamp = {
         ...record,
         updatedAt: new Date()
@@ -273,7 +273,7 @@ export class LocalDatabaseService {
     
     // 如果指定了账户ID，进行过滤
     if (accountIds && accountIds.length > 0) {
-      return allRecords.filter(record => accountIds.includes(record.accountId));
+      return allRecords.filter((record: any) => accountIds.includes(record.accountId));
     }
     
     return allRecords;
@@ -460,7 +460,7 @@ export class LocalDatabaseService {
     const transaction = this.db!.transaction(['systemMetrics'], 'readwrite');
     const store = transaction.objectStore('systemMetrics');
     
-    const promises = metrics?.filter(Boolean)?.map(metric => {
+    const promises = metrics?.filter(Boolean)?.map((metric: any) => {
       const record: SystemMetricsRecord = {
         ...metric,
         id: `metric_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -494,7 +494,7 @@ export class LocalDatabaseService {
     
     // 时间范围过滤
     if (startTime || endTime) {
-      return allMetrics.filter(metric => {
+      return allMetrics.filter((metric: any) => {
         const timestamp = new Date(metric.timestamp);
         if (startTime && timestamp < startTime) return Promise.resolve(false);
         if (endTime && timestamp > endTime) return Promise.resolve(false);
@@ -598,7 +598,7 @@ export class LocalDatabaseService {
     if (data.systemConfig) {
       const configTransaction = this.db!.transaction(['systemConfig'], 'readwrite');
       const configStore = configTransaction.objectStore('systemConfig');
-      data.systemConfig.forEach(config => {
+      data.systemConfig.forEach((config: any) => {
         promises.push(this.promisifyRequest(configStore.put(config)));
       });
     }
@@ -606,7 +606,7 @@ export class LocalDatabaseService {
     if (data.emailSubscriptions) {
       const subTransaction = this.db!.transaction(['emailSubscriptions'], 'readwrite');
       const subStore = subTransaction.objectStore('emailSubscriptions');
-      data.emailSubscriptions.forEach(sub => {
+      data.emailSubscriptions.forEach((sub: any) => {
         promises.push(this.promisifyRequest(subStore.put(sub)));
       });
     }

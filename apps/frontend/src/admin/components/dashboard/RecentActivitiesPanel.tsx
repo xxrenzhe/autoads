@@ -110,7 +110,7 @@ export function RecentActivitiesPanel({
     
     // Add metadata context
     if (activity.metadata) {
-      Object.entries(activity.metadata).forEach(([key, value]) => {
+      Object.entries(activity.metadata).forEach(([key, value]: any) => {
         description = description.replace(
           new RegExp(`\\{${key}\\}`, 'g'),
           String(value)
@@ -136,7 +136,7 @@ export function RecentActivitiesPanel({
 
   return (
     <div className="space-y-4">
-      {displayedActivities.map((activity) => {
+      {displayedActivities.map((activity: any) => {
         const Icon = getActivityIcon(activity.type)
         const color = getActivityColor(activity.type)
         
@@ -167,7 +167,7 @@ export function RecentActivitiesPanel({
                   )}
                   {activity.metadata && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {Object.entries(activity.metadata).map(([key, value]) => (
+                      {Object.entries(activity.metadata).map(([key, value]: any) => (
                         <Badge key={key} variant="secondary" className="text-xs">
                           {key}: {String(value)}
                         </Badge>

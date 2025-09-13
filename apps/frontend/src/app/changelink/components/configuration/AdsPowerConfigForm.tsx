@@ -95,9 +95,9 @@ export default function AdsPowerConfigForm({
     repeatCount: 3,
     notificationEmail: '',
     originalLinks: [''],
-    linkMappings: (initialData?.adMappingConfig || [])?.filter(Boolean)?.map(m => ({
+    linkMappings: (initialData?.adMappingConfig || [])?.filter(Boolean)?.map((m: any) => ({
       originalUrl: typeof m.originalUrl === 'string' ? m.originalUrl : '',
-      targetAdIds: Array.isArray(m.adMappings) ? m.adMappings?.filter(Boolean)?.map(ad => ad.adId) : [],
+      targetAdIds: Array.isArray(m.adMappings) ? m.adMappings?.filter(Boolean)?.map((ad: any) => ad.adId) : [],
       priority: 1,
       enabled: true,
     })),
@@ -157,7 +157,7 @@ export default function AdsPowerConfigForm({
   }, [form]);
   // 步骤导航
   const goToStep = useCallback((stepId: number) => {
-    const step = steps.find(s => s.id === stepId);
+    const step = steps.find((s: any) => s.id === stepId);
     if (step) {
       setActiveTab(step.tab);
       setCurrentStep(stepId);
@@ -186,7 +186,7 @@ export default function AdsPowerConfigForm({
 
   const handleRemoveOriginalLink = (index: number) => {
     const currentLinks = form.getValues('originalLinks') || [];
-    form.setValue('originalLinks', currentLinks.filter((_, i) => i !== index));
+    form.setValue('originalLinks', currentLinks.filter((_, i: any) => i !== index));
   };
 
   // 链接映射字段数组
@@ -203,10 +203,10 @@ export default function AdsPowerConfigForm({
   const getAllAds = () => {
     const ads: { id: string; name: string; accountName: string; campaignName: string; adGroupName: string }[] = [];
 
-    googleAdsAccounts.forEach(account => {
-      account.campaignMappings?.forEach(campaign => {
-        campaign.adGroupMappings?.forEach(adGroup => {
-          adGroup.adMappings?.forEach(ad => {
+    googleAdsAccounts.forEach((account: any) => {
+      account.campaignMappings?.forEach((campaign: any) => {
+        campaign.adGroupMappings?.forEach((adGroup: any) => {
+          adGroup.adMappings?.forEach((ad: any) => {
             if (ad.adId && ad.adName && campaign.campaignName && adGroup.adGroupName) {
               ads.push({
                 id: ad.adId,
@@ -248,7 +248,7 @@ export default function AdsPowerConfigForm({
 
   // 测试链接
   const handleTestLinks = async () => {
-    const links = (form.getValues('originalLinks') || []).filter(link => link.trim() !== '');
+    const links = (form.getValues('originalLinks') || []).filter((link: any) => link.trim() !== '');
     if (links.length === 0) return;
 
     setLinkValidation({ status: 'validating' });
@@ -261,7 +261,7 @@ export default function AdsPowerConfigForm({
     } catch (error) {
       setLinkValidation({
         status: 'invalid',
-        results: links?.filter(Boolean)?.map(url => ({
+        results: links?.filter(Boolean)?.map((url: any) => ({
           url,
           valid: false,
           error: error instanceof Error ? error.message : '测试失败'
@@ -273,12 +273,12 @@ export default function AdsPowerConfigForm({
   
   // 自动生成链接映射
   const handleGenerateLinkMappings = () => {
-    const links = (form.getValues('originalLinks') || []).filter(link => link.trim() !== '');
+    const links = (form.getValues('originalLinks') || []).filter((link: any) => link.trim() !== '');
     const ads = getAllAds();
 
     if (links.length === 0 || ads.length === 0) return;
 
-    const newMappings = links.map((url, index) => ({
+    const newMappings = links.map((url, index: any) => ({
       originalUrl: url,
       targetAdIds: [ads[index % ads.length].id], // 循环分配广告
       priority: index + 1,
@@ -321,7 +321,7 @@ export default function AdsPowerConfigForm({
         {/* 步骤指示器 */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            {steps.map((step, index) => (
+            {steps.map((step, index: any) => (
               <div key={step.id} className="flex items-center">
                 <div
                   className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium cursor-pointer transition-colors ${currentStep === step.id
@@ -330,7 +330,7 @@ export default function AdsPowerConfigForm({
                       ? 'bg-green-600 text-white'
                       : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                     }`}
-                  onClick={() => goToStep(step.id)}
+                  onClick={((: any): any) => goToStep(step.id)}
                 >
                   {completedSteps.has(step.id) ? (
                     <CheckCircle className="h-4 w-4" />
@@ -358,9 +358,9 @@ export default function AdsPowerConfigForm({
           )}
         </div>
 
-        <Tabs value={activeTab} onValueChange={(value) => {
+        <Tabs value={activeTab} onValueChange={((value: any): any) => {
           setActiveTab(value);
-          const step = steps.find(s => s.tab === value);
+          const step = steps.find((s: any) => s.tab === value);
           if (step) setCurrentStep(step.id);
         }}>
           <TabsList className="grid grid-cols-3 mb-4">
@@ -494,7 +494,7 @@ export default function AdsPowerConfigForm({
                             max={10}
                             placeholder="输入重复次数"
                             {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                            onChange={((e: any): any) => field.onChange(parseInt(e.target.value) || 1)}
                           />
                         </FormControl>
                         <FormDescription>每个链接将被执行的次数（1-10次）</FormDescription>
@@ -546,7 +546,7 @@ export default function AdsPowerConfigForm({
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {(form.getValues('originalLinks') || []).map((_, index) => (
+                {(form.getValues('originalLinks') || []).map((_, index: any) => (
                   <div key={`original-link-${index}`} className="space-y-2">
                     <div className="flex items-center gap-2">
                       <div className="flex-1">
@@ -572,7 +572,7 @@ export default function AdsPowerConfigForm({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemoveOriginalLink(index)}
+                          onClick={((: any): any) => handleRemoveOriginalLink(index)}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
@@ -612,7 +612,7 @@ export default function AdsPowerConfigForm({
                     <AlertDescription className={linkValidation.status === 'valid' ? 'text-green-700' : 'text-red-700'}>
                       {linkValidation.status === 'valid'
                         ? `所有 ${linkValidation.results.length} 个链接验证通过`
-                        : `${linkValidation.results.filter(r => !r.valid).length} 个链接验证失败`
+                        : `${linkValidation.results.filter((r: any) => !r.valid).length} 个链接验证失败`
                       }
                     </AlertDescription>
                   </Alert>
@@ -674,7 +674,7 @@ export default function AdsPowerConfigForm({
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {linkMappingFields.map((field, index) => (
+                        {linkMappingFields.map((field, index: any) => (
                           <Card key={field.id} className="border-dashed">
                             <CardHeader className="pb-2">
                               <div className="flex justify-between items-center">
@@ -683,7 +683,7 @@ export default function AdsPowerConfigForm({
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => removeLinkMapping(index)}
+                                  onClick={((: any): any) => removeLinkMapping(index)}
                                 >
                                   <Trash2 className="h-4 w-4 text-red-500" />
                                 </Button>
@@ -716,7 +716,7 @@ export default function AdsPowerConfigForm({
                                           min={1}
                                           max={10}
                                           {...field}
-                                          onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                          onChange={((e: any): any) => field.onChange(parseInt(e.target.value) || 1)}
                                         />
                                       </FormControl>
                                     </FormItem>
@@ -745,17 +745,17 @@ export default function AdsPowerConfigForm({
                               <div>
                                 <FormLabel>目标广告</FormLabel>
                                 <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                                  {getAllAds()?.filter(Boolean)?.map(ad => (
+                                  {getAllAds()?.filter(Boolean)?.map((ad: any) => (
                                     <div key={ad.id} className="flex items-center space-x-2 text-sm">
                                       <input
                                         type="checkbox"
                                         checked={form.watch(`linkMappings.${index}.targetAdIds`)?.includes(ad.id) || false}
-                                        onChange={(e) => {
+                                        onChange={((e: any): any) => {
                                           const currentIds = form.getValues(`linkMappings.${index}.targetAdIds`) || [];
                                           if (e.target.checked) {
                                             form.setValue(`linkMappings.${index}.targetAdIds`, [...currentIds, ad.id]);
                                           } else {
-                                            form.setValue(`linkMappings.${index}.targetAdIds`, currentIds.filter(id => id !== ad.id));
+                                            form.setValue(`linkMappings.${index}.targetAdIds`, currentIds.filter((id: any) => id !== ad.id));
                                           }
                                         }}
                                         className="rounded"
@@ -835,7 +835,7 @@ export default function AdsPowerConfigForm({
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">配置预览</h3>
-                  <Button variant="ghost" size="sm" onClick={() => setShowPreview(false)}>
+                  <Button variant="ghost" size="sm" onClick={((: any): any) => setShowPreview(false)}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
@@ -855,9 +855,9 @@ export default function AdsPowerConfigForm({
                   </div>
 
                   <div>
-                    <h4 className="font-medium mb-2">原始链接 ({(form.getValues('originalLinks') || []).filter(l => l.trim()).length}个)</h4>
+                    <h4 className="font-medium mb-2">原始链接 ({(form.getValues('originalLinks') || []).filter((l: any) => l.trim()).length}个)</h4>
                     <div className="bg-gray-50 p-3 rounded text-sm space-y-1">
-                      {(form.getValues('originalLinks') || []).filter(l => l.trim()).map((link, index) => (
+                      {(form.getValues('originalLinks') || []).filter((l: any) => l.trim()).map((link, index: any) => (
                         <p key={index} className="font-mono break-all">{index + 1}. {link}</p>
                       ))}
                     </div>
@@ -867,7 +867,7 @@ export default function AdsPowerConfigForm({
                     <div>
                       <h4 className="font-medium mb-2">链接映射 ({(form.getValues('linkMappings') || []).length}个)</h4>
                       <div className="bg-gray-50 p-3 rounded text-sm space-y-2">
-                        {(form.getValues('linkMappings') || []).map((mapping, index) => (
+                        {(form.getValues('linkMappings') || []).map((mapping, index: any) => (
                           <div key={index} className="border-l-2 border-blue-500 pl-2">
                             <p className="font-mono text-xs break-all">{mapping.originalUrl}</p>
                             <p className="text-xs text-gray-600">

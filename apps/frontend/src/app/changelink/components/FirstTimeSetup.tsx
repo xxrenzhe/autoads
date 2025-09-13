@@ -258,7 +258,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                 <Input
                   id="username"
                   value={setupData.user.username}
-                  onChange={(e) => setSetupData(prev => ({
+                  onChange={((e: any) => setSetupData(prev: any) => ({
                     ...prev,
                     user: { ...prev.user, username: e.target.value }
                   }))}
@@ -272,7 +272,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                   id="email"
                   type="email"
                   value={setupData.user.email}
-                  onChange={(e) => setSetupData(prev => ({
+                  onChange={((e: any) => setSetupData(prev: any) => ({
                     ...prev,
                     user: { ...prev.user, email: e.target.value }
                   }))}
@@ -300,7 +300,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                 <Input
                   id="apiUrl"
                   value={setupData.adspower.apiUrl}
-                  onChange={(e) => setSetupData(prev => ({
+                  onChange={((e: any) => setSetupData(prev: any) => ({
                     ...prev,
                     adspower: { ...prev.adspower, apiUrl: e.target.value }
                   }))}
@@ -316,7 +316,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                 <Input
                   id="testEnvironmentId"
                   value={setupData.adspower.testEnvironmentId}
-                  onChange={(e) => setSetupData(prev => ({
+                  onChange={((e: any) => setSetupData(prev: any) => ({
                     ...prev,
                     adspower: { ...prev.adspower, testEnvironmentId: e.target.value }
                   }))}
@@ -360,7 +360,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                 <Input
                   id="clientId"
                   value={setupData.googleAds.clientId}
-                  onChange={(e) => setSetupData(prev => ({
+                  onChange={((e: any) => setSetupData(prev: any) => ({
                     ...prev,
                     googleAds: { ...prev.googleAds, clientId: e.target.value }
                   }))}
@@ -374,7 +374,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                   id="clientSecret"
                   type="password"
                   value={setupData.googleAds.clientSecret}
-                  onChange={(e) => setSetupData(prev => ({
+                  onChange={((e: any) => setSetupData(prev: any) => ({
                     ...prev,
                     googleAds: { ...prev.googleAds, clientSecret: e.target.value }
                   }))}
@@ -388,7 +388,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
                   id="developerToken"
                   type="password"
                   value={setupData.googleAds.developerToken}
-                  onChange={(e) => setSetupData(prev => ({
+                  onChange={((e: any) => setSetupData(prev: any) => ({
                     ...prev,
                     googleAds: { ...prev.googleAds, developerToken: e.target.value }
                   }))}
@@ -465,7 +465,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
         {/* 步骤指示器 */}
         <div className="flex justify-center mb-8">
           <div className="flex space-x-4">
-            {steps.map((step, index) => {
+            {steps.map((step, index: any) => {
               const Icon = step.icon;
               const isActive = index === currentStep;
               const isCompleted = step.completed;

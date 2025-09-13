@@ -85,7 +85,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
         const data = await response.json();
         
         if (data.code === 0 && data.data?.list) {
-          const environment = data.data.list.find((env: any) => env.user_id === environmentId);
+          const environment = data.data.list.find((env: any: any) => env.user_id === environmentId);
           if (!environment) {
             throw new Error(`环境ID ${environmentId} 不存在`);
           }
@@ -231,7 +231,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
               <Input
                 id="environmentId"
                 value={environmentId}
-                onChange={(e) => onEnvironmentIdChange(e.target.value)}
+                onChange={((e: any): any) => onEnvironmentIdChange(e.target.value)}
                 placeholder="输入AdsPower环境ID"
                 disabled={testing}
               />
@@ -241,7 +241,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
               <Input
                 id="testUrl"
                 value={testUrl}
-                onChange={(e) => setTestUrl(e.target.value)}
+                onChange={((e: any): any) => setTestUrl(e.target.value)}
                 placeholder="输入要测试的广告联盟链接"
                 disabled={testing}
               />
@@ -271,7 +271,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
           {testResults.length > 0 && (
             <div className="space-y-3">
               <h4 className="font-medium">测试进度</h4>
-              {testResults.map((result, index) => (
+              {testResults.map((result, index: any) => (
                 <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center gap-3">
                     {getStepIcon(result.status)}

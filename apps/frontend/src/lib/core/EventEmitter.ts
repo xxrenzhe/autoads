@@ -280,11 +280,11 @@ export class EventEmitter {
     let history = [...this.eventHistory];
 
     if (filter?.event) {
-      history = history.filter(item => item.event === filter.event);
+      history = history.filter((item: any) => item.event === filter.event);
     }
 
     if (filter?.since) {
-      history = history.filter(item => item.metadata.timestamp >= filter.since!);
+      history = history.filter((item: any) => item.metadata.timestamp >= filter.since!);
     }
 
     if (filter?.limit) {
@@ -350,7 +350,7 @@ export class EventEmitter {
     data: T,
     metadata?: Partial<EventMetadata>
   ): Promise<void> {
-    const promises = events?.filter(Boolean)?.map(event => this.emit(event, data, metadata));
+    const promises = events?.filter(Boolean)?.map((event: any) => this.emit(event, data, metadata));
     await Promise.allSettled(promises);
   }
 

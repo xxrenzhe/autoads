@@ -24,7 +24,7 @@ export interface SelectedUserAgent {
  * 根据权重随机选择选项
  */
 function weightedRandomChoice<T>(options: { [key: string]: T }, weights: { [key: string]: number }): string {
-  const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+  const totalWeight = Object.values(weights).reduce((sum, weight: any) => sum + weight, 0);
   let random = Math.random() * totalWeight;
   
   for (const [key, weight] of Object.entries(weights)) {
@@ -85,7 +85,7 @@ export function getSmartUserAgent(options?: {
   if (selectedPlatform === 'mobile') {
     // 移动端可用的浏览器
     const mobileBrowsers = ['chromeMobile', 'chromeIOS', 'safari', 'samsung', 'uc'];
-    availableBrowsers = availableBrowsers.filter(browser => 
+    availableBrowsers = availableBrowsers.filter((browser: any) => 
       mobileBrowsers.includes(browser) || 
       (browser === 'chrome' && Math.random() < 0.3) // 30% 概率使用桌面 Chrome 的移动版本
     );
@@ -122,7 +122,7 @@ export function getSmartUserAgent(options?: {
   }
 
   const selectedBrowser = weightedRandomChoice(
-  availableBrowsers.reduce((obj, key) => ({ ...obj, [key]: filteredWeights[key] || 0 }), {}), 
+  availableBrowsers.reduce((obj, key: any) => ({ ...obj, [key]: filteredWeights[key] || 0 }), {}), 
   filteredWeights
 );
 
@@ -132,7 +132,7 @@ export function getSmartUserAgent(options?: {
     userAgentList = (ALL_USER_AGENTS as any)[selectedBrowser];
   } else if (selectedBrowser === 'safari' && selectedPlatform === 'mobile') {
     // 移动端 Safari 通常是 iOS Safari
-    userAgentList = ALL_USER_AGENTS.safari.filter(ua => ua.includes('iPhone') || ua.includes('iPad'));
+    userAgentList = ALL_USER_AGENTS.safari.filter((ua: any) => ua.includes('iPhone') || ua.includes('iPad'));
   } else {
     userAgentList = (ALL_USER_AGENTS as any)[selectedBrowser] || [];
   }
@@ -148,10 +148,10 @@ export function getSmartUserAgent(options?: {
   // 选择合适的视口
   let viewport: { width: number; height: number };
   if (selectedPlatform === 'mobile') {
-    const mobileViewports = COMMON_VIEWPORTS.filter(v => v.width < 768);
+    const mobileViewports = COMMON_VIEWPORTS.filter((v: any) => v.width < 768);
     viewport = mobileViewports[Math.floor(Math.random() * mobileViewports.length)];
   } else {
-    const desktopViewports = COMMON_VIEWPORTS.filter(v => v.width >= 1024);
+    const desktopViewports = COMMON_VIEWPORTS.filter((v: any) => v.width >= 1024);
     viewport = desktopViewports[Math.floor(Math.random() * desktopViewports.length)];
   }
 
@@ -208,14 +208,14 @@ export function getMultipleUserAgents(count: number, options?: {
       const currentOptions: Parameters<typeof getSmartUserAgent>[0] = {};
       
       if (ensurePlatformMix && agents.length > 0) {
-        const missingPlatforms = ['desktop', 'mobile'].filter(p => !usedPlatforms.has(p));
+        const missingPlatforms = ['desktop', 'mobile'].filter((p: any) => !usedPlatforms.has(p));
         if (missingPlatforms.length > 0) {
           currentOptions.platform = missingPlatforms[0] as 'desktop' | 'mobile';
         }
       }
 
       if (ensureDifferentBrowsers && agents.length > 0) {
-        const availableBrowsers = Object.keys(BROWSER_WEIGHTS).filter(b => !usedBrowsers.has(b));
+        const availableBrowsers = Object.keys(BROWSER_WEIGHTS).filter((b: any) => !usedBrowsers.has(b));
         if (availableBrowsers.length > 0) {
           currentOptions.includeOnlyBrowsers = availableBrowsers;
         }
@@ -259,7 +259,7 @@ export function getUserAgentByBrowser(browser: string): SelectedUserAgent | null
   }
 
   // 选择合适的视口
-  const viewports = COMMON_VIEWPORTS.filter(v => 
+  const viewports = COMMON_VIEWPORTS.filter((v: any) => 
     platform === 'mobile' ? v.width < 768 : v.width >= 1024
   );
   const viewport = viewports[Math.floor(Math.random() * viewports.length)];
@@ -300,7 +300,7 @@ export function getUserAgentStats() {
       stats.platformCounts.mobile += agents.length;
     } else if (browser === 'safari') {
       // Safari 可能在桌面或移动端
-      const mobileCount = agents.filter(ua => ua.includes('iPhone') || ua.includes('iPad')).length;
+      const mobileCount = agents.filter((ua: any) => ua.includes('iPhone') || ua.includes('iPad')).length;
       stats.platformCounts.mobile += mobileCount;
       stats.platformCounts.desktop += agents.length - mobileCount;
     } else {

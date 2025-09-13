@@ -76,12 +76,12 @@ export function validateCriticalEnvironmentVariables(): ValidationResult {
 export function logValidationResult(result: ValidationResult): void {
   if (result.errors.length > 0) {
     console.error('❌ Critical Environment Validation Failed:');
-    result.errors.forEach(error => console.error(`  - ${error}`));
+    result.errors.forEach((error: any) => console.error(`  - ${error}`));
   }
 
   if (result.warnings.length > 0) {
     console.warn('⚠️  Environment Warnings:');
-    result.warnings.forEach(warning => console.warn(`  - ${warning}`));
+    result.warnings.forEach((warning: any) => console.warn(`  - ${warning}`));
   }
 
   if (result.valid && result.errors.length === 0 && result.warnings.length === 0) {

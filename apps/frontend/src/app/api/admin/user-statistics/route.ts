@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 
     // Create plan statistics map
     const planStatsMap = new Map();
-    plans.forEach(plan => {
+    plans.forEach((plan: any) => {
       planStatsMap.set(plan.id, {
         planName: plan.name,
         price: plan.price,
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Map subscription counts to plans
-    subscriptionStats.forEach(stat => {
+    subscriptionStats.forEach((stat: any) => {
       const planStat = planStatsMap.get(stat.planId);
       if (planStat) {
         planStat.count = stat._count._all;
@@ -94,12 +94,12 @@ export async function GET(request: NextRequest) {
 
     // Convert to array and sort by count
     const subscriptionByPlan = Array.from(planStatsMap.values())
-      .filter(stat => stat.count > 0)
+      .filter((stat: any) => stat.count > 0)
       .sort((a, b) => b.count - a.count);
 
     // Calculate cumulative statistics
-    const totalRegistrations = userRegistrations.reduce((sum, day) => sum + day.total_users, 0);
-    const totalActiveSubscriptions = subscriptionByPlan.reduce((sum, plan) => sum + plan.count, 0);
+    const totalRegistrations = userRegistrations.reduce((sum, day: any) => sum + day.total_users, 0);
+    const totalActiveSubscriptions = subscriptionByPlan.reduce((sum, plan: any) => sum + plan.count, 0);
 
     // Get user growth trend
     const userGrowth = await prisma.user.groupBy({
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      dailyRegistrations: userRegistrations.map(item => ({
+      dailyRegistrations: userRegistrations.map((item: any) => ({
         date: item.date.toISOString().split('T')[0],
         totalUsers: item.total_users,
         verifiedUsers: item.verified_users,
@@ -126,10 +126,10 @@ export async function GET(request: NextRequest) {
       summary: {
         totalRegistrations,
         totalActiveSubscriptions,
-        newSubscriptions: subscriptionStats.reduce((sum, stat) => sum + stat._count._all, 0),
+        newSubscriptions: subscriptionStats.reduce((sum, stat: any) => sum + stat._count._all, 0),
         averageDailyRegistrations: Math.round(totalRegistrations / Math.max(1, userRegistrations.length)),
       },
-      userGrowth: userGrowth.map(item => ({
+      userGrowth: userGrowth.map((item: any) => ({
         status: item.status,
         count: item._count._all,
       })),

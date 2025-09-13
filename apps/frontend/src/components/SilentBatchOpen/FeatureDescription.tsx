@@ -54,7 +54,7 @@ export const FeatureDescription: React.FC<FeatureDescriptionProps> = ({
             {getTranslation(t, "batchOpenSection.featureDescription.technicalTitle")}
           </h4>
           <ul className="list-disc list-inside text-blue-800 text-sm leading-relaxed space-y-2">
-            {(t("batchOpenSection.featureDescription.technicalFeatures") as string[]).map((feature, index) => (
+            {(t("batchOpenSection.featureDescription.technicalFeatures") as string[]).map((feature, index: any) => (
               <li key={index}>{feature}</li>
             ))}
           </ul>
@@ -67,7 +67,7 @@ export const FeatureDescription: React.FC<FeatureDescriptionProps> = ({
             {getTranslation(t, "batchOpenSection.featureDescription.notesTitle")}
           </h4>
           <ul className="list-disc list-inside text-red-800 text-sm leading-relaxed space-y-2">
-            {(t("batchOpenSection.featureDescription.notes") as string[]).map((note, index) => (
+            {(t("batchOpenSection.featureDescription.notes") as string[]).map((note, index: any) => (
               <li key={index}>{note}</li>
             ))}
           </ul>

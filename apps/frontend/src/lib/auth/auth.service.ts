@@ -811,7 +811,7 @@ export class AuthService extends BaseService implements IAuthService {
     const user = this.users.get(userId);
     if (!user) return;
 
-    user.refreshTokens = user.refreshTokens.filter(token => token !== refreshToken);
+    user.refreshTokens = user.refreshTokens.filter((token: any) => token !== refreshToken);
     user.updatedAt = new Date().toISOString();
     this.users.set(userId, user);
   }

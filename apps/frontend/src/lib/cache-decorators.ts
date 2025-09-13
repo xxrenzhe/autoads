@@ -222,7 +222,7 @@ function generateCacheKey(prefix: string, namespace: string | undefined, methodN
 // 从参数生成键
 function generateKeyFromArgs(args: any[]): string {
   return args
-    .map(arg => {
+    .map((arg: any) => {
       if (typeof arg === 'object' && arg !== null) {
         return JSON.stringify(arg);
       }

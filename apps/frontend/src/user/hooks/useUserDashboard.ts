@@ -272,7 +272,7 @@ export function useUserDashboard(userId: string) {
   }, [userStats])
 
   const getUnreadNotificationCount = useCallback(() => {
-    return notifications?.filter(n => !n.read).length || 0
+    return notifications?.filter((n: any) => !n.read).length || 0
   }, [notifications])
 
   const getUsageTrend = useCallback((days: number = 7) => {
@@ -283,8 +283,8 @@ export function useUserDashboard(userId: string) {
     
     if (older.length === 0) return 'stable'
     
-    const recentAvg = recent.reduce((sum, day) => sum + day.tokens, 0) / recent.length
-    const olderAvg = older.reduce((sum, day) => sum + day.tokens, 0) / older.length
+    const recentAvg = recent.reduce((sum, day: any) => sum + day.tokens, 0) / recent.length
+    const olderAvg = older.reduce((sum, day: any) => sum + day.tokens, 0) / older.length
     
     const change = ((recentAvg - olderAvg) / olderAvg) * 100
     

@@ -76,10 +76,10 @@ export async function GET(request: NextRequest) {
       const dateStr = currentDate.toISOString().split('T')[0];
       
       // Check if we have transactions for this date
-      const dayTransactions = history.filter(h => h.date === dateStr);
+      const dayTransactions = history.filter((h: any) => h.date === dateStr);
       
       if (dayTransactions.length > 0) {
-        const dayChange = dayTransactions.reduce((sum, h) => sum + h.change, 0);
+        const dayChange = dayTransactions.reduce((sum, h: any) => sum + h.change, 0);
         lastBalance += dayChange;
         filledHistory.push({
           date: dateStr,

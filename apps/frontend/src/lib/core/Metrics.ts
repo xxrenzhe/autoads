@@ -284,7 +284,7 @@ export class Metrics {
 
     const labelString = Object.entries(labels)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, value]) => `${key}=${value}`)
+      .map(([key, value]: any) => `${key}=${value}`)
       .join(',');
 
     return `${name}{${labelString}}`;
@@ -312,7 +312,7 @@ export class Metrics {
     try {
       const totalMetrics = this.metrics.size;
       const totalDataPoints = Array.from(this.metrics.values())
-        .reduce((sum, metric) => sum + metric.values.length, 0);
+        .reduce((sum, metric: any) => sum + metric.values.length, 0);
 
       return {
         status: 'healthy',
@@ -345,7 +345,7 @@ export class Metrics {
       // Add metric value
       if (metric.values[0]?.labels) {
         const labels = Object.entries(metric.values[0].labels)
-          .map(([k, v]) => `${k}="${v}"`)
+          .map(([k, v]: any) => `${k}="${v}"`)
           .join(',');
         lines.push(`${name}{${labels}} ${value}`);
       } else {

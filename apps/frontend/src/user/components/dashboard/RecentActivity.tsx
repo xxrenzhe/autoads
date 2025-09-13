@@ -85,7 +85,7 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({ activities }) =>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {displayActivities.map((activity) => (
+          {displayActivities.map((activity: any) => (
             <div key={activity.id} className="flex items-start space-x-3">
               <div className="flex-shrink-0 mt-0.5">
                 {getTypeIcon(activity.type)}

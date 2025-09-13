@@ -24,7 +24,7 @@ export class SchedulerService {
   static stopScheduler() {
     console.log('Stopping scheduler service...')
     
-    this.intervals.forEach((interval, name) => {
+    this.intervals.forEach((interval, name: any) => {
       clearInterval(interval)
       console.log(`Stopped scheduler: ${name}`)
     })

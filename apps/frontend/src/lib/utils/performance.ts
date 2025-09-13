@@ -128,19 +128,19 @@ export class BatchProcessor<T, R> {
     }
     
     const batch = this.queue.splice(0, this.options.batchSize!);
-    const items = batch.map(b => b.item);
+    const items = batch.map((b: any) => b.item);
     
     try {
       const results = await this.processor(items);
       
       // Match results to their promises
-      results.forEach((result, index) => {
+      results.forEach((result, index: any) => {
         if (index < batch.length) {
           batch[index].resolve(result);
         }
       });
     } catch (error) {
-      batch.forEach(b => b.reject(error));
+      batch.forEach((b: any) => b.reject(error));
     } finally {
       this.processing = false;
       
@@ -327,10 +327,10 @@ export class ConnectionPool<T> {
   }
   
   async destroy(): Promise<void> {
-    await Promise.all(this.pool.map(item => this.destroyer(item)));
+    await Promise.all(this.pool.map((item: any) => this.destroyer(item)));
     this.pool = [];
     this.available = [];
-    this.waiting.forEach(w => w.reject(new Error('Pool destroyed')));
+    this.waiting.forEach((w: any) => w.reject(new Error('Pool destroyed')));
     this.waiting = [];
   }
 }

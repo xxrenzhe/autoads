@@ -213,7 +213,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                 
                 <div className="space-y-2 mb-4">
                   <h4 className="font-medium text-gray-900">包含功能:</h4>
-                  {mockSubscription.features.map((feature, index) => (
+                  {mockSubscription.features.map((feature, index: any) => (
                     <div key={index} className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                       <span className="text-gray-600">{feature}</span>
@@ -290,7 +290,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {mockTokenData.recentUsage.map((usage, index) => (
+                  {mockTokenData.recentUsage.map((usage, index: any) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>

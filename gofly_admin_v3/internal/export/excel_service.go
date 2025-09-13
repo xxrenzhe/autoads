@@ -307,7 +307,7 @@ func (s *ExcelService) ExportBatchTasks(c *gin.Context) {
 // RegisterExportRoutes 注册导出相关路由
 func RegisterExportRoutes(r *gin.RouterGroup, db *gorm.DB) {
 	exportService := NewExcelService(db)
-	
+
 	export := r.Group("/export")
 	{
 		export.GET("/users", exportService.ExportUsers)

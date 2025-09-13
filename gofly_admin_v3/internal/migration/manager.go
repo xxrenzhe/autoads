@@ -9,24 +9,24 @@ import (
 	"strings"
 	"time"
 
-	"gofly-admin-v3/utils/gform"
 	"gofly-admin-v3/utils/gf"
+	"gofly-admin-v3/utils/gform"
 )
 
 // MigrationManager 迁移管理器
 type MigrationManager struct {
-	db         gform.DB
-	migrations []Migration
+	db           gform.DB
+	migrations   []Migration
 	migrationDir string
 }
 
 // Migration 迁移定义
 type Migration struct {
-	ID          string
-	Name        string
-	Up          func() error
-	Down        func() error
-	CreatedAt   time.Time
+	ID        string
+	Name      string
+	Up        func() error
+	Down      func() error
+	CreatedAt time.Time
 }
 
 // MigrationOptions 迁移选项
@@ -42,13 +42,13 @@ type MigrationOptions struct {
 
 // MigrationHistory 迁移历史记录
 type MigrationHistory struct {
-	ID           string    `json:"id"`
-	Name         string    `json:"name"`
-	Version      string    `json:"version"`
-	Batch        int       `json:"batch"`
-	ExecutedAt   time.Time `json:"executed_at"`
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	Version       string    `json:"version"`
+	Batch         int       `json:"batch"`
+	ExecutedAt    time.Time `json:"executed_at"`
 	ExecutionTime int       `json:"execution_time"`
-	Error        string    `json:"error,omitempty"`
+	Error         string    `json:"error,omitempty"`
 }
 
 // MigrationStatus 迁移状态
@@ -61,9 +61,9 @@ type MigrationStatus struct {
 // NewMigrationManager 创建迁移管理器
 func NewMigrationManager(db gform.DB, migrationDir string) *MigrationManager {
 	return &MigrationManager{
-		db:         db,
+		db:           db,
 		migrationDir: migrationDir,
-		migrations: make([]Migration, 0),
+		migrations:   make([]Migration, 0),
 	}
 }
 
@@ -81,7 +81,7 @@ func (m *MigrationManager) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
-	
+
 	// 加载迁移文件
 	return m.loadMigrations()
 }
@@ -96,7 +96,7 @@ func (m *MigrationManager) loadMigrations() error {
 		}
 		return err
 	}
-	
+
 	// 按文件名排序
 	var fileNames []string
 	for _, file := range files {
@@ -105,10 +105,10 @@ func (m *MigrationManager) loadMigrations() error {
 		}
 	}
 	sort.Strings(fileNames)
-	
+
 	// TODO: 实际的迁移文件加载逻辑
 	// 这里需要解析迁移文件并注册迁移
-	
+
 	return nil
 }
 
@@ -138,10 +138,10 @@ func (m *MigrationManager) Rollback(options MigrationOptions) error {
 func (m *MigrationManager) CreateMigration(name, migrationType string) error {
 	timestamp := time.Now().Format("20060102_150405")
 	filename := fmt.Sprintf("%s_%s.%s.go", timestamp, name, migrationType)
-	
+
 	path := filepath.Join(m.migrationDir, filename)
 	content := m.generateMigrationTemplate(name, migrationType)
-	
+
 	return os.WriteFile(path, []byte(content), 0644)
 }
 
@@ -177,8 +177,8 @@ func (m *MigrationManager) Status() gf.Map {
 	status["completed"] = []MigrationHistory{}
 	status["failed"] = []MigrationHistory{}
 	status["total"] = 0
-	
+
 	// TODO: 实际的状态查询逻辑
-	
+
 	return status
 }

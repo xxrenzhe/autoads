@@ -194,7 +194,7 @@ export const ALL_USER_AGENTS = {
 };
 
 // 获取所有 User-Agent 的总数
-export const TOTAL_USER_AGENTS_COUNT = Object.values(ALL_USER_AGENTS).reduce((sum, agents) => sum + agents.length, 0);
+export const TOTAL_USER_AGENTS_COUNT = Object.values(ALL_USER_AGENTS).reduce((sum, agents: any) => sum + agents.length, 0);
 
 // 常用的视口尺寸
 export const COMMON_VIEWPORTS = [

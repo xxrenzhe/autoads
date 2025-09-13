@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Default plans initialized successfully',
-      plans: results.map(p => ({
+      plans: results.map((p: any) => ({
         id: p.id,
         name: p.name,
         price: p.price,

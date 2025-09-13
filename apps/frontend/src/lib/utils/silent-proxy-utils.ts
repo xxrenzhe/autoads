@@ -88,7 +88,7 @@ export function calculateTotalVisits(visitsPerUrl: number[]): number {
       return 0;
     }
     
-    const totalVisits = visitsPerUrl.reduce((sum, visits) => sum + visits, 0);
+    const totalVisits = visitsPerUrl.reduce((sum, visits: any) => sum + visits, 0);
     
     logger.debug('总访问次数计算', {
       visitsPerUrl,

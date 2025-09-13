@@ -156,12 +156,12 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
   };
 
   const getPermissionCategories = () => {
-    const categories = new Set(permissions.map(p => p.category));
+    const categories = new Set(permissions.map((p: any) => p.category));
     return Array.from(categories);
   };
 
   const getPermissionsByCategory = (category: string) => {
-    return permissions.filter(p => p.category === category);
+    return permissions.filter((p: any) => p.category === category);
   };
 
   const togglePermission = (permissionName: string) => {
@@ -191,7 +191,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
       </Typography>
 
       <Grid container spacing={3}>
-        {roles.map((role) => (
+        {roles.map((role: any) => (
           <Grid item xs={12} md={6} lg={4} key={role.id}>
             <Card 
               sx={{ 
@@ -233,7 +233,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
                     权限 ({role.permissions.length}):
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {role.permissions.slice(0, 6).map((permission) => (
+                    {role.permissions.slice(0, 6).map((permission: any) => (
                       <Chip 
                         key={permission} 
                         label={permission.split(':')[1]} 
@@ -256,7 +256,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
                     size="small"
                     variant="outlined"
                     startIcon={<Settings />}
-                    onClick={() => handleManagePermissions(role)}
+                    onClick={((: any): any) => handleManagePermissions(role)}
                     disabled={role.isSystem}
                   >
                     管理权限
@@ -265,7 +265,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
                     size="small"
                     variant="outlined"
                     startIcon={<Edit />}
-                    onClick={() => handleEditRole(role)}
+                    onClick={((: any): any) => handleEditRole(role)}
                     disabled={role.isSystem}
                   >
                     编辑
@@ -285,7 +285,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
             fullWidth
             label="角色名称"
             value={editForm.name || ''}
-            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            onChange={((e: any): any) => setEditForm({ ...editForm, name: e.target.value })}
             margin="normal"
             disabled={selectedRole?.isSystem}
           />
@@ -293,14 +293,14 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
             fullWidth
             label="角色描述"
             value={editForm.description || ''}
-            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+            onChange={((e: any): any) => setEditForm({ ...editForm, description: e.target.value })}
             margin="normal"
             multiline
             rows={3}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>取消</Button>
+          <Button onClick={((: any): any) => setEditDialogOpen(false)}>取消</Button>
           <Button onClick={handleSaveRole} variant="contained" startIcon={<Save />}>
             保存
           </Button>
@@ -327,19 +327,19 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
           
           <Tabs defaultValue="all" sx={{ mb: 2 }}>
             <Tab label="全部权限" value="all" />
-            {getPermissionCategories().map(category => (
+            {getPermissionCategories().map((category: any) => (
               <Tab key={category} label={category} value={category} />
             ))}
           </Tabs>
 
           <Box sx={{ maxHeight: 'calc(80vh - 200px)', overflowY: 'auto' }}>
-            {getPermissionCategories().map(category => (
+            {getPermissionCategories().map((category: any) => (
               <Box key={category} sx={{ mb: 3 }}>
                 <Typography variant="h6" gutterBottom>
                   {category}
                 </Typography>
                 <Grid container spacing={1}>
-                  {getPermissionsByCategory(category).map(permission => (
+                  {getPermissionsByCategory(category).map((permission: any) => (
                     <Grid item xs={12} sm={6} md={4} key={permission.id}>
                       <Card 
                         variant="outlined" 
@@ -348,7 +348,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
                           borderColor: selectedPermissions.includes(permission.name) ? 'primary.main' : 'grey.300',
                           bgcolor: selectedPermissions.includes(permission.name) ? 'primary.50' : 'background.paper',
                         }}
-                        onClick={() => togglePermission(permission.name)}
+                        onClick={((: any): any) => togglePermission(permission.name)}
                       >
                         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -372,7 +372,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPermissionDialogOpen(false)}>取消</Button>
+          <Button onClick={((: any): any) => setPermissionDialogOpen(false)}>取消</Button>
           <Button 
             onClick={handleSavePermissions} 
             variant="contained" 

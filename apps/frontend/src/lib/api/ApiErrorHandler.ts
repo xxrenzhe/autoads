@@ -122,7 +122,7 @@ export class ApiErrorHandler extends BaseErrorHandler {
     timestamp: string;
   } {
     const errorDetails = Array.isArray(errors) 
-      ? errors.reduce((acc, error, index) => ({ ...acc, [`field_${index}`]: error }), {})
+      ? errors.reduce((acc, error, index: any) => ({ ...acc, [`field_${index}`]: error }), {})
       : errors;
 
     logger.warn('Validation Error:', { context, details: errorDetails });

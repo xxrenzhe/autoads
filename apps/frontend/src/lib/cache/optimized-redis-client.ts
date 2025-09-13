@@ -60,7 +60,7 @@ class OptimizedRedisClient {
         // 检查是否为集群配置
         if (redisUrl.includes(',')) {
           // 集群模式：redis://host1:port1,redis://host2:port2
-          const nodes = redisUrl.split(',').map(url => {
+          const nodes = redisUrl.split(',').map((url: any) => {
             const parsed = new URL(url.trim());
             return `${parsed.hostname}:${parsed.port || 6379}`;
           });
@@ -130,7 +130,7 @@ class OptimizedRedisClient {
         });
         
         this.client = new Redis.Cluster(
-          this.config.clusterNodes.map(node => {
+          this.config.clusterNodes.map((node: any) => {
             const [host, port] = node.split(':');
             return { host, port: parseInt(port) };
           }),
@@ -336,14 +336,14 @@ class OptimizedRedisClient {
       
       del: async (...keys: string[]) => {
         let deleted = 0;
-        keys.forEach(key => {
+        keys.forEach((key: any) => {
           if (memoryStore.delete(key)) deleted++;
         });
         return deleted;
       },
       
       exists: async (...keys: string[]) => {
-        return keys.filter(key => memoryStore.has(key)).length;
+        return keys.filter((key: any) => memoryStore.has(key)).length;
       },
       
       expire: async (key: string, seconds: number) => {
@@ -407,7 +407,7 @@ class OptimizedRedisClient {
       // 工具方法
       keys: async (pattern: string) => {
         const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-        return Array.from(memoryStore.keys()).filter(key => regex.test(key));
+        return Array.from(memoryStore.keys()).filter((key: any) => regex.test(key));
       },
       
       flushall: async () => {

@@ -131,13 +131,13 @@ const UserStatisticsDashboard: React.FC = () => {
 
     const csvContent = [
       ['日期', '注册用户数', '已验证用户', '活跃用户'],
-      ...data.dailyRegistrations.map(item => [
+      ...data.dailyRegistrations.map((item: any) => [
         item.date,
         item.totalUsers,
         item.verifiedUsers,
         item.activeUsers,
       ]),
-    ].map(row => row.join(',')).join('\n');
+    ].map((row: any) => row.join(',')).join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -188,7 +188,7 @@ const UserStatisticsDashboard: React.FC = () => {
                 <Select
                   value={dateRange}
                   label="时间范围"
-                  onChange={(e) => setDateRange(e.target.value)}
+                  onChange={((e: any): any) => setDateRange(e.target.value)}
                 >
                   <MenuItem value="7">最近7天</MenuItem>
                   <MenuItem value="30">最近30天</MenuItem>
@@ -208,7 +208,7 @@ const UserStatisticsDashboard: React.FC = () => {
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                     value={customStartDate}
-                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    onChange={((e: any): any) => setCustomStartDate(e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12} sm={3}>
@@ -219,7 +219,7 @@ const UserStatisticsDashboard: React.FC = () => {
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                     value={customEndDate}
-                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    onChange={((e: any): any) => setCustomEndDate(e.target.value)}
                   />
                 </Grid>
               </>
@@ -231,7 +231,7 @@ const UserStatisticsDashboard: React.FC = () => {
                 <Select
                   value={groupBy}
                   label="分组方式"
-                  onChange={(e) => setGroupBy(e.target.value)}
+                  onChange={((e: any): any) => setGroupBy(e.target.value)}
                 >
                   <MenuItem value="day">按天</MenuItem>
                   <MenuItem value="week">按周</MenuItem>
@@ -335,7 +335,7 @@ const UserStatisticsDashboard: React.FC = () => {
                         活跃用户
                       </Typography>
                       <Typography variant="h4">
-                        {data.dailyRegistrations.reduce((sum, day) => sum + day.activeUsers, 0)}
+                        {data.dailyRegistrations.reduce((sum, day: any) => sum + day.activeUsers, 0)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         累计活跃用户
@@ -405,7 +405,7 @@ const UserStatisticsDashboard: React.FC = () => {
                   <ResponsiveContainer width="100%" height={400}>
                     <PieChart>
                       <Pie
-                        data={data.subscriptionByPlan.map(item => ({
+                        data={data.subscriptionByPlan.map((item: any) => ({
                           name: `${item.planName} ($${item.price})`,
                           value: item.count,
                         }))}
@@ -419,7 +419,7 @@ const UserStatisticsDashboard: React.FC = () => {
                         fill="#8884d8"
                         dataKey="value"
                       >
-                        {data.subscriptionByPlan.map((entry, index) => (
+                        {data.subscriptionByPlan.map((entry, index: any) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>

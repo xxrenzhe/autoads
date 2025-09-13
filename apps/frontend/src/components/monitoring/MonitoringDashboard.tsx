@@ -100,7 +100,7 @@ export default function MonitoringDashboard() {
       });
 
       if (response.ok) {
-        setAlerts(prev => prev?.filter(Boolean)?.map(alert => 
+        setAlerts(prev => prev?.filter(Boolean)?.map((alert: any) => 
           alert.id === alertId ? { ...alert, acknowledged: true } : alert
         ));
       }
@@ -355,7 +355,7 @@ export default function MonitoringDashboard() {
                   <AlertDescription>暂无告警</AlertDescription>
                 </Alert>
               ) : (
-                alerts.map((alert) => (
+                alerts.map((alert: any) => (
                   <Alert key={alert.id}>
                     <div className="flex items-center justify-between">
                       <div>
@@ -376,7 +376,7 @@ export default function MonitoringDashboard() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => acknowledgeAlert(alert.id)}
+                          onClick={((: any): any) => acknowledgeAlert(alert.id)}
                         >
                           确认
                         </Button>

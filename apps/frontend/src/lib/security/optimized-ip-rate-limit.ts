@@ -181,7 +181,7 @@ export class OptimizedIPRateLimitManager {
     const records = await cache.get<IPRequestRecord[]>(key) || [];
     
     // 过滤掉过期的记录
-    const validRecords = records.filter(record => record.timestamp > windowStart);
+    const validRecords = records.filter((record: any) => record.timestamp > windowStart);
     
     // 检查是否超过限制
     if (validRecords.length >= maxRequests) {
@@ -338,9 +338,9 @@ export class OptimizedIPRateLimitManager {
     const windowMs = 60 * 60 * 1000; // 1小时窗口
     
     return {
-      pageRequests: (pageRecords || []).filter(r => r.timestamp > now - windowMs).length,
-      apiRequests: (apiRecords || []).filter(r => r.timestamp > now - windowMs).length,
-      authRequests: (authRecords || []).filter(r => r.timestamp > now - windowMs).length,
+      pageRequests: (pageRecords || []).filter((r: any) => r.timestamp > now - windowMs).length,
+      apiRequests: (apiRecords || []).filter((r: any) => r.timestamp > now - windowMs).length,
+      authRequests: (authRecords || []).filter((r: any) => r.timestamp > now - windowMs).length,
       isBanned: banInfo !== null && banInfo.expiresAt > now,
       banInfo: banInfo || undefined
     };

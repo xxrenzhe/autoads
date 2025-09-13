@@ -48,7 +48,7 @@ class LoggerManager {
       'PerformanceMonitor'
     ];
     
-    commonContexts.forEach(context => {
+    commonContexts.forEach((context: any) => {
       this.getLogger(context);
     });
   }

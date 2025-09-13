@@ -92,7 +92,7 @@ const SuspiciousDevicesList = () => {
   useEffect(() => {
     if (data) {
       // Calculate advanced statistics
-      const deviceGroupings = data.reduce((acc, device) => {
+      const deviceGroupings = data.reduce((acc: any, device: any: any) => {
         if (!acc[device.fingerprint]) {
           acc[device.fingerprint] = []
         }
@@ -106,16 +106,16 @@ const SuspiciousDevicesList = () => {
 
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
       const newAccountsWithCheckIn = data.filter(
-        device => new Date(device.user?.createdAt) > oneDayAgo
+        (device: any) => new Date(device.user?.createdAt) > oneDayAgo
       ).length
 
       const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000)
       const highFrequencyDevices = data.filter(
-        device => new Date(device.lastSeenAt) > sixHoursAgo
+        (device: any) => new Date(device.lastSeenAt) > sixHoursAgo
       ).length
 
       const totalCheckIns = data.reduce(
-        (sum, device) => sum + (device.user?.checkInsCount || 0), 0
+        (sum: any, device: any) => sum + (device.user?.checkInsCount || 0), 0
       )
 
       setStats({
@@ -129,7 +129,7 @@ const SuspiciousDevicesList = () => {
   
   if (isLoading) return <div>加载中...</div>
   
-  const suspiciousCount = data?.filter(d => d.isSuspicious).length || 0
+  const suspiciousCount = data?.filter((d: any: any) => d.isSuspicious).length || 0
   const totalDevices = data?.length || 0
   
   return (
@@ -214,13 +214,13 @@ const SuspiciousDevicesList = () => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="body2">不同IP地址</Typography>
                 <Typography variant="body2" fontWeight="bold">
-                  {new Set(data?.map(d => d.firstIP)).size}
+                  {new Set(data?.map((d: any: any) => d.firstIP)).size}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="body2">不同用户代理</Typography>
                 <Typography variant="body2" fontWeight="bold">
-                  {new Set(data?.map(d => d.userAgent)).size}
+                  {new Set(data?.map((d: any: any) => d.userAgent)).size}
                 </Typography>
               </Box>
             </Stack>
@@ -325,7 +325,7 @@ const ListActions = () => {
       <FilterButton />
       <Button 
         label="刷新数据" 
-        onClick={() => refresh()}
+        onClick={((: any): any) => refresh()}
         sx={{ mr: 1 }}
       >
         <RefreshCw />

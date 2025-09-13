@@ -310,8 +310,8 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
   const parseInput = (text: string): string[] => {
     return text
       .split(/\s|,|;|\n|\r/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0 && /^https?:\/\//.test(s));
+      .map((s: any) => s.trim())
+      .filter((s: any) => s.length > 0 && /^https?:\/\//.test(s));
   };
 
   // 通用输入处理函数
@@ -573,19 +573,19 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
       <div className="flex justify-center gap-4 mb-8">
         <button
           className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${version === "basic" ? UI_CONSTANTS.buttons.primary : UI_CONSTANTS.buttons.outline}`}
-          onClick={() => handleSwitchVersion("basic")}
+          onClick={((: any): any) => handleSwitchVersion("basic")}
         >
           {getTranslation(t, "batchopen.basicVersion.title")}
         </button>
         <button
           className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${version === "silent" ? UI_CONSTANTS.buttons.primary : UI_CONSTANTS.buttons.outline}`}
-          onClick={() => handleSwitchVersion("silent")}
+          onClick={((: any): any) => handleSwitchVersion("silent")}
         >
           {getTranslation(t, "batchopen.silentVersion.title")}
         </button>
         <button
           className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${version === "autoclick" ? UI_CONSTANTS.buttons.primary : UI_CONSTANTS.buttons.outline} relative`}
-          onClick={() => handleSwitchVersion("autoclick")}
+          onClick={((: any): any) => handleSwitchVersion("autoclick")}
         >
           {getTranslation(t, "batchopen.autoclickVersion.title")}
           <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">

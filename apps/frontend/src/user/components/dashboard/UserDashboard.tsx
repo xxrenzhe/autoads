@@ -73,12 +73,12 @@ export function UserDashboard({ userId, layout = 'default' }: UserDashboardProps
     )
   }
 
-  const unreadNotifications = notifications?.filter(n => !n.read).length || 0
+  const unreadNotifications = notifications?.filter((n: any) => !n.read).length || 0
   const tokenUsagePercentage = userStats?.tokenUsage ? 
     (userStats.tokenUsage.used / userStats.tokenUsage.limit) * 100 : 0
 
   // Transform UserActivity to ActivityItem
-  const transformedActivities: ActivityItem[] = recentActivities?.filter(Boolean)?.map(activity => ({
+  const transformedActivities: ActivityItem[] = recentActivities?.filter(Boolean)?.map((activity: any) => ({
     id: activity.id,
     type: activity.type === 'login' ? 'user' : 
           activity.type === 'api_call' ? 'task' : 
@@ -232,7 +232,7 @@ export function UserDashboard({ userId, layout = 'default' }: UserDashboardProps
                 </div>
                 <select
                   value={selectedTimeRange}
-                  onChange={(e) => setSelectedTimeRange(e.target.value)}
+                  onChange={((e: any): any) => setSelectedTimeRange(e.target.value)}
                   className="text-sm border border-gray-300 rounded px-2 py-1"
                 >
                   <option value="24h">Last 24 Hours</option>
@@ -287,7 +287,7 @@ export function UserDashboard({ userId, layout = 'default' }: UserDashboardProps
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {userStats?.achievements?.map((achievement, index) => (
+                {userStats?.achievements?.map((achievement, index: any) => (
                   <div key={index} className="flex items-center space-x-3">
                     <Award className="h-5 w-5 text-yellow-500" />
                     <div>
@@ -316,7 +316,7 @@ export function UserDashboard({ userId, layout = 'default' }: UserDashboardProps
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {userStats?.bookmarks?.map((bookmark, index) => (
+                {userStats?.bookmarks?.map((bookmark, index: any) => (
                   <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
                     <span className="text-sm text-gray-700 dark:text-gray-300">
                       {bookmark.title}
@@ -343,7 +343,7 @@ export function UserDashboard({ userId, layout = 'default' }: UserDashboardProps
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {userStats?.usageBreakdown?.map((item, index) => (
+                {userStats?.usageBreakdown?.map((item, index: any) => (
                   <div key={index} className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">{item.feature}</span>
                     <div className="flex items-center space-x-2">

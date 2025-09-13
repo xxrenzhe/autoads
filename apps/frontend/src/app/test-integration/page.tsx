@@ -356,7 +356,7 @@ export default function TestIntegrationPage() {
         </Button>
       </div>
 
-      <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as 'tests' | 'api')}>
+      <Tabs value={currentTab} onValueChange={((value: any): any) => setCurrentTab(value as 'tests' | 'api')}>
         <TabsList>
           <TabsTrigger value="tests">测试结果</TabsTrigger>
           <TabsTrigger value="api">API状态</TabsTrigger>
@@ -373,7 +373,7 @@ export default function TestIntegrationPage() {
             </Card>
           )}
 
-          {testResults.map((result, index) => (
+          {testResults.map((result, index: any) => (
             <Card key={index}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">

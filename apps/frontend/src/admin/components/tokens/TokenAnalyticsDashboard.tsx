@@ -197,7 +197,7 @@ export default function TokenAnalyticsDashboard() {
 
   const convertToCSV = (records: any[]) => {
     const headers = ['Date', 'User', 'Feature', 'Operation', 'Tokens', 'Items', 'Batch', 'Efficiency']
-    const rows = records?.filter(Boolean)?.map(record => [
+    const rows = records?.filter(Boolean)?.map((record: any) => [
       new Date(record.createdAt).toLocaleDateString(),
       record.user.email,
       record.feature,
@@ -208,7 +208,7 @@ export default function TokenAnalyticsDashboard() {
       (record.tokensConsumed / record.itemCount).toFixed(2)
     ])
     
-    return [headers, ...rows]?.filter(Boolean)?.map(row => row.join(',')).join('\n')
+    return [headers, ...rows]?.filter(Boolean)?.map((row: any) => row.join(',')).join('\n')
   }
 
   const downloadCSV = (csv: string, filename: string) => {
@@ -287,11 +287,11 @@ export default function TokenAnalyticsDashboard() {
     if (!analytics) return
 
     const consumption: FeatureConsumption[] = Object.entries(analytics.breakdown.byFeature)
-      .map(([feature, tokens]) => {
-        const featureRecords = analytics.records.filter(r => r.feature === feature)
+      .map(([feature, tokens]: any) => {
+        const featureRecords = analytics.records.filter((r: any) => r.feature === feature)
         const operations = featureRecords.length
         const averagePerOperation = operations > 0 ? tokens / operations : 0
-        const totalItems = featureRecords.reduce((sum, r) => sum + r.itemCount, 0)
+        const totalItems = featureRecords.reduce((sum, r: any) => sum + r.itemCount, 0)
         const efficiency = totalItems > 0 ? tokens / totalItems : 0
 
         return {
@@ -312,13 +312,13 @@ export default function TokenAnalyticsDashboard() {
   const analyzeUserPatterns = () => {
     if (!analytics) return
 
-    const patterns: UserUsagePattern[] = analytics.breakdown.topUsers.map(user => {
-      const userRecords = analytics.records.filter(r => r.userId === user.userId)
-      const batchOperations = userRecords.filter(r => r.isBatch).length
+    const patterns: UserUsagePattern[] = analytics.breakdown.topUsers.map((user: any) => {
+      const userRecords = analytics.records.filter((r: any) => r.userId === user.userId)
+      const batchOperations = userRecords.filter((r: any) => r.isBatch).length
       const batchUsageRate = userRecords.length > 0 ? (batchOperations / userRecords.length) * 100 : 0
       
       // Determine preferred features
-      const featureUsage = userRecords.reduce((acc, record) => {
+      const featureUsage = userRecords.reduce((acc, record: any) => {
         acc[record.feature] = (acc[record.feature] || 0) + 1
         return acc
       }, {} as Record<string, number>)
@@ -326,7 +326,7 @@ export default function TokenAnalyticsDashboard() {
       const preferredFeatures = Object.entries(featureUsage)
         .sort(([,a], [,b]) => (b as number) - (a as number))
         .slice(0, 2)
-        .map(([feature]) => feature)
+        .map(([feature]: any) => feature)
 
       // Determine activity pattern
       const activityPattern = user.totalTokens > 1000 ? 'heavy' : 
@@ -334,7 +334,7 @@ export default function TokenAnalyticsDashboard() {
 
       // Get last active date
       const lastActive = userRecords.length > 0 
-        ? new Date(Math.max(...userRecords.map(r => new Date(r.createdAt).getTime()))).toISOString()
+        ? new Date(Math.max(...userRecords.map((r: any) => new Date(r.createdAt).getTime()))).toISOString()
         : new Date().toISOString()
 
       return {
@@ -354,7 +354,7 @@ export default function TokenAnalyticsDashboard() {
     setUserPatterns(patterns)
   }
 
-  const filteredUserPatterns = userPatterns.filter(user =>
+  const filteredUserPatterns = userPatterns.filter((user: any) =>
     user.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.userEmail.toLowerCase().includes(searchTerm.toLowerCase())
   ).sort((a, b) => {
@@ -398,7 +398,7 @@ export default function TokenAnalyticsDashboard() {
     )
   }
 
-  const pieChartData = Object.entries(analytics.breakdown.byFeature).map(([feature, tokens]) => ({
+  const pieChartData = Object.entries(analytics.breakdown.byFeature).map(([feature, tokens]: any) => ({
     name: feature.charAt(0).toUpperCase() + feature.slice(1),
     value: tokens,
     percentage: ((tokens / analytics.summary.totalTokens) * 100).toFixed(1)
@@ -501,7 +501,7 @@ export default function TokenAnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {insights.map((insight, index) => (
+              {insights.map((insight, index: any) => (
                 <div key={index} className={`p-4 rounded-lg border ${
                   insight.severity === 'success' ? 'bg-green-50 border-green-200' :
                   insight.severity === 'warning' ? 'bg-yellow-50 border-yellow-200' :
@@ -531,7 +531,7 @@ export default function TokenAnalyticsDashboard() {
             <label className="text-sm font-medium">Time Range:</label>
             <select
               value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
+              onChange={((e: any): any) => setDateRange(e.target.value)}
               className="px-3 py-1 border rounded-md text-sm"
             >
               <option value="7">Last 7 days</option>
@@ -545,7 +545,7 @@ export default function TokenAnalyticsDashboard() {
             <label className="text-sm font-medium">Feature:</label>
             <select
               value={selectedFeature}
-              onChange={(e) => setSelectedFeature(e.target.value)}
+              onChange={((e: any): any) => setSelectedFeature(e.target.value)}
               className="px-3 py-1 border rounded-md text-sm"
             >
               <option value="all">All features</option>
@@ -560,7 +560,7 @@ export default function TokenAnalyticsDashboard() {
         <div className="flex items-center gap-2">
           <select
             value={pageSize}
-            onChange={(e) => {
+            onChange={((e: any): any) => {
               setPageSize(Number(e.target.value))
               setPage(1)
             }}
@@ -576,7 +576,7 @@ export default function TokenAnalyticsDashboard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={((: any) => setPage(p: any) => Math.max(1, p - 1))}
               disabled={page === 1}
             >
               Previous
@@ -587,7 +587,7 @@ export default function TokenAnalyticsDashboard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(p => p + 1)}
+              onClick={((: any) => setPage(p: any) => p + 1)}
               disabled={!analytics?.pagination?.hasMore}
             >
               Next
@@ -625,7 +625,7 @@ export default function TokenAnalyticsDashboard() {
                       dataKey="value"
                       label={({ name, percentage }) => `${name}: ${percentage}%`}
                     >
-                      {pieChartData.map((entry, index) => (
+                      {pieChartData.map((entry, index: any) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -643,7 +643,7 @@ export default function TokenAnalyticsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {analytics.records.slice(0, 5).map((record, index) => (
+                  {analytics.records.slice(0, 5).map((record, index: any) => (
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium">{record.user.name || record.user.email}</p>
@@ -675,7 +675,7 @@ export default function TokenAnalyticsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {featureConsumption.map((feature) => {
+                  {featureConsumption.map((feature: any) => {
                     const percentage = (feature.totalTokens / analytics.summary.totalTokens) * 100
                     
                     return (
@@ -768,13 +768,13 @@ export default function TokenAnalyticsDashboard() {
                       type="text"
                       placeholder="Search users..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={((e: any): any) => setSearchTerm(e.target.value)}
                       className="pl-10 pr-4 py-2 border rounded-md text-sm"
                     />
                   </div>
                   <select
                     value={`${sortBy}-${sortOrder}`}
-                    onChange={(e) => {
+                    onChange={((e: any): any) => {
                       const [field, order] = e.target.value.split('-')
                       setSortBy(field as any)
                       setSortOrder(order as any)
@@ -793,7 +793,7 @@ export default function TokenAnalyticsDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filteredUserPatterns.slice(0, 20).map((user, index) => (
+                {filteredUserPatterns.slice(0, 20).map((user, index: any) => (
                   <div key={user.userId} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
@@ -834,7 +834,7 @@ export default function TokenAnalyticsDashboard() {
                       <div>
                         <p className="text-muted-foreground">Preferred Features</p>
                         <div className="flex gap-1 mt-1">
-                          {user.preferredFeatures.map(feature => (
+                          {user.preferredFeatures.map((feature: any) => (
                             <Badge key={feature} variant="outline" className="text-xs">
                               {feature}
                             </Badge>

@@ -199,7 +199,7 @@ export const SESSION_CONFIG = {
  */
 export function getCSPHeader(): string {
   return Object.entries(CSP_CONFIG)
-    .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
+    .map(([directive, sources]: any) => `${directive} ${sources.join(' ')}`)
     .join('; ');
 }
 

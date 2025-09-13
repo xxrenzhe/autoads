@@ -193,7 +193,7 @@ export default function SubscriptionConfirmation({
           What's Included
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {plan.features?.map((feature, index) => (
+          {plan.features?.map((feature, index: any) => (
             <div key={index} className="flex items-center">
               <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
               <span className="text-sm text-gray-700">{feature}</span>

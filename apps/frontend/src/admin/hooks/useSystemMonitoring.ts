@@ -265,20 +265,20 @@ export function useSystemMonitoring(refreshInterval: number = 30000) {
   }, [])
 
   const getCriticalAlerts = useCallback(() => {
-    return alerts?.filter(alert => alert.severity === 'critical' && !alert.resolved) || []
+    return alerts?.filter((alert: any) => alert.severity === 'critical' && !alert.resolved) || []
   }, [alerts])
 
   const getWarningAlerts = useCallback(() => {
-    return alerts?.filter(alert => alert.severity === 'high' && !alert.resolved) || []
+    return alerts?.filter((alert: any) => alert.severity === 'high' && !alert.resolved) || []
   }, [alerts])
 
   const getUnhealthyServices = useCallback(() => {
-    return services?.filter(service => service.status !== 'healthy') || []
+    return services?.filter((service: any) => service.status !== 'healthy') || []
   }, [services])
 
   const calculateAverageResponseTime = useCallback(() => {
     if (!metricsHistory || metricsHistory.length === 0) return 0
-    const sum = metricsHistory.reduce((acc, metric) => acc + metric.responseTime, 0)
+    const sum = metricsHistory.reduce((acc, metric: any) => acc + metric.responseTime, 0)
     return sum / metricsHistory.length
   }, [metricsHistory])
 
@@ -288,7 +288,7 @@ export function useSystemMonitoring(refreshInterval: number = 30000) {
     const recent = metricsHistory.slice(-10)
     const older = metricsHistory.slice(-20, -10)
     
-    const recentAvg = recent.reduce((acc, metric) => {
+    const recentAvg = recent.reduce((acc, metric: any) => {
       switch (resource) {
         case 'cpu': return acc + metric.cpuUsage
         case 'memory': return acc + metric.memoryUsage
@@ -297,7 +297,7 @@ export function useSystemMonitoring(refreshInterval: number = 30000) {
       }
     }, 0) / recent.length
     
-    const olderAvg = older.reduce((acc, metric) => {
+    const olderAvg = older.reduce((acc, metric: any) => {
       switch (resource) {
         case 'cpu': return acc + metric.cpuUsage
         case 'memory': return acc + metric.memoryUsage

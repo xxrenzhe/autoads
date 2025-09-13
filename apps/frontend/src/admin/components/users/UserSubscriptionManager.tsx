@@ -214,7 +214,7 @@ export function UserSubscriptionManager({
   }
 
   const getPlanDisplayName = (planName: string) => {
-    const plan = plans.find(p => p.name.toLowerCase() === planName.toLowerCase())
+    const plan = plans.find((p: any) => p.name.toLowerCase() === planName.toLowerCase())
     return plan?.displayName || planName
   }
 
@@ -251,7 +251,7 @@ export function UserSubscriptionManager({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowModifyForm(!showModifyForm)}
+                  onClick={((: any): any) => setShowModifyForm(!showModifyForm)}
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Modify
@@ -315,7 +315,7 @@ export function UserSubscriptionManager({
             <p className="text-gray-600 mb-4">
               This user is on the free plan
             </p>
-            <Button onClick={() => setShowAssignForm(true)}>
+            <Button onClick={((: any): any) => setShowAssignForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Assign Subscription
             </Button>
@@ -337,7 +337,7 @@ export function UserSubscriptionManager({
                   <SelectValue placeholder="Choose a plan" />
                 </SelectTrigger>
                 <SelectContent>
-                  {plans.filter(p => p.isActive).map((plan) => (
+                  {plans.filter((p: any) => p.isActive).map((plan: any) => (
                     <SelectItem key={plan.id} value={plan.id}>
                       {plan.displayName} - ¥{plan.price}/{plan.interval.toLowerCase()}
                     </SelectItem>
@@ -354,7 +354,7 @@ export function UserSubscriptionManager({
                   type="number"
                   min="1"
                   value={duration}
-                  onChange={(e) => setDuration(parseInt(e.target.value) || 1)}
+                  onChange={((e: any): any) => setDuration(parseInt(e.target.value) || 1)}
                   disabled={!!customEndDate}
                 />
               </div>
@@ -364,7 +364,7 @@ export function UserSubscriptionManager({
                   id="custom-end-date"
                   type="date"
                   value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  onChange={((e: any): any) => setCustomEndDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
@@ -376,7 +376,7 @@ export function UserSubscriptionManager({
                 id="notes"
                 placeholder="Add any notes about this subscription assignment..."
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={((e: any): any) => setNotes(e.target.value)}
                 rows={3}
               />
             </div>
@@ -390,7 +390,7 @@ export function UserSubscriptionManager({
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setShowAssignForm(false)}
+                onClick={((: any): any) => setShowAssignForm(false)}
               >
                 Cancel
               </Button>
@@ -413,7 +413,7 @@ export function UserSubscriptionManager({
                 type="number"
                 min="1"
                 value={extendDays}
-                onChange={(e) => setExtendDays(parseInt(e.target.value) || 0)}
+                onChange={((e: any): any) => setExtendDays(parseInt(e.target.value) || 0)}
                 placeholder="Number of days to extend"
               />
             </div>
@@ -424,7 +424,7 @@ export function UserSubscriptionManager({
                 id="modify-notes"
                 placeholder="Add any notes about this modification..."
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={((e: any): any) => setNotes(e.target.value)}
                 rows={3}
               />
             </div>
@@ -438,7 +438,7 @@ export function UserSubscriptionManager({
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setShowModifyForm(false)}
+                onClick={((: any): any) => setShowModifyForm(false)}
               >
                 Cancel
               </Button>

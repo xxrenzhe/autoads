@@ -112,7 +112,7 @@ export class AccessControlMiddleware {
    * Find matching protected route
    */
   private findProtectedRoute(pathname: string) {
-    return this.config.protectedRoutes.find(route => 
+    return this.config.protectedRoutes.find((route: any) => 
       pathname.startsWith(route.path)
     )
   }

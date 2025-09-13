@@ -152,14 +152,14 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
         // 功能使用数据
         '功能使用统计',
         '功能名称,消耗Token,操作次数,占比(%),平均消耗,最后使用时间',
-        ...statsData.byFeature?.filter(Boolean)?.map(f => 
+        ...statsData.byFeature?.filter(Boolean)?.map((f: any) => 
           `${f.displayName},${f.tokens},${f.operations},${f.percentage},${f.averageTokensPerOperation},${new Date(f.lastUsed).toLocaleString('zh-CN')}`
         ),
         '',
         // 趋势数据
         '使用趋势',
         '日期,Token消耗,操作次数',
-        ...statsData.trends?.filter(Boolean)?.map(t => 
+        ...statsData.trends?.filter(Boolean)?.map((t: any) => 
           `${new Date(t.date).toLocaleDateString('zh-CN')},${t.tokens},${t.operations}`
         )
       ].join('\n')
@@ -330,7 +330,7 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {statsData.byFeature.map((featureStats) => (
+            {statsData.byFeature.map((featureStats: any) => (
               <div key={featureStats.feature} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
@@ -428,7 +428,7 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
                 <div className="flex items-center justify-between">
                   <span className="text-sm">活跃时段</span>
                   <div className="flex space-x-1">
-                    {statsData.patterns.peakHours?.filter(Boolean)?.map(hour => (
+                    {statsData.patterns.peakHours?.filter(Boolean)?.map((hour: any) => (
                       <Badge key={hour} variant="outline" className="text-xs">
                         {hour}:00
                       </Badge>
@@ -438,7 +438,7 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
                 <div className="flex items-center justify-between">
                   <span className="text-sm">活跃日期</span>
                   <div className="flex space-x-1">
-                    {statsData.patterns.peakDays?.filter(Boolean)?.map(day => (
+                    {statsData.patterns.peakDays?.filter(Boolean)?.map((day: any) => (
                       <Badge key={day} variant="outline" className="text-xs">
                         {day}
                       </Badge>
@@ -495,7 +495,7 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {statsData.efficiency.recommendations.map((recommendation, index) => (
+              {statsData.efficiency.recommendations.map((recommendation, index: any) => (
                 <div key={index} className="flex items-start space-x-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <Lightbulb className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
                   <p className="text-sm">{recommendation}</p>
@@ -523,8 +523,8 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
               {/* 趋势图表 */}
               <div className="h-64 w-full">
                 <div className="flex items-end justify-between h-full space-x-1 pb-4">
-                  {statsData.trends.slice(-15).map((trend, index) => {
-                    const maxTokens = Math.max(...statsData.trends?.filter(Boolean)?.map(t => t.tokens))
+                  {statsData.trends.slice(-15).map((trend, index: any) => {
+                    const maxTokens = Math.max(...statsData.trends?.filter(Boolean)?.map((t: any) => t.tokens))
                     const height = maxTokens > 0 ? (trend.tokens / maxTokens) * 100 : 0
                     return (
                       <div key={trend.date} className="flex flex-col items-center flex-1 group">
@@ -554,7 +554,7 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
                   <div className="relative w-48 h-48 mx-auto">
                     {/* 简化的饼图 */}
                     <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                      {statsData.byFeature.reduce((acc, feature, index) => {
+                      {statsData.byFeature.reduce((acc, feature, index: any) => {
                         const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444']
                         const startAngle = acc.currentAngle
                         const angle = (feature.percentage / 100) * 360
@@ -598,7 +598,7 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
                   </div>
                   
                   <div className="mt-4 space-y-2">
-                    {statsData.byFeature.map((feature, index) => {
+                    {statsData.byFeature.map((feature, index: any) => {
                       const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444']
                       return (
                         <div key={feature.feature} className="flex items-center space-x-2">
@@ -617,7 +617,7 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
                 <div>
                   <h4 className="font-medium mb-4">详细数据</h4>
                   <div className="space-y-3">
-                    {statsData.trends.slice(-7).map((trend) => (
+                    {statsData.trends.slice(-7).map((trend: any) => (
                       <div key={trend.date} className="flex items-center justify-between p-2 border rounded">
                         <span className="text-sm font-mono">
                           {new Date(trend.date).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}
@@ -633,7 +633,7 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
                             <div 
                               className="bg-blue-600 h-2 rounded-full" 
                               style={{ 
-                                width: `${Math.min((trend.tokens / Math.max(...statsData.trends?.filter(Boolean)?.map(t => t.tokens))) * 100, 100)}%` 
+                                width: `${Math.min((trend.tokens / Math.max(...statsData.trends?.filter(Boolean)?.map((t: any) => t.tokens))) * 100, 100)}%` 
                               }}
                             />
                           </div>

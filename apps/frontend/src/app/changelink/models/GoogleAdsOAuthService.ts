@@ -521,7 +521,7 @@ export class GoogleAdsOAuthService {
       }
     }
 
-    expiredStates.forEach(state => this.authStates.delete(state));
+    expiredStates.forEach((state: any) => this.authStates.delete(state));
 
     if (expiredStates.length > 0) {
       this.loggingService.info('Cleaned up expired auth states', {

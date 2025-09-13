@@ -280,7 +280,7 @@ export class MultiLayerCacheSystem {
     logger.info('初始化缓存预热服务');
     
     // 添加预热策略
-    PREDEFINED_STRATEGIES.forEach(strategy => {
+    PREDEFINED_STRATEGIES.forEach((strategy: any) => {
       this.cacheWarmer.addStrategy(strategy);
     });
     

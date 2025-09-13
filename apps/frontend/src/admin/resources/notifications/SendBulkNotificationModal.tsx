@@ -119,7 +119,7 @@ export const SendBulkNotificationModal: React.FC<SendBulkNotificationModalProps>
               <TextField
                 label="通知标题"
                 value={formData.title}
-                onChange={(e) => handleChange('title', e.target.value)}
+                onChange={((e: any): any) => handleChange('title', e.target.value)}
                 fullWidth
                 required
                 helperText="简明扼要的标题，建议不超过30个字符"
@@ -127,7 +127,7 @@ export const SendBulkNotificationModal: React.FC<SendBulkNotificationModalProps>
               <TextField
                 label="通知内容"
                 value={formData.content}
-                onChange={(e) => handleChange('content', e.target.value)}
+                onChange={((e: any): any) => handleChange('content', e.target.value)}
                 multiline
                 rows={4}
                 fullWidth
@@ -140,9 +140,9 @@ export const SendBulkNotificationModal: React.FC<SendBulkNotificationModalProps>
                   <Select
                     value={formData.type}
                     label="通知类型"
-                    onChange={(e) => handleChange('type', e.target.value)}
+                    onChange={((e: any): any) => handleChange('type', e.target.value)}
                   >
-                    {notificationTypes.map((type) => (
+                    {notificationTypes.map((type: any) => (
                       <MenuItem key={type.id} value={type.id}>
                         <Chip
                           label={type.name}
@@ -160,9 +160,9 @@ export const SendBulkNotificationModal: React.FC<SendBulkNotificationModalProps>
                   <Select
                     value={formData.priority}
                     label="优先级"
-                    onChange={(e) => handleChange('priority', e.target.value)}
+                    onChange={((e: any): any) => handleChange('priority', e.target.value)}
                   >
-                    {priorities.map((priority) => (
+                    {priorities.map((priority: any) => (
                       <MenuItem key={priority.id} value={priority.id}>
                         {priority.name}
                       </MenuItem>
@@ -184,9 +184,9 @@ export const SendBulkNotificationModal: React.FC<SendBulkNotificationModalProps>
                 <Select
                   value={formData.targetType}
                   label="用户类型"
-                  onChange={(e) => handleChange('targetType', e.target.value)}
+                  onChange={((e: any): any) => handleChange('targetType', e.target.value)}
                 >
-                  {userTypes.map((type) => (
+                  {userTypes.map((type: any) => (
                     <MenuItem key={type.id} value={type.id}>
                       <People sx={{ mr: 1 }} />
                       {type.name}
@@ -201,7 +201,7 @@ export const SendBulkNotificationModal: React.FC<SendBulkNotificationModalProps>
                   options={[]}
                   freeSolo
                   value={formData.userIds}
-                  onChange={(e, newValue) => handleChange('userIds', newValue)}
+                  onChange={((e, newValue: any): any) => handleChange('userIds', newValue)}
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -225,7 +225,7 @@ export const SendBulkNotificationModal: React.FC<SendBulkNotificationModalProps>
                 label="过期时间"
                 type="datetime-local"
                 value={formData.expiresAt}
-                onChange={(e) => handleChange('expiresAt', e.target.value)}
+                onChange={((e: any): any) => handleChange('expiresAt', e.target.value)}
                 fullWidth
                 InputLabelProps={{ shrink: true }}
                 helperText="可选，通知将在指定时间后过期"
@@ -235,7 +235,7 @@ export const SendBulkNotificationModal: React.FC<SendBulkNotificationModalProps>
                 control={
                   <Switch
                     checked={formData.isPinned}
-                    onChange={(e) => handleChange('isPinned', e.target.checked)}
+                    onChange={((e: any): any) => handleChange('isPinned', e.target.checked)}
                   />
                 }
                 label="置顶通知"
@@ -245,7 +245,7 @@ export const SendBulkNotificationModal: React.FC<SendBulkNotificationModalProps>
                 control={
                   <Switch
                     checked={formData.sendEmail}
-                    onChange={(e) => handleChange('sendEmail', e.target.checked)}
+                    onChange={((e: any): any) => handleChange('sendEmail', e.target.checked)}
                   />
                 }
                 label="同时发送邮件"

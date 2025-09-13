@@ -22,7 +22,7 @@ export function getClientIP(request: NextRequest): string {
     if (value) {
       // X-Forwarded-For 可能包含多个IP，取第一个
       if (header.toLowerCase() === 'x-forwarded-for') {
-        const ips = value.split(',')?.filter(Boolean)?.map(ip => ip.trim());
+        const ips = value.split(',')?.filter(Boolean)?.map((ip: any) => ip.trim());
         if (ips.length > 0 && ips[0]) {
           return ips[0];
         }

@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Find matching invitation by generated code
-    const invitation = invitations.find(inv => 
+    const invitation = invitations.find((inv: any) => 
       generateInvitationCode(inv.id) === invitationCode.toUpperCase()
     );
 

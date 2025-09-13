@@ -31,7 +31,7 @@ export class QueryOptimizer {
    */
   static only<T extends Record<string, any>>(query: T, fields: string[]) {
     const select: Record<string, boolean> = {};
-    fields.forEach(field => {
+    fields.forEach((field: any) => {
       select[field] = true;
     });
     

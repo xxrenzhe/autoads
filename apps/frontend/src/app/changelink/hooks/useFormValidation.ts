@@ -52,12 +52,12 @@ export function useFormValidation(
     const fieldWarnings: { [key: string]: string } = {};
 
     // 处理错误
-    result.errors.forEach(error => {
+    result.errors.forEach((error: any) => {
       fieldErrors[error.field] = error.message || '验证失败';
     });
 
     // 处理警告
-    result.warnings.forEach(warning => {
+    result.warnings.forEach((warning: any) => {
       fieldWarnings[warning.field] = warning.message || '验证警告';
     });
 
@@ -257,12 +257,12 @@ export function useFormValidation(
 
   // 获取所有错误消息
   const getAllErrors = useCallback(() => {
-    return validationState.errors?.filter(Boolean)?.map(error => error.message || '验证失败');
+    return validationState.errors?.filter(Boolean)?.map((error: any) => error.message || '验证失败');
   }, [validationState.errors]);
 
   // 获取所有警告消息
   const getAllWarnings = useCallback(() => {
-    return validationState.warnings?.filter(Boolean)?.map(warning => warning.message || '验证警告');
+    return validationState.warnings?.filter(Boolean)?.map((warning: any) => warning.message || '验证警告');
   }, [validationState.warnings]);
 
   // 初始验证
@@ -325,8 +325,8 @@ export function useFieldValidation(
       const result = ValidationService.validateConfiguration(tempConfig);
 
       // 找到当前字段的错误和警告
-      const fieldError = result.errors.find(error => error.field === fieldName);
-      const fieldWarning = result.warnings.find(warning => warning.field === fieldName);
+      const fieldError = result.errors.find((error: any) => error.field === fieldName);
+      const fieldWarning = result.warnings.find((warning: any) => warning.field === fieldName);
 
       setFieldState({
         error: fieldError ? ValidationService.getErrorMessage(fieldError) : '',

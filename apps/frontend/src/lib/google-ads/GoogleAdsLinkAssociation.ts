@@ -122,7 +122,7 @@ export class GoogleAdsLinkAssociation {
         throw new Error(`No configuration found for account ${accountId}`);
       }
 
-      config.affiliateLinks = config.affiliateLinks.filter(link => link.id !== linkId);
+      config.affiliateLinks = config.affiliateLinks.filter((link: any) => link.id !== linkId);
       await this.saveConfig(config);
 
       logger.info('Affiliate link configuration removed', { accountId, linkId });
@@ -143,7 +143,7 @@ export class GoogleAdsLinkAssociation {
       }
 
       const results: LinkAssociationResult[] = [];
-      const activeLinks = config.affiliateLinks.filter(link => link.status === 'ACTIVE');
+      const activeLinks = config.affiliateLinks.filter((link: any) => link.status === 'ACTIVE');
 
       for (const ad of ads) {
         const matches = await this.findMatchesForAd(ad, activeLinks, config.matchingStrategy);
@@ -176,7 +176,7 @@ export class GoogleAdsLinkAssociation {
         accountId,
         totalAds: ads.length,
         matchedAds: results.length,
-        averageConfidence: results.length > 0 ? results.reduce((sum, r) => sum + r.confidence, 0) / results.length : 0,
+        averageConfidence: results.length > 0 ? results.reduce((sum, r: any) => sum + r.confidence, 0) / results.length : 0,
       });
 
       return results;
@@ -291,7 +291,7 @@ export class GoogleAdsLinkAssociation {
       const linkStats = new Map<string, { matchCount: number; totalConfidence: number }>();
       
       // Calculate link statistics
-      matches.forEach(match => {
+      matches.forEach((match: any) => {
         const linkId = match.matchedLink.id;
         const existing = linkStats.get(linkId) || { matchCount: 0, totalConfidence: 0 };
         linkStats.set(linkId, {
@@ -301,8 +301,8 @@ export class GoogleAdsLinkAssociation {
       });
 
       const topLinks = Array.from(linkStats.entries())
-        .map(([linkId, stats]) => {
-          const link = config.affiliateLinks.find(l => l.id === linkId)!;
+        .map(([linkId, stats]: any) => {
+          const link = config.affiliateLinks.find((l: any) => l.id === linkId)!;
           return {
             link,
             matchCount: stats.matchCount,
@@ -314,9 +314,9 @@ export class GoogleAdsLinkAssociation {
 
       // Calculate confidence distribution
       const confidenceDistribution = {
-        high: matches.filter(m => m.confidence > 0.8).length,
-        medium: matches.filter(m => m.confidence >= 0.5 && m.confidence <= 0.8).length,
-        low: matches.filter(m => m.confidence < 0.5).length,
+        high: matches.filter((m: any) => m.confidence > 0.8).length,
+        medium: matches.filter((m: any) => m.confidence >= 0.5 && m.confidence <= 0.8).length,
+        low: matches.filter((m: any) => m.confidence < 0.5).length,
       };
 
       return {
@@ -513,7 +513,7 @@ export class GoogleAdsLinkAssociation {
     const adWords = adText.split(/\s+/);
     const linkWords = linkText.split(/\s+/);
     
-    const intersection = adWords.filter(word => linkWords.includes(word));
+    const intersection = adWords.filter((word: any) => linkWords.includes(word));
     const union = [...new Set([...adWords, ...linkWords])];
     
     return intersection.length / union.length;
@@ -572,7 +572,7 @@ export class GoogleAdsLinkAssociation {
 
     // Add tracking parameters from link
     const url = new URL(finalUrl);
-    Object.entries(link.trackingParameters).forEach(([key, value]) => {
+    Object.entries(link.trackingParameters).forEach(([key, value]: any) => {
       url.searchParams.append(key, value);
     });
 

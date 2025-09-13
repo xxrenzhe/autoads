@@ -86,7 +86,7 @@ export default function GATestPage() {
           </div>
           
           <button
-            onClick={() => window.location.reload()}
+            onClick={((: any): any) => window.location.reload()}
             className="w-full mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
           >
             Reload Page

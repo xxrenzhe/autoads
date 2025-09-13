@@ -19,7 +19,7 @@ export default function GADebugPage() {
       messages.push({
         type,
         timestamp: new Date().toISOString(),
-        args: args?.filter(Boolean)?.map(arg => 
+        args: args?.filter(Boolean)?.map((arg: any) => 
           typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
         )
       });
@@ -104,14 +104,14 @@ export default function GADebugPage() {
         dataLayerLength: (window as any).dataLayer?.length || 0,
         
         // Scripts
-        scripts: Array.from(document.querySelectorAll('script'))?.filter(Boolean)?.map(script => ({
+        scripts: Array.from(document.querySelectorAll('script'))?.filter(Boolean)?.map((script: any) => ({
           src: script.src,
           id: script.id,
           innerHTML: script.innerHTML ? script.innerHTML.substring(0, 100) + '...' : ''
-        })).filter(s => s.src.includes('google') || s.id.includes('google')),
+        })).filter((s: any) => s.src.includes('google') || s.id.includes('google')),
         
         // GA specific checks
-        gaCookies: document.cookie.split(';').filter(cookie => 
+        gaCookies: document.cookie.split(';').filter((cookie: any) => 
           cookie.trim().startsWith('_ga') || cookie.trim().startsWith('_gid')
         ),
         
@@ -194,7 +194,7 @@ export default function GADebugPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Console Messages</h2>
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {consoleMessages.map((msg, index) => (
+              {consoleMessages.map((msg, index: any) => (
                 <div 
                   key={index} 
                   className={`text-xs p-2 rounded ${
@@ -214,7 +214,7 @@ export default function GADebugPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Network Requests</h2>
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {networkRequests.map((req, index) => (
+              {networkRequests.map((req, index: any) => (
                 <div 
                   key={index} 
                   className={`text-xs p-2 rounded ${
@@ -242,21 +242,21 @@ export default function GADebugPage() {
             <h2 className="text-xl font-semibold mb-4">Test Actions</h2>
             <div className="space-y-4">
               <button
-                onClick={() => window.location.reload()}
+                onClick={((: any): any) => window.location.reload()}
                 className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
               >
                 Reload Page
               </button>
               
               <button
-                onClick={() => (window as any).testGA?.()}
+                onClick={((: any): any) => (window as any).testGA?.()}
                 className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition"
               >
                 Send Test Event
               </button>
               
               <button
-                onClick={() => {
+                onClick={((: any): any) => {
                   const gaId = (window as any).__RUNTIME_CONFIG__?.GA_ID;
                   if (gaId) {
                     window.open(`https://analytics.google.com/analytics/web/#/p${gaId.replace('G-', '')}/`, '_blank');

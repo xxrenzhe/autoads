@@ -328,7 +328,7 @@ export default function UserTokensPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {Object.entries(apiData.data.stats.byFeature).map(([feature, stats]) => (
+              {Object.entries(apiData.data.stats.byFeature).map(([feature, stats]: any) => (
                 <div key={feature} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">{getFeatureIcon(feature)}</span>
@@ -421,7 +421,7 @@ export default function UserTokensPage() {
               <Button
                 variant={includeBatchDetails ? "default" : "outline"}
                 size="sm"
-                onClick={() => setIncludeBatchDetails(!includeBatchDetails)}
+                onClick={((: any): any) => setIncludeBatchDetails(!includeBatchDetails)}
               >
                 <Info className="h-4 w-4 mr-2" />
                 {includeBatchDetails ? "隐藏详情" : "显示详情"}
@@ -449,7 +449,7 @@ export default function UserTokensPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {apiData.data.records.map((usage) => (
+                  {apiData.data.records.map((usage: any) => (
                     <TableRow key={usage.id}>
                       <TableCell>
                         <div className="flex items-center space-x-2">
@@ -492,7 +492,7 @@ export default function UserTokensPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleBatchDetailsClick(usage.batchId!)}
+                                onClick={((: any): any) => handleBatchDetailsClick(usage.batchId!)}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -548,7 +548,7 @@ export default function UserTokensPage() {
                                           </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                          {batchDetails.operations.map((op) => (
+                                          {batchDetails.operations.map((op: any) => (
                                             <TableRow key={op.index}>
                                               <TableCell>{op.index}</TableCell>
                                               <TableCell className="font-mono text-sm">
@@ -583,7 +583,7 @@ export default function UserTokensPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handlePageChange(currentPage - 1)}
+                      onClick={((: any): any) => handlePageChange(currentPage - 1)}
                       disabled={currentPage <= 1}
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -595,7 +595,7 @@ export default function UserTokensPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handlePageChange(currentPage + 1)}
+                      onClick={((: any): any) => handlePageChange(currentPage + 1)}
                       disabled={currentPage >= apiData.data.pagination.totalPages}
                     >
                       下一页

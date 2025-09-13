@@ -243,7 +243,7 @@ const CheckInModule: React.FC = () => {
     for (let i = 29; i >= 0; i--) {
       const date = subDays(today, i);
       const dateStr = format(date, 'yyyy-MM-dd');
-      const checkIn = checkInData.history.find(h => 
+      const checkIn = checkInData.history.find((h: any) => 
         format(new Date(h.date), 'yyyy-MM-dd') === dateStr
       );
       
@@ -257,7 +257,7 @@ const CheckInModule: React.FC = () => {
 
     return (
       <Grid container spacing={1} sx={{ mt: 2 }}>
-        {calendarDays.map((day, index) => {
+        {calendarDays.map((day, index: any) => {
           const dayName = format(day.date, 'EEE', { locale: zhCN });
           const dayNum = format(day.date, 'd');
           
@@ -411,7 +411,7 @@ const CheckInModule: React.FC = () => {
             奖励进度
           </Typography>
           <Stack spacing={2}>
-            {[1, 2, 3, 4].map(level => {
+            {[1, 2, 3, 4].map((level: any) => {
               const reward = getRewardInfo(level);
               const isCurrentLevel = stats.currentStreak >= level;
               const isNextLevel = nextReward.rewardLevel === level;

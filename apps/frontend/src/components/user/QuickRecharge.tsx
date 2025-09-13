@@ -213,7 +213,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
           <Box>
             <Typography variant="h6" gutterBottom>选择充值套餐</Typography>
             <Grid container spacing={2}>
-              {rechargePackages.map((pkg) => (
+              {rechargePackages.map((pkg: any) => (
                 <Grid item xs={12} sm={6} key={pkg.id}>
                   <Card
                     variant={selectedPackage?.id === pkg.id ? "elevation" : "outlined"}
@@ -228,7 +228,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
                         boxShadow: 2
                       }
                     }}
-                    onClick={() => handlePackageSelect(pkg)}
+                    onClick={((: any): any) => handlePackageSelect(pkg)}
                   >
                     {pkg.popular && (
                       <Chip
@@ -272,7 +272,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
                   label="充值金额 (¥)"
                   type="number"
                   value={customAmount}
-                  onChange={(e) => setCustomAmount(e.target.value)}
+                  onChange={((e: any): any) => setCustomAmount(e.target.value)}
                   inputProps={{ min: 1, step: 0.1 }}
                 />
               </Grid>
@@ -282,7 +282,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
                   label="Token数量"
                   type="number"
                   value={customTokens}
-                  onChange={(e) => setCustomTokens(e.target.value)}
+                  onChange={((e: any): any) => setCustomTokens(e.target.value)}
                   inputProps={{ min: 100 }}
                 />
               </Grid>
@@ -323,7 +323,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
             <FormControl component="fieldset" fullWidth>
               <RadioGroup
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
+                onChange={((e: any): any) => setPaymentMethod(e.target.value)}
               >
                 <Card variant="outlined" sx={{ mb: 2, cursor: 'pointer' }}>
                   <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -455,7 +455,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
           </Box>
 
           <Grid container spacing={2}>
-            {rechargePackages.slice(0, 3).map((pkg) => (
+            {rechargePackages.slice(0, 3).map((pkg: any) => (
               <Grid item xs={12} sm={4} key={pkg.id}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ textAlign: 'center' }}>
@@ -498,7 +498,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
         <DialogTitle>Token充值</DialogTitle>
         <DialogContent>
           <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-            {steps.map((label, index) => (
+            {steps.map((label, index: any) => (
               <Step key={label}>
                 <StepLabel>{label}</StepLabel>
               </Step>
@@ -509,7 +509,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
         </DialogContent>
         <DialogActions>
           {activeStep > 0 && activeStep < 3 && (
-            <Button onClick={() => setActiveStep(activeStep - 1)}>
+            <Button onClick={((: any): any) => setActiveStep(activeStep - 1)}>
               上一步
             </Button>
           )}

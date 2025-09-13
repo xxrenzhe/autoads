@@ -176,7 +176,7 @@ export default function TokenBalanceManager() {
             Refresh
           </Button>
           <Button
-            onClick={() => setShowTopUpForm(true)}
+            onClick={((: any): any) => setShowTopUpForm(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Top Up
@@ -298,7 +298,7 @@ export default function TokenBalanceManager() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {Object.entries(balance.analytics.byFeature).map(([feature, tokens]) => {
+            {Object.entries(balance.analytics.byFeature).map(([feature, tokens]: any) => {
               const percentage = (tokens / balance.monthlyUsage) * 100
               return (
                 <div key={feature} className="space-y-2">
@@ -365,7 +365,7 @@ export default function TokenBalanceManager() {
                   min="1"
                   max="10000"
                   value={topUpAmount}
-                  onChange={(e) => setTopUpAmount(parseInt(e.target.value) || 0)}
+                  onChange={((e: any): any) => setTopUpAmount(parseInt(e.target.value) || 0)}
                   placeholder="Enter token amount"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -388,7 +388,7 @@ export default function TokenBalanceManager() {
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => setShowTopUpForm(false)}
+                  onClick={((: any): any) => setShowTopUpForm(false)}
                   className="flex-1"
                 >
                   Cancel

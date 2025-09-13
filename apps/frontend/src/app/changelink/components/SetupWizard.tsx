@@ -314,7 +314,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
   };
 
   const markStepCompleted = (stepId: string) => {
-    setSetupSteps(prev => prev?.filter(Boolean)?.map(step => 
+    setSetupSteps(prev => prev?.filter(Boolean)?.map((step: any) => 
       step.id === stepId ? { ...step, completed: true } : step
     ));
   };
@@ -454,7 +454,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setEditMode(prev => ({ ...prev, clientId: true }))}
+                onClick={((: any) => setEditMode(prev: any) => ({ ...prev, clientId: true }))}
                 className="h-6 px-2 text-xs"
               >
                 <Edit className="h-3 w-3 mr-1" />
@@ -475,7 +475,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             <input
               type="text"
               value={googleAdsConfig.clientId}
-              onChange={(e) => {
+              onChange={((e: any): any) => {
                 setGoogleAdsConfig(prev => ({ ...prev, clientId: e.target.value }));
                 setUsingDefaults(prev => ({ ...prev, clientId: false }));
               }}
@@ -492,7 +492,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     setEditMode(prev => ({ ...prev, clientId: false }));
                     setUsingDefaults(prev => ({ ...prev, clientId: true }));
                     setGoogleAdsConfig(prev => ({ ...prev, clientId: '' }));
@@ -519,7 +519,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setEditMode(prev => ({ ...prev, clientSecret: true }))}
+                onClick={((: any) => setEditMode(prev: any) => ({ ...prev, clientSecret: true }))}
                 className="h-6 px-2 text-xs"
               >
                 <Edit className="h-3 w-3 mr-1" />
@@ -541,7 +541,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               <input
                 type={showPasswords ? "text" : "password"}
                 value={googleAdsConfig.clientSecret}
-                onChange={(e) => {
+                onChange={((e: any): any) => {
                   setGoogleAdsConfig(prev => ({ ...prev, clientSecret: e.target.value }));
                   setUsingDefaults(prev => ({ ...prev, clientSecret: false }));
                 }}
@@ -550,7 +550,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               />
               <button
                 type="button"
-                onClick={() => setShowPasswords(!showPasswords)}
+                onClick={((: any): any) => setShowPasswords(!showPasswords)}
                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
               >
                 {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -566,7 +566,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     setEditMode(prev => ({ ...prev, clientSecret: false }));
                     setUsingDefaults(prev => ({ ...prev, clientSecret: true }));
                     setGoogleAdsConfig(prev => ({ ...prev, clientSecret: '' }));
@@ -593,7 +593,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setEditMode(prev => ({ ...prev, developerToken: true }))}
+                onClick={((: any) => setEditMode(prev: any) => ({ ...prev, developerToken: true }))}
                 className="h-6 px-2 text-xs"
               >
                 <Edit className="h-3 w-3 mr-1" />
@@ -614,7 +614,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             <input
               type={showPasswords ? "text" : "password"}
               value={googleAdsConfig.developerToken}
-              onChange={(e) => {
+              onChange={((e: any): any) => {
                 setGoogleAdsConfig(prev => ({ ...prev, developerToken: e.target.value }));
                 setUsingDefaults(prev => ({ ...prev, developerToken: false }));
               }}
@@ -631,7 +631,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     setEditMode(prev => ({ ...prev, developerToken: false }));
                     setUsingDefaults(prev => ({ ...prev, developerToken: true }));
                     setGoogleAdsConfig(prev => ({ ...prev, developerToken: '' }));
@@ -651,7 +651,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
           <input
             type={showPasswords ? "text" : "password"}
             value={googleAdsConfig.refreshToken}
-            onChange={(e) => setGoogleAdsConfig(prev => ({ ...prev, refreshToken: e.target.value }))}
+            onChange={((e: any) => setGoogleAdsConfig(prev: any) => ({ ...prev, refreshToken: e.target.value }))}
             className="w-full px-3 py-2 border rounded-md"
             placeholder="请输入Refresh Token（可选）"
           />
@@ -669,7 +669,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setEditMode(prev => ({ ...prev, loginCustomerId: true }))}
+                onClick={((: any) => setEditMode(prev: any) => ({ ...prev, loginCustomerId: true }))}
                 className="h-6 px-2 text-xs"
               >
                 <Edit className="h-3 w-3 mr-1" />
@@ -690,7 +690,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             <input
               type="text"
               value={googleAdsConfig.loginCustomerId}
-              onChange={(e) => {
+              onChange={((e: any): any) => {
                 setGoogleAdsConfig(prev => ({ ...prev, loginCustomerId: e.target.value }));
                 setUsingDefaults(prev => ({ ...prev, loginCustomerId: false }));
               }}
@@ -708,7 +708,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     setEditMode(prev => ({ ...prev, loginCustomerId: false }));
                     setUsingDefaults(prev => ({ ...prev, loginCustomerId: true }));
                     setGoogleAdsConfig(prev => ({ ...prev, loginCustomerId: '' }));
@@ -747,7 +747,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
+                onClick={((: any): any) => {
                   markStepCompleted('google-ads');
                   handleNext();
                 }}
@@ -790,7 +790,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             <input
               type="text"
               value={emailConfig.smtpHost}
-              onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpHost: e.target.value }))}
+              onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, smtpHost: e.target.value }))}
               className="w-full px-3 py-2 border rounded-md"
               placeholder="smtp.gmail.com"
             />
@@ -801,7 +801,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             <input
               type="text"
               value={emailConfig.smtpPort}
-              onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpPort: e.target.value }))}
+              onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, smtpPort: e.target.value }))}
               className="w-full px-3 py-2 border rounded-md"
               placeholder="587"
             />
@@ -813,7 +813,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
           <input
             type="text"
             value={emailConfig.smtpUser}
-            onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpUser: e.target.value }))}
+            onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, smtpUser: e.target.value }))}
             className="w-full px-3 py-2 border rounded-md"
             placeholder="your-email@gmail.com"
           />
@@ -825,13 +825,13 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             <input
               type={showPasswords ? "text" : "password"}
               value={emailConfig.smtpPassword}
-              onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpPassword: e.target.value }))}
+              onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, smtpPassword: e.target.value }))}
               className="w-full px-3 py-2 border rounded-md pr-10"
               placeholder="应用专用密码"
             />
             <button
               type="button"
-              onClick={() => setShowPasswords(!showPasswords)}
+              onClick={((: any): any) => setShowPasswords(!showPasswords)}
               className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
             >
               {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -845,7 +845,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             <input
               type="email"
               value={emailConfig.fromEmail}
-              onChange={(e) => setEmailConfig(prev => ({ ...prev, fromEmail: e.target.value }))}
+              onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, fromEmail: e.target.value }))}
               className="w-full px-3 py-2 border rounded-md"
               placeholder="reports@yourcompany.com"
             />
@@ -856,7 +856,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
             <input
               type="text"
               value={emailConfig.fromName}
-              onChange={(e) => setEmailConfig(prev => ({ ...prev, fromName: e.target.value }))}
+              onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, fromName: e.target.value }))}
               className="w-full px-3 py-2 border rounded-md"
               placeholder="ChangeLink Reports"
             />
@@ -874,7 +874,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
 
           <Button
             variant="ghost"
-            onClick={() => {
+            onClick={((: any): any) => {
               markStepCompleted('email');
               handleNext();
             }}
@@ -933,7 +933,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
 
         <div className="text-center pt-6">
           <Button
-            onClick={async () => {
+            onClick={(async (): any) => {
               const success = await initializeDatabase();
               if (success) {
                 handleNext();
@@ -1012,7 +1012,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <input
                   type="text"
                   value={emailConfig.smtpHost}
-                  onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpHost: e.target.value }))}
+                  onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, smtpHost: e.target.value }))}
                   className="w-full px-3 py-2 border rounded-md"
                   placeholder="smtp.gmail.com"
                 />
@@ -1023,7 +1023,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <input
                   type="text"
                   value={emailConfig.smtpPort}
-                  onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpPort: e.target.value }))}
+                  onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, smtpPort: e.target.value }))}
                   className="w-full px-3 py-2 border rounded-md"
                   placeholder="587"
                 />
@@ -1035,7 +1035,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               <input
                 type="text"
                 value={emailConfig.smtpUser}
-                onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpUser: e.target.value }))}
+                onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, smtpUser: e.target.value }))}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="your-email@gmail.com"
               />
@@ -1047,13 +1047,13 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <input
                   type={showPasswords ? "text" : "password"}
                   value={emailConfig.smtpPassword}
-                  onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpPassword: e.target.value }))}
+                  onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, smtpPassword: e.target.value }))}
                   className="w-full px-3 py-2 border rounded-md pr-10"
                   placeholder="应用专用密码"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPasswords(!showPasswords)}
+                  onClick={((: any): any) => setShowPasswords(!showPasswords)}
                   className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
                 >
                   {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -1067,7 +1067,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <input
                   type="email"
                   value={emailConfig.fromEmail}
-                  onChange={(e) => setEmailConfig(prev => ({ ...prev, fromEmail: e.target.value }))}
+                  onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, fromEmail: e.target.value }))}
                   className="w-full px-3 py-2 border rounded-md"
                   placeholder="reports@yourcompany.com"
                 />
@@ -1078,7 +1078,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                 <input
                   type="text"
                   value={emailConfig.fromName}
-                  onChange={(e) => setEmailConfig(prev => ({ ...prev, fromName: e.target.value }))}
+                  onChange={((e: any) => setEmailConfig(prev: any) => ({ ...prev, fromName: e.target.value }))}
                   className="w-full px-3 py-2 border rounded-md"
                   placeholder="ChangeLink Reports"
                 />
@@ -1096,7 +1096,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
 
               <Button
                 variant="ghost"
-                onClick={() => {
+                onClick={((: any): any) => {
                   markStepCompleted('advanced');
                   handleNext();
                 }}
@@ -1167,7 +1167,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
 
         {/* 步骤指示器 */}
         <div className="flex items-center justify-center mb-8 overflow-x-auto">
-          {setupSteps.map((step, index) => (
+          {setupSteps.map((step, index: any) => (
             <div key={step.id} className="flex items-center">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
                 index === currentStep 

@@ -31,7 +31,7 @@ export const QuickActions: React.FC = () => {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {actions.map((action, index) => (
+          {actions.map((action, index: any) => (
             <Button
               key={index}
               variant="outline"

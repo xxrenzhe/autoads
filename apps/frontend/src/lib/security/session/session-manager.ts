@@ -234,7 +234,7 @@ export class SessionManager {
       })
 
       // Remove from cache
-      const cacheKeys = sessions.map((s: any) => `${SessionManager.CACHE_PREFIX}${s.sessionToken}`)
+      const cacheKeys = sessions.map((s: any: any) => `${SessionManager.CACHE_PREFIX}${s.sessionToken}`)
       if (cacheKeys.length > 0) {
         for (const key of cacheKeys) {
           await redis.del(key)
@@ -278,7 +278,7 @@ export class SessionManager {
       orderBy: { expires: 'desc' }
     })
 
-    return sessions.map((session: any) => ({
+    return sessions.map((session: any: any) => ({
       id: session.id,
       userId: session.userId,
       sessionToken: session.sessionToken,
@@ -312,7 +312,7 @@ export class SessionManager {
 
       // Check for multiple IPs
       const userSessions = await this.getUserSessions(userId)
-      const uniqueIPs = new Set(userSessions?.filter(Boolean)?.map(s => s.ipAddress).filter(Boolean))
+      const uniqueIPs = new Set(userSessions?.filter(Boolean)?.map((s: any) => s.ipAddress).filter(Boolean))
       
       if (uniqueIPs.size > 3) {
         return { isSuspicious: true, reason: 'Multiple IP addresses' }

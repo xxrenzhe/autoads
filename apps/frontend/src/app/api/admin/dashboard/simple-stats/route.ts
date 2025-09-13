@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     // 计算总收入
-    const monthlyRevenue = subscriptions.reduce((sum: number, sub: any) => {
+    const monthlyRevenue = subscriptions.reduce((sum: number, sub: any: any) => {
       return sum + (sub.plan?.price || 0);
     }, 0);
 
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         siterank: stats.featureStats.siterank.tokens,
         batchopen: stats.featureStats.batchopen.tokens,
         adscenter: stats.featureStats.adscenter.tokens,
-        total: Object.values(stats.featureStats).reduce((sum: number, f: any) => sum + f.tokens, 0)
+        total: Object.values(stats.featureStats).reduce((sum: number, f: any: any) => sum + f.tokens, 0)
       },
 
       // API性能
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       },
 
       // 订阅分布
-      subscriptionByPlan: subscriptions.reduce((acc, sub) => {
+      subscriptionByPlan: subscriptions.reduce((acc, sub: any) => {
         const planName = sub.plan?.name || 'Unknown';
         acc[planName] = (acc[planName] || 0) + 1;
         return acc;

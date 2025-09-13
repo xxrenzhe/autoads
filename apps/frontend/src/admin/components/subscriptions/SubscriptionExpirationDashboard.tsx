@@ -146,7 +146,7 @@ export const SubscriptionExpirationDashboard: React.FC = () => {
             variant="contained"
             color="warning"
             startIcon={<Schedule />}
-            onClick={() => setConfirmDialogOpen(true)}
+            onClick={((: any): any) => setConfirmDialogOpen(true)}
             disabled={loading}
           >
             手动检查到期
@@ -277,7 +277,7 @@ export const SubscriptionExpirationDashboard: React.FC = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmDialogOpen(false)}>
+          <Button onClick={((: any): any) => setConfirmDialogOpen(false)}>
             取消
           </Button>
           <Button 

@@ -179,7 +179,7 @@ const TokenTransactionDashboard: React.FC = () => {
   const exportData = async () => {
     try {
       const params = new URLSearchParams();
-      Object.entries(filter).forEach(([key, value]) => {
+      Object.entries(filter).forEach(([key, value]: any) => {
         if (value) params.append(key, value);
       });
 
@@ -210,7 +210,7 @@ const TokenTransactionDashboard: React.FC = () => {
     const headers = Object.keys(data[0]);
     const csv = [
       headers.join(','),
-      ...data.map(row => headers.map(header => JSON.stringify(row[header])).join(','))
+      ...data.map((row => headers.map(header: any) => JSON.stringify(row[header])).join(','))
     ].join('\n');
     
     return csv;
@@ -250,7 +250,7 @@ const TokenTransactionDashboard: React.FC = () => {
             </IconButton>
           </Tooltip>
           <Tooltip title="筛选">
-            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+            <IconButton onClick={((e: any): any) => setAnchorEl(e.currentTarget)}>
               <FilterList />
             </IconButton>
           </Tooltip>
@@ -346,7 +346,7 @@ const TokenTransactionDashboard: React.FC = () => {
             <Select
               value={filter.type}
               label="Token类型"
-              onChange={(e) => handleFilterChange('type', e.target.value)}
+              onChange={((e: any): any) => handleFilterChange('type', e.target.value)}
             >
               <MenuItem value="">全部</MenuItem>
               <MenuItem value="SUBSCRIPTION">订阅Token</MenuItem>
@@ -383,7 +383,7 @@ const TokenTransactionDashboard: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {transactions.map((transaction) => (
+              {transactions.map((transaction: any) => (
                 <TableRow key={transaction.id}>
                   <TableCell>
                     {format(new Date(transaction.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}
@@ -456,7 +456,7 @@ const TokenTransactionDashboard: React.FC = () => {
                   按类型统计
                 </Typography>
                 <Box sx={{ mt: 2 }}>
-                  {Object.entries(stats.byType).map(([type, data]) => (
+                  {Object.entries(stats.byType).map(([type, data]: any) => (
                     <Box key={type} sx={{ mb: 2 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                         <Typography variant="body2">{tokenTypeLabels[type as keyof typeof tokenTypeLabels]}</Typography>
@@ -483,7 +483,7 @@ const TokenTransactionDashboard: React.FC = () => {
                   按来源统计
                 </Typography>
                 <Box sx={{ mt: 2 }}>
-                  {Object.entries(stats.bySource).map(([source, amount]) => (
+                  {Object.entries(stats.bySource).map(([source, amount]: any) => (
                     <Box key={source} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                       <Typography variant="body2">
                         {sourceLabels[source as keyof typeof sourceLabels] || source}
@@ -505,7 +505,7 @@ const TokenTransactionDashboard: React.FC = () => {
         <Pagination
           count={Math.ceil(100 / 20)} // Replace with actual total pages
           page={page}
-          onChange={(e, newPage) => setPage(newPage)}
+          onChange={((e, newPage: any): any) => setPage(newPage)}
           color="primary"
         />
       </Box>

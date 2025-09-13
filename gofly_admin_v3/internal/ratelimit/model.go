@@ -95,16 +95,16 @@ func (p *PlanRateLimitDB) ToConfig() *PlanRateLimit {
 }
 
 type RateLimitUsage struct {
-    ID         string    `json:"id" gorm:"primaryKey;size:64"`
-    UserID     string    `json:"user_id" gorm:"size:64;index"`
-    Plan       string    `json:"plan" gorm:"size:32"`
-    Feature    string    `json:"feature" gorm:"size:32"`
-    UsedCount  int       `json:"used_count"`
-    LimitCount int       `json:"limit_count"`
-    Period     string    `json:"period" gorm:"size:16"` // MINUTE/HOUR
-    RecordedAt time.Time `json:"recorded_at"`
-    CreatedAt  time.Time `json:"created_at"`
-    Status     string    `json:"status" gorm:"size:32"`
+	ID         string    `json:"id" gorm:"primaryKey;size:64"`
+	UserID     string    `json:"user_id" gorm:"size:64;index"`
+	Plan       string    `json:"plan" gorm:"size:32"`
+	Feature    string    `json:"feature" gorm:"size:32"`
+	UsedCount  int       `json:"used_count"`
+	LimitCount int       `json:"limit_count"`
+	Period     string    `json:"period" gorm:"size:16"` // MINUTE/HOUR
+	RecordedAt time.Time `json:"recorded_at"`
+	CreatedAt  time.Time `json:"created_at"`
+	Status     string    `json:"status" gorm:"size:32"`
 }
 
 func (RateLimitUsage) TableName() string { return "rate_limit_usages" }

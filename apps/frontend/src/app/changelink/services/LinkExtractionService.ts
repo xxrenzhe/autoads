@@ -357,7 +357,7 @@ export class LinkExtractionService {
       ];
 
       const searchParams = new URLSearchParams(urlObj.search);
-      trackingParams.forEach(param => {
+      trackingParams.forEach((param: any) => {
         searchParams.delete(param);
       });
 

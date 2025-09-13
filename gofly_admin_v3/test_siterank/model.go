@@ -9,11 +9,11 @@ import (
 type QueryStatus string
 
 const (
-	StatusPending    QueryStatus = "pending"    // 等待中
-	StatusRunning    QueryStatus = "running"    // 查询中
-	StatusCompleted  QueryStatus = "completed"  // 已完成
-	StatusFailed     QueryStatus = "failed"     // 失败
-	StatusCached     QueryStatus = "cached"     // 缓存命中
+	StatusPending   QueryStatus = "pending"   // 等待中
+	StatusRunning   QueryStatus = "running"   // 查询中
+	StatusCompleted QueryStatus = "completed" // 已完成
+	StatusFailed    QueryStatus = "failed"    // 失败
+	StatusCached    QueryStatus = "cached"    // 缓存命中
 )
 
 // Priority 优先级
@@ -35,33 +35,33 @@ const (
 
 // SiteRankQuery 网站排名查询模型
 type SiteRankQuery struct {
-	ID       string      `json:"id" gorm:"primaryKey;size:36"`
-	UserID   string      `json:"user_id" gorm:"not null;index;size:36"`
-	Domain   string      `json:"domain" gorm:"not null;index;size:255"`
-	Status   QueryStatus `json:"status" gorm:"size:20;default:pending"`
-	Source   DataSource  `json:"source" gorm:"size:20;default:similarweb"`
-	
+	ID     string      `json:"id" gorm:"primaryKey;size:36"`
+	UserID string      `json:"user_id" gorm:"not null;index;size:36"`
+	Domain string      `json:"domain" gorm:"not null;index;size:255"`
+	Status QueryStatus `json:"status" gorm:"size:20;default:pending"`
+	Source DataSource  `json:"source" gorm:"size:20;default:similarweb"`
+
 	// 查询结果
-	GlobalRank     *int     `json:"global_rank"`                    // 全球排名
-	CategoryRank   *int     `json:"category_rank"`                  // 分类排名
-	Category       string   `json:"category" gorm:"size:100"`       // 分类
-	Country        string   `json:"country" gorm:"size:2"`          // 国家代码
-	Visits         *float64 `json:"visits"`                         // 访问量
-	BounceRate     *float64 `json:"bounce_rate"`                    // 跳出率
-	PagesPerVisit  *float64 `json:"pages_per_visit"`                // 每次访问页面数
-	AvgDuration    *float64 `json:"avg_duration"`                   // 平均访问时长
-	Priority       Priority `json:"priority" gorm:"size:10"`        // 优先级
-	
+	GlobalRank    *int     `json:"global_rank"`              // 全球排名
+	CategoryRank  *int     `json:"category_rank"`            // 分类排名
+	Category      string   `json:"category" gorm:"size:100"` // 分类
+	Country       string   `json:"country" gorm:"size:2"`    // 国家代码
+	Visits        *float64 `json:"visits"`                   // 访问量
+	BounceRate    *float64 `json:"bounce_rate"`              // 跳出率
+	PagesPerVisit *float64 `json:"pages_per_visit"`          // 每次访问页面数
+	AvgDuration   *float64 `json:"avg_duration"`             // 平均访问时长
+	Priority      Priority `json:"priority" gorm:"size:10"`  // 优先级
+
 	// 缓存控制
-	CacheUntil    *time.Time `json:"cache_until"`                   // 缓存过期时间
-	RequestCount  int        `json:"request_count" gorm:"default:1"` // 请求次数
-	
+	CacheUntil   *time.Time `json:"cache_until"`                    // 缓存过期时间
+	RequestCount int        `json:"request_count" gorm:"default:1"` // 请求次数
+
 	// 错误信息
-	ErrorMessage  string `json:"error_message" gorm:"type:text"`    // 错误信息
-	
+	ErrorMessage string `json:"error_message" gorm:"type:text"` // 错误信息
+
 	// 审计字段
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // TableName 指定表名
@@ -71,14 +71,14 @@ func (SiteRankQuery) TableName() string {
 
 // SiteRankData SimilarWeb响应数据
 type SiteRankData struct {
-	GlobalRank    *int                   `json:"global_rank"`
-	CategoryRank  *int                   `json:"category_rank"`
-	Category      string                 `json:"category"`
-	Country       string                 `json:"country"`
-	Visits        *float64               `json:"visits"`
-	BounceRate    *float64               `json:"bounce_rate"`
-	PagesPerVisit *float64               `json:"pages_per_visit"`
-	AvgDuration   *float64               `json:"avg_duration"`
+	GlobalRank     *int                   `json:"global_rank"`
+	CategoryRank   *int                   `json:"category_rank"`
+	Category       string                 `json:"category"`
+	Country        string                 `json:"country"`
+	Visits         *float64               `json:"visits"`
+	BounceRate     *float64               `json:"bounce_rate"`
+	PagesPerVisit  *float64               `json:"pages_per_visit"`
+	AvgDuration    *float64               `json:"avg_duration"`
 	TrafficSources map[string]interface{} `json:"traffic_sources"`
 	Demographics   map[string]interface{} `json:"demographics"`
 	Competitors    []string               `json:"competitors"`
@@ -93,11 +93,11 @@ type BatchQuery struct {
 	Progress int      `json:"progress"`
 	Total    int      `json:"total"`
 	Results  []string `json:"results"` // 查询ID列表
-	
+
 	// 批量配置
-	BatchSize    int `json:"batch_size"`    // 批次大小
-	RateLimit    int `json:"rate_limit"`    // 速率限制（请求/分钟）
-	
+	BatchSize int `json:"batch_size"` // 批次大小
+	RateLimit int `json:"rate_limit"` // 速率限制（请求/分钟）
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -162,17 +162,17 @@ func (q *SiteRankQuery) CalculatePriority() Priority {
 	if q.GlobalRank == nil {
 		return PriorityLow
 	}
-	
+
 	rank := *q.GlobalRank
-	
+
 	// 根据全球排名计算优先级
 	switch {
 	case rank <= 10000:
-		return PriorityHigh   // 前1万名：高优先级
+		return PriorityHigh // 前1万名：高优先级
 	case rank <= 100000:
 		return PriorityMedium // 前10万名：中优先级
 	default:
-		return PriorityLow    // 其他：低优先级
+		return PriorityLow // 其他：低优先级
 	}
 }
 
@@ -186,10 +186,10 @@ func (q *SiteRankQuery) UpdateFromSimilarWebData(data *SiteRankData) {
 	q.BounceRate = data.BounceRate
 	q.PagesPerVisit = data.PagesPerVisit
 	q.AvgDuration = data.AvgDuration
-	
+
 	// 计算优先级
 	q.Priority = q.CalculatePriority()
-	
+
 	// 设置缓存时间
 	if q.Status == StatusCompleted {
 		// 成功查询缓存7天
@@ -200,17 +200,17 @@ func (q *SiteRankQuery) UpdateFromSimilarWebData(data *SiteRankData) {
 		cacheUntil := time.Now().Add(1 * time.Hour)
 		q.CacheUntil = &cacheUntil
 	}
-	
+
 	q.UpdatedAt = time.Now()
 }
 
 // SimilarWebConfig SimilarWeb API配置
 type SimilarWebConfig struct {
-	APIKey      string `json:"api_key"`
-	BaseURL     string `json:"base_url"`
-	RateLimit   int    `json:"rate_limit"`   // 每小时请求数
-	Timeout     int    `json:"timeout"`     // 超时时间（秒）
-	RetryCount  int    `json:"retry_count"` // 重试次数
+	APIKey     string `json:"api_key"`
+	BaseURL    string `json:"base_url"`
+	RateLimit  int    `json:"rate_limit"`  // 每小时请求数
+	Timeout    int    `json:"timeout"`     // 超时时间（秒）
+	RetryCount int    `json:"retry_count"` // 重试次数
 }
 
 // DefaultSimilarWebConfig 默认SimilarWeb配置
@@ -241,12 +241,12 @@ type BatchQueryRequest struct {
 
 // QueryStats 查询统计
 type QueryStats struct {
-	TotalQueries    int64 `json:"total_queries"`
-	CachedQueries   int64 `json:"cached_queries"`
-	SuccessQueries  int64 `json:"success_queries"`
-	FailedQueries   int64 `json:"failed_queries"`
-	HighPriority    int64 `json:"high_priority"`
-	MediumPriority  int64 `json:"medium_priority"`
-	LowPriority     int64 `json:"low_priority"`
-	CacheHitRate    float64 `json:"cache_hit_rate"`
+	TotalQueries   int64   `json:"total_queries"`
+	CachedQueries  int64   `json:"cached_queries"`
+	SuccessQueries int64   `json:"success_queries"`
+	FailedQueries  int64   `json:"failed_queries"`
+	HighPriority   int64   `json:"high_priority"`
+	MediumPriority int64   `json:"medium_priority"`
+	LowPriority    int64   `json:"low_priority"`
+	CacheHitRate   float64 `json:"cache_hit_rate"`
 }

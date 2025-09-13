@@ -70,7 +70,7 @@ export function UsageChart({
           <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
             {formatDate(label)}
           </p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: any, index: number: any) => (
             <div key={index} className="flex items-center space-x-2">
               <div 
                 className="w-3 h-3 rounded-full"

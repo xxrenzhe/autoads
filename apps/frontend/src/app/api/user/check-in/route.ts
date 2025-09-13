@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       currentStreak = 1;
       for (let i = 1; i < 365; i++) { // Max 365 days
         const checkDate = subDays(today, i);
-        const checkIn = history.find(h => 
+        const checkIn = history.find((h: any) => 
           format(h.date, 'yyyy-MM-dd') === format(checkDate, 'yyyy-MM-dd')
         );
         if (checkIn) {
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
         rewardLevel: getRewardLevel(todayCheckIn.streak),
         createdAt: todayCheckIn.createdAt.toISOString(),
       } : undefined,
-      history: history.map(checkIn => ({
+      history: history.map((checkIn: any) => ({
         id: checkIn.id,
         date: checkIn.date.toISOString(),
         tokens: checkIn.tokens,

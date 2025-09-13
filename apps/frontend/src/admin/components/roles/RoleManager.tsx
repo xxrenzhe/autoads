@@ -63,7 +63,7 @@ export function RoleManager({
   const [editingRole, setEditingRole] = useState<Role | null>(null)
 
   // Filter roles based on search term
-  const filteredRoles = roles.filter(role =>
+  const filteredRoles = roles.filter((role: any) =>
     role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.description.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -82,7 +82,7 @@ export function RoleManager({
     if (selectedRoles.size === filteredRoles.length) {
       setSelectedRoles(new Set())
     } else {
-      setSelectedRoles(new Set(filteredRoles?.filter(Boolean)?.map(role => role.id)))
+      setSelectedRoles(new Set(filteredRoles?.filter(Boolean)?.map((role: any) => role.id)))
     }
   }
 
@@ -119,7 +119,7 @@ export function RoleManager({
   const getRoleHierarchy = (role: Role): Role[] => {
     const hierarchy: Role[] = [role]
     if (role.parentRole) {
-      const parent = roles.find(r => r.id === role.parentRole)
+      const parent = roles.find((r: any) => r.id === role.parentRole)
       if (parent) {
         hierarchy.unshift(...getRoleHierarchy(parent))
       }
@@ -177,7 +177,7 @@ export function RoleManager({
                 <Input
                   placeholder="Search roles..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -201,9 +201,9 @@ export function RoleManager({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    selectedRoles.forEach(roleId => {
-                      const role = roles.find(r => r.id === roleId)
+                  onClick={((: any): any) => {
+                    selectedRoles.forEach((roleId: any) => {
+                      const role = roles.find((r: any) => r.id === roleId)
                       if (role) handleDuplicateRole(role)
                     })
                     setSelectedRoles(new Set())
@@ -215,9 +215,9 @@ export function RoleManager({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => {
+                  onClick={((: any): any) => {
                     if (window.confirm(`Are you sure you want to delete ${selectedRoles.size} role(s)?`)) {
-                      selectedRoles.forEach(roleId => handleDeleteRole(roleId))
+                      selectedRoles.forEach((roleId: any) => handleDeleteRole(roleId))
                       setSelectedRoles(new Set())
                     }
                   }}
@@ -234,7 +234,7 @@ export function RoleManager({
       {/* Roles Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
-          Array.from({ length: 6 }).map((_, index) => (
+          Array.from({ length: 6 }).map((_, index: any) => (
             <Card key={index} className="animate-pulse">
               <CardContent className="p-6">
                 <div className="space-y-4">
@@ -270,13 +270,13 @@ export function RoleManager({
             </Card>
           </div>
         ) : (
-          filteredRoles.map((role) => (
+          filteredRoles.map((role: any) => (
             <Card 
               key={role.id} 
               className={`cursor-pointer transition-all hover:shadow-md ${
                 selectedRoles.has(role.id) ? 'ring-2 ring-blue-500' : ''
               }`}
-              onClick={() => onRoleSelect?.(role)}
+              onClick={((: any): any) => onRoleSelect?.(role)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
@@ -284,7 +284,7 @@ export function RoleManager({
                     <input
                       type="checkbox"
                       checked={selectedRoles.has(role.id)}
-                      onChange={(e) => {
+                      onChange={((e: any): any) => {
                         e.stopPropagation()
                         handleRoleSelect(role.id)
                       }}
@@ -301,7 +301,7 @@ export function RoleManager({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e) => {
+                      onClick={((e: any): any) => {
                         e.stopPropagation()
                         handleEditRole(role)
                       }}
@@ -311,7 +311,7 @@ export function RoleManager({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e) => {
+                      onClick={((e: any): any) => {
                         e.stopPropagation()
                         handleDuplicateRole(role)
                       }}
@@ -322,7 +322,7 @@ export function RoleManager({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={(e) => {
+                        onClick={((e: any): any) => {
                           e.stopPropagation()
                           handleDeleteRole(role.id)
                         }}
@@ -344,7 +344,7 @@ export function RoleManager({
                   <div className="mb-3">
                     <div className="text-xs text-gray-500 mb-1">Inherits from:</div>
                     <div className="flex items-center space-x-1">
-                      {getRoleHierarchy(role).slice(0, -1).map((parentRole, index) => (
+                      {getRoleHierarchy(role).slice(0, -1).map((parentRole, index: any) => (
                         <React.Fragment key={parentRole.id}>
                           {index > 0 && <span className="text-gray-400">→</span>}
                           <Badge variant="outline" className="text-xs">
@@ -374,7 +374,7 @@ export function RoleManager({
                   <div>
                     <div className="text-xs text-gray-500 mb-2">Key permissions:</div>
                     <div className="flex flex-wrap gap-1">
-                      {role.permissions.slice(0, 3).map((permission) => (
+                      {role.permissions.slice(0, 3).map((permission: any) => (
                         <Badge key={permission} variant="secondary" className="text-xs">
                           {permission.replace(/[_-]/g, ' ').toLowerCase()}
                         </Badge>
@@ -393,7 +393,7 @@ export function RoleManager({
                   <div className="mt-3">
                     <div className="text-xs text-gray-500 mb-1">Child roles:</div>
                     <div className="flex flex-wrap gap-1">
-                      {role.children.slice(0, 2).map((childRole) => (
+                      {role.children.slice(0, 2).map((childRole: any) => (
                         <Badge key={childRole.id} variant="outline" className="text-xs">
                           {childRole.name}
                         </Badge>

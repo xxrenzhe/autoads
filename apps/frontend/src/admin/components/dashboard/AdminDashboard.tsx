@@ -22,11 +22,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {widgets.map((widget) => (
+        {widgets.map((widget: any) => (
           <div
             key={widget.id}
             className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => onWidgetClick?.(widget.id)}
+            onClick={((: any): any) => onWidgetClick?.(widget.id)}
           >
             <div className="flex items-center mb-4">
               <div className="mr-3">{widget.icon}</div>

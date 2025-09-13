@@ -1,16 +1,16 @@
 package siterankgo
 
 import (
-    "context"
-    "encoding/json"
-    "fmt"
-    "net/http"
-    "net/url"
-    "os"
-    "strconv"
-    "strings"
-    "sync"
-    "time"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 // SimilarWebClient SimilarWeb API客户端
@@ -311,8 +311,8 @@ func (url *UserRateLimiter) fillUserTokens(userID string) {
 			default:
 				// 令牌桶已满
 			}
-        }
-    }
+		}
+	}
 }
 
 // GetUserRateLimitStats 获取用户速率限制统计

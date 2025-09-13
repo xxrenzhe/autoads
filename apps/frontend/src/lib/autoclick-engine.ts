@@ -267,7 +267,7 @@ export class AutoClickExecutionEngine {
     }
 
     // 检查是否需要切换访问器
-    const successRate = results.filter(r => r.success).length / results.length;
+    const successRate = results.filter((r: any) => r.success).length / results.length;
     if (successRate === 0 && plan.currentVisitor === 'simple') {
       // 切换到Puppeteer
       await prisma.dailyExecutionPlan.update({
@@ -298,9 +298,9 @@ export class AutoClickExecutionEngine {
 
     return {
       totalClicks: execution.actualClicks + remainingClicks,
-      successCount: execution.successCount + results.filter(r => r.success).length,
-      failCount: execution.failCount + results.filter(r => !r.success).length,
-      tokensUsed: execution.tokensUsed + results.reduce((sum, r) => sum + r.tokensUsed, 0),
+      successCount: execution.successCount + results.filter((r: any) => r.success).length,
+      failCount: execution.failCount + results.filter((r: any) => !r.success).length,
+      tokensUsed: execution.tokensUsed + results.reduce((sum, r: any) => sum + r.tokensUsed, 0),
       executionDetails: [...(execution.executionDetails || []), ...results]
     };
   }
@@ -422,10 +422,10 @@ export class AutoClickExecutionEngine {
       }
     });
 
-    const totalClicks = hourlyExecutions.reduce((sum: number, h: any) => sum + h.actualClicks, 0);
-    const totalSuccess = hourlyExecutions.reduce((sum: number, h: any) => sum + h.successCount, 0);
-    const totalFail = hourlyExecutions.reduce((sum: number, h: any) => sum + h.failCount, 0);
-    const totalTokens = hourlyExecutions.reduce((sum: number, h: any) => sum + h.tokensUsed, 0);
+    const totalClicks = hourlyExecutions.reduce((sum: number, h: any: any) => sum + h.actualClicks, 0);
+    const totalSuccess = hourlyExecutions.reduce((sum: number, h: any: any) => sum + h.successCount, 0);
+    const totalFail = hourlyExecutions.reduce((sum: number, h: any: any) => sum + h.failCount, 0);
+    const totalTokens = hourlyExecutions.reduce((sum: number, h: any: any) => sum + h.tokensUsed, 0);
 
     // 确定执行状态
     const executionStatus = totalSuccess >= totalClicks ? 'success' : 
@@ -502,8 +502,8 @@ export class AutoClickExecutionEngine {
       };
     }
 
-    const target = plan.hourlyClicks.slice(0, currentHour + 1).reduce((sum: number, clicks: number) => sum + clicks, 0);
-    const completed = plan.hourlyExecutions.reduce((sum: number, h: any) => sum + h.successCount, 0);
+    const target = plan.hourlyClicks.slice(0, currentHour + 1).reduce((sum: number, clicks: number: any) => sum + clicks, 0);
+    const completed = plan.hourlyExecutions.reduce((sum: number, h: any: any) => sum + h.successCount, 0);
 
     return {
       isRunning: true,

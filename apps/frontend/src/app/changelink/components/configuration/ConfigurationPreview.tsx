@@ -83,16 +83,16 @@ export default function ConfigurationPreview({
     
     for (const mapping of configuration.adMappingConfig) {
       if (Array.isArray(mapping.adMappings)) {
-        mapping.adMappings.forEach(ad => {
+        mapping.adMappings.forEach((ad: any) => {
           const adId = ad.adId;
           adCounts.set(adId, (adCounts.get(adId) || 0) + 1);
         });
       }
     }
 
-    googleAdsAccounts.forEach(account => { account.campaignMappings?.forEach(campaign => {
-        campaign.adGroupMappings?.forEach(adGroup => {
-          adGroup.adMappings?.forEach(ad => {
+    googleAdsAccounts.forEach((account => { account.campaignMappings?.forEach(campaign: any) => {
+        campaign.adGroupMappings?.forEach((adGroup: any) => {
+          adGroup.adMappings?.forEach((ad: any) => {
             if (ad.adId) {
               const count = adCounts.get(ad.adId);
               if (count && count > 0) {
@@ -251,7 +251,7 @@ export default function ConfigurationPreview({
                       <div className="flex justify-between">
                         <span className="text-gray-600">原始链接:</span>
                         <span className="font-medium">
-                          {configuration.originalLinks?.filter(l => l.trim()).length || 0}个
+                          {configuration.originalLinks?.filter((l: any) => l.trim()).length || 0}个
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -267,7 +267,7 @@ export default function ConfigurationPreview({
                       <div className="flex justify-between">
                         <span className="text-gray-600">总执行次数:</span>
                         <span className="font-medium">
-                          {(configuration.originalLinks?.filter(l => l.trim()).length || 0) * (configuration.repeatCount || 1)}次
+                          {(configuration.originalLinks?.filter((l: any) => l.trim()).length || 0) * (configuration.repeatCount || 1)}次
                         </span>
                       </div>
                     </CardContent>
@@ -314,12 +314,12 @@ export default function ConfigurationPreview({
                   <CardHeader>
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Link className="h-4 w-4" />
-                      原始链接列表 ({configuration.originalLinks?.filter(l => l.trim()).length || 0}个)
+                      原始链接列表 ({configuration.originalLinks?.filter((l: any) => l.trim()).length || 0}个)
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {configuration.originalLinks?.filter(l => l.trim()).map((link, index) => (
+                      {configuration.originalLinks?.filter((l: any) => l.trim()).map((link, index: any) => (
                         <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-sm">
                           <span className="text-gray-500 font-mono text-xs w-6">{index + 1}.</span>
                           <span className="font-mono text-xs break-all flex-1">{link}</span>
@@ -339,7 +339,7 @@ export default function ConfigurationPreview({
               <TabsContent value="mapping" className="space-y-4">
                 {configuration.adMappingConfig && configuration.adMappingConfig.length > 0 ? (
                   <div className="space-y-4">
-                    {configuration.adMappingConfig.map((mapping, index) => (
+                    {configuration.adMappingConfig.map((mapping, index: any) => (
                       <Card key={index}>
                         <CardHeader className="pb-2">
                           <div className="flex justify-between items-center">
@@ -362,8 +362,8 @@ export default function ConfigurationPreview({
                               目标广告 ({mapping.adMappings?.length || 0}个):
                             </p>
                             <div className="space-y-1">
-                              {mapping.adMappings?.map((adMapping, idx) => {
-                                const mappedAd = getMappedAds().find(a => a.id === adMapping.adId);
+                              {mapping.adMappings?.map((adMapping, idx: any) => {
+                                const mappedAd = getMappedAds().find((a: any) => a.id === adMapping.adId);
                                 return mappedAd ? (
                                   <div key={adMapping.adId} className="text-xs bg-blue-50 p-2 rounded">
                                     <p className="font-medium">{mappedAd.name}</p>
@@ -420,8 +420,8 @@ export default function ConfigurationPreview({
                         <div className="flex-1">
                           <p className="text-sm font-medium">处理原始链接</p>
                           <p className="text-xs text-gray-600">
-                            {configuration.originalLinks?.filter(l => l.trim()).length || 0}个链接 × {configuration.repeatCount}次 = 
-                            {(configuration.originalLinks?.filter(l => l.trim()).length || 0) * (configuration.repeatCount || 1)}次执行
+                            {configuration.originalLinks?.filter((l: any) => l.trim()).length || 0}个链接 × {configuration.repeatCount}次 = 
+                            {(configuration.originalLinks?.filter((l: any) => l.trim()).length || 0) * (configuration.repeatCount || 1)}次执行
                           </p>
                         </div>
                       </div>

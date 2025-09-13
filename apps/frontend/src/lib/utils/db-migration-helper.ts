@@ -219,13 +219,13 @@ export async function bulkInsert<T>(
           } else {
             // 逐个插入以捕获错误
             const results = await Promise.allSettled(
-              batch.map(item => (prisma[model as keyof PrismaClient] as any).create({ data: item }))
+              batch.map((item: any) => (prisma[model as keyof PrismaClient] as any).create({ data: item }))
             );
             
-            const successful = results.filter(r => r.status === 'fulfilled');
-            const failed = results.filter(r => r.status === 'rejected');
+            const successful = results.filter((r: any) => r.status === 'fulfilled');
+            const failed = results.filter((r: any) => r.status === 'rejected');
             
-            failed.forEach((f: PromiseRejectedResult) => {
+            failed.forEach((f: PromiseRejectedResult: any) => {
               errors.push({
                 data: batch[results.indexOf(f)],
                 error: (f.reason as Error).message

@@ -59,7 +59,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
   const theme = useTheme();
 
   // Format date columns
-  const enhancedColumns = columns.map((col) => {
+  const enhancedColumns = columns.map((col: any) => {
     if (col.type === 'dateTime') {
       return {
         ...col,
@@ -122,7 +122,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
                 <GridActionsCellItem
                   icon={<ViewIcon />}
                   label="查看"
-                  onClick={() => onView(params.row)}
+                  onClick={((: any): any) => onView(params.row)}
                   showInMenu
                 />
               );
@@ -133,19 +133,19 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
                 <GridActionsCellItem
                   icon={<EditIcon />}
                   label="编辑"
-                  onClick={() => onEdit(params.row)}
+                  onClick={((: any): any) => onEdit(params.row)}
                   showInMenu
                 />
               );
             }
 
-            actions.forEach((action) => {
+            actions.forEach((action: any) => {
               if (!action.show || action.show(params.row)) {
                 actionsArray.push(
                   <GridActionsCellItem
                     icon={action.icon}
                     label={action.label}
-                    onClick={() => action.onClick(params.row)}
+                    onClick={((: any): any) => action.onClick(params.row)}
                     showInMenu
                   />
                 );
@@ -157,7 +157,7 @@ export const ResponsiveDataGrid: React.FC<ResponsiveDataGridProps> = ({
                 <GridActionsCellItem
                   icon={<DeleteIcon />}
                   label="删除"
-                  onClick={() => onDelete(params.row)}
+                  onClick={((: any): any) => onDelete(params.row)}
                   showInMenu
                 />
               );

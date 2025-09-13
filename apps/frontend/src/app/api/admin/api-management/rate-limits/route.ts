@@ -35,7 +35,7 @@ async function handleGET(request: NextRequest, { user }: any) {
     const rules: any[] = [] // Placeholder until apiRateLimit table is implemented
 
     // Transform data to match interface
-    const rateLimitRules = rules.map((rule: any) => ({
+    const rateLimitRules = rules.map((rule: any: any) => ({
       id: rule.id,
       name: `${rule.method} ${rule.endpoint}`,
       endpoint: rule.endpoint,

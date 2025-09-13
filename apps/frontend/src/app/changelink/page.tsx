@@ -92,7 +92,7 @@ export default function ChangeLinkPage() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-            {stats.map((stat, index) => (
+            {stats.map((stat, index: any) => (
               <div key={index} className={UI_CONSTANTS.cards.default + " p-6 text-center"}>
                 <div className="flex items-center justify-center mb-4">
                   <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center`}>
@@ -107,7 +107,7 @@ export default function ChangeLinkPage() {
 
           {/* Features Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            {features.map((feature, index) => (
+            {features.map((feature, index: any) => (
               <div key={index} className={UI_CONSTANTS.cards.featured + " p-6 hover:shadow-xl transition-all duration-300"}>
                 <div className="flex items-center space-x-3 mb-4">
                   <div className={`w-12 h-12 ${feature.color} rounded-xl flex items-center justify-center`}>
@@ -119,7 +119,7 @@ export default function ChangeLinkPage() {
                   {feature.description}
                 </p>
                 <div className="grid grid-cols-2 gap-2 mb-6">
-                  {feature.features.map((item, itemIndex) => (
+                  {feature.features.map((item, itemIndex: any) => (
                     <div key={itemIndex} className="flex items-center space-x-2 text-sm text-gray-500">
                       <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                       <span>{item}</span>
@@ -306,7 +306,7 @@ const LegacyFeaturesPage = () => {
 
       {/* 统计数据 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
+        {stats.map((stat, index: any) => (
           <Card key={index} className="text-center">
             <CardContent className="p-4">
               <div className="flex items-center justify-center mb-2">
@@ -321,7 +321,7 @@ const LegacyFeaturesPage = () => {
 
       {/* 功能模块 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {features.map((feature, index) => (
+        {features.map((feature, index: any) => (
           <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-3">
@@ -335,7 +335,7 @@ const LegacyFeaturesPage = () => {
               <p className="text-gray-600">{feature.description}</p>
               
               <div className="grid grid-cols-2 gap-2">
-                {feature.features.map((item, itemIndex) => (
+                {feature.features.map((item, itemIndex: any) => (
                   <div key={itemIndex} className="flex items-center space-x-2 text-sm text-gray-500">
                     <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                     <span>{item}</span>

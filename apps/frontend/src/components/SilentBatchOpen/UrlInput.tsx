@@ -37,7 +37,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({
 }) => {
   // 解析输入的URL
   const parseUrls = useCallback((text: string) => {
-    const lines = text.split('\n').filter(line => {
+    const lines = text.split('\n').filter((line: any) => {
       const trimmed = line.trim();
       return trimmed && (trimmed.startsWith('http://') || trimmed.startsWith('https://'));
     });
@@ -69,7 +69,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({
       </label>
       <textarea
         value={input}
-        onChange={(e) => handleInputChange(e.target.value)}
+        onChange={((e: any): any) => handleInputChange(e.target.value)}
         placeholder={getTranslation(t, "batchopen.input.placeholder")}
         className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
         disabled={isOpening}

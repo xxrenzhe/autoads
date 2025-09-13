@@ -188,7 +188,7 @@ export class GoogleAdsMatchingEngine {
       } = options;
 
       const pairsToMatch = urlPairIds 
-        ? urlPairIds?.filter(Boolean)?.map(id => this.urlPairs.get(id)).filter(Boolean) as UrlPair[]
+        ? urlPairIds?.filter(Boolean)?.map((id: any) => this.urlPairs.get(id)).filter(Boolean) as UrlPair[]
         : Array.from(this.urlPairs.values());
 
       const results = new Map<string, MatchResult[]>();
@@ -315,19 +315,19 @@ export class GoogleAdsMatchingEngine {
     let history = Array.from(this.matchHistory.values());
 
     if (filters.adId) {
-      history = history.filter(match => match.adId === filters.adId);
+      history = history.filter((match: any) => match.adId === filters.adId);
     }
 
     if (filters.urlPairId) {
-      history = history.filter(match => match.urlPairId === filters.urlPairId);
+      history = history.filter((match: any) => match.urlPairId === filters.urlPairId);
     }
 
     if (filters.minConfidence !== undefined) {
-      history = history.filter(match => match.confidence >= filters.minConfidence!);
+      history = history.filter((match: any) => match.confidence >= filters.minConfidence!);
     }
 
     if (filters.startTime) {
-      history = history.filter(match => {
+      history = history.filter((match: any) => {
         // This would require adding timestamp to MatchResult
         return true; // Placeholder
       });
@@ -406,7 +406,7 @@ export class GoogleAdsMatchingEngine {
       
       // Find frequently matched but low confidence pairs
       const lowConfidencePairs = new Map<string, number>();
-      history.forEach(match => {
+      history.forEach((match: any) => {
         if (match.confidence < 0.5) {
           lowConfidencePairs.set(match.urlPairId, (lowConfidencePairs.get(match.urlPairId) || 0) + 1);
         }
@@ -516,8 +516,8 @@ export class GoogleAdsMatchingEngine {
     // Add bonus matches based on strategy
     const bonusMatches = this.calculateBonusMatches(ad, urlPair);
     reasons.push(...bonusMatches);
-    totalScore += bonusMatches.reduce((sum, r) => sum + r.score * r.weight, 0);
-    maxScore += bonusMatches.reduce((sum, r) => sum + r.weight, 0);
+    totalScore += bonusMatches.reduce((sum, r: any) => sum + r.score * r.weight, 0);
+    maxScore += bonusMatches.reduce((sum, r: any) => sum + r.weight, 0);
 
     // Calculate confidence
     const confidence = maxScore > 0 ? Math.min(totalScore / maxScore, 1) : 0;
@@ -586,7 +586,7 @@ export class GoogleAdsMatchingEngine {
 
       case 'label':
         matched = ad.labels.some(label => this.evaluateStringMatch(label, condition));
-        matchedValue = ad.labels.find(label => this.evaluateStringMatch(label, condition)) || '';
+        matchedValue = ad.labels.find((label: any) => this.evaluateStringMatch(label, condition)) || '';
         score = matched ? 0.8 : 0;
         break;
 
@@ -690,7 +690,7 @@ export class GoogleAdsMatchingEngine {
 
   private calculateFuzzyScore(str1: string, str2: string): number {
     // Simple Levenshtein distance-based fuzzy matching
-    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+    const matrix = Array(str2.length + 1).fill(null).map((: any) => Array(str1.length + 1).fill(null));
 
     for (let i = 0; i <= str2.length; i++) {
       matrix[i][0] = i;
@@ -772,7 +772,7 @@ export class GoogleAdsMatchingEngine {
 
     // Add tracking parameters
     const url = new URL(finalUrl);
-    Object.entries(urlPair.trackingParameters).forEach(([key, value]) => {
+    Object.entries(urlPair.trackingParameters).forEach(([key, value]: any) => {
       url.searchParams.set(key, value);
     });
     finalUrl = url.toString();
@@ -881,8 +881,8 @@ export class GoogleAdsMatchingEngine {
     // Update condition type statistics
     const conditionTypes = new Map<string, { usage: number; success: number }>();
     
-    allMatches.forEach(match => {
-      match.matchReasons.forEach(reason => {
+    allMatches.forEach((match: any) => {
+      match.matchReasons.forEach((reason: any) => {
         const existing = conditionTypes.get(reason.conditionType) || { usage: 0, success: 0 };
         existing.usage++;
         if (match.confidence > 0.5) {
@@ -893,7 +893,7 @@ export class GoogleAdsMatchingEngine {
     });
 
     this.stats.topConditionTypes = Array.from(conditionTypes.entries())
-      .map(([type, stats]) => ({
+      .map(([type, stats]: any) => ({
         type,
         usageCount: stats.usage,
         successRate: stats.usage > 0 ? stats.success / stats.usage : 0,
@@ -906,7 +906,7 @@ export class GoogleAdsMatchingEngine {
     const allMatches = Array.from(results.values()).flat();
     if (allMatches.length === 0) return 0;
     
-    const totalConfidence = allMatches.reduce((sum, match) => sum + match.confidence, 0);
+    const totalConfidence = allMatches.reduce((sum, match: any) => sum + match.confidence, 0);
     return totalConfidence / allMatches.length;
   }
 

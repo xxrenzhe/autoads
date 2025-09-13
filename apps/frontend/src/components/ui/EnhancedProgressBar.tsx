@@ -410,7 +410,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = ({
       {/* 阶段指示器 */}
       {showDetails && (
         <div className="flex items-center justify-between text-xs text-gray-500">
-          {Object.values(STAGE_INFO).map((stage, index) => {
+          {Object.values(STAGE_INFO).map((stage, index: any) => {
             const currentStageKey = getCurrentStage();
             const isCurrentStage = stage.key === currentStageKey;
             const isCompleted = progress >= ((index + 1) * (100 / Object.keys(STAGE_INFO).length));

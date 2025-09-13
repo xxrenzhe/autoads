@@ -206,7 +206,7 @@ export function DeploymentInfo() {
                 variant="outline" 
                 size="sm" 
                 className="mt-2"
-                onClick={() => window.open('https://www.autoads.dev', '_blank')}
+                onClick={((: any): any) => window.open('https://www.autoads.dev', '_blank')}
               >
                 <ExternalLink className="w-4 h-4 mr-1" />
                 访问生产环境
@@ -268,7 +268,7 @@ export function VersionComparison() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {currentVersion.features.map((feature, index) => (
+            {currentVersion.features.map((feature, index: any) => (
               <div key={index} className="flex items-center gap-2 text-sm">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span>{feature}</span>
@@ -291,7 +291,7 @@ export function VersionComparison() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {otherVersion.features.map((feature, index) => (
+            {otherVersion.features.map((feature, index: any) => (
               <div key={index} className="flex items-center gap-2 text-sm">
                 <div className={`w-4 h-4 rounded-full ${
                   currentVersion.features.includes(feature) 

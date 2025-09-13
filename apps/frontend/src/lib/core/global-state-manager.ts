@@ -84,8 +84,8 @@ export class GlobalStateManager {
    */
   public getExecutingTasks(): string[] {
     return Array.from(this.executionFlags.entries())
-      .filter(([_, flag]) => flag.active)
-      .map(([taskId, _]) => taskId);
+      .filter(([_, flag]: any) => flag.active)
+      .map(([taskId, _]: any) => taskId);
   }
   
   /**

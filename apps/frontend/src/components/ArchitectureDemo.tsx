@@ -203,7 +203,7 @@ export function ArchitectureDemo() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(systemStatus.services).map(([service, isRunning]) => (
+              {Object.entries(systemStatus.services).map(([service, isRunning]: any) => (
                 <div key={service} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-500' : 'bg-red-500'}`}></div>
@@ -231,7 +231,7 @@ export function ArchitectureDemo() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {systemStatus.recentActivity.map((activity) => (
+              {systemStatus.recentActivity.map((activity: any) => (
                 <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className={`w-2 h-2 rounded-full ${

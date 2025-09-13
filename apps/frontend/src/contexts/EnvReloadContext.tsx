@@ -129,7 +129,7 @@ export function EnvReloadProvider({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => window.location.reload()}
+              onClick={((: any): any) => window.location.reload()}
               className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-sm"
             >
               立即刷新

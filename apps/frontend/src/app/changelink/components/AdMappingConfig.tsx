@@ -64,8 +64,8 @@ export default function AdMappingConfig({
 
   useEffect(() => {
     // 当原始链接变化时，更新映射配置
-    const updatedConfig = originalLinks?.filter(Boolean)?.map(url => {
-      const existing = adMappingConfig.find(config => config.originalUrl === url);
+    const updatedConfig = originalLinks?.filter(Boolean)?.map((url: any) => {
+      const existing = adMappingConfig.find((config: any) => config.originalUrl === url);
       return existing || { originalUrl: url, adMappings: [] };
     });
     onAdMappingChange(updatedConfig);
@@ -187,9 +187,9 @@ export default function AdMappingConfig({
   };
 
   const handleAdSelection = (linkIndex: number, mappingIndex: number, adId: string) => {
-    const selectedAd = ads.find(ad => ad.id === adId);
-    const selectedAdGroup = adGroups.find(ag => ag.id === selectedAd?.adGroupId);
-    const selectedCampaign = campaigns.find(c => c.id === selectedAdGroup?.campaignId);
+    const selectedAd = ads.find((ad: any) => ad.id === adId);
+    const selectedAdGroup = adGroups.find((ag: any) => ag.id === selectedAd?.adGroupId);
+    const selectedCampaign = campaigns.find((c: any) => c.id === selectedAdGroup?.campaignId);
 
     if (selectedAd) {
       const updatedConfig = [...adMappingConfig];
@@ -233,7 +233,7 @@ export default function AdMappingConfig({
         </Alert>
       )}
 
-      {originalLinks.map((link, linkIndex) => (
+      {originalLinks.map((link, linkIndex: any) => (
         <Card key={linkIndex}>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -249,7 +249,7 @@ export default function AdMappingConfig({
               <Button
                 type="button"
                 size="sm"
-                onClick={() => addAdMapping(linkIndex)}
+                onClick={((: any): any) => addAdMapping(linkIndex)}
                 disabled={googleAdsAccounts.length === 0}
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -266,7 +266,7 @@ export default function AdMappingConfig({
               </div>
             ) : (
               <div className="space-y-4">
-                {adMappingConfig[linkIndex]?.adMappings.map((mapping, mappingIndex) => (
+                {adMappingConfig[linkIndex]?.adMappings.map((mapping, mappingIndex: any) => (
                   <div key={mappingIndex} className="border rounded-lg p-4 space-y-4">
                     <div className="flex justify-between items-center">
                       <h4 className="font-medium">映射配置 {mappingIndex + 1}</h4>
@@ -274,7 +274,7 @@ export default function AdMappingConfig({
                         type="button"
                         size="sm"
                         variant="outline"
-                        onClick={() => removeAdMapping(linkIndex, mappingIndex)}
+                        onClick={((: any): any) => removeAdMapping(linkIndex, mappingIndex)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -285,13 +285,13 @@ export default function AdMappingConfig({
                         <Label>选择广告</Label>
                         <Select
                           value={mapping.adId}
-                          onValueChange={(value) => handleAdSelection(linkIndex, mappingIndex, value)}
+                          onValueChange={((value: any): any) => handleAdSelection(linkIndex, mappingIndex, value)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="选择要更新的广告" />
                           </SelectTrigger>
                           <SelectContent>
-                            {ads.map((ad) => (
+                            {ads.map((ad: any) => (
                               <SelectItem key={ad.id} value={ad.id}>
                                 {ad.name} ({ad.status})
                               </SelectItem>
@@ -304,13 +304,13 @@ export default function AdMappingConfig({
                         <Label>执行次数</Label>
                         <Select
                           value={mapping.executionNumber.toString()}
-                          onValueChange={(value) => updateAdMapping(linkIndex, mappingIndex, 'executionNumber', parseInt(value))}
+                          onValueChange={((value: any): any) => updateAdMapping(linkIndex, mappingIndex, 'executionNumber', parseInt(value))}
                         >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                            {Array.from({ length: 10 }, (_, i) => i + 1).map((num: any) => (
                               <SelectItem key={num} value={num.toString()}>
                                 第 {num} 次执行
                               </SelectItem>

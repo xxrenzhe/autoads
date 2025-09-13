@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       totalInvited,
       totalAccepted,
       totalTokensEarned,
-      recentInvitations: recentInvitations.map(inv => ({
+      recentInvitations: recentInvitations.map((inv: any) => ({
         id: inv.id,
         code: generateInvitationCode(inv.id), // Generate display code from ID
         inviterEmail: 'user@example.com', // session.user?.email || '',

@@ -28,7 +28,7 @@ export function withCache(options: CacheMiddlewareOptions = {}) {
 
     // Check Vary headers
     const varyValues = varyBy
-      .map(header => req.headers.get(header))
+      .map((header: any) => req.headers.get(header))
       .filter(Boolean)
       .join(':');
     

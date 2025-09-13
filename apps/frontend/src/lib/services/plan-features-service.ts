@@ -86,7 +86,7 @@ export class PlanFeaturesService {
    * Get all standard features
    */
   static getAllStandardFeatures() {
-    return Object.entries(this.STANDARD_FEATURES).map(([key, feature]) => ({
+    return Object.entries(this.STANDARD_FEATURES).map(([key, feature]: any) => ({
       id: key,
       ...feature
     }));
@@ -97,8 +97,8 @@ export class PlanFeaturesService {
    */
   static getFeaturesByCategory(category: string) {
     return Object.entries(this.STANDARD_FEATURES)
-      .filter(([_, feature]) => feature.category === category)
-      .map(([key, feature]) => ({
+      .filter(([_, feature]: any) => feature.category === category)
+      .map(([key, feature]: any) => ({
         id: key,
         ...feature
       }));
@@ -205,7 +205,7 @@ export class PlanFeaturesService {
       orderBy: { createdAt: 'asc' }
     });
 
-    return features.map((feature: any) => ({
+    return features.map((feature: any: any) => ({
       id: feature.featureName,
       name: feature.metadata?.name,
       description: feature.metadata?.description,
@@ -264,7 +264,7 @@ export class PlanFeaturesService {
     });
 
     // Free Plan (免费套餐)
-    const freePlan = existingPlans.find((p: any) => p.name === 'free') || await prisma.plan.create({
+    const freePlan = existingPlans.find((p: any: any) => p.name === 'free') || await prisma.plan.create({
       data: {
         name: 'free',
         description: '免费套餐',
@@ -280,7 +280,7 @@ export class PlanFeaturesService {
     });
 
     // Pro Plan (高级套餐)
-    const proPlan = existingPlans.find((p: any) => p.name === 'pro') || await prisma.plan.create({
+    const proPlan = existingPlans.find((p: any: any) => p.name === 'pro') || await prisma.plan.create({
       data: {
         name: 'pro',
         description: '高级套餐',
@@ -296,7 +296,7 @@ export class PlanFeaturesService {
     });
 
     // Max Plan (白金套餐)
-    const maxPlan = existingPlans.find((p: any) => p.name === 'max') || await prisma.plan.create({
+    const maxPlan = existingPlans.find((p: any: any) => p.name === 'max') || await prisma.plan.create({
       data: {
         name: 'max',
         description: '白金套餐',
@@ -373,13 +373,13 @@ export class PlanFeaturesService {
 
     const differences = [];
     const allFeatureIds = new Set([
-      ...features1.map((f: any) => f.id),
-      ...features2.map((f: any) => f.id)
+      ...features1.map((f: any: any) => f.id),
+      ...features2.map((f: any: any) => f.id)
     ]);
 
     for (const featureId of allFeatureIds) {
-      const feat1 = features1.find((f: any) => f.id === featureId);
-      const feat2 = features2.find((f: any) => f.id === featureId);
+      const feat1 = features1.find((f: any: any) => f.id === featureId);
+      const feat2 = features2.find((f: any: any) => f.id === featureId);
 
       differences.push({
         featureId,

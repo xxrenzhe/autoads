@@ -96,7 +96,7 @@ export function WebhookHandler({
   }
 
   const formatEventType = (type: string) => {
-    return type.split('.')?.filter(Boolean)?.map(part => 
+    return type.split('.')?.filter(Boolean)?.map((part: any) => 
       part.charAt(0).toUpperCase() + part.slice(1)
     ).join(' ')
   }
@@ -123,7 +123,7 @@ export function WebhookHandler({
         </div>
         
         <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, index) => (
+          {Array.from({ length: 5 }).map((_, index: any) => (
             <Card key={index} className="animate-pulse">
               <CardContent className="p-4">
                 <div className="space-y-3">
@@ -154,7 +154,7 @@ export function WebhookHandler({
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               {error.message}
             </p>
-            <Button onClick={() => refetch()} variant="outline">
+            <Button onClick={((: any): any) => refetch()} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
               Try Again
             </Button>
@@ -177,7 +177,7 @@ export function WebhookHandler({
           </p>
         </div>
         
-        <Button onClick={() => refetch()} variant="outline" size="sm">
+        <Button onClick={((: any): any) => refetch()} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
@@ -197,10 +197,10 @@ export function WebhookHandler({
               
               <select
                 value={selectedEventType}
-                onChange={(e) => setSelectedEventType(e.target.value)}
+                onChange={((e: any): any) => setSelectedEventType(e.target.value)}
                 className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {eventTypes?.filter(Boolean)?.map(type => (
+                {eventTypes?.filter(Boolean)?.map((type: any) => (
                   <option key={type} value={type}>
                     {type === 'all' ? 'All Events' : formatEventType(type)}
                   </option>
@@ -209,7 +209,7 @@ export function WebhookHandler({
               
               <select
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={((e: any): any) => setSelectedStatus(e.target.value)}
                 className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
@@ -225,7 +225,7 @@ export function WebhookHandler({
       {/* Events List */}
       <div className="space-y-4">
         {webhookEvents && webhookEvents.length > 0 ? (
-          webhookEvents.map((event) => {
+          webhookEvents.map((event: any) => {
             const StatusIcon = getStatusIcon(event.status)
             
             return (
@@ -271,7 +271,7 @@ export function WebhookHandler({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setSelectedEvent(event)}
+                        onClick={((: any): any) => setSelectedEvent(event)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View
@@ -281,7 +281,7 @@ export function WebhookHandler({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleRetryWebhook(event.id)}
+                          onClick={((: any): any) => handleRetryWebhook(event.id)}
                         >
                           <RefreshCw className="h-4 w-4 mr-1" />
                           Retry
@@ -318,7 +318,7 @@ export function WebhookHandler({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSelectedEvent(null)}
+                  onClick={((: any): any) => setSelectedEvent(null)}
                 >
                   ×
                 </Button>

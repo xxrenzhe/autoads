@@ -294,7 +294,7 @@ export class GoogleAdsApiClient {
         headers: { 'customer-id': customerId },
       });
 
-      return response.data.results.map((result: any) => this.mapAdResult(result.ad));
+      return response.data.results.map((result: any: any) => this.mapAdResult(result.ad));
     } catch (error) {
       console.error('获取广告列表失败:', error);
       throw error;
@@ -319,7 +319,7 @@ export class GoogleAdsApiClient {
         headers: { 'customer-id': customerId },
       });
 
-      return response.data.results.map((result: any) => this.mapAdGroupResult(result.adGroup));
+      return response.data.results.map((result: any: any) => this.mapAdGroupResult(result.adGroup));
     } catch (error) {
       console.error('获取广告组列表失败:', error);
       throw error;
@@ -343,7 +343,7 @@ export class GoogleAdsApiClient {
         headers: { 'customer-id': customerId },
       });
 
-      return response.data.results.map((result: any) => this.mapCampaignResult(result.campaign));
+      return response.data.results.map((result: any: any) => this.mapCampaignResult(result.campaign));
     } catch (error) {
       console.error('获取广告系列列表失败:', error);
       throw error;
@@ -432,7 +432,7 @@ export class GoogleAdsApiClient {
         headers: { 'customer-id': customerId },
       });
 
-      return response.data.results.map((result: any) => this.mapPerformanceResult(result));
+      return response.data.results.map((result: any: any) => this.mapPerformanceResult(result));
     } catch (error) {
       console.error('获取广告性能数据失败:', error);
       throw error;
@@ -469,7 +469,7 @@ export class GoogleAdsApiClient {
     }
 
     if (options.status && options.status.length > 0) {
-      conditions.push(`ad.status IN (${options.status.map((s: string) => `'${s}'`).join(', ')})`);
+      conditions.push(`ad.status IN (${options.status.map((s: string: any) => `'${s}'`).join(', ')})`);
     }
 
     if (conditions.length > 0) {
@@ -503,7 +503,7 @@ export class GoogleAdsApiClient {
     }
 
     if (options.status && options.status.length > 0) {
-      conditions.push(`ad_group.status IN (${options.status.map((s: string) => `'${s}'`).join(', ')})`);
+      conditions.push(`ad_group.status IN (${options.status.map((s: string: any) => `'${s}'`).join(', ')})`);
     }
 
     if (conditions.length > 0) {
@@ -532,7 +532,7 @@ export class GoogleAdsApiClient {
     `;
 
     if (options.status && options.status.length > 0) {
-      query += ` AND campaign.status IN (${options.status.map((s: string) => `'${s}'`).join(', ')})`;
+      query += ` AND campaign.status IN (${options.status.map((s: string: any) => `'${s}'`).join(', ')})`;
     }
 
     query += ' ORDER BY campaign.id DESC';

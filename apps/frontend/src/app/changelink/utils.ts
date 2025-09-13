@@ -89,7 +89,7 @@ export function validateConfiguration(config: Partial<TrackingConfiguration>): V
     });
   } else {
     // 验证链接格式
-    config.originalLinks.forEach((link, index) => {
+    config.originalLinks.forEach((link, index: any) => {
       if (!isValidUrl(link)) {
         errors.push({
           field: `originalLinks[${index}]`,
@@ -111,7 +111,7 @@ export function validateConfiguration(config: Partial<TrackingConfiguration>): V
   }
 
   // 业务逻辑验证
-  const adCount = config.adMappingConfig ? config.adMappingConfig.reduce((sum, mapping) => sum + (mapping.adMappings?.length || 0), 0) : 0;
+  const adCount = config.adMappingConfig ? config.adMappingConfig.reduce((sum, mapping: any) => sum + (mapping.adMappings?.length || 0), 0) : 0;
   if (config.repeatCount && adCount > 0 && config.repeatCount < adCount) {
     warnings.push({
       field: 'repeatCount',
@@ -310,7 +310,7 @@ export function calculateNextExecution(
         const currentDay = now.getDay();
         const sortedDays = scheduleDays.sort((a, b) => a - b);
         
-        let nextDay = sortedDays.find(day => day > currentDay);
+        let nextDay = sortedDays.find((day: any) => day > currentDay);
         if (!nextDay) {
           // 如果本周没有更多执行日，使用下周的第一个
           nextDay = sortedDays[0] + 7;

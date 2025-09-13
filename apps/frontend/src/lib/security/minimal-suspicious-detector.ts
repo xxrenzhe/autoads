@@ -107,7 +107,7 @@ export class MinimalSuspiciousDetector {
     const results = await Promise.allSettled(detections);
     
     // 处理检测结果
-    results.forEach((result, index) => {
+    results.forEach((result, index: any) => {
       if (result.status === 'fulfilled' && result.value) {
         const types = ['automation_tool', 'brute_force', 'abnormal_token_consumption', 'suspicious_ip_rotation'];
         this.logSuspiciousEvent(event.userId, types[index] as any, event);
@@ -180,7 +180,7 @@ export class MinimalSuspiciousDetector {
         select: { amount: true }
       });
 
-      const totalTokens = tokenUsages.reduce((sum: number, usage: any) => sum + (usage.amount || 0), 0);
+      const totalTokens = tokenUsages.reduce((sum: number, usage: any: any) => sum + (usage.amount || 0), 0);
       
       if (totalTokens >= this.config.tokenConsumption.maxTokensPerMinute) {
         return true;
@@ -228,7 +228,7 @@ export class MinimalSuspiciousDetector {
       select: { ip: true }
     });
 
-    const uniqueIPs = new Set(events.map((e: any) => e.ip).filter(Boolean));
+    const uniqueIPs = new Set(events.map((e: any: any) => e.ip).filter(Boolean));
     
     return uniqueIPs.size >= this.config.ipRotation.maxIPs;
   }
@@ -308,7 +308,7 @@ export class MinimalSuspiciousDetector {
         take: limit
       });
 
-      return events.map((event: any) => ({
+      return events.map((event: any: any) => ({
         id: event.id,
         userId: event.userId,
         type: event.type,
@@ -340,7 +340,7 @@ export class MinimalSuspiciousDetector {
         }
       });
 
-      return events.map((event: any) => ({
+      return events.map((event: any: any) => ({
         id: event.id,
         userId: event.userId,
         type: event.type,

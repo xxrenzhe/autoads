@@ -39,7 +39,7 @@ export default function OAuthCallbackPage() {
 
       // 获取账户信息以获取 client_id 和 client_secret
       const accounts = await globalConfigurationManager.getGoogleAdsAccounts();
-      const account = accounts.find(acc => acc.id === state);
+      const account = accounts.find((acc: any) => acc.id === state);
       if (!account || !account.clientId || !account.clientSecret) {
         setStatus('error');
         setMessage('无法获取账户配置信息');

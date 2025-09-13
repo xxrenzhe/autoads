@@ -206,15 +206,15 @@ export function useSubscriptionManagement() {
 
   // Helper functions
   const getPlanById = useCallback((planId: string): SubscriptionPlan | undefined => {
-    return plans.find(plan => plan.id === planId)
+    return plans.find((plan: any) => plan.id === planId)
   }, [plans])
 
   const getActivePlans = useCallback((): SubscriptionPlan[] => {
-    return plans.filter(plan => plan.active)
+    return plans.filter((plan: any) => plan.active)
   }, [plans])
 
   const getPopularPlan = useCallback((): SubscriptionPlan | undefined => {
-    return plans.find(plan => plan.popular && plan.active)
+    return plans.find((plan: any) => plan.popular && plan.active)
   }, [plans])
 
   const getPlansByPrice = useCallback((): SubscriptionPlan[] => {
@@ -222,7 +222,7 @@ export function useSubscriptionManagement() {
   }, [plans])
 
   const getFreePlan = useCallback((): SubscriptionPlan | undefined => {
-    return plans.find(plan => plan.price === 0)
+    return plans.find((plan: any) => plan.price === 0)
   }, [plans])
 
   const calculateAnnualSavings = useCallback((monthlyPrice: number, yearlyPrice: number): number => {
@@ -251,7 +251,7 @@ export function useSubscriptionManagement() {
   const getRecommendedPlan = useCallback((usage: { tokens: number; users: number; apiCalls: number }): SubscriptionPlan | undefined => {
     const activePlans = getActivePlans().sort((a, b) => a.price - b.price)
     
-    return activePlans.find(plan => 
+    return activePlans.find((plan: any) => 
       plan.limits.tokens >= usage.tokens &&
       plan.limits.users >= usage.users &&
       plan.limits.apiCalls >= usage.apiCalls

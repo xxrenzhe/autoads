@@ -267,19 +267,19 @@ export class LoggingService {
     let filteredLogs = this.logs;
 
     if (level) {
-      filteredLogs = filteredLogs.filter(log => log.level === level);
+      filteredLogs = filteredLogs.filter((log: any) => log.level === level);
     }
 
     if (category) {
-      filteredLogs = filteredLogs.filter(log => log.category === category);
+      filteredLogs = filteredLogs.filter((log: any) => log.category === category);
     }
 
     if (startDate) {
-      filteredLogs = filteredLogs.filter(log => log.timestamp >= startDate);
+      filteredLogs = filteredLogs.filter((log: any) => log.timestamp >= startDate);
     }
 
     if (endDate) {
-      filteredLogs = filteredLogs.filter(log => log.timestamp <= endDate);
+      filteredLogs = filteredLogs.filter((log: any) => log.timestamp <= endDate);
     }
 
     return filteredLogs.slice(-limit);
@@ -298,19 +298,19 @@ export class LoggingService {
     let filteredAudit = this.auditTrail;
 
     if (action) {
-      filteredAudit = filteredAudit.filter(entry => entry.action === action);
+      filteredAudit = filteredAudit.filter((entry: any) => entry.action === action);
     }
 
     if (resource) {
-      filteredAudit = filteredAudit.filter(entry => entry.resource === resource);
+      filteredAudit = filteredAudit.filter((entry: any) => entry.resource === resource);
     }
 
     if (startDate) {
-      filteredAudit = filteredAudit.filter(entry => entry.timestamp >= startDate);
+      filteredAudit = filteredAudit.filter((entry: any) => entry.timestamp >= startDate);
     }
 
     if (endDate) {
-      filteredAudit = filteredAudit.filter(entry => entry.timestamp <= endDate);
+      filteredAudit = filteredAudit.filter((entry: any) => entry.timestamp <= endDate);
     }
 
     return filteredAudit.slice(-limit);
@@ -328,15 +328,15 @@ export class LoggingService {
     let filteredPerformance = this.performanceLogs;
 
     if (operation) {
-      filteredPerformance = filteredPerformance.filter(entry => entry.operation === operation);
+      filteredPerformance = filteredPerformance.filter((entry: any) => entry.operation === operation);
     }
 
     if (startDate) {
-      filteredPerformance = filteredPerformance.filter(entry => entry.timestamp >= startDate);
+      filteredPerformance = filteredPerformance.filter((entry: any) => entry.timestamp >= startDate);
     }
 
     if (endDate) {
-      filteredPerformance = filteredPerformance.filter(entry => entry.timestamp <= endDate);
+      filteredPerformance = filteredPerformance.filter((entry: any) => entry.timestamp <= endDate);
     }
 
     return filteredPerformance.slice(-limit);
@@ -390,7 +390,7 @@ export class LoggingService {
       logsByCategory[log.category] = (logsByCategory[log.category] || 0) + 1;
     }
 
-    const totalLogSize = this.logs.reduce((sum, log) => 
+    const totalLogSize = this.logs.reduce((sum, log: any) => 
       sum + JSON.stringify(log).length, 0);
 
     return {
@@ -505,9 +505,9 @@ export class LoggingService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - this.config.retentionDays);
 
-    this.logs = this.logs.filter(log => log.timestamp >= cutoffDate);
-    this.auditTrail = this.auditTrail.filter(entry => entry.timestamp >= cutoffDate);
-    this.performanceLogs = this.performanceLogs.filter(entry => entry.timestamp >= cutoffDate);
+    this.logs = this.logs.filter((log: any) => log.timestamp >= cutoffDate);
+    this.auditTrail = this.auditTrail.filter((entry: any) => entry.timestamp >= cutoffDate);
+    this.performanceLogs = this.performanceLogs.filter((entry: any) => entry.timestamp >= cutoffDate);
   }
 
   /**
@@ -528,7 +528,7 @@ export class LoggingService {
     const csvRows = [headers.join(',')];
 
     for (const row of data) {
-      const values = headers?.filter(Boolean)?.map(header => {
+      const values = headers?.filter(Boolean)?.map((header: any) => {
         const value = (row as Record<string, unknown>)[header];
         if (typeof value === 'object') {
           return `"${JSON.stringify(value).replace(/"/g, '""')}"`;

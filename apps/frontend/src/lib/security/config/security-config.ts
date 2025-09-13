@@ -296,7 +296,7 @@ export function getCSPHeader(config: SecurityConfig): string {
   if (!config.csp.enabled) return ''
 
   const directives = Object.entries(config.csp.directives)
-    .map(([key, values]) => `${key} ${values.join(' ')}`)
+    .map(([key, values]: any) => `${key} ${values.join(' ')}`)
     .join('; ')
 
   return directives

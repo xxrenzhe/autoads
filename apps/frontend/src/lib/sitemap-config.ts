@@ -199,8 +199,8 @@ export const sitemapConfig = {
 export const sitemapUtils = { // 获取所有当前可用页面（排除future标记的页面）
   getCurrentPages() {
     return Object.entries(sitemapConfig.pages)
-      .filter(([, config]) => !(config as PageConfig).future)
-      .map(([key, config]) => ({ key, ...config }));
+      .filter(([, config]: any) => !(config as PageConfig).future)
+      .map(([key, config]: any) => ({ key, ...config }));
   },
 
   // 生成多语言URL
@@ -230,7 +230,7 @@ export const sitemapUtils = { // 获取所有当前可用页面（排除future�
   // 获取所有sitemap URL
   getAllSitemapUrls() {
     return Object.values(sitemapConfig.sitemaps)
-      .filter((sitemap) => !(sitemap as SitemapConfig).future)
-      .map((sitemap) => `${sitemapConfig.baseUrl}${sitemap.path}`);
+      .filter((sitemap: any) => !(sitemap as SitemapConfig).future)
+      .map((sitemap: any) => `${sitemapConfig.baseUrl}${sitemap.path}`);
   },
 };

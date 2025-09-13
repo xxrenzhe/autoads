@@ -190,7 +190,7 @@ export class GoogleAdsUrlUpdater {
           if (!validation.isValid) {
             errors.push(`Ad ${update.adId}: ${validation.errors.join(', ')}`);
           }
-          warnings.push(...validation.warnings?.filter(Boolean)?.map(w => `Ad ${update.adId}: ${w}`));
+          warnings.push(...validation.warnings?.filter(Boolean)?.map((w: any) => `Ad ${update.adId}: ${w}`));
         }
 
         if (errors.length > 0) {
@@ -220,7 +220,7 @@ export class GoogleAdsUrlUpdater {
         results.push(...batchResults);
 
         // Update counters
-        batchResults.forEach(result => {
+        batchResults.forEach((result: any) => {
           if (result.success) {
             successfulUpdates++;
           } else if (result.error?.includes('skipped')) {
@@ -231,7 +231,7 @@ export class GoogleAdsUrlUpdater {
           }
 
           if (result.warnings) {
-            warnings.push(...result.warnings?.filter(Boolean)?.map(w => `Ad ${result.adId}: ${w}`));
+            warnings.push(...result.warnings?.filter(Boolean)?.map((w: any) => `Ad ${result.adId}: ${w}`));
           }
         });
 
@@ -243,7 +243,7 @@ export class GoogleAdsUrlUpdater {
 
       const processingTime = Date.now() - startTime;
       const averageProcessingTime = results.length > 0 
-        ? results.reduce((sum, r) => sum + r.processingTime, 0) / results.length 
+        ? results.reduce((sum, r: any) => sum + r.processingTime, 0) / results.length 
         : 0;
 
       const summary: BatchUpdateSummary = {
@@ -312,7 +312,7 @@ export class GoogleAdsUrlUpdater {
       }
 
       // Build update requests
-      const updates: UrlUpdateRequest[] = matchingAds?.filter(Boolean)?.map(ad => ({
+      const updates: UrlUpdateRequest[] = matchingAds?.filter(Boolean)?.map((ad: any) => ({
         adId: ad.id,
         finalUrl: replacement.finalUrl,
         finalUrlSuffix: replacement.finalUrlSuffix,
@@ -358,7 +358,7 @@ export class GoogleAdsUrlUpdater {
 
         if (suffixUpdate.adIds) {
           adsToUpdate = await Promise.all(
-            suffixUpdate.adIds?.filter(Boolean)?.map(adId => this.getAdData(accountId, adId))
+            suffixUpdate.adIds?.filter(Boolean)?.map((adId: any) => this.getAdData(accountId, adId))
           );
         } else if (suffixUpdate.adGroupId) {
           adsToUpdate = await this.getAdsByAdGroup(accountId, suffixUpdate.adGroupId);
@@ -366,7 +366,7 @@ export class GoogleAdsUrlUpdater {
           adsToUpdate = await this.getAdsByCampaign(accountId, suffixUpdate.campaignId);
         }
 
-        const updates = adsToUpdate?.filter(Boolean)?.map(ad => ({
+        const updates = adsToUpdate?.filter(Boolean)?.map((ad: any) => ({
           adId: ad.id,
           finalUrlSuffix: this.buildNewSuffix(ad.finalUrlSuffix, suffixUpdate),
         }));
@@ -465,29 +465,29 @@ export class GoogleAdsUrlUpdater {
     let filtered = [...this.updateHistory];
 
     if (filters.accountId) {
-      filtered = filtered.filter(r => r.adId.startsWith(filters.accountId!));
+      filtered = filtered.filter((r: any) => r.adId.startsWith(filters.accountId!));
     }
 
     if (filters.adId) {
-      filtered = filtered.filter(r => r.adId === filters.adId);
+      filtered = filtered.filter((r: any) => r.adId === filters.adId);
     }
 
     if (filters.startDate) {
-      filtered = filtered.filter(r => {
+      filtered = filtered.filter((r: any) => {
         const updateTime = new Date(Date.now() - r.processingTime);
         return updateTime >= filters.startDate!;
       });
     }
 
     if (filters.endDate) {
-      filtered = filtered.filter(r => {
+      filtered = filtered.filter((r: any) => {
         const updateTime = new Date(Date.now() - r.processingTime);
         return updateTime <= filters.endDate!;
       });
     }
 
     if (filters.success !== undefined) {
-      filtered = filtered.filter(r => r.success === filters.success);
+      filtered = filtered.filter((r: any) => r.success === filters.success);
     }
 
     return filtered.sort((a, b) => b.processingTime - a.processingTime);
@@ -506,20 +506,20 @@ export class GoogleAdsUrlUpdater {
     successRate: number;
   } {
     const history = accountId 
-      ? this.updateHistory.filter(r => r.adId.startsWith(accountId))
+      ? this.updateHistory.filter((r: any) => r.adId.startsWith(accountId))
       : this.updateHistory;
 
     const totalUpdates = history.length;
-    const successfulUpdates = history.filter(r => r.success).length;
-    const failedUpdates = history.filter(r => !r.success).length;
-    const totalProcessingTime = history.reduce((sum, r) => sum + r.processingTime, 0);
+    const successfulUpdates = history.filter((r: any) => r.success).length;
+    const failedUpdates = history.filter((r: any) => !r.success).length;
+    const totalProcessingTime = history.reduce((sum, r: any) => sum + r.processingTime, 0);
     const averageProcessingTime = totalUpdates > 0 ? totalProcessingTime / totalUpdates : 0;
     const successRate = totalUpdates > 0 ? (successfulUpdates / totalUpdates) * 100 : 0;
 
     const recentErrors = history
-      .filter(r => !r.success && r.error)
+      .filter((r: any) => !r.success && r.error)
       .slice(-10)
-      ?.filter(Boolean)?.map(r => r.error!);
+      ?.filter(Boolean)?.map((r: any) => r.error!);
 
     return {
       totalUpdates,
@@ -675,7 +675,7 @@ export class GoogleAdsUrlUpdater {
     }
 
     const params = Object.entries(parameters)
-      .map(([key, value]) => `${key}={${key}}`)
+      .map(([key, value]: any) => `${key}={${key}}`)
       .join('&');
 
     return params ? `{lpurl}?${params}` : '';
@@ -755,7 +755,7 @@ export class GoogleAdsUrlUpdater {
     const chunks = this.chunkArray(batch, maxConcurrent);
 
     for (const chunk of chunks) {
-      const promises = chunk?.filter(Boolean)?.map(update => 
+      const promises = chunk?.filter(Boolean)?.map((update: any) => 
         this.updateAdUrls(accountId, update.adId, {
           ...update,
           finalUrl: dryRun ? update.finalUrl + '?dry-run=true' : update.finalUrl,
@@ -764,7 +764,7 @@ export class GoogleAdsUrlUpdater {
 
       const chunkResults = await Promise.allSettled(promises);
       
-      chunkResults.forEach(result => {
+      chunkResults.forEach((result: any) => {
         if (result.status === 'fulfilled') {
           results.push(result.value);
         } else {

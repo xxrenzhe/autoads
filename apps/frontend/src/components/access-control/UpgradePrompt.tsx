@@ -132,7 +132,7 @@ export default function UpgradePrompt({
           <div className="space-y-2">
             <p className="text-sm font-medium">Why upgrade now:</p>
             <ul className="space-y-1">
-              {suggestion.reasons.slice(0, 3).map((reason, index) => (
+              {suggestion.reasons.slice(0, 3).map((reason, index: any) => (
                 <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
                   <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                   {reason}

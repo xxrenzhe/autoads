@@ -338,7 +338,7 @@ export default function MonitoringDashboard() {
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Critical System Alert:</strong> {alerts.filter(a => a.severity === 'critical').length} critical alerts require immediate attention.
+            <strong>Critical System Alert:</strong> {alerts.filter((a: any) => a.severity === 'critical').length} critical alerts require immediate attention.
           </AlertDescription>
         </Alert>
       )}
@@ -362,7 +362,7 @@ export default function MonitoringDashboard() {
         <TabsContent value="health" className="space-y-4">
           {systemHealth && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {systemHealth.services.map((service) => (
+              {systemHealth.services.map((service: any) => (
                 <Card key={service.service}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -378,7 +378,7 @@ export default function MonitoringDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {service.checks.map((check, index) => (
+                      {service.checks.map((check, index: any) => (
                         <div key={index} className="flex items-center justify-between p-2 border rounded">
                           <div className="flex items-center gap-2">
                             {getStatusIcon(check.status)}
@@ -418,7 +418,7 @@ export default function MonitoringDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {alerts.map((alert) => (
+                  {alerts.map((alert: any) => (
                     <div key={alert.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -444,13 +444,13 @@ export default function MonitoringDashboard() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => acknowledgeAlert(alert.id)}
+                            onClick={((: any): any) => acknowledgeAlert(alert.id)}
                           >
                             Acknowledge
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => resolveAlert(alert.id)}
+                            onClick={((: any): any) => resolveAlert(alert.id)}
                           >
                             Resolve
                           </Button>
@@ -474,9 +474,9 @@ export default function MonitoringDashboard() {
               <CardContent>
                 {systemHealth && (
                   <div className="space-y-4">
-                    {systemHealth.services.map((service) => {
+                    {systemHealth.services.map((service: any) => {
                       if (['cpu', 'memory', 'filesystem'].includes(service.service)) {
-                        const check = service.checks.find(c => c.name.includes('usage'))
+                        const check = service.checks.find((c: any) => c.name.includes('usage'))
                         if (check && check.metadata) {
                           let percentage = 0
                           if (service.service === 'cpu' && check.metadata.loadAverage) {
@@ -513,7 +513,7 @@ export default function MonitoringDashboard() {
               <CardContent>
                 {alertMetrics && (
                   <div className="space-y-3">
-                    {Object.entries(alertMetrics.alertsBySeverity).map(([severity, count]) => (
+                    {Object.entries(alertMetrics.alertsBySeverity).map(([severity, count]: any) => (
                       <div key={severity} className="flex items-center justify-between">
                         <span className="capitalize">{severity}</span>
                         <Badge variant={getSeverityColor(severity) as any}>{count}</Badge>

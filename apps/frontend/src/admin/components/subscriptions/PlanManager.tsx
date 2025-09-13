@@ -217,7 +217,7 @@ export default function PlanManager() {
   }
 
   const filteredPlans = plans
-    .filter(plan => {
+    .filter((plan: any) => {
       const matchesSearch = plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            plan.displayName.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesFilter = filterActive === 'all' || 
@@ -238,8 +238,8 @@ export default function PlanManager() {
           bValue = b.price.monthly
           break
         case 'subscribers':
-          const aComparison = planComparison.find(p => p.planId === a.id)
-          const bComparison = planComparison.find(p => p.planId === b.id)
+          const aComparison = planComparison.find((p: any) => p.planId === a.id)
+          const bComparison = planComparison.find((p: any) => p.planId === b.id)
           aValue = aComparison?.subscribers || 0
           bValue = bComparison?.subscribers || 0
           break
@@ -278,7 +278,7 @@ export default function PlanManager() {
             Refresh
           </Button>
           <Button
-            onClick={() => setShowCreateForm(true)}
+            onClick={((: any): any) => setShowCreateForm(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Plan
@@ -367,14 +367,14 @@ export default function PlanManager() {
               <Input
                 placeholder="Search plans..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={((e: any): any) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
             
             <select
               value={filterActive}
-              onChange={(e) => setFilterActive(e.target.value as any)}
+              onChange={((e: any): any) => setFilterActive(e.target.value as any)}
               className="px-3 py-2 border rounded-md text-sm"
             >
               <option value="all">All Plans</option>
@@ -384,7 +384,7 @@ export default function PlanManager() {
             
             <select
               value={`${sortBy}-${sortOrder}`}
-              onChange={(e) => {
+              onChange={((e: any): any) => {
                 const [field, order] = e.target.value.split('-')
                 setSortBy(field as any)
                 setSortOrder(order as any)
@@ -402,8 +402,8 @@ export default function PlanManager() {
 
           {/* Plans Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPlans.map((plan) => {
-              const comparison = planComparison.find(p => p.planId === plan.id)
+            {filteredPlans.map((plan: any) => {
+              const comparison = planComparison.find((p: any) => p.planId === plan.id)
               
               return (
                 <Card key={plan.id} className={`relative ${plan.isPopular ? 'ring-2 ring-blue-500' : ''}`}>
@@ -425,14 +425,14 @@ export default function PlanManager() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setSelectedPlan(plan)}
+                          onClick={((: any): any) => setSelectedPlan(plan)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deletePlan(plan.id)}
+                          onClick={((: any): any) => deletePlan(plan.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -460,7 +460,7 @@ export default function PlanManager() {
                     <div>
                       <p className="text-sm font-medium mb-2">Features:</p>
                       <ul className="text-sm text-muted-foreground space-y-1">
-                        {plan.features.slice(0, 3).map((feature, index) => (
+                        {plan.features.slice(0, 3).map((feature, index: any) => (
                           <li key={index} className="flex items-center gap-2">
                             <CheckCircle className="h-3 w-3 text-green-500" />
                             {feature}
@@ -487,7 +487,7 @@ export default function PlanManager() {
                       <Button
                         variant={plan.status === 'ACTIVE' ? "outline" : "default"}
                         size="sm"
-                        onClick={() => togglePlanStatus(plan.id, plan.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')}
+                        onClick={((: any): any) => togglePlanStatus(plan.id, plan.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')}
                         className="flex-1"
                       >
                         {plan.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
@@ -520,7 +520,7 @@ export default function PlanManager() {
                     </tr>
                   </thead>
                   <tbody>
-                    {planComparison.map((comparison) => (
+                    {planComparison.map((comparison: any) => (
                       <tr key={comparison.planId} className="border-b">
                         <td className="p-2 font-medium">{comparison.planName}</td>
                         <td className="p-2">{comparison.subscribers.toLocaleString()}</td>
@@ -547,7 +547,7 @@ export default function PlanManager() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {Object.entries(analytics.planDistribution).map(([planName, count]) => {
+                    {Object.entries(analytics.planDistribution).map(([planName, count]: any) => {
                       const percentage = (count / analytics.totalSubscribers) * 100
                       return (
                         <div key={planName} className="space-y-2">
@@ -577,7 +577,7 @@ export default function PlanManager() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {Object.entries(analytics.revenueByPlan).map(([planName, revenue]) => {
+                    {Object.entries(analytics.revenueByPlan).map(([planName, revenue]: any) => {
                       const percentage = (revenue / analytics.totalRevenue) * 100
                       return (
                         <div key={planName} className="space-y-2">
@@ -667,7 +667,7 @@ function PlanEditModal({ plan, onSave, onClose, saving }: PlanEditModalProps) {
               <Input
                 id="name"
                 value={formData.name || ''}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={((e: any): any) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
             </div>
@@ -676,7 +676,7 @@ function PlanEditModal({ plan, onSave, onClose, saving }: PlanEditModalProps) {
               <Input
                 id="displayName"
                 value={formData.displayName || ''}
-                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                onChange={((e: any): any) => setFormData({ ...formData, displayName: e.target.value })}
                 required
               />
             </div>
@@ -687,7 +687,7 @@ function PlanEditModal({ plan, onSave, onClose, saving }: PlanEditModalProps) {
             <Textarea
               id="description"
               value={formData.description || ''}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={((e: any): any) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
             />
           </div>
@@ -699,7 +699,7 @@ function PlanEditModal({ plan, onSave, onClose, saving }: PlanEditModalProps) {
                 id="monthlyPrice"
                 type="number"
                 value={formData.price?.monthly || 0}
-                onChange={(e) => setFormData({
+                onChange={((e: any): any) => setFormData({
                   ...formData,
                   price: { ...formData.price!, monthly: parseFloat(e.target.value) || 0 }
                 })}
@@ -712,7 +712,7 @@ function PlanEditModal({ plan, onSave, onClose, saving }: PlanEditModalProps) {
                 id="yearlyPrice"
                 type="number"
                 value={formData.price?.yearly || 0}
-                onChange={(e) => setFormData({
+                onChange={((e: any): any) => setFormData({
                   ...formData,
                   price: { ...formData.price!, yearly: parseFloat(e.target.value) || 0 }
                 })}
@@ -727,7 +727,7 @@ function PlanEditModal({ plan, onSave, onClose, saving }: PlanEditModalProps) {
               id="tokenQuota"
               type="number"
               value={formData.tokenQuota || 0}
-              onChange={(e) => setFormData({ ...formData, tokenQuota: parseInt(e.target.value) || 0 })}
+              onChange={((e: any): any) => setFormData({ ...formData, tokenQuota: parseInt(e.target.value) || 0 })}
               required
             />
           </div>
@@ -737,7 +737,7 @@ function PlanEditModal({ plan, onSave, onClose, saving }: PlanEditModalProps) {
               <input
                 type="checkbox"
                 checked={formData.status === 'ACTIVE' || false}
-                onChange={(e) => setFormData({ ...formData, status: e.target.checked ? 'ACTIVE' : 'INACTIVE' })}
+                onChange={((e: any): any) => setFormData({ ...formData, status: e.target.checked ? 'ACTIVE' : 'INACTIVE' })}
               />
               Active
             </label>
@@ -745,7 +745,7 @@ function PlanEditModal({ plan, onSave, onClose, saving }: PlanEditModalProps) {
               <input
                 type="checkbox"
                 checked={formData.isPopular || false}
-                onChange={(e) => setFormData({ ...formData, isPopular: e.target.checked })}
+                onChange={((e: any): any) => setFormData({ ...formData, isPopular: e.target.checked })}
               />
               Popular
             </label>

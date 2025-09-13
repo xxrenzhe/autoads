@@ -212,11 +212,11 @@ export function useRoleManagement() {
 
   // Helper functions
   const getRoleById = useCallback((roleId: string): Role | undefined => {
-    return roles.find(role => role.id === roleId)
+    return roles.find((role: any) => role.id === roleId)
   }, [roles])
 
   const getPermissionById = useCallback((permissionId: string): Permission | undefined => {
-    return permissions.find(permission => permission.id === permissionId)
+    return permissions.find((permission: any) => permission.id === permissionId)
   }, [permissions])
 
   const getRolePermissions = useCallback((roleId: string): Permission[] => {
@@ -224,25 +224,25 @@ export function useRoleManagement() {
     if (!role) return []
     
     return role.permissions
-      ?.filter(id => id)?.map(permissionId => getPermissionById(permissionId))
+      ?.filter((id: any) => id)?.map((permissionId: any) => getPermissionById(permissionId))
       .filter(Boolean) as Permission[]
   }, [getRoleById, getPermissionById])
 
   const getEffectivePermissions = useCallback((roleId: string): Permission[] => {
-    const hierarchy = roleHierarchy?.find(h => h.role.id === roleId)
+    const hierarchy = roleHierarchy?.find((h: any) => h.role.id === roleId)
     if (!hierarchy) return getRolePermissions(roleId)
     
     return hierarchy.effectivePermissions
-      ?.filter(id => id)?.map(permissionId => getPermissionById(permissionId))
+      ?.filter((id: any) => id)?.map((permissionId: any) => getPermissionById(permissionId))
       .filter(Boolean) as Permission[]
   }, [roleHierarchy, getRolePermissions, getPermissionById])
 
   const getInheritedPermissions = useCallback((roleId: string): Permission[] => {
-    const hierarchy = roleHierarchy?.find(h => h.role.id === roleId)
+    const hierarchy = roleHierarchy?.find((h: any) => h.role.id === roleId)
     if (!hierarchy) return []
     
     return hierarchy.inheritedPermissions
-      ?.filter(id => id)?.map(permissionId => getPermissionById(permissionId))
+      ?.filter((id: any) => id)?.map((permissionId: any) => getPermissionById(permissionId))
       .filter(Boolean) as Permission[]
   }, [roleHierarchy, getPermissionById])
 
@@ -285,7 +285,7 @@ export function useRoleManagement() {
   }, [getRoleById])
 
   const getPermissionsByCategory = useCallback((): Record<string, Permission[]> => {
-    return permissions.reduce((acc, permission) => {
+    return permissions.reduce((acc, permission: any) => {
       if (!acc[permission.category]) {
         acc[permission.category] = []
       }
@@ -298,7 +298,7 @@ export function useRoleManagement() {
     if (!query.trim()) return roles
     
     const lowercaseQuery = query.toLowerCase()
-    return roles.filter(role =>
+    return roles.filter((role: any) =>
       role.name.toLowerCase().includes(lowercaseQuery) ||
       role.description.toLowerCase().includes(lowercaseQuery) ||
       role.permissions.some(permissionId => {
@@ -313,7 +313,7 @@ export function useRoleManagement() {
     if (!query.trim()) return permissions
     
     const lowercaseQuery = query.toLowerCase()
-    return permissions.filter(permission =>
+    return permissions.filter((permission: any) =>
       permission.name.toLowerCase().includes(lowercaseQuery) ||
       permission.description.toLowerCase().includes(lowercaseQuery) ||
       permission.category.toLowerCase().includes(lowercaseQuery) ||

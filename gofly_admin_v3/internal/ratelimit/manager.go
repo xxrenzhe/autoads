@@ -1,24 +1,24 @@
 package ratelimit
 
 import (
-    "context"
-    "fmt"
-    "sync"
-    "time"
+	"context"
+	"fmt"
+	"sync"
+	"time"
 
-    "gofly-admin-v3/internal/config"
-    "gofly-admin-v3/internal/store"
+	"gofly-admin-v3/internal/config"
+	"gofly-admin-v3/internal/store"
 )
 
 // UserInfo 速率限制所需的用户信息（最小化）
 type UserInfo struct {
-    PlanName string
-    Plan     string
+	PlanName string
+	Plan     string
 }
 
 // UserService 用户服务接口（最小化）
 type UserService interface {
-    GetUserByID(userID string) (*UserInfo, error)
+	GetUserByID(userID string) (*UserInfo, error)
 }
 
 // RateLimitManager 统一速率限制管理器
@@ -176,10 +176,12 @@ func (rlm *RateLimitManager) CheckAPIRateLimit(ctx context.Context, userID strin
 		return fmt.Errorf("failed to get user info: %w", err)
 	}
 
-    // 获取用户套餐限制
-    plan := userInfo.PlanName
-    if plan == "" { plan = userInfo.Plan }
-    planLimit, exists := rlm.planLimits[plan]
+	// 获取用户套餐限制
+	plan := userInfo.PlanName
+	if plan == "" {
+		plan = userInfo.Plan
+	}
+	planLimit, exists := rlm.planLimits[plan]
 	if !exists {
 		planLimit = rlm.planLimits["FREE"] // 默认限制
 	}
@@ -199,10 +201,12 @@ func (rlm *RateLimitManager) CheckSiteRankRateLimit(ctx context.Context, userID 
 		return fmt.Errorf("failed to get user info: %w", err)
 	}
 
-    // 获取用户套餐限制
-    plan := userInfo.PlanName
-    if plan == "" { plan = userInfo.Plan }
-    planLimit, exists := rlm.planLimits[plan]
+	// 获取用户套餐限制
+	plan := userInfo.PlanName
+	if plan == "" {
+		plan = userInfo.Plan
+	}
+	planLimit, exists := rlm.planLimits[plan]
 	if !exists {
 		planLimit = rlm.planLimits["FREE"] // 默认限制
 	}
@@ -224,10 +228,12 @@ func (rlm *RateLimitManager) CheckBatchRateLimit(ctx context.Context, userID str
 		return fmt.Errorf("failed to get user info: %w", err)
 	}
 
-    // 获取用户套餐限制
-    plan := userInfo.PlanName
-    if plan == "" { plan = userInfo.Plan }
-    planLimit, exists := rlm.planLimits[plan]
+	// 获取用户套餐限制
+	plan := userInfo.PlanName
+	if plan == "" {
+		plan = userInfo.Plan
+	}
+	planLimit, exists := rlm.planLimits[plan]
 	if !exists {
 		planLimit = rlm.planLimits["FREE"] // 默认限制
 	}
@@ -250,9 +256,11 @@ func (rlm *RateLimitManager) GetBatchConcurrentLimit(userID string) int {
 	}
 
 	// 获取用户套餐限制
-    plan := userInfo.PlanName
-    if plan == "" { plan = userInfo.Plan }
-    planLimit, exists := rlm.planLimits[plan]
+	plan := userInfo.PlanName
+	if plan == "" {
+		plan = userInfo.Plan
+	}
+	planLimit, exists := rlm.planLimits[plan]
 	if !exists {
 		planLimit = rlm.planLimits["FREE"]
 	}
@@ -365,9 +373,11 @@ func (rlm *RateLimitManager) GetRateLimitStats(userID string) map[string]interfa
 		return map[string]interface{}{"error": "user not found"}
 	}
 
-    plan := userInfo.Plan
-    if plan == "" { plan = userInfo.PlanName }
-    planLimit, exists := rlm.planLimits[plan]
+	plan := userInfo.Plan
+	if plan == "" {
+		plan = userInfo.PlanName
+	}
+	planLimit, exists := rlm.planLimits[plan]
 	if !exists {
 		planLimit = rlm.planLimits["FREE"]
 	}
@@ -501,7 +511,7 @@ func (rlm *RateLimitManager) GetPlanLimits() map[string]*PlanRateLimit {
 
 // GetUserService 获取用户服务实例
 func (rlm *RateLimitManager) GetUserService() UserService {
-    return rlm.userService
+	return rlm.userService
 }
 
 // GetSystemStats 获取系统统计
@@ -513,15 +523,17 @@ func (rlm *RateLimitManager) GetSystemStats() map[string]interface{} {
 	totalUsers := len(rlm.limits)
 
 	// 按套餐统计用户数
-    planStats := make(map[string]int)
-    for uid := range rlm.limits {
-        userInfo, err := rlm.userService.GetUserByID(uid)
-        if err == nil {
-            plan := userInfo.PlanName
-            if plan == "" { plan = userInfo.Plan }
-            planStats[plan]++
-        }
-    }
+	planStats := make(map[string]int)
+	for uid := range rlm.limits {
+		userInfo, err := rlm.userService.GetUserByID(uid)
+		if err == nil {
+			plan := userInfo.PlanName
+			if plan == "" {
+				plan = userInfo.Plan
+			}
+			planStats[plan]++
+		}
+	}
 
 	return map[string]interface{}{
 		"total_active_users": totalUsers,
@@ -614,10 +626,10 @@ func (rlm *RateLimitManager) ResetUserLimiter(userID string) error {
 
 // logRateLimitAction 记录限流操作日志
 func (rlm *RateLimitManager) logRateLimitAction(userID, action, details string) {
-    // 简化：此版本不落库，仅保留扩展点
-    _ = userID
-    _ = action
-    _ = details
+	// 简化：此版本不落库，仅保留扩展点
+	_ = userID
+	_ = action
+	_ = details
 }
 
 // recordUsage 记录使用情况
@@ -626,57 +638,59 @@ func (rlm *RateLimitManager) recordUsage(userID, feature string, period string, 
 	defer rlm.mu.Unlock()
 
 	// 更新内存统计
-    if stats, exists := rlm.stats[userID]; exists {
-        switch feature {
-        case "API":
-            if period == "MINUTE" {
-                stats.APIMinuteUsed += int64(count)
-            } else if period == "HOUR" {
-                stats.APIHourUsed += int64(count)
-            }
-        case "SITE_RANK":
-            if period == "MINUTE" {
-                stats.SiteRankMinuteUsed += int64(count)
-            } else if period == "HOUR" {
-                stats.SiteRankHourUsed += int64(count)
-            }
-        case "BATCH":
-            if period == "MINUTE" {
-                stats.BatchMinuteUsed += int64(count)
-            }
-        }
-        stats.LastUpdated = time.Now()
+	if stats, exists := rlm.stats[userID]; exists {
+		switch feature {
+		case "API":
+			if period == "MINUTE" {
+				stats.APIMinuteUsed += int64(count)
+			} else if period == "HOUR" {
+				stats.APIHourUsed += int64(count)
+			}
+		case "SITE_RANK":
+			if period == "MINUTE" {
+				stats.SiteRankMinuteUsed += int64(count)
+			} else if period == "HOUR" {
+				stats.SiteRankHourUsed += int64(count)
+			}
+		case "BATCH":
+			if period == "MINUTE" {
+				stats.BatchMinuteUsed += int64(count)
+			}
+		}
+		stats.LastUpdated = time.Now()
 	} else {
 		// 创建新的统计
 		userInfo, err := rlm.userService.GetUserByID(userID)
 		if err == nil {
-            plan := userInfo.Plan
-            if plan == "" { plan = userInfo.PlanName }
-            _ , _ = rlm.planLimits[plan]
-            stats := &UserRateLimitStats{
-                UserID: userID,
-                Plan:   plan,
-                LastUpdated: time.Now(),
-            }
+			plan := userInfo.Plan
+			if plan == "" {
+				plan = userInfo.PlanName
+			}
+			_, _ = rlm.planLimits[plan]
+			stats := &UserRateLimitStats{
+				UserID:      userID,
+				Plan:        plan,
+				LastUpdated: time.Now(),
+			}
 
 			// 设置初始使用量
 			switch feature {
 			case "API":
-                if period == "MINUTE" {
-                    stats.APIMinuteUsed = int64(count)
-                } else if period == "HOUR" {
-                    stats.APIHourUsed = int64(count)
-                }
+				if period == "MINUTE" {
+					stats.APIMinuteUsed = int64(count)
+				} else if period == "HOUR" {
+					stats.APIHourUsed = int64(count)
+				}
 			case "SITE_RANK":
-                if period == "MINUTE" {
-                    stats.SiteRankMinuteUsed = int64(count)
-                } else if period == "HOUR" {
-                    stats.SiteRankHourUsed = int64(count)
-                }
+				if period == "MINUTE" {
+					stats.SiteRankMinuteUsed = int64(count)
+				} else if period == "HOUR" {
+					stats.SiteRankHourUsed = int64(count)
+				}
 			case "BATCH":
-                if period == "MINUTE" {
-                    stats.BatchMinuteUsed = int64(count)
-                }
+				if period == "MINUTE" {
+					stats.BatchMinuteUsed = int64(count)
+				}
 			}
 
 			rlm.stats[userID] = stats
@@ -689,13 +703,13 @@ func (rlm *RateLimitManager) recordUsage(userID, feature string, period string, 
 
 // UserRateLimitStats 用户速率限制统计信息
 type UserRateLimitStats struct {
-    UserID             string    `json:"user_id"`
-    Plan               string    `json:"plan"`
-    APIMinuteUsed      int64     `json:"api_minute_used"`
-    APIHourUsed        int64     `json:"api_hour_used"`
-    SiteRankMinuteUsed int64     `json:"site_rank_minute_used"`
-    SiteRankHourUsed   int64     `json:"site_rank_hour_used"`
-    BatchMinuteUsed    int64     `json:"batch_minute_used"`
-    LastUpdated        time.Time `json:"last_updated"`
-    LastActive         time.Time `json:"last_active"`
+	UserID             string    `json:"user_id"`
+	Plan               string    `json:"plan"`
+	APIMinuteUsed      int64     `json:"api_minute_used"`
+	APIHourUsed        int64     `json:"api_hour_used"`
+	SiteRankMinuteUsed int64     `json:"site_rank_minute_used"`
+	SiteRankHourUsed   int64     `json:"site_rank_hour_used"`
+	BatchMinuteUsed    int64     `json:"batch_minute_used"`
+	LastUpdated        time.Time `json:"last_updated"`
+	LastActive         time.Time `json:"last_active"`
 }

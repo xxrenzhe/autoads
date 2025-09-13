@@ -72,7 +72,7 @@ export class SmoothUpgradeManager {
       fromVersion,
       toVersion,
       steps,
-      totalEstimatedTime: steps.reduce((total, step) => total + step.estimatedTime, 0),
+      totalEstimatedTime: steps.reduce((total, step: any) => total + step.estimatedTime, 0),
       createdAt: new Date(),
       status: 'pending'
     };
@@ -319,7 +319,7 @@ export class SmoothUpgradeManager {
       const completedSteps = [...progress.completedSteps].reverse();
       
       for (const stepId of completedSteps) {
-        const step = plan.steps.find(s => s.id === stepId);
+        const step = plan.steps.find((s: any) => s.id === stepId);
         
         if (step?.rollback && step.rollbackable) {
           console.log(`回滚步骤: ${step.name}`);
@@ -453,7 +453,7 @@ export class SmoothUpgradeManager {
     return async (request: NextRequest) => {
       // 检查是否有正在进行的升级
       const runningUpgrades = Array.from(this.upgradeProgress.values())
-        .filter(progress => progress.status === 'running');
+        .filter((progress: any) => progress.status === 'running');
 
       if (runningUpgrades.length > 0) {
         return NextResponse.json(

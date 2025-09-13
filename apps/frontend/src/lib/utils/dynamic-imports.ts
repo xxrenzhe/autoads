@@ -171,7 +171,7 @@ export class ServiceRegistry {
         service.reset();
       }
     } else {
-      this.services.forEach(service => service.reset());
+      this.services.forEach((service: any) => service.reset());
     }
   }
 }
@@ -300,7 +300,7 @@ export class ImportPerformanceMonitor {
     const metrics = this.metrics.get(name);
     if (!metrics || metrics.length === 0) return 0;
     
-    const total = metrics.reduce((sum, metric) => sum + metric.loadTime, 0);
+    const total = metrics.reduce((sum, metric: any) => sum + metric.loadTime, 0);
     return total / metrics.length;
   }
 

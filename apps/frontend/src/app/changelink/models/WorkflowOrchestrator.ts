@@ -260,13 +260,13 @@ export class WorkflowOrchestrator {
         errors,
         summary: {
           totalLinks: linkResults.length,
-          successfulLinks: linkResults.filter(r => r.status === 'success').length,
-          failedLinks: linkResults.filter(r => r.status === 'failed').length,
+          successfulLinks: linkResults.filter((r: any) => r.status === 'success').length,
+          failedLinks: linkResults.filter((r: any) => r.status === 'failed').length,
           totalAdsUpdated: 0, // TODO: Calculate from googleAdsResults
           successfulAdsUpdated: 0, // TODO: Calculate from googleAdsResults
           failedAdsUpdated: 0, // TODO: Calculate from googleAdsResults
           successRate: linkResults.length > 0 
-            ? linkResults.filter(r => r.status === 'success').length / linkResults.length 
+            ? linkResults.filter((r: any) => r.status === 'success').length / linkResults.length 
             : 0
         }
       };
@@ -308,8 +308,8 @@ export class WorkflowOrchestrator {
         errors: [error instanceof Error ? error.message : "Unknown error" as any],
         summary: {
           totalLinks: linkResults.length,
-          successfulLinks: linkResults.filter(r => r.status === 'success').length,
-          failedLinks: linkResults.filter(r => r.status === 'failed').length,
+          successfulLinks: linkResults.filter((r: any) => r.status === 'success').length,
+          failedLinks: linkResults.filter((r: any) => r.status === 'failed').length,
           totalAdsUpdated: 0,
           successfulAdsUpdated: 0,
           failedAdsUpdated: 0,
@@ -430,7 +430,7 @@ export class WorkflowOrchestrator {
     this.loggingService.logInfo('Links processed', { 
       configurationId: configuration.id,
       totalResults: results.length,
-      successfulResults: results.filter(r => r.status === 'success').length
+      successfulResults: results.filter((r: any) => r.status === 'success').length
     });
 
     return results;
@@ -543,13 +543,13 @@ export class WorkflowOrchestrator {
       errors: [],
       summary: {
         totalLinks: linkResults.length,
-        successfulLinks: linkResults.filter(r => r.status === 'success').length,
-        failedLinks: linkResults.filter(r => r.status === 'failed').length,
+        successfulLinks: linkResults.filter((r: any) => r.status === 'success').length,
+        failedLinks: linkResults.filter((r: any) => r.status === 'failed').length,
         totalAdsUpdated: 0,
         successfulAdsUpdated: 0,
         failedAdsUpdated: 0,
         successRate: linkResults.length > 0 
-          ? linkResults.filter(r => r.status === 'success').length / linkResults.length 
+          ? linkResults.filter((r: any) => r.status === 'success').length / linkResults.length 
           : 0,
       }
     };

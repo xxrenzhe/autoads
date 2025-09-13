@@ -44,11 +44,11 @@ type IndexDefinition struct {
 
 // ForeignKeyDefinition 外键定义
 type ForeignKeyDefinition struct {
-	Name           string
-	Column         string
-	ReferenceTable string
+	Name            string
+	Column          string
+	ReferenceTable  string
 	ReferenceColumn string
-	OnDelete       string
+	OnDelete        string
 }
 
 // ModelMigrationOptions 模型迁移选项
@@ -71,11 +71,11 @@ func (g *MigrationGenerator) GenerateFromModel(model interface{}, options ModelM
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 	}
-	
+
 	if val.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("model must be a struct or pointer to struct")
 	}
-	
+
 	// 获取表名
 	tableName := options.TableName
 	if tableName == "" {
@@ -86,25 +86,25 @@ func (g *MigrationGenerator) GenerateFromModel(model interface{}, options ModelM
 				tableName = results[0].String()
 			}
 		}
-		
+
 		// 如果还是没有，使用结构体名称的复数形式
 		if tableName == "" {
 			tableName = strings.ToLower(val.Type().Name()) + "s"
 		}
 	}
-	
+
 	// 解析结构体字段
 	columns := make([]ColumnDefinition, 0)
 	typ := val.Type()
-	
+
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
-		
+
 		// 跳过非导出字段
 		if !field.IsExported() {
 			continue
 		}
-		
+
 		// 解析 gorm 标签
 		columnName := field.Tag.Get("gorm")
 		if columnName == "" {
@@ -119,12 +119,12 @@ func (g *MigrationGenerator) GenerateFromModel(model interface{}, options ModelM
 				}
 			}
 		}
-		
+
 		// 跳过特定字段
 		if columnName == "-" || columnName == "gorm" {
 			continue
 		}
-		
+
 		// 确定列类型
 		var columnType string
 		switch field.Type.Kind() {
@@ -149,13 +149,13 @@ func (g *MigrationGenerator) GenerateFromModel(model interface{}, options ModelM
 				columnType = "TEXT"
 			}
 		}
-		
+
 		// 检查是否可为空
 		nullable := true
 		if strings.Contains(field.Tag.Get("gorm"), "not null") {
 			nullable = false
 		}
-		
+
 		// 获取默认值
 		var defaultValue string
 		if strings.Contains(field.Tag.Get("gorm"), "default:") {
@@ -167,7 +167,7 @@ func (g *MigrationGenerator) GenerateFromModel(model interface{}, options ModelM
 				}
 			}
 		}
-		
+
 		columns = append(columns, ColumnDefinition{
 			Name:     columnName,
 			Type:     columnType,
@@ -175,7 +175,7 @@ func (g *MigrationGenerator) GenerateFromModel(model interface{}, options ModelM
 			Default:  defaultValue,
 		})
 	}
-	
+
 	// 添加时间戳字段
 	if options.Timestamps {
 		columns = append(columns,
@@ -193,7 +193,7 @@ func (g *MigrationGenerator) GenerateFromModel(model interface{}, options ModelM
 			},
 		)
 	}
-	
+
 	// 添加软删除字段
 	if options.SoftDeletes {
 		columns = append(columns,
@@ -204,7 +204,7 @@ func (g *MigrationGenerator) GenerateFromModel(model interface{}, options ModelM
 			},
 		)
 	}
-	
+
 	// 添加自增ID字段
 	if options.AutoID {
 		columns = append([]ColumnDefinition{
@@ -215,11 +215,11 @@ func (g *MigrationGenerator) GenerateFromModel(model interface{}, options ModelM
 			},
 		}, columns...)
 	}
-	
+
 	return &GeneratedMigration{
-		TableName: tableName,
-		Columns:   columns,
-		Indexes:   []IndexDefinition{},
+		TableName:   tableName,
+		Columns:     columns,
+		Indexes:     []IndexDefinition{},
 		ForeignKeys: []ForeignKeyDefinition{},
 	}, nil
 }
@@ -227,12 +227,12 @@ func (g *MigrationGenerator) GenerateFromModel(model interface{}, options ModelM
 // GenerateMigrationCode 生成迁移代码
 func (g *GeneratedMigration) GenerateMigrationCode() string {
 	var builder strings.Builder
-	
+
 	// 生成 Up 方法
 	builder.WriteString("func (m *Migration) Up(db gform.DB) error {\n")
 	builder.WriteString("\treturn db.Exec(context.Background(), `\n")
 	builder.WriteString("\t\tCREATE TABLE IF NOT EXISTS " + g.TableName + " (\n")
-	
+
 	for i, col := range g.Columns {
 		builder.WriteString("\t\t\t" + col.Name + " " + col.Type)
 		if !col.Nullable {
@@ -247,16 +247,16 @@ func (g *GeneratedMigration) GenerateMigrationCode() string {
 			builder.WriteString("\n")
 		}
 	}
-	
+
 	builder.WriteString("\t\t)\n")
 	builder.WriteString("\t\tENGINE=" + "InnoDB" + " DEFAULT CHARSET=" + "utf8mb4" + " COLLATE=" + "utf8mb4_unicode_ci" + "\n")
 	builder.WriteString("\t`)\n")
 	builder.WriteString("}\n\n")
-	
+
 	// 生成 Down 方法
 	builder.WriteString("func (m *Migration) Down(db gform.DB) error {\n")
 	builder.WriteString("\treturn db.Exec(context.Background(), `DROP TABLE IF EXISTS " + g.TableName + "`)\n")
 	builder.WriteString("}\n")
-	
+
 	return builder.String()
 }

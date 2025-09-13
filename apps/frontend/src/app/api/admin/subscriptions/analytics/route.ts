@@ -72,7 +72,7 @@ async function handleGET(request: NextRequest, { user }: any) {
     const churnRate = totalSubscribers > 0 ? (churnData / totalSubscribers) * 100 : 0
 
     // Format plan distribution
-    const planDistributionFormatted = planDistribution.reduce((acc: any, item: any) => {
+    const planDistributionFormatted = planDistribution.reduce((acc: any, item: any: any) => {
       // In a real implementation, you'd join with plan data
       const planName = `Plan ${item.planId}` // Simplified
       acc[planName] = item._count._all
@@ -80,9 +80,9 @@ async function handleGET(request: NextRequest, { user }: any) {
     }, {} as Record<string, number>)
 
     // Format revenue by plan - calculate from subscription data
-    const revenueByPlanFormatted = revenueByPlan.reduce((acc: any, subscription: any) => {
+    const revenueByPlanFormatted = revenueByPlan.reduce((acc: any, subscription: any: any) => {
       const planName = subscription.plan?.name || 'Unknown'
-      const totalPayments = subscription.payments.reduce((sum: number, payment: any) => sum + payment.amount, 0)
+      const totalPayments = subscription.payments.reduce((sum: number, payment: any: any) => sum + payment.amount, 0)
       acc[planName] = (acc[planName] || 0) + totalPayments
       return acc
     }, {})

@@ -57,7 +57,7 @@ export const useAnalysisEngine = ({
     const domainSet = new Set<string>();
     const uniqueList: string[] = [];
     
-    domains.forEach(domain => {
+    domains.forEach((domain: any) => {
       if (!domainSet.has(domain)) {
         domainSet.add(domain);
         uniqueList.push(domain);
@@ -221,9 +221,9 @@ export const useAnalysisEngine = ({
       });
 
       // 立即创建初始结果并显示，包含所有原始数据
-      const initialResults: AnalysisResult[] = domains.map((domain, index) => {
+      const initialResults: AnalysisResult[] = domains.map((domain, index: any) => {
         // 找到对应的原始数据行 - 通过extractedDomain字段匹配
-        const originalRow = originalData.find(row => row.extractedDomain === domain) || originalData[index] || {};
+        const originalRow = originalData.find((row: any) => row.extractedDomain === domain) || originalData[index] || {};
         
         logger.info(`Creating initial result ${index}: domain="${domain}", originalData:`, originalRow);
         
@@ -233,7 +233,7 @@ export const useAnalysisEngine = ({
           originalUrl: String(originalRow?.["Advert Url"] ?? originalRow?.originalUrl ?? domain),
           // 保留所有原始列数据，但排除extractedDomain字段
           ...Object.fromEntries(
-            Object.entries(originalRow).filter(([key]) => key !== 'extractedDomain')
+            Object.entries(originalRow).filter(([key]: any) => key !== 'extractedDomain')
           ),
           // 排名数据初始化为加载状态
           GlobalRank: "loading",
@@ -253,7 +253,7 @@ export const useAnalysisEngine = ({
 
       // 创建域名到原始索引的映射，用于更新重复域名
       const domainToIndices = new Map<string, number[]>();
-      domains.forEach((domain, index) => {
+      domains.forEach((domain, index: any) => {
         if (!domainToIndices.has(domain)) {
           domainToIndices.set(domain, []);
         }
@@ -290,7 +290,7 @@ export const useAnalysisEngine = ({
               );
               
               // 更新所有相同域名的记录
-              indices.forEach(index => {
+              indices.forEach((index: any) => {
                 if (index < newResults.length) {
                   newResults[index] = {
                     ...newResults[index],
@@ -365,7 +365,7 @@ export const useAnalysisEngine = ({
           for (const domain of batch) {
             const indices = domainToIndices.get(domain) || [];
             
-            indices.forEach(index => {
+            indices.forEach((index: any) => {
               if (index < newResults.length) {
                 const result = newResults[index];
                 if (result.GlobalRank === "loading" || result.MonthlyVisits === "loading" || result.测试优先级 === "loading") {
@@ -386,12 +386,12 @@ export const useAnalysisEngine = ({
         });
         
         // 动态调整批次大小 - 优化逻辑
-        const successCount = batchResults.filter((r) => r.success).length;
-        const errorCount = batchResults.filter((r) => !r.success).length;
+        const successCount = batchResults.filter((r: any) => r.success).length;
+        const errorCount = batchResults.filter((r: any) => !r.success).length;
         const errorRate = errorCount / batchResults.length;
 
         // 只有在真正的网络错误或超时时才减少批次大小
-        const realErrors = batchResults.filter((r) => 
+        const realErrors = batchResults.filter((r: any) => 
           !r.success && r.error !== "invalid_data" && r.error !== "invalid_response"
         ).length;
 
@@ -422,8 +422,8 @@ export const useAnalysisEngine = ({
 
       // 所有查询完成后，重新计算优先级确保高、中、低三档分布
       if (allResults.length > 0) {
-        const allGlobalRanks = allResults.map((r) => r.globalRank);
-        const allMonthlyVisits = allResults.map((r) => r.monthlyVisits);
+        const allGlobalRanks = allResults.map((r: any) => r.globalRank);
+        const allMonthlyVisits = allResults.map((r: any) => r.monthlyVisits);
 
         onResultsUpdate((prev) => {
           const newResults = [...prev];
@@ -439,7 +439,7 @@ export const useAnalysisEngine = ({
             
             // 更新所有相同域名的记录
             const indices = domainToIndices.get(result.domain) || [];
-            indices.forEach(index => {
+            indices.forEach((index: any) => {
               if (index < newResults.length) {
                 newResults[index] = {
                   ...newResults[index],

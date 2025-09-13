@@ -3,8 +3,8 @@ export async function processFile(file: File): Promise<string[]> {
     const text = await file.text();
     const lines = text
       .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
+      .map((line: any) => line.trim())
+      .filter((line: any) => line.length > 0);
 
     // Simple URL extraction - look for URLs in each line
     const urls: string[] = [];
@@ -27,7 +27,7 @@ export async function processFile(file: File): Promise<string[]> {
 export function normalizeHeaders(headers: string[]): string[] {
   let hasCommission = false;
   return headers
-    .map((h) => {
+    .map((h: any) => {
       if (h === "佣金") {
         hasCommission = true;
         return "Commission";

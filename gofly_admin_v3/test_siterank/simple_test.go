@@ -9,19 +9,19 @@ import (
 
 func TestSimilarWebMockClient(t *testing.T) {
 	client := NewMockSimilarWebClient()
-	
+
 	// Test domain validation
 	err := client.ValidateDomain("google.com")
 	if err != nil {
 		t.Errorf("Domain validation failed: %v", err)
 	}
-	
+
 	// Test domain normalization
 	normalized := client.NormalizeDomain("GOOGLE.COM")
 	if normalized != "google.com" {
 		t.Errorf("Expected 'google.com', got '%s'", normalized)
 	}
-	
+
 	// Test getting domain rank for known domains
 	testCases := []struct {
 		domain       string
@@ -33,10 +33,10 @@ func TestSimilarWebMockClient(t *testing.T) {
 		{"example.com", 50000, false},
 		{"unknown-domain-12345.com", 0, true},
 	}
-	
+
 	for _, tc := range testCases {
 		data, err := client.GetDomainRank(tc.domain, "world")
-		
+
 		if tc.shouldError {
 			if err == nil {
 				t.Errorf("Expected error for domain '%s', but got none", tc.domain)
@@ -65,11 +65,11 @@ func TestPriorityCalculation(t *testing.T) {
 		{intPtr(500000), PriorityLow},
 		{nil, PriorityLow},
 	}
-	
+
 	for _, tc := range testCases {
 		query := &SiteRankQuery{GlobalRank: tc.rank}
 		priority := query.CalculatePriority()
-		
+
 		if priority != tc.expected {
 			t.Errorf("For rank %v, expected priority %s, got %s", tc.rank, tc.expected, priority)
 		}
@@ -84,27 +84,27 @@ func TestSiteRankQueryModel(t *testing.T) {
 		Status: StatusPending,
 		Source: SourceSimilarWeb,
 	}
-	
+
 	// Test table name
 	tableName := query.TableName()
 	if tableName != "siterank_queries" {
 		t.Errorf("Expected table name 'siterank_queries', got '%s'", tableName)
 	}
-	
+
 	// Test response conversion
 	response := query.ToResponse()
 	if response == nil {
 		t.Fatal("Response is nil")
 	}
-	
+
 	if response.ID != query.ID {
 		t.Errorf("Expected ID '%s', got '%s'", query.ID, response.ID)
 	}
-	
+
 	if response.Domain != query.Domain {
 		t.Errorf("Expected domain '%s', got '%s'", query.Domain, response.Domain)
 	}
-	
+
 	if response.Status != query.Status {
 		t.Errorf("Expected status '%s', got '%s'", query.Status, response.Status)
 	}
@@ -112,23 +112,23 @@ func TestSiteRankQueryModel(t *testing.T) {
 
 func TestSimilarWebConfig(t *testing.T) {
 	config := DefaultSimilarWebConfig()
-	
+
 	if config == nil {
 		t.Fatal("Config is nil")
 	}
-	
+
 	if config.BaseURL == "" {
 		t.Error("BaseURL should not be empty")
 	}
-	
+
 	if config.RateLimit <= 0 {
 		t.Error("RateLimit should be positive")
 	}
-	
+
 	if config.Timeout <= 0 {
 		t.Error("Timeout should be positive")
 	}
-	
+
 	if config.RetryCount < 0 {
 		t.Error("RetryCount should not be negative")
 	}
@@ -142,7 +142,7 @@ func TestQueryStatusConstants(t *testing.T) {
 		StatusFailed,
 		StatusCached,
 	}
-	
+
 	for _, status := range expectedStatuses {
 		if string(status) == "" {
 			t.Errorf("Status constant should not be empty: %v", status)
@@ -156,7 +156,7 @@ func TestPriorityConstants(t *testing.T) {
 		PriorityMedium,
 		PriorityLow,
 	}
-	
+
 	for _, priority := range expectedPriorities {
 		if string(priority) == "" {
 			t.Errorf("Priority constant should not be empty: %v", priority)
@@ -169,7 +169,7 @@ func TestDataSourceConstants(t *testing.T) {
 		SourceSimilarWeb,
 		SourceCache,
 	}
-	
+
 	for _, source := range expectedSources {
 		if string(source) == "" {
 			t.Errorf("DataSource constant should not be empty: %v", source)
@@ -187,7 +187,7 @@ func BenchmarkPriorityCalculation(b *testing.B) {
 	query := &SiteRankQuery{}
 	rank := 50000
 	query.GlobalRank = &rank
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		query.CalculatePriority()
@@ -197,7 +197,7 @@ func BenchmarkPriorityCalculation(b *testing.B) {
 func BenchmarkDomainValidation(b *testing.B) {
 	client := NewMockSimilarWebClient()
 	domain := "example.com"
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		client.ValidateDomain(domain)
@@ -207,7 +207,7 @@ func BenchmarkDomainValidation(b *testing.B) {
 func BenchmarkDomainNormalization(b *testing.B) {
 	client := NewMockSimilarWebClient()
 	domain := "EXAMPLE.COM"
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		client.NormalizeDomain(domain)
@@ -217,25 +217,25 @@ func BenchmarkDomainNormalization(b *testing.B) {
 // Example test to demonstrate usage
 func ExampleSiteRankQuery_CalculatePriority() {
 	query := &SiteRankQuery{}
-	
+
 	// High priority domain (rank <= 10000)
 	rank := 5000
 	query.GlobalRank = &rank
 	priority := query.CalculatePriority()
 	fmt.Println(priority)
-	
+
 	// Medium priority domain (rank <= 100000)
 	rank = 50000
 	query.GlobalRank = &rank
 	priority = query.CalculatePriority()
 	fmt.Println(priority)
-	
+
 	// Low priority domain (rank > 100000)
 	rank = 500000
 	query.GlobalRank = &rank
 	priority = query.CalculatePriority()
 	fmt.Println(priority)
-	
+
 	// Output:
 	// High
 	// Medium

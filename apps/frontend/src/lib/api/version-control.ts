@@ -240,10 +240,10 @@ export class ApiVersionManager {
     }
 
     // 递归处理嵌套对象
-    Object.keys(transformed).forEach(key => {
+    Object.keys(transformed).forEach((key: any) => {
       if (typeof transformed[key] === 'object' && transformed[key] !== null) {
         if (Array.isArray(transformed[key])) {
-          transformed[key] = transformed[key].map((item: any) => this.transformToV1(item));
+          transformed[key] = transformed[key].map((item: any: any) => this.transformToV1(item));
         } else {
           transformed[key] = this.transformToV1(transformed[key]);
         }
@@ -273,7 +273,7 @@ export class ApiVersionManager {
    * 获取所有支持的版本
    */
   static getSupportedVersions(): string[] {
-    return Object.keys(API_VERSIONS).filter(version => 
+    return Object.keys(API_VERSIONS).filter((version: any) => 
       API_VERSIONS[version].isSupported
     );
   }
@@ -352,7 +352,7 @@ export function requireFeature(feature: string) {
           {
             error: 'Feature not available',
             message: `功能 ${feature} 在API版本 ${version} 中不可用`,
-            availableInVersions: Object.keys(API_VERSIONS).filter(v => 
+            availableInVersions: Object.keys(API_VERSIONS).filter((v: any) => 
               ApiVersionManager.isFeatureAvailable(v, feature)
             )
           },

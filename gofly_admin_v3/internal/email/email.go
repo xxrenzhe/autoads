@@ -66,9 +66,9 @@ func NewEmailService(cfg *EmailConfig) *EmailService {
 
 // GetEmailService 获取邮件服务
 func GetEmailService() *EmailService {
-    if !emailInit {
-        // 从配置文件获取邮件配置（保留初始化调用以便后续扩展）
-        _ = config.GetConfigManager()
+	if !emailInit {
+		// 从配置文件获取邮件配置（保留初始化调用以便后续扩展）
+		_ = config.GetConfigManager()
 
 		// 这里简化处理，实际应该从配置文件读取邮件配置
 		emailCfg := &EmailConfig{
@@ -104,7 +104,7 @@ func (es *EmailService) Send(msg *EmailMessage) error {
 
 	// 如果有附件或HTML内容，使用MIME多部分
 	if len(msg.Files) > 0 || msg.HTMLBody != "" {
-        boundary := " boundary_" + gf.UUID()
+		boundary := " boundary_" + gf.UUID()
 		buf.WriteString(fmt.Sprintf("Content-Type: multipart/mixed;%s\r\n", boundary))
 		buf.WriteString("\r\n")
 
@@ -123,11 +123,11 @@ func (es *EmailService) Send(msg *EmailMessage) error {
 			buf.WriteString("\r\n")
 		}
 
-        // 添加附件
-        for range msg.Files {
-            buf.WriteString(fmt.Sprintf("--%s\r\n", boundary[2:]))
-            // TODO: 实现附件添加
-        }
+		// 添加附件
+		for range msg.Files {
+			buf.WriteString(fmt.Sprintf("--%s\r\n", boundary[2:]))
+			// TODO: 实现附件添加
+		}
 
 		buf.WriteString(fmt.Sprintf("--%s--\r\n", boundary[2:]))
 	} else {

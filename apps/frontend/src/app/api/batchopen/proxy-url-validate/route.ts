@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    const { proxyUrl } = inputValidation.data;
+    const { proxyUrl } = inputValidation.data as any;
     
     logger.info('验证代理URL格式和IP获取能力:', { proxyUrl });
 

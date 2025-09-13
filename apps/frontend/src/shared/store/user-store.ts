@@ -102,7 +102,7 @@ export const useUserStore = create<UserState>()(
   devtools(
     persist(
       subscribeWithSelector(
-        immer((set, get) => ({
+        immer((set: any, get: any) => ({
           // Initial state
           profile: null,
           preferences: null,
@@ -115,25 +115,25 @@ export const useUserStore = create<UserState>()(
 
           // Actions
           setProfile: (profile) =>
-            set((state) => {
+            set((state: any) => {
               state.profile = profile;
               state.auth.isAuthenticated = !!profile;
             }),
 
           updateProfile: (updates) =>
-            set((state) => {
+            set((state: any) => {
               if (state.profile) {
                 state.profile = { ...state.profile, ...updates, updatedAt: new Date() };
               }
             }),
 
           setPreferences: (preferences) =>
-            set((state) => {
+            set((state: any) => {
               state.preferences = preferences;
             }),
 
           updatePreferences: (updates) =>
-            set((state) => {
+            set((state: any) => {
               if (state.preferences) {
                 state.preferences = { ...state.preferences, ...updates };
               } else {
@@ -142,17 +142,17 @@ export const useUserStore = create<UserState>()(
             }),
 
           setSession: (session) =>
-            set((state) => {
+            set((state: any) => {
               state.session = session;
             }),
 
           setAuthState: (auth) =>
-            set((state) => {
+            set((state: any) => {
               state.auth = { ...state.auth, ...auth };
             }),
 
           login: (profile, session) =>
-            set((state) => {
+            set((state: any) => {
               state.profile = profile;
               state.session = session;
               state.preferences = state.preferences || defaultPreferences;
@@ -164,7 +164,7 @@ export const useUserStore = create<UserState>()(
             }),
 
           logout: () =>
-            set((state) => {
+            set((state: any) => {
               state.profile = null;
               state.session = null;
               state.auth = {
@@ -176,14 +176,14 @@ export const useUserStore = create<UserState>()(
             }),
 
           clearError: () =>
-            set((state) => {
+            set((state: any) => {
               state.auth.error = null;
             })
         }))
       ),
       {
         name: 'user-store',
-        partialize: (state) => ({
+        partialize: (state: any) => ({
           profile: state.profile,
           preferences: state.preferences,
           session: state.session
@@ -217,7 +217,7 @@ if (typeof window !== 'undefined') {
 // Activity tracker
 if (typeof window !== 'undefined') {
   useUserStore.subscribe(
-    (state) => state.auth.isAuthenticated,
+    (state: any) => state.auth.isAuthenticated,
     (isAuthenticated) => {
       if (isAuthenticated) {
         const updateActivity = () => {
@@ -232,12 +232,12 @@ if (typeof window !== 'undefined') {
 
         // Update activity on user interactions
         const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-        events.forEach(event => {
+        events.forEach((event: any) => {
           document.addEventListener(event, updateActivity, { passive: true });
         });
 
         return () => {
-          events.forEach(event => {
+          events.forEach((event: any) => {
             document.removeEventListener(event, updateActivity);
           });
         };

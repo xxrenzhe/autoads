@@ -646,7 +646,7 @@ class ProxyService {
   public getCacheStats(): { count: number; size: number } {
     return {
       count: proxyCache.size,
-      size: Array.from(proxyCache.values()).reduce((total, cache) => 
+      size: Array.from(proxyCache.values()).reduce((total, cache: any) => 
         total + cache.proxies.length, 0
       )
     };

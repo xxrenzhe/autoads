@@ -383,7 +383,7 @@ export interface PermissionContext {
         permissions = this.getLegacyRolePermissions(user.role)
       }
 
-      const resources = [...new Set(permissions?.filter(Boolean)?.map(p => p.resource))]
+      const resources = [...new Set(permissions?.filter(Boolean)?.map((p: any) => p.resource))]
 
       return resources
     } catch (error) {

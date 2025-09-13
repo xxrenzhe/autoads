@@ -141,7 +141,7 @@ export function ConfigHistory({
         </Card>
       ) : (
         <div className="space-y-4">
-          {history.map((item, index) => (
+          {history.map((item, index: any) => (
             <Card key={item.id} className="relative">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -211,7 +211,7 @@ export function ConfigHistory({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toggleDiff(item.id)}
+                      onClick={((: any): any) => toggleDiff(item.id)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -219,7 +219,7 @@ export function ConfigHistory({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRestore(item)}
+                        onClick={((: any): any) => handleRestore(item)}
                       >
                         <RotateCcw className="h-4 w-4" />
                       </Button>

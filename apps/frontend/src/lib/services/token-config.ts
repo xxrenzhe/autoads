@@ -95,7 +95,7 @@ export class TokenConfigService {
     }
 
     // Apply database values
-    configs.forEach((item: any) => {
+    configs.forEach((item: any: any) => {
       const [, feature, setting] = item.key.split('.')
       if (feature && setting && config[feature as keyof TokenConfig]) {
         const value = item.type === 'number' ? parseFloat(item.value) : item.value
@@ -323,15 +323,15 @@ export class TokenConfigService {
       orderBy: { createdAt: 'desc' }
     })
 
-    const totalConsumed = usageRecords.reduce((sum: number, record: any) => sum + record.tokensConsumed, 0)
+    const totalConsumed = usageRecords.reduce((sum: number, record: any: any) => sum + record.tokensConsumed, 0)
     
-    const byFeature = usageRecords.reduce((acc: Record<string, number>, record: any) => {
+    const byFeature = usageRecords.reduce((acc: Record<string, number>, record: any: any) => {
       acc[record.feature] = (acc[record.feature] || 0) + record.tokensConsumed
       return acc
     }, {} as Record<string, number>)
 
     // Group by day for period analysis
-    const byPeriod = usageRecords.reduce((acc: Record<string, number>, record: any) => {
+    const byPeriod = usageRecords.reduce((acc: Record<string, number>, record: any: any) => {
       const date = record.createdAt.toISOString().split('T')[0]
       acc[date] = (acc[date] || 0) + record.tokensConsumed
       return acc
@@ -342,7 +342,7 @@ export class TokenConfigService {
     const projectedMonthly = averageDaily * 30
 
     // Calculate efficiency (tokens per item)
-    const totalItems = usageRecords.reduce((sum: number, record: any) => sum + record.itemCount, 0)
+    const totalItems = usageRecords.reduce((sum: number, record: any: any) => sum + record.itemCount, 0)
     const efficiency = totalItems > 0 ? totalConsumed / totalItems : 0
 
     const analytics: TokenAnalytics = {
@@ -377,11 +377,11 @@ export class TokenConfigService {
     
     // Simple confidence calculation based on data consistency
     const dailyValues = Object.values(analytics.byPeriod)
-    const mean = dailyValues.reduce((sum, val) => sum + val, 0) / dailyValues.length
-    const variance = dailyValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / dailyValues.length
+    const mean = dailyValues.reduce((sum, val: any) => sum + val, 0) / dailyValues.length
+    const variance = dailyValues.reduce((sum, val: any) => sum + Math.pow(val - mean, 2), 0) / dailyValues.length
     const confidence = Math.max(0.1, Math.min(0.9, 1 - (variance / (mean * mean))))
 
-    const breakdown = Object.entries(analytics.byFeature).reduce((acc, [feature, usage]) => {
+    const breakdown = Object.entries(analytics.byFeature).reduce((acc, [feature, usage]: any) => {
       const ratio = usage / analytics.totalConsumed
       acc[feature] = projectedUsage * ratio
       return acc

@@ -22,7 +22,7 @@ export const ValidationRules = {
 
 export const createQueryParams = (params: Record<string, any>) => {
   const searchParams = new URLSearchParams()
-  Object.entries(params).forEach(([key, value]) => {
+  Object.entries(params).forEach(([key, value]: any) => {
     if (value !== undefined && value !== null) {
       searchParams.append(key, String(value))
     }
@@ -35,7 +35,7 @@ export const createQueryString = createQueryParams
 export const parseQueryParams = (search: string) => {
   const params = new URLSearchParams(search)
   const result: Record<string, string> = {}
-  params.forEach((value, key) => {
+  params.forEach((value, key: any) => {
     result[key] = value
   })
   return result
@@ -45,7 +45,7 @@ export const createTypeSafeParams = <T extends Record<string, any>>(schema: Reco
   const params = parseQueryParams(search)
   const result: Partial<T> = {}
   
-  Object.entries(schema).forEach(([key, rule]) => {
+  Object.entries(schema).forEach(([key, rule]: any) => {
     const value = params[key]
     const typedRule = rule as any
     if (value !== undefined && true) {

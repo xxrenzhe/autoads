@@ -80,18 +80,18 @@ export class UsageStatsService {
 
       return {
         period: { days, startDate, endDate: new Date() },
-        features: usageLogs.map((log: UsageLogGroupResult) => ({
+        features: usageLogs.map((log: UsageLogGroupResult: any) => ({
           feature: log.feature,
           totalUsage: log._sum.usage || 0,
           usageCount: log._count
         })),
-        apiEndpoints: apiUsage.map((api: any) => ({
+        apiEndpoints: apiUsage.map((api: any: any) => ({
           endpoint: api.endpoint,
           totalTokens: api._sum.tokenConsumed || 0,
           callCount: api._count,
           avgResponseTime: api._avg.responseTime || 0
         })),
-        behaviors: behaviorAnalytics.map((behavior: any) => ({
+        behaviors: behaviorAnalytics.map((behavior: any: any) => ({
           feature: behavior.feature,
           action: behavior.action,
           totalTokens: behavior._sum.tokensConsumed || 0,
@@ -138,7 +138,7 @@ export class UsageStatsService {
     
     for (let i = 0; i < days; i++) {
       const dateStr = currentDate.toISOString().split('T')[0];
-      const stat = dailyStats.find(s => 
+      const stat = dailyStats.find((s: any) => 
         s.date.toISOString().split('T')[0] === dateStr
       );
       
@@ -231,7 +231,7 @@ export class UsageStatsService {
           totalTransactions: tokenStats._count,
           totalVolume: Number(tokenStats._sum.amount || 0)
         },
-        subscriptions: subscriptionStats.reduce((acc: any, stat: any) => {
+        subscriptions: subscriptionStats.reduce((acc: any, stat: any: any) => {
           acc[stat.status] = stat._count;
           return acc;
         }, {} as Record<string, number>),
@@ -261,7 +261,7 @@ export class UsageStatsService {
         take: limit
       });
 
-      return rankings.map((item: any, index: any) => ({
+      return rankings.map((item: any, index: any: any) => ({
         rank: index + 1,
         feature: item.feature,
         totalUsage: Number(item._sum.usage || 0),
@@ -303,7 +303,7 @@ export class UsageStatsService {
       
       while (currentDate <= new Date()) {
         const dateStr = currentDate.toISOString().split('T')[0];
-        const dayData = dailyRegistrations.find(d => 
+        const dayData = dailyRegistrations.find((d: any) => 
           d.date.toISOString().split('T')[0] === dateStr
         );
         
@@ -377,17 +377,17 @@ export class UsageStatsService {
       ]);
 
       return {
-        byType: byType.map((t: any) => ({
+        byType: byType.map((t: any: any) => ({
           type: t.type,
           totalAmount: Number(t._sum.amount || 0),
           count: t._count
         })),
-        byPlan: byPlan.map(p => ({
+        byPlan: byPlan.map((p: any) => ({
           plan: p.plan_name,
           totalUsage: Number(p.total_usage),
           uniqueUsers: p.unique_users
         })),
-        byFeature: byFeature.map((f: any) => ({
+        byFeature: byFeature.map((f: any: any) => ({
           feature: f.feature,
           totalUsage: Number(f._sum.usage || 0),
           uniqueUsers: f._count.userId
@@ -430,8 +430,8 @@ export class UsageStatsService {
         },
         database: {
           totalQueries: dbPerformance.length,
-          slowQueries: dbPerformance.filter(q => q.avgTime > 1000).length,
-          avgQueryTime: dbPerformance.reduce((sum, q) => sum + q.avgTime, 0) / dbPerformance.length || 0
+          slowQueries: dbPerformance.filter((q: any) => q.avgTime > 1000).length,
+          avgQueryTime: dbPerformance.reduce((sum, q: any) => sum + q.avgTime, 0) / dbPerformance.length || 0
         },
         cache: cacheStats
       };
