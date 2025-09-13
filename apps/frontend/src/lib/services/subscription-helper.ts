@@ -382,7 +382,7 @@ export class SubscriptionHelper {
     }
 
     // Calculate total days to add from all queued rewards
-    const totalDays = queuedRewards.reduce((sum: number, reward: any: any) => sum + reward.daysToAdd, 0);
+    const totalDays = queuedRewards.reduce((sum: number, reward: any) => sum + reward.daysToAdd, 0);
     
     // Create a single subscription for all queued rewards
     const startDate = new Date();
@@ -415,7 +415,7 @@ export class SubscriptionHelper {
     await prisma.queuedInvitationReward.updateMany({
       where: {
         id: {
-          in: queuedRewards.map((r: any: any) => r.id)
+          in: queuedRewards.map((r: any) => r.id)
         }
       },
       data: {
@@ -434,7 +434,7 @@ export class SubscriptionHelper {
           subscriptionId: subscription.id,
           totalDays,
           rewardsCount: queuedRewards.length,
-          rewardIds: queuedRewards.map((r: any: any) => r.id)
+          rewardIds: queuedRewards.map((r: any) => r.id)
         }
       }
     });

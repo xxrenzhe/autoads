@@ -90,7 +90,8 @@ export default function ConfigurationPreview({
       }
     }
 
-    googleAdsAccounts.forEach((account => { account.campaignMappings?.forEach(campaign: any) => {
+    googleAdsAccounts.forEach((account) => {
+      account.campaignMappings?.forEach((campaign: any) => {
         campaign.adGroupMappings?.forEach((adGroup: any) => {
           adGroup.adMappings?.forEach((ad: any) => {
             if (ad.adId) {
@@ -103,7 +104,7 @@ export default function ConfigurationPreview({
                   campaignName: campaign.campaignName || 'Unknown Campaign',
                   adGroupName: adGroup.adGroupName || 'Unknown Ad Group',
                   mappingCount: count
-               });
+                });
               }
             }
           });
@@ -319,7 +320,7 @@ export default function ConfigurationPreview({
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {configuration.originalLinks?.filter((l: any) => l.trim()).map((link, index: any) => (
+                      {configuration.originalLinks?.filter((l: any) => l.trim()).map((link, index) => (
                         <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-sm">
                           <span className="text-gray-500 font-mono text-xs w-6">{index + 1}.</span>
                           <span className="font-mono text-xs break-all flex-1">{link}</span>
@@ -339,7 +340,7 @@ export default function ConfigurationPreview({
               <TabsContent value="mapping" className="space-y-4">
                 {configuration.adMappingConfig && configuration.adMappingConfig.length > 0 ? (
                   <div className="space-y-4">
-                    {configuration.adMappingConfig.map((mapping, index: any) => (
+                    {configuration.adMappingConfig.map((mapping, index) => (
                       <Card key={index}>
                         <CardHeader className="pb-2">
                           <div className="flex justify-between items-center">

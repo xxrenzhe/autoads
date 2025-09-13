@@ -63,7 +63,7 @@ export class ConfigurationValidator {
       const data = await response.json();
 
       // 检查环境是否存在
-      const environment = data.data?.list?.find((env: Record<string, unknown>: any) => (env as { user_id: string }).user_id === environmentId);
+      const environment = data.data?.list?.find((env: any) => (env as { user_id: string }).user_id === environmentId);
 
       if (!environment) {
         return {
@@ -193,7 +193,7 @@ export class ConfigurationValidator {
 
       const data = await response.json();
 
-      return data.data?.list?.map((env: Record<string, unknown>: any) => ({
+      return data.data?.list?.map((env: any) => ({
         id: env.user_id,
         name: env.name,
         status: env.user_status === 'Active' ? 'active' :
@@ -235,11 +235,11 @@ export class ConfigurationValidator {
     if (!config.originalLinks || config.originalLinks.length === 0) {
       errors.push('至少需要一个原始链接');
     } else {
-      const validLinks = config.originalLinks.filter((link: string: any) => link && link.trim() !== '');
+      const validLinks = config.originalLinks.filter((link: string) => link && link.trim() !== '');
       if (validLinks.length === 0) {
         errors.push('至少需要一个有效的原始链接');
       } else {
-        validLinks.forEach((link: string, index: number: any) => {
+        validLinks.forEach((link: string, index: number) => {
           try {
             new URL(link);
           } catch {
@@ -251,7 +251,7 @@ export class ConfigurationValidator {
 
     // 映射配置验证
     if (config.adMappingConfig && config.adMappingConfig.length > 0) {
-      config.adMappingConfig.forEach((mapping: any, index: number: any) => {
+      config.adMappingConfig.forEach((mapping: any, index: number) => {
         if (!mapping.adMappings || mapping.adMappings.length === 0) {
           errors.push(`映射${index + 1}未选择目标广告`);
         }
@@ -296,7 +296,7 @@ export class ConfigurationValidator {
       overhead: number;
     };
   } {
-    const linkCount = config.originalLinks?.filter((l: string: any) => l.trim()).length || 0;
+    const linkCount = config.originalLinks?.filter((l: string) => l.trim()).length || 0;
     const repeatCount = config.repeatCount || 1;
     const totalLinkExecutions = linkCount * repeatCount;
 
@@ -328,9 +328,9 @@ export class ConfigurationValidator {
     if (!config.adMappingConfig) return 0;
 
     const uniqueAdIds = new Set<string>();
-    config.adMappingConfig.forEach((mapping: any: any) => {
+    config.adMappingConfig.forEach((mapping: any) => {
       if (mapping.adMappings) {
-        mapping.adMappings.forEach((adMapping: any: any) => {
+        mapping.adMappings.forEach((adMapping: any) => {
           if (adMapping.targetAdId) {
             uniqueAdIds.add(adMapping.targetAdId);
           }

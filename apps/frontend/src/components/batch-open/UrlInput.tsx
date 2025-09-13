@@ -36,7 +36,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({
             : "Enter URLs to open, one per line:\n\nhttps://example1.com\nhttps://example2.com\nhttps://example3.com"
         }
         value={input}
-        onChange={((e: any): any) => onInputChange(e.target.value)}
+        onChange={(e: any) => onInputChange(e.target.value)}
         className="min-h-[200px] font-mono text-sm"
       />
       

@@ -1,10 +1,11 @@
 package ratelimit
 
 import (
-	"context"
-	"fmt"
-	"sync"
-	"time"
+    "context"
+    "fmt"
+    "strings"
+    "sync"
+    "time"
 
 	"gofly-admin-v3/internal/config"
 	"gofly-admin-v3/internal/store"
@@ -405,6 +406,47 @@ func (rlm *RateLimitManager) GetRateLimitStats(userID string) map[string]interfa
 	}
 
 	return stats
+}
+
+// GetUsageSeries 返回时间序列速率使用数据（按小时/分钟聚合）
+func (rlm *RateLimitManager) GetUsageSeries(userID string, granularity string, windowHours int, windowMinutes int) ([]map[string]interface{}, error) {
+    if rlm.db == nil {
+        return []map[string]interface{}{}, nil
+    }
+    // 计算时间范围
+    now := time.Now()
+    var since time.Time
+    var period string
+    var fmtStr string
+    switch strings.ToLower(granularity) {
+    case "minute", "minutely":
+        if windowMinutes <= 0 { windowMinutes = 60 }
+        since = now.Add(-time.Duration(windowMinutes) * time.Minute)
+        period = "MINUTE"
+        fmtStr = "%Y-%m-%d %H:%i:00"
+    default:
+        if windowHours <= 0 { windowHours = 24 }
+        since = now.Add(-time.Duration(windowHours) * time.Hour)
+        period = "HOUR"
+        fmtStr = "%Y-%m-%d %H:00:00"
+    }
+    type row struct {
+        Ts   string
+        Used int
+        Lim  int
+    }
+    var rows []row
+    if err := rlm.db.Raw(
+        "SELECT DATE_FORMAT(recorded_at, ?) AS ts, SUM(used_count) AS used, MAX(limit_count) AS lim FROM rate_limit_usages WHERE user_id=? AND period=? AND recorded_at >= ? GROUP BY ts ORDER BY ts",
+        fmtStr, userID, period, since,
+    ).Scan(&rows).Error; err != nil {
+        return nil, err
+    }
+    out := make([]map[string]interface{}, 0, len(rows))
+    for _, r := range rows {
+        out = append(out, map[string]interface{}{"ts": r.Ts, "used": r.Used, "limit": r.Lim})
+    }
+    return out, nil
 }
 
 // watchConfigChanges 监听配置变化

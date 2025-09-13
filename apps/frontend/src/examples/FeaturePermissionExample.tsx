@@ -77,7 +77,7 @@ export function SiteRankFeatureExample() {
             <Button 
               variant="link" 
               className="ml-2 p-0 h-auto"
-              onClick={((: any): any) => window.location.href = '/subscription'}
+              onClick={() => { window.location.href = '/subscription' }}
             >
               立即升级
             </Button>

@@ -179,7 +179,10 @@ func parseAdminToken(tokenStr string) (*adminClaims, error) {
 func AdminJWT() gin.HandlerFunc {
     return func(c *gin.Context) {
         path := c.Request.URL.Path
-        if !strings.HasPrefix(path, "/admin/") || path == "/admin/login" {
+        // 兼容 /admin/* 与 /api/v1/admin/* 两种前缀
+        isAdminPath := strings.HasPrefix(path, "/admin/") || strings.Contains(path, "/api/v1/admin/")
+        isLogin := strings.HasSuffix(path, "/admin/login") || strings.HasSuffix(path, "/api/v1/admin/login")
+        if !isAdminPath || isLogin {
             c.Next(); return
         }
         tokenStr := c.GetHeader("Authorization")

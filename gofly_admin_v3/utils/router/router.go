@@ -307,6 +307,55 @@ func InitRouter(path string) *gin.Engine {
         return rates
     }
     rl.SetPlanRates(buildPlanRates(), redisClient)
+    // DB 动态限额下发：存在 rate_limit_configs 表时每分钟刷新一次
+    go func() {
+        ticker := time.NewTicker(60 * time.Second)
+        defer ticker.Stop()
+        for range ticker.C {
+            // 检查表是否存在
+            if _, err := gf.DB().Query(ctx, "SELECT 1 FROM rate_limit_configs LIMIT 1"); err != nil {
+                continue
+            }
+            rows, err := gf.DB().Query(ctx, `SELECT plan, feature, per_minute, per_hour FROM rate_limit_configs WHERE is_active=1`)
+            if err != nil || rows.IsEmpty() { continue }
+            rates := map[string]middleware.PlanRateConfig{}
+            for _, rec := range rows {
+                plan := rec["plan"].String()
+                feature := strings.ToUpper(rec["feature"].String())
+                if feature != "API" { continue }
+                pm := rec["per_minute"].Int()
+                rps := float64(pm) / 60.0
+                if rps <= 0 { continue }
+                rates[plan] = middleware.PlanRateConfig{RPS: rps, Burst: pm}
+            }
+            if len(rates) > 0 {
+                rl.SetPlanRates(rates, redisClient)
+            }
+        }
+    }()
+
+    // 事件驱动：订阅 Redis 通道触发限额刷新（比轮询更及时）
+    if rlConfig.UseRedis && redisClient != nil {
+        go func() {
+            pubsub := redisClient.Subscribe(ctx, "ratelimit:plans:update")
+            ch := pubsub.Channel()
+            for range ch {
+                rows, err := gf.DB().Query(ctx, `SELECT plan, feature, per_minute, per_hour FROM rate_limit_configs WHERE is_active=1`)
+                if err != nil || rows.IsEmpty() { continue }
+                rates := map[string]middleware.PlanRateConfig{}
+                for _, rec := range rows {
+                    if strings.ToUpper(rec["feature"].String()) != "API" { continue }
+                    pm := rec["per_minute"].Int()
+                    rps := float64(pm)/60.0
+                    if rps <= 0 { continue }
+                    rates[rec["plan"].String()] = middleware.PlanRateConfig{RPS: rps, Burst: pm}
+                }
+                if len(rates) > 0 {
+                    rl.SetPlanRates(rates, redisClient)
+                }
+            }
+        }()
+    }
     R.Use(rl.GlobalRateLimit())
     R.Use(rl.IPRateLimit())
     R.Use(rl.PlanAPIRateLimit(resolveUserPlan))

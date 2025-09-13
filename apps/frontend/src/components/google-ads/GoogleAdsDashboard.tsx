@@ -367,7 +367,7 @@ export default function GoogleAdsDashboard() {
                       <Button 
                         size="sm" 
                         variant={selectedAccount === account.id ? 'default' : 'outline'}
-                        onClick={((: any): any) => setSelectedAccount(account.id)}
+                        onClick={() => setSelectedAccount(account.id)}
                       >
                         选择
                       </Button>

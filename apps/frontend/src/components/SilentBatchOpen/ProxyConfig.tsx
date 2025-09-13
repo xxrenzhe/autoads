@@ -136,7 +136,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
           <input
             type="text"
             value={proxyUrl}
-            onChange={((e: any): any) => handleProxyUrlChange(e.target.value)}
+            onChange={(e: any) => handleProxyUrlChange(e.target.value)}
             placeholder="https://api.iprocket.io/api?username=xxx&password=xxx&cc=ROW&ips=1&type=-res-&proxyType=http&responseType=txt"
             className={`flex-1 p-2 border rounded-lg ${proxyValidationSuccess ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}
             disabled={isOpening}
@@ -237,7 +237,7 @@ export const ProxyConfig: React.FC<ProxyConfigProps> = ({
             <input
               type="text"
               value={customReferer}
-              onChange={((e: any): any) => onCustomRefererChange(e.target.value)}
+              onChange={(e: any) => onCustomRefererChange(e.target.value)}
               placeholder="请输入自定义Referer，例如：https://www.google.com/（留空则不发送Referer）"
               className="w-full p-2 border border-gray-300 rounded-lg"
               disabled={isOpening}

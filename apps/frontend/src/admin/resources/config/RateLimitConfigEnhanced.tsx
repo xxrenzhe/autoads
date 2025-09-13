@@ -274,7 +274,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
                       <Input
                         id="endpoint"
                         value={formData.endpoint}
-                        onChange={((e: any): any) => setFormData({ ...formData, endpoint: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
                         className="col-span-3"
                         placeholder="/api/*"
                       />
@@ -285,7 +285,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
                       </Label>
                       <Select
                         value={formData.method}
-                        onValueChange={((value: any): any) => setFormData({ ...formData, method: value })}
+                        onValueChange={(value) => setFormData({ ...formData, method: value })}
                       >
                         <SelectTrigger className="col-span-3">
                           <SelectValue />
@@ -306,7 +306,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
                       </Label>
                       <Select
                         value={formData.userRole}
-                        onValueChange={((value: any): any) => setFormData({ ...formData, userRole: value })}
+                        onValueChange={(value) => setFormData({ ...formData, userRole: value })}
                       >
                         <SelectTrigger className="col-span-3">
                           <SelectValue />
@@ -328,7 +328,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
                         type="number"
                         min="1"
                         value={formData.requestsPerMinute}
-                        onChange={((e: any): any) => setFormData({ ...formData, requestsPerMinute: parseInt(e.target.value) })}
+                        onChange={(e) => setFormData({ ...formData, requestsPerMinute: parseInt(e.target.value) })}
                         className="col-span-3"
                       />
                     </div>
@@ -340,7 +340,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
                         <Switch
                           id="isActive"
                           checked={formData.status === 'ACTIVE'}
-                          onCheckedChange={((checked: boolean: any): any) => setFormData({ ...formData, status: checked ? 'ACTIVE' : 'INACTIVE' })}
+                          onCheckedChange={(checked: boolean) => setFormData({ ...formData, status: checked ? 'ACTIVE' : 'INACTIVE' })}
                         />
                         <Label className="text-sm text-muted-foreground">
                           Enable this rule
@@ -349,7 +349,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={((: any): any) => setDialogOpen(false)}>
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
                       Cancel
                     </Button>
                     <Button onClick={handleSave}>
@@ -385,7 +385,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rules.map((rule: any) => (
+                {rules.map((rule) => (
                   <TableRow key={rule.id}>
                     <TableCell className="font-medium">{rule.endpoint}</TableCell>
                     <TableCell>
@@ -428,7 +428,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={((: any): any) => {
+                          onClick={() => {
                             setEditingRule(rule)
                             setFormData({
                               endpoint: rule.endpoint,
@@ -445,7 +445,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={((: any): any) => handleDelete(rule.id, rule)}
+                          onClick={() => handleDelete(rule.id, rule)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

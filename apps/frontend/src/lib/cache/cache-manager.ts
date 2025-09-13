@@ -205,7 +205,7 @@ export class CacheManager {
       })
     } catch (error) {
       console.error('Cache mget error:', error)
-      return keys.map((: any) => null)
+      return keys.map(() => null)
     }
   }
 

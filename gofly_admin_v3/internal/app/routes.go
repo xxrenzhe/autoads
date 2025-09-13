@@ -6,7 +6,11 @@ import (
 	// "time"
 
 	"github.com/gin-gonic/gin"
-	// "gofly-admin-v3/internal/admin"  // 暂时禁用
+	"gofly-admin-v3/internal/admin"
+	"gofly-admin-v3/internal/system"
+	"gofly-admin-v3/internal/upload"
+	"gofly-admin-v3/utils/gf"
+	"strings"
 	// "gofly-admin-v3/internal/adscentergo"
 	// "gofly-admin-v3/internal/auth"
 	// "gofly-admin-v3/internal/batchgo"
@@ -44,6 +48,30 @@ func SetupRoutes(router *gin.Engine, ctx *Context) {
 	// 设置监控和指标路由
 	metrics.SetupMetrics(router)
 
+	// 初始化系统配置缓存并注册示例回调（可按需替换为具体模块刷新逻辑）
+system.Init()
+// 配置变更回调示例：上传模块
+system.On("max_file_size", func(key, value string) {
+        // 动态调整上传大小限制
+        if us := upload.GetUploadService(); us != nil {
+            if v := gf.Int(value); v > 0 { us.Config().MaxFileSize = int64(v) }
+        }
+    })
+system.On("allowed_file_types", func(key, value string) {
+        // 允许类型，例如："image,document"
+        if us := upload.GetUploadService(); us != nil {
+            m := map[string]bool{}
+            for _, p := range strings.Split(value, ",") { p = strings.TrimSpace(p); if p != "" { m[strings.ToLower(p)] = true } }
+            // 映射到 FileType
+            us.Config().AllowedTypes = map[upload.FileType]bool{
+                upload.FileTypeImage: m["image"],
+                upload.FileTypeDoc:   m["document"],
+                upload.FileTypeVideo: m["video"],
+                upload.FileTypeAudio: m["audio"],
+            }
+        }
+    })
+
 	// 全局中间件
 	router.Use(ErrorHandler())
 	router.Use(Logger())
@@ -53,6 +81,22 @@ func SetupRoutes(router *gin.Engine, ctx *Context) {
 	// API版本分组
 	v1 := router.Group("/api/v1")
 	{
+        // 管理员登录（JWT）
+        v1.POST("/admin/login", admin.AdminLoginHandler)
+        // 管理员受保护路由（JWT）
+        adminGroup := v1.Group("/admin")
+        adminGroup.Use(admin.AdminJWT())
+        {
+            controller := admin.NewAdminController(nil, nil, nil, nil)
+            adminGroup.GET("/system/config", controller.GetSystemConfig)
+            adminGroup.POST("/system/config", controller.UpsertSystemConfig)
+            adminGroup.DELETE("/system/config/:key", controller.DeleteSystemConfig)
+            adminGroup.GET("/system/config/history", controller.GetSystemConfigHistory)
+
+            rateLimitController := admin.NewRateLimitController(ctx.RateLimitManager)
+            rateLimitController.RegisterRoutes(adminGroup)
+        }
+
 		// 用户相关路由 - TODO: Fix user service initialization
 		/*
 			userGroup := v1.Group("/user")
@@ -270,8 +314,21 @@ func SetupRoutes(router *gin.Engine, ctx *Context) {
 							adsCenterGoService,
 							rateLimitManager,
 						)
-						controller.GetSystemConfig(c)
-					})
+                    controller.GetSystemConfig(c)
+                })
+                // 系统配置管理（完善：增删改）
+                adminAuthGroup.POST("/system/config", func(c *gin.Context) {
+                    controller := admin.NewAdminController(
+                        nil, nil, nil, nil,
+                    )
+                    controller.UpsertSystemConfig(c)
+                })
+                adminAuthGroup.DELETE("/system/config/:key", func(c *gin.Context) {
+                    controller := admin.NewAdminController(
+                        nil, nil, nil, nil,
+                    )
+                    controller.DeleteSystemConfig(c)
+                })
 
 					// 管理员自身管理
 					adminAuthGroup.GET("/profile", func(c *gin.Context) {

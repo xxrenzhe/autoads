@@ -13,7 +13,6 @@ import {
   CircularProgress,
   Alert,
   TextField,
-  IconButton,
 } from '@mui/material';
 import {
   TrendingUp,
@@ -188,7 +187,7 @@ const UserStatisticsDashboard: React.FC = () => {
                 <Select
                   value={dateRange}
                   label="时间范围"
-                  onChange={((e: any): any) => setDateRange(e.target.value)}
+                  onChange={(e) => setDateRange((e.target as HTMLInputElement).value)}
                 >
                   <MenuItem value="7">最近7天</MenuItem>
                   <MenuItem value="30">最近30天</MenuItem>
@@ -208,7 +207,7 @@ const UserStatisticsDashboard: React.FC = () => {
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                     value={customStartDate}
-                    onChange={((e: any): any) => setCustomStartDate(e.target.value)}
+                    onChange={(e) => setCustomStartDate((e.target as HTMLInputElement).value)}
                   />
                 </Grid>
                 <Grid item xs={12} sm={3}>
@@ -219,7 +218,7 @@ const UserStatisticsDashboard: React.FC = () => {
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                     value={customEndDate}
-                    onChange={((e: any): any) => setCustomEndDate(e.target.value)}
+                    onChange={(e) => setCustomEndDate((e.target as HTMLInputElement).value)}
                   />
                 </Grid>
               </>
@@ -231,7 +230,7 @@ const UserStatisticsDashboard: React.FC = () => {
                 <Select
                   value={groupBy}
                   label="分组方式"
-                  onChange={((e: any): any) => setGroupBy(e.target.value)}
+                  onChange={(e) => setGroupBy((e.target as HTMLInputElement).value)}
                 >
                   <MenuItem value="day">按天</MenuItem>
                   <MenuItem value="week">按周</MenuItem>
@@ -419,7 +418,7 @@ const UserStatisticsDashboard: React.FC = () => {
                         fill="#8884d8"
                         dataKey="value"
                       >
-                        {data.subscriptionByPlan.map((entry, index: any) => (
+                        {data.subscriptionByPlan.map((entry, index: number) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>

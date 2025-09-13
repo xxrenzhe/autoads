@@ -53,6 +53,7 @@ import {
   Warning,
   BugReport,
 } from '@mui/icons-material';
+import type { ChipProps } from '@mui/material';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
@@ -81,7 +82,7 @@ interface StripeConfig {
 }
 
 const ProviderStatusChip: React.FC<{ status: string }> = ({ status }) => {
-  const getStatusProps = () => {
+  const getStatusProps = (): { icon: React.ReactNode; color: ChipProps['color']; label: string } => {
     switch (status) {
       case 'HEALTHY':
         return {
@@ -116,7 +117,7 @@ const ProviderStatusChip: React.FC<{ status: string }> = ({ status }) => {
     <Chip
       icon={icon}
       label={label}
-      color={color as any}
+      color={color}
       size="small"
       variant="outlined"
     />
@@ -164,7 +165,7 @@ const StripeConfigForm: React.FC<{
             <Select
               value={config.mode}
               label="模式"
-              onChange={((e: any: any): any) => setConfig({ ...config, mode: e.target.value as 'test' | 'live' })}
+              onChange={(e) => setConfig({ ...config, mode: (e.target as any).value as 'test' | 'live' })}
             >
               <MenuItem value="test">测试模式</MenuItem>
               <MenuItem value="live">生产模式</MenuItem>
@@ -176,7 +177,7 @@ const StripeConfigForm: React.FC<{
             <Select
               value={config.currency}
               label="币种"
-              onChange={((e: any): any) => setConfig({ ...config, currency: e.target.value })}
+              onChange={(e) => setConfig({ ...config, currency: (e.target as any).value })}
             >
               <MenuItem value="USD">美元 (USD)</MenuItem>
               <MenuItem value="CNY">人民币 (CNY)</MenuItem>
@@ -192,7 +193,7 @@ const StripeConfigForm: React.FC<{
             multiline
             rows={2}
             value={config.publishableKey}
-            onChange={((e: React.ChangeEvent<HTMLInputElement>: any): any) => setConfig({ ...config, publishableKey: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfig({ ...config, publishableKey: e.target.value })}
             placeholder="pk_test_..."
             type="password"
             fullWidth
@@ -206,7 +207,7 @@ const StripeConfigForm: React.FC<{
             multiline
             rows={3}
             value={config.secretKey}
-            onChange={((e: React.ChangeEvent<HTMLInputElement>: any): any) => setConfig({ ...config, secretKey: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfig({ ...config, secretKey: e.target.value })}
             placeholder="sk_test_..."
             type="password"
             fullWidth
@@ -220,7 +221,7 @@ const StripeConfigForm: React.FC<{
             multiline
             rows={2}
             value={config.webhookSecret}
-            onChange={((e: React.ChangeEvent<HTMLInputElement>: any): any) => setConfig({ ...config, webhookSecret: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfig({ ...config, webhookSecret: e.target.value })}
             placeholder="whsec_..."
             type="password"
             fullWidth
@@ -232,7 +233,7 @@ const StripeConfigForm: React.FC<{
           <Select
             multiple
             value={config.supportedPaymentMethods}
-            onChange={((e: any): any) => setConfig({ ...config, supportedPaymentMethods: e.target.value as string[] })}
+            onChange={(e) => setConfig({ ...config, supportedPaymentMethods: (e.target as any).value as string[] })}
           >
             <MenuItem value="card">银行卡</MenuItem>
             <MenuItem value="alipay">支付宝</MenuItem>
@@ -361,7 +362,7 @@ const PaymentProviderListActions = () => {
   return (
     <TopToolbar>
       <Button
-        onClick={((: any): any) => setStripeDialogOpen(true)}
+        onClick={() => setStripeDialogOpen(true)}
         variant="contained"
         startIcon={<Add />}
         sx={{ mr: 2 }}
@@ -440,7 +441,7 @@ export const PaymentProviderListEnhanced: React.FC = () => {
     return (
       <Card sx={{ mt: 2 }}>
         <CardContent>
-          <Tabs value={activeTab} onChange={((_, newValue: any): any) => setActiveTab(newValue)}>
+          <Tabs value={activeTab} onChange={(_, newValue: any) => setActiveTab(newValue)}>
             <Tab label="配置信息" />
             <Tab label="健康状态" />
             <Tab label="元数据" />
@@ -536,7 +537,7 @@ export const PaymentProviderListEnhanced: React.FC = () => {
         exporter={false}
       >
         <Box sx={{ width: '100%' }}>
-          <Tabs value={tabValue} onChange={((_, newValue: any): any) => setTabValue(newValue)}>
+          <Tabs value={tabValue} onChange={(_e, newValue) => setTabValue(newValue)}>
             <Tab label="支付渠道列表" />
             <Tab label="使用统计" />
           </Tabs>

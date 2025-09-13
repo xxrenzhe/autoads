@@ -48,7 +48,7 @@ async function fetchRanks(
   
   // 转换SimilarWeb响应格式
   if (result.success && result.data) {
-    return result.data.map((item: any: any) => ({
+    return result.data.map((item: any) => ({
       domain: item.domain,
       rank: item.globalRank,
       monthlyVisits: item.monthlyVisits,
@@ -207,7 +207,7 @@ function SiteRankClientLazy() {
                 <Textarea
                   placeholder="https://example.com&#10;https://test.com"
                   value={urlInput}
-                  onChange={((e: any): any) => setUrlInput(e.target.value)}
+                  onChange={(e) => setUrlInput((e.target as HTMLTextAreaElement).value)}
                 />
               </div>
 
@@ -254,7 +254,7 @@ function SiteRankClientLazy() {
                 <Input
                   placeholder="搜索域名..."
                   value={filterText}
-                  onChange={((e: any): any) => setFilterText(e.target.value)}
+                  onChange={(e) => setFilterText((e.target as HTMLInputElement).value)}
                   className="w-64 rounded-lg border-blue-200 focus:border-blue-400 focus:ring-blue-400"
                 />
               </div>

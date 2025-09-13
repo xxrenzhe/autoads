@@ -103,8 +103,8 @@ export async function GET(request: NextRequest) {
     });
 
     // Process data for export
-    const exportData = activityData.map((user: any: any) => {
-      const totalTokensUsed = user.tokenTransactions.reduce((sum: any, tx: any: any) => sum + Math.abs(tx.amount), 0);
+    const exportData = activityData.map((user: any) => {
+      const totalTokensUsed = user.tokenTransactions.reduce((sum: any, tx: any) => sum + Math.abs(tx.amount), 0);
       const totalTransactions = user.tokenTransactions.length;
       const checkInCount = user.checkIns.length;
       const userType = user.subscriptions.length > 0 
@@ -148,13 +148,13 @@ export async function GET(request: NextRequest) {
             userSegment,
           },
           summary: {
-            totalTokensUsed: exportData.reduce((sum: any, user: any: any) => sum + user.totalTokensUsed, 0),
-            totalTransactions: exportData.reduce((sum: any, user: any: any) => sum + user.totalTransactions, 0),
-            totalCheckIns: exportData.reduce((sum: any, user: any: any) => sum + user.checkInCount, 0),
+            totalTokensUsed: exportData.reduce((sum: any, user: any) => sum + user.totalTokensUsed, 0),
+            totalTransactions: exportData.reduce((sum: any, user: any) => sum + user.totalTransactions, 0),
+            totalCheckIns: exportData.reduce((sum: any, user: any) => sum + user.checkInCount, 0),
             activityDistribution: {
-              high: exportData.filter((u: any: any) => u.activityLevel === 'high').length,
-              medium: exportData.filter((u: any: any) => u.activityLevel === 'medium').length,
-              low: exportData.filter((u: any: any) => u.activityLevel === 'low').length,
+              high: exportData.filter((u: any) => u.activityLevel === 'high').length,
+              medium: exportData.filter((u: any) => u.activityLevel === 'medium').length,
+              low: exportData.filter((u: any) => u.activityLevel === 'low').length,
             },
           },
         },
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
 
       const csvContent = [
         headers.join(','),
-        ...exportData.map((row: any: any) => [
+        ...exportData.map((row: any) => [
           row.userId,
           `\"${row.userEmail}\"`,
           `\"${row.userName}\"`,
@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
 
       const csvContent = [
         headers.join('\\t'),
-        ...exportData.map((row: any: any) => [
+        ...exportData.map((row: any) => [
           row.userId,
           row.userEmail,
           row.userName,

@@ -716,7 +716,7 @@ export default function AdsPowerConfigForm({
                                           min={1}
                                           max={10}
                                           {...field}
-                                          onChange={((e: any): any) => field.onChange(parseInt(e.target.value) || 1)}
+                                          onChange={(e) => field.onChange(parseInt((e.target as HTMLInputElement).value) || 1)}
                                         />
                                       </FormControl>
                                     </FormItem>
@@ -745,21 +745,21 @@ export default function AdsPowerConfigForm({
                               <div>
                                 <FormLabel>目标广告</FormLabel>
                                 <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                                  {getAllAds()?.filter(Boolean)?.map((ad: any) => (
-                                    <div key={ad.id} className="flex items-center space-x-2 text-sm">
-                                      <input
-                                        type="checkbox"
-                                        checked={form.watch(`linkMappings.${index}.targetAdIds`)?.includes(ad.id) || false}
-                                        onChange={((e: any): any) => {
-                                          const currentIds = form.getValues(`linkMappings.${index}.targetAdIds`) || [];
-                                          if (e.target.checked) {
-                                            form.setValue(`linkMappings.${index}.targetAdIds`, [...currentIds, ad.id]);
-                                          } else {
-                                            form.setValue(`linkMappings.${index}.targetAdIds`, currentIds.filter((id: any) => id !== ad.id));
-                                          }
-                                        }}
-                                        className="rounded"
-                                      />
+                                      {getAllAds()?.filter(Boolean)?.map((ad: any) => (
+                                        <div key={ad.id} className="flex items-center space-x-2 text-sm">
+                                          <input
+                                            type="checkbox"
+                                            checked={form.watch(`linkMappings.${index}.targetAdIds`)?.includes(ad.id) || false}
+                                            onChange={(e) => {
+                                              const currentIds = form.getValues(`linkMappings.${index}.targetAdIds`) || [];
+                                              if ((e.target as HTMLInputElement).checked) {
+                                                form.setValue(`linkMappings.${index}.targetAdIds`, [...currentIds, ad.id]);
+                                              } else {
+                                                form.setValue(`linkMappings.${index}.targetAdIds`, currentIds.filter((id: any) => id !== ad.id));
+                                              }
+                                            }}
+                                            className="rounded"
+                                          />
                                       <div className="flex-1">
                                         <p className="font-medium">{ad.name}</p>
                                         <p className="text-xs text-gray-500">

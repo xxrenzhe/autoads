@@ -65,7 +65,7 @@ export default function AuthError() {
           
           <div className="space-y-2">
             <Button
-              onClick={((: any): any) => router.push('/auth/signin')}
+              onClick={() => router.push('/auth/signin')}
               className="w-full"
               variant="outline"
             >
@@ -74,7 +74,7 @@ export default function AuthError() {
             </Button>
             
             <Button
-              onClick={((: any): any) => router.push('/')}
+              onClick={() => router.push('/')}
               className="w-full"
             >
               返回首页

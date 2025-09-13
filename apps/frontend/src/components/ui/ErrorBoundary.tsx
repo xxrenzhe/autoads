@@ -115,7 +115,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               重试
             </button>
             <button
-              onClick={((: any): any) => window.location.reload()}
+              onClick={() => window.location.reload()}
               className="ml-2 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
             >
               刷新页面
@@ -266,7 +266,7 @@ export function NetworkErrorBoundary({
             请检查您的网络连接并重试
           </p>
           <button
-            onClick={((: any): any) => window.location.reload()}
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
             重新连接

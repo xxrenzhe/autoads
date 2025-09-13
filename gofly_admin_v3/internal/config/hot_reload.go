@@ -10,6 +10,8 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"gofly-admin-v3/utils/tools/glog"
+    "context"
+    "gofly-admin-v3/utils/gf"
 )
 
 // HotReloadConfig 热更新配置管理器
@@ -51,6 +53,9 @@ func NewHotReloadConfig(configPath string, updater RateLimitConfigUpdater) (*Hot
 
 	// 启动监听协程
 	go hrc.watchConfigChanges()
+
+    // 订阅Redis渠道以实现事件驱动刷新（系统配置）
+    go hrc.subscribeRedisEvents()
 
 	return hrc, nil
 }
@@ -94,6 +99,41 @@ func (hrc *HotReloadConfig) watchConfigChanges() {
 			return
 		}
 	}
+}
+
+// subscribeRedisEvents 订阅Redis事件
+func (hrc *HotReloadConfig) subscribeRedisEvents() {
+    // 可选：若Redis未配置则跳过
+    r := gf.Redis()
+    if r == nil {
+        return
+    }
+    ctx := context.Background()
+    // 仅订阅系统配置更新事件；限速更新已有独立订阅逻辑
+    conn, _, err := r.GroupPubSub().Subscribe(ctx, "system:config:updated")
+    if err != nil {
+        glog.Error(nil, "redis_subscribe_failed", map[string]interface{}{"error": err.Error()})
+        return
+    }
+    for {
+        msg, err := conn.ReceiveMessage(ctx)
+        if err != nil {
+            // 短暂错误时继续
+            time.Sleep(500 * time.Millisecond)
+            continue
+        }
+        if msg != nil && msg.Channel == "system:config:updated" {
+            // 广播给订阅者：configType = system_config，NewValue = key
+            hrc.mu.RLock()
+            callbacks := hrc.callbacks["system_config"]
+            hrc.mu.RUnlock()
+            for _, cb := range callbacks {
+                key := msg.Payload
+                go cb(key)
+            }
+            glog.Info(nil, "system_config_updated_event", map[string]interface{}{"key": msg.Payload})
+        }
+    }
 }
 
 // reloadConfig 重新加载配置

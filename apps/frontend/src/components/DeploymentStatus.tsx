@@ -206,7 +206,7 @@ export function DeploymentInfo() {
                 variant="outline" 
                 size="sm" 
                 className="mt-2"
-                onClick={((: any): any) => window.open('https://www.autoads.dev', '_blank')}
+                onClick={() => window.open('https://www.autoads.dev', '_blank')}
               >
                 <ExternalLink className="w-4 h-4 mr-1" />
                 访问生产环境

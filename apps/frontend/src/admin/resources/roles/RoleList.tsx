@@ -44,7 +44,7 @@ const RolePermissionsField: React.FC = () => {
   
   return (
     <Box sx={{ maxWidth: 300 }}>
-      {permissions.slice(0, displayCount).map((permission: string: any) => (
+      {permissions.slice(0, displayCount).map((permission: string) => (
         <Chip 
           key={permission}
           label={permission.split(':')[1]}

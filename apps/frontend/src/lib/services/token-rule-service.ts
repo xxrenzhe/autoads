@@ -46,7 +46,7 @@ export class TokenRuleService {
         where: { status: 'ACTIVE' },
       });
 
-      dbRules.forEach((rule: any: any) => {
+      dbRules.forEach((rule: any) => {
         const key = `${rule.feature}-${rule.method}`;
         this.ruleCache.set(key, rule.cost);
       });
@@ -276,7 +276,7 @@ export class TokenRuleService {
       orderBy: { createdAt: 'desc' },
     });
 
-    dbRules.forEach((rule: any: any) => {
+    dbRules.forEach((rule: any) => {
       rules.push({
         id: rule.id,
         feature: rule.feature,
@@ -392,7 +392,7 @@ export class TokenRuleService {
         take: 50,
       });
 
-      return history.map((record: any: any) => ({
+      return history.map((record: any) => ({
         id: record.id,
         previousCost: record.previousCost,
         newCost: record.newCost,

@@ -198,7 +198,7 @@ export default function HomePage() {
               <Link 
                 href="/adscenter"
                 className="inline-flex items-center justify-center w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-300 group-hover:shadow-lg"
-                onClick={((: any): any) => handleCTAClick('automation')}
+                onClick={() => handleCTAClick('automation')}
               >
                 立即使用
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
@@ -251,7 +251,7 @@ export default function HomePage() {
             <Link 
               href="/adscenter"
               className="inline-flex items-center justify-center border-2 border-white text-white font-semibold py-3 px-8 rounded-xl hover:bg-white hover:text-purple-600 transition-all duration-300"
-              onClick={((: any): any) => handleCTAClick('automation_cta')}
+              onClick={() => handleCTAClick('automation_cta')}
             >配置自动化广告<LinkIcon className="w-5 h-5 ml-2" />
             </Link>
           </div>

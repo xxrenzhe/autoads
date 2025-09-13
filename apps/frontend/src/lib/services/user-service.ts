@@ -219,7 +219,7 @@ export class UserService {
         ((newThisMonth - lastMonthUsers) / lastMonthUsers) * 100 : 0
 
       // Convert role stats to object
-      const byRole = roleStats.reduce((acc: Record<string, number>, stat: RoleGroupResult: any) => {
+      const byRole = roleStats.reduce((acc: Record<string, number>, stat: RoleGroupResult) => {
         acc[stat.role] = stat._count.role
         return acc
       }, {} as Record<string, number>)
@@ -448,12 +448,12 @@ export class UserService {
         })
       ])
 
-      const byFeature = featureStats.reduce((acc: Record<string, number>, stat: ActionGroupResult: any) => {
+      const byFeature = featureStats.reduce((acc: Record<string, number>, stat: ActionGroupResult) => {
         acc[stat.action] = stat._count.action
         return acc
       }, {} as Record<string, number>)
 
-      const byAction = actionStats.reduce((acc: Record<string, number>, stat: ActionGroupResult: any) => {
+      const byAction = actionStats.reduce((acc: Record<string, number>, stat: ActionGroupResult) => {
         acc[stat.action] = stat._count.action
         return acc
       }, {} as Record<string, number>)

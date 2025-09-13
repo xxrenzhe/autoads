@@ -262,7 +262,7 @@ export function EmailConfigEnhanced() {
                         id="to"
                         type="email"
                         value={testData.to}
-                        onChange={((e: any): any) => setTestData({ ...testData, to: e.target.value })}
+                        onChange={(e) => setTestData({ ...testData, to: (e.target as any).value })}
                         className="col-span-3"
                         placeholder="test@example.com"
                       />
@@ -274,13 +274,13 @@ export function EmailConfigEnhanced() {
                       <Input
                         id="subject"
                         value={testData.subject}
-                        onChange={((e: any): any) => setTestData({ ...testData, subject: e.target.value })}
+                        onChange={(e) => setTestData({ ...testData, subject: (e.target as any).value })}
                         className="col-span-3"
                       />
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={((: any): any) => setTestDialogOpen(false)}>
+                    <Button variant="outline" onClick={() => setTestDialogOpen(false)}>
                       Cancel
                     </Button>
                     <Button onClick={handleTestEmail}>
@@ -317,7 +317,7 @@ export function EmailConfigEnhanced() {
                       <Label htmlFor="provider">Provider</Label>
                       <Select
                         value={config.provider}
-                        onValueChange={((value: string: any): any) => updateConfig('provider', value)}
+                        onValueChange={(value) => updateConfig('provider', value)}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -337,7 +337,7 @@ export function EmailConfigEnhanced() {
                         id="from"
                         type="email"
                         value={config.from}
-                        onChange={((e: any): any) => updateConfig('from', e.target.value)}
+                        onChange={(e) => updateConfig('from', (e.target as any).value)}
                         placeholder="noreply@example.com"
                       />
                     </div>
@@ -351,7 +351,7 @@ export function EmailConfigEnhanced() {
                           <Input
                             id="host"
                             value={config.smtp.host}
-                            onChange={((e: any): any) => updateConfig('smtp.host', e.target.value)}
+                            onChange={(e) => updateConfig('smtp.host', (e.target as any).value)}
                             placeholder="smtp.example.com"
                           />
                         </div>
@@ -362,7 +362,7 @@ export function EmailConfigEnhanced() {
                             id="port"
                             type="number"
                             value={config.smtp.port}
-                            onChange={((e: any): any) => updateConfig('smtp.port', parseInt(e.target.value))}
+                            onChange={(e) => updateConfig('smtp.port', parseInt(e.target.value))}
                           />
                         </div>
                       </div>
@@ -373,7 +373,7 @@ export function EmailConfigEnhanced() {
                           <Input
                             id="user"
                             value={config.smtp.user}
-                            onChange={((e: any): any) => updateConfig('smtp.user', e.target.value)}
+                            onChange={(e) => updateConfig('smtp.user', e.target.value)}
                           />
                         </div>
                         
@@ -383,7 +383,7 @@ export function EmailConfigEnhanced() {
                             id="pass"
                             type="password"
                             value={config.smtp.pass}
-                            onChange={((e: any): any) => updateConfig('smtp.pass', e.target.value)}
+                            onChange={(e) => updateConfig('smtp.pass', e.target.value)}
                           />
                         </div>
                       </div>
@@ -392,7 +392,7 @@ export function EmailConfigEnhanced() {
                         <Switch
                           id="secure"
                           checked={config.smtp.secure}
-                          onCheckedChange={((checked: boolean: any): any) => updateConfig('smtp.secure', checked)}
+                          onCheckedChange={(checked: boolean) => updateConfig('smtp.secure', checked)}
                         />
                         <Label htmlFor="secure">Use SSL/TLS</Label>
                       </div>
@@ -415,7 +415,7 @@ export function EmailConfigEnhanced() {
                     <Switch
                       id="enabled"
                       checked={config.enabled}
-                      onCheckedChange={((checked: boolean: any): any) => updateConfig('enabled', checked)}
+                      onCheckedChange={(checked: boolean) => updateConfig('enabled', checked)}
                     />
                     <Label htmlFor="enabled">Enable email notifications</Label>
                   </div>
@@ -429,7 +429,7 @@ export function EmailConfigEnhanced() {
                             id="rateLimit"
                             type="number"
                             value={config.rateLimit}
-                            onChange={((e: any): any) => updateConfig('rateLimit', parseInt(e.target.value))}
+                            onChange={(e) => updateConfig('rateLimit', parseInt(e.target.value))}
                           />
                         </div>
                         
@@ -439,7 +439,7 @@ export function EmailConfigEnhanced() {
                             id="maxRetries"
                             type="number"
                             value={config.maxRetries}
-                            onChange={((e: any): any) => updateConfig('maxRetries', parseInt(e.target.value))}
+                            onChange={(e) => updateConfig('maxRetries', parseInt(e.target.value))}
                           />
                         </div>
                       </div>
@@ -452,7 +452,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="userRegistration"
                             checked={config.events.userRegistration}
-                            onCheckedChange={((checked: boolean: any): any) => updateConfig('events.userRegistration', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.userRegistration', checked)}
                           />
                         </div>
                         
@@ -461,7 +461,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="passwordReset"
                             checked={config.events.passwordReset}
-                            onCheckedChange={((checked: boolean: any): any) => updateConfig('events.passwordReset', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.passwordReset', checked)}
                           />
                         </div>
                         
@@ -470,7 +470,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="subscriptionCreated"
                             checked={config.events.subscriptionCreated}
-                            onCheckedChange={((checked: boolean: any): any) => updateConfig('events.subscriptionCreated', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.subscriptionCreated', checked)}
                           />
                         </div>
                         
@@ -479,7 +479,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="subscriptionExpired"
                             checked={config.events.subscriptionExpired}
-                            onCheckedChange={((checked: boolean: any): any) => updateConfig('events.subscriptionExpired', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.subscriptionExpired', checked)}
                           />
                         </div>
                         
@@ -488,7 +488,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="paymentFailed"
                             checked={config.events.paymentFailed}
-                            onCheckedChange={((checked: boolean: any): any) => updateConfig('events.paymentFailed', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.paymentFailed', checked)}
                           />
                         </div>
                         
@@ -497,7 +497,7 @@ export function EmailConfigEnhanced() {
                           <Switch
                             id="tokenLow"
                             checked={config.events.tokenLow}
-                            onCheckedChange={((checked: boolean: any): any) => updateConfig('events.tokenLow', checked)}
+                            onCheckedChange={(checked: boolean) => updateConfig('events.tokenLow', checked)}
                           />
                         </div>
                       </div>
@@ -530,7 +530,7 @@ export function EmailConfigEnhanced() {
                       <Input
                         id="domain"
                         value={config.dkim.domain}
-                        onChange={((e: any): any) => updateConfig('dkim.domain', e.target.value)}
+                        onChange={(e) => updateConfig('dkim.domain', e.target.value)}
                         placeholder="example.com"
                       />
                     </div>
@@ -540,7 +540,7 @@ export function EmailConfigEnhanced() {
                       <Input
                         id="selector"
                         value={config.dkim.selector}
-                        onChange={((e: any): any) => updateConfig('dkim.selector', e.target.value)}
+                        onChange={(e) => updateConfig('dkim.selector', e.target.value)}
                         placeholder="default"
                       />
                     </div>
@@ -551,7 +551,7 @@ export function EmailConfigEnhanced() {
                     <Textarea
                       id="privateKey"
                       value={config.dkim.privateKey}
-                      onChange={((e: any: any): any) => updateConfig('dkim.privateKey', e.target.value)}
+                      onChange={(e) => updateConfig('dkim.privateKey', e.target.value)}
                       rows={6}
                       placeholder="-----BEGIN RSA PRIVATE KEY-----"
                     />

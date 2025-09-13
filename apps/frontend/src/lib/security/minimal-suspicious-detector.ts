@@ -152,7 +152,7 @@ export class MinimalSuspiciousDetector {
         action: 'api_call',
         'metadata->>\'success\'': 'false',
         timestamp: { gte: since }
-      }
+      } as any
     });
 
     return failureCount >= this.config.bruteForce.maxFailures;
@@ -179,8 +179,8 @@ export class MinimalSuspiciousDetector {
         },
         select: { amount: true }
       });
-
-      const totalTokens = tokenUsages.reduce((sum: number, usage: any: any) => sum + (usage.amount || 0), 0);
+      
+      const totalTokens = (tokenUsages ?? []).reduce((sum: number, usage: any) => sum + (usage.amount || 0), 0);
       
       if (totalTokens >= this.config.tokenConsumption.maxTokensPerMinute) {
         return true;
@@ -228,7 +228,7 @@ export class MinimalSuspiciousDetector {
       select: { ip: true }
     });
 
-    const uniqueIPs = new Set(events.map((e: any: any) => e.ip).filter(Boolean));
+    const uniqueIPs = new Set(events.map((e: any) => e.ip).filter(Boolean));
     
     return uniqueIPs.size >= this.config.ipRotation.maxIPs;
   }
@@ -274,7 +274,7 @@ export class MinimalSuspiciousDetector {
       });
 
       // 通知管理员（异步）
-      this.notifyAdmin(type, userId, event).catch();
+      this.notifyAdmin(type, userId, event).catch(() => {});
       
       logger.warn(`检测到可疑行为: ${type}`, { userId, type, endpoint: event.endpoint });
     } catch (error) {
@@ -308,7 +308,7 @@ export class MinimalSuspiciousDetector {
         take: limit
       });
 
-      return events.map((event: any: any) => ({
+      return events.map((event: any) => ({
         id: event.id,
         userId: event.userId,
         type: event.type,
@@ -340,7 +340,7 @@ export class MinimalSuspiciousDetector {
         }
       });
 
-      return events.map((event: any: any) => ({
+      return events.map((event: any) => ({
         id: event.id,
         userId: event.userId,
         type: event.type,

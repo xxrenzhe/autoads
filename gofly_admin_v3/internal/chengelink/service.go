@@ -19,8 +19,8 @@ type ChengeLinkService struct {
 
 // TokenService Token服务接口
 type TokenService interface {
-	ConsumeTokens(userID string, amount int, description string) error
-	GetBalance(userID string) (int, error)
+    ConsumeTokensByService(userID, service, action string, quantity int, reference string) error
+    GetBalance(userID string) (int, error)
 }
 
 // NewChengeLinkService 创建Chengelink服务
@@ -177,13 +177,13 @@ func (s *ChengeLinkService) executeTask(task *ChengeLinkTask) {
 	s.db.Save(task)
 
 	// 消费Token（链接提取部分）
-	extractTokens := len(task.AffiliateLinks)
-	if err := s.tokenService.ConsumeTokens(task.UserID, extractTokens, fmt.Sprintf("Chengelink链接提取: %s", task.Name)); err != nil {
-		task.Status = TaskStatusFailed
-		task.AddLog("error", "Token消费失败", err.Error())
-		task.CompletedAt = &[]time.Time{time.Now()}[0]
-		s.db.Save(task)
-		return
+    extractTokens := len(task.AffiliateLinks)
+    if err := s.tokenService.ConsumeTokensByService(task.UserID, "chengelink", "extract_link", extractTokens, task.ID); err != nil {
+        task.Status = TaskStatusFailed
+        task.AddLog("error", "Token消费失败", err.Error())
+        task.CompletedAt = &[]time.Time{time.Now()}[0]
+        s.db.Save(task)
+        return
 	}
 
 	task.TokensConsumed += extractTokens
@@ -371,10 +371,10 @@ func (s *ChengeLinkService) updateGoogleAds(task *ChengeLinkTask) error {
 	}
 
 	// 消费Token（广告更新部分）
-	updateTokens := len(updateRequests) * 3
-	if err := s.tokenService.ConsumeTokens(task.UserID, updateTokens, fmt.Sprintf("Chengelink广告更新: %s", task.Name)); err != nil {
-		return fmt.Errorf("Token消费失败: %w", err)
-	}
+    updateTokens := len(updateRequests)
+    if err := s.tokenService.ConsumeTokensByService(task.UserID, "chengelink", "update_ad", updateTokens, task.ID); err != nil {
+        return fmt.Errorf("Token消费失败: %w", err)
+    }
 
 	task.TokensConsumed += updateTokens
 

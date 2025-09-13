@@ -474,7 +474,7 @@ export default function SchedulingPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             刷新
           </Button>
-          <Button onClick={((: any): any) => setShowCreateDialog(true)}>
+          <Button onClick={() => setShowCreateDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             创建任务
           </Button>

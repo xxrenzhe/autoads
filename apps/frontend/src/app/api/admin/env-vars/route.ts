@@ -34,7 +34,7 @@ export async function GET() {
     });
 
     // 对于非超级管理员，隐藏秘密值
-    const filteredEnvVars = envVars.map((envVar: any: any) => ({
+    const filteredEnvVars = envVars.map((envVar: any) => ({
       ...envVar,
       value: session.user?.role === 'SUPER_ADMIN' || !envVar.isSecret 
         ? envVar.value 

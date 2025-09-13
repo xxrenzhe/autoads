@@ -119,7 +119,7 @@ export function UserBehaviorAnalytics({
           <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
             {label}
           </p>
-          {payload.map((entry: any, index: number: any) => (
+          {payload.map((entry: any, index: number) => (
             <div key={index} className="flex items-center space-x-2">
               <div 
                 className="w-3 h-3 rounded-full"
@@ -186,7 +186,7 @@ export function UserBehaviorAnalytics({
           <select
             id="time-range-select"
             value={selectedTimeRange}
-            onChange={((e: any): any) => setSelectedTimeRange(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTimeRange(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-labelledby={timeRangeLabelId}
           >
@@ -198,7 +198,7 @@ export function UserBehaviorAnalytics({
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={((: any): any) => exportAnalytics('csv')}
+            onClick={() => exportAnalytics('csv')}
             aria-label="Export analytics data as CSV"
           >
             <Download className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -578,7 +578,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {featureAdoption?.discoveryMethods?.map((method, index: any) => (
+                  {featureAdoption?.discoveryMethods?.map((method, index: number) => (
                     <div key={method.method} className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {method.method}
@@ -611,7 +611,7 @@ export function UserBehaviorAnalytics({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {userJourney?.journeySteps?.map((step, index: any) => (
+                {userJourney?.journeySteps?.map((step, index: number) => (
                   <div key={step.step} className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
@@ -661,7 +661,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {userJourney?.dropOffPoints?.map((point, index: any) => (
+                  {userJourney?.dropOffPoints?.map((point, index: number) => (
                     <div key={point.step} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                       <div>
                         <p className="font-medium text-red-800 dark:text-red-200">
@@ -686,7 +686,7 @@ export function UserBehaviorAnalytics({
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {userJourney?.successPaths?.map((path, index: any) => (
+                  {userJourney?.successPaths?.map((path, index: number) => (
                     <div key={path.path} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                       <div>
                         <p className="font-medium text-green-800 dark:text-green-200">

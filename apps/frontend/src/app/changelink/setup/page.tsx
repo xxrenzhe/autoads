@@ -903,7 +903,7 @@ export default function SetupPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={((: any): any) => setShowKeyboardHelp(!showKeyboardHelp)}
+              onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
               className="text-gray-600 hover:text-gray-800"
               aria-label="显示键盘快捷键帮助"
             >

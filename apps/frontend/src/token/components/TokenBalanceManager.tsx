@@ -14,8 +14,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  DollarSign,
-  Users,
   Zap
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -285,7 +283,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
           ].map(({ id, label, icon: Icon }: any) => (
             <button
               key={id}
-              onClick={((: any): any) => setActiveTab(id as any)}
+              onClick={() => setActiveTab(id as 'balances' | 'transactions' | 'topup')}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
                   ? 'border-blue-500 text-blue-600'
@@ -440,7 +438,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
                 </label>
                 <select
                   value={selectedUser}
-                  onChange={((e: any): any) => setSelectedUser(e.target.value)}
+                  onChange={(e) => setSelectedUser((e.target as HTMLSelectElement).value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Choose a user...</option>
@@ -459,7 +457,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
                 <Input
                   type="number"
                   value={adjustmentAmount}
-                  onChange={((e: any): any) => setAdjustmentAmount(parseInt(e.target.value) || 0)}
+                  onChange={(e) => setAdjustmentAmount(parseInt((e.target as HTMLInputElement).value) || 0)}
                   placeholder="Enter positive or negative amount"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -473,7 +471,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
                 </label>
                 <Input
                   value={adjustmentReason}
-                  onChange={((e: any): any) => setAdjustmentReason(e.target.value)}
+                  onChange={(e) => setAdjustmentReason((e.target as HTMLInputElement).value)}
                   placeholder="e.g., Refund for service issue, Bonus tokens, etc."
                 />
               </div>

@@ -65,7 +65,7 @@ const InvitationActions = () => {
   return (
     <TopToolbar>
       <Button
-        onClick={((: any): any) => refresh()}
+        onClick={() => refresh()}
         label="刷新"
         startIcon={<RefreshIcon />}
       />

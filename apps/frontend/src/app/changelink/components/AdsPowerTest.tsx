@@ -85,7 +85,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
         const data = await response.json();
         
         if (data.code === 0 && data.data?.list) {
-          const environment = data.data.list.find((env: any: any) => env.user_id === environmentId);
+          const environment = data.data.list.find((env: any) => env.user_id === environmentId);
           if (!environment) {
             throw new Error(`环境ID ${environmentId} 不存在`);
           }
@@ -231,7 +231,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
               <Input
                 id="environmentId"
                 value={environmentId}
-                onChange={((e: any): any) => onEnvironmentIdChange(e.target.value)}
+                onChange={(e) => onEnvironmentIdChange((e.target as HTMLInputElement).value)}
                 placeholder="输入AdsPower环境ID"
                 disabled={testing}
               />
@@ -241,7 +241,7 @@ export default function AdsPowerTest({ environmentId, onEnvironmentIdChange }: A
               <Input
                 id="testUrl"
                 value={testUrl}
-                onChange={((e: any): any) => setTestUrl(e.target.value)}
+                onChange={(e) => setTestUrl((e.target as HTMLInputElement).value)}
                 placeholder="输入要测试的广告联盟链接"
                 disabled={testing}
               />

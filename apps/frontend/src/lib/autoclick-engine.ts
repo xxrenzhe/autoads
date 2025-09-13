@@ -422,10 +422,10 @@ export class AutoClickExecutionEngine {
       }
     });
 
-    const totalClicks = hourlyExecutions.reduce((sum: number, h: any: any) => sum + h.actualClicks, 0);
-    const totalSuccess = hourlyExecutions.reduce((sum: number, h: any: any) => sum + h.successCount, 0);
-    const totalFail = hourlyExecutions.reduce((sum: number, h: any: any) => sum + h.failCount, 0);
-    const totalTokens = hourlyExecutions.reduce((sum: number, h: any: any) => sum + h.tokensUsed, 0);
+    const totalClicks = hourlyExecutions.reduce((sum: number, h: any) => sum + h.actualClicks, 0);
+    const totalSuccess = hourlyExecutions.reduce((sum: number, h: any) => sum + h.successCount, 0);
+    const totalFail = hourlyExecutions.reduce((sum: number, h: any) => sum + h.failCount, 0);
+    const totalTokens = hourlyExecutions.reduce((sum: number, h: any) => sum + h.tokensUsed, 0);
 
     // 确定执行状态
     const executionStatus = totalSuccess >= totalClicks ? 'success' : 
@@ -502,8 +502,8 @@ export class AutoClickExecutionEngine {
       };
     }
 
-    const target = plan.hourlyClicks.slice(0, currentHour + 1).reduce((sum: number, clicks: number: any) => sum + clicks, 0);
-    const completed = plan.hourlyExecutions.reduce((sum: number, h: any: any) => sum + h.successCount, 0);
+    const target = plan.hourlyClicks.slice(0, currentHour + 1).reduce((sum: number, clicks: number) => sum + clicks, 0);
+    const completed = plan.hourlyExecutions.reduce((sum: number, h: any) => sum + h.successCount, 0);
 
     return {
       isRunning: true,

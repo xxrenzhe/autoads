@@ -349,7 +349,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
                 <Input
                   type="text"
                   value={authCode}
-                  onChange={((e: any): any) => setAuthCode(e.target.value)}
+                  onChange={(e: any) => setAuthCode(e.target.value)}
                   placeholder="请输入授权码"
                 />
               </div>
@@ -414,7 +414,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={((: any): any) => handleCopyToClipboard(refreshToken, 'refreshToken')}
+                  onClick={() => handleCopyToClipboard(refreshToken, 'refreshToken')}
                 >
                   {copiedText === 'refreshToken' ? (
                     <CheckCircle className="h-4 w-4" />
@@ -453,7 +453,7 @@ export const GoogleOAuthFlow: React.FC<GoogleOAuthFlowProps> = ({
           <div className="space-y-6">
             {/* 步骤指示器 */}
             <div className="flex items-center justify-between">
-              {steps.map((step, index: any) => (
+              {steps.map((step, index: number) => (
                 <div key={step.id} className="flex items-center">
                   <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
                     stepStatuses[step.id] === 'completed' 

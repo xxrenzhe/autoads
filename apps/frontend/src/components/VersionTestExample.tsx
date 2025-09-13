@@ -114,7 +114,7 @@ export function FeatureCards() {
               <p className="text-gray-600 mb-3">AI驱动的智能网站排名分析，提供详细的SEO建议</p>
               <div className="flex gap-2">
                 <Button 
-                  onClick={((: any): any) => handleFeatureClick('siterank')}
+                  onClick={() => handleFeatureClick('siterank')}
                   className="flex-1"
                 >
                   立即分析
@@ -137,7 +137,7 @@ export function FeatureCards() {
               <p className="text-gray-600 mb-3">自动化链接优化和批量处理，支持多种格式</p>
               <div className="flex gap-2">
                 <Button 
-                  onClick={((: any): any) => handleFeatureClick('adscenter')}
+                  onClick={() => handleFeatureClick('adscenter')}
                   className="flex-1"
                 >
                   开始处理
@@ -160,7 +160,7 @@ export function FeatureCards() {
               <p className="text-gray-600 mb-3">高效批量打开链接，支持自定义延迟和分组</p>
               <div className="flex gap-2">
                 <Button 
-                  onClick={((: any): any) => handleFeatureClick('batch-open')}
+                  onClick={() => handleFeatureClick('batch-open')}
                   className="flex-1"
                 >
                   批量打开
@@ -180,7 +180,7 @@ export function FeatureCards() {
 // 版本测试状态组件
 export function VersionTestStatus() {
   // A/B testing removed - no version info available
-  return null as any;
+  return null;
 }
 
 // 导出版本信息组件（用于生产环境）

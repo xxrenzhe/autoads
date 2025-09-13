@@ -113,7 +113,7 @@ export class SimpleCacheService {
       const keysToDelete = new Set<string>();
       
       if (results) {
-        results.forEach(([error, keys]: [Error | null, any]: any) => {
+        results.forEach(([error, keys]: [Error | null, any]) => {
           if (!error && Array.isArray(keys)) {
             keys.forEach((key: any) => keysToDelete.add(key));
           }

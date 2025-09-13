@@ -325,8 +325,8 @@ export default function SiteRankPageRefactored() {
                   className="w-full h-32 border rounded p-2"
                   placeholder={getStr(t("siterank.inputPlaceholder") as string | string[] | undefined)}
                   value={urlInput}
-                  onChange={((e: any): any) => {
-                    setUrlInput(e.target.value);
+                  onChange={(e) => {
+                    setUrlInput((e.target as HTMLTextAreaElement).value);
                     if (urlError) setUrlError("");
                     if (tokenError) setTokenError("");
                   }}

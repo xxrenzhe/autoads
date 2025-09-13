@@ -233,7 +233,7 @@ export default function AdMappingConfig({
         </Alert>
       )}
 
-      {originalLinks.map((link, linkIndex: any) => (
+      {originalLinks.map((link, linkIndex) => (
         <Card key={linkIndex}>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -266,7 +266,7 @@ export default function AdMappingConfig({
               </div>
             ) : (
               <div className="space-y-4">
-                {adMappingConfig[linkIndex]?.adMappings.map((mapping, mappingIndex: any) => (
+                {adMappingConfig[linkIndex]?.adMappings.map((mapping, mappingIndex: number) => (
                   <div key={mappingIndex} className="border rounded-lg p-4 space-y-4">
                     <div className="flex justify-between items-center">
                       <h4 className="font-medium">映射配置 {mappingIndex + 1}</h4>
@@ -304,13 +304,13 @@ export default function AdMappingConfig({
                         <Label>执行次数</Label>
                         <Select
                           value={mapping.executionNumber.toString()}
-                          onValueChange={((value: any): any) => updateAdMapping(linkIndex, mappingIndex, 'executionNumber', parseInt(value))}
+                          onValueChange={(value) => updateAdMapping(linkIndex, mappingIndex, 'executionNumber', parseInt(value))}
                         >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {Array.from({ length: 10 }, (_, i) => i + 1).map((num: any) => (
+                            {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
                               <SelectItem key={num} value={num.toString()}>
                                 第 {num} 次执行
                               </SelectItem>

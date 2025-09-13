@@ -175,7 +175,7 @@ const PlanTemplateSelector: React.FC<{ onSelect: (template: any) => void }> = ({
                   boxShadow: 2
                 }
               }}
-              onClick={((: any): any) => onSelect(plan)}
+              onClick={() => onSelect(plan)}
             >
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography variant="h5" component="div" gutterBottom>
@@ -193,7 +193,7 @@ const PlanTemplateSelector: React.FC<{ onSelect: (template: any) => void }> = ({
                   />
                 )}
                 <Box sx={{ textAlign: 'left', mt: 2 }}>
-                  {plan.metadata?.highlightFeatures?.slice(0, 3).map((feature: string, index: number: any) => (
+                  {plan.metadata?.highlightFeatures?.slice(0, 3).map((feature: string, index: number) => (
                     <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
                       • {feature}
                     </Typography>
@@ -226,7 +226,7 @@ const PlanCreateToolbar = (props: any) => {
       {selectedTemplate && (
         <Button
           color="secondary"
-          onClick={((: any): any) => setSelectedTemplate(null)}
+          onClick={() => setSelectedTemplate(null)}
           sx={{ ml: 2 }}
         >
           清除模板

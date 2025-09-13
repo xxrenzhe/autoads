@@ -218,12 +218,12 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
             <input
               type="checkbox"
               checked={autoRefresh}
-              onChange={((e: any): any) => setAutoRefresh(e.target.checked)}
+              onChange={(e) => setAutoRefresh((e.target as HTMLInputElement).checked)}
               className="rounded"
             />
             <select
               value={refreshInterval}
-              onChange={((e: any): any) => setRefreshInterval(parseInt(e.target.value))}
+              onChange={(e) => setRefreshInterval(parseInt((e.target as HTMLSelectElement).value))}
               disabled={!autoRefresh}
               className="px-2 py-1 text-sm border border-gray-300 rounded"
             >
@@ -282,10 +282,10 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
             { id: 'services', label: 'Services', icon: Server },
             { id: 'infrastructure', label: 'Infrastructure', icon: Cpu },
             { id: 'errors', label: 'Error Logs', icon: AlertTriangle }
-          ].map(({ id, label, icon: Icon }: any) => (
+          ].map(({ id, label, icon: Icon }: { id: string; label: string; icon: any }) => (
             <button
               key={id}
-              onClick={((: any): any) => setActiveTab(id as any)}
+              onClick={() => setActiveTab(id as any)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
                   ? 'border-blue-500 text-blue-600'
@@ -381,7 +381,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
 
       {activeTab === 'services' && systemHealth && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {systemHealth.services.map((service, index: any) => (
+          {systemHealth.services.map((service, index: number) => (
             <Card key={index}>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">

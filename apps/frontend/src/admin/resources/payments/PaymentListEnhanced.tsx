@@ -197,7 +197,7 @@ const PaymentActions = () => {
   return (
     <TopToolbar>
       <Button
-        onClick={((: any): any) => refresh()}
+        onClick={() => refresh()}
         label="刷新"
         startIcon={<Refresh />}
       />
@@ -266,7 +266,7 @@ const PaymentStatsDashboard: React.FC = () => {
         <SelectInput
           source="timeRange"
           value={timeRange}
-          onChange={((e: any): any) => setTimeRange(e.target.value as any)}
+          onChange={(e: any) => setTimeRange(e.target?.value as any)}
           choices={[
             { id: '7d', name: '最近7天' },
             { id: '30d', name: '最近30天' },
@@ -393,7 +393,7 @@ const PaymentStatsDashboard: React.FC = () => {
                     fill="#8884d8"
                     dataKey="amount"
                   >
-                    {stats.revenueByMethod.map((entry, index: any) => (
+                    {stats.revenueByMethod.map((entry, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -508,7 +508,7 @@ export const PaymentListEnhanced: React.FC = () => {
         exporter={false}
       >
         <Box sx={{ width: '100%' }}>
-          <Tabs value={activeTab} onChange={((_, newValue: any): any) => setActiveTab(newValue)}>
+          <Tabs value={activeTab} onChange={(_e, newValue: number) => setActiveTab(newValue)}>
             <Tab label="支付记录" />
             <Tab label="统计分析" />
           </Tabs>

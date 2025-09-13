@@ -46,7 +46,7 @@ const ManualInputSection: React.FC<ManualInputSectionProps> = ({
               📋 {t("pasteFromClipboard")}
             </Button>
             <Button
-              onClick={((: any): any) => setShowManualInput(false)}
+              onClick={() => setShowManualInput(false)}
               variant="outline"
               size="sm"
               className="border-gray-300"
@@ -80,7 +80,7 @@ const ManualInputSection: React.FC<ManualInputSectionProps> = ({
           </label>
           <Textarea
             value={manualUrls}
-            onChange={((e: any): any) => setManualUrls(e.target.value)}
+            onChange={(e: any) => setManualUrls(e.target.value)}
             className="min-h-32 font-mono text-sm border-blue-200 focus:border-blue-400"
             placeholder="1. https://final-url-1.com&#10;2. https://final-url-2.com&#10;3. https://final-url-3.com"
           />

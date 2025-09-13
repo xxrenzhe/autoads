@@ -124,7 +124,7 @@ export function BatchOpenVersionShowcase() {
                 <div className="pt-4">
                   {hasAccess ? (
                     <Button 
-                      onClick={((: any): any) => handleUseVersion(config.id)}
+                      onClick={() => handleUseVersion(config.id)}
                       className="w-full"
                     >
                       使用 {version.name}

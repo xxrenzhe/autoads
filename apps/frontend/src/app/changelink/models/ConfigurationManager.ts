@@ -357,7 +357,7 @@ export class ConfigurationManager {
 
     // 删除账号配置
     const configs = await (await getDatabaseService()).getAllConfigs('google_ads');
-    const accountConfig = configs.find((config: any: any) => config.key === `googleAdsAccount_${id}`);
+    const accountConfig = configs.find((config: any) => config.key === `googleAdsAccount_${id}`);
     
     if (accountConfig) {
       // 这里需要实现删除配置的方法
@@ -397,8 +397,8 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('user');
     return configs
-      .filter((config: any: any) => config.key.startsWith('affiliateLink_'))
-      .map((config: any: any) => config.value as AffiliateLink)
+      .filter((config: any) => config.key.startsWith('affiliateLink_'))
+      .map((config: any) => config.value as AffiliateLink)
       .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -451,8 +451,8 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('system');
     return configs
-      .filter((config: any: any) => config.key.startsWith('adsPowerEnv_'))
-      .map((config: any: any) => config.value as AdsPowerEnvironment)
+      .filter((config: any) => config.key.startsWith('adsPowerEnv_'))
+      .map((config: any) => config.value as AdsPowerEnvironment)
       .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -488,8 +488,8 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('associations');
     return configs
-      .filter((config: any: any) => config.key.startsWith('association_'))
-      .map((config: any: any) => config.value as LinkAccountAssociation)
+      .filter((config: any) => config.key.startsWith('association_'))
+      .map((config: any) => config.value as LinkAccountAssociation)
       .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -545,8 +545,8 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('tasks');
     return configs
-      .filter((config: any: any) => config.key.startsWith('task_'))
-      .map((config: any: any) => config.value as AutomationTask)
+      .filter((config: any) => config.key.startsWith('task_'))
+      .map((config: any) => config.value as AutomationTask)
       .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -626,25 +626,25 @@ export class ConfigurationManager {
     
     const configs = await (await getDatabaseService()).getAllConfigs('executions');
     let records = configs
-      .filter((config: any: any) => config.key.startsWith('execution_'))
-      .map((config: any: any) => config.value as ExecutionRecord);
+      .filter((config: any) => config.key.startsWith('execution_'))
+      .map((config: any) => config.value as ExecutionRecord);
 
     // 应用过滤器
     if (filters) {
       if (filters.taskId) {
-        records = records.filter((r: ExecutionRecord: any) => r.taskId === filters.taskId);
+        records = records.filter((r: ExecutionRecord) => r.taskId === filters.taskId);
       }
       if (filters.associationId) {
-        records = records.filter((r: ExecutionRecord: any) => r.associationId === filters.associationId);
+        records = records.filter((r: ExecutionRecord) => r.associationId === filters.associationId);
       }
       if (filters.status) {
-        records = records.filter((r: ExecutionRecord: any) => r.status === filters.status);
+        records = records.filter((r: ExecutionRecord) => r.status === filters.status);
       }
       if (filters.startDate) {
-        records = records.filter((r: ExecutionRecord: any) => r.startTime >= filters.startDate!);
+        records = records.filter((r: ExecutionRecord) => r.startTime >= filters.startDate!);
       }
       if (filters.endDate) {
-        records = records.filter((r: ExecutionRecord: any) => r.startTime <= filters.endDate!);
+        records = records.filter((r: ExecutionRecord) => r.startTime <= filters.endDate!);
       }
     }
 
@@ -668,12 +668,12 @@ export class ConfigurationManager {
       const allConfigs = await this.getAllConfigurations();
       const configurations = allConfigs || [];
 
-      const activeCount = configurations.filter((c: any: any) => c.status === 'active').length;
-      const pausedCount = configurations.filter((c: any: any) => c.status === 'paused').length;
+      const activeCount = configurations.filter((c: any) => c.status === 'active').length;
+      const pausedCount = configurations.filter((c: any) => c.status === 'paused').length;
 
       // 计算备份数量
       const keys = await (await getDatabaseService()).getAllKeys(this.options.namespace);
-      const backupCount = keys.filter((key: string: any) => key.startsWith('backup:')).length;
+      const backupCount = keys.filter((key: string) => key.startsWith('backup:')).length;
 
       // 计算总大小（近似值）
       let totalSize = 0;
@@ -708,7 +708,7 @@ export class ConfigurationManager {
       const allConfigs = await this.getAllConfigurations();
       const configurations = allConfigs || [];
 
-      return configurations.filter((config: any: any) => 
+      return configurations.filter((config: any) => 
         config.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         config.originalLinks.some((link: string) => link.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (config.notificationEmail && config.notificationEmail.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -778,17 +778,17 @@ export class ConfigurationManager {
     let filteredRecords = records;
 
     if (timeRange) {
-      filteredRecords = records.filter((r: ExecutionRecord: any) => 
+      filteredRecords = records.filter((r: ExecutionRecord) => 
         r.startTime >= timeRange.start && r.startTime <= timeRange.end
       );
     }
 
     const totalExecutions = filteredRecords.length;
-    const successfulExecutions = filteredRecords.filter((r: ExecutionRecord: any) => r.status === 'completed').length;
-    const failedExecutions = filteredRecords.filter((r: ExecutionRecord: any) => r.status === 'failed').length;
+    const successfulExecutions = filteredRecords.filter((r: ExecutionRecord) => r.status === 'completed').length;
+    const failedExecutions = filteredRecords.filter((r: ExecutionRecord) => r.status === 'failed').length;
     
     // 计算平均执行时间
-    const completedRecords = filteredRecords.filter((r: ExecutionRecord: any) => r.endTime);
+    const completedRecords = filteredRecords.filter((r: ExecutionRecord) => r.endTime);
     const averageExecutionTime = completedRecords.length > 0
       ? completedRecords.reduce((sum, r: any) => sum + (r.endTime!.getTime() - r.startTime.getTime()), 0) / completedRecords.length
       : 0;
@@ -954,7 +954,7 @@ export class ConfigurationManager {
    */
   async getActiveConfigurations(): Promise<any[]> {
     const associations = await this.getLinkAccountAssociations();
-    return associations.filter((a: LinkAccountAssociation: any) => a.isActive);
+    return associations.filter((a: LinkAccountAssociation) => a.isActive);
   }
 
   /**
@@ -971,7 +971,7 @@ export class ConfigurationManager {
       totalLinks: links.length,
       totalEnvironments: environments.length,
       totalAssociations: associations.length,
-      activeAssociations: associations.filter((a: LinkAccountAssociation: any) => a.isActive).length
+      activeAssociations: associations.filter((a: LinkAccountAssociation) => a.isActive).length
     };
   }
 

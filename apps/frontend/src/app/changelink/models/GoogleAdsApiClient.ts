@@ -505,7 +505,7 @@ export class GoogleAdsApiClient { private oauth2Client: any;
         `;
     
              const response = await this.getReport(customerId, query);
-         return ((response as any).rows || []).map((row: any: any) => ({
+         return ((response as any).rows || []).map((row: any) => ({
           campaignId: row.campaign.id,
           campaignName: row.campaign.name,
           impressions: parseInt(row.metrics.impressions) || 0,
@@ -545,7 +545,7 @@ export class GoogleAdsApiClient { private oauth2Client: any;
     `;
 
         const response = await this.getReport(customerId, query);
-        return ((response as any).rows || []).map((row: any: any) => ({
+        return ((response as any).rows || []).map((row: any) => ({
           campaignId: row.campaign.id,
           campaignName: row.campaign.name,
           impressions: parseInt(row.metrics.impressions) || 0,

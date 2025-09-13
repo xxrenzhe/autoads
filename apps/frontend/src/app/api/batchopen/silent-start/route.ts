@@ -285,7 +285,7 @@ const baseHandler = requireFeature('batchopen_basic', async (request: NextReques
     data: result,
     metadata: {
       timestamp: new Date().toISOString(),
-      features: context.features.map((f: any: any) => f.featureId),
+      features: context.features.map((f: any) => f.featureId),
       limits: context.limits
     }
   });

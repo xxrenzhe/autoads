@@ -520,7 +520,7 @@ export class TokenConsumptionService {
     
     // 检查时间间隔（5分钟内的操作可以合并）
     const timeWindow = 5 * 60 * 1000 // 5分钟
-    const timestamps = operations.map((op: { feature: string; operation: string; createdAt: Date }: any) => op.createdAt.getTime()).sort()
+    const timestamps = operations.map((op: { feature: string; operation: string; createdAt: Date }) => op.createdAt.getTime()).sort()
     const timeSpan = timestamps[timestamps.length - 1] - timestamps[0]
     
     return timeSpan <= timeWindow

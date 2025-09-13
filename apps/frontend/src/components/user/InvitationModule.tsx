@@ -26,8 +26,6 @@ import {
   Paper,
   Tab,
   Tabs,
-  Badge,
-  Divider,
   CircularProgress
 } from '@mui/material';
 import {
@@ -38,7 +36,6 @@ import {
   EventBusy,
   EmojiEvents,
   Group,
-  TrendingUp,
   CardMembership,
   Star
 } from '@mui/icons-material';
@@ -187,7 +184,7 @@ const InvitationModule: React.FC = () => {
       case 'ACCEPTED': return <CheckCircle />;
       case 'PENDING': return <Pending />;
       case 'EXPIRED': return <EventBusy />;
-      default: return null as any;
+      default: return null;
     }
   };
 
@@ -267,7 +264,7 @@ const InvitationModule: React.FC = () => {
 
         {/* Tabs */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs value={tabValue} onChange={((e, v: any): any) => setTabValue(v)}>
+          <Tabs value={tabValue} onChange={(_e, v: any) => setTabValue(v)}>
             <Tab label="我的邀请码" />
             <Tab label="使用邀请码" />
             <Tab label="邀请记录" />
@@ -353,7 +350,7 @@ const InvitationModule: React.FC = () => {
                 fullWidth
                 label="邀请码"
                 value={invitationCode}
-                onChange={((e: any): any) => setInvitationCode(e.target.value.toUpperCase())}
+                onChange={(e) => setInvitationCode((e.target as HTMLInputElement).value.toUpperCase())}
                 placeholder="请输入8位邀请码"
                 inputProps={{ maxLength: 8, style: { textTransform: 'uppercase' } }}
               />

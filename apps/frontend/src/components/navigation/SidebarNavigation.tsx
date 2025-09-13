@@ -214,12 +214,12 @@ export default function SidebarNavigation({ type, className }: SidebarNavigation
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
         <nav className="space-y-2">
-          {filteredItems.map((item: any) => (
+          {filteredItems.map((item) => (
             <div key={item.href}>
               <div className="relative">
                 <Link
                   href={item.children ? '#' : item.href}
-                  onClick={((e: any): any) => {
+                  onClick={(e) => {
                     if (item.children) {
                       e.preventDefault()
                       toggleExpanded(item.href)
@@ -266,7 +266,7 @@ export default function SidebarNavigation({ type, className }: SidebarNavigation
               {/* Children */}
               {item.children && !collapsed && expandedItems.includes(item.href) && (
                 <div className="ml-6 mt-2 space-y-1">
-                  {item.children.map((child: any) => (
+                  {item.children.map((child) => (
                     <Link
                       key={child.href}
                       href={child.href}

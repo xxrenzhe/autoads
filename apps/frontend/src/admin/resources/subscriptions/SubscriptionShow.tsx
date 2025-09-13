@@ -31,7 +31,7 @@ const SubscriptionFeatures: React.FC = () => {
             功能列表
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {record?.features?.map((feature: string, index: number: any) => (
+            {record?.features?.map((feature: string, index: number) => (
               <Chip
                 key={index}
                 label={feature}
@@ -74,7 +74,7 @@ const SubscriptionPayments: React.FC = () => {
     <React.Fragment>
       {record?.payments?.length > 0 ? (
         <Box sx={{ width: '100%' }}>
-          {record.payments.map((payment: any, index: number: any) => (
+          {record.payments.map((payment: any, index: number) => (
             <Paper key={index} sx={{ p: 2, mb: 2 }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} md={3}>

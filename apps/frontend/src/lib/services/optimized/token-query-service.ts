@@ -321,12 +321,12 @@ export class TokenQueryService {
           startDate,
           endDate: new Date()
         },
-        transactions: transactions.map((t: any: any) => ({
+        transactions: transactions.map((t: any) => ({
           type: t.type,
           totalAmount: t._sum.amount || 0,
           count: t._count
         })),
-        usageByFeature: usageByFeature.map((u: any: any) => ({
+        usageByFeature: usageByFeature.map((u: any) => ({
           feature: u.feature,
           totalUsage: u._sum.usage || 0
         }))

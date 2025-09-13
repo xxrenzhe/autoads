@@ -3,10 +3,7 @@
  * 处理循环次数、打开间隔、随机化等参数配置
  */
 
-import React, { useCallback, useState } from 'react';
-import { createClientLogger } from '@/lib/utils/security/client-secure-logger';
-
-const logger = createClientLogger('ParameterConfig');
+import React, { useCallback } from 'react';
 
 interface ParameterConfigProps {
   cycleCountInput: string;
@@ -84,7 +81,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
               name="accessMode"
               value="http"
               checked={accessMode === "http"}
-              onChange={((e: any): any) => onAccessModeChange(e.target.value as "http" | "puppeteer")}
+              onChange={(e) => onAccessModeChange((e.target as HTMLInputElement).value as "http" | "puppeteer")}
               disabled={isOpening}
               className="mr-2"
             />
@@ -96,7 +93,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
               name="accessMode"
               value="puppeteer"
               checked={accessMode === "puppeteer"}
-              onChange={((e: any): any) => onAccessModeChange(e.target.value as "http" | "puppeteer")}
+              onChange={(e) => onAccessModeChange((e.target as HTMLInputElement).value as "http" | "puppeteer")}
               disabled={isOpening}
               className="mr-2"
             />
@@ -117,7 +114,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
             className="w-full border rounded px-2 py-1"
             placeholder="1-1000"
             value={cycleCountInput}
-            onChange={((e: any): any) => handleCycleCountInputChange(e.target.value)}
+            onChange={(e) => handleCycleCountInputChange((e.target as HTMLInputElement).value)}
             onBlur={handleCycleCountBlur}
             disabled={isOpening}
           />

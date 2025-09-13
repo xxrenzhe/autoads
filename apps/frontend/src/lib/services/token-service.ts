@@ -3,6 +3,8 @@ import { PermissionService } from './permission-service'
 import { TokenConsumptionService } from './token-consumption-service'
 import { TokenConfigService } from './token-config-service'
 import { TokenPriorityService } from './token-priority-service'
+import { TokenRuleEngine } from './token-rule-engine'
+import { redisService } from '@/lib/redis-config'
 import { $Enums } from '@prisma/client'
 
 type TokenType = $Enums.TokenType
@@ -74,6 +76,51 @@ export interface LowBalanceUser {
 }
 
 export class TokenService {
+  // Standard error codes for token deductions
+  static readonly ErrorCodes = {
+    INSUFFICIENT_TOKENS: 'INSUFFICIENT_TOKENS',
+    USER_NOT_FOUND: 'USER_NOT_FOUND',
+    TOKEN_CONSUME_FAILED: 'TOKEN_CONSUME_FAILED',
+  } as const
+
+  // Normalize incoming feature strings to Prisma enum-compatible values
+  private static normalizeFeature(feature: string): TokenUsageFeature {
+    const f = (feature || '').toLowerCase()
+    if (f === 'adscenter' || f === 'changelink') return 'CHANGELINK'
+    if (f === 'batchopen') return 'BATCHOPEN'
+    if (f === 'siterank') return 'SITERANK'
+    // Fallback to OTHER to avoid enum mismatch
+    return 'OTHER'
+  }
+
+  // Resolve total cost for an action; applies rule engine for ChangeLink
+  private static async resolveTotalCost(
+    feature: TokenUsageFeature,
+    action: string,
+    batchSize: number,
+    customAmount?: number,
+    hasExplicitOperations?: boolean
+  ): Promise<{ total: number; unit: number }>{
+    // If explicit per-op amounts are provided by caller, trust them
+    if (!Number.isNaN(customAmount as number) && customAmount !== undefined) {
+      return { total: (customAmount as number) * Math.max(1, batchSize), unit: customAmount as number }
+    }
+
+    const isBatch = batchSize > 1
+    if (feature === 'CHANGELINK') {
+      const per = await TokenRuleEngine.calcChangeLinkCost((action as any) || 'update_ad', 1, false)
+      const total = hasExplicitOperations ? per * Math.max(1, batchSize) : await TokenRuleEngine.calcChangeLinkCost((action as any) || 'update_ad', Math.max(1, batchSize), isBatch)
+      return { total, unit: per }
+    }
+
+    // Fallback to generic token config for known features
+    const cfg = new TokenConfigService()
+    // Map enum -> config feature keys
+    const featureKey = feature === 'SITERANK' ? 'siterank' : feature === 'BATCHOPEN' ? 'batchopen' : 'adscenter'
+    const per = await cfg.calculateTokenCost(featureKey as any, 1, false)
+    const total = await cfg.calculateTokenCost(featureKey as any, Math.max(1, batchSize), isBatch)
+    return { total, unit: per }
+  }
   /**
    * 获取用户Token余额
    */
@@ -157,15 +204,20 @@ export class TokenService {
     tokensConsumed?: number
     batchId?: string
     error?: string
+    errorCode?: string
   }> {
     try {
-      // Convert string feature to TokenUsageFeature enum
-      const featureEnum = feature.toUpperCase() as TokenUsageFeature
-      
-      // 获取Token消耗配置
-      const unitCost = options.customAmount ?? await TokenConfigService.getTokenCost(featureEnum)
-      const batchSize = options.batchSize || 1
-      const totalAmount = unitCost * batchSize
+      // Normalize feature to Prisma enum
+      const featureEnum = this.normalizeFeature(feature)
+
+      const batchSize = options.batchSize || (options.operations ? options.operations.length : 1)
+      const { total: totalAmount, unit: unitCost } = await this.resolveTotalCost(
+        featureEnum,
+        action,
+        batchSize,
+        options.customAmount,
+        !!options.operations
+      )
 
       // 检查余额
       const balanceCheck = await this.checkTokenBalance(userId, totalAmount)
@@ -176,7 +228,8 @@ export class TokenService {
         
         return {
           success: false,
-          error: `Insufficient token balance. Required: ${totalAmount}, Available: ${balanceCheck.currentBalance}`
+          error: `Insufficient token balance. Required: ${totalAmount}, Available: ${balanceCheck.currentBalance}`,
+          errorCode: this.ErrorCodes.INSUFFICIENT_TOKENS
         }
       }
 
@@ -184,7 +237,7 @@ export class TokenService {
       const priorityResult = await TokenPriorityService.consumeTokensWithPriority(
         userId,
         totalAmount,
-        feature,
+        featureEnum.toLowerCase(),
         action,
         options.metadata
       )
@@ -198,29 +251,25 @@ export class TokenService {
         // 批量操作
         batchId = options.batchId || TokenConsumptionService.generateBatchId(featureEnum, userId)
         
-        const operations: Array<{ metadata: any; tokensConsumed: number; description?: string }> = 
-          options.operations?.map((op: any) => ({
+        let operations: Array<{ metadata: any; tokensConsumed: number; description?: string }>
+        if (options.operations) {
+          operations = options.operations.map((op: any) => ({
             metadata: op.metadata,
             tokensConsumed: op.amount,
             description: op.description
-          })) || [{
-            metadata: options.metadata || {},
-            tokensConsumed: unitCost,
-            description: `${feature}操作`
-          }]
-        
-        // 如果没有提供operations，根据batchSize生成
-        if (!options.operations && batchSize > 1) {
-          const generatedOps: Array<{ metadata: any; tokensConsumed: number; description?: string }> = []
-          for (let i = 0; i < batchSize; i++) {
-            generatedOps.push({
-              metadata: { ...options.metadata, index: i + 1 },
-              tokensConsumed: unitCost,
-              description: `${feature}操作 ${i + 1}`
-            })
-          }
-          operations.splice(0, operations.length, ...generatedOps)
+          }))
+        } else {
+          // 根据总额平摊到每个子操作，确保合计=总扣减
+          const base = Math.floor(totalAmount / batchSize)
+          const remainder = totalAmount - base * batchSize
+          operations = Array.from({ length: batchSize }).map((_, i) => ({
+            metadata: { ...options.metadata, index: i + 1 },
+            tokensConsumed: base + (i < remainder ? 1 : 0),
+            description: `${feature}操作 ${i + 1}`
+          }))
         }
+        
+        // 此时 operations 的 tokensConsumed 求和等于 totalAmount
 
         await TokenConsumptionService.recordBatchUsage({
           batchId,
@@ -246,6 +295,11 @@ export class TokenService {
       // 检查是否需要发送低余额通知
       await this.checkAndNotifyLowBalance(userId, result)
 
+      // 发布事件：余额已更新（事件驱动刷新）
+      try {
+        await redisService.publish('token:balance:updated', JSON.stringify({ userId, balance: result, consumed: totalAmount }))
+      } catch {}
+
       return {
         success: true,
         newBalance: result,
@@ -256,7 +310,8 @@ export class TokenService {
       console.error('Failed to consume tokens:', error)
       return {
         success: false,
-        error: 'Failed to consume tokens'
+        error: 'Failed to consume tokens',
+        errorCode: this.ErrorCodes.TOKEN_CONSUME_FAILED
       }
     }
   }
@@ -379,6 +434,11 @@ export class TokenService {
         }
       })
 
+      // 事件通知：余额更新
+      try {
+        await redisService.publish('token:balance:updated', JSON.stringify({ userId, balance: user?.tokenBalance || 0 }))
+      } catch {}
+
       return {
         success: true,
         newBalance: user?.tokenBalance || 0
@@ -453,6 +513,11 @@ export class TokenService {
         }
       })
 
+      // 事件通知：余额更新
+      try {
+        await redisService.publish('token:balance:updated', JSON.stringify({ userId: request.userId, balance: updatedUser.tokenBalance }))
+      } catch {}
+
       return {
         success: true,
         newBalance: updatedUser.tokenBalance
@@ -520,13 +585,13 @@ export class TokenService {
       ])
 
       // 转换功能使用数据
-      const byFeature = featureUsage.reduce((acc: Record<string, number>, item: any: any) => {
+      const byFeature = featureUsage.reduce((acc: Record<string, number>, item: any) => {
         acc[item.feature] = item._sum.tokensConsumed || 0
         return acc
       }, {} as Record<string, number>)
 
       // 转换最近使用数据
-      const recentConsumption: TokenConsumption[] = recentUsage.map((usage: TokenUsageRecord: any) => ({
+      const recentConsumption: TokenConsumption[] = recentUsage.map((usage: TokenUsageRecord) => ({
         userId,
         feature: usage.feature,
         amount: usage.tokensConsumed,
@@ -614,12 +679,12 @@ export class TokenService {
       const totalUsers = uniqueUsers.length
       const averagePerUser = totalUsers > 0 ? totalConsumed / totalUsers : 0
 
-      const topFeatures = featureStats.map((item: any: any) => ({
+      const topFeatures = featureStats.map((item: any) => ({
         feature: item.feature,
         usage: item._sum?.tokensConsumed || 0
       }))
 
-      const topUsers = userStats.map((item: any: any) => ({
+      const topUsers = userStats.map((item: any) => ({
         userId: item.userId,
         usage: item._sum?.tokensConsumed || 0
       }))
@@ -653,7 +718,7 @@ export class TokenService {
 
       const costs: Record<string, Record<string, number>> = {}
       
-      configs.forEach((config: any: any) => {
+      configs.forEach((config: any) => {
         if (!costs[config.feature]) {
           costs[config.feature] = {}
         }
@@ -685,8 +750,10 @@ export class TokenService {
    * 获取特定功能和操作的Token消耗
    */
   static async getTokenCost(feature: string, action: string): Promise<number> {
-    // Note: action parameter is ignored for now, only feature is used
-    return TokenConfigService.getTokenCost(feature.toUpperCase() as TokenUsageFeature)
+    // Deprecated in favor of resolveTotalCost; keep minimal compatibility
+    const featureEnum = this.normalizeFeature(feature)
+    const { unit } = await this.resolveTotalCost(featureEnum, action, 1)
+    return unit
   }
 
   /**
@@ -723,6 +790,7 @@ export class TokenService {
     newBalance?: number
     batchId?: string
     error?: string
+    errorCode?: string
   }> {
     const result = await this.consumeTokens(userId, feature, action, options)
     
@@ -731,7 +799,8 @@ export class TokenService {
       consumed: result.tokensConsumed || 0,
       newBalance: result.newBalance,
       batchId: result.batchId,
-      error: result.error
+      error: result.error,
+      errorCode: result.errorCode
     }
   }
 
@@ -752,6 +821,7 @@ export class TokenService {
     totalConsumed: number
     newBalance?: number
     error?: string
+    errorCode?: string
   }> {
     try {
       // 获取单位消耗
@@ -776,14 +846,16 @@ export class TokenService {
         batchId: result.batchId,
         totalConsumed: result.tokensConsumed || 0,
         newBalance: result.newBalance,
-        error: result.error
+        error: result.error,
+        errorCode: result.errorCode
       }
     } catch (error) {
       console.error('批量Token消耗失败:', error)
       return {
         success: false,
         totalConsumed: 0,
-        error: 'Failed to consume batch tokens'
+        error: 'Failed to consume batch tokens',
+        errorCode: this.ErrorCodes.TOKEN_CONSUME_FAILED
       }
     }
   }
@@ -1012,12 +1084,12 @@ export class TokenService {
         orderBy: { tokenBalance: 'asc' }
       })
 
-      return users.map((user: any: any) => ({
+      return users.map((user: any) => ({
         userId: user.id,
         email: user.email,
         name: user.name,
         balance: user.tokenBalance,
-        lastUsed: user.tokenUsages[0]?.createdAt || null
+        lastUsed: (user as any).token_usage?.[0]?.createdAt || null
       }))
     } catch (error) {
       console.error('Failed to get low balance users:', error)

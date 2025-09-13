@@ -63,7 +63,7 @@ export function useUserManagement() {
     isLoading,
     error,
     refetch: refetchUsers
-  } = useQuery({
+  } = useQuery<{ users: User[]; total: number }, Error>({
     queryKey: ['admin-users', filters, pagination.page, pagination.limit],
     queryFn: async () => {
       const params = QueryParamBuilder.build({
@@ -77,7 +77,7 @@ export function useUserManagement() {
         throw new Error('Failed to fetch users')
       }
       
-      const data = await response.json()
+      const data: { users: User[]; total: number } = await response.json()
       setPagination(prev => ({ ...prev, total: data.total }))
       return data
     },
@@ -89,7 +89,7 @@ export function useUserManagement() {
     data: analytics,
     isLoading: isAnalyticsLoading,
     error: analyticsError
-  } = useQuery({
+  } = useQuery<UserAnalytics, Error>({
     queryKey: ['user-analytics'],
     queryFn: async (): Promise<UserAnalytics> => {
       const response = await fetch('/api/admin/users/analytics')
@@ -102,7 +102,7 @@ export function useUserManagement() {
   })
 
   // Create user mutation
-  const createUserMutation = useMutation({
+  const createUserMutation = useMutation<any, Error, Partial<User>>({
     mutationFn: async (userData: Partial<User>) => {
       const response = await fetch('/api/admin/users', {
         method: 'POST',
@@ -123,7 +123,7 @@ export function useUserManagement() {
   })
 
   // Update user mutation
-  const updateUserMutation = useMutation({
+  const updateUserMutation = useMutation<any, Error, { userId: string; userData: Partial<User> }>({
     mutationFn: async ({ userId, userData }: { userId: string; userData: Partial<User> }) => {
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: 'PUT',
@@ -144,7 +144,7 @@ export function useUserManagement() {
   })
 
   // Delete user mutation
-  const deleteUserMutation = useMutation({
+  const deleteUserMutation = useMutation<any, Error, string>({
     mutationFn: async (userId: string) => {
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: 'DELETE',
@@ -161,7 +161,7 @@ export function useUserManagement() {
   })
 
   // Bulk actions mutation
-  const bulkActionMutation = useMutation({
+  const bulkActionMutation = useMutation<any, Error, { action: string; userIds: string[] }>({
     mutationFn: async ({ action, userIds }: { action: string; userIds: string[] }) => {
       const response = await fetch('/api/admin/users/bulk', {
         method: 'POST',
@@ -182,7 +182,7 @@ export function useUserManagement() {
   })
 
   // Export users mutation
-  const exportUsersMutation = useMutation({
+  const exportUsersMutation = useMutation<{ success: boolean }, Error, 'csv' | 'json' | 'xlsx'>({
     mutationFn: async (format: 'csv' | 'json' | 'xlsx') => {
       const params = QueryParamBuilder.build({
         format,
@@ -209,7 +209,7 @@ export function useUserManagement() {
   })
 
   // Import users mutation
-  const importUsersMutation = useMutation({
+  const importUsersMutation = useMutation<any, Error, File>({
     mutationFn: async (file: File) => {
       const formData = new FormData()
       formData.append('file', file)
@@ -269,17 +269,17 @@ export function useUserManagement() {
 
   // Get user by ID
   const getUserById = useCallback((userId: string): User | undefined => {
-    return usersData?.users?.find((user: User: any) => user.id === userId)
+    return usersData?.users?.find((user: User) => user.id === userId)
   }, [usersData])
 
   // Get users by role
   const getUsersByRole = useCallback((role: string): User[] => {
-    return usersData?.users?.filter((user: User: any) => user.role === role) || []
+    return usersData?.users?.filter((user: User) => user.role === role) || []
   }, [usersData])
 
   // Get users by status
   const getUsersByStatus = useCallback((status: string): User[] => {
-    return usersData?.users?.filter((user: User: any) => user.status === status) || []
+    return usersData?.users?.filter((user: User) => user.status === status) || []
   }, [usersData])
 
   return {

@@ -157,10 +157,10 @@ export async function GET(request: NextRequest) {
           }))
         : byDimension.map((user: any) => ({
             dimension: user.email,
-            totalTokens: user.token_usage.reduce((sum: number, usage: any: any) => sum + usage.tokensConsumed, 0),
+            totalTokens: user.token_usage.reduce((sum: number, usage: any) => sum + usage.tokensConsumed, 0),
             totalOperations: user.token_usage.length,
             averageTokensPerOperation: user.token_usage.length > 0 
-              ? user.token_usage.reduce((sum: number, usage: any: any) => sum + usage.tokensConsumed, 0) / user.token_usage.length 
+              ? user.token_usage.reduce((sum: number, usage: any) => sum + usage.tokensConsumed, 0) / user.token_usage.length 
               : 0,
             growth: 0
           })),
@@ -168,13 +168,13 @@ export async function GET(request: NextRequest) {
         userId: user.id,
         userName: user.name || user.email,
         userEmail: user.email,
-        totalTokens: user.token_usage.reduce((sum: number, usage: any: any) => sum + usage.tokensConsumed, 0),
+        totalTokens: user.token_usage.reduce((sum: number, usage: any) => sum + usage.tokensConsumed, 0),
         operations: user.token_usage.length,
         averageTokens: user.token_usage.length > 0 
-          ? user.token_usage.reduce((sum: number, usage: any: any) => sum + usage.tokensConsumed, 0) / user.token_usage.length 
+          ? user.token_usage.reduce((sum: number, usage: any) => sum + usage.tokensConsumed, 0) / user.token_usage.length 
           : 0,
         lastActivity: user.token_usage.length > 0 
-          ? user.token_usage.reduce((latest: Date, usage: any: any) => 
+          ? user.token_usage.reduce((latest: Date, usage: any) => 
               usage.createdAt > latest ? usage.createdAt : latest, 
               user.token_usage[0].createdAt
             ).toISOString()

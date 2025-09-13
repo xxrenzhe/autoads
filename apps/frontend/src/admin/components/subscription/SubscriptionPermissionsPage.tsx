@@ -257,7 +257,7 @@ export default function SubscriptionPermissionsPage() {
       renderCell: (params: GridRenderCellParams<any>) => (
         <Switch
           checked={params.value}
-          onChange={((e: any): any) => {
+          onChange={(e) => {
             const planId = plans[selectedTab]?.id
             if (planId && params.row.featureId) {
               handleFeatureToggle(planId, params.row.featureId, e.target.checked)
@@ -279,7 +279,7 @@ export default function SubscriptionPermissionsPage() {
         
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {Object.entries(config).map(([key, value]: any) => (
+            {Object.entries(config).map(([key, value]) => (
               <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2" sx={{ minWidth: 100 }}>
                   {key}:
@@ -287,7 +287,7 @@ export default function SubscriptionPermissionsPage() {
                 <TextField
                   size="small"
                   value={value}
-                  onChange={((e: any): any) => handleFeatureLimitChange(planId, featureId, key, e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFeatureLimitChange(planId, featureId, key, e.target.value)}
                   sx={{ width: 100 }}
                 />
               </Box>
@@ -317,9 +317,9 @@ export default function SubscriptionPermissionsPage() {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs 
           value={selectedTab} 
-          onChange={((e, newValue: any): any) => setSelectedTab(newValue)}
+          onChange={(_e, newValue: number) => setSelectedTab(newValue)}
         >
-          {plans.map((plan: any) => (
+          {plans.map((plan) => (
             <Tab 
               key={plan.id} 
               label={`${plan.name} (${plan.price === 0 ? '免费' : `¥${plan.price}`})`} 

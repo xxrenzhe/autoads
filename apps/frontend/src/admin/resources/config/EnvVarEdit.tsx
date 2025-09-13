@@ -145,7 +145,7 @@ export function EnvVarEdit({ envVar, onSave, onCancel }: EnvVarEditProps) {
             <Input
               id="key"
               value={formData.key}
-              onChange={((e: any): any) => handleInputChange('key', e.target.value.toUpperCase())}
+              onChange={(e: any) => handleInputChange('key', e.target.value.toUpperCase())}
               onBlur={() => handleBlur('key')}
               placeholder="e.g., DATABASE_URL"
               disabled={isSubmitting || isEdit}
@@ -170,7 +170,7 @@ export function EnvVarEdit({ envVar, onSave, onCancel }: EnvVarEditProps) {
             <Textarea
               id="value"
               value={formData.value}
-              onChange={((e: React.ChangeEvent<HTMLTextAreaElement>: any): any) => handleInputChange('value', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('value', e.target.value)}
               onBlur={() => handleBlur('value')}
               placeholder="Enter the variable value"
               disabled={isSubmitting}
@@ -188,7 +188,7 @@ export function EnvVarEdit({ envVar, onSave, onCancel }: EnvVarEditProps) {
               <input
                 type="checkbox"
                 checked={formData.isSecret}
-                onChange={((e: any): any) => handleInputChange('isSecret', e.target.checked)}
+                onChange={(e: any) => handleInputChange('isSecret', e.target.checked)}
                 disabled={isSubmitting}
                 className="rounded border-gray-300"
               />

@@ -92,7 +92,7 @@ const SuspiciousDevicesList = () => {
   useEffect(() => {
     if (data) {
       // Calculate advanced statistics
-      const deviceGroupings = data.reduce((acc: any, device: any: any) => {
+      const deviceGroupings = data.reduce((acc: any, device: any) => {
         if (!acc[device.fingerprint]) {
           acc[device.fingerprint] = []
         }
@@ -129,7 +129,7 @@ const SuspiciousDevicesList = () => {
   
   if (isLoading) return <div>加载中...</div>
   
-  const suspiciousCount = data?.filter((d: any: any) => d.isSuspicious).length || 0
+  const suspiciousCount = data?.filter((d: any) => d.isSuspicious).length || 0
   const totalDevices = data?.length || 0
   
   return (
@@ -214,13 +214,13 @@ const SuspiciousDevicesList = () => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="body2">不同IP地址</Typography>
                 <Typography variant="body2" fontWeight="bold">
-                  {new Set(data?.map((d: any: any) => d.firstIP)).size}
+                  {new Set(data?.map((d: any) => d.firstIP)).size}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="body2">不同用户代理</Typography>
                 <Typography variant="body2" fontWeight="bold">
-                  {new Set(data?.map((d: any: any) => d.userAgent)).size}
+                  {new Set(data?.map((d: any) => d.userAgent)).size}
                 </Typography>
               </Box>
             </Stack>
@@ -325,7 +325,7 @@ const ListActions = () => {
       <FilterButton />
       <Button 
         label="刷新数据" 
-        onClick={((: any): any) => refresh()}
+        onClick={() => refresh()}
         sx={{ mr: 1 }}
       >
         <RefreshCw />

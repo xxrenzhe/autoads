@@ -80,18 +80,18 @@ export class UsageStatsService {
 
       return {
         period: { days, startDate, endDate: new Date() },
-        features: usageLogs.map((log: UsageLogGroupResult: any) => ({
+        features: usageLogs.map((log: UsageLogGroupResult) => ({
           feature: log.feature,
           totalUsage: log._sum.usage || 0,
           usageCount: log._count
         })),
-        apiEndpoints: apiUsage.map((api: any: any) => ({
+        apiEndpoints: apiUsage.map((api: any) => ({
           endpoint: api.endpoint,
           totalTokens: api._sum.tokenConsumed || 0,
           callCount: api._count,
           avgResponseTime: api._avg.responseTime || 0
         })),
-        behaviors: behaviorAnalytics.map((behavior: any: any) => ({
+        behaviors: behaviorAnalytics.map((behavior: any) => ({
           feature: behavior.feature,
           action: behavior.action,
           totalTokens: behavior._sum.tokensConsumed || 0,
@@ -231,7 +231,7 @@ export class UsageStatsService {
           totalTransactions: tokenStats._count,
           totalVolume: Number(tokenStats._sum.amount || 0)
         },
-        subscriptions: subscriptionStats.reduce((acc: any, stat: any: any) => {
+        subscriptions: subscriptionStats.reduce((acc: any, stat: any) => {
           acc[stat.status] = stat._count;
           return acc;
         }, {} as Record<string, number>),
@@ -261,7 +261,7 @@ export class UsageStatsService {
         take: limit
       });
 
-      return rankings.map((item: any, index: any: any) => ({
+      return rankings.map((item: any, index: number) => ({
         rank: index + 1,
         feature: item.feature,
         totalUsage: Number(item._sum.usage || 0),
@@ -377,7 +377,7 @@ export class UsageStatsService {
       ]);
 
       return {
-        byType: byType.map((t: any: any) => ({
+        byType: byType.map((t: any) => ({
           type: t.type,
           totalAmount: Number(t._sum.amount || 0),
           count: t._count
@@ -387,7 +387,7 @@ export class UsageStatsService {
           totalUsage: Number(p.total_usage),
           uniqueUsers: p.unique_users
         })),
-        byFeature: byFeature.map((f: any: any) => ({
+        byFeature: byFeature.map((f: any) => ({
           feature: f.feature,
           totalUsage: Number(f._sum.usage || 0),
           uniqueUsers: f._count.userId

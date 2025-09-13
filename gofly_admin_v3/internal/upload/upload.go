@@ -70,7 +70,7 @@ type FileInfo struct {
 
 // UploadService 上传服务
 type UploadService struct {
-	config *FileConfig
+    config *FileConfig
 }
 
 var (
@@ -80,9 +80,9 @@ var (
 
 // NewUploadService 创建上传服务
 func NewUploadService(cfg *FileConfig) *UploadService {
-	return &UploadService{
-		config: cfg,
-	}
+    return &UploadService{
+        config: cfg,
+    }
 }
 
 // GetUploadService 获取上传服务
@@ -113,6 +113,9 @@ func GetUploadService() *UploadService {
 	}
 	return defaultUploadService
 }
+
+// Config 访问运行时可变配置（用于热更新回调）
+func (us *UploadService) Config() *FileConfig { return us.config }
 
 // UploadFile 上传文件
 func (us *UploadService) UploadFile(file *multipart.FileHeader, userID string) (*FileInfo, error) {

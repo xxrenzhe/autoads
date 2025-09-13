@@ -215,7 +215,7 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError,
             
             <Button 
               variant="outline" 
-              onClick={((: any): any) => typeof window !== 'undefined' && window.location.reload()}
+              onClick={() => typeof window !== 'undefined' && window.location.reload()}
               className="flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />

@@ -353,7 +353,7 @@ export const WithActions: Story = {
           <div className="flex space-x-2">
             <button 
               className="text-blue-600 hover:text-blue-800 text-sm"
-              onClick={((e: any): any) => {
+              onClick={(e) => {
                 e.stopPropagation();
                 console.log('Edit:', row);
               }}
@@ -362,7 +362,7 @@ export const WithActions: Story = {
             </button>
             <button 
               className="text-red-600 hover:text-red-800 text-sm"
-              onClick={((e: any): any) => {
+              onClick={(e) => {
                 e.stopPropagation();
                 console.log('Delete:', row);
               }}

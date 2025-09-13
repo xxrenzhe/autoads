@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, AlertCircle, Copy, ExternalLink, RefreshCw } from 'lucide-react';
 import { detectEnvironment, getDomainConfig, getGoogleOAuthConfig, isDomainAllowed } from '@/lib/domain-config';
-import { EnhancedError } from '@/lib/utils/error-handling';
 
 interface TestResult {
   name: string;
@@ -325,7 +324,7 @@ export default function EnvironmentTestPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Button
               variant="outline"
-              onClick={(async (): any) => {
+              onClick={async () => {
                 try {
                   await copyToClipboard(envInfo?.baseUrl || '');
                 } catch (err) {

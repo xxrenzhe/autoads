@@ -245,7 +245,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={activeTab} onChange={((e, v: any): any) => setActiveTab(v)}>
+        <Tabs value={activeTab} onChange={(_e: any, v: any) => setActiveTab(v)}>
           <Tab label="使用趋势" icon={<TimelineIcon />} />
           <Tab label="Token分布" icon={<InfoIcon />} />
           <Tab label="详细记录" />
@@ -260,11 +260,11 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
             <Box sx={{ height: 200 }}>
               {/* Simplified trend visualization */}
               <Grid container spacing={1} sx={{ height: '100%', alignItems: 'flex-end' }}>
-                {usageData.dailyUsage.slice(-7).map((day, index: any) => {
+                {usageData.dailyUsage.slice(-7).map((day, index) => {
                   const maxValue = Math.max(...usageData.dailyUsage.map((d: any) => d.tokensUsed));
                   const height = (day.tokensUsed / maxValue) * 150;
                   return (
-                    <Grid size="grow" key={index} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Grid item xs key={index} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <Box
                         sx={{
                           width: '100%',
@@ -391,7 +391,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {usageData.dailyUsage.slice(-5).reverse().map((day, index: any) => (
+                  {usageData.dailyUsage.slice(-5).reverse().map((day, index) => (
                     <TableRow key={index}>
                       <TableCell>{format(new Date(day.date), 'MM/dd HH:mm')}</TableCell>
                       <TableCell>API调用</TableCell>
@@ -450,7 +450,7 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {usageData.dailyUsage.map((day, index: any) => {
+                {usageData.dailyUsage.map((day, index) => {
                   const totalTokens = usageData.monthlyStats.totalTokensUsed;
                   const percentage = totalTokens > 0 ? (day.tokensUsed / totalTokens * 100).toFixed(1) : '0';
                   return (

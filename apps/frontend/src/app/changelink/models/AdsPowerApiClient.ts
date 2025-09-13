@@ -834,7 +834,7 @@ export class AdsPowerApiClient {
       });
 
       const statusResults = await Promise.all(statusPromises);
-      activeBrowsers = statusResults.reduce((sum: number, count: number: any) => sum + count, 0);
+      activeBrowsers = statusResults.reduce((sum: number, count: number) => sum + count, 0);
 
       return {
         total_environments: environments.list.length,

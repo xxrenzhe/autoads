@@ -23,14 +23,12 @@ import {
   Tab,
   InputAdornment,
   IconButton,
-  Tooltip,
   Badge,
   Grid,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
-  Divider,
   MenuItem,
 } from '@mui/material';
 import {
@@ -41,7 +39,6 @@ import {
   Security,
   Speed,
   CheckCircle,
-  Error as ErrorIcon,
   Warning,
   Info,
   Code,
@@ -50,7 +47,6 @@ import {
   Lock,
   Public,
   Refresh,
-  FilterList,
 } from '@mui/icons-material';
 
 interface ApiEndpoint {
@@ -345,7 +341,7 @@ export const ApiList: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {api.parameters.map((param, index: any) => (
+                      {api.parameters.map((param, index: number) => (
                         <TableRow key={index}>
                           <TableCell>
                             <code>{param.name}</code>
@@ -379,7 +375,7 @@ export const ApiList: React.FC = () => {
                 <Typography variant="h6" gutterBottom>
                   响应格式
                 </Typography>
-                {api.responses.map((response, index: any) => (
+                {api.responses.map((response, index: number) => (
                   <Box key={index} sx={{ mb: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>
                       <Chip
@@ -410,7 +406,7 @@ export const ApiList: React.FC = () => {
                 <Typography variant="h6" gutterBottom>
                   使用示例
                 </Typography>
-                {api.examples.map((example, index: any) => (
+                {api.examples.map((example, index: number) => (
                   <Accordion key={index} sx={{ mb: 1 }}>
                     <AccordionSummary expandIcon={<ExpandMore />}>
                       <Typography variant="subtitle2">{example.title}</Typography>
@@ -526,7 +522,7 @@ export const ApiList: React.FC = () => {
                 select
                 label="分类"
                 value={selectedCategory}
-                onChange={((e: any): any) => setSelectedCategory(e.target.value)}
+                onChange={(e) => setSelectedCategory((e.target as HTMLInputElement).value)}
               >
                 {categories.map((category: any) => (
                   <MenuItem key={category.value} value={category.value}>
@@ -545,7 +541,7 @@ export const ApiList: React.FC = () => {
                 select
                 label="状态"
                 value={selectedStatus}
-                onChange={((e: any): any) => setSelectedStatus(e.target.value)}
+                onChange={(e) => setSelectedStatus((e.target as HTMLInputElement).value)}
               >
                 {statusOptions.map((status: any) => (
                   <MenuItem key={status.value} value={status.value}>
@@ -621,7 +617,7 @@ export const ApiList: React.FC = () => {
                   <TableCell>
                     <IconButton
                       size="small"
-                      onClick={((: any): any) => setExpandedApi(expandedApi === api.id ? null : api.id)}
+                      onClick={() => setExpandedApi(expandedApi === api.id ? null : api.id)}
                     >
                       <Description />
                     </IconButton>

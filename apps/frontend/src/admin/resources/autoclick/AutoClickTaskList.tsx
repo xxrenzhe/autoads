@@ -77,7 +77,7 @@ export const AutoClickTaskList = () => {
         <Button
           size="small"
           color="primary"
-          onClick={((: any): any) => handleAction(record.id, 'start')}
+          onClick={() => handleAction(record.id, 'start')}
           title="启动任务"
         >
           <Play />
@@ -87,7 +87,7 @@ export const AutoClickTaskList = () => {
         <Button
           size="small"
           color="error"
-          onClick={((: any): any) => handleAction(record.id, 'terminate')}
+          onClick={() => handleAction(record.id, 'terminate')}
           title="终止任务"
         >
           <Stop />
@@ -95,7 +95,7 @@ export const AutoClickTaskList = () => {
       )}
       <Button
         size="small"
-        onClick={((: any): any) => handleAction(record.id, 'refresh')}
+        onClick={() => handleAction(record.id, 'refresh')}
         title="刷新状态"
       >
         <Refresh />

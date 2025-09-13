@@ -582,7 +582,7 @@ export function SecurityManager() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => setSelectedUser(user)}
+                          onClick={() => setSelectedUser(user)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -590,7 +590,7 @@ export function SecurityManager() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={((: any): any) => handleEnableTwoFactor(user.id)}
+                            onClick={() => handleEnableTwoFactor(user.id)}
                             disabled={isLoading}
                           >
                             <Key className="h-4 w-4" />
@@ -599,7 +599,7 @@ export function SecurityManager() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => handleUserStatusChange(
+                          onClick={() => handleUserStatusChange(
                             user.id, 
                             user.status === 'active' ? 'suspended' : 'active'
                           )}

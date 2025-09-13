@@ -258,7 +258,7 @@ export function URLInput({
             <Button
               variant="outline"
               size="sm"
-              onClick={((: any): any) => fileInputRef.current?.click()}
+              onClick={() => fileInputRef.current?.click()}
             >
               <FileText className="w-4 h-4 mr-2" />
               选择文件
@@ -270,7 +270,7 @@ export function URLInput({
         <div className="space-y-2">
           <Textarea
             value={inputText}
-            onChange={((e: any): any) => handleInputChange(e.target.value)}
+            onChange={(e: any) => handleInputChange(e.target.value)}
             placeholder={placeholder}
             className="min-h-[200px] font-mono text-sm"
             disabled={isProcessing}
@@ -316,7 +316,7 @@ export function URLInput({
         {showStats && parsedURLs.length > 0 && (
           <div className="border rounded-lg p-3 max-h-40 overflow-y-auto">
             <div className="space-y-1">
-              {parsedURLs.slice(0, 10).map((url, index: any) => (
+              {parsedURLs.slice(0, 10).map((url, index: number) => (
                 <div
                   key={index}
                   className="flex items-center space-x-2 text-sm"

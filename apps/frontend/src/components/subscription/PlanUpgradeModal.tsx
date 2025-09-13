@@ -73,7 +73,7 @@ export default function PlanUpgradeModal({
 
     return (
       <div
-        onClick={((: any): any) => setSelectedPlan(plan)}
+        onClick={() => setSelectedPlan(plan)}
         className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all ${
           isSelected
             ? 'border-blue-500 bg-blue-50'

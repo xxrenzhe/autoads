@@ -809,7 +809,6 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
       dispatch({ type: 'SET_TASK_ID', payload: newTaskId });
 
       // 计算总访问次数
-      const urlVisits = parsedUrls.map((: any) => currentCycleCount);
       const actualTotalVisits = parsedUrls.length * currentCycleCount;
       
       // 检查并消费 token

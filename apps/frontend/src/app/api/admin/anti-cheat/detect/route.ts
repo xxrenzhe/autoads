@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
     // 记录安全事件
     if (isSuspicious) {
       await prisma.securityThreat.createMany({
-        data: deviceIds.map((deviceId: string: any) => ({
+        data: deviceIds.map((deviceId: string) => ({
           userId: '', // 这里需要根据deviceId查询userId
           type: 'DEVICE_BATCH_MARKED_SUSPICIOUS',
           severity: 'HIGH',

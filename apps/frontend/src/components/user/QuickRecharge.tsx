@@ -13,10 +13,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Select,
-  MenuItem,
   FormControl,
-  InputLabel,
   RadioGroup,
   FormControlLabel,
   Radio,
@@ -26,16 +23,10 @@ import {
   Step,
   StepLabel,
   Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
   CircularProgress
 } from '@mui/material';
 import {
   CreditCard as CreditCardIcon,
-  AccountBalance as AccountBalanceIcon,
   QrCode as QrCodeIcon,
   LocalOffer as LocalOfferIcon,
   CheckCircle as CheckCircleIcon,
@@ -272,7 +263,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
                   label="充值金额 (¥)"
                   type="number"
                   value={customAmount}
-                  onChange={((e: any): any) => setCustomAmount(e.target.value)}
+                  onChange={(e) => setCustomAmount((e.target as HTMLInputElement).value)}
                   inputProps={{ min: 1, step: 0.1 }}
                 />
               </Grid>
@@ -282,7 +273,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
                   label="Token数量"
                   type="number"
                   value={customTokens}
-                  onChange={((e: any): any) => setCustomTokens(e.target.value)}
+                  onChange={(e) => setCustomTokens((e.target as HTMLInputElement).value)}
                   inputProps={{ min: 100 }}
                 />
               </Grid>
@@ -323,7 +314,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
             <FormControl component="fieldset" fullWidth>
               <RadioGroup
                 value={paymentMethod}
-                onChange={((e: any): any) => setPaymentMethod(e.target.value)}
+                onChange={(e) => setPaymentMethod((e.target as HTMLInputElement).value)}
               >
                 <Card variant="outlined" sx={{ mb: 2, cursor: 'pointer' }}>
                   <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -435,7 +426,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
         );
 
       default:
-        return null as any;
+        return null;
     }
   };
 

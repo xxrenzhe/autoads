@@ -283,7 +283,7 @@ export default function SiteRankClient() {
                         className="w-full border-2 border-gray-200 rounded-xl p-4 resize-none h-[140px] focus:border-blue-500 focus:outline-none transition-colors"
                         placeholder={getStr(t("siterank.inputPlaceholder") as string | string[] | undefined)}
                         value={urlInput}
-                        onChange={((e: any): any) => setUrlInput(e.target.value)}
+                        onChange={(e: any) => setUrlInput(e.target.value)}
                       />
                       <div className="text-sm text-gray-500 mt-3 h-6 flex items-center gap-2">
                         <span className="w-2 h-2 bg-blue-500 rounded-full inline-block"></span>
@@ -496,5 +496,4 @@ export default function SiteRankClient() {
     </div>
   );
 }
-
 

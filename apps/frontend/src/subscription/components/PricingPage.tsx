@@ -101,7 +101,7 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
             Monthly
           </span>
           <button
-            onClick={((: any): any) => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+            onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               billingCycle === 'yearly' ? 'bg-blue-600' : 'bg-gray-200'
             }`}
@@ -215,7 +215,7 @@ export function PricingPage({ userId, currentPlan, onSelectPlan }: PricingPagePr
 
                 {/* Action Button */}
                 <Button
-                  onClick={((: any): any) => handleSelectPlan(plan.id)}
+                  onClick={() => handleSelectPlan(plan.id)}
                   variant={isCurrentPlan ? 'outline' : plan.buttonVariant}
                   className="w-full"
                   disabled={isCurrentPlan}

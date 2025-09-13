@@ -16,10 +16,7 @@ import {
   UserPlus, 
   UserX, 
   Shield, 
-  Key, 
-  Mail, 
-  Phone, 
-  Calendar,
+  Key,
   CheckCircle,
   XCircle,
   AlertTriangle,
@@ -30,12 +27,7 @@ import {
   Search,
   Filter,
   RefreshCw,
-  Download,
-  Upload,
-  Settings,
-  Activity,
-  Lock,
-  Unlock
+  
 } from 'lucide-react';
 
 interface User {
@@ -268,18 +260,6 @@ const UserManagement: React.FC<UserManagementProps> = ({
     setRoles(mockRoles);
   }, []);
 
-  const defaultUser: User = {
-    id: '',
-    username: '',
-    email: '',
-    fullName: '',
-    role: roles.find((r: any) => r.isDefault) || roles[0],
-    status: 'active',
-    permissions: [],
-    createdAt: new Date(),
-    updatedAt: new Date()
-  };
-
   const defaultRole: UserRole = {
     id: '',
     name: '',
@@ -287,6 +267,18 @@ const UserManagement: React.FC<UserManagementProps> = ({
     permissions: [],
     isDefault: false,
     createdAt: new Date()
+  };
+
+  const defaultUser: User = {
+    id: '',
+    username: '',
+    email: '',
+    fullName: '',
+    role: (roles.find((r: any) => r.isDefault) as UserRole) || roles[0] || defaultRole,
+    status: 'active',
+    permissions: [],
+    createdAt: new Date(),
+    updatedAt: new Date()
   };
 
   const handleCreateUser = useCallback(() => {
@@ -467,7 +459,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 <Input
                   placeholder="Search users..."
                   value={searchTerm}
-                  onChange={((e: any): any) => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm((e.target as HTMLInputElement).value)}
                   className="pl-10 w-64"
                 />
               </div>
@@ -762,7 +754,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             ? 'border-primary bg-primary/5'
                             : 'border-border hover:border-primary/50'
                         }`}
-                        onClick={((: any): any) => setCurrentRole(role)}
+                        onClick={() => setCurrentRole(role)}
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
@@ -783,7 +775,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={((e: any): any) => {
+                              onClick={(e) => {
                                 e.stopPropagation();
                                 handleEditRole(role);
                               }}
@@ -793,7 +785,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={((e: any): any) => {
+                              onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteRole(role.id);
                               }}
@@ -858,8 +850,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
                               type="checkbox"
                               id={permission.id}
                               checked={currentRole.permissions.some(p => p.id === permission.id)}
-                              onChange={((e: any): any) => {
-                                if (e.target.checked) {
+                              onChange={(e) => {
+                                if ((e.target as HTMLInputElement).checked) {
                                   setCurrentRole(prev => prev ? {
                                     ...prev,
                                     permissions: [...prev.permissions, permission]

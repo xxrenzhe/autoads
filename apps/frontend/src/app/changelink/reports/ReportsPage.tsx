@@ -321,7 +321,7 @@ export default function ReportsPage() {
                       key={range}
                       variant={timeRange === range ? "default" : "ghost"}
                       size="sm"
-                      onClick={((: any): any) => setTimeRange(range)}
+                      onClick={() => setTimeRange(range)}
                       className="text-xs"
                     >
                       {range === '7d' ? '7天' : range === '30d' ? '30天' : range === '90d' ? '90天' : '全部'}
@@ -401,10 +401,10 @@ export default function ReportsPage() {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button size="sm" onClick={((: any): any) => exportReport('csv')} className={UI_CONSTANTS.buttons.primary}>
+                <Button size="sm" onClick={() => exportReport('csv')} className={UI_CONSTANTS.buttons.primary}>
                   CSV
                 </Button>
-                <Button size="sm" variant="outline" onClick={((: any): any) => exportReport('json')}>
+                <Button size="sm" variant="outline" onClick={() => exportReport('json')}>
                   JSON
                 </Button>
               </div>
@@ -413,7 +413,7 @@ export default function ReportsPage() {
 
           {/* 详细报告 */}
           <div className={UI_CONSTANTS.cards.default + " p-6"}>
-            <Tabs value={selectedReport} onValueChange={((value: any): any) => setSelectedReport(value as any)}>
+            <Tabs value={selectedReport} onValueChange={(value) => setSelectedReport(value as any)}>
               <TabsList className="grid w-full grid-cols-4 mb-6">
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
@@ -603,7 +603,7 @@ export default function ReportsPage() {
                     执行数量和成功率趋势
                   </p>
                   <div className="space-y-3">
-                    {reportData.performance.dailyTrend.map((day, index: any) => (
+                    {reportData.performance.dailyTrend.map((day, index: number) => (
                       <div key={day.date} className="flex items-center space-x-4">
                         <div className="w-24 text-sm font-medium">{day.date}</div>
                         <div className="flex-1 grid grid-cols-2 gap-4">

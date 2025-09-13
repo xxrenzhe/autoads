@@ -594,7 +594,7 @@ export class EnhancedSimilarWebService {
       results.push(result);
     }
 
-    return results.map((result: any, index: any: any) => {
+    return results.map((result: any, index: any) => {
       const domain = domains[index];
 
       if (result.success) {

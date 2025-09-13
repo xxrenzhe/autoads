@@ -125,7 +125,7 @@ export const AffiliateLinksStep = memo(({
               <label className="block text-sm font-medium mb-2">链接描述（Description）<br/><span className="text-xs text-gray-500">链接的详细说明和使用场景</span></label>
               <textarea
                 value={newLink.description || ''}
-                onChange={((e: any): any) => handleInputChange('description', e.target.value)}
+                onChange={(e: any) => handleInputChange('description', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 rows={3}
                 placeholder="链接描述和用途说明"

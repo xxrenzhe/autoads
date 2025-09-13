@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       
       if (error.message === 'Insufficient token balance') {
         return NextResponse.json(
-          { error: 'Insufficient token balance' },
+          { error: 'Insufficient token balance', code: 'INSUFFICIENT_TOKENS' },
           { status: 402 }
         )
       }

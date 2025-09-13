@@ -232,7 +232,7 @@ export function UserDashboard({ userId, layout = 'default' }: UserDashboardProps
                 </div>
                 <select
                   value={selectedTimeRange}
-                  onChange={((e: any): any) => setSelectedTimeRange(e.target.value)}
+                  onChange={(e) => setSelectedTimeRange((e.target as HTMLSelectElement).value)}
                   className="text-sm border border-gray-300 rounded px-2 py-1"
                 >
                   <option value="24h">Last 24 Hours</option>

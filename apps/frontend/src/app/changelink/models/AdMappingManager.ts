@@ -147,7 +147,7 @@ export class AdMappingManager {
             adGroupName: adGroup.name,
             ads: adGroup.ads,
             totalAds: adGroup.ads.length,
-            availableAds: adGroup.ads.filter((ad: Advertisement: any) => ad.status === 'ENABLED').length
+            availableAds: adGroup.ads.filter((ad: any) => ad.status === 'ENABLED').length
           };
 
           hierarchies.push(hierarchy);

@@ -124,7 +124,7 @@ export class SimpleSuspiciousDetector {
       }
 
       // 检测2: 批量操作异常
-      const batchOps = activities.filter((a: any: any) => 
+      const batchOps = activities.filter((a: any) => 
         a.action.includes('batch') || 
         (a.metadata?.batchSize && a.metadata.batchSize > this.config.maxBatchSize)
       );
@@ -134,7 +134,7 @@ export class SimpleSuspiciousDetector {
       }
 
       // 检测3: 错误率过高
-      const errorOps = activities.filter((a: any: any) => 
+      const errorOps = activities.filter((a: any) => 
         a.action.includes('error') || a.action.includes('failed')
       );
       if (errorOps.length / activities.length > this.config.maxErrorRate) {
@@ -143,7 +143,7 @@ export class SimpleSuspiciousDetector {
       }
 
       // 检测4: 凌晨时段活跃
-      const nightOps = activities.filter((a: any: any) => {
+      const nightOps = activities.filter((a: any) => {
         const hour = a.timestamp.getHours();
         return this.config.nightHours.includes(hour);
       });
@@ -160,7 +160,7 @@ export class SimpleSuspiciousDetector {
           timestamp: { gte: oneDayAgo }
         }
       });
-      const uniqueIPs = new Set(dayActivities.map((a: any: any) => a.ip).filter(Boolean));
+      const uniqueIPs = new Set(dayActivities.map((a: any) => a.ip).filter(Boolean));
       if (uniqueIPs.size > this.config.maxIPs) {
         riskFactors.push(`IP地址频繁变更: ${uniqueIPs.size}个`);
         riskScore += 35;
@@ -260,7 +260,7 @@ export class SimpleSuspiciousDetector {
         take: limit
       });
 
-      return risks.map((risk: any: any) => ({
+      return risks.map((risk: any) => ({
         userId: risk.userId,
         riskLevel: risk.riskLevel,
         riskScore: risk.riskScore,

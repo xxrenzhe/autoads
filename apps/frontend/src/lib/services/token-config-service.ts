@@ -447,7 +447,7 @@ export class TokenConfigService {
       } catch (error) {
         failed.push({
           id: update.id,
-          error: error instanceof Error ? error.message : "Unknown error" as any
+          error: error instanceof Error ? error.message : "Unknown error"
         })
       }
     }
@@ -456,7 +456,7 @@ export class TokenConfigService {
     if (results.length > 0) {
       const notification: ConfigChangeNotification = {
         type: 'batch_update',
-        configIds: results.map((r: { config: TokenConfig; history: TokenConfigHistory }: any) => r.config.id),
+        configIds: results.map((r: { config: TokenConfig; history: TokenConfigHistory }) => r.config.id),
         changedBy,
         timestamp: Date.now()
       }
@@ -664,11 +664,11 @@ export class TokenConfigService {
 
       return {
         totalChanges,
-        changesByFeature: changesByFeature.reduce((acc: Record<string, number>, item: any: any) => {
+        changesByFeature: changesByFeature.reduce((acc: Record<string, number>, item: any) => {
           acc[item.configKey] = (item._count as any).configKey || 0
           return acc
         }, {} as Record<string, number>),
-        changesByUser: changesByUser.reduce((acc: Record<string, number>, item: any: any) => {
+        changesByUser: changesByUser.reduce((acc: Record<string, number>, item: any) => {
           acc[item.changedBy] = (item._count as any).changedBy || 0
           return acc
         }, {} as Record<string, number>),

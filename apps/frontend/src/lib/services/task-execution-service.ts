@@ -1341,7 +1341,7 @@ export async function executeBatchTask(options: TaskExecutionOptions): Promise<T
         });
         
         // 使用前置计算的访问次数或默认值
-        const urlVisits = options.urlVisits || urls.map((: any) => cycleCount);
+        const urlVisits = options.urlVisits || urls.map(() => cycleCount);
         
         // 执行批量访问
         const batchResult = await executeSilentBatchVisit({

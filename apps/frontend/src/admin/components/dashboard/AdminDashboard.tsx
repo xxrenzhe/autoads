@@ -26,7 +26,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div
             key={widget.id}
             className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={((: any): any) => onWidgetClick?.(widget.id)}
+            onClick={() => onWidgetClick?.(widget.id)}
           >
             <div className="flex items-center mb-4">
               <div className="mr-3">{widget.icon}</div>

@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Map subscription stats by plan name
-    const subscriptionByPlan = subscriptionStats.reduce((acc: any, stat: any: any) => {
+    const subscriptionByPlan = subscriptionStats.reduce((acc: any, stat: any) => {
       const plan = plans.find((p: any) => p.id === stat.planId);
       if (plan) {
         acc[plan.name] = stat._count;

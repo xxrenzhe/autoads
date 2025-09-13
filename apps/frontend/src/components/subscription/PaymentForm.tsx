@@ -219,7 +219,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
               type="text"
               id="name"
               value={billingDetails.name}
-              onChange={((e: any): any) => handleInputChange('name', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('name', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.name ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -238,7 +238,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
               type="email"
               id="email"
               value={billingDetails.email}
-              onChange={((e: any): any) => handleInputChange('email', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('email', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.email ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -258,7 +258,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
             type="text"
             id="address_line1"
             value={billingDetails.address.line1}
-            onChange={((e: any): any) => handleInputChange('address.line1', e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('address.line1', e.target.value)}
             className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.address_line1 ? 'border-red-300' : 'border-gray-300'
             }`}
@@ -277,7 +277,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
             type="text"
             id="address_line2"
             value={billingDetails.address.line2 || ''}
-            onChange={((e: any): any) => handleInputChange('address.line2', e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('address.line2', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Apartment, suite, etc."
           />
@@ -292,7 +292,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
               type="text"
               id="city"
               value={billingDetails.address.city}
-              onChange={((e: any): any) => handleInputChange('address.city', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('address.city', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.city ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -311,7 +311,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
               type="text"
               id="state"
               value={billingDetails.address.state}
-              onChange={((e: any): any) => handleInputChange('address.state', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('address.state', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.state ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -330,7 +330,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
               type="text"
               id="postal_code"
               value={billingDetails.address.postal_code}
-              onChange={((e: any): any) => handleInputChange('address.postal_code', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('address.postal_code', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.postal_code ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -352,7 +352,9 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
         <div className="border border-gray-300 rounded-md p-3">
           <CardElement
             options={cardElementOptions}
-            onChange={((event: any): any) => {
+            onChange={(event) => {
+              // Stripe types may not be available; keep loose typing
+              // @ts-expect-error - event type depends on Stripe SDK typing presence
               setCardError(event.error ? event.error.message : null)
             }}
           />

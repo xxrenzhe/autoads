@@ -239,7 +239,7 @@ const TokenConsumptionRules: React.FC = () => {
                       label="每个域名消耗Token"
                       type="number"
                       value={config.siterank.costPerDomain}
-                      onChange={((e: any): any) => updateConfig('siterank', 'costPerDomain', Number(e.target.value))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateConfig('siterank', 'costPerDomain', Number(e.target.value))}
                       margin="normal"
                     />
                     <TextField
@@ -247,7 +247,7 @@ const TokenConsumptionRules: React.FC = () => {
                       label="批量操作倍率"
                       type="number"
                       value={config.siterank.batchMultiplier}
-                      onChange={((e: any): any) => updateConfig('siterank', 'batchMultiplier', Number(e.target.value))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateConfig('siterank', 'batchMultiplier', Number(e.target.value))}
                       margin="normal"
                       helperText="批量操作时的折扣倍率，如0.8表示20%折扣"
                     />
@@ -271,7 +271,7 @@ const TokenConsumptionRules: React.FC = () => {
                       label="HTTP模式 - 每个URL消耗Token"
                       type="number"
                       value={config.batchopen.costPerUrl}
-                      onChange={((e: any): any) => updateConfig('batchopen', 'costPerUrl', Number(e.target.value))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateConfig('batchopen', 'costPerUrl', Number(e.target.value))}
                       margin="normal"
                     />
                     <TextField
@@ -279,7 +279,7 @@ const TokenConsumptionRules: React.FC = () => {
                       label="Puppeteer模式 - 每个URL消耗Token"
                       type="number"
                       value={config.batchopen.puppeteerCostPerUrl || 2}
-                      onChange={((e: any): any) => updateConfig('batchopen', 'puppeteerCostPerUrl', Number(e.target.value))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateConfig('batchopen', 'puppeteerCostPerUrl', Number(e.target.value))}
                       margin="normal"
                     />
                     <TextField
@@ -287,7 +287,7 @@ const TokenConsumptionRules: React.FC = () => {
                       label="批量操作倍率"
                       type="number"
                       value={config.batchopen.batchMultiplier}
-                      onChange={((e: any): any) => updateConfig('batchopen', 'batchMultiplier', Number(e.target.value))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateConfig('batchopen', 'batchMultiplier', Number(e.target.value))}
                       margin="normal"
                     />
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
@@ -433,7 +433,7 @@ const TokenConsumptionRules: React.FC = () => {
             label="基础消耗"
             type="number"
             value={editForm.baseCost || ''}
-            onChange={(e) => setEditForm({ ...editForm, baseCost: Number(e.target.value) })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm({ ...editForm, baseCost: Number(e.target.value) })}
             margin="normal"
           />
           <TextField
@@ -450,7 +450,7 @@ const TokenConsumptionRules: React.FC = () => {
             <Select
               value={editForm.isActive ? 'active' : 'inactive'}
               label="状态"
-              onChange={(e) => setEditForm({ ...editForm, isActive: (e.target as any).value === 'active' })}
+              onChange={(e) => setEditForm({ ...editForm, isActive: (e.target as unknown as HTMLInputElement).value === 'active' })}
             >
               <MenuItem value="active">启用</MenuItem>
               <MenuItem value="inactive">禁用</MenuItem>

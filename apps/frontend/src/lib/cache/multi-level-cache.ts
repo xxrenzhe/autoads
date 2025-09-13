@@ -148,7 +148,7 @@ export class MultiLevelCacheService {
       const results = await pipeline.exec();
       const keysToDelete = new Set<string>();
       
-      results?.forEach(([error, keys]: [any, any]: any) => {
+      results?.forEach(([error, keys]: [any, any]) => {
         if (!error && Array.isArray(keys)) {
           keys.forEach((key: any) => keysToDelete.add(key));
         }

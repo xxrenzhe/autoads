@@ -391,7 +391,7 @@ export default function TokenConfigManager() {
             <div className="space-y-1">
               <p className="font-medium">Please fix the following errors:</p>
               <ul className="list-disc list-inside space-y-1">
-                {validationErrors.map((error, index: any) => (
+                {validationErrors.map((error, index: number) => (
                   <li key={index} className="text-sm">
                     {error.field}: {error.message}
                   </li>
@@ -482,12 +482,12 @@ export default function TokenConfigManager() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Textarea
-                placeholder="Describe the reason for these changes..."
-                value={reason}
-                onChange={((e: any): any) => setReason(e.target.value)}
-                rows={3}
-              />
+                <Textarea
+                  placeholder="Describe the reason for these changes..."
+                  value={reason}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
+                  rows={3}
+                />
             </CardContent>
           </Card>
 
@@ -512,7 +512,7 @@ export default function TokenConfigManager() {
                     min="0"
                     step="0.1"
                     value={config.siterank.costPerDomain}
-                    onChange={((e: any): any) => updateFeatureConfig('siterank', 'costPerDomain', parseFloat(e.target.value) || 0)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFeatureConfig('siterank', 'costPerDomain', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('siterank.costPerDomain') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('siterank.costPerDomain') && (
@@ -528,7 +528,7 @@ export default function TokenConfigManager() {
                     max="1"
                     step="0.01"
                     value={config.siterank.batchMultiplier}
-                    onChange={((e: any): any) => updateFeatureConfig('siterank', 'batchMultiplier', parseFloat(e.target.value) || 0)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFeatureConfig('siterank', 'batchMultiplier', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('siterank.batchMultiplier') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('siterank.batchMultiplier') && (
@@ -541,7 +541,7 @@ export default function TokenConfigManager() {
                 <Input
                   id="siterank-desc"
                   value={config.siterank.description || ''}
-                  onChange={((e: any): any) => updateFeatureConfig('siterank', 'description', e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFeatureConfig('siterank', 'description', e.target.value)}
                   placeholder="Description of this feature's token usage"
                 />
               </div>
@@ -569,7 +569,7 @@ export default function TokenConfigManager() {
                     min="0"
                     step="0.1"
                     value={config.batchopen.costPerUrl}
-                    onChange={((e: any): any) => updateFeatureConfig('batchopen', 'costPerUrl', parseFloat(e.target.value) || 0)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFeatureConfig('batchopen', 'costPerUrl', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('batchopen.costPerUrl') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('batchopen.costPerUrl') && (
@@ -585,7 +585,7 @@ export default function TokenConfigManager() {
                     max="1"
                     step="0.01"
                     value={config.batchopen.batchMultiplier}
-                    onChange={((e: any): any) => updateFeatureConfig('batchopen', 'batchMultiplier', parseFloat(e.target.value) || 0)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFeatureConfig('batchopen', 'batchMultiplier', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('batchopen.batchMultiplier') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('batchopen.batchMultiplier') && (
@@ -598,7 +598,7 @@ export default function TokenConfigManager() {
                 <Input
                   id="batchopen-desc"
                   value={config.batchopen.description || ''}
-                  onChange={((e: any): any) => updateFeatureConfig('batchopen', 'description', e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFeatureConfig('batchopen', 'description', e.target.value)}
                   placeholder="Description of this feature's token usage"
                 />
               </div>
@@ -626,7 +626,7 @@ export default function TokenConfigManager() {
                     min="0"
                     step="0.1"
                     value={config.adscenter.costPerLinkChange}
-                    onChange={(e) => updateFeatureConfig('adscenter', 'costPerLinkChange', parseFloat(e.target.value) || 0)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFeatureConfig('adscenter', 'costPerLinkChange', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('adscenter.costPerLinkChange') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('adscenter.costPerLinkChange') && (
@@ -642,7 +642,7 @@ export default function TokenConfigManager() {
                     max="1"
                     step="0.01"
                     value={config.adscenter.batchMultiplier}
-                    onChange={(e) => updateFeatureConfig('adscenter', 'batchMultiplier', parseFloat(e.target.value) || 0)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFeatureConfig('adscenter', 'batchMultiplier', parseFloat(e.target.value) || 0)}
                     className={hasFieldError('adscenter.batchMultiplier') ? 'border-red-500' : ''}
                   />
                   {hasFieldError('adscenter.batchMultiplier') && (
@@ -655,7 +655,7 @@ export default function TokenConfigManager() {
                 <Input
                   id="adscenter-desc"
                   value={config.adscenter.description || ''}
-                  onChange={(e) => updateFeatureConfig('adscenter', 'description', e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFeatureConfig('adscenter', 'description', e.target.value)}
                   placeholder="Description of this feature's token usage"
                 />
               </div>

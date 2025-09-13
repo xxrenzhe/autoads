@@ -235,7 +235,7 @@ export class GoogleAdsMatchingEngine {
       const adMatches = matches.get(ad.id) || [];
 
       if (adMatches.length === 0) {
-        return null as any;
+        return null;
       }
 
       // Sort by confidence and return the best match
@@ -281,7 +281,7 @@ export class GoogleAdsMatchingEngine {
           await this.addUrlPair(pairData);
           imported++;
         } catch (error) {
-          errors.push(`Failed to import URL pair: ${error instanceof Error ? error.message : "Unknown error" as any}`);
+          errors.push(`Failed to import URL pair: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
       }
 
@@ -690,7 +690,7 @@ export class GoogleAdsMatchingEngine {
 
   private calculateFuzzyScore(str1: string, str2: string): number {
     // Simple Levenshtein distance-based fuzzy matching
-    const matrix = Array(str2.length + 1).fill(null).map((: any) => Array(str1.length + 1).fill(null));
+    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
 
     for (let i = 0; i <= str2.length; i++) {
       matrix[i][0] = i;

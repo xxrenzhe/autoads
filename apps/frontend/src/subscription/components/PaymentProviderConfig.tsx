@@ -227,8 +227,8 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
                   Configuration Issues
                 </h3>
                 <ul className="mt-2 text-sm text-red-700 dark:text-red-300 space-y-1">
-                  {providerStatus.validation.errors.map((error, index: any) => (
-                    <li key={index}>• {error}</li>
+                  {providerStatus.validation.errors.map((err, index: number) => (
+                    <li key={index}>• {err}</li>
                   ))}
                 </ul>
               </div>

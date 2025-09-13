@@ -65,20 +65,20 @@ export async function GET(request: NextRequest) {
     });
 
     const processedUsers = users.map((user: any) => {
-      const totalTokens = user.token_usage.reduce((sum: number, usage: any: any) => sum + usage.tokensConsumed, 0);
+      const totalTokens = user.token_usage.reduce((sum: number, usage: any) => sum + usage.tokensConsumed, 0);
       const operations = user.token_usage.length;
-      const batchOperations = user.token_usage.filter((usage: any: any) => usage.isBatch).length;
+      const batchOperations = user.token_usage.filter((usage: any) => usage.isBatch).length;
       
       // Calculate preferred features
       const featureCount = new Map<string, number>();
-      user.token_usage.forEach((usage: any: any) => {
+      user.token_usage.forEach((usage: any) => {
         featureCount.set(usage.feature, (featureCount.get(usage.feature) || 0) + 1);
       });
       
       const preferredFeatures = Array.from(featureCount.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
-        .map(([feature]: any) => feature);
+        .map(([feature]) => feature);
 
       return {
         userId: user.id,
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         preferredFeatures,
         activityPattern: totalTokens > 1000 ? 'heavy' : totalTokens > 100 ? 'moderate' : 'light',
         lastActivity: user.token_usage.length > 0 
-          ? user.token_usage.reduce((latest: Date, usage: any: any) => 
+          ? user.token_usage.reduce((latest: Date, usage: any) => 
               usage.createdAt > latest ? usage.createdAt : latest, 
               user.token_usage[0].createdAt
             ).toISOString()

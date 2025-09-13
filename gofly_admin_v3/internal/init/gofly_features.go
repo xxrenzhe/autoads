@@ -250,6 +250,7 @@ func registerAdminPanel() {
 				{"title": "系统设置", "path": "/admin/gofly-panel/system"},
 				{"title": "操作日志", "path": "/admin/gofly-panel/logs"},
 				{"title": "数据备份", "path": "/admin/gofly-panel/backup"},
+				{"title": "系统管理（新）", "path": "/admin/system-manager"},
 			},
 		},
 	})

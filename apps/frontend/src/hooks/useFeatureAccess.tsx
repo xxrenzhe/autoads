@@ -156,7 +156,7 @@ export function FeatureGuard({
             {error || 'This feature requires a higher subscription plan.'}
           </p>
           <button
-            onClick={((: any): any) => window.location.href = '/subscription'}
+            onClick={() => { window.location.href = '/subscription' }}
             className="mt-2 px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
           >
             Upgrade Plan

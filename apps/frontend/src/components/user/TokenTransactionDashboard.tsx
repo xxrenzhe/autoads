@@ -20,9 +20,7 @@ import {
   TableRow,
   Paper,
   LinearProgress,
-  Badge,
   Alert,
-  Button,
   Menu,
   MenuItem,
   Select,
@@ -39,7 +37,6 @@ import {
   Info,
   ArrowUpward,
   ArrowDownward,
-  CalendarToday,
   AccountBalanceWallet,
   LocalActivity,
   ShoppingBag,
@@ -179,7 +176,7 @@ const TokenTransactionDashboard: React.FC = () => {
   const exportData = async () => {
     try {
       const params = new URLSearchParams();
-      Object.entries(filter).forEach(([key, value]: any) => {
+      Object.entries(filter as Record<string, string>).forEach(([key, value]) => {
         if (value) params.append(key, value);
       });
 
@@ -210,7 +207,7 @@ const TokenTransactionDashboard: React.FC = () => {
     const headers = Object.keys(data[0]);
     const csv = [
       headers.join(','),
-      ...data.map((row => headers.map(header: any) => JSON.stringify(row[header])).join(','))
+      ...data.map(row => headers.map(header => JSON.stringify((row as any)[header])).join(','))
     ].join('\n');
     
     return csv;
@@ -250,7 +247,7 @@ const TokenTransactionDashboard: React.FC = () => {
             </IconButton>
           </Tooltip>
           <Tooltip title="筛选">
-            <IconButton onClick={((e: any): any) => setAnchorEl(e.currentTarget)}>
+            <IconButton onClick={(e) => setAnchorEl(e.currentTarget as HTMLElement)}>
               <FilterList />
             </IconButton>
           </Tooltip>
@@ -346,7 +343,7 @@ const TokenTransactionDashboard: React.FC = () => {
             <Select
               value={filter.type}
               label="Token类型"
-              onChange={((e: any): any) => handleFilterChange('type', e.target.value)}
+              onChange={(e) => handleFilterChange('type', (e.target as HTMLInputElement).value)}
             >
               <MenuItem value="">全部</MenuItem>
               <MenuItem value="SUBSCRIPTION">订阅Token</MenuItem>
@@ -505,7 +502,7 @@ const TokenTransactionDashboard: React.FC = () => {
         <Pagination
           count={Math.ceil(100 / 20)} // Replace with actual total pages
           page={page}
-          onChange={((e, newPage: any): any) => setPage(newPage)}
+          onChange={(_e, newPage: number) => setPage(newPage)}
           color="primary"
         />
       </Box>

@@ -36,7 +36,7 @@ export default function LanguageSwitcher() {
         <Button
           variant={locale === "en" ? "default" : "ghost"}
           size="sm"
-          onClick={((: any): any) => handleLanguageChange("en")}
+          onClick={() => handleLanguageChange("en")}
           className="rounded-r-none text-xs px-3 py-1"
         >
           EN
@@ -44,7 +44,7 @@ export default function LanguageSwitcher() {
         <Button
           variant={locale === "zh" ? "default" : "ghost"}
           size="sm"
-          onClick={((: any): any) => handleLanguageChange("zh")}
+          onClick={() => handleLanguageChange("zh")}
           className="rounded-l-none text-xs px-3 py-1"
         >
           中文

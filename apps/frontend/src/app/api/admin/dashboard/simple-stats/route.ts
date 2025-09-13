@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     // 计算总收入
-    const monthlyRevenue = subscriptions.reduce((sum: number, sub: any: any) => {
+    const monthlyRevenue = subscriptions.reduce((sum: number, sub: any) => {
       return sum + (sub.plan?.price || 0);
     }, 0);
 
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         siterank: stats.featureStats.siterank.tokens,
         batchopen: stats.featureStats.batchopen.tokens,
         adscenter: stats.featureStats.adscenter.tokens,
-        total: Object.values(stats.featureStats).reduce((sum: number, f: any: any) => sum + f.tokens, 0)
+        total: Object.values(stats.featureStats).reduce((sum: number, f: any) => sum + (f as any).tokens, 0)
       },
 
       // API性能

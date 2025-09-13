@@ -111,8 +111,8 @@ export default function ApiDocsPage() {
                 </label>
                 <select
                   value={selectedVersion.version}
-                  onChange={((e: any): any) => {
-                    const version = API_VERSIONS.find((v: any) => v.version === e.target.value);
+                  onChange={(e) => {
+                    const version = API_VERSIONS.find((v) => v.version === (e.target as HTMLSelectElement).value);
                     if (version) setSelectedVersion(version);
                   }}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -133,7 +133,7 @@ export default function ApiDocsPage() {
                 <input
                   type="password"
                   value={authToken}
-                  onChange={((e: any): any) => handleTokenChange(e.target.value)}
+                  onChange={(e) => handleTokenChange((e.target as HTMLInputElement).value)}
                   placeholder="输入您的API Token"
                   className="block w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />

@@ -143,7 +143,7 @@ export const RestrictionCreate = () => {
               control={
                 <Checkbox
                   checked={customDuration}
-                  onChange={((e: any): any) => setCustomDuration(e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>, checked: boolean) => setCustomDuration(checked)}
                 />
               }
               label="自定义过期时间"
@@ -162,7 +162,7 @@ export const RestrictionCreate = () => {
                     control={
                       <Checkbox
                         checked={selectedPreset === preset.value}
-                        onChange={((: any): any) => setSelectedPreset(preset.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>, _checked: boolean) => setSelectedPreset(preset.value)}
                       />
                     }
                     label={preset.label}

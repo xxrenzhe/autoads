@@ -9,20 +9,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  Calendar,
+  DollarSign,
   BarChart3,
   PieChart,
   AlertTriangle,
-  CheckCircle,
   RefreshCw,
   Download
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
   XAxis,
@@ -301,7 +296,7 @@ export default function TokenUsageAnalytics() {
           <label className="text-sm font-medium">Time Range:</label>
           <select
             value={dateRange}
-            onChange={((e: any): any) => setDateRange(e.target.value)}
+            onChange={(e) => setDateRange((e.target as HTMLSelectElement).value)}
             className="px-3 py-1 border rounded-md text-sm"
           >
             <option value="7">Last 7 days</option>
@@ -315,7 +310,7 @@ export default function TokenUsageAnalytics() {
           <label className="text-sm font-medium">Feature:</label>
           <select
             value={selectedFeature}
-            onChange={((e: any): any) => setSelectedFeature(e.target.value)}
+            onChange={(e) => setSelectedFeature((e.target as HTMLSelectElement).value)}
             className="px-3 py-1 border rounded-md text-sm"
           >
             <option value="all">All features</option>

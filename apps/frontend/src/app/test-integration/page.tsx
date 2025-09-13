@@ -356,7 +356,7 @@ export default function TestIntegrationPage() {
         </Button>
       </div>
 
-      <Tabs value={currentTab} onValueChange={((value: any): any) => setCurrentTab(value as 'tests' | 'api')}>
+      <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as 'tests' | 'api')}>
         <TabsList>
           <TabsTrigger value="tests">测试结果</TabsTrigger>
           <TabsTrigger value="api">API状态</TabsTrigger>

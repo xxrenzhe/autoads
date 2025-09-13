@@ -76,7 +76,7 @@ export class UserQueryService {
       });
 
       // 创建映射以便快速查找
-      const userMap = new Map(users.map((user: any: any) => [user.id, user]));
+      const userMap = new Map(users.map((user: any) => [user.id, user]));
       return userMap;
     } catch (error) {
       logger.error('批量获取用户信息失败', error as Error);
@@ -134,7 +134,7 @@ export class UserQueryService {
       };
 
       // 处理交易记录
-      transactions.forEach((tx: any: any) => {
+      transactions.forEach((tx: any) => {
         if (tx.amount > 0) {
           tokenStats.totalEarned += tx.amount;
           tokenStats.byType[tx.type] = (tokenStats.byType[tx.type] || 0) + tx.amount;
@@ -145,7 +145,7 @@ export class UserQueryService {
 
       // 处理使用日志
       const dailyUsageMap = new Map<string, number>();
-      usageLogs.forEach((log: any: any) => {
+      usageLogs.forEach((log: any) => {
         const dateStr = log.date.toISOString().split('T')[0];
         dailyUsageMap.set(dateStr, (dailyUsageMap.get(dateStr) || 0) + log.usage);
         tokenStats.byFeature[log.feature] = (tokenStats.byFeature[log.feature] || 0) + log.usage;
@@ -154,7 +154,7 @@ export class UserQueryService {
 
       // 转换每日使用量为数组
       tokenStats.dailyUsage = Array.from(dailyUsageMap.entries())
-        .map(([date, usage]: any) => ({ date, usage }))
+        .map(([date, usage]) => ({ date, usage }))
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-30); // 只返回最近30天
 

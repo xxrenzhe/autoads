@@ -177,6 +177,17 @@ export function withBatchOpenTokenTracking(
       })
     }
 
+    // 扣减失败时，附加统一错误码响应头，供前端引导充值/续订
+    if (tokenResult && !tokenResult.success && tokenResult.errorCode) {
+      const headers = new Headers(response.headers)
+      headers.set('X-Error-Code', tokenResult.errorCode)
+      return new NextResponse(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers
+      })
+    }
+
     return response
   }
 }

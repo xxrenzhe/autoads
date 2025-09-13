@@ -1,7 +1,9 @@
 package siterank
 
 import (
-	"gorm.io/gorm"
+    "gorm.io/gorm"
+    "gofly-admin-v3/internal/token"
+    "gofly-admin-v3/utils/gf"
 )
 
 // RegisterRoutes 注册SiteRank路由
@@ -36,7 +38,8 @@ func RegisterRoutes(db *gorm.DB) {
 
 // InitSiteRankService 初始化SiteRank服务（供其他模块调用）
 func InitSiteRankService(db *gorm.DB) *Service {
-	// 使用模拟Token服务避免循环依赖
-	config := DefaultSimilarWebConfig()
-	return NewServiceWithMockToken(db, config)
+    // 使用真实 Token 适配器
+    config := DefaultSimilarWebConfig()
+    tk := token.NewAdapterWithService(token.NewService(gf.DB()))
+    return NewService(db, tk, config)
 }

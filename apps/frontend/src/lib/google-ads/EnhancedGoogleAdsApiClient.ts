@@ -1082,7 +1082,7 @@ export class EnhancedGoogleAdsApiClient {
         const response = await this.executeMutation<any>(serviceName, batch);
         
         if (response.results) {
-          response.results.forEach((result: any, index: number: any) => {
+          response.results.forEach((result: any, index: number) => {
             successful.push({
               operation: batch[index],
               result: result as T,

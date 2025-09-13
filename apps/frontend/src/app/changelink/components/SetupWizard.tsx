@@ -933,7 +933,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
 
         <div className="text-center pt-6">
           <Button
-            onClick={(async (): any) => {
+            onClick={async () => {
               const success = await initializeDatabase();
               if (success) {
                 handleNext();

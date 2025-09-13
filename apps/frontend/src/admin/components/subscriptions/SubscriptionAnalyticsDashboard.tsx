@@ -204,7 +204,7 @@ export default function SubscriptionAnalyticsDashboard() {
         <div className="flex items-center gap-2">
           <select
             value={dateRange}
-            onChange={((e: any): any) => setDateRange(e.target.value)}
+            onChange={(e: any) => setDateRange(e.target.value)}
             className="px-3 py-1 border rounded-md text-sm"
           >
             <option value="7">Last 7 days</option>

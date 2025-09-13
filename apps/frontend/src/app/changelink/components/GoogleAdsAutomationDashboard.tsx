@@ -256,7 +256,7 @@ export default function GoogleAdsAutomationDashboard({
                 <Button 
                   variant="outline" 
                   className="h-auto p-4 flex flex-col items-start space-y-2"
-                  onClick={((: any): any) => handleExportData(systemOverview)}
+                  onClick={() => handleExportData(systemOverview)}
                 >
                   <Database className="h-4 w-4" />
                   <span className="font-medium">导出数据</span>

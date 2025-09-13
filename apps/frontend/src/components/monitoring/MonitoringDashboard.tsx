@@ -376,7 +376,7 @@ export default function MonitoringDashboard() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={((: any): any) => acknowledgeAlert(alert.id)}
+                          onClick={() => acknowledgeAlert(alert.id)}
                         >
                           确认
                         </Button>

@@ -57,25 +57,20 @@ export function withChangeLinkTokenTracking(
         }
       }
 
-      // 提取操作类型
-      let operationType = 'link_replace'
+      // 提取操作类型（规则式：extract_link / update_ad）
+      let operationType: 'extract_link' | 'update_ad' = 'update_ad'
       if (options.extractOperationType) {
         operationType = await options.extractOperationType(request, body)
       } else if (body?.type) {
-        // 根据操作类型确定Token消耗类型
-        switch (body.type) {
-          case 'google-ads-account':
-          case 'affiliate-link':
-          case 'adspower-environment':
-          case 'association':
-          case 'configuration':
-            operationType = 'link_replace'
-            break
-          case 'test-connection':
-            operationType = 'link_replace' // 测试连接也消耗Token
-            break
-          default:
-            operationType = 'link_replace'
+        // 尝试从URL或body推断：只分两类 extract_link / update_ad
+        try {
+          const url = new URL(request.url)
+          const action = (url.searchParams.get('action') || body.action || '').toString().toLowerCase()
+          const type = (body.type || '').toString().toLowerCase()
+          const looksLikeExtract = action.includes('extract') || type.includes('extract') || Array.isArray(body?.data?.originalLinks)
+          operationType = looksLikeExtract ? 'extract_link' : 'update_ad'
+        } catch {
+          operationType = 'update_ad'
         }
       }
 
@@ -145,7 +140,7 @@ export function withChangeLinkTokenTracking(
 
         tokenResult = await TokenService.consumeBatchTokens(
           userId,
-          'adscenter',
+          'changelink',
           operationType,
           operations
         )
@@ -153,7 +148,7 @@ export function withChangeLinkTokenTracking(
         // 单个操作
         tokenResult = await TokenService.checkAndConsumeTokens(
           userId,
-          'adscenter',
+          'changelink',
           operationType,
           {
             metadata: {
@@ -212,6 +207,17 @@ export function withChangeLinkTokenTracking(
       })
     }
 
+    // 扣减失败时，附加统一错误码便于前端引导购买/续订
+    if (tokenResult && !tokenResult.success && tokenResult.errorCode) {
+      const headers = new Headers(response.headers)
+      headers.set('X-Error-Code', tokenResult.errorCode)
+      return new NextResponse(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers
+      })
+    }
+
     return response
   }
 }
@@ -238,10 +244,16 @@ export function extractChangeLinkCount(request: NextRequest, body: any): number 
  * 从请求体中提取操作类型
  */
 export function extractChangeLinkOperationType(request: NextRequest, body: any): string {
-  if (!body?.type) return 'link_replace'
-
-  // 所有ChangeLink操作都归类为link_replace
-  return 'link_replace'
+  if (!body) return 'update_ad'
+  try {
+    const url = new URL(request.url)
+    const action = (url.searchParams.get('action') || body.action || '').toString().toLowerCase()
+    const type = (body.type || '').toString().toLowerCase()
+    if (action.includes('extract') || type.includes('extract')) {
+      return 'extract_link'
+    }
+  } catch {}
+  return 'update_ad'
 }
 
 /**

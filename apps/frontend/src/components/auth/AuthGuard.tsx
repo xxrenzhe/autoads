@@ -72,7 +72,7 @@ export function AuthGuard({
                 )}
               </div>
               <button
-                onClick={((: any): any) => setShowLoginModal(true)}
+                onClick={() => setShowLoginModal(true)}
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
               >
                 立即登录

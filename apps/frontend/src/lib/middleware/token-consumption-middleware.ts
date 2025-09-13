@@ -91,10 +91,11 @@ export function withTokenConsumption(
           await options.onError(tokenResult.error)
         }
 
-        return NextResponse.json(
+        const res = NextResponse.json(
           {
             success: false,
             error: tokenResult.error || 'Insufficient tokens',
+            code: tokenResult.errorCode || 'INSUFFICIENT_TOKENS',
             tokenInfo: {
               required: batchSize,
               available: 0 // 这里可以优化为实际余额
@@ -102,6 +103,8 @@ export function withTokenConsumption(
           },
           { status: 402 } // Payment Required
         )
+        res.headers.set('X-Error-Code', tokenResult.errorCode || 'INSUFFICIENT_TOKENS')
+        return res
       }
 
       // 调用原始处理器

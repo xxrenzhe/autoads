@@ -470,14 +470,14 @@ export default function AdsPowerConfiguration() {
                             <Input
                               type="number"
                               value={environment.browserSettings?.openTabs || 1}
-                              onChange={((e: any): any) => 
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                 updateEnvironment(environment.id, {
-                                  browserSettings: { 
+                                  browserSettings: {
                                     headless: environment.browserSettings?.headless || false,
                                     openTabs: parseInt(e.target.value),
                                     timeout: environment.browserSettings?.timeout || 30000,
-                                    autoRecover: environment.browserSettings?.autoRecover || false
-                                  }
+                                    autoRecover: environment.browserSettings?.autoRecover || false,
+                                  },
                                 })
                               }
                             />
@@ -488,14 +488,14 @@ export default function AdsPowerConfiguration() {
                             <Input
                               type="number"
                               value={(environment.browserSettings?.timeout || 30) / 1000}
-                              onChange={((e: any): any) => 
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                 updateEnvironment(environment.id, {
-                                  browserSettings: { 
+                                  browserSettings: {
                                     headless: environment.browserSettings?.headless || false,
                                     openTabs: environment.browserSettings?.openTabs || 1,
                                     timeout: parseInt(e.target.value) * 1000,
-                                    autoRecover: environment.browserSettings?.autoRecover || false
-                                  }
+                                    autoRecover: environment.browserSettings?.autoRecover || false,
+                                  },
                                 })
                               }
                             />
@@ -505,7 +505,7 @@ export default function AdsPowerConfiguration() {
                             <Label>自动恢复</Label>
                             <Switch
                               checked={environment.browserSettings?.autoRecover || false}
-                              onCheckedChange={((checked: boolean: any): any) => 
+                              onCheckedChange={(checked: boolean) =>
                                 updateEnvironment(environment.id, {
                                   browserSettings: { 
                                     headless: environment.browserSettings?.headless || false,
@@ -526,7 +526,7 @@ export default function AdsPowerConfiguration() {
                             <Label>启用代理</Label>
                             <Switch
                               checked={environment.proxyConfig?.enabled || false}
-                              onCheckedChange={((checked: boolean: any): any) => 
+                              onCheckedChange={(checked: boolean) =>
                                 updateEnvironment(environment.id, {
                                   proxyConfig: { 
                                     enabled: checked,
@@ -546,11 +546,11 @@ export default function AdsPowerConfiguration() {
                                 <Label>代理主机</Label>
                                 <Input
                                   value={environment.proxyConfig?.host || ''}
-                                  onChange={(e) => 
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                     updateEnvironment(environment.id, {
                                       proxyConfig: { 
                                         enabled: environment.proxyConfig?.enabled || false,
-                                        host: (e.target as any).value,
+                                        host: e.target.value,
                                         port: environment.proxyConfig?.port || 8080,
                                         username: environment.proxyConfig?.username || '',
                                         password: environment.proxyConfig?.password || ''
@@ -566,12 +566,12 @@ export default function AdsPowerConfiguration() {
                                 <Input
                                   type="number"
                                   value={environment.proxyConfig?.port || ''}
-                                  onChange={(e) => 
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                     updateEnvironment(environment.id, {
                                       proxyConfig: { 
                                         enabled: environment.proxyConfig?.enabled || false,
                                         host: environment.proxyConfig?.host || '',
-                                        port: parseInt((e.target as any).value),
+                                        port: parseInt(e.target.value),
                                         username: environment.proxyConfig?.username || '',
                                         password: environment.proxyConfig?.password || ''
                                       }
@@ -584,13 +584,13 @@ export default function AdsPowerConfiguration() {
                                 <Label>用户名</Label>
                                 <Input
                                   value={environment.proxyConfig?.username || ''}
-                                  onChange={(e) => 
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                     updateEnvironment(environment.id, {
                                       proxyConfig: { 
                                         enabled: environment.proxyConfig?.enabled || false,
                                         host: environment.proxyConfig?.host || '',
                                         port: environment.proxyConfig?.port || 8080,
-                                        username: (e.target as any).value,
+                                        username: e.target.value,
                                         password: environment.proxyConfig?.password || ''
                                       }
                                     })
@@ -603,14 +603,14 @@ export default function AdsPowerConfiguration() {
                                 <Input
                                   type="password"
                                   value={environment.proxyConfig?.password || ''}
-                                  onChange={(e) => 
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                     updateEnvironment(environment.id, {
                                       proxyConfig: { 
                                         enabled: environment.proxyConfig?.enabled || false,
                                         host: environment.proxyConfig?.host || '',
                                         port: environment.proxyConfig?.port || 8080,
                                         username: environment.proxyConfig?.username || '',
-                                        password: (e.target as any).value
+                                        password: e.target.value
                                       }
                                     })
                                   }

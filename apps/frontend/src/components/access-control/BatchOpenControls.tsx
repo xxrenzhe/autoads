@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Play, Pause, Settings, Clock, Bot, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Play, Pause, Clock, Bot, Eye, EyeOff, AlertCircle } from 'lucide-react'
 
 interface BatchOpenControlsProps {
   version: 'basic' | 'silent' | 'automated'
@@ -131,7 +131,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                 <Textarea
                   placeholder="https://example.com/page1&#10;https://example.com/page2&#10;https://example.com/page3"
                   value={urls}
-                  onChange={((e: any): any) => setUrls(e.target.value)}
+                  onChange={(e) => setUrls((e.target as HTMLTextAreaElement).value)}
                   rows={10}
                   className="font-mono text-sm"
                 />
@@ -290,7 +290,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                       id="schedule"
                       placeholder="0 9 * * *"
                       value={schedule}
-                      onChange={((e: any): any) => setSchedule(e.target.value)}
+                      onChange={(e) => setSchedule((e.target as HTMLInputElement).value)}
                     />
                     <p className="text-sm text-gray-500">
                       例如：0 9 * * * (每天9点执行)
@@ -319,7 +319,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                       id="script"
                       placeholder="// 在页面加载后执行的脚本&#10;console.log('Page loaded');&#10;document.querySelector('.button').click();"
                       value={script}
-                      onChange={((e: any): any) => setScript(e.target.value)}
+                      onChange={(e) => setScript((e.target as HTMLTextAreaElement).value)}
                       rows={8}
                       className="font-mono text-sm"
                     />

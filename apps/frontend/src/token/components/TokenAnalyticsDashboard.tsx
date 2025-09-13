@@ -226,7 +226,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
         <div className="flex items-center space-x-3">
           <select
             value={timeRange}
-            onChange={((e: any): any) => setTimeRange(e.target.value)}
+            onChange={(e) => setTimeRange((e.target as HTMLSelectElement).value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="24h">Last 24 Hours</option>

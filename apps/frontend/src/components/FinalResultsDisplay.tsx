@@ -141,7 +141,7 @@ const FinalResultsDisplay = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {finalUrls.map((url, index: any) => (
+            {finalUrls.map((url, index: number) => (
               <div
                 key={url}
                 className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
@@ -156,14 +156,14 @@ const FinalResultsDisplay = ({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={((: any): any) => navigator.clipboard.writeText(url)}
+                    onClick={() => navigator.clipboard.writeText(url)}
                   >
                     <Copy className="w-3 h-3" />
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={((: any): any) => window.open(url, "_blank")}
+                    onClick={() => window.open(url, "_blank")}
                   >
                     <ExternalLink className="w-3 h-3" />
                   </Button>
@@ -186,7 +186,7 @@ const FinalResultsDisplay = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {results.map((result, index: any) => (
+            {results.map((result, index: number) => (
               <div key={result.originalUrl} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-sm truncate flex-1">

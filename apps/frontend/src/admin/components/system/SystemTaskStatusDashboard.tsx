@@ -336,7 +336,7 @@ export const SystemTaskStatusDashboard: React.FC = () => {
                         <TableCell>{start.metadata?.tasksCount || 0}</TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {start.metadata?.enabledTasks?.map((taskId: string: any) => (
+                            {start.metadata?.enabledTasks?.map((taskId: string) => (
                               <Chip 
                                 key={taskId}
                                 label={taskId}

@@ -366,17 +366,17 @@ export function UserList({
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredAndSortedUsers.map((user: User: any) => (
+                  {filteredAndSortedUsers.map((user: User) => (
                     <tr 
                       key={user.id} 
                       className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                      onClick={((: any): any) => onUserSelect?.(user)}
+                      onClick={() => onUserSelect?.(user)}
                     >
                       <td className="px-6 py-4">
                         <input
                           type="checkbox"
                           checked={selectedUsers.has(user.id)}
-                          onChange={((e: any): any) => {
+                          onChange={(e) => {
                             e.stopPropagation()
                             handleSelectUser(user.id)
                           }}

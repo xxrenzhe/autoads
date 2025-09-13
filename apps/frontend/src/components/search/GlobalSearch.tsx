@@ -216,7 +216,7 @@ export default function GlobalSearch({ trigger }: GlobalSearchProps) {
   const router = useRouter()
 
   // Filter items based on user permissions
-  const filteredItems = searchableItems.filter((item: any) => {
+  const filteredItems = searchableItems.filter((item) => {
     if (item.requiresAuth && !session) return false
     if (item.requiresRole && (!session?.user?.role || !item.requiresRole.includes(session.user.role))) return false
     return true
@@ -224,14 +224,14 @@ export default function GlobalSearch({ trigger }: GlobalSearchProps) {
 
   // Filter items based on search query
   const searchResults = query.length > 0 
-    ? filteredItems.filter((item: any) =>
+    ? filteredItems.filter((item) =>
         item.title.toLowerCase().includes(query.toLowerCase()) ||
         item.description?.toLowerCase().includes(query.toLowerCase())
       )
     : filteredItems
 
   // Group results by category
-  const groupedResults = searchResults.reduce((acc, item: any) => {
+  const groupedResults = searchResults.reduce((acc, item) => {
     if (!acc[item.category]) {
       acc[item.category] = []
     }
@@ -271,7 +271,7 @@ export default function GlobalSearch({ trigger }: GlobalSearchProps) {
   return (
     <>
       {trigger ? (
-        <div onClick={((: any): any) => setOpen(true)}>
+        <div onClick={() => setOpen(true)}>
           {trigger}
         </div>
       ) : (
@@ -280,7 +280,7 @@ export default function GlobalSearch({ trigger }: GlobalSearchProps) {
           className={cn(
             "relative h-8 w-full justify-start rounded-[0.5rem] bg-background text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
           )}
-          onClick={((: any): any) => setOpen(true)}
+          onClick={() => setOpen(true)}
         >
           <Search className="h-4 w-4 mr-2" />
           <span className="hidden lg:inline-flex">Search...</span>
@@ -300,14 +300,14 @@ export default function GlobalSearch({ trigger }: GlobalSearchProps) {
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           
-          {categoryOrder.map((category: any) => {
+          {categoryOrder.map((category: string) => {
             const items = groupedResults[category]
             if (!items || items.length === 0) return null
 
             return (
               <React.Fragment key={category}>
                 <CommandGroup heading={categoryLabels[category as keyof typeof categoryLabels]}>
-                  {items.map((item: any) => (
+                  {items.map((item) => (
                     <CommandItem
                       key={item.id}
                       value={`${item.title} ${item.description}`}

@@ -135,8 +135,8 @@ async function handleGET(request: NextRequest, { validatedQuery, user }: any) {
 
   // Get batch operation summaries
   const batchOperations = usageRecords
-    .filter((record: any: any) => record.isBatch && record.batchId)
-    .reduce((acc: Record<string, any>, record: any: any) => {
+    .filter((record: any) => record.isBatch && record.batchId)
+    .reduce((acc: Record<string, any>, record: any) => {
       const batchId = record.batchId!
       if (!acc[batchId]) {
         acc[batchId] = {

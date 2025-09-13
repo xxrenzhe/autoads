@@ -230,7 +230,7 @@ export class RedisCacheBackend extends CacheBackend {
   async keys(): Promise<string[]> {
     try {
       const keys = await this.redis.keys(`${this.prefix}*`);
-      return keys.map((key: string: any) => key.replace(this.prefix, ''));
+      return keys.map((key: string) => key.replace(this.prefix, ''));
     } catch (error) {
       logger.error('Redis keys error:', new EnhancedError('Redis keys error:', { error: error instanceof Error ? error.message : String(error)  }));
       return [];

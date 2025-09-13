@@ -252,7 +252,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
               </Button>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={((: any): any) => setEditingVar(null)}>
+                  <Button onClick={() => setEditingVar(null)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Variable
                   </Button>
@@ -276,7 +276,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                       <Input
                         id="key"
                         value={formData.key}
-                        onChange={((e: any): any) => setFormData({ ...formData, key: e.target.value.toUpperCase() })}
+                        onChange={(e) => setFormData({ ...formData, key: e.target.value.toUpperCase() })}
                         className="col-span-3"
                         disabled={!!editingVar}
                         placeholder="e.g., API_URL"
@@ -290,7 +290,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                         id="value"
                         type={formData.isSecret ? 'password' : 'text'}
                         value={formData.value}
-                        onChange={((e: any): any) => setFormData({ ...formData, value: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, value: e.target.value })}
                         className="col-span-3"
                         placeholder="Enter value"
                       />
@@ -303,7 +303,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                         <Switch
                           id="isSecret"
                           checked={formData.isSecret}
-                          onCheckedChange={((checked: boolean: any): any) => setFormData({ ...formData, isSecret: checked })}
+                          onCheckedChange={(checked: boolean) => setFormData({ ...formData, isSecret: checked })}
                         />
                         <Label className="text-sm text-muted-foreground">
                           Encrypt this value
@@ -319,7 +319,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                           <Switch
                             id="isHotReload"
                             checked={formData.isHotReload}
-                            onCheckedChange={((checked: boolean: any): any) => setFormData({ ...formData, isHotReload: checked })}
+                            onCheckedChange={(checked: boolean) => setFormData({ ...formData, isHotReload: checked })}
                           />
                           <Label className="text-sm text-muted-foreground">
                             Apply changes without restart
@@ -329,7 +329,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                     )}
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={((: any): any) => setDialogOpen(false)}>
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
                       Cancel
                     </Button>
                     <Button onClick={handleSave}>
@@ -355,7 +355,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {envVars.map((envVar: any) => (
+                {envVars.map((envVar) => (
                   <TableRow key={envVar.id}>
                     <TableCell className="font-medium">{envVar.key}</TableCell>
                     <TableCell>
@@ -366,11 +366,11 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                             : '••••••••'}
                         </code>
                         {envVar.isSecret && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={((: any): any) => toggleSecretVisibility(envVar.key)}
-                          >
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleSecretVisibility(envVar.key)}
+                        >
                             {showSecrets[envVar.key] ? (
                               <EyeOff className="h-4 w-4" />
                             ) : (
@@ -405,14 +405,14 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={((: any): any) => handleEdit(envVar)}
+                          onClick={() => handleEdit(envVar)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={((: any): any) => handleDelete(envVar.id, envVar.key)}
+                          onClick={() => handleDelete(envVar.id, envVar.key)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

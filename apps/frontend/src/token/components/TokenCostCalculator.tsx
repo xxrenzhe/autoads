@@ -5,8 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { 
   Calculator,
-  Coins,
-  TrendingUp,
   BarChart3,
   DollarSign,
   Zap
@@ -39,7 +37,7 @@ export function TokenCostCalculator({ className }: TokenCostCalculatorProps) {
 
   useEffect(() => {
     if (selectedFeature && tokenAmount && tokenConfigs) {
-      const config = tokenConfigs.find((c: any: any) => c.id === selectedFeature)
+      const config = tokenConfigs.find((c: any) => c.id === selectedFeature)
       if (config) {
         const totalCost = tokenAmount * config.costPerToken
         const isWithinLimits = tokenAmount >= config.minimumTokens && tokenAmount <= config.maximumTokens
@@ -101,11 +99,11 @@ export function TokenCostCalculator({ className }: TokenCostCalculatorProps) {
               </label>
               <select
                 value={selectedFeature}
-                onChange={((e: any): any) => setSelectedFeature(e.target.value)}
+                onChange={(e) => setSelectedFeature((e.target as HTMLSelectElement).value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Choose a feature...</option>
-                {tokenConfigs?.filter((config: any: any) => config.isActive).map((config: any: any) => (
+                {tokenConfigs?.filter((config: any) => config.isActive).map((config: any) => (
                   <option key={config.id} value={config.id}>
                     {config.feature} (${config.costPerToken.toFixed(4)}/token)
                   </option>
@@ -121,7 +119,7 @@ export function TokenCostCalculator({ className }: TokenCostCalculatorProps) {
                 type="number"
                 min="1"
                 value={tokenAmount}
-                onChange={((e: any): any) => setTokenAmount(parseInt(e.target.value) || 0)}
+                onChange={(e) => setTokenAmount(parseInt((e.target as HTMLInputElement).value) || 0)}
                 placeholder="Enter token amount"
               />
             </div>
@@ -293,7 +291,7 @@ export function TokenCostCalculator({ className }: TokenCostCalculatorProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {tokenConfigs.map((config: any: any) => (
+                  {tokenConfigs.map((config: any) => (
                     <tr key={config.id} className="border-b">
                       <td className="py-2 font-medium">{config.feature}</td>
                       <td className="text-center py-2">{formatCurrency(config.costPerToken)}</td>

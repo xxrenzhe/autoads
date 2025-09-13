@@ -374,9 +374,9 @@ export const TokenRulesList: React.FC = () => {
                           size="small"
                           type="number"
                           value={editValues[rule.id] || rule.cost}
-                          onChange={((e: any): any) => setEditValues({
+                          onChange={(e) => setEditValues({
                             ...editValues,
-                            [rule.id]: parseInt(e.target.value) || 0
+                            [rule.id]: parseInt((e.target as HTMLInputElement).value) || 0
                           })}
                           inputProps={{ min: 0, max: 100 }}
                           sx={{ width: 80 }}
@@ -395,7 +395,7 @@ export const TokenRulesList: React.FC = () => {
                         control={
                           <Switch
                             checked={rule.isActive}
-                            onChange={((: any): any) => handleToggleActive(rule.id, rule.isActive)}
+                            onChange={() => handleToggleActive(rule.id, rule.isActive)}
                             size="small"
                           />
                         }
@@ -438,7 +438,7 @@ export const TokenRulesList: React.FC = () => {
                               <IconButton
                                 size="small"
                                 color="primary"
-                                onClick={((: any): any) => handleEditSave(rule.id)}
+                                onClick={() => handleEditSave(rule.id)}
                               >
                                 <Save />
                               </IconButton>
@@ -457,7 +457,7 @@ export const TokenRulesList: React.FC = () => {
                             <Tooltip title="编辑规则">
                               <IconButton
                                 size="small"
-                                onClick={((: any): any) => handleEditRule(rule)}
+                                onClick={() => handleEditRule(rule)}
                               >
                                 <Edit />
                               </IconButton>
@@ -465,7 +465,7 @@ export const TokenRulesList: React.FC = () => {
                             <Tooltip title="查看历史">
                               <IconButton
                                 size="small"
-                                onClick={((: any): any) => handleShowHistory(rule.id)}
+                                onClick={() => handleShowHistory(rule.id)}
                               >
                                 <History />
                               </IconButton>
@@ -518,7 +518,7 @@ export const TokenRulesList: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            onClick={((: any): any) => setConfirmDialog({ open: false, ruleId: null, newCost: 0, oldCost: 0 })}
+            onClick={() => setConfirmDialog({ open: false, ruleId: null, newCost: 0, oldCost: 0 })}
           >
             取消
           </Button>
@@ -587,7 +587,7 @@ export const TokenRulesList: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={((: any): any) => setHistoryDialog({ open: false, ruleId: null })}>
+          <Button onClick={() => setHistoryDialog({ open: false, ruleId: null })}>
             关闭
           </Button>
         </DialogActions>

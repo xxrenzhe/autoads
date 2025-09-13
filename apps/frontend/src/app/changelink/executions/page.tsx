@@ -315,7 +315,7 @@ export default function ExecutionsPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={((: any): any) => openDetailDialog(execution.id)}
+              onClick={() => openDetailDialog(execution.id)}
             >
               <Eye className="h-4 w-4 mr-1" />
               详情
@@ -324,7 +324,7 @@ export default function ExecutionsPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={((: any): any) => handleCancelExecution(execution.id)}
+                onClick={() => handleCancelExecution(execution.id)}
               >
                 <Square className="h-4 w-4 mr-1" />
                 取消

@@ -175,7 +175,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             <Input
               placeholder={"搜索域名..."}
               value={searchTerm}
-              onChange={((e: any): any) => onSearchChange(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => onSearchChange(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -196,11 +196,11 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
           <table className="w-full border-collapse bg-white">
             <thead className="bg-slate-50">
               <tr>
-                {displayColumns.map((col: any) => (
+                {displayColumns.map((col) => (
                   <th
                     key={col}
                     className={`py-3 px-4 text-left text-sm font-semibold text-slate-700 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors ${sortField === col ? "bg-blue-50" : ""} ${getColumnWidth(col)} ${getColumnClass(col)}`}
-                    onClick={((: any): any) => onSort(col)}
+                    onClick={() => onSort(col)}
                   >
                     <div className="flex items-center justify-between">
                       <span>{getColumnDisplayName(col, locale)}</span>
@@ -215,12 +215,12 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               </tr>
             </thead>
             <tbody>
-              {sortedResults.map((row, index: any) => (
+              {sortedResults.map((row, index: number) => (
                 <tr
                   key={`${row.domain || row.域名}-${index}`}
                   className="hover:bg-slate-50 transition-colors"
                 >
-                  {displayColumns.map((col: any) => (
+                  {displayColumns.map((col) => (
                     <td
                       key={col}
                       className={`py-2 px-4 align-middle text-[15px] ${getColumnClass(col)} border-r border-gray-100 last:border-r-0`}

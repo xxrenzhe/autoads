@@ -131,7 +131,7 @@ export const ConfigurationStep = memo(({
               <label className="block text-sm font-medium mb-2">配置描述（Description）<br/><span className="text-xs text-gray-500">配置的详细说明和用途</span></label>
               <textarea
                 value={newConfiguration.description || ''}
-                onChange={((e: any): any) => handleInputChange('description', e.target.value)}
+                onChange={(e: any) => handleInputChange('description', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
                 rows={3}
                 placeholder="配置描述和用途说明"

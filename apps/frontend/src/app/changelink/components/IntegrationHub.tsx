@@ -23,22 +23,12 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  Download,
-  Upload,
-  Zap,
   Database,
   Mail,
   MessageSquare,
-  Calendar,
   FileText,
-  Shield,
   Activity,
-  Clock,
-  Users,
   Globe,
-  Key,
-  Lock,
-  Unlock,
   Filter
 } from 'lucide-react';
 
@@ -493,7 +483,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                               ? 'border-primary bg-primary/5'
                               : 'border-border hover:border-primary/50'
                           }`}
-                          onClick={((: any): any) => setCurrentIntegration(integration)}
+                          onClick={() => setCurrentIntegration(integration)}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
@@ -547,7 +537,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={((e: any): any) => {
+                                onClick={(e: any) => {
                                   e.stopPropagation();
                                   handleEditIntegration(integration);
                                 }}
@@ -557,7 +547,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={((e: any): any) => {
+                                onClick={(e: any) => {
                                   e.stopPropagation();
                                   handleDeleteIntegration(integration.id);
                                 }}
@@ -691,9 +681,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                           <Input
                             id="endpoint"
                             value={currentIntegration.config.endpoint || ''}
-                            onChange={(e) => setCurrentIntegration(prev => prev ? {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, endpoint: (e.target as any).value }
+                              config: { ...prev.config, endpoint: e.target.value }
                             } : null)}
                           />
                         </div>
@@ -703,9 +693,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                             id="api-key"
                             type={showSecrets ? 'text' : 'password'}
                             value={currentIntegration.config.apiKey || ''}
-                            onChange={(e) => setCurrentIntegration(prev => prev ? {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, apiKey: (e.target as any).value }
+                              config: { ...prev.config, apiKey: e.target.value }
                             } : null)}
                           />
                         </div>
@@ -717,9 +707,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                           <Input
                             id="username"
                             value={currentIntegration.config.username || ''}
-                            onChange={(e) => setCurrentIntegration(prev => prev ? {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, username: (e.target as any).value }
+                              config: { ...prev.config, username: e.target.value }
                             } : null)}
                           />
                         </div>
@@ -729,9 +719,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                             id="password"
                             type={showSecrets ? 'text' : 'password'}
                             value={currentIntegration.config.password || ''}
-                            onChange={(e) => setCurrentIntegration(prev => prev ? {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, password: (e.target as any).value }
+                              config: { ...prev.config, password: e.target.value }
                             } : null)}
                           />
                         </div>
@@ -744,9 +734,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                             id="timeout"
                             type="number"
                             value={currentIntegration.config.timeout || 30}
-                            onChange={(e) => setCurrentIntegration(prev => prev ? {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, timeout: parseInt((e.target as any).value) }
+                              config: { ...prev.config, timeout: parseInt(e.target.value) }
                             } : null)}
                           />
                         </div>
@@ -756,9 +746,9 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
                             id="retry-attempts"
                             type="number"
                             value={currentIntegration.config.retryAttempts || 3}
-                            onChange={(e) => setCurrentIntegration(prev => prev ? {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentIntegration(prev => prev ? {
                               ...prev,
-                              config: { ...prev.config, retryAttempts: parseInt((e.target as any).value) }
+                              config: { ...prev.config, retryAttempts: parseInt(e.target.value) }
                             } : null)}
                           />
                         </div>
@@ -943,7 +933,7 @@ const IntegrationHub: React.FC<IntegrationHubProps> = ({
             <div className="font-medium">{operationResult.message}</div>
             {Boolean(operationResult.details) && (
               <div className="mt-2 text-sm">
-                {Object.entries(operationResult.details as any).map(([key, value]: any) => (
+                {Object.entries(operationResult.details as Record<string, unknown>).map(([key, value]) => (
                   <div key={key} className="flex justify-between">
                     <span className="capitalize">{key}:</span>
                     <span>{String(value)}</span>

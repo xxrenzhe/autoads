@@ -35,7 +35,7 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
           <button
             key={action.id}
             className={`flex items-center space-x-3 p-3 rounded-lg text-white transition-colors ${colorClasses[action.color]}`}
-            onClick={((: any): any) => onActionClick?.(action.id)}
+            onClick={() => onActionClick?.(action.id)}
           >
             <div className="flex-shrink-0">
               {action.icon}

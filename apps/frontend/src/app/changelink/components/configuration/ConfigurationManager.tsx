@@ -450,7 +450,7 @@ export default function ConfigurationManager({ onConfigurationSelect }: Configur
               })),
             } : undefined}
             googleAdsAccounts={editingConfig?.googleAdsAccounts || []}
-            onSubmit={((formData: any): any) => {
+            onSubmit={(formData: any) => {
               const configData: TrackingConfiguration = {
                 id: editingConfig?.id || '',
                 ...formData,

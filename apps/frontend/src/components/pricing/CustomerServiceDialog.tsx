@@ -66,7 +66,7 @@ export default function CustomerServiceDialog({
         
         <div className="flex justify-center">
           <Button 
-            onClick={((: any): any) => onOpenChange(false)}
+            onClick={() => onOpenChange(false)}
             variant="outline"
           >
             我知道了

@@ -242,7 +242,7 @@ export default function SubscriptionManagement() {
   if (loading) {
     return (
       <div className="space-y-6">
-        {[...Array(3)].map((_, i: any) => (
+        {[...Array(3)].map((_, i: number) => (
           <div key={i} className="animate-pulse bg-white rounded-lg shadow p-6">
             <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
             <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
@@ -262,7 +262,7 @@ export default function SubscriptionManagement() {
           您当前使用的是免费版，升级到付费计划解锁更多功能
         </p>
         <button
-          onClick={((: any): any) => router.push('/pricing')}
+          onClick={() => router.push('/pricing')}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
         >
           查看订阅计划
