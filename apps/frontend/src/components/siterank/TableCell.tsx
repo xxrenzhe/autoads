@@ -1,7 +1,7 @@
 import React from 'react';
 import type { AnalysisResult } from '@/lib/siterank/types';
 import { getPriorityLevel } from '@/lib/siterank/priority';
-import React from 'react';
+// duplicate import removed
 
 interface TableCellProps {
   row: AnalysisResult;

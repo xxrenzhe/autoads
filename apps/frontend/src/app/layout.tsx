@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+// 使用系统字体，避免构建期访问 Google Fonts
+// import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import AppLayout from "@/components/AppLayout";
@@ -14,7 +15,7 @@ import "@/lib/autoclick-init";
 import QueryProvider from "@/components/providers/QueryProvider";
 import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
 
-const inter = Inter({ subsets: ["latin"] });
+// const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
@@ -147,7 +148,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>
+      <body className="font-sans">
         <SessionProvider>
           <AuthProvider>
             <LanguageProvider>

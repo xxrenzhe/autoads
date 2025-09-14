@@ -5,7 +5,7 @@ const nextConfig = {
   
   // 环境变量配置
   env: {
-    CUSTOM_KEY: 'changelink-autoads',
+    CUSTOM_KEY: 'adscenter-autoads',
     DEPLOYMENT_DOMAIN: process.env.DEPLOYMENT_DOMAIN,
     NEXT_PUBLIC_DEPLOYMENT_ENV: process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV,
   },
@@ -31,8 +31,9 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        // 兼容旧 API 前缀，重写到新 adscenter 路由
         source: '/api/changelink/:path*',
-        destination: '/api/changelink/:path*',
+        destination: '/api/adscenter/:path*',
       },
     ];
   },
@@ -189,8 +190,30 @@ const nextConfig = {
       config.externals.push('playwright', 'playwright-core');
     }
 
+    // 为缺失三方依赖提供本地构建桩，便于离线构建
+    config.resolve = config.resolve || {}
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      'swagger-ui-react': path.resolve(__dirname, 'src/stubs/swagger-ui-react.tsx'),
+      '@radix-ui/react-dialog': path.resolve(__dirname, 'src/stubs/radix-dialog.tsx'),
+      '@radix-ui/react-avatar': path.resolve(__dirname, 'src/stubs/radix-avatar.tsx'),
+      '@radix-ui/react-dropdown-menu': path.resolve(__dirname, 'src/stubs/radix-dropdown.tsx'),
+      '@radix-ui/react-switch': path.resolve(__dirname, 'src/stubs/radix-switch.tsx'),
+      'exceljs': path.resolve(__dirname, 'src/stubs/exceljs.ts'),
+      '@stripe/stripe-js': path.resolve(__dirname, 'src/stubs/stripe-js.ts'),
+      '@stripe/react-stripe-js': path.resolve(__dirname, 'src/stubs/react-stripe-js.tsx'),
+      '@heroicons/react/24/outline': path.resolve(__dirname, 'src/stubs/heroicons-outline.tsx'),
+      '@heroicons/react/24/solid': path.resolve(__dirname, 'src/stubs/heroicons-solid.tsx'),
+      'framer-motion': path.resolve(__dirname, 'src/stubs/framer-motion.tsx'),
+      'zod': path.resolve(__dirname, 'src/stubs/zod.ts'),
+    }
+
     return config;
   },
 };
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default nextConfig;
