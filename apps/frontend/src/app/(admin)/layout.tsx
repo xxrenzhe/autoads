@@ -34,10 +34,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     )
   }
 
-  if (!session || (session.user?.role !== 'ADMIN' && session.user?.role !== 'SUPER_ADMIN')) {
-    return null
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {children}

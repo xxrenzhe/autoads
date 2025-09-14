@@ -69,7 +69,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
     if (!subscription?.plan.features) return null;
 
     const features = subscription.plan.features;
-    const featureList = [];
+    const featureList: React.ReactNode[] = [];
 
     // SiteRank features
     if (features.siterank?.enabled) {

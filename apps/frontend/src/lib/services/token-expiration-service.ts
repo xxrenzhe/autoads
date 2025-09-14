@@ -129,7 +129,7 @@ export class TokenExpirationService {
       }
     });
 
-    const processed = [];
+    const processed: any[] = [];
     
     for (const tokenRecord of expiredSubscriptionTokens) {
       try {

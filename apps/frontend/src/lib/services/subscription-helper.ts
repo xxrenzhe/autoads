@@ -313,7 +313,7 @@ export class SubscriptionHelper {
       }
     });
 
-    const results = [];
+    const results: any[] = [];
 
     for (const subscription of expiredSubscriptions) {
       try {
@@ -336,7 +336,7 @@ export class SubscriptionHelper {
           userEmail: subscription.user.email,
           planName: subscription.plan.name,
           status: 'error',
-          error: error instanceof Error ? error.message : "Unknown error" as any
+          error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
     }
@@ -382,7 +382,7 @@ export class SubscriptionHelper {
     }
 
     // Calculate total days to add from all queued rewards
-    const totalDays = queuedRewards.reduce((sum: number, reward: any) => sum + reward.daysToAdd, 0);
+    const totalDays = queuedRewards.reduce((sum, reward) => sum + (reward as any).daysToAdd, 0);
     
     // Create a single subscription for all queued rewards
     const startDate = new Date();
@@ -415,7 +415,7 @@ export class SubscriptionHelper {
     await prisma.queuedInvitationReward.updateMany({
       where: {
         id: {
-          in: queuedRewards.map((r: any) => r.id)
+          in: queuedRewards.map((r) => (r as any).id)
         }
       },
       data: {
@@ -434,7 +434,7 @@ export class SubscriptionHelper {
           subscriptionId: subscription.id,
           totalDays,
           rewardsCount: queuedRewards.length,
-          rewardIds: queuedRewards.map((r: any) => r.id)
+          rewardIds: queuedRewards.map((r) => (r as any).id)
         }
       }
     });
@@ -493,7 +493,7 @@ export class SubscriptionHelper {
       }
     });
 
-    const processed = [];
+    const processed: any[] = [];
 
     for (const subscription of subscriptions) {
       try {

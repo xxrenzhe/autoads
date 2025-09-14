@@ -14,7 +14,7 @@ export class RateLimiter {
 
   constructor(options: RateLimitOptions) {
     this.options = {
-      keyGenerator: (req) => req.ip || 'unknown',
+      keyGenerator: (req) => (req as any).ip || req.headers.get('x-forwarded-for') || 'unknown',
       skipSuccessfulRequests: false,
       skipFailedRequests: false,
       ...options,

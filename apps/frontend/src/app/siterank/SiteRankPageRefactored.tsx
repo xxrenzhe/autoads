@@ -12,7 +12,7 @@ import { Loader2 } from "lucide-react";
 import { FileUpload } from "@/components/siterank/FileUpload";
 import { ResultsTable } from "@/components/siterank/ResultsTable";
 import { useAnalysisEngine } from "@/components/siterank/AnalysisEngine";
-import { extractDomain } from "@/lib/siterank/utils";
+import { UrlValidator } from "@/lib/utils/url/UrlValidator";
 import type { AnalysisResult } from "@/lib/siterank/types";
 import { createClientLogger } from "@/lib/utils/security/client-secure-logger";
 import { EnhancedError } from '@/lib/utils/error-handling';
@@ -103,7 +103,7 @@ export default function SiteRankPageRefactored() {
     .split("\n")
     .map((line: any) => line.trim())
     .filter((line: any) => line.length > 0);
-  const domainList = urlList?.filter(Boolean)?.map(extractDomain);
+  const domainList: string[] = urlList?.filter(Boolean)?.map((u: string) => UrlValidator.extractDomain(u)) || [];
   
   // 获取需要分析的域名总数
   const totalDomains = fileDomains.length > 0 ? fileDomains.length : domainList.length;

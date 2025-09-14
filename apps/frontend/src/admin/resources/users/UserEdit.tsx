@@ -205,14 +205,15 @@ export const UserEdit: React.FC = () => {
             账号信息
           </Typography>
           
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          {/* Stripe 集成已禁用：隐藏 Stripe 客户ID */}
+          {/* <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <TextInput
               source="stripeCustomerId"
               label="Stripe客户ID"
               disabled
               sx={{ flex: 1, minWidth: 300 }}
             />
-          </Box>
+          </Box> */}
           
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 2 }}>
             <DateInput

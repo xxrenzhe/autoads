@@ -75,7 +75,7 @@ export class ScheduledTaskService {
     this.cronJobs.set(taskId, cronJob)
     
     // Update next run time
-    const nextRun = cronJob.nextRun()
+    const nextRun = (cronJob as any).nextRun ? (cronJob as any).nextRun() : null
     task.nextRun = nextRun ? new Date(nextRun) : undefined
 
     console.log(`[ScheduledTaskService] Scheduled task: ${task.name} - Next run: ${task.nextRun?.toISOString()}`)

@@ -73,7 +73,8 @@ const generateLargeDataset = (count: number) => {
   });
 };
 
-const meta: Meta<typeof DataTable> = {
+// Storybook type generics may vary by setup; keep loose typing for compatibility
+const meta: any = {
   title: 'Data Display/DataTable',
   component: DataTable,
   parameters: {
@@ -139,7 +140,7 @@ A fully accessible data table component with sorting, filtering, pagination, and
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = any;
 
 const basicColumns = [
   {
@@ -165,7 +166,7 @@ const basicColumns = [
     header: 'Status',
     sortable: true,
     filterable: true,
-    render: (value: any) => (
+    render: (value) => (
       <StatusIndicator 
         status={value === 'active' ? 'success' : value === 'inactive' ? 'error' : 'warning'} 
         label={String(value)}
@@ -200,7 +201,7 @@ export const WithCustomRendering: Story = {
         key: 'name' as const,
         header: 'User',
         sortable: true,
-        render: (value: any, row: any) => (
+        render: (value, row) => (
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
               {String(value).charAt(0)}
@@ -216,7 +217,7 @@ export const WithCustomRendering: Story = {
         key: 'role' as const,
         header: 'Role',
         sortable: true,
-        render: (value: any) => (
+        render: (value) => (
           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
             value === 'Admin' ? 'bg-purple-100 text-purple-800' :
             value === 'Manager' ? 'bg-blue-100 text-blue-800' :
@@ -230,7 +231,7 @@ export const WithCustomRendering: Story = {
         key: 'status' as const,
         header: 'Status',
         sortable: true,
-        render: (value: any) => (
+        render: (value) => (
           <StatusIndicator 
             status={value === 'active' ? 'success' : value === 'inactive' ? 'error' : 'warning'} 
             label={String(value)}
@@ -242,13 +243,13 @@ export const WithCustomRendering: Story = {
         key: 'lastLogin' as const,
         header: 'Last Login',
         sortable: true,
-        render: (value: any) => new Date(String(value)).toLocaleDateString(),
+        render: (value) => new Date(String(value)).toLocaleDateString(),
       },
       {
         key: 'projects' as const,
         header: 'Projects',
         sortable: true,
-        render: (value: any) => (
+        render: (value) => (
           <div className="text-center">
             <span className="text-lg font-semibold">{String(value)}</span>
           </div>
@@ -257,7 +258,7 @@ export const WithCustomRendering: Story = {
     ],
     searchable: true,
     pageSize: 5,
-    onRowClick: (row: any) => console.log('Row clicked:', row),
+    onRowClick: (row) => console.log('Row clicked:', row),
   },
 };
 
@@ -326,7 +327,7 @@ export const CompactView: Story = {
         sortable: true,
         filterable: true,
         width: '120px',
-        render: (value: any) => (
+        render: (value) => (
           <StatusIndicator 
             status={value === 'active' ? 'success' : value === 'inactive' ? 'error' : 'warning'} 
             variant="dot"
@@ -349,7 +350,7 @@ export const WithActions: Story = {
       {
         key: 'actions' as const,
         header: 'Actions',
-        render: (value: any, row: any) => (
+        render: (value, row) => (
           <div className="flex space-x-2">
             <button 
               className="text-blue-600 hover:text-blue-800 text-sm"
@@ -382,7 +383,7 @@ export const WithActions: Story = {
 export const AccessibilityDemo: Story = {
   args: {
     data: sampleData.slice(0, 4),
-    columns: basicColumns?.filter(Boolean)?.map((col: any) => ({
+    columns: basicColumns?.filter(Boolean)?.map((col) => ({
       ...col,
       ariaLabel: `${col.header} column - ${col.sortable ? 'sortable' : 'not sortable'}${col.filterable ? ', filterable' : ''}`,
     })),

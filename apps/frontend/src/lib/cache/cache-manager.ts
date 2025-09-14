@@ -1,5 +1,5 @@
 import Redis from 'ioredis'
-import { getRedisClient } from './redis-client'
+import { getRedisClient } from '@/lib/redis-config'
 
 /**
  * Cache Management System
@@ -192,10 +192,10 @@ export class CacheManager {
    */
   async mget<T = any>(keys: string[]): Promise<(T | null)[]> {
     try {
-      const formattedKeys = keys?.filter(Boolean)?.map((key: any) => this.formatKey(key))
+      const formattedKeys = keys?.filter(Boolean)?.map((key) => this.formatKey(key))
       const values = await this.redis.mget(...formattedKeys)
       
-      return values?.filter(Boolean)?.map((value: any) => {
+      return values?.filter(Boolean)?.map((value) => {
         if (value === null) {
           this.updateMetrics('miss')
           return null
@@ -473,7 +473,7 @@ export class CacheManager {
    */
   private parseRedisInfo(info: string, key: string): number {
     const lines = info.split('\r\n')
-    const line = lines.find((l: any) => l.startsWith(`${key}:`))
+    const line = lines.find((l) => l.startsWith(`${key}:`))
     if (line) {
       const value = line.split(':')[1]
       return parseInt(value) || 0

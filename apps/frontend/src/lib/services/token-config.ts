@@ -1,27 +1,24 @@
 import { prisma } from '@/lib/prisma'
 import redis from '@/lib/redis'
-import { z } from 'zod'
 
-// Token configuration schema
-const TokenConfigSchema = z.object({
-  siterank: z.object({
-    costPerDomain: z.number().min(0),
-    batchMultiplier: z.number().min(0).max(1).default(1),
-    description: z.string().optional()
-  }),
-  batchopen: z.object({
-    costPerUrl: z.number().min(0),
-    batchMultiplier: z.number().min(0).max(1).default(1),
-    description: z.string().optional()
-  }),
-  adscenter: z.object({
-    costPerLinkChange: z.number().min(0),
-    batchMultiplier: z.number().min(0).max(1).default(1),
-    description: z.string().optional()
-  })
-})
-
-export type TokenConfig = z.infer<typeof TokenConfigSchema>
+// Token configuration types (lightweight, no zod dependency)
+export interface TokenConfig {
+  siterank: {
+    costPerDomain: number
+    batchMultiplier: number
+    description?: string
+  }
+  batchopen: {
+    costPerUrl: number
+    batchMultiplier: number
+    description?: string
+  }
+  adscenter: {
+    costPerLinkChange: number
+    batchMultiplier: number
+    description?: string
+  }
+}
 
 export interface TokenUsageRecord {
   id: string
@@ -125,7 +122,7 @@ export class TokenConfigService {
     const newConfig = { ...currentConfig, ...config }
 
     // Validate the new configuration
-    const validated = TokenConfigSchema.parse(newConfig)
+    const validated = newConfig as TokenConfig
 
     // Update database
     const updates: Array<{

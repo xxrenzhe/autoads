@@ -22,6 +22,9 @@ import {
 } from '@mui/icons-material';
 import { Route } from 'react-router-dom';
 
+// Feature flag controlled by environment variable (default false)
+const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true';
+
 // Providers
 import { autoAdsDataProvider } from './providers/AutoAdsDataProvider';
 import { createNextAuthAuthProvider, withNextAuth } from './providers/NextAuthAuthProvider';
@@ -213,20 +216,24 @@ const AdminContent: React.FC = () => {
       />
 
       {/* Payment Management */}
-      <Resource
-        name="payment-providers"
-        list={PaymentProviderList}
-        edit={PaymentProviderEdit}
-        icon={Payment}
-        options={{ label: '支付配置' }}
-      />
+      {PAYMENTS_ENABLED && (
+        <>
+          <Resource
+            name="payment-providers"
+            list={PaymentProviderList}
+            edit={PaymentProviderEdit}
+            icon={Payment}
+            options={{ label: '支付配置' }}
+          />
 
-      <Resource
-        name="payments"
-        list={PaymentList}
-        icon={Payment}
-        options={{ label: '支付记录' }}
-      />
+          <Resource
+            name="payments"
+            list={PaymentList}
+            icon={Payment}
+            options={{ label: '支付记录' }}
+          />
+        </>
+      )}
 
       {/* Notification Management */}
       <Resource

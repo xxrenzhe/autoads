@@ -354,7 +354,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
             options={cardElementOptions}
             onChange={(event) => {
               // Stripe types may not be available; keep loose typing
-              // @ts-expect-error - event type depends on Stripe SDK typing presence
+              // @ts-ignore - event type depends on Stripe SDK typing presence
               setCardError(event.error ? event.error.message : null)
             }}
           />

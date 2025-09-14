@@ -108,7 +108,7 @@ export class PlanFeaturesService {
    * Create standardized features for a plan
    */
   static async createPlanFeatures(planId: string, featuresConfig: Record<string, any>) {
-    const features = [];
+    const features: any[] = [];
     
     for (const [featureKey, config] of Object.entries(featuresConfig)) {
       const standardFeature = this.STANDARD_FEATURES[featureKey as keyof typeof this.STANDARD_FEATURES];
@@ -145,7 +145,7 @@ export class PlanFeaturesService {
    * Update plan features
    */
   static async updatePlanFeatures(planId: string, featuresConfig: Record<string, any>) {
-    const results = [];
+    const results: any[] = [];
     
     for (const [featureKey, config] of Object.entries(featuresConfig)) {
       const standardFeature = this.STANDARD_FEATURES[featureKey as keyof typeof this.STANDARD_FEATURES];
@@ -205,7 +205,7 @@ export class PlanFeaturesService {
       orderBy: { createdAt: 'asc' }
     });
 
-    return features.map((feature: any) => ({
+    return features.map((feature) => ({
       id: feature.featureName,
       name: feature.metadata?.name,
       description: feature.metadata?.description,
@@ -264,52 +264,61 @@ export class PlanFeaturesService {
     });
 
     // Free Plan (免费套餐)
-    const freePlan = existingPlans.find((p: any) => p.name === 'free') || await prisma.plan.create({
-      data: {
-        name: 'free',
-        description: '免费套餐',
-        price: 0,
-        currency: 'CNY',
-        interval: 'MONTH',
-        status: 'ACTIVE',
-        sortOrder: 0,
-        tokenQuota: 1000,
-        tokenReset: 'MONTHLY',
-        rateLimit: 10
-      }
-    });
+    let freePlan: any = existingPlans.find((p) => p.name === 'free');
+    if (!freePlan) {
+      freePlan = await prisma.plan.create({
+        data: {
+          name: 'free',
+          description: '免费套餐',
+          price: 0,
+          currency: 'CNY',
+          interval: 'MONTH',
+          status: 'ACTIVE',
+          sortOrder: 0,
+          tokenQuota: 1000,
+          tokenReset: 'MONTHLY',
+          rateLimit: 10
+        }
+      });
+    }
 
     // Pro Plan (高级套餐)
-    const proPlan = existingPlans.find((p: any) => p.name === 'pro') || await prisma.plan.create({
-      data: {
-        name: 'pro',
-        description: '高级套餐',
-        price: 298,
-        currency: 'CNY',
-        interval: 'MONTH',
-        status: 'ACTIVE',
-        sortOrder: 1,
-        tokenQuota: 10000,
-        tokenReset: 'MONTHLY',
-        rateLimit: 100
-      }
-    });
+    let proPlan: any = existingPlans.find((p) => p.name === 'pro');
+    if (!proPlan) {
+      proPlan = await prisma.plan.create({
+        data: {
+          name: 'pro',
+          description: '高级套餐',
+          price: 298,
+          currency: 'CNY',
+          interval: 'MONTH',
+          status: 'ACTIVE',
+          sortOrder: 1,
+          tokenQuota: 10000,
+          tokenReset: 'MONTHLY',
+          rateLimit: 100
+        }
+      });
+    }
 
     // Max Plan (白金套餐)
-    const maxPlan = existingPlans.find((p: any) => p.name === 'max') || await prisma.plan.create({
-      data: {
-        name: 'max',
-        description: '白金套餐',
-        price: 998,
-        currency: 'CNY',
-        interval: 'MONTH',
-        status: 'ACTIVE',
-        sortOrder: 2,
-        tokenQuota: 100000,
-        tokenReset: 'MONTHLY',
-        rateLimit: 500
-      }
-    });
+    let maxPlan: any = existingPlans.find((p) => p.name === 'max');
+    if (!maxPlan) {
+      maxPlan = await prisma.plan.create({
+        data: {
+          name: 'max',
+          description: '白金套餐',
+          price: 998,
+          currency: 'CNY',
+          interval: 'MONTH',
+          status: 'ACTIVE',
+          sortOrder: 2,
+          tokenQuota: 100000,
+          tokenReset: 'MONTHLY',
+          rateLimit: 500
+        }
+      });
+    }
 
     // Create features for each plan based on requirements
     
@@ -371,15 +380,15 @@ export class PlanFeaturesService {
       this.getPlanFeatures(planId2)
     ]);
 
-    const differences = [];
+    const differences: any[] = [];
     const allFeatureIds = new Set([
-      ...features1.map((f: any) => f.id),
-      ...features2.map((f: any) => f.id)
+      ...features1.map((f) => f.id),
+      ...features2.map((f) => f.id)
     ]);
 
     for (const featureId of allFeatureIds) {
-      const feat1 = features1.find((f: any) => f.id === featureId);
-      const feat2 = features2.find((f: any) => f.id === featureId);
+      const feat1 = features1.find((f) => f.id === featureId);
+      const feat2 = features2.find((f) => f.id === featureId);
 
       differences.push({
         featureId,

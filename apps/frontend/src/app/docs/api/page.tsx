@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 
 // 动态导入Swagger UI以避免SSR问题
-const SwaggerUI = dynamic(() => import('swagger-ui-react'), { ssr: false });
+const SwaggerUI: any = dynamic(() => import('swagger-ui-react'), { ssr: false });
 
 interface ApiVersion {
   version: string;
@@ -117,7 +117,7 @@ export default function ApiDocsPage() {
                   }}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
-                  {API_VERSIONS.map((version: any) => (
+                  {API_VERSIONS.map((version) => (
                     <option key={version.version} value={version.version}>
                       {version.name}
                     </option>
@@ -232,7 +232,7 @@ export default function ApiDocsPage() {
       {/* Swagger UI */}
       <div className="bg-white">
         <div className="max-w-7xl mx-auto">
-          <SwaggerUI {...swaggerConfig} />
+          <SwaggerUI {...(swaggerConfig as any)} />
         </div>
       </div>
 

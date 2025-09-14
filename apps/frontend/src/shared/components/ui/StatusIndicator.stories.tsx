@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { StatusIndicator, BatchStatusIndicator } from './StatusIndicator';
 
-const meta: Meta<typeof StatusIndicator> = {
+const meta: any = {
   title: 'UI/StatusIndicator',
   component: StatusIndicator,
   parameters: {
@@ -28,7 +28,7 @@ const meta: Meta<typeof StatusIndicator> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = any;
 
 export const Default: Story = {
   args: {
@@ -136,17 +136,7 @@ export const Sizes: Story = {
 };
 
 // Batch Status Indicator Stories
-const batchMeta: Meta<typeof BatchStatusIndicator> = {
-  title: 'UI/BatchStatusIndicator',
-  component: BatchStatusIndicator,
-  parameters: {
-    layout: 'centered',
-  },
-  tags: ['autodocs'],
-};
-
 export const BatchDefault: StoryObj<typeof BatchStatusIndicator> = {
-  ...batchMeta,
   args: {
     statuses: [
       { status: 'success', count: 45, label: 'Completed' },
@@ -158,7 +148,6 @@ export const BatchDefault: StoryObj<typeof BatchStatusIndicator> = {
 };
 
 export const BatchSizes: StoryObj<typeof BatchStatusIndicator> = {
-  ...batchMeta,
   render: () => (
     <div className="space-y-6">
       <div>

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { type DialogProps } from "@radix-ui/react-dialog"
+// Avoid tight coupling to Radix types in this lightweight wrapper
 import { Command as CommandPrimitive } from "cmdk"
 import { Search } from "lucide-react"
 
@@ -23,7 +23,7 @@ const Command = React.forwardRef<
 ))
 Command.displayName = CommandPrimitive.displayName
 
-interface CommandDialogProps extends DialogProps {}
+interface CommandDialogProps { [key: string]: any }
 
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (

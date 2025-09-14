@@ -213,11 +213,11 @@ export function validateInput(data: any, rules: ValidationRule[]): any {
 /**
  * Zod schema validation helper
  */
-export function validateWithZod<T>(schema: z.ZodSchema<T>, data: any): T {
+export function validateWithZod<T>(schema: any, data: any): T {
   try {
     return schema.parse(data);
   } catch (error) {
-    if (error instanceof z.ZodError) {
+    if ((error as any)?.errors) {
       const formattedErrors = error.errors.map((err: any) => ({
         field: err.path.join('.'),
         message: err.message,

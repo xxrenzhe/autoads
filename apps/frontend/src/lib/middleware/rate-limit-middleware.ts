@@ -79,7 +79,7 @@ export class RateLimiter {
    */
   private getDefaultKey(req: NextRequest): string {
     // Use IP address as default key
-    const ip = req.ip || req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const ip = (req as any).ip || req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
     
     // For authenticated requests, include user ID
     const authHeader = req.headers.get('authorization');
@@ -236,7 +236,7 @@ export const rateLimits = {
  */
 export function createKeyGenerator(prefix: string) {
   return (req: NextRequest): string => {
-    const ip = req.ip || req.headers.get('x-forwarded-for') || 'unknown';
+    const ip = (req as any).ip || req.headers.get('x-forwarded-for') || 'unknown';
     const path = new URL(req.url).pathname;
     return `${prefix}:${ip}:${path}`;
   };

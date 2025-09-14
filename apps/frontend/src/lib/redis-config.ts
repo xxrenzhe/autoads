@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import type { Redis as RedisClientType } from 'ioredis';
 import { createLogger } from './utils/security/secure-logger';
 
 const logger = createLogger('RedisClient');
@@ -53,9 +54,9 @@ function getRedisConfig(): RedisConfig {
 }
 
 // 创建 Redis 客户端
-let redisClient: Redis | null = null;
+let redisClient: RedisClientType | null = null;
 
-export function createRedisClient(): Redis {
+export function createRedisClient(): RedisClientType {
   if (redisClient) {
     return redisClient;
   }
@@ -95,7 +96,7 @@ export function createRedisClient(): Redis {
 }
 
 // 获取 Redis 客户端实例
-export function getRedisClient(): Redis {
+export function getRedisClient(): RedisClientType {
   if (!redisClient) {
     redisClient = createRedisClient();
   }
@@ -130,9 +131,9 @@ export async function closeRedisConnection(): Promise<void> {
 
 // Redis 操作封装
 export class RedisService {
-  private client: Redis;
+  private client: RedisClientType;
   
-  constructor(client?: Redis) {
+  constructor(client?: RedisClientType) {
     this.client = client || getRedisClient();
   }
   
@@ -165,6 +166,12 @@ export class RedisService {
   
   async expire(key: string, seconds: number): Promise<number> {
     return this.client.expire(key, seconds);
+  }
+
+  // 兼容 setex 便捷方法
+  async setex(key: string, seconds: number, value: string | number): Promise<'OK'> {
+    // @ts-ignore underlying client supports setex
+    return this.client.setex(key, seconds, value as any);
   }
   
   async ttl(key: string): Promise<number> {
@@ -251,11 +258,12 @@ export class RedisService {
   }
   
   // 事务
-  async multi(): Promise<import('ioredis').ChainableCommander> {
-    return this.client.multi();
+  async multi(): Promise<ReturnType<RedisClientType['multi']>> {
+    // Cast is safe as ioredis returns a chainable commander instance
+    return this.client.multi() as ReturnType<RedisClientType['multi']>;
   }
   
-  async exec(pipeline: import('ioredis').ChainableCommander): Promise<[Error | null, any][]> {
+  async exec(pipeline: ReturnType<RedisClientType['multi']>): Promise<[Error | null, any][]> {
     const result = await pipeline.exec();
     return result || [];
   }

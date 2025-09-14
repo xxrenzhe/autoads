@@ -259,7 +259,7 @@ export class DeprecationWarningManager {
         feature_name: feature.name,
         endpoint: request.nextUrl.pathname,
         user_agent: userAgent || request.headers.get('user-agent'),
-        ip: request.ip || request.headers.get('x-forwarded-for'),
+        ip: (request as any).ip || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
         severity: feature.severity,
         removal_date: feature.removalDate?.toISOString()
       };

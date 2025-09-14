@@ -3,7 +3,7 @@
 import React from 'react';
 import { useForm, Controller, FieldValues, Path } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import type { ZodSchema } from 'zod';
 import { clsx } from 'clsx';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -104,7 +104,7 @@ export interface FormSection {
 // Form builder props
 export interface FormBuilderProps<T extends FieldValues = FieldValues> {
   sections: FormSection[];
-  schema?: z.ZodSchema<T>;
+  schema?: ZodSchema<T>;
   defaultValues?: Partial<T>;
   onSubmit: (data: T) => void | Promise<void>;
   submitLabel?: string;

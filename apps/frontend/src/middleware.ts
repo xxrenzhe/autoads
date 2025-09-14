@@ -53,9 +53,9 @@ async function getUserIdFromRequest(request: NextRequest): Promise<string | null
       // 这里只是示例，实际需要在API路由中处理
     }
     
-    return null as any;
+    return null;
   } catch (error) {
-    return null as any;
+    return null;
   }
 }
 
@@ -89,7 +89,7 @@ async function recordSecurityEvent(request: NextRequest, userId: string | null, 
       action: 'api_call' as const,
       endpoint: path,
       userAgent: request.headers.get('user-agent') || undefined,
-      ip: request.ip || request.headers.get('x-forwarded-for') || undefined,
+      ip: (request as any).ip || request.headers.get('x-forwarded-for') || undefined,
       timestamp: new Date().toISOString(),
       metadata: {
         method: request.method,
@@ -187,7 +187,7 @@ export async function middleware(request: NextRequest) {
         path: path,
         type: isApiRoute ? 'api' : 'page',
         userAgent: request.headers.get('user-agent'),
-        ip: request.ip || request.headers.get('x-forwarded-for') || 'unknown',
+        ip: (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown',
         timestamp: new Date().toISOString()
       });
     }

@@ -19,7 +19,7 @@ interface RouteParams {
 // POST /api/admin/subscriptions/[id]/actions - Perform subscription actions
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
+    const session = await (auth as any)();
     
     if (!session?.user || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role as string)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

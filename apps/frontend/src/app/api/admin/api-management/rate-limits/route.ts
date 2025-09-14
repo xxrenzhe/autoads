@@ -3,10 +3,12 @@ import { auth } from '@/lib/auth/v5-config'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
 import { createSecureHandler } from '@/lib/utils/api-security'
-import { hotReloadService } from '@/lib/hot-reload'
+import crypto from 'crypto'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
+
+const CONFIG_KEY = 'api_management:rate_limit_rules'
 
 const RateLimitRuleSchema = z.object({
   name: z.string().min(1).max(255),
@@ -31,36 +33,13 @@ async function handleGET(request: NextRequest, { user }: any) {
   }
 
   try {
-    // Get rate limit rules - apiRateLimit table doesn't exist yet
-    const rules: any[] = [] // Placeholder until apiRateLimit table is implemented
-
-    // Transform data to match interface
-    const rateLimitRules = rules.map((rule: any) => ({
-      id: rule.id,
-      name: `${rule.method} ${rule.endpoint}`,
-      endpoint: rule.endpoint,
-      method: rule.method,
-      userRole: rule.userRole,
-      requestsPerMinute: Math.floor(rule.maxRequests / (rule.windowMs / 60000)),
-      requestsPerHour: Math.floor(rule.maxRequests * (3600000 / rule.windowMs)),
-      requestsPerDay: Math.floor(rule.maxRequests * (86400000 / rule.windowMs)),
-      isActive: rule.enabled,
-      priority: 1, // Default priority
-      description: `Rate limit for ${rule.method} ${rule.endpoint}`,
-      createdAt: rule.createdAt.toISOString(),
-      updatedAt: rule.updatedAt.toISOString()
-    }))
-
-    return NextResponse.json({
-      success: true,
-      data: rateLimitRules
-    })
+    const cfg = await prisma.systemConfig.findUnique({ where: { key: CONFIG_KEY } })
+    let rules: any[] = []
+    try { rules = cfg?.value ? JSON.parse(cfg.value) : [] } catch {}
+    return NextResponse.json({ success: true, data: rules })
   } catch (error) {
     console.error('Error fetching rate limit rules:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch rate limit rules' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to fetch rate limit rules' }, { status: 500 })
   }
 }
 
@@ -76,18 +55,37 @@ async function handlePOST(request: NextRequest, { validatedData, user }: any) {
   const { name, endpoint, method, userRole, requestsPerMinute, requestsPerHour, requestsPerDay, isActive, priority, description } = validatedData.body
 
   try {
-    // apiRateLimit table doesn't exist yet
-    return NextResponse.json(
-      { error: 'Rate limit management is not yet implemented' },
-      { status: 503 }
-    )
+    const nowISO = new Date().toISOString()
+    const newRule = {
+      id: crypto.randomUUID(),
+      name,
+      endpoint,
+      method: (method || 'ALL').toUpperCase(),
+      userRole: userRole || 'all',
+      requestsPerMinute,
+      requestsPerHour,
+      requestsPerDay,
+      isActive: isActive ?? true,
+      priority: priority ?? 1,
+      description: description || '',
+      createdAt: nowISO,
+      updatedAt: nowISO
+    }
 
+    const cfg = await prisma.systemConfig.findUnique({ where: { key: CONFIG_KEY } })
+    let rules: any[] = []
+    try { rules = cfg?.value ? JSON.parse(cfg.value) : [] } catch {}
+    rules.unshift(newRule)
+    await prisma.systemConfig.upsert({
+      where: { key: CONFIG_KEY },
+      update: { value: JSON.stringify(rules), updatedBy: user.id, updatedAt: new Date() },
+      create: { key: CONFIG_KEY, value: JSON.stringify(rules), category: 'api-management', description: 'API Management: rate limit rules', isSecret: false, createdBy: user.id, updatedBy: user.id }
+    })
+
+    return NextResponse.json({ success: true, data: newRule })
   } catch (error) {
     console.error('Error creating rate limit rule:', error)
-    return NextResponse.json(
-      { error: 'Failed to create rate limit rule' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to create rate limit rule' }, { status: 500 })
   }
 }
 

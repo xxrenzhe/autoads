@@ -469,7 +469,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
-                  {roles?.filter(Boolean)?.map((role: any) => (
+                  {roles?.filter(Boolean)?.map((role) => (
                     <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -510,7 +510,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         <p>No users found</p>
                       </div>
                     ) : (
-                      filteredUsers.map((user: any) => (
+                      filteredUsers.map((user) => (
                         <div
                           key={user.id}
                           className={`p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -625,7 +625,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         <Select
                           value={currentUser.role.id}
                           onValueChange={(value) => {
-                            const role = roles.find((r: any) => r.id === value);
+                            const role = roles.find((r) => r.id === value);
                             if (role) {
                               setCurrentUser(prev => prev ? { ...prev, role } : null);
                             }
@@ -635,7 +635,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {roles?.filter(Boolean)?.map((role: any) => (
+                            {roles?.filter(Boolean)?.map((role) => (
                               <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -645,8 +645,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         <Label htmlFor="status">Status</Label>
                         <Select
                           value={currentUser.status}
-                          onValueChange={(value: 'active' | 'inactive' | 'suspended') => 
-                            setCurrentUser(prev => prev ? { ...prev, status: value } : null)
+                          onValueChange={(value) => 
+                            setCurrentUser(prev => prev ? { ...prev, status: value as any } : null)
                           }
                         >
                           <SelectTrigger>
@@ -746,7 +746,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {roles.map((role: any) => (
+                    {roles.map((role) => (
                       <div
                         key={role.id}
                         className={`p-3 border rounded-lg cursor-pointer transition-colors ${

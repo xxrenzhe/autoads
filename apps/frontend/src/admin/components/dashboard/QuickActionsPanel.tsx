@@ -31,7 +31,7 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
         Quick Actions
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {actions.map((action: any) => (
+        {actions.map((action: QuickAction) => (
           <button
             key={action.id}
             className={`flex items-center space-x-3 p-3 rounded-lg text-white transition-colors ${colorClasses[action.color]}`}

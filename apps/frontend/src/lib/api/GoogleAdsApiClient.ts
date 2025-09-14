@@ -7,12 +7,12 @@
 import { EnhancedError } from '@/lib/utils/error-handling';
 import { GoogleAuth, OAuth2Client  } from 'google-auth-library';
 import axios, { AxiosInstance } from 'axios';
-import { 
-  GoogleAdsConfig, 
-  AdUpdateRequest, 
+import {
+  GoogleAdsConfig,
+  AdUpdateRequest,
   AdUpdateResult,
-  AdsPerformance 
-} from '../../app/adscenter/types';
+  AdsPerformance
+} from '@/app/changelink/types';
 
 export interface GoogleAdsAd {
   id: string;

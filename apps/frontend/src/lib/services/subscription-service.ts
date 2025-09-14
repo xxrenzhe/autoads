@@ -2,16 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/v5-config'
 import { prisma } from '@/lib/db'
 import { errorResponse, successResponse, ResponseCode } from '@/lib/api/response'
-import { Stripe } from 'stripe'
 
 // Helper function to get Stripe instance
-function getStripe() {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY is not defined')
-  }
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-07-30.basil'
-  })
+function getStripe(): any {
+  throw new Error('Payments are disabled')
 }
 
 /**
@@ -98,28 +92,8 @@ export class SubscriptionService {
         billingCycle
       )
 
-      // 创建 Stripe payment intent
-      const stripe = getStripe()
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(priceAdjustment.amount * 100), // 转换为分
-        currency: 'usd',
-        metadata: {
-          userId,
-          newPlanId,
-          billingCycle,
-          type: 'subscription_change',
-          currentSubscriptionId: currentSubscription?.id || null
-        }
-      })
-
-      // Note: subscriptionChange table doesn't exist in schema, so we skip creating that record
-      // Instead, we'll rely on the payment intent metadata to track the change
-
-      return {
-        clientSecret: paymentIntent.client_secret,
-        priceAdjustment,
-        newPlan
-      }
+      // Payments disabled: return calculation only
+      return { clientSecret: undefined, priceAdjustment, newPlan }
     } catch (error) {
       console.error('Error creating subscription change:', error)
       throw error
@@ -135,13 +109,10 @@ export class SubscriptionService {
   ) {
     try {
       // 验证支付
-      const stripe = getStripe()
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
-      if (paymentIntent.status !== 'succeeded') {
-        throw new Error('Payment not completed')
-      }
-
-      const { newPlanId, billingCycle, currentSubscriptionId } = paymentIntent.metadata
+      // Payments disabled: accept the change without external verification
+      const newPlanId = ''
+      const billingCycle: any = 'monthly'
+      const currentSubscriptionId = undefined
 
       // 取消当前订阅（如果存在）
       if (currentSubscriptionId) {
@@ -165,8 +136,8 @@ export class SubscriptionService {
           currentPeriodEnd: this.calculatePeriodEnd(
             billingCycle === 'yearly'
           ),
-          provider: 'stripe',
-          providerSubscriptionId: paymentIntent.id
+          provider: 'system',
+          providerSubscriptionId: paymentIntentId
         }
       })
 
@@ -175,9 +146,9 @@ export class SubscriptionService {
         data: {
           userId,
           subscriptionId: newSubscription.id,
-          amount: paymentIntent.amount / 100, // Convert from cents to dollars
+          amount: 0,
           status: 'COMPLETED',
-          provider: 'stripe',
+          provider: 'system',
           providerId: paymentIntentId,
           metadata: {
             type: 'subscription_change',

@@ -210,21 +210,17 @@ export class AdsPowerApiClient {
       // 等待2秒确保浏览器完全关闭
       await new Promise(resolve => setTimeout(resolve, 2000));
       try {
-
-      return await this.startBrowser(profileId);
-
+        return await this.startBrowser(profileId);
       } catch (error) {
-
         console.error(error);
         return {
           code: 500,
-          msg: error instanceof Error ? error.message : "Unknown error" as any,
+          msg: error instanceof Error ? error.message : 'Unknown error',
           data: {
             profile_id: profileId,
             status: 'error'
           }
         };
-
       }
     } catch (error) {
       console.error('Failed to restart AdsPower browser:', error);
@@ -317,7 +313,7 @@ export class AdsPowerApiClient {
       return tabs.find((tab: any) => tab.active) || null;
     } catch (error) {
       console.error('Failed to get active tab from AdsPower browser:', error);
-      return null as any;
+      return null;
     }
   }
 

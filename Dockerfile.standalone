@@ -1,0 +1,51 @@
+# syntax=docker/dockerfile:1.7
+
+############################
+# Frontend build (Vite)
+FROM node:20-alpine AS web
+WORKDIR /web
+COPY gofly_admin_v3/web/package*.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+COPY gofly_admin_v3/web/ ./
+RUN npm run build
+
+############################
+# Backend build (Go)
+FROM golang:1.22-alpine AS build
+ARG VERSION=dev
+ARG COMMIT=unknown
+WORKDIR /src
+RUN apk add --no-cache git
+COPY gofly_admin_v3/ ./gofly_admin_v3/
+WORKDIR /src/gofly_admin_v3
+ENV CGO_ENABLED=0
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    go build -ldflags "-X main.Version=${VERSION} -X main.GitCommit=${COMMIT}" -o /out/server cmd/server/main.go
+COPY --from=web /web/dist /out/web/dist
+
+############################
+# Runtime image
+FROM alpine:3.20
+WORKDIR /app/gofly_admin_v3
+# 需要 envsubst 渲染模板，安装 gettext
+RUN apk add --no-cache ca-certificates tzdata gettext && adduser -D -h /home/app app && chown -R app:app /app
+USER app
+COPY --from=build /out/server /app/gofly_admin_v3/server
+COPY --from=build /out/web/dist ./web/dist
+COPY gofly_admin_v3/config.yaml.template /app/gofly_admin_v3/config.yaml.template
+COPY gofly_admin_v3/resource/config.yaml.template /app/gofly_admin_v3/resource/config.yaml.template
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+ARG NEXT_PUBLIC_DEPLOYMENT_ENV="preview"
+ARG NEXT_PUBLIC_DOMAIN="localhost"
+ARG ALLOW_ORIGINS="http://localhost:3000,http://localhost:8080,http://localhost:8081"
+ARG GOOGLE_REDIRECT_URI=""
+ENV PORT=8080 \
+    ADMIN_CONFIG=/app/gofly_admin_v3/config.yaml \
+    NEXT_PUBLIC_DEPLOYMENT_ENV=${NEXT_PUBLIC_DEPLOYMENT_ENV} \
+    NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN} \
+    ALLOW_ORIGINS=${ALLOW_ORIGINS} \
+    GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+EXPOSE 8080
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

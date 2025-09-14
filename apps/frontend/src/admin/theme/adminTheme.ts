@@ -227,8 +227,8 @@ export const adminTheme: RaThemeOptions = createTheme({
         },
       },
     },
-  },
-});
+  } as any,
+} as any);
 
 /**
  * Dark theme variant

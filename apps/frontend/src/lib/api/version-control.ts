@@ -177,7 +177,7 @@ export class ApiVersionManager {
     data: T,
     version: string,
     status: number = 200
-  ): NextResponse<VersionedResponse<T>> {
+  ): NextResponse {
     const response: VersionedResponse<T> = {
       data,
       version

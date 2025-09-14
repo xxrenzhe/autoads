@@ -51,7 +51,7 @@ export async function antiCheatMiddleware(request: NextRequest): Promise<{
   deviceFingerprint?: string
 }> {
   try {
-    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown'
+  const ip = (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown'
     const deviceFingerprint = generateSimpleDeviceFingerprint(request)
     const url = new URL(request.url)
     const pathname = url.pathname
@@ -119,7 +119,7 @@ export async function antiCheatMiddleware(request: NextRequest): Promise<{
 export async function recordUserDevice(userId: string, deviceFingerprint: string, request: NextRequest) {
   try {
     const userAgent = request.headers.get('user-agent') || ''
-    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown'
+  const ip = (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown'
     
     // 检查设备是否已存在
     const existingDevice = await prisma.userDevice.findFirst({

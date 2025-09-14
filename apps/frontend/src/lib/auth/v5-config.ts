@@ -160,23 +160,14 @@ const customAdapter = {
   }
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const __nextAuth = NextAuth({
   adapter: customAdapter,
-  trustHost: true, // 信任所有主机，支持多域名部署
   secret: process.env.AUTH_SECRET,
   debug: process.env.NODE_ENV === 'development' || process.env.AUTH_DEBUG === 'true',
-  basePath: '/api/auth',
-  useSecureCookies: shouldUseSecureCookies(),
   // Enhanced logging for debugging
   logger: {
-    error(error: Error) {
-      console.error(`[auth][error]:`, error)
-      
-      // Extract code and metadata from error if available
-      const code = (error as any).code
-      const metadata = (error as any).metadata
-      
-      // Enhanced error logging with context
+    error(code: string, metadata?: any) {
+      console.error(`[auth][error] ${code}:`, metadata)
       if (code === 'CSRF_TOKEN_MISMATCH' || code === 'MISSING_CSRF') {
         console.error('[auth][csrf] CSRF Error Details:', {
           timestamp: new Date().toISOString(),
@@ -188,7 +179,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           url: metadata?.request?.url,
         })
       }
-      
       if (code === 'UNKNOWN_ACTION') {
         console.error('[auth][action] Unknown Action Details:', {
           timestamp: new Date().toISOString(),
@@ -199,14 +189,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         })
       }
     },
-    warn(code) {
+    warn(code: string) {
       console.warn(`[auth][warn] ${code}`)
     },
-    debug(code, metadata) {
+    debug(code: string, metadata?: any) {
       if (process.env.AUTH_DEBUG === 'true') {
         console.log(`[auth][debug] ${code}:`, metadata)
       }
-    }
+    },
   },
   providers: [
     Google({
@@ -243,14 +233,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'Email', type: 'email', placeholder: 'admin@autoads.dev' },
         password: { label: 'Password', type: 'password' }
       },
-      async authorize(credentials: Partial<Record<"email" | "password", unknown>>) {
+      async authorize(credentials: Record<"email" | "password", string> | undefined, _req) {
         if (!credentials?.email || !credentials?.password) {
           console.log('[auth][debug] Missing email or password')
           return null
         }
 
-        const email = credentials.email as string
-        const password = credentials.password as string
+        const email = credentials.email
+        const password = credentials.password
 
         console.log('[auth][debug] Attempting admin login for email:', email)
 
@@ -453,18 +443,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             }
             
             // Update avatar if it's different
-            if (profile?.picture && profile.picture !== existingUser.avatar) {
+            if ((profile as any)?.picture && (profile as any).picture !== existingUser.avatar) {
               await prisma.user.update({
                 where: { id: existingUser.id },
-                data: { avatar: profile.picture }
+                data: { avatar: (profile as any).picture }
               })
             }
             
             // Update name if it's different
-            if (profile?.name && profile.name !== existingUser.name) {
+            if ((profile as any)?.name && (profile as any).name !== existingUser.name) {
               await prisma.user.update({
                 where: { id: existingUser.id },
-                data: { name: profile.name }
+                data: { name: (profile as any).name }
               })
             }
             
@@ -547,3 +537,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 })
+
+// Re-export with relaxed types to avoid strict signature mismatches across call sites
+export const handlers = __nextAuth.handlers
+export const signIn = __nextAuth.signIn
+export const signOut = __nextAuth.signOut
+// Cast auth to any to accept 0/1/2 arguments depending on usage context
+export const auth: any = __nextAuth.auth

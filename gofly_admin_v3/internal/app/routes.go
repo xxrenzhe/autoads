@@ -11,6 +11,7 @@ import (
 	"gofly-admin-v3/internal/upload"
 	"gofly-admin-v3/utils/gf"
 	"strings"
+	"path/filepath"
 	// "gofly-admin-v3/internal/adscentergo"
 	// "gofly-admin-v3/internal/auth"
 	// "gofly-admin-v3/internal/batchgo"
@@ -76,7 +77,22 @@ system.On("allowed_file_types", func(key, value string) {
 	router.Use(ErrorHandler())
 	router.Use(Logger())
 	router.Use(GlobalRateLimit())
+	// API访问日志（用于Analytics/Performance）
+	router.Use(ApiAccessLogger())
 	router.Use(metrics.GetMetrics().HTTPMiddleware())
+
+	// 静态托管管理前端（Vite构建产物） /admin
+	distDir := filepath.Join("web", "dist")
+	router.Static("/admin/assets", filepath.Join(distDir, "assets"))
+	router.StaticFile("/admin", filepath.Join(distDir, "index.html"))
+	router.NoRoute(func(c *gin.Context) {
+		p := c.Request.URL.Path
+		if strings.HasPrefix(p, "/admin") {
+			c.File(filepath.Join(distDir, "index.html"))
+			return
+		}
+		c.JSON(404, gin.H{"message": "not found"})
+	})
 
 	// API版本分组
 	v1 := router.Group("/api/v1")
@@ -86,16 +102,55 @@ system.On("allowed_file_types", func(key, value string) {
         // 管理员受保护路由（JWT）
         adminGroup := v1.Group("/admin")
         adminGroup.Use(admin.AdminJWT())
-        {
-            controller := admin.NewAdminController(nil, nil, nil, nil)
-            adminGroup.GET("/system/config", controller.GetSystemConfig)
-            adminGroup.POST("/system/config", controller.UpsertSystemConfig)
-            adminGroup.DELETE("/system/config/:key", controller.DeleteSystemConfig)
-            adminGroup.GET("/system/config/history", controller.GetSystemConfigHistory)
+		{
+			controller := admin.NewAdminController(nil, nil, nil, nil)
+			adminGroup.GET("/system/config", controller.GetSystemConfig)
+			adminGroup.POST("/system/config", controller.UpsertSystemConfig)
+			adminGroup.DELETE("/system/config/:key", controller.DeleteSystemConfig)
+			adminGroup.GET("/system/config/history", controller.GetSystemConfigHistory)
 
             rateLimitController := admin.NewRateLimitController(ctx.RateLimitManager)
             rateLimitController.RegisterRoutes(adminGroup)
-        }
+
+            // API管理（端点与API Key）
+            apiMgmt := &admin.ApiManagementController{}
+            apiGroup := adminGroup.Group("/api-management")
+            {
+                // Endpoints
+                apiGroup.GET("/endpoints", apiMgmt.ListEndpoints)
+                apiGroup.POST("/endpoints", apiMgmt.CreateEndpoint)
+                apiGroup.PUT("/endpoints/:id", apiMgmt.UpdateEndpoint)
+                apiGroup.DELETE("/endpoints/:id", apiMgmt.DeleteEndpoint)
+                apiGroup.POST("/endpoints/:id/toggle", apiMgmt.ToggleEndpoint)
+                apiGroup.GET("/endpoints/:id/metrics", apiMgmt.GetEndpointMetrics)
+
+                // API Keys
+                apiGroup.GET("/keys", apiMgmt.ListKeys)
+                apiGroup.POST("/keys", apiMgmt.CreateKey)
+                apiGroup.PUT("/keys/:id", apiMgmt.UpdateKey)
+                apiGroup.DELETE("/keys/:id", apiMgmt.DeleteKey)
+                apiGroup.POST("/keys/:id/revoke", apiMgmt.RevokeKey)
+
+                // Analytics & Performance（迁移自Next.js管理台）
+                apiGroup.GET("/analytics", apiMgmt.GetAnalytics)
+                apiGroup.GET("/performance", apiMgmt.GetPerformance)
+            }
+
+            // 用户管理
+            admin.RegisterUserRoutes(adminGroup)
+
+            // 订阅与计划（手动分配）
+            admin.RegisterSubscriptionRoutes(adminGroup)
+
+            // Token 管理
+            admin.RegisterTokenRoutes(adminGroup)
+
+            // 监控与告警
+            admin.RegisterMonitoringRoutes(adminGroup)
+
+            // 管理员与角色
+            admin.RegisterAdminAccountRoutes(adminGroup)
+		}
 
 		// 用户相关路由 - TODO: Fix user service initialization
 		/*

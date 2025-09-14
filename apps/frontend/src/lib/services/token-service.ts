@@ -253,7 +253,7 @@ export class TokenService {
         
         let operations: Array<{ metadata: any; tokensConsumed: number; description?: string }>
         if (options.operations) {
-          operations = options.operations.map((op: any) => ({
+          operations = options.operations.map((op) => ({
             metadata: op.metadata,
             tokensConsumed: op.amount,
             description: op.description
@@ -585,13 +585,13 @@ export class TokenService {
       ])
 
       // 转换功能使用数据
-      const byFeature = featureUsage.reduce((acc: Record<string, number>, item: any) => {
+      const byFeature = featureUsage.reduce((acc, item) => {
         acc[item.feature] = item._sum.tokensConsumed || 0
         return acc
       }, {} as Record<string, number>)
 
       // 转换最近使用数据
-      const recentConsumption: TokenConsumption[] = recentUsage.map((usage: TokenUsageRecord) => ({
+      const recentConsumption: TokenConsumption[] = recentUsage.map((usage) => ({
         userId,
         feature: usage.feature,
         amount: usage.tokensConsumed,
@@ -679,12 +679,12 @@ export class TokenService {
       const totalUsers = uniqueUsers.length
       const averagePerUser = totalUsers > 0 ? totalConsumed / totalUsers : 0
 
-      const topFeatures = featureStats.map((item: any) => ({
+      const topFeatures = featureStats.map((item) => ({
         feature: item.feature,
         usage: item._sum?.tokensConsumed || 0
       }))
 
-      const topUsers = userStats.map((item: any) => ({
+      const topUsers = userStats.map((item) => ({
         userId: item.userId,
         usage: item._sum?.tokensConsumed || 0
       }))
@@ -718,7 +718,7 @@ export class TokenService {
 
       const costs: Record<string, Record<string, number>> = {}
       
-      configs.forEach((config: any) => {
+      configs.forEach((config) => {
         if (!costs[config.feature]) {
           costs[config.feature] = {}
         }
@@ -1084,7 +1084,7 @@ export class TokenService {
         orderBy: { tokenBalance: 'asc' }
       })
 
-      return users.map((user: any) => ({
+      return users.map((user) => ({
         userId: user.id,
         email: user.email,
         name: user.name,

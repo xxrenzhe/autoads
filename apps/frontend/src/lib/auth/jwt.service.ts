@@ -5,9 +5,8 @@
 
 import { EnhancedError } from '@/lib/utils/error-handling';
 import jwt from 'jsonwebtoken';
-import { 
-
-v4 as uuidv4 } from 'uuid';
+import type { Algorithm, JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { BaseService, ServiceContext } from '@/lib/core/BaseService';
 import { Logger } from '@/lib/core/Logger';
 import { 
@@ -108,7 +107,7 @@ export class JWTService extends BaseService {
       };
 
       const token = jwt.sign(payload, this.authConfig.jwt.secret, {
-        algorithm: this.authConfig.jwt.algorithm as jwt.Algorithm,
+        algorithm: this.authConfig.jwt.algorithm as Algorithm,
         issuer: this.authConfig.jwt.issuer,
         audience: this.authConfig.jwt.audience,
         jwtid: payload.jti
@@ -154,7 +153,7 @@ export class JWTService extends BaseService {
       };
 
       const token = jwt.sign(payload, this.authConfig.jwt.secret, {
-        algorithm: this.authConfig.jwt.algorithm as jwt.Algorithm,
+        algorithm: this.authConfig.jwt.algorithm as Algorithm,
         issuer: this.authConfig.jwt.issuer,
         audience: this.authConfig.jwt.audience,
         jwtid: payload.jti
@@ -203,7 +202,7 @@ export class JWTService extends BaseService {
     return this.withErrorHandling(async () => {
       try {
         const decoded = jwt.verify(token, this.authConfig.jwt.secret, {
-          algorithms: [this.authConfig.jwt.algorithm as jwt.Algorithm],
+          algorithms: [this.authConfig.jwt.algorithm as Algorithm],
           issuer: this.authConfig.jwt.issuer,
           audience: this.authConfig.jwt.audience
         }) as JwtPayload;
@@ -234,7 +233,7 @@ export class JWTService extends BaseService {
 
         return decoded;
       } catch (error) {
-        if (error instanceof jwt.JsonWebTokenError) {
+        if (error instanceof (jwt as any).JsonWebTokenError) {
           throw new AuthError(
             AuthErrorType.INVALID_TOKEN,
             'Invalid token',
@@ -243,7 +242,7 @@ export class JWTService extends BaseService {
           );
         }
         
-        if (error instanceof jwt.TokenExpiredError) {
+        if (error instanceof (jwt as any).TokenExpiredError) {
           throw new AuthError(
             AuthErrorType.TOKEN_EXPIRED,
             'Token has expired',
@@ -271,12 +270,12 @@ export class JWTService extends BaseService {
    */
   extractTokenFromHeader(authHeader: string | null): string | null {
     if (!authHeader) {
-      return null as any;
+      return null;
     }
 
     const parts = authHeader.split(' ');
     if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
-      return null as any;
+      return null;
     }
 
     return parts[1];
@@ -287,7 +286,7 @@ export class JWTService extends BaseService {
    */
   extractTokenFromCookie(cookieHeader: string | null, cookieName: string = 'token'): string | null {
     if (!cookieHeader) {
-      return null as any;
+      return null;
     }
 
     const cookies = cookieHeader.split(';').reduce((acc, cookie: any) => {
@@ -309,7 +308,7 @@ export class JWTService extends BaseService {
       this.logger.warn('Failed to decode token', { 
         error: error instanceof Error ? error.message : String(error) 
       });
-      return null as any;
+      return null;
     }
   }
 

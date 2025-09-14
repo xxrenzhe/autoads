@@ -98,7 +98,7 @@ const defaultPreferences: UserPreferences = {
 };
 
 // Create the user store
-export const useUserStore = create<UserState>()(
+export const useUserStore = (create as unknown as <S>() => any)<UserState>()(
   devtools(
     persist(
       subscribeWithSelector(

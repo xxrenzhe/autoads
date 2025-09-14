@@ -60,7 +60,7 @@ export function withChangeLinkTokenTracking(
       // 提取操作类型（规则式：extract_link / update_ad）
       let operationType: 'extract_link' | 'update_ad' = 'update_ad'
       if (options.extractOperationType) {
-        operationType = await options.extractOperationType(request, body)
+        operationType = (await options.extractOperationType(request, body)) as 'extract_link' | 'update_ad'
       } else if (body?.type) {
         // 尝试从URL或body推断：只分两类 extract_link / update_ad
         try {

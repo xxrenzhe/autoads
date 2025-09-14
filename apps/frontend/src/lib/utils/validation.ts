@@ -3,7 +3,7 @@
  * 提供安全的输入验证功能
  */
 
-import { z } from 'zod';
+import { z, ZodError, ZodSchema } from 'zod';
 import { EnhancedError } from '@/lib/utils/error-handling';
 
 // URL验证
@@ -104,25 +104,26 @@ export type ValidationResult<T> = {
 } | {
   success: false;
   error: string;
-  details?: z.ZodError;
+  details?: ZodError;
 };
 
 /**
  * 验证输入数据
  */
 export function validateInput<T>(
-  schema: z.ZodSchema<T>,
+  schema: ZodSchema<T> | any,
   data: unknown
 ): ValidationResult<T> {
   try {
     const result = schema.parse(data);
     return { success: true, data: result };
   } catch (error) {
-    if (error instanceof z.ZodError) {
+    const err: any = error as any;
+    if (err && err.issues) {
       return {
         success: false,
-        error: error.issues[0]?.message || '输入验证失败',
-        details: error
+        error: err.issues[0]?.message || '输入验证失败',
+        details: err
       };
     }
     return {
@@ -143,17 +144,17 @@ export function safeUrlParse(urlString: string): URL | null {
     
     // 验证协议
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      return null as any;
+      return null;
     }
     
     // 验证主机名
     if (!url.hostname || url.hostname.includes('..')) {
-      return null as any;
+      return null;
     }
     
     return url;
   } catch {
-    return null as any;
+    return null;
   }
 }
 

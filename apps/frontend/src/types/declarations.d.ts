@@ -1,82 +1,5 @@
 // Declaration file for missing modules
-declare module 'zod' {
-  export const z: {
-    string: () => any
-    number: () => any
-    boolean: () => any
-    object: (shape: any) => any
-    array: (schema: any) => any
-    enum: (values: any) => any
-    union: (schemas: any[]) => any
-    optional: (schema: any) => any
-    nullable: (schema: any) => any
-    record: (key: any, value: any) => any
-    any: () => any
-    unknown: () => any
-    never: () => any
-    void: () => any
-    literal: (value: any) => any
-    tuple: (schemas: any[]) => any
-    set: (schema: any) => any
-    map: (keySchema: any, valueSchema: any) => any
-    date: () => any
-    bigint: () => any
-    nativeEnum: (enumValue: any) => any
-    pipeline: (schema: any, transformations: any) => any
-    discriminatedUnion: (discriminator: string, options: any[]) => any
-    intersection: (schemas: any[]) => any
-    default: (schema: any, defaultValue: any) => any
-    catch: (schema: any, defaultValue: any) => any
-    transform: (schema: any, transformer: any) => any
-    refine: (schema: any, refinement: any) => any
-    superRefine: (schema: any, refinement: any) => any
-    safeParse: (data: any) => any
-    parse: (data: any) => any
-    coerce: any
-    ZodError: any
-  }
-  export default z
-  
-  // Also export the methods directly on the module
-  export const string: () => any
-  export const number: () => any
-  export const boolean: () => any
-  export const object: (shape: any) => any
-  export const array: (schema: any) => any
-  export const enumFn: (values: any) => any
-  export const union: (schemas: any[]) => any
-  export const optional: (schema: any) => any
-  export const nullable: (schema: any) => any
-  export const record: (key: any, value: any) => any
-  export const any: () => any
-  export const unknown: () => any
-  export const never: () => any
-  export const voidFn: () => any
-  export const literal: (value: any) => any
-  export const tuple: (schemas: any[]) => any
-  export const set: (schema: any) => any
-  export const map: (keySchema: any, valueSchema: any) => any
-  export const date: () => any
-  export const bigint: () => any
-  export const nativeEnum: (enumValue: any) => any
-  export const pipeline: (schema: any, transformations: any) => any
-  export const discriminatedUnion: (discriminator: string, options: any[]) => any
-  export const intersection: (schemas: any[]) => any
-  export const defaultFn: (schema: any, defaultValue: any) => any
-  export const catchFn: (schema: any, defaultValue: any) => any
-  export const transform: (schema: any, transformer: any) => any
-  export const refine: (schema: any, refinement: any) => any
-  export const superRefine: (schema: any, refinement: any) => any
-  export const safeParse: (data: any) => any
-  export const parse: (data: any) => any
-  export const coerce: any
-  export const ZodError: any
-}
 
-declare module 'stripe' {
-  export const Stripe: any
-  export default Stripe
-}
 
 declare module '@stripe/stripe-js' {
   export const loadStripe: any
@@ -304,11 +227,6 @@ declare module 'exceljs' {
   export default ExcelJS
 }
 
-declare module 'jsonwebtoken' {
-  export const sign: any
-  export const verify: any
-  export default { sign, verify }
-}
 
 declare module 'uuid' {
   export const v4: any
@@ -355,10 +273,6 @@ declare module 'googleapis' {
   export default google
 }
 
-declare module 'google-auth-library' {
-  export const GoogleAuth: any
-  export default GoogleAuth
-}
 
 declare module 'google-ads-api' {
   export const GoogleAdsApi: any

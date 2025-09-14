@@ -150,17 +150,24 @@ jobs:
         if [[ "${{ github.ref }}" == "refs/heads/production" ]] || [[ "${{ github.ref }}" == refs/tags/v* ]]; then
           echo "NEXT_PUBLIC_DEPLOYMENT_ENV=production" >> $GITHUB_OUTPUT
           echo "NEXT_PUBLIC_DOMAIN=autoads.dev" >> $GITHUB_OUTPUT
+          BASE_DOMAIN=autoads.dev
         else
           echo "NEXT_PUBLIC_DEPLOYMENT_ENV=preview" >> $GITHUB_OUTPUT
           echo "NEXT_PUBLIC_DOMAIN=urlchecker.dev" >> $GITHUB_OUTPUT
+          BASE_DOMAIN=urlchecker.dev
         fi
+        WWW_DOMAIN="www.${BASE_DOMAIN}"
+        # CI 注入域名元信息（不注入301跳转开关）
+        echo "ALLOW_ORIGINS=https://${BASE_DOMAIN},https://${WWW_DOMAIN}" >> $GITHUB_OUTPUT
+        echo "GOOGLE_REDIRECT_URI=https://${WWW_DOMAIN}/auth/google/callback" >> $GITHUB_OUTPUT
 
     - name: Build and push Docker image
       id: build
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./configs/docker/Dockerfile.monorepo
+        # 依据 MustKnow.md 使用 standalone Dockerfile
+        file: ./Dockerfile.standalone
         platforms: linux/amd64
         push: true
         tags: ${{ steps.meta.outputs.tags }}
@@ -168,6 +175,8 @@ jobs:
         build-args: |
           NEXT_PUBLIC_DEPLOYMENT_ENV=${{ steps.build-args.outputs.NEXT_PUBLIC_DEPLOYMENT_ENV }}
           NEXT_PUBLIC_DOMAIN=${{ steps.build-args.outputs.NEXT_PUBLIC_DOMAIN }}
+          ALLOW_ORIGINS=${{ steps.build-args.outputs.ALLOW_ORIGINS }}
+          GOOGLE_REDIRECT_URI=${{ steps.build-args.outputs.GOOGLE_REDIRECT_URI }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 

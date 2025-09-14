@@ -53,6 +53,7 @@ interface UsageStats {
 }
 
 export default function SubscriptionManagement() {
+  const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true';
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null)
@@ -312,6 +313,11 @@ export default function SubscriptionManagement() {
         </div>
 
         {/* Subscription Actions */}
+        {!PAYMENTS_ENABLED ? (
+          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800">
+            支付与套餐变更功能暂未开通。如需升级请联系在线客服。
+          </div>
+        ) : (
         <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200">
           {subscription.status === 'active' && !subscription.cancelAtPeriodEnd && (
             <>
@@ -355,6 +361,7 @@ export default function SubscriptionManagement() {
             </button>
           )}
         </div>
+        )}
 
         {/* Cancellation Notice */}
         {subscription.cancelAtPeriodEnd && (
@@ -438,6 +445,7 @@ export default function SubscriptionManagement() {
       )}
 
       {/* Billing History */}
+      {PAYMENTS_ENABLED && (
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
         <div className="flex items-center mb-6">
           <CalendarIcon className="h-6 w-6 text-green-600 mr-2" />
@@ -497,8 +505,10 @@ export default function SubscriptionManagement() {
           </div>
         )}
       </div>
+      )}
 
       {/* Payment Method */}
+      {PAYMENTS_ENABLED && (
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
@@ -518,6 +528,7 @@ export default function SubscriptionManagement() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Support */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">

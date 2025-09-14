@@ -131,6 +131,7 @@ import { RestrictionShow } from './resources/restrictions/RestrictionShow';
  */
 const InnerAdminApp: React.FC = () => {
   const authProvider = createNextAuthAuthProvider();
+  const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true';
   
   return (
     <EnvReloadProvider>
@@ -277,20 +278,24 @@ const InnerAdminApp: React.FC = () => {
         />
 
         {/* Payment Management */}
-        <Resource
-          name="payment-providers"
-          list={PaymentProviderListEnhanced}
-          edit={PaymentProviderEdit}
-          icon={Payment}
-          options={{ label: '支付配置' }}
-        />
+        {PAYMENTS_ENABLED && (
+          <>
+            <Resource
+              name="payment-providers"
+              list={PaymentProviderListEnhanced}
+              edit={PaymentProviderEdit}
+              icon={Payment}
+              options={{ label: '支付配置' }}
+            />
 
-        <Resource
-          name="payments"
-          list={PaymentListEnhanced}
-          icon={Payment}
-          options={{ label: '支付记录' }}
-        />
+            <Resource
+              name="payments"
+              list={PaymentListEnhanced}
+              icon={Payment}
+              options={{ label: '支付记录' }}
+            />
+          </>
+        )}
 
         {/* Notification Management */}
         <Resource

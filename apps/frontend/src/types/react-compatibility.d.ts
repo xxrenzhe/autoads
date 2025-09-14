@@ -94,6 +94,7 @@ declare module '@radix-ui/react-dropdown-menu' {
   const Item: any;
   const CheckboxItem: any;
   const RadioItem: any;
+  const RadioGroup: any;
   const ItemIndicator: any;
   const Label: any;
   const Separator: any;
@@ -223,7 +224,14 @@ declare module 'react-admin' {
 
 // Axios compatibility
 declare module 'axios' {
-  export class AxiosInstance {}
+  export interface AxiosInstance {
+    get?: any
+    post?: any
+    put?: any
+    delete?: any
+    interceptors?: any
+    [key: string]: any
+  }
   export interface AxiosRequestConfig {}
 }
 
@@ -256,74 +264,11 @@ declare module 'puppeteer' {
 }
 
 // Google Auth Library
-declare module 'google-auth-library' {
-  class OAuth2Client {}
-  class GoogleAuth {}
-}
 
 // Google Ads API
-declare module 'google-ads-api' {
-  const Customer: any;
-  const resources: any;
-  const services: any;
-  const enums: any;
-  class GoogleAdsApi {}
-}
 
-// Nodemailer
-declare module 'nodemailer' {
-  namespace Transporter {}
-}
 
-// JWT
-declare module 'jsonwebtoken' {
-  const sign: any;
-  const verify: any;
-  const decode: any;
-  class JsonWebTokenError {}
-  class TokenExpiredError {}
-}
-
-// Stripe
-declare module 'stripe' {
-  namespace Stripe {}
-}
-
-// Zod
-declare module 'zod' {
-  const string: any;
-  const number: any;
-  const boolean: any;
-  const object: any;
-  const array: any;
-  const enum_: any;
-  const union: any;
-  const optional: any;
-  const coerce: any;
-  const ZodError: any;
-  function infer(): any;
-}
-
-// ioredis
-declare module 'ioredis' {
-  class ChainableCommander {}
-}
-
-// Cron
-declare module 'cron' {
-  class Cron {}
-}
-
-// Big.js
-declare module 'big.js' {
-  interface Big {}
-}
-
-// Lucide
-declare module 'lucide-react' {
-  interface LucideIcon {}
-  interface LucideProps {}
-}
+// Intentionally keep this file focused on UI library compat only.
 
 // Material UI
 declare module '@mui/material' {

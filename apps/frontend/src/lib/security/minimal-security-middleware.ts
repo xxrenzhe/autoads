@@ -45,7 +45,7 @@ export function withMinimalSecurity(
             action: 'api_call',
             endpoint: request.nextUrl.pathname,
             userAgent: request.headers.get('user-agent') || undefined,
-            ip: request.ip || request.headers.get('x-forwarded-for') || undefined,
+            ip: (request as any).ip || request.headers.get('x-forwarded-for') || undefined,
             timestamp: new Date(),
             metadata: {
               method: request.method,
@@ -70,7 +70,7 @@ export function withMinimalSecurity(
           action: 'api_call',
           endpoint: request.nextUrl.pathname,
           userAgent: request.headers.get('user-agent') || undefined,
-          ip: request.ip || request.headers.get('x-forwarded-for') || undefined,
+          ip: (request as any).ip || request.headers.get('x-forwarded-for') || undefined,
           timestamp: new Date(),
           metadata: {
             method: request.method,

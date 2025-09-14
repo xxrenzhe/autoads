@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { TokenService } from '@/lib/services/token-service';
 import { $Enums } from '@prisma/client';
-import Stripe from 'stripe';
 
 type TokenType = $Enums.TokenType;
 
@@ -11,6 +10,17 @@ type TokenType = $Enums.TokenType;
  * Handle Stripe webhook for token purchases
  */
 export async function POST(request: NextRequest) {
+  // Stripe integration disabled
+  try {
+    return NextResponse.json({ error: 'Stripe is disabled' }, { status: 501 });
+  } catch (error) {
+    return NextResponse.json({ error: 'Stripe is disabled' }, { status: 501 });
+  }
+}
+
+/*
+// Previous implementation kept for reference
+export async function POST_OLD(request: NextRequest) {
   try {
     const signature = request.headers.get('stripe-signature');
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_TOKENS;
@@ -36,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     // Handle payment_intent.succeeded event
     if (event.type === 'payment_intent.succeeded') {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const paymentIntent = event.data.object as any;
       const metadata = paymentIntent.metadata;
 
       // Check if this is a token purchase
@@ -75,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     // Handle payment_intent.payment_failed event
     if (event.type === 'payment_intent.payment_failed') {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const paymentIntent = event.data.object as any;
       const metadata = paymentIntent.metadata;
 
       if (metadata.type === 'token_purchase' && metadata.purchaseId) {
@@ -107,3 +117,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+*/

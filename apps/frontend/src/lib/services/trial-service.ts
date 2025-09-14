@@ -82,7 +82,7 @@ export class TrialService {
           severity: 'error',
           outcome: 'failure',
           details: JSON.stringify({
-            error: error instanceof Error ? error.message : "Unknown error" as any
+            error: error instanceof Error ? error.message : 'Unknown error'
           })
         }
       }).catch(console.error);

@@ -102,6 +102,7 @@ const AdminDashboard: React.FC = () => {
   const [stats, setStats] = React.useState<DashboardStats | null>(null);
   const [loading, setLoading] = React.useState(true);
   const navigate = useNavigate();
+  const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true';
 
   React.useEffect(() => {
     // Fetch dashboard statistics
@@ -152,7 +153,7 @@ const AdminDashboard: React.FC = () => {
             break;
           case 'b':
             event.preventDefault();
-            navigate('/admin-dashboard/payment-providers');
+            if (PAYMENTS_ENABLED) navigate('/admin-dashboard/payment-providers');
             break;
           case 'a':
             event.preventDefault();
@@ -781,15 +782,17 @@ const AdminDashboard: React.FC = () => {
                   color={stats?.trialStats?.expiringThisWeek ? 'warning' : 'primary'}
                 >
                   试用管理 {stats?.trialStats?.expiringThisWeek ? `(${stats.trialStats.expiringThisWeek})` : ''}\n                </Button>
-                <Button 
-                  size="small" 
-                  startIcon={<Payment />}
-                  onClick={() => navigate('/admin-dashboard/payment-providers')}
-                  sx={{ justifyContent: 'flex-start' }}
-                  title="配置支付方式和账单 (快捷键: Alt+B)"
-                >
-                  支付配置
-                </Button>
+                {!PAYMENTS_ENABLED ? null : (
+                  <Button 
+                    size="small" 
+                    startIcon={<Payment />}
+                    onClick={() => navigate('/admin-dashboard/payment-providers')}
+                    sx={{ justifyContent: 'flex-start' }}
+                    title="配置支付方式和账单 (快捷键: Alt+B)"
+                  >
+                    支付配置
+                  </Button>
+                )}
                 <Button 
                   size="small" 
                   startIcon={<Assessment />}

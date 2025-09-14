@@ -824,7 +824,7 @@ export class UnifiedGoogleAdsService {
       return { 
         success: false, 
         adId, 
-        error: error instanceof Error ? error.message : "Unknown error" as any 
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -886,7 +886,7 @@ export class UnifiedGoogleAdsService {
         const response = await this.executeMutation<any>(serviceName, batch);
         
         if (response.results) {
-          response.results.forEach((result: any, index: number) => {
+          response.results.forEach((result: any, index) => {
             successful.push({
               operation: batch[index],
               result: result as T,
@@ -903,7 +903,7 @@ export class UnifiedGoogleAdsService {
         batch.forEach((operation: any) => {
           failed.push({
             operation,
-            error: error instanceof Error ? error.message : "Unknown error" as any,
+            error: error instanceof Error ? error.message : 'Unknown error',
             errorCode: (error as any)?.code
           });
         });

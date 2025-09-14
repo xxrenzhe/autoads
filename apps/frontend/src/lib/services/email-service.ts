@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import type { Transporter } from 'nodemailer'
 
 export interface EmailConfig {
   provider: 'smtp' | 'sendgrid' | 'ses'
@@ -36,7 +37,7 @@ export interface EmailMessage {
 }
 
 export class EmailService {
-  private static transporter: nodemailer.Transporter | null = null
+  private static transporter: Transporter | null = null
   private static config: EmailConfig | null = null
 
   /**
@@ -224,7 +225,7 @@ export class EmailService {
       const testConfig = config || this.getConfigFromEnv()
       
       // 临时创建测试传输器
-      let testTransporter: nodemailer.Transporter
+      let testTransporter: Transporter
 
       switch (testConfig.provider) {
         case 'smtp':

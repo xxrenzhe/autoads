@@ -1,21 +1,21 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Meta, StoryObj } from '@storybook/react';
 
 import { userEvent, within } from '@storybook/testing-library';
 import { expect } from '@storybook/jest';
 
 import { Page } from './Page';
 
-const meta = {
+const meta: any = {
   title: 'Example/Page',
   component: Page,
   parameters: {
     // More on how to position stories at: https://storybook.js.org/docs/configure/story-layout
     layout: 'fullscreen',
   },
-} satisfies Meta<typeof Page>;
+} as const;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = any;
 
 export const LoggedOut: Story = {};
 

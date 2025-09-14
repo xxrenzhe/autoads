@@ -59,3 +59,15 @@ export interface ProgressInfo {
   estimatedTimeRemaining?: string;
   speed?: string;
 }
+
+// SiteRank data structure used by siterank pages
+export interface SiteRankData {
+  domain: string;
+  "Website Url": string;
+  rank: number | null;
+  priority: number | null;
+  commission?: number;
+  traffic?: number;
+  status: 'pending' | 'completed' | 'error';
+  sources?: string[];
+}

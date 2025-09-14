@@ -100,7 +100,7 @@ export async function apiMiddleware(request: NextRequest, handler: () => Promise
     if (isSuspicious) {
       const error = new RateLimitError('请求被拒绝');
       logger.warn('Suspicious request detected', { 
-        ip: request.ip || 'unknown',
+        ip: (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown',
         path: pathname,
         proxyHeaderCount,
         headerKeys,
@@ -123,7 +123,7 @@ export async function apiMiddleware(request: NextRequest, handler: () => Promise
       if (size > maxSize) {
         const error = new ApplicationError('请求体过大', 'INVALID_INPUT', 413);
         logger.warn('Request size exceeded', { 
-          ip: request.ip || 'unknown',
+          ip: (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown',
           path: pathname,
           size,
           maxSize
@@ -137,7 +137,7 @@ export async function apiMiddleware(request: NextRequest, handler: () => Promise
     }
     
     // Apply rate limiting
-    const clientIp = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const clientIp = (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown';
     const rateLimitKey = `${clientIp}:${pathname}`;
     const rateLimitConfig = getRateLimitConfig(pathname);
     

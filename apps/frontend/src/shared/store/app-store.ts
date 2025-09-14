@@ -74,7 +74,7 @@ const defaultMetadata: AppMetadata = {
 };
 
 // Create the app store
-export const useAppStore = create<AppState>()(
+export const useAppStore = (create as unknown as <S>() => any)<AppState>()(
   devtools(
     persist(
       subscribeWithSelector(

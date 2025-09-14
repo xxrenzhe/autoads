@@ -81,7 +81,7 @@ export function useFormValidation(
       
       if (!skipAsyncValidation) {
         // 异步验证
-        const asyncValidations = [];
+        const asyncValidations: Promise<any>[] = [];
 
         // URL可访问性验证
         if (data.originalLinks && data.originalLinks.length > 0) {

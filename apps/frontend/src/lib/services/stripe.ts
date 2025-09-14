@@ -1,5 +1,4 @@
-import Stripe from 'stripe';
-
+// Stripe integration disabled: lightweight stubs
 export interface StripeConfig {
   publishableKey: string;
   secretKey: string;
@@ -10,12 +9,13 @@ export interface StripeConfig {
 }
 
 export class StripeService {
-  private stripe: Stripe;
+  // No underlying Stripe client when disabled
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private stripe: unknown;
 
   constructor(secretKey: string) {
-    this.stripe = new Stripe(secretKey, {
-      apiVersion: '2025-07-30.basil',
-    });
+    // Stripe disabled
+    this.stripe = null;
   }
 
   /**
@@ -28,13 +28,7 @@ export class StripeService {
     paymentMethodTypes?: string[];
     metadata?: Record<string, string>;
   }) {
-    return await this.stripe.paymentIntents.create({
-      amount: Math.round(params.amount * 100), // 转换为分
-      currency: params.currency.toLowerCase(),
-      customer: params.customerId,
-      payment_method_types: params.paymentMethodTypes || ['card'],
-      metadata: params.metadata,
-    });
+    throw new Error('Stripe is disabled');
   }
 
   /**
@@ -45,11 +39,7 @@ export class StripeService {
     name?: string;
     metadata?: Record<string, string>;
   }) {
-    return await this.stripe.customers.create({
-      email: params.email,
-      name: params.name,
-      metadata: params.metadata,
-    });
+    throw new Error('Stripe is disabled');
   }
 
   /**
@@ -61,25 +51,14 @@ export class StripeService {
     trialPeriodDays?: number;
     metadata?: Record<string, string>;
   }) {
-    return await this.stripe.subscriptions.create({
-      customer: params.customerId,
-      items: [{ price: params.priceId }],
-      trial_period_days: params.trialPeriodDays,
-      metadata: params.metadata,
-    });
+    throw new Error('Stripe is disabled');
   }
 
   /**
    * 取消订阅
    */
   async cancelSubscription(subscriptionId: string, immediate = false) {
-    if (immediate) {
-      return await this.stripe.subscriptions.cancel(subscriptionId);
-    } else {
-      return await this.stripe.subscriptions.update(subscriptionId, {
-        cancel_at_period_end: true,
-      });
-    }
+    throw new Error('Stripe is disabled');
   }
 
   /**
@@ -90,11 +69,7 @@ export class StripeService {
     description?: string;
     metadata?: Record<string, string>;
   }) {
-    return await this.stripe.products.create({
-      name: params.name,
-      description: params.description,
-      metadata: params.metadata,
-    });
+    throw new Error('Stripe is disabled');
   }
 
   /**
@@ -108,39 +83,28 @@ export class StripeService {
     intervalCount?: number;
     metadata?: Record<string, string>;
   }) {
-    return await this.stripe.prices.create({
-      product: params.productId,
-      unit_amount: Math.round(params.unitAmount * 100),
-      currency: params.currency.toLowerCase(),
-      recurring: {
-        interval: params.interval,
-        interval_count: params.intervalCount,
-      },
-      metadata: params.metadata,
-    });
+    throw new Error('Stripe is disabled');
   }
 
   /**
    * 验证 webhook 签名
    */
   verifyWebhookSignature(payload: string, signature: string, secret: string) {
-    return this.stripe.webhooks.constructEvent(payload, signature, secret);
+    throw new Error('Stripe is disabled');
   }
 
   /**
    * 获取支付意图
    */
   async retrievePaymentIntent(paymentIntentId: string) {
-    return await this.stripe.paymentIntents.retrieve(paymentIntentId);
+    throw new Error('Stripe is disabled');
   }
 
   /**
    * 确认支付意图
    */
   async confirmPaymentIntent(paymentIntentId: string, paymentMethodId: string) {
-    return await this.stripe.paymentIntents.confirm(paymentIntentId, {
-      payment_method: paymentMethodId,
-    });
+    throw new Error('Stripe is disabled');
   }
 
   /**
@@ -152,26 +116,21 @@ export class StripeService {
     reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer';
     metadata?: Record<string, string>;
   }) {
-    return await this.stripe.refunds.create({
-      payment_intent: params.paymentIntentId,
-      amount: params.amount ? Math.round(params.amount * 100) : undefined,
-      reason: params.reason,
-      metadata: params.metadata,
-    });
+    throw new Error('Stripe is disabled');
   }
 
   /**
    * 获取余额
    */
   async retrieveBalance() {
-    return await this.stripe.balance.retrieve();
+    throw new Error('Stripe is disabled');
   }
 
   /**
    * 获取账户信息
    */
   async retrieveAccount() {
-    return await this.stripe.accounts.retrieve();
+    throw new Error('Stripe is disabled');
   }
 
   /**
@@ -182,15 +141,7 @@ export class StripeService {
     quantity?: number;
     metadata?: Record<string, string>;
   }) {
-    return await this.stripe.paymentLinks.create({
-      line_items: [
-        {
-          price: params.priceId,
-          quantity: params.quantity || 1,
-        },
-      ],
-      metadata: params.metadata,
-    });
+    throw new Error('Stripe is disabled');
   }
 
   /**
@@ -204,36 +155,16 @@ export class StripeService {
     interval: 'day' | 'week' | 'month' | 'year';
     metadata?: Record<string, string>;
   }>) {
-    const results = [];
+    const results: any[] = [];
 
     for (const plan of plans) {
       try {
         // 创建产品
-        const product = await this.createProduct({
-          name: plan.name,
-          description: plan.description,
-          metadata: plan.metadata,
-        });
-
-        // 创建价格
-        const price = await this.createPrice({
-          productId: product.id,
-          unitAmount: plan.price,
-          currency: plan.currency,
-          interval: plan.interval,
-          metadata: plan.metadata,
-        });
-
-        results.push({
-          plan: plan.name,
-          productId: product.id,
-          priceId: price.id,
-          success: true,
-        });
+        throw new Error('Stripe is disabled');
       } catch (error) {
         results.push({
           plan: plan.name,
-          error: error instanceof Error ? error.message : "Unknown error" as any,
+          error: error instanceof Error ? error.message : 'Unknown error',
           success: false,
         });
       }

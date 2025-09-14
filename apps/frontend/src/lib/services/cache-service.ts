@@ -1,4 +1,5 @@
-import { Redis } from 'ioredis'
+import Redis from 'ioredis'
+import type { Redis as RedisClientType } from 'ioredis'
 
 interface CacheConfig {
   host: string
@@ -28,7 +29,7 @@ interface CacheStats {
 }
 
 class CacheService {
-  private redis: Redis | null = null
+  private redis: RedisClientType | null = null
   private isConnected = false
   private stats: CacheStats = {
     hits: 0,

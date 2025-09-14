@@ -32,7 +32,8 @@ interface RedisClientOptions {
 }
 
 class OptimizedRedisClient {
-  private client: Redis | InstanceType<typeof Redis.Cluster> | null = null;
+  // 使用 any 以避免在不同 ioredis 类型定义下的 Cluster 类型冲突
+  private client: any = null;
   private fallbackClient: any = null;
   private isConnected = false;
   private connectionAttempts = 0;
@@ -251,7 +252,7 @@ class OptimizedRedisClient {
       if (times > this.maxConnectionAttempts) {
         logger.error('Redis重连次数超限，切换到fallback');
         this.initializeFallbackClient();
-        return null as any;
+        return null;
       }
       
       const delay = Math.min(Math.exp(times) * 100, 5000);
@@ -312,11 +313,11 @@ class OptimizedRedisClient {
       // 基础操作
       get: async (key: string) => {
         const item = memoryStore.get(key);
-        if (!item) return null as any;
+        if (!item) return null;
         
         if (item.expiry && Date.now() > item.expiry) {
           memoryStore.delete(key);
-          return null as any;
+          return null;
         }
         
         return item.value;

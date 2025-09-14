@@ -33,7 +33,7 @@ export function withSecurityIntegration(
     const startTime = Date.now();
     const session = await auth();
     const userId = session?.user?.id;
-    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  const ip = (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
     const sessionId = request.headers.get('x-session-id') || generateSessionId();
 

@@ -1,10 +1,11 @@
 import Redis from 'ioredis';
+import type { Redis as RedisClientType } from 'ioredis';
 import { createLogger } from './utils/security/secure-logger';
 
 const logger = createLogger('RateLimit');
 
 // Redis客户端（使用现有的REDIS_URL）
-let redis: Redis | null = null;
+let redis: RedisClientType | null = null;
 
 if (process.env.REDIS_URL) {
   redis = new Redis(process.env.REDIS_URL);

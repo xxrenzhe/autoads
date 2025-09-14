@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation'
 export async function createSubscription(formData: FormData) {
   const session = await auth()
   
-  if (!session?.userId) {
+  if (!session?.user?.id) {
     redirect('/auth/signin')
   }
 
@@ -24,7 +24,7 @@ export async function createSubscription(formData: FormData) {
     // Check if user already has an active subscription
     const existingSubscription = await prisma.subscription.findFirst({
       where: {
-        userId: session.userId,
+        userId: session.user!.id,
         status: 'ACTIVE',
         currentPeriodEnd: {
           gte: new Date()
@@ -51,7 +51,7 @@ export async function createSubscription(formData: FormData) {
 
     // Get or create Stripe customer
     let user = await prisma.user.findUnique({
-      where: { id: session.userId },
+      where: { id: session.user!.id },
       select: { stripeCustomerId: true, email: true, name: true }
     })
 
@@ -66,7 +66,7 @@ export async function createSubscription(formData: FormData) {
       
       // Update user with Stripe customer ID
       await prisma.user.update({
-        where: { id: session.userId },
+        where: { id: session.user!.id },
         data: { stripeCustomerId }
       })
     }
@@ -76,10 +76,10 @@ export async function createSubscription(formData: FormData) {
     const cancelUrl = `${process.env.NEXT_PUBLIC_BASE_URL || ''}/pricing?canceled=true`
 
     // Use the Stripe price ID from the plan
-    const stripePriceId = plan.stripePriceId
+    const stripePriceId = plan.stripePriceId as string
 
     const checkoutSession = await StripeService.createCheckoutSession({
-      customerId: stripeCustomerId,
+      customerId: stripeCustomerId!,
       priceId: stripePriceId,
       successUrl,
       cancelUrl
@@ -88,7 +88,7 @@ export async function createSubscription(formData: FormData) {
     // Create pending subscription record
     await prisma.subscription.create({
       data: {
-        userId: session.userId,
+        userId: session.user!.id,
         planId,
         status: 'PENDING',
         currentPeriodStart: new Date(),
@@ -113,7 +113,7 @@ export async function createSubscription(formData: FormData) {
 export async function updateUserRole(userId: string, role: string) {
   const session = await auth()
   
-  if (!session?.userId || (session.user?.role !== 'ADMIN' && session.user?.role !== 'SUPER_ADMIN')) {
+  if (!session?.user?.id || (session.user?.role !== 'ADMIN' && session.user?.role !== 'SUPER_ADMIN')) {
     throw new Error('Unauthorized')
   }
 
@@ -137,7 +137,7 @@ export async function updateUserRole(userId: string, role: string) {
 export async function updateUserStatus(userId: string, status: string) {
   const session = await auth()
   
-  if (!session?.userId || (session.user?.role !== 'ADMIN' && session.user?.role !== 'SUPER_ADMIN')) {
+  if (!session?.user?.id || (session.user?.role !== 'ADMIN' && session.user?.role !== 'SUPER_ADMIN')) {
     throw new Error('Unauthorized')
   }
 
@@ -161,7 +161,7 @@ export async function updateUserStatus(userId: string, status: string) {
 export async function cancelSubscription(subscriptionId: string, immediately = false) {
   const session = await auth()
   
-  if (!session?.userId) {
+  if (!session?.user?.id) {
     throw new Error('Unauthorized')
   }
 
@@ -170,7 +170,7 @@ export async function cancelSubscription(subscriptionId: string, immediately = f
     const subscription = await prisma.subscription.findFirst({
       where: {
         id: subscriptionId,
-        userId: session.userId,
+        userId: session.user!.id,
         provider: 'stripe'
       }
     })
@@ -208,14 +208,14 @@ export async function cancelSubscription(subscriptionId: string, immediately = f
 export async function createCustomerPortalSession() {
   const session = await auth()
   
-  if (!session?.userId) {
+  if (!session?.user?.id) {
     throw new Error('Unauthorized')
   }
 
   try {
     // Get user with Stripe customer ID
     const user = await prisma.user.findUnique({
-      where: { id: session.userId },
+      where: { id: session.user!.id },
       select: { stripeCustomerId: true }
     })
 

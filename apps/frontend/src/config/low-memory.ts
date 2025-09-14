@@ -130,9 +130,10 @@ export function isLowMemoryEnvironment(): boolean {
   }
   
   // 检查环境变量
-  return process.env.LOW_MEMORY_MODE === 'true' ||
-         process.env.DOCKER_ENV === 'true' ||
-         process.env.VERCEL === 'true';
+  const envTrue = (v?: string) => ['true', '1', 'yes', 'on'].includes((v ?? '').toLowerCase())
+  return envTrue(process.env.LOW_MEMORY_MODE) ||
+         envTrue(process.env.DOCKER_ENV) ||
+         envTrue(process.env.VERCEL);
 }
 
 // 导出所有配置

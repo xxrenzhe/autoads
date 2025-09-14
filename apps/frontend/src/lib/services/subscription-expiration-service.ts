@@ -9,7 +9,7 @@ import { Cron } from 'croner';
  * Service to handle subscription expiration and fallback to free plan
  */
 export class SubscriptionExpirationService {
-  private static expirationCheckJob: Cron | null = null;
+  private static expirationCheckJob: ReturnType<typeof Cron> | null = null;
   /**
    * Process expired subscriptions and downgrade users to free plan
    */
@@ -37,7 +37,7 @@ export class SubscriptionExpirationService {
       }
     });
 
-    const results = [];
+    const results: any[] = [];
 
     for (const subscription of expiredSubscriptions) {
       try {

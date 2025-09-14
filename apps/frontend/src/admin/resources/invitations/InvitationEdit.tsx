@@ -153,7 +153,7 @@ export const InvitationEdit: React.FC = () => {
                   try {
                     return value ? JSON.parse(value) : null;
                   } catch {
-                    return null as any;
+                    return null;
                   }
                 }}
               />

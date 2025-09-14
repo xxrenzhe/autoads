@@ -276,7 +276,7 @@ export interface PerformanceMetrics {
 }
 
 export class EnhancedGoogleAdsApiClient {
-  private client: GoogleAdsApi;
+  private client: any;
   private customer: Customer | null = null;
   private customerId: string;
   private rateLimiter: GoogleAdsRateLimiter;
@@ -1082,7 +1082,7 @@ export class EnhancedGoogleAdsApiClient {
         const response = await this.executeMutation<any>(serviceName, batch);
         
         if (response.results) {
-          response.results.forEach((result: any, index: number) => {
+          response.results.forEach((result: any, index) => {
             successful.push({
               operation: batch[index],
               result: result as T,
@@ -1099,7 +1099,7 @@ export class EnhancedGoogleAdsApiClient {
         batch.forEach((operation: any) => {
           failed.push({
             operation,
-            error: error instanceof Error ? error.message : "Unknown error" as any,
+            error: error instanceof Error ? error.message : 'Unknown error',
             errorCode: (error as any)?.code
           });
         });

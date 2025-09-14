@@ -225,7 +225,7 @@ export async function bulkInsert<T>(
             const successful = results.filter((r: any) => r.status === 'fulfilled');
             const failed = results.filter((r: any) => r.status === 'rejected');
             
-            failed.forEach((f: PromiseRejectedResult) => {
+            failed.forEach((f: any) => {
               errors.push({
                 data: batch[results.indexOf(f)],
                 error: (f.reason as Error).message

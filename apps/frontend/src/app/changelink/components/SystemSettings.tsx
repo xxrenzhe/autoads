@@ -572,7 +572,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Label htmlFor="encryption-level">Encryption Level</Label>
                     <Select
                       value={config.security.encryptionLevel}
-                      onValueChange={(value: 'basic' | 'standard' | 'high') => updateConfig('security', 'encryptionLevel', value)}
+                      onValueChange={(value: string) => updateConfig('security', 'encryptionLevel', value as any)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -675,7 +675,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Label htmlFor="log-level">Log Level</Label>
                     <Select
                       value={config.performance.logLevel}
-                      onValueChange={(value: 'debug' | 'info' | 'warn' | 'error') => updateConfig('performance', 'logLevel', value)}
+                      onValueChange={(value: string) => updateConfig('performance', 'logLevel', value as any)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -771,7 +771,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <Label htmlFor="backup-frequency">Backup Frequency</Label>
                     <Select
                       value={config.database.backupFrequency}
-                      onValueChange={(value: 'daily' | 'weekly' | 'monthly') => updateConfig('database', 'backupFrequency', value)}
+                      onValueChange={(value: string) => updateConfig('database', 'backupFrequency', value as any)}
                     >
                       <SelectTrigger>
                         <SelectValue />

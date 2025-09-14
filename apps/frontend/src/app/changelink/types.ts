@@ -363,7 +363,9 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   pageSize: number;
-  totalPages: number;
+  totalPages?: number;
+  hasNext?: boolean;
+  hasPrev?: boolean;
 }
 
 export interface FilterRequest {
@@ -460,4 +462,67 @@ export interface LinkAccountAssociation {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Minimal additional types referenced by services
+export interface PerformanceMetrics {
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  averageResponseTime: number;
+}
+
+export interface ScheduledTask {
+  id: string;
+  name: string;
+  enabled: boolean;
+  schedule?: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  role?: UserRole;
+}
+
+export type UserRole = 'ADMIN' | 'USER' | 'SUPER_ADMIN';
+
+export interface Permission {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface AuditEvent {
+  id: string;
+  userId: string;
+  action: string;
+  timestamp: Date | string;
+  details?: any;
+}
+
+export interface IntegrationConfig {
+  id: string;
+  type: string;
+  config: Record<string, any>;
+}
+
+export interface Integration {
+  id: string;
+  name: string;
+  type: string;
+  config?: IntegrationConfig;
+}
+
+export interface SystemStatus {
+  status: 'ok' | 'degraded' | 'down';
+  details?: Record<string, any>;
+}
+
+export interface ExportJob {
+  id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  createdAt?: Date | string;
+  completedAt?: Date | string;
 }

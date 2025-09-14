@@ -83,12 +83,12 @@ open http://localhost:8888
 ### 预发环境
 - **域名**: urlchecker.dev
 - **镜像**: `ghcr.io/xxrenzhe/autoads:preview-latest`
-- **资源**: 1.5C/1.5G
+- **资源**: 2C/4G
 
 ### 生产环境
 - **域名**: autoads.dev
 - **镜像**: `ghcr.io/xxrenzhe/autoads:prod-latest`
-- **资源**: 2C/2G
+- **资源**: 2C/4G
 
 ## 监控和维护
 
@@ -198,6 +198,34 @@ docker exec autoads-saas-production netstat -tlnp
 - ✅ **部署简单**：一个命令完成部署
 - ✅ **性能优异**：零网络延迟，资源利用率高
 - ✅ **运维友好**：统一监控，简化管理
+
+## ClawCloud 运行时覆盖域名元信息（重要）
+
+为配合 MustKnow.md 的两步部署流程，CI 会在构建镜像时注入“域名元信息”，并在容器启动时渲染 `gofly_admin_v3/resource/config.yaml`。在 ClawCloud 控制台你可以覆盖以下环境变量，无需改动镜像内容：
+
+- 变量：`ALLOW_ORIGINS`
+  - 用途：渲染 `resource/config.yaml` 中的 `app.allowurl`（CORS 允许来源）
+  - 说明：请填写以逗号分隔的 https 域名列表（不含 301 开关；跳转由域名解析/边缘层负责）
+  - 示例（预发）：`https://urlchecker.dev,https://www.urlchecker.dev`
+  - 示例（生产）：`https://autoads.dev,https://www.autoads.dev`
+
+- 变量：`GOOGLE_REDIRECT_URI`
+  - 用途：渲染 `resource/config.yaml` 中 Google OAuth 的回调地址
+  - 示例（预发）：`https://www.urlchecker.dev/auth/google/callback`
+  - 示例（生产）：`https://www.autoads.dev/auth/google/callback`
+
+注意事项：
+- 若未显式设置上述变量，启动脚本会基于 `NEXT_PUBLIC_DOMAIN` 或 `DOMAIN` 自动推导：
+  - `ALLOW_ORIGINS = https://<domain>,https://www.<domain>`
+  - `GOOGLE_REDIRECT_URI = https://www.<domain>/auth/google/callback`
+- CI 侧不会注入“301 跳转开关”，因为 301 已在域名层实现。
+- 模板位置：`gofly_admin_v3/resource/config.yaml.template`（其中 `allowurl: ${ALLOW_ORIGINS}`）。
+- 渲染逻辑：`docker-entrypoint.sh` 使用 `envsubst` 只替换域名相关变量，不会覆盖其他保密配置位。
+
+验证步骤：
+- 部署后在容器日志中应看到“渲染 resource/config.yaml (ALLOW_ORIGINS, GOOGLE_REDIRECT_URI)”提示。
+- 进入容器检查：`/app/gofly_admin_v3/resource/config.yaml` 的 `allowurl` 是否为期望域名列表。
+- 跨域验证：带 `Origin: https://www.<domain>` 请求 API，应返回允许跨域的响应头。
 - ✅ **成本可控**：2C4G 运行完整应用
 
 这种架构特别适合中小型 SaaS 应用，在保证功能完整性的同时，最大化了部署和运维的效率。

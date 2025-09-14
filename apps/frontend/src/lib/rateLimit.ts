@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getRequestIp } from '@/lib/utils/request-ip'
 import { createHash } from 'crypto';
 
 interface RateLimitData {
@@ -36,7 +37,7 @@ export function createRateLimit(options: RateLimitOptions = {}) {
     maxRequests = 100, // 默认100次请求
     keyGenerator = (req: NextRequest) => {
       // 默认使用 IP + User-Agent 作为键
-      const ip = req.ip || req.headers.get('x-forwarded-for') || 'unknown';
+      const ip = getRequestIp(req) || 'unknown';
       const userAgent = req.headers.get('user-agent') || 'unknown';
       return createHash('md5').update(`${ip}:${userAgent}`).digest('hex');
     },
@@ -87,7 +88,7 @@ export const logApiRateLimit = createRateLimit({
   maxRequests: 30, // 每分钟最多30次请求
   keyGenerator: (req: NextRequest) => {
     // 对日志API使用更严格的限制键
-    const ip = req.ip || req.headers.get('x-forwarded-for') || 'unknown';
+    const ip = getRequestIp(req) || 'unknown';
     const path = req.nextUrl.pathname;
     return createHash('md5').update(`${ip}:${path}`).digest('hex');
   },
@@ -98,6 +99,12 @@ export const generalApiRateLimit = createRateLimit({
   windowMs: 60 * 1000, // 1分钟
   maxRequests: 100, // 每分钟最多100次请求
 });
+
+// 导出统一的限制器集合，便于通过 key 选择
+export const rateLimiters = {
+  general: generalApiRateLimit,
+  log: logApiRateLimit,
+};
 
 // 创建速率限制中间件
 export function withRateLimit(

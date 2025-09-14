@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Progress } from './ProgressBar';
 
-const meta: Meta<typeof Progress> = {
+const meta: any = {
   title: 'UI/ProgressBar',
   component: Progress,
   parameters: {
@@ -25,7 +25,7 @@ const meta: Meta<typeof Progress> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = any;
 
 export const Default: Story = {
   args: {

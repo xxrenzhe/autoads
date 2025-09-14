@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
       }
     ];
 
-    const results = [];
+    const results: any[] = [];
     
     for (const planData of plans) {
       const result = await prisma.plan.upsert({

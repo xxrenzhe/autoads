@@ -25,7 +25,7 @@ export const useStatisticsPermissions = () => {
     
     // Get available features based on permissions
     getAvailableFeatures: function() {
-      const features = [];
+      const features: string[] = [];
       if (this.canViewUsage) features.push('usage');
       if (this.canViewBehavior) features.push('behavior');
       if (this.canExportData) features.push('export');

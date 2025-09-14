@@ -69,7 +69,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       'text/csv': ['.csv'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
       'application/vnd.ms-excel': ['.xls']
-    },
+    } as any,
     multiple: false
   });
 

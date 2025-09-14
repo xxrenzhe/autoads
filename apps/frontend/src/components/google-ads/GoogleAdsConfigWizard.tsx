@@ -359,9 +359,9 @@ export function GoogleAdsConfigWizard({
                   <Label htmlFor="executionOrder">执行顺序</Label>
                   <Select
                     value={config.executionOrder}
-                    onValueChange={(value: 'priority' | 'random' | 'roundrobin') => setConfig(prev => ({
+                    onValueChange={(value: string) => setConfig(prev => ({
                       ...prev,
-                      executionOrder: value
+                      executionOrder: value as 'priority' | 'random' | 'roundrobin'
                     }))}
                   >
                     <SelectTrigger>
@@ -603,11 +603,11 @@ export function GoogleAdsConfigWizard({
                       <Label htmlFor="frequency">更新频率</Label>
                       <Select
                         value={config.updateSchedule.frequency}
-                        onValueChange={(value: 'hourly' | 'daily' | 'weekly') => setConfig(prev => ({
+                        onValueChange={(value: string) => setConfig(prev => ({
                           ...prev,
                           updateSchedule: {
                             ...prev.updateSchedule,
-                            frequency: value
+                            frequency: value as 'hourly' | 'daily' | 'weekly'
                           }
                         }))}
                       >

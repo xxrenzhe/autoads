@@ -86,6 +86,26 @@ const CACHE_TTL = 5 * 60 * 1000 // 5分钟缓存
 
 export class TokenConfigService {
   /**
+   * Compatibility helper: estimate token cost for a given feature and item count.
+   * This mirrors the signature used elsewhere in the codebase.
+   */
+  async calculateTokenCost(
+    feature: 'siterank' | 'batchopen' | 'adscenter',
+    itemCount: number,
+    isBatch: boolean = false
+  ): Promise<number> {
+    // Use simple defaults; real configs are not persisted in current schema
+    const defaults: Record<string, number> = {
+      siterank: 1,
+      batchopen: 1,
+      adscenter: 2,
+    }
+    const unit = defaults[feature] ?? 1
+    const total = unit * Math.max(1, itemCount)
+    // No batch multiplier available here; return computed total
+    return total
+  }
+  /**
    * 获取所有Token配置
    */
   static async getAllConfigs(): Promise<TokenConfig[]> {

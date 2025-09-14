@@ -362,7 +362,9 @@ export const ExecutionAPI = {
       const endpoint = configurationId 
         ? `/executions/statistics?configurationId=${configurationId}`
         : '/executions/statistics';
-      const response = await api.get(endpoint);
+      const response = await api.get<{
+        total: number; completed: number; failed: number; running: number; pending: number; successRate: number; avgExecutionTime: number;
+      }>(endpoint);
       return response.data || {
         total: 0,
         completed: 0,
@@ -405,7 +407,7 @@ export const AnalyticsAPI = {
     }>;
   }> => {
     try {
-      const response = await api.get(`/analytics/trends?period=${period}`);
+      const response = await api.get<{ labels: string[]; datasets: { label: string; data: number[] }[] }>(`/analytics/trends?period=${period}`);
       return response.data || { labels: [], datasets: [] };
     } catch (error) {
       console.error('Error in getTrends:', error);
@@ -421,7 +423,7 @@ export const AnalyticsAPI = {
     suggestions: string[];
   }>> => {
     try {
-      const response = await api.get('/analytics/bottlenecks');
+      const response = await api.get<Array<{ type: string; description: string; impact: number; suggestions: string[] }>>('/analytics/bottlenecks');
       return response.data || [];
     } catch (error) {
       console.error('Error in getBottlenecks:', error);
@@ -438,7 +440,7 @@ export const AnalyticsAPI = {
     estimatedImpact: string;
   }>> => {
     try {
-      const response = await api.get('/analytics/recommendations');
+      const response = await api.get<Array<{ category: string; title: string; description: string; priority: 'low'|'medium'|'high'; estimatedImpact: string }>>('/analytics/recommendations');
       return response.data || [];
     } catch (error) {
       console.error('Error in getRecommendations:', error);
@@ -561,7 +563,7 @@ export const NotificationAPI = {
     sentAt: Date;
   }>> => {
     try {
-      const response = await api.get(`/notifications/history?page=${page}&pageSize=${pageSize}`);
+      const response = await api.get<PaginatedResponse<{ id: string; type: string; recipient: string; subject: string; status: 'sent'|'failed'; sentAt: Date }>>(`/notifications/history?page=${page}&pageSize=${pageSize}`);
       return response.data || { items: [], total: 0, page, pageSize, hasNext: false, hasPrev: false };
     } catch (error) {
       console.error('Error in getHistory:', error);
@@ -857,8 +859,8 @@ export const SystemAPI = {
     size: number;
   }>> => {
     try {
-      const response = await api.get('/system/backups');
-      return response.data || [];
+      const response = await api.get<Array<{ id: string; description: string; createdAt: Date; size: number }>>('/system/backups');
+      return (response && (response as any).data) || [];
     } catch (error) {
       console.error('Error in getBackups:', error);
       throw error;
@@ -923,8 +925,8 @@ export const DataAPI = {
         body: formData,
       });
   
-      const data = await response.json();
-      return data.data || { success: false, importedCount: 0, errors: [] };
+      const data: any = await response.json();
+      return (data && data.data) || { success: false, importedCount: 0, errors: [] };
     } catch (error) {
       console.error('Error in importData:', error);
       throw error;
@@ -935,7 +937,7 @@ export const DataAPI = {
 // 实时更新 API
 export const RealtimeAPI = {
   // 建立WebSocket连接
-  connect: (onMessage: (data: unknown) => void): WebSocket => {
+  connect: (onMessage: (data: any) => void): WebSocket => {
     const API_BASE_URL = getApiBaseUrl();
     const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/realtime`;
     const ws = new WebSocket(wsUrl);
@@ -954,9 +956,9 @@ export const RealtimeAPI = {
 
   // 订阅执行更新
   subscribeToExecution: (executionId: string, onUpdate: (execution: ExecutionResult) => void): () => void => {
-    const ws = RealtimeAPI.connect((data: unknown) => {
-      if (data.type === 'execution_update' && data.executionId === executionId) {
-        onUpdate(data.execution);
+    const ws = RealtimeAPI.connect((data: any) => {
+      if (data && data.type === 'execution_update' && data.executionId === executionId) {
+        onUpdate(data.execution as ExecutionResult);
       }
     });
 
@@ -974,9 +976,9 @@ export const RealtimeAPI = {
 
   // 订阅系统状态更新
   subscribeToSystemStatus: (onUpdate: (status: SystemStatus) => void): () => void => {
-    const ws = RealtimeAPI.connect((data: unknown) => {
-      if (data.type === 'system_status_update') {
-        onUpdate(data.status);
+    const ws = RealtimeAPI.connect((data: any) => {
+      if (data && data.type === 'system_status_update') {
+        onUpdate(data.status as SystemStatus);
       }
     });
 

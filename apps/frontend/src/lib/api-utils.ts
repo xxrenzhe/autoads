@@ -1,5 +1,6 @@
-import { rateLimiters } from './rate-limit';
+import { rateLimiters } from '@/lib/rate-limit';
 import { NextRequest, NextResponse } from 'next/server';
+import { getRequestIp } from '@/lib/utils/request-ip'
 
 // 创建API路由的速率限制包装器
 export function withRateLimit(
@@ -63,7 +64,7 @@ function getDefaultKey(req: NextRequest): string {
   }
   
   // 2. 使用IP地址
-  const ip = req.ip || req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip');
+  const ip = getRequestIp(req);
   if (ip) {
     return `ip:${ip}`;
   }

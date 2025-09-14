@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from 'zustand';
+import type { ComponentType, ReactNode } from 'react';
 import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
@@ -8,7 +9,7 @@ import { immer } from 'zustand/middleware/immer';
 export interface ModalState {
   id: string;
   isOpen: boolean;
-  component?: React.ComponentType<any>;
+  component?: ComponentType<any>;
   props?: Record<string, any>;
   options?: {
     closable?: boolean;
@@ -43,7 +44,7 @@ export interface PageState {
   title: string;
   subtitle?: string;
   breadcrumbs: BreadcrumbItem[];
-  actions?: React.ReactNode;
+  actions?: ReactNode;
 }
 
 // Layout configuration
@@ -78,7 +79,7 @@ export interface UIState {
   isDesktop: boolean;
   
   // Actions
-  openModal: (id: string, component?: React.ComponentType<any>, props?: Record<string, any>, options?: ModalState['options']) => void;
+  openModal: (id: string, component?: ComponentType<any>, props?: Record<string, any>, options?: ModalState['options']) => void;
   closeModal: (id: string) => void;
   closeAllModals: () => void;
   
@@ -118,7 +119,7 @@ const defaultPageState: PageState = {
 };
 
 // Create the UI store
-export const useUIStore = create<UIState>()(
+export const useUIStore = (create as unknown as <S>() => any)<UIState>()(
   devtools(
     persist(
       subscribeWithSelector(

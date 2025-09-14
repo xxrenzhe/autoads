@@ -331,7 +331,7 @@ export class SecurityMiddleware {
     if (realIP) return realIP
     if (forwarded) return forwarded.split(',')[0].trim()
 
-    return request.ip || 'unknown'
+    return (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown'
   }
 
   /**

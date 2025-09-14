@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { z } from 'zod';
 import {
   Plus,
   Trash2,
@@ -49,7 +49,7 @@ const adsPowerConfigSchema = z.object({
   linkMappings: z.array(linkMappingSchema).optional(),
   description: z.string().optional()
 });
-type AdsPowerConfigFormValues = z.infer<typeof adsPowerConfigSchema>;
+type AdsPowerConfigFormValues = any;
 
 interface AdsPowerConfigFormProps {
   initialData?: Partial<TrackingConfiguration>;
@@ -137,7 +137,7 @@ export default function AdsPowerConfigForm({
       return () => clearTimeout(timeoutId);
     });
 
-    return () => subscription.unsubscribe();
+    return () => (subscription as any as { unsubscribe: () => void }).unsubscribe();
   }, [form.watch, isAutoSaving]);
   // 步骤验证
   const validateStep = useCallback((stepId: number): boolean => {
@@ -313,7 +313,7 @@ export default function AdsPowerConfigForm({
       return undefined;
     });
 
-    return () => subscription.unsubscribe();
+    return () => (subscription as any as { unsubscribe: () => void }).unsubscribe();
   }, [form.watch, handleValidateEnvironment]);
   return (
     <Form {...form}>

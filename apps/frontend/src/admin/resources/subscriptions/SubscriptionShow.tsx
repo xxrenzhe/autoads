@@ -239,8 +239,9 @@ export const SubscriptionShow: React.FC = () => {
             <TextField source="currency" label="币种" />
             <BooleanField source="autoRenew" label="自动续费" />
             
-            <TextField source="stripeSubscriptionId" label="Stripe订阅ID" />
-            <TextField source="stripeCustomerId" label="Stripe客户ID" />
+            {/* Stripe 集成已禁用：隐藏 Stripe 相关字段 */}
+            {/* <TextField source="stripeSubscriptionId" label="Stripe订阅ID" />
+            <TextField source="stripeCustomerId" label="Stripe客户ID" /> */}
           </SimpleShowLayout>
         </Tab>
         
@@ -256,11 +257,12 @@ export const SubscriptionShow: React.FC = () => {
           </SimpleShowLayout>
         </Tab>
         
-        <Tab label="支付记录" icon={<History />}>
+        {/* 支付集成已禁用：隐藏支付记录标签 */}
+        {/* <Tab label="支付记录" icon={<History />}>
           <SimpleShowLayout>
             <SubscriptionPayments />
           </SimpleShowLayout>
-        </Tab>
+        </Tab> */}
       </TabbedShowLayout>
     </Show>
   );

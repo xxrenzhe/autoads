@@ -48,7 +48,7 @@ async function fetchRanks(
   
   // 转换SimilarWeb响应格式
   if (result.success && result.data) {
-    return result.data.map((item: any) => ({
+    return result.data.map((item) => ({
       domain: item.domain,
       rank: item.globalRank,
       monthlyVisits: item.monthlyVisits,
@@ -57,7 +57,7 @@ async function fetchRanks(
   }
   
   // 返回空结果数组
-  return domains?.filter(Boolean)?.map((domain: any) => ({
+  return domains?.filter(Boolean)?.map((domain) => ({
     domain,
     rank: null,
     monthlyVisits: null,
@@ -105,7 +105,7 @@ function SiteRankClientLazy() {
     setQueried(true);
     setAnalysisStatus("正在查询网站排名...");
     setAnalysisProgress(0);
-    const updatedData: SiteRankData[] = domains.map((item: any) => ({
+    const updatedData: SiteRankData[] = domains.map((item) => ({
       ...item,
       status: "pending",
       rank: null,
@@ -118,10 +118,10 @@ function SiteRankClientLazy() {
     for (let i = 0; i < updatedData.length; i += batchSize) {
       const batch = updatedData.slice(i, i + batchSize);
       try {
-        const batchResults = await fetchRanks(batch.map((item: any) => item.domain));
+        const batchResults = await fetchRanks(batch.map((item) => item.domain));
         for (let j = 0; j < batch.length; j++) {
           const idx = i + j;
-          const result = batchResults.find((r: any) => r.domain === batch[j].domain);
+          const result = batchResults.find((r) => r.domain === batch[j].domain);
           if (result) {
             updatedData[idx] = {
               ...updatedData[idx],
@@ -163,8 +163,8 @@ function SiteRankClientLazy() {
   // 处理输入分析
   const handleStartAnalysis = () => {
     if (urlInput.trim() !== "") {
-      const urls = urlInput.split("\n").filter((url: any) => url.trim() !== "");
-      const formattedData = urls.map((url: any) => {
+      const urls = urlInput.split("\n").filter((url) => url.trim() !== "");
+      const formattedData = urls.map((url) => {
         const trimmedUrl = url.trim();
         const domain = extractDomain(trimmedUrl);
         return {
@@ -272,7 +272,7 @@ function SiteRankClientLazy() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((row: any) => (
+                  {filteredData.map((row) => (
                     <tr key={row.domain} className="border-b">
                       <td className="px-2 py-1">{row.domain}</td>
                       <td className="px-2 py-1">{row.rank ?? "-"}</td>

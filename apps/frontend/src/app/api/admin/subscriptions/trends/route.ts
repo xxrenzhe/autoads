@@ -21,7 +21,7 @@ async function handleGET(request: NextRequest, { user, validatedData }: any) {
     const startDate = new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000)
     
     // Generate mock trend data (in real implementation, this would query actual subscription events)
-    const trends = []
+    const trends: Array<{ date: string; newSubscriptions: number; cancellations: number; revenue: number; netGrowth: number; }> = []
     for (let i = parseInt(days) - 1; i >= 0; i--) {
       const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
       const dateStr = date.toISOString().split('T')[0]

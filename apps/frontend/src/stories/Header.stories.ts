@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Meta, StoryObj } from '@storybook/react';
 
 const fn = () => {};
 
 import { Header } from './Header';
 
-const meta = {
+const meta: any = {
   title: 'Example/Header',
   component: Header,
   // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/writing-docs/autodocs
@@ -18,10 +18,10 @@ const meta = {
     onLogout: fn,
     onCreateAccount: fn,
   },
-} satisfies Meta<typeof Header>;
+} as const;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = any;
 
 export const LoggedIn: Story = {
   args: {

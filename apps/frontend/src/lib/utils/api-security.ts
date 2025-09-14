@@ -38,7 +38,7 @@ export function createSecureHandler(options: SecureHandlerOptions) {
     return logApiRequest(request, async (req: NextRequest, context: any) => {
       try {
         // Check authentication if required
-        let user = null
+        let user: any = null
         if (options.requireAuth) {
           const session = await auth()
           if (!session?.user?.id) {

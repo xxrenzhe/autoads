@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
     // Calculate suspicious scores
     const devicesWithScores = suspiciousActivities.map((device: any) => {
       let score = 0;
-      const reasons = [];
+      const reasons: string[] = [];
 
       // Check for multiple accounts
       const accountCount = (device as any).user?.devices?.length || 1;

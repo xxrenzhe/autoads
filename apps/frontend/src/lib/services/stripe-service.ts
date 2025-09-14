@@ -1,22 +1,13 @@
-import Stripe from 'stripe'
+// Stripe disabled: remove runtime dependency
 import { prisma } from '@/lib/db'
 import { PlanService } from './plan-service'
 // Note: Notification service has been removed for performance optimization
 
 // Initialize Stripe conditionally
-let stripe: Stripe | null = null
+let stripe: any = null
 
-function getStripe(): Stripe {
-  if (!stripe) {
-    const secretKey = process.env.STRIPE_SECRET_KEY
-    if (!secretKey) {
-      throw new Error('STRIPE_SECRET_KEY environment variable is not set')
-    }
-    stripe = new Stripe(secretKey, {
-      apiVersion: '2025-07-30.basil',
-    })
-  }
-  return stripe
+function getStripe(): any {
+  throw new Error('Stripe integration is disabled')
 }
 
 export interface SubscriptionData {
@@ -136,8 +127,8 @@ export class StripeService {
       })
 
       // 获取客户端密钥用于前端确认支付
-      const invoice = stripeSubscription.latest_invoice as Stripe.Invoice
-      const paymentIntent = (invoice as any).payment_intent as Stripe.PaymentIntent
+      const invoice = stripeSubscription.latest_invoice as any
+      const paymentIntent = (invoice as any).payment_intent as any
 
       return {
         success: true,
@@ -278,19 +269,19 @@ export class StripeService {
 
       switch (event.type) {
         case 'invoice.payment_succeeded':
-          processed = await this.handlePaymentSucceeded(event.data.object as Stripe.Invoice)
+          processed = await this.handlePaymentSucceeded(event.data.object as any)
           break
 
         case 'invoice.payment_failed':
-          processed = await this.handlePaymentFailed(event.data.object as Stripe.Invoice)
+          processed = await this.handlePaymentFailed(event.data.object as any)
           break
 
         case 'customer.subscription.updated':
-          processed = await this.handleSubscriptionUpdated(event.data.object as Stripe.Subscription)
+          processed = await this.handleSubscriptionUpdated(event.data.object as any)
           break
 
         case 'customer.subscription.deleted':
-          processed = await this.handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
+          processed = await this.handleSubscriptionDeleted(event.data.object as any)
           break
 
         default:
@@ -315,7 +306,7 @@ export class StripeService {
   /**
    * 处理支付成功事件
    */
-  private static async handlePaymentSucceeded(invoice: Stripe.Invoice): Promise<boolean> {
+  private static async handlePaymentSucceeded(invoice: any): Promise<boolean> {
     try {
       const subscriptionId = (invoice as any).subscription as string
       if (!subscriptionId) return false
@@ -394,7 +385,7 @@ export class StripeService {
   /**
    * 处理支付失败事件
    */
-  private static async handlePaymentFailed(invoice: Stripe.Invoice): Promise<boolean> {
+  private static async handlePaymentFailed(invoice: any): Promise<boolean> {
     try {
       const subscriptionId = (invoice as any).subscription as string
       if (!subscriptionId) return false
@@ -460,7 +451,7 @@ export class StripeService {
   /**
    * 处理订阅更新事件
    */
-  private static async handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<boolean> {
+  private static async handleSubscriptionUpdated(subscription: any): Promise<boolean> {
     try {
       const userId = subscription.metadata.userId
       if (!userId) return false
@@ -489,7 +480,7 @@ export class StripeService {
   /**
    * 处理订阅删除事件
    */
-  private static async handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<boolean> {
+  private static async handleSubscriptionDeleted(subscription: any): Promise<boolean> {
     try {
       const userId = subscription.metadata.userId
       if (!userId) return false
@@ -811,7 +802,7 @@ export class StripeService {
   /**
    * 检索 Checkout Session
    */
-  static async retrieveCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session | null> {
+  static async retrieveCheckoutSession(sessionId: string): Promise<any | null> {
     try {
       const session = await getStripe().checkout.sessions.retrieve(sessionId, {
         expand: ['subscription', 'payment_intent']
@@ -826,7 +817,7 @@ export class StripeService {
   /**
    * 检索订阅
    */
-  static async retrieveSubscription(subscriptionId: string): Promise<Stripe.Subscription | null> {
+  static async retrieveSubscription(subscriptionId: string): Promise<any | null> {
     try {
       const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
       return subscription
@@ -839,7 +830,7 @@ export class StripeService {
   /**
    * 检索发票
    */
-  static async retrieveInvoice(invoiceId: string): Promise<Stripe.Invoice | null> {
+  static async retrieveInvoice(invoiceId: string): Promise<any | null> {
     try {
       const invoice = await getStripe().invoices.retrieve(invoiceId)
       return invoice
@@ -859,7 +850,7 @@ export class StripeService {
     starting_after?: string
   } = {}): Promise<{
     success: boolean
-    data?: Stripe.Invoice[]
+    data?: any[]
     error?: string
   }> {
     try {
@@ -878,7 +869,7 @@ export class StripeService {
       console.error('Failed to list invoices:', error)
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error" as any
+        error: error instanceof Error ? error.message : 'Unknown error'
       }
     }
   }
@@ -890,7 +881,7 @@ export class StripeService {
     email: string
     name?: string
     metadata?: Record<string, string>
-  }): Promise<Stripe.Customer> {
+  }): Promise<any> {
     try {
       const customer = await getStripe().customers.create({
         email: data.email,
@@ -912,7 +903,7 @@ export class StripeService {
     description?: string
     dueDate?: number
     metadata?: Record<string, string>
-  }): Promise<Stripe.Invoice> {
+  }): Promise<any> {
     try {
       const invoice = await getStripe().invoices.create({
         customer: data.customerId,
@@ -936,7 +927,7 @@ export class StripeService {
     amount: number
     currency: string
     description?: string
-  }): Promise<Stripe.InvoiceItem> {
+  }): Promise<any> {
     try {
       const invoiceItem = await getStripe().invoiceItems.create({
         customer: data.customerId,
@@ -955,7 +946,7 @@ export class StripeService {
   /**
    * 完成发票
    */
-  static async finalizeInvoice(invoiceId: string): Promise<Stripe.Invoice> {
+  static async finalizeInvoice(invoiceId: string): Promise<any> {
     try {
       const invoice = await getStripe().invoices.finalizeInvoice(invoiceId)
       return invoice

@@ -82,7 +82,7 @@ interface StripeConfig {
 }
 
 const ProviderStatusChip: React.FC<{ status: string }> = ({ status }) => {
-  const getStatusProps = (): { icon: React.ReactNode; color: ChipProps['color']; label: string } => {
+  const getStatusProps = (): { icon: React.ReactElement; color: ChipProps['color']; label: string } => {
     switch (status) {
       case 'HEALTHY':
         return {
