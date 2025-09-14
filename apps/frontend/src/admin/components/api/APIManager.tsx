@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAdminApiEndpoints, useAdminApiKeys, useAdminApiAnalytics } from '@/lib/hooks/admin/useAdminApiManagement'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 
 export interface APIEndpoint {
   id: string
@@ -67,7 +68,13 @@ export function APIManager({ className }: APIManagerProps) {
   const [showCreateKey, setShowCreateKey] = useState(false)
   const [editingEndpoint, setEditingEndpoint] = useState<APIEndpoint | null>(null)
   const [editingKey, setEditingKey] = useState<APIKey | null>(null)
+  const [endpointForm, setEndpointForm] = useState<{ description: string; isActive: boolean; rateLimitPerMinute?: number; requiresAuth?: boolean; requiredRole?: string }>({ description: '', isActive: true })
+  const [keyForm, setKeyForm] = useState<{ name: string; isActive: boolean; rateLimitOverride?: number }>({ name: '', isActive: true })
   const [announcement, setAnnouncement] = useState<string>('')
+  const [confirmDeleteEndpointId, setConfirmDeleteEndpointId] = useState<string | null>(null)
+  const [confirmDeleteEndpointLabel, setConfirmDeleteEndpointLabel] = useState<string>('')
+  const [confirmDeleteKeyId, setConfirmDeleteKeyId] = useState<string | null>(null)
+  const [confirmDeleteKeyLabel, setConfirmDeleteKeyLabel] = useState<string>('')
   
   const queryClient = useQueryClient()
   const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
@@ -212,6 +219,7 @@ export function APIManager({ className }: APIManagerProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'endpoints'] });
       queryClient.invalidateQueries({ queryKey: ['api-endpoints'] });
+      setAnnouncement('Endpoint updated successfully')
     }
   });
 
@@ -230,6 +238,8 @@ export function APIManager({ className }: APIManagerProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'endpoints'] });
       queryClient.invalidateQueries({ queryKey: ['api-endpoints'] });
+      setConfirmDeleteEndpointId(null)
+      setAnnouncement('Endpoint deleted')
     }
   });
 
@@ -252,6 +262,7 @@ export function APIManager({ className }: APIManagerProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'keys'] });
       queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+      setAnnouncement('API key updated successfully')
     }
   });
 
@@ -270,6 +281,8 @@ export function APIManager({ className }: APIManagerProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'keys'] });
       queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+      setConfirmDeleteKeyId(null)
+      setAnnouncement('API key deleted')
     }
   });
 
@@ -530,10 +543,14 @@ export function APIManager({ className }: APIManagerProps) {
                                 size="sm"
                                 aria-label={`Edit ${endpoint.path} endpoint`}
                                 onClick={() => {
-                                  const newDesc = window.prompt('Update endpoint description:', endpoint.description || '')
-                                  if (newDesc !== null) {
-                                    updateEndpointMutation.mutate({ id: String(endpoint.id || endpoint.path), payload: { description: newDesc } })
-                                  }
+                                  setEditingEndpoint(endpoint)
+                                  setEndpointForm({
+                                    description: endpoint.description || '',
+                                    isActive: !!endpoint.isActive,
+                                    rateLimitPerMinute: endpoint.rateLimitPerMinute,
+                                    requiresAuth: endpoint.requiresAuth,
+                                    requiredRole: endpoint.requiredRole || ''
+                                  })
                                 }}
                               >
                                 <Edit className="h-3 w-3" aria-hidden="true" />
@@ -544,9 +561,8 @@ export function APIManager({ className }: APIManagerProps) {
                                 size="sm"
                                 aria-label={`Delete ${endpoint.path} endpoint`}
                                 onClick={() => {
-                                  if (window.confirm(`Delete endpoint ${endpoint.path}?`)) {
-                                    deleteEndpointMutation.mutate(String(endpoint.id || endpoint.path))
-                                  }
+                                  setConfirmDeleteEndpointId(String(endpoint.id || endpoint.path))
+                                  setConfirmDeleteEndpointLabel(endpoint.path)
                                 }}
                               >
                                 <Trash2 className="h-3 w-3" aria-hidden="true" />
@@ -703,10 +719,8 @@ export function APIManager({ className }: APIManagerProps) {
                               className="flex-1"
                               aria-label={`Edit ${key.name} API key`}
                               onClick={() => {
-                                const newName = window.prompt('Update API key name:', key.name)
-                                if (newName !== null && newName.trim().length > 0) {
-                                  updateKeyMutation.mutate({ id: String(key.id), payload: { name: newName } })
-                                }
+                                setEditingKey(key)
+                                setKeyForm({ name: key.name, isActive: !!key.isActive, rateLimitOverride: key.rateLimitOverride })
                               }}
                             >
                               <Edit className="h-3 w-3 mr-1" aria-hidden="true" />
@@ -717,9 +731,8 @@ export function APIManager({ className }: APIManagerProps) {
                               size="sm"
                               aria-label={`Delete ${key.name} API key`}
                               onClick={() => {
-                                if (window.confirm(`Delete API key ${key.name}?`)) {
-                                  deleteKeyMutation.mutate(String(key.id))
-                                }
+                                setConfirmDeleteKeyId(String(key.id))
+                                setConfirmDeleteKeyLabel(key.name)
                               }}
                             >
                               <Trash2 className="h-3 w-3" aria-hidden="true" />
@@ -859,6 +872,98 @@ export function APIManager({ className }: APIManagerProps) {
           </section>
         )}
       </div>
+
+      {/* Edit Endpoint Dialog */}
+      <Dialog open={!!editingEndpoint} onOpenChange={(open) => { if (!open) setEditingEndpoint(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Endpoint</DialogTitle>
+            <DialogDescription>Update endpoint metadata and limits</DialogDescription>
+          </DialogHeader>
+          {editingEndpoint && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Path</label>
+                <div className="text-sm font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded">{editingEndpoint.path}</div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Method</label>
+                <div className="text-sm font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded">{editingEndpoint.method}</div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Description</label>
+                <Input value={endpointForm.description} onChange={(e) => setEndpointForm(f => ({ ...f, description: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <input id="ep-active" type="checkbox" checked={endpointForm.isActive} onChange={(e) => setEndpointForm(f => ({ ...f, isActive: e.target.checked }))} />
+                  <label htmlFor="ep-active" className="text-sm">Active</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input id="ep-auth" type="checkbox" checked={!!endpointForm.requiresAuth} onChange={(e) => setEndpointForm(f => ({ ...f, requiresAuth: e.target.checked }))} />
+                  <label htmlFor="ep-auth" className="text-sm">Requires Auth</label>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Rate Limit (per minute)</label>
+                  <Input type="number" value={endpointForm.rateLimitPerMinute ?? ''} onChange={(e) => setEndpointForm(f => ({ ...f, rateLimitPerMinute: e.target.value ? Number(e.target.value) : undefined }))} />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Required Role</label>
+                  <Input value={endpointForm.requiredRole || ''} onChange={(e) => setEndpointForm(f => ({ ...f, requiredRole: e.target.value }))} placeholder="e.g., ADMIN" />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                if (!editingEndpoint) return
+                updateEndpointMutation.mutate({ id: String(editingEndpoint.id || editingEndpoint.path), payload: endpointForm })
+                setEditingEndpoint(null)
+              }}
+            >Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit API Key Dialog */}
+      <Dialog open={!!editingKey} onOpenChange={(open) => { if (!open) setEditingKey(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit API Key</DialogTitle>
+            <DialogDescription>Update key name, status and override</DialogDescription>
+          </DialogHeader>
+          {editingKey && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Name</label>
+                <Input value={keyForm.name} onChange={(e) => setKeyForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <input id="key-active" type="checkbox" checked={keyForm.isActive} onChange={(e) => setKeyForm(f => ({ ...f, isActive: e.target.checked }))} />
+                  <label htmlFor="key-active" className="text-sm">Active</label>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Rate Limit Override</label>
+                  <Input type="number" value={keyForm.rateLimitOverride ?? ''} onChange={(e) => setKeyForm(f => ({ ...f, rateLimitOverride: e.target.value ? Number(e.target.value) : undefined }))} />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                if (!editingKey) return
+                updateKeyMutation.mutate({ id: String(editingKey.id), payload: keyForm })
+                setEditingKey(null)
+              }}
+            >Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

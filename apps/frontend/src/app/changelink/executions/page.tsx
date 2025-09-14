@@ -134,16 +134,30 @@ export default function ExecutionsPage() {
 
   const loadActiveExecutions = async () => {
     try {
-      const result = await http.getCached<{ success: boolean; data: { executions: ExecutionContext[] } }>(
-        '/adscenter/execute',
-        { action: 'list', userId: 'current_user' },
-        15_000,
-        false
-      );
-      
-      if ((result as any).success) {
-        setActiveExecutions((result as any).data.executions);
-      }
+      const res = await http.getCached<any>('/adscenter/executions', undefined, 15_000);
+      const list: any[] = Array.isArray(res) ? res : (res as any)?.data || [];
+      const normalized: ExecutionContext[] = list
+        .filter((e: any) => (e.status !== 'completed'))
+        .map((e: any) => ({
+          id: e.id,
+          configurationId: e.configurationId,
+          userId: 'me',
+          status: (e.status as any) || 'pending',
+          progress: e.progress ?? 0,
+          totalSteps: e.totalSteps ?? 1,
+          currentStep: e.currentStep || 'initialized',
+          startTime: e.started_at || e.createdAt || new Date().toISOString(),
+          endTime: e.completed_at,
+          results: [],
+          errors: [],
+          metadata: {
+            totalLinks: e.total_items ?? 0,
+            processedLinks: e.processed_items ?? 0,
+            successfulUpdates: 0,
+            failedUpdates: 0,
+          }
+        }));
+      setActiveExecutions(normalized);
     } catch (error) {
       console.error('加载活跃执行失败:', error);
     }
@@ -151,16 +165,30 @@ export default function ExecutionsPage() {
 
   const loadHistoryExecutions = async () => {
     try {
-      const result = await http.getCached<{ success: boolean; data: { executions: ExecutionContext[] } }>(
-        '/adscenter/execute',
-        { action: 'history', userId: 'current_user', limit: 20 },
-        30_000,
-        false
-      );
-      
-      if ((result as any).success) {
-        setHistoryExecutions((result as any).data.executions);
-      }
+      const res = await http.getCached<any>('/adscenter/executions', undefined, 30_000);
+      const list: any[] = Array.isArray(res) ? res : (res as any)?.data || [];
+      const normalized: ExecutionContext[] = list
+        .filter((e: any) => (e.status === 'completed' || e.status === 'failed' || e.status === 'cancelled'))
+        .map((e: any) => ({
+          id: e.id,
+          configurationId: e.configurationId,
+          userId: 'me',
+          status: (e.status as any) || 'completed',
+          progress: e.progress ?? 100,
+          totalSteps: e.totalSteps ?? 1,
+          currentStep: e.currentStep || 'finished',
+          startTime: e.started_at || e.createdAt || new Date().toISOString(),
+          endTime: e.completed_at || new Date().toISOString(),
+          results: [],
+          errors: [],
+          metadata: {
+            totalLinks: e.total_items ?? 0,
+            processedLinks: e.processed_items ?? 0,
+            successfulUpdates: 0,
+            failedUpdates: 0,
+          }
+        }));
+      setHistoryExecutions(normalized);
     } catch (error) {
       console.error('加载历史执行失败:', error);
     }
@@ -170,8 +198,8 @@ export default function ExecutionsPage() {
     try {
       setCancelingId(executionId);
       const result = await http.post<{ success: boolean; error?: string }>(
-        '/adscenter/execute',
-        { action: 'cancel', executionId }
+        `/adscenter/executions/${executionId}/cancel`,
+        {}
       );
       
       if ((result as any).success) {
@@ -189,16 +217,33 @@ export default function ExecutionsPage() {
 
   const openDetailDialog = async (executionId: string) => {
     try {
-      const result = await http.get<{ success: boolean; data: ExecutionContext; error?: string }>(
-        '/adscenter/execute',
-        { action: 'status', executionId }
-      );
+      const result = await http.get<any>(`/adscenter/executions/${executionId}`);
       
-      if ((result as any).success) {
-        setSelectedExecution((result as any).data);
-        setShowDetailDialog(true);
-      } else {
+      if ((result as any)?.success === false) {
         toast.error('获取执行详情失败: ' + (result as any).error);
+      } else {
+        const e = (result as any)?.data || result;
+        const normalized: ExecutionContext = {
+          id: e.id,
+          configurationId: e.configurationId,
+          userId: 'me',
+          status: e.status || 'pending',
+          progress: e.progress ?? 0,
+          totalSteps: e.totalSteps ?? 1,
+          currentStep: e.currentStep || 'initialized',
+          startTime: e.started_at || e.createdAt || new Date().toISOString(),
+          endTime: e.completed_at,
+          results: [],
+          errors: [],
+          metadata: {
+            totalLinks: e.total_items ?? 0,
+            processedLinks: e.processed_items ?? 0,
+            successfulUpdates: 0,
+            failedUpdates: 0,
+          }
+        }
+        setSelectedExecution(normalized);
+        setShowDetailDialog(true);
       }
     } catch (error) {
       console.error('获取执行详情失败:', error);
