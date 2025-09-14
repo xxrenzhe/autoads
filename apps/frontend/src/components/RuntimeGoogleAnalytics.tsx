@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { http } from '@/shared/http/client';
 
 // GA类型声明
 declare global {
@@ -41,14 +42,13 @@ function RuntimeGoogleAnalyticsInner() {
         } else {
           console.error('❌ Runtime config not found after 5 seconds');
           // 尝试直接从API获取配置
-          fetch('/api/config')
-            .then(response => response.json())
-            .then(config => {
-              if (config.GA_ID) {
-                console.log('✅ Fallback: Config loaded from API:', config.GA_ID);
+          http.getCached<Record<string, any>>('/config', undefined, 60_000, false)
+            .then((config) => {
+              if (config && (config as any).GA_ID) {
+                console.log('✅ Fallback: Config loaded from API:', (config as any).GA_ID);
                 (window as any).__RUNTIME_CONFIG__ = config;
-                setGaId(config.GA_ID);
-                loadGoogleAnalytics(config.GA_ID);
+                setGaId((config as any).GA_ID);
+                loadGoogleAnalytics((config as any).GA_ID);
               }
             })
             .catch(error => {

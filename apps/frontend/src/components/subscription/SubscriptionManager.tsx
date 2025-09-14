@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CreditCard, ExternalLink, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
+import { http } from '@/shared/http/client'
 
 interface Subscription {
   id: string
@@ -36,19 +37,16 @@ export default function SubscriptionManager({ subscription }: SubscriptionManage
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/subscription/cancel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriptionId: subscription.id, immediately: false })
-      })
-
-      if (response.ok) {
+      const res = await http.post<{ success: boolean; message?: string }>(
+        '/subscription/cancel',
+        { subscriptionId: subscription.id, immediately: false }
+      )
+      if ((res as any)?.success !== false) {
         setMessage({ type: 'success', text: '订阅将在当前计费周期结束后取消' })
         // Refresh the page to show updated status
         setTimeout(() => window.location.reload(), 2000)
       } else {
-        const error = await response.json()
-        setMessage({ type: 'error', text: error.message || '取消订阅失败' })
+        setMessage({ type: 'error', text: (res as any)?.message || '取消订阅失败' })
       }
     } catch (error) {
       setMessage({ type: 'error', text: '取消订阅失败，请稍后重试' })
@@ -60,12 +58,11 @@ export default function SubscriptionManager({ subscription }: SubscriptionManage
   const handleManageSubscription = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/subscription/portal', {
-        method: 'POST'
-      })
-
-      if (response.ok) {
-        const { url } = await response.json()
+      const { url } = await http.post<{ url: string }>(
+        '/subscription/portal',
+        undefined
+      )
+      if (url) {
         window.location.href = url
       } else {
         setMessage({ type: 'error', text: '无法打开订阅管理页面' })

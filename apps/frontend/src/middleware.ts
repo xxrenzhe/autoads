@@ -125,6 +125,15 @@ export async function middleware(request: NextRequest) {
   const start = Date.now();
   const { pathname } = request.nextUrl;
 
+  // 301 跳转到 www 子域（仅页面路由，避免影响 API/Cookies）
+  const hostname = request.nextUrl.hostname;
+  const isApiRoute = pathname.startsWith('/api/');
+  if (!isApiRoute && (hostname === 'urlchecker.dev' || hostname === 'autoads.dev')) {
+    const target = new URL(request.url);
+    target.hostname = `www.${hostname}`;
+    return NextResponse.redirect(target, 301);
+  }
+
   // 管理员路由保护
   if (pathname.startsWith('/admin-dashboard') || pathname.startsWith('/api/admin')) {
     try {
@@ -193,18 +202,41 @@ export async function middleware(request: NextRequest) {
     }
   }
   
-  // 继续处理请求
-  const response = NextResponse.next();
-  
-  // 计算响应时间
+  // 准备安全事件头（传递给后续 API 路由从请求头读取）
   const responseTime = Date.now() - start;
+  const userId: string | null = null; // 中间件中不阻塞获取用户ID
+  let securityHeader: string | null = null;
+  try {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    if (path.startsWith('/api/') &&
+        !['/api/auth', '/api/admin/security-minimal', '/api/health', '/api/metrics'].some(p => path.startsWith(p))) {
+      const eventData = {
+        userId: userId || 'anonymous',
+        action: 'api_call' as const,
+        endpoint: path,
+        userAgent: request.headers.get('user-agent') || undefined,
+        ip: (request as any).ip || request.headers.get('x-forwarded-for') || undefined,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          method: request.method,
+          responseTime,
+          url: request.url,
+          userAgent: request.headers.get('user-agent'),
+          feature: getFeatureFromPath(path)
+        }
+      };
+      securityHeader = btoa(JSON.stringify(eventData));
+    }
+  } catch {}
+
+  // 将安全事件写入“请求头”，供后续 Route Handler 读取
+  const requestHeaders = new Headers(request.headers);
+  if (securityHeader) {
+    requestHeaders.set('x-security-event', securityHeader);
+  }
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('x-response-time', responseTime.toString());
-  
-  // 异步记录安全事件（完全不阻塞请求）
-  userIdPromise.then(userId => {
-    recordSecurityEvent(request, userId, responseTime, response).catch();
-  }).catch();
-  
   return response;
 }
 

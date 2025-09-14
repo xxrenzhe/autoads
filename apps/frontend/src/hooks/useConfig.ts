@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { RuntimeConfig, ConfigValidationResult, ConfigMetadata } from '@/lib/config/runtime';
+import { http } from '@/shared/http/client';
 
 interface UseConfigReturn {
   config: RuntimeConfig | null;
@@ -26,12 +27,7 @@ export function useConfig(): UseConfigReturn {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/config');
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await http.get<any>('/config');
       
       // 提取配置、验证和元数据
       const { _meta, _validation, ...configData } = data;

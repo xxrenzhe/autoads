@@ -1,5 +1,6 @@
 'use client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { http } from '@/shared/http/client'
 
 export interface TokenConfig {
   id: string
@@ -56,12 +57,8 @@ export function useTokenManagement() {
   } = useQuery({
     queryKey: ['token-configs'],
     queryFn: async (): Promise<TokenConfig[]> => {
-      const response = await fetch('/api/admin/token-config')
-      if (!response.ok) {
-        throw new Error('Failed to fetch token configurations')
-      }
-      const result = await response.json()
-      return result.data || []
+      const result = await http.get<{ data: TokenConfig[] }>('/admin/token-config')
+      return (result as any).data || []
     },
     staleTime: 5 * 60 * 1000,
   })
@@ -74,12 +71,8 @@ export function useTokenManagement() {
   } = useQuery({
     queryKey: ['token-analytics'],
     queryFn: async (): Promise<TokenAnalytics> => {
-      const response = await fetch('/api/admin/token-analytics')
-      if (!response.ok) {
-        throw new Error('Failed to fetch token analytics')
-      }
-      const result = await response.json()
-      return result.data
+      const result = await http.get<{ data: TokenAnalytics }>('/admin/token-analytics')
+      return (result as any).data
     },
     staleTime: 2 * 60 * 1000,
   })
@@ -87,17 +80,7 @@ export function useTokenManagement() {
   // Create token configuration
   const createConfigMutation = useMutation({
     mutationFn: async (configData: Partial<TokenConfig>) => {
-      const response = await fetch('/api/admin/token-config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(configData),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to create token configuration')
-      }
-      return response.json()
+      return http.post('/admin/token-config', configData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-configs'] })
@@ -108,17 +91,7 @@ export function useTokenManagement() {
   // Update token configuration
   const updateConfigMutation = useMutation({
     mutationFn: async ({ id, ...configData }: Partial<TokenConfig> & { id: string }) => {
-      const response = await fetch(`/api/admin/token-config/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(configData),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to update token configuration')
-      }
-      return response.json()
+      return http.put(`/admin/token-config/${id}`, configData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-configs'] })
@@ -129,13 +102,7 @@ export function useTokenManagement() {
   // Delete token configuration
   const deleteConfigMutation = useMutation({
     mutationFn: async (configId: string) => {
-      const response = await fetch(`/api/admin/token-config/${configId}`, {
-        method: 'DELETE',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to delete token configuration')
-      }
-      return response.json()
+      return http.delete(`/admin/token-config/${configId}`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-configs'] })
@@ -146,13 +113,7 @@ export function useTokenManagement() {
   // Toggle token configuration status
   const toggleConfigMutation = useMutation({
     mutationFn: async (configId: string) => {
-      const response = await fetch(`/api/admin/token-config/${configId}/toggle`, {
-        method: 'POST',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to toggle token configuration')
-      }
-      return response.json()
+      return http.post(`/admin/token-config/${configId}/toggle`, undefined)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-configs'] })

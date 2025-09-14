@@ -12,7 +12,9 @@ import {
 } from '@heroicons/react/24/outline'
 import PlanSelector from './PlanSelector'
 import PaymentForm from './PaymentForm'
+import { toast } from 'sonner'
 import SubscriptionConfirmation from './SubscriptionConfirmation'
+import { http } from '@/shared/http/client'
 
 interface Plan {
   id: string
@@ -55,11 +57,8 @@ export default function SubscriptionFlow() {
 
   const loadPlanDetails = async (planId: string) => {
     try {
-      const response = await fetch(`/api/admin/plans/${planId}`)
-      if (response.ok) {
-        const plan = await response.json()
-        setSelectedPlan(plan)
-      }
+      const plan = await http.get<Plan>(`/admin/plans/${planId}`)
+      setSelectedPlan(plan as any)
     } catch (error) {
       console.error('Failed to load plan details:', error)
     }
@@ -77,30 +76,27 @@ export default function SubscriptionFlow() {
     setError(null)
 
     try {
-      const response = await fetch('/api/subscriptions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const result = await http.post<{ subscriptionId: string; error?: string }>(
+        '/subscriptions',
+        {
           planId: selectedPlan.id,
           stripePriceId: selectedPlan.stripePriceId,
           paymentMethodId: paymentData.paymentMethodId,
           billingDetails: paymentData.billingDetails
-        }),
-      })
+        }
+      )
 
-      const result = await response.json()
-
-      if (response.ok) {
-        setSubscriptionId(result.subscriptionId)
+      if ((result as any)?.subscriptionId) {
+        setSubscriptionId((result as any).subscriptionId)
         setCurrentStep('success')
       } else {
-        throw new Error(result.error || 'Subscription creation failed')
+        throw new Error((result as any)?.error || 'Subscription creation failed')
       }
     } catch (error) {
       console.error('Subscription error:', error)
-      setError(error instanceof Error ? error.message : 'An error occurred')
+      const msg = error instanceof Error ? error.message : 'An error occurred'
+      setError(msg)
+      toast.error('创建订阅失败：' + msg)
       setCurrentStep('error')
     } finally {
       setLoading(false)

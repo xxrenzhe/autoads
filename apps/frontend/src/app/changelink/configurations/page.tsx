@@ -30,6 +30,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { http } from '@/shared/http/client'
+import { toast } from 'sonner'
 
 interface Configuration {
   id: string;
@@ -87,15 +89,20 @@ export default function ConfigurationsPage() {
   useEffect(() => {
     loadConfigurations();
   }, []);
+  
+  // HTTP 客户端
+  import { http } from '@/shared/http/client'
 
   const loadConfigurations = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/adscenter/settings?type=configurations');
-      const result = await response.json();
+      const result = await http.get<{ success: boolean; data: { configurations: any[] } }>(
+        '/adscenter/settings',
+        { type: 'configurations' }
+      );
       
-      if (result.success) {
-        setConfigurations(result.data.configurations);
+      if ((result as any).success) {
+        setConfigurations((result as any).data.configurations);
       }
     } catch (error) {
       console.error('加载配置失败:', error);
@@ -106,10 +113,9 @@ export default function ConfigurationsPage() {
 
   const handleCreateConfiguration = async () => {
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await http.post<{ success: boolean; data?: any; error?: string }>(
+        '/adscenter/settings',
+        {
           type: 'configuration',
           action: 'create',
           data: {
@@ -121,17 +127,15 @@ export default function ConfigurationsPage() {
               adMappings: []
             }))
           }
-        })
-      });
-
-      const result = await response.json();
+        }
+      );
       
-      if (result.success) {
+      if ((result as any).success) {
         setShowCreateDialog(false);
         resetForm();
         loadConfigurations();
       } else {
-        alert('创建配置失败: ' + result.error);
+        alert('创建配置失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('创建配置失败:', error);
@@ -143,10 +147,9 @@ export default function ConfigurationsPage() {
     if (!selectedConfig) return;
 
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/settings',
+        {
           type: 'configuration',
           action: 'update',
           id: selectedConfig.id,
@@ -159,18 +162,16 @@ export default function ConfigurationsPage() {
               adMappings: []
             }))
           }
-        })
-      });
-
-      const result = await response.json();
+        }
+      );
       
-      if (result.success) {
+      if ((result as any).success) {
         setShowEditDialog(false);
         setSelectedConfig(null);
         resetForm();
         loadConfigurations();
       } else {
-        alert('更新配置失败: ' + result.error);
+        alert('更新配置失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('更新配置失败:', error);
@@ -182,22 +183,19 @@ export default function ConfigurationsPage() {
     if (!confirm('确定要删除这个配置吗？')) return;
 
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/settings',
+        {
           type: 'configuration',
           action: 'delete',
           id
-        })
-      });
-
-      const result = await response.json();
+        }
+      );
       
-      if (result.success) {
+      if ((result as any).success) {
         loadConfigurations();
       } else {
-        alert('删除配置失败: ' + result.error);
+        alert('删除配置失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('删除配置失败:', error);
@@ -207,23 +205,20 @@ export default function ConfigurationsPage() {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/settings',
+        {
           type: 'configuration',
           action: 'update-status',
           id,
           data: { status }
-        })
-      });
-
-      const result = await response.json();
+        }
+      );
       
-      if (result.success) {
+      if ((result as any).success) {
         loadConfigurations();
       } else {
-        alert('更新状态失败: ' + result.error);
+        alert('更新状态失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('更新状态失败:', error);
@@ -233,22 +228,19 @@ export default function ConfigurationsPage() {
 
   const handleExecuteConfiguration = async (id: string) => {
     try {
-      const response = await fetch('/api/adscenter/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await http.post<{ success: boolean; data?: any; error?: string }>(
+        '/adscenter/execute',
+        {
           action: 'start',
           configurationId: id,
-          userId: 'current_user' // 实际项目中应该从认证系统获取
-        })
-      });
-
-      const result = await response.json();
+          userId: 'current_user'
+        }
+      );
       
-      if (result.success) {
-        alert(`执行已启动，执行ID: ${result.data.executionId}`);
+      if ((result as any).success) {
+        alert(`执行已启动，执行ID: ${(result as any).data.executionId}`);
       } else {
-        alert('启动执行失败: ' + result.error);
+        alert('启动执行失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('启动执行失败:', error);

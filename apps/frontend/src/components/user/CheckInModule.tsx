@@ -37,6 +37,7 @@ import {
 import { format, isToday, isYesterday, addDays, subDays, startOfDay, endOfDay } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import CheckInSuccessDialog from './CheckInSuccessDialog';
+import { http } from '@/shared/http/client'
 
 interface CheckInRecord {
   id: string;
@@ -91,12 +92,8 @@ const CheckInModule: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/user/check-in');
-      if (!response.ok) {
-        throw new Error('Failed to fetch check-in data');
-      }
-      const data = await response.json();
-      setCheckInData(data);
+      const data = await http.get<CheckInData>('/user/check-in');
+      setCheckInData(data as any);
       
       // Check if user has shared today
       await checkShareStatus();
@@ -113,11 +110,11 @@ const CheckInModule: React.FC = () => {
       const todayStart = startOfDay(today).toISOString();
       const todayEnd = endOfDay(today).toISOString();
       
-      const response = await fetch(`/api/user/check-in/share-rewards?startDate=${todayStart}&endDate=${todayEnd}`);
-      if (response.ok) {
-        const data = await response.json();
-        setHasSharedToday(data.hasSharedToday);
-      }
+      const data = await http.get<{ hasSharedToday: boolean }>(
+        '/user/check-in/share-rewards',
+        { startDate: todayStart, endDate: todayEnd }
+      );
+      setHasSharedToday((data as any)?.hasSharedToday || false);
     } catch (error) {
       console.error('Failed to check share status:', error);
     }
@@ -128,17 +125,15 @@ const CheckInModule: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/user/check-in', {
-        method: 'POST'
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Check-in failed');
+      const data = await http.post<{ success: boolean; checkIn?: any; error?: string }>(
+        '/user/check-in',
+        undefined
+      )
+      if ((data as any)?.success === false) {
+        throw new Error((data as any)?.error || 'Check-in failed')
       }
 
-      setCheckInResult(data);
+      setCheckInResult(data as any);
       setSuccessDialog(true);
       await fetchCheckInData();
     } catch (err) {
@@ -164,23 +159,18 @@ const CheckInModule: React.FC = () => {
       const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
       // Create share rewards record
-      const response = await fetch('/api/user/check-in/share-rewards', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const data = await http.post<{ success: boolean; rewardToken: number; error?: string }>(
+        '/user/check-in/share-rewards',
+        {
           checkInId: checkInResult.checkIn.id,
           platform,
           shareText,
           shareUrl
-        })
-      });
+        }
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Share reward failed');
+      if ((data as any)?.success === false) {
+        throw new Error((data as any)?.error || 'Share reward failed');
       }
 
       // Update share status

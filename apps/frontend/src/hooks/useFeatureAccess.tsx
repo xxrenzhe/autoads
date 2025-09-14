@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { http } from '@/shared/http/client';
 
 export interface FeaturePermission {
   featureId: string;
@@ -28,13 +29,7 @@ export function useFeatureAccess(featureId?: string) {
     const checkAccess = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/user/features/${featureId}/access`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to check feature access');
-        }
-        
-        const result = await response.json();
+        const result = await http.get<{ hasAccess: boolean; limits?: Record<string, any>; reason?: string }>(`/user/features/${featureId}/access`);
         setHasAccess(result.hasAccess);
         setLimits(result.limits || null);
         
@@ -61,8 +56,7 @@ export function useFeatureAccess(featureId?: string) {
       setLoading(true);
       setError(null);
       // Trigger refetch
-      fetch(`/api/user/features/${featureId}/access`)
-        .then(response => response.json())
+      http.get<{ hasAccess: boolean; limits?: Record<string, any>; reason?: string }>(`/user/features/${featureId}/access`)
         .then(result => {
           setHasAccess(result.hasAccess);
           setLimits(result.limits || null);
@@ -86,13 +80,7 @@ export function useUserFeatures() {
     const fetchFeatures = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/user/features');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch user features');
-        }
-        
-        const result = await response.json();
+        const result = await http.get<UserFeatures>('/user/features');
         setData(result);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -111,14 +99,9 @@ export function useUserFeatures() {
     refetch: () => {
       setLoading(true);
       setError(null);
-      fetch('/api/user/features')
-        .then(response => response.json())
-        .then(result => {
-          setData(result);
-        })
-        .catch(err => {
-          setError(err instanceof Error ? err.message : 'Unknown error');
-        })
+      http.get<UserFeatures>('/user/features')
+        .then(result => { setData(result); })
+        .catch(err => { setError(err instanceof Error ? err.message : 'Unknown error'); })
         .finally(() => setLoading(false));
     }
   };

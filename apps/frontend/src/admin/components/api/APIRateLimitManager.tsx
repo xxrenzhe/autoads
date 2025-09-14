@@ -21,6 +21,8 @@ import {
   X
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { http } from '@/shared/http/client'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 interface RateLimitRule {
   id: string
@@ -79,6 +81,7 @@ export default function APIRateLimitManager() {
   const [saving, setSaving] = useState(false)
   const [selectedRule, setSelectedRule] = useState<RateLimitRule | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
@@ -109,20 +112,13 @@ export default function APIRateLimitManager() {
     try {
       setLoading(true)
       
-      const [rulesResponse, statsResponse] = await Promise.all([
-        fetch('/api/admin/api-management/rate-limits'),
-        fetch('/api/admin/api-management/rate-limit-stats')
+      const [rulesData, statsData] = await Promise.all([
+        http.getCached<{ data: RateLimitRule[] }>('/admin/api-management/rate-limits', undefined as any, 30_000) as any,
+        http.getCached<{ data: RateLimitStats }>('/admin/api-management/rate-limit-stats', undefined as any, 15_000) as any
       ])
 
-      if (rulesResponse.ok) {
-        const data = await rulesResponse.json()
-        setRules(data.data || [])
-      }
-
-      if (statsResponse.ok) {
-        const data = await statsResponse.json()
-        setStats(data.data)
-      }
+      setRules((rulesData as any)?.data || [])
+      setStats((statsData as any)?.data || null)
     } catch (error) {
       console.error('Error fetching rate limit data:', error)
       toast.error('Failed to fetch rate limit data')
@@ -134,20 +130,12 @@ export default function APIRateLimitManager() {
   const saveRule = async (rule: Partial<RateLimitRule>) => {
     try {
       setSaving(true)
-      const url = rule.id ? `/api/admin/api-management/rate-limits/${rule.id}` : '/api/admin/api-management/rate-limits'
-      const method = rule.id ? 'PUT' : 'POST'
+      const url = rule.id ? `/admin/api-management/rate-limits/${rule.id}` : '/admin/api-management/rate-limits'
+      const resp = rule.id 
+        ? await http.put(url, rule)
+        : await http.post(url, rule)
       
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(rule)
-      })
-
-      const data = await response.json()
-      
-      if (data.success) {
+      if ((resp as any)?.success !== false) {
         await fetchRateLimitData()
         setSelectedRule(null)
         setShowCreateForm(false)
@@ -155,7 +143,7 @@ export default function APIRateLimitManager() {
         toast.success(successMessage)
         announceToScreenReader(successMessage)
       } else {
-        const errorMessage = data.error || 'Failed to save rate limit rule'
+        const errorMessage = (resp as any)?.error || 'Failed to save rate limit rule'
         toast.error(errorMessage)
         announceToScreenReader(errorMessage)
       }
@@ -168,24 +156,16 @@ export default function APIRateLimitManager() {
   }
 
   const deleteRule = async (ruleId: string) => {
-    if (!confirm('Are you sure you want to delete this rate limit rule?')) {
-      return
-    }
-
     try {
-      const response = await fetch(`/api/admin/api-management/rate-limits/${ruleId}`, {
-        method: 'DELETE'
-      })
-
-      const data = await response.json()
+      const data = await http.delete(`/admin/api-management/rate-limits/${ruleId}`)
       
-      if (data.success) {
+      if ((data as any)?.success !== false) {
         await fetchRateLimitData()
         const successMessage = 'Rate limit rule deleted successfully'
         toast.success(successMessage)
         announceToScreenReader(successMessage)
       } else {
-        const errorMessage = data.error || 'Failed to delete rate limit rule'
+        const errorMessage = (data as any)?.error || 'Failed to delete rate limit rule'
         toast.error(errorMessage)
         announceToScreenReader(errorMessage)
       }
@@ -197,23 +177,15 @@ export default function APIRateLimitManager() {
 
   const toggleRuleStatus = async (ruleId: string, isActive: boolean) => {
     try {
-      const response = await fetch(`/api/admin/api-management/rate-limits/${ruleId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ isActive })
-      })
-
-      const data = await response.json()
+      const data = await http.put(`/admin/api-management/rate-limits/${ruleId}/status`, { isActive })
       
-      if (data.success) {
+      if ((data as any)?.success !== false) {
         await fetchRateLimitData()
         const successMessage = `Rate limit rule ${isActive ? 'activated' : 'deactivated'} successfully`
         toast.success(successMessage)
         announceToScreenReader(successMessage)
       } else {
-        const errorMessage = data.error || 'Failed to update rate limit rule status'
+        const errorMessage = (data as any)?.error || 'Failed to update rate limit rule status'
         toast.error(errorMessage)
         announceToScreenReader(errorMessage)
       }
@@ -244,6 +216,26 @@ export default function APIRateLimitManager() {
 
   return (
     <div className="space-y-6">
+      {/* 删除确认 */}
+      <Dialog open={!!confirmDeleteId} onOpenChange={(open) => { if (!open) setConfirmDeleteId(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Rate Limit Rule</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this rate limit rule? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <button className="px-4 py-2 rounded border" onClick={() => setConfirmDeleteId(null)}>Cancel</button>
+            <button
+              className="px-4 py-2 rounded bg-red-600 text-white"
+              onClick={async () => { const id = confirmDeleteId as string; setConfirmDeleteId(null); await deleteRule(id); }}
+            >
+              Confirm
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Status announcements for screen readers */}
       <div 
         ref={statusAnnouncementRef}
@@ -496,7 +488,7 @@ export default function APIRateLimitManager() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => deleteRule(rule.id)}
+                              onClick={() => setConfirmDeleteId(rule.id)}
                               aria-label={`Delete rule ${rule.name}`}
                             >
                               <Trash2 className="h-4 w-4" aria-hidden="true" />

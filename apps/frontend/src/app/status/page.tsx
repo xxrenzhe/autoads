@@ -14,6 +14,9 @@ import {
   Database,
   Zap
 } from 'lucide-react';
+import { http } from '@/shared/http/client'
+import { backend } from '@/shared/http/backend'
+import { useHealthQuery } from '@/lib/hooks/useHealthQuery'
 
 interface BuildInfo {
   buildTime: string;
@@ -35,6 +38,7 @@ interface SystemStatus {
 }
 
 export default function StatusPage() {
+  const { data: healthData } = useHealthQuery();
   const [buildInfo, setBuildInfo] = useState<BuildInfo | null>(null);
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
     api: 'online',
@@ -66,9 +70,8 @@ export default function StatusPage() {
     setLoading(true);
     
     try {
-      // 检查 API 状态
-      const apiResponse = await fetch('/api/adscenter/system?action=health');
-      const apiStatus = apiResponse.ok ? 'online' : 'degraded';
+      // 检查 Go 后端 API 状态（通过 Next 内置反代 /go -> 127.0.0.1:8080）
+      const apiStatus = healthData?.status === 'ok' ? 'online' : 'degraded';
 
       // 检查其他服务状态
       setSystemStatus({

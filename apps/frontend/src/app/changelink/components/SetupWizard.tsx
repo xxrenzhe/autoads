@@ -32,6 +32,7 @@ import {
   Edit,
   RotateCcw
 } from 'lucide-react';
+import { http } from '@/shared/http/client'
 
 interface SetupStep {
   id: string;
@@ -273,18 +274,12 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
           : googleAdsConfig.loginCustomerId
       };
       
-      const response = await fetch('/api/adscenter/reports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'complete-setup',
-          googleAdsConfig: configToSave
-        })
-      });
-      
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error);
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/reports',
+        { action: 'complete-setup', googleAdsConfig: configToSave }
+      );
+      if ((result as any).success === false) {
+        throw new Error((result as any).error || '保存失败');
       }
     } catch (error) {
       console.error('保存Google Ads配置失败:', error);
@@ -294,18 +289,12 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
 
   const saveEmailConfig = async () => {
     try {
-      const response = await fetch('/api/adscenter/reports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'complete-setup',
-          emailConfig
-        })
-      });
-      
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error);
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/reports',
+        { action: 'complete-setup', emailConfig }
+      );
+      if ((result as any).success === false) {
+        throw new Error((result as any).error);
       }
     } catch (error) {
       console.error('保存邮件配置失败:', error);
@@ -351,21 +340,18 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
       };
       
       // 最终保存所有配置
-      const response = await fetch('/api/adscenter/reports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/reports',
+        {
           action: 'complete-setup',
           googleAdsConfig: googleAdsConfigToSave,
           emailConfig
-        })
-      });
-      
-      const result = await response.json();
-      if (result.success) {
+        }
+      );
+      if ((result as any).success) {
         onComplete();
       } else {
-        throw new Error(result.error);
+        throw new Error((result as any).error);
       }
     } catch (error) {
       console.error('完成配置失败:', error);

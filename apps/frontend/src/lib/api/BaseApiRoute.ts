@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createLogger } from '@/lib/utils/security/secure-logger';
 import { EnhancedError } from '@/lib/utils/error-handling';
+import { getDomainConfig } from '@/lib/domain-config';
 
 // Base error handler functionality
 class BaseErrorHandler {
@@ -71,9 +72,10 @@ export abstract class BaseApiRoute {
   ): NextResponse {
     const userMessage = this.errorHandler.getUserMessage(error, context);
     
-    this.logger.error('${context} failed:', new EnhancedError('${context} failed:', { error: error instanceof Error ? error.message : String(error),
+    this.logger.error(`${context} failed:`, new EnhancedError(`${context} failed:`, {
+      error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
-     }));
+    }));
 
     return NextResponse.json({
       success: false,
@@ -144,12 +146,16 @@ export abstract class BaseApiRoute {
    * Handle CORS preflight requests
    */
   protected handlePreflight(): NextResponse {
+    const cfg = getDomainConfig();
+    const allowedOrigin = cfg.isLocal ? '*' : cfg.baseUrl;
     return new NextResponse(null, {
       status: 204,
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': allowedOrigin,
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Request-Id',
+        'Access-Control-Allow-Credentials': 'true',
+        'Vary': 'Origin',
       },
     });
   }
@@ -158,7 +164,11 @@ export abstract class BaseApiRoute {
    * Add common headers to response
    */
   protected addHeaders(response: NextResponse): NextResponse {
-    response.headers.set('Access-Control-Allow-Origin', '*');
+    const cfg = getDomainConfig();
+    const allowedOrigin = cfg.isLocal ? '*' : cfg.baseUrl;
+    response.headers.set('Access-Control-Allow-Origin', allowedOrigin);
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Vary', 'Origin');
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');

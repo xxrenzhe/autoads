@@ -17,6 +17,7 @@ import {
   Zap
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { http } from '@/shared/http/client'
 
 export interface TokenBalance {
   userId: string
@@ -61,10 +62,8 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
   } = useQuery({
     queryKey: ['token-balances'],
     queryFn: async (): Promise<TokenBalance[]> => {
-      const response = await fetch('/api/admin/token-balance')
-      if (!response.ok) throw new Error('Failed to fetch token balances')
-      const result = await response.json()
-      return result.data || []
+      const result = await http.get<{ data: TokenBalance[] }>('/admin/token-balance')
+      return (result as any).data || []
     },
     staleTime: 2 * 60 * 1000,
   })
@@ -76,10 +75,8 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
   } = useQuery({
     queryKey: ['token-transactions'],
     queryFn: async (): Promise<TokenTransaction[]> => {
-      const response = await fetch('/api/admin/token-transactions')
-      if (!response.ok) throw new Error('Failed to fetch token transactions')
-      const result = await response.json()
-      return result.data || []
+      const result = await http.get<{ data: TokenTransaction[] }>('/admin/token-transactions')
+      return (result as any).data || []
     },
     staleTime: 1 * 60 * 1000,
   })
@@ -87,13 +84,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
   // Adjust token balance mutation
   const adjustBalanceMutation = useMutation({
     mutationFn: async ({ userId, amount, reason }: { userId: string; amount: number; reason: string }) => {
-      const response = await fetch('/api/admin/token-balance/adjust', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, amount, reason }),
-      })
-      if (!response.ok) throw new Error('Failed to adjust token balance')
-      return response.json()
+      return http.post('/admin/token-balance/adjust', { userId, amount, reason })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-balances'] })
@@ -107,13 +98,7 @@ export function TokenBalanceManager({ className }: TokenBalanceManagerProps) {
   // Top-up tokens mutation
   const topUpMutation = useMutation({
     mutationFn: async ({ userId, amount, paymentMethod }: { userId: string; amount: number; paymentMethod: string }) => {
-      const response = await fetch('/api/admin/token-balance/topup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, amount, paymentMethod }),
-      })
-      if (!response.ok) throw new Error('Failed to process top-up')
-      return response.json()
+      return http.post('/admin/token-balance/topup', { userId, amount, paymentMethod })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-balances'] })

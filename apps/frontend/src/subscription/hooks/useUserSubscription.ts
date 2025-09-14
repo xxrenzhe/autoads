@@ -1,6 +1,7 @@
 'use client'
 import { useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { http } from '@/shared/http/client'
 
 export interface UserSubscription {
   id: string
@@ -58,12 +59,8 @@ export function useUserSubscription(userId: string) {
   } = useQuery({
     queryKey: ['user-subscription', userId],
     queryFn: async (): Promise<UserSubscription | null> => {
-      const response = await fetch('/api/subscriptions')
-      if (!response.ok) {
-        throw new Error('Failed to fetch user subscription')
-      }
-      const result = await response.json()
-      return result.success ? result.data : null
+      const result = await http.get<{ success: boolean; data: UserSubscription | null }>('/subscriptions')
+      return (result as any).success ? (result as any).data : null
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
@@ -76,12 +73,8 @@ export function useUserSubscription(userId: string) {
   } = useQuery({
     queryKey: ['subscription-plans'],
     queryFn: async () => {
-      const response = await fetch('/api/subscription/plans')
-      if (!response.ok) {
-        throw new Error('Failed to fetch subscription plans')
-      }
-      const result = await response.json()
-      return result.success ? result.data : []
+      const result = await http.get<{ success: boolean; data: any[] }>('/subscription/plans')
+      return (result as any).success ? (result as any).data : []
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
   })
@@ -94,12 +87,10 @@ export function useUserSubscription(userId: string) {
   } = useQuery({
     queryKey: ['billing-history', userId],
     queryFn: async (): Promise<BillingHistoryItem[]> => {
-      const response = await fetch('/api/subscriptions/billing-history')
-      if (!response.ok) {
-        return []
-      }
-      const result = await response.json()
-      return result.success ? result.data : []
+      const result = await http.get<{ success: boolean; data: BillingHistoryItem[] }>(
+        '/subscriptions/billing-history'
+      )
+      return (result as any).success ? (result as any).data : []
     },
     staleTime: 15 * 60 * 1000, // 15 minutes
   })
@@ -107,16 +98,7 @@ export function useUserSubscription(userId: string) {
   // Upgrade subscription mutation
   const upgradeSubscriptionMutation = useMutation({
     mutationFn: async (planId: string) => {
-      const response = await fetch('/api/subscription/upgrade', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ planId }),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to upgrade subscription')
-      }
+      await http.post('/subscription/upgrade', { planId })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-subscription', userId] })
@@ -126,16 +108,7 @@ export function useUserSubscription(userId: string) {
   // Downgrade subscription mutation
   const downgradeSubscriptionMutation = useMutation({
     mutationFn: async (planId: string) => {
-      const response = await fetch('/api/subscription/downgrade', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ planId }),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to downgrade subscription')
-      }
+      await http.post('/subscription/downgrade', { planId })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-subscription', userId] })
@@ -145,17 +118,7 @@ export function useUserSubscription(userId: string) {
   // Cancel subscription mutation
   const cancelSubscriptionMutation = useMutation({
     mutationFn: async ({ immediate }: { immediate?: boolean } = {}) => {
-      const response = await fetch('/api/subscriptions/cancel', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ immediate }),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to cancel subscription')
-      }
-      return response.json()
+      return http.post('/subscriptions/cancel', { immediate })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-subscription', userId] })
@@ -165,16 +128,7 @@ export function useUserSubscription(userId: string) {
   // Pause subscription mutation
   const pauseSubscriptionMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/subscriptions/pause', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      if (!response.ok) {
-        throw new Error('Failed to pause subscription')
-      }
-      return response.json()
+      return http.post('/subscriptions/pause', undefined)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-subscription', userId] })
@@ -184,16 +138,7 @@ export function useUserSubscription(userId: string) {
   // Resume subscription mutation
   const resumeSubscriptionMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/subscriptions/resume', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      if (!response.ok) {
-        throw new Error('Failed to resume subscription')
-      }
-      return response.json()
+      return http.post('/subscriptions/resume', undefined)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-subscription', userId] })
@@ -203,16 +148,7 @@ export function useUserSubscription(userId: string) {
   // Update payment method mutation
   const updatePaymentMethodMutation = useMutation({
     mutationFn: async (paymentMethodId: string) => {
-      const response = await fetch('/api/subscriptions/payment-method', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ paymentMethodId }),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to update payment method')
-      }
+      await http.put('/subscriptions/payment-method', { paymentMethodId })
     },
   })
 

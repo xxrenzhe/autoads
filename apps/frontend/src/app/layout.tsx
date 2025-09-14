@@ -11,6 +11,7 @@ import { SessionProvider } from "next-auth/react";
 // 内存优化模块已移除
 import "@/lib/scheduled-task-init";
 import "@/lib/autoclick-init";
+import QueryProvider from "@/components/providers/QueryProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -149,7 +150,9 @@ export default function RootLayout({
         <SessionProvider>
           <AuthProvider>
             <LanguageProvider>
-              <AppLayout>{children}</AppLayout>
+              <QueryProvider>
+                <AppLayout>{children}</AppLayout>
+              </QueryProvider>
             </LanguageProvider>
           </AuthProvider>
         </SessionProvider>

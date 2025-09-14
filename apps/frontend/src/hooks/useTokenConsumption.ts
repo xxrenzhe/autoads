@@ -1,5 +1,6 @@
 import { useAuthContext } from '@/contexts/AuthContext'
 import { useRequireAuth } from '@/contexts/AuthContext'
+import { http } from '@/shared/http/client'
 
 /**
  * 使用Token消耗的Hook
@@ -38,35 +39,35 @@ export function useTokenConsumption() {
       // Convert feature to uppercase for API compatibility
       const featureUpper = feature.toUpperCase() as 'BATCHOPEN' | 'SITERANK' | 'CHANGELINK'
       
-      const response = await fetch('/api/user/tokens/consume', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          feature: featureUpper,
-          operation,
-          tokens,
-          itemCount: options.itemCount,
-          description: options.description,
-          metadata: options.metadata
-        })
-      })
+      try {
+        const data = await http.post<{ success: true; remainingBalance: number; consumed: number } | { error: string }>(
+          '/user/tokens/consume',
+          {
+            feature: featureUpper,
+            operation,
+            tokens,
+            itemCount: options.itemCount,
+            description: options.description,
+            metadata: options.metadata
+          }
+        )
 
-      const data = await response.json()
+        // API returns success: true when OK
+        if ((data as any).success !== true) {
+          return { success: false, error: (data as any)?.error || 'Failed to consume tokens' }
+        }
 
-      if (!response.ok) {
-        if (response.status === 402) {
+        return {
+          success: true,
+          remainingBalance: (data as any).remainingBalance,
+          consumed: (data as any).consumed
+        }
+      } catch (err: any) {
+        if (err?.status === 402) {
           options.onInsufficientBalance?.()
           return { success: false, error: 'Insufficient token balance' }
         }
-        return { success: false, error: data.error || 'Failed to consume tokens' }
-      }
-
-      return {
-        success: true,
-        remainingBalance: data.remainingBalance,
-        consumed: data.consumed
+        return { success: false, error: err?.details?.error || 'Failed to consume tokens' }
       }
     } catch (error) {
       console.error('Token consumption error:', error)

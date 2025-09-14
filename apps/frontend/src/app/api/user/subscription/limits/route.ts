@@ -41,11 +41,20 @@ export async function GET(request: NextRequest) {
     };
 
     if (!subscription) {
-      return NextResponse.json({
+      const payload = {
         limits: defaultLimits,
         planName: 'Free',
         planId: 'free'
-      });
+      };
+      const etag = `W/"${Buffer.from(JSON.stringify(payload)).toString('base64')}"`;
+      const ifNoneMatch = request.headers.get('if-none-match');
+      if (ifNoneMatch === etag) {
+        return new NextResponse(null, { status: 304, headers: { 'ETag': etag, 'Cache-Control': 'private, max-age=60' } });
+      }
+      const res = NextResponse.json(payload);
+      res.headers.set('ETag', etag);
+      res.headers.set('Cache-Control', 'private, max-age=60');
+      return res;
     }
 
     // Build limits from plan features
@@ -68,12 +77,21 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    return NextResponse.json({
+    const payload = {
       limits,
       planName: subscription.plan.name,
       planId: subscription.plan.id,
       subscriptionId: subscription.id
-    });
+    };
+    const etag = `W/"${Buffer.from(JSON.stringify(payload)).toString('base64')}"`;
+    const ifNoneMatch = request.headers.get('if-none-match');
+    if (ifNoneMatch === etag) {
+      return new NextResponse(null, { status: 304, headers: { 'ETag': etag, 'Cache-Control': 'private, max-age=60' } });
+    }
+    const res = NextResponse.json(payload);
+    res.headers.set('ETag', etag);
+    res.headers.set('Cache-Control', 'private, max-age=60');
+    return res;
   } catch (error) {
     console.error('Error fetching subscription limits:', error);
     return NextResponse.json(

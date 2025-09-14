@@ -25,6 +25,9 @@ import {
   Search,
   Filter
 } from 'lucide-react';
+import { http } from '@/shared/http/client'
+import { toast } from 'sonner'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 interface GoogleAdsAccount {
   id: string;
@@ -62,6 +65,8 @@ const GoogleAdsAccountManager: React.FC = () => {
   });
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
+  const [busyAccountId, setBusyAccountId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // 初始化账户列表
   useEffect(() => {
@@ -72,12 +77,13 @@ const GoogleAdsAccountManager: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/adscenter/oauth/accounts');
-      if (!response.ok) {
-        throw new Error('Failed to load accounts');
-      }
-      const data = await response.json();
-      setAccounts(data.accounts || []);
+      const data = await http.getCached<{ accounts: GoogleAdsAccount[] }>(
+        '/adscenter/oauth/accounts',
+        undefined,
+        30_000,
+        false
+      );
+      setAccounts((data as any)?.accounts || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load accounts');
     } finally {
@@ -90,28 +96,22 @@ const GoogleAdsAccountManager: React.FC = () => {
     setIsAuthenticating(true);
     setError(null);
     try {
-      const response = await fetch('/api/adscenter/oauth/auth-url', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const data = await http.post<{ authUrl?: string; success?: boolean; error?: string }>(
+        '/adscenter/oauth/auth-url',
+        {
           clientId: oauthConfig.clientId,
           redirectUri: oauthConfig.redirectUri,
           scopes: oauthConfig.scopes
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start OAuth flow');
-      }
-
-      const data = await response.json();
-      if (data.authUrl) {
-        window.open(data.authUrl, '_blank', 'width=600,height=700');
+        }
+      );
+      if ((data as any)?.authUrl) {
+        window.open((data as any).authUrl, '_blank', 'width=600,height=700');
+      } else if ((data as any)?.success === false) {
+        throw new Error((data as any)?.error || 'Failed to start OAuth flow');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start OAuth flow');
+      toast.error(err instanceof Error ? err.message : 'Failed to start OAuth flow');
     } finally {
       setIsAuthenticating(false);
     }
@@ -120,55 +120,49 @@ const GoogleAdsAccountManager: React.FC = () => {
   const validateToken = useCallback(async (accountId: string) => {
     setError(null);
     try {
-      const response = await fetch('/api/adscenter/oauth/validate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ accountId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Token validation failed');
-      }
-
-      const data = await response.json();
-      if (data.valid) {
+      setBusyAccountId(accountId);
+      const data = await http.post<{ valid: boolean; error?: string }>(
+        '/adscenter/oauth/validate',
+        { accountId }
+      );
+      if ((data as any).valid) {
         setSuccess('Token is valid');
+        toast.success('令牌有效');
         loadAccounts(); // 刷新账户列表
       } else {
-        setError('Token is invalid or expired');
+        const msg = (data as any)?.error || 'Token is invalid or expired';
+        setError(msg);
+        toast.error(msg);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Token validation failed');
+      toast.error(err instanceof Error ? err.message : 'Token validation failed');
     }
+    finally { setBusyAccountId(null); }
   }, [oauthConfig]);
   // 刷新 OAuth 令牌
   const refreshToken = useCallback(async (accountId: string) => {
     setError(null);
     try {
-      const response = await fetch('/api/adscenter/oauth/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ accountId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Token refresh failed');
-      }
-
-      const data = await response.json();
-      if (data.success) {
+      setBusyAccountId(accountId);
+      const data = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/oauth/refresh',
+        { accountId }
+      );
+      if ((data as any).success) {
         setSuccess('Token refreshed successfully');
+        toast.success('令牌刷新成功');
         loadAccounts();
       } else {
-        setError('Token refresh failed');
+        const msg = (data as any)?.error || 'Token refresh failed';
+        setError(msg);
+        toast.error(msg);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Token refresh failed');
+      toast.error(err instanceof Error ? err.message : 'Token refresh failed');
     }
+    finally { setBusyAccountId(null); }
   }, [oauthConfig]);
   // 同步账户数据
   const syncAccountData = useCallback(async (accountId: string) => {
@@ -176,20 +170,12 @@ const GoogleAdsAccountManager: React.FC = () => {
     setSyncProgress(0);
     
     try {
-      const response = await fetch('/api/adscenter/oauth/accounts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          action: 'sync',
-          accountId 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Account sync failed');
-      }
+      setBusyAccountId(accountId);
+      const res = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/oauth/accounts',
+        { action: 'sync', accountId }
+      );
+      if ((res as any)?.success === false) throw new Error((res as any)?.error || 'Account sync failed');
 
       // 模拟进度更新
       const interval = setInterval(() => {
@@ -201,43 +187,36 @@ const GoogleAdsAccountManager: React.FC = () => {
           return prev + 10;
         });
       }, 200);
-
-      const data = await response.json();
-      if (data.success) {
+      
+      if ((res as any).success) {
         setSuccess('Account data synced successfully');
+        toast.success('账户同步成功');
         loadAccounts();
       } else {
         setError('Account sync failed');
+        toast.error('Account sync failed');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Account sync failed');
+      toast.error(err instanceof Error ? err.message : 'Account sync failed');
     }
+    finally { setBusyAccountId(null); }
   }, [oauthConfig]);
   // 删除账户
   const deleteAccount = useCallback(async (accountId: string) => {
-    if (!confirm('Are you sure you want to delete this account?')) {
-      return;
-    }
-
     setError(null);
     try {
-      const response = await fetch('/api/adscenter/oauth/accounts', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ accountId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete account');
-      }
+      setBusyAccountId(accountId);
+      await http.post('/adscenter/oauth/accounts', { action: 'delete', accountId });
 
       setSuccess('Account deleted successfully');
+      toast.success('账户已删除');
       loadAccounts();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete account');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete account');
     }
+    finally { setBusyAccountId(null); }
   }, [oauthConfig]);
   // 导出账户配置
   const exportAccounts = useCallback(() => {
@@ -297,6 +276,31 @@ const GoogleAdsAccountManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* 删除确认 */}
+      <Dialog open={!!confirmDeleteId} onOpenChange={(open) => { if (!open) setConfirmDeleteId(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>删除账户</DialogTitle>
+            <DialogDescription>
+              删除后将无法继续使用该 Google Ads 账户进行操作，确定要删除吗？
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <button className="px-4 py-2 rounded border" onClick={() => setConfirmDeleteId(null)}>取消</button>
+            <button
+              className="px-4 py-2 rounded bg-red-600 text-white disabled:opacity-50"
+              disabled={busyAccountId === confirmDeleteId}
+              onClick={async () => {
+                const id = confirmDeleteId as string;
+                setConfirmDeleteId(null);
+                await deleteAccount(id);
+              }}
+            >
+              确认删除
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* 标题和操作按钮 */}
       <div className="flex justify-between items-center">
         <div>
@@ -425,25 +429,28 @@ const GoogleAdsAccountManager: React.FC = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => validateToken(account.id)}
+                          disabled={busyAccountId === account.id || loading}
                         >
-                          <Shield className="w-4 h-4 mr-1" />
-                          Validate
+                          <Shield className={`w-4 h-4 mr-1 ${busyAccountId === account.id ? 'animate-pulse' : ''}`} />
+                          {busyAccountId === account.id ? 'Validating...' : 'Validate'}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => refreshToken(account.id)}
+                          disabled={busyAccountId === account.id || loading}
                         >
-                          <RefreshCw className="w-4 h-4 mr-1" />
-                          Refresh
+                          <RefreshCw className={`w-4 h-4 mr-1 ${busyAccountId === account.id ? 'animate-spin' : ''}`} />
+                          {busyAccountId === account.id ? 'Refreshing...' : 'Refresh'}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => syncAccountData(account.id)}
+                          disabled={busyAccountId === account.id || loading}
                         >
-                          <Download className="w-4 h-4 mr-1" />
-                          Sync
+                          <Download className={`w-4 h-4 mr-1 ${busyAccountId === account.id ? 'animate-pulse' : ''}`} />
+                          {busyAccountId === account.id ? 'Syncing...' : 'Sync'}
                         </Button>
                         <Button
                           size="sm"
@@ -456,10 +463,11 @@ const GoogleAdsAccountManager: React.FC = () => {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => deleteAccount(account.id)}
+                          onClick={() => setConfirmDeleteId(account.id)}
+                          disabled={busyAccountId === account.id || loading}
                         >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Delete
+                          <Trash2 className={`w-4 h-4 mr-1 ${busyAccountId === account.id ? 'animate-pulse' : ''}`} />
+                          {busyAccountId === account.id ? 'Deleting...' : 'Delete'}
                         </Button>
                       </div>
                     </div>

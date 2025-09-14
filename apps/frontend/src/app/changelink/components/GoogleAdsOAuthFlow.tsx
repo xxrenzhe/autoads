@@ -11,6 +11,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { createClientLogger } from "@/lib/utils/security/client-secure-logger";
 import { getDomainConfig, getGoogleOAuthConfig } from '@/lib/domain-config';
+import { toast } from 'sonner'
+import { http } from '@/shared/http/client'
 const logger = createClientLogger('GoogleAdsOAuthFlow');
 
 import { 
@@ -79,24 +81,22 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
     setAuthStep('callback');
 
     try {
-      const response = await fetch('/api/adscenter/oauth/callback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code, state, error })
-      });
-
-      const result = await response.json();
+      const result = await http.post<{ success: boolean; accounts?: unknown[]; credentials?: unknown; error?: string }>(
+        '/adscenter/oauth/callback',
+        { code, state, error }
+      );
 
       if (result.success) {
         setAuthStep('success');
         setAccounts(result.accounts || []);
         onAuthSuccess?.(result.credentials);
+        toast.success('OAuth 回调处理成功');
       } else {
         setAuthStep('error');
-        setError(result.error || 'Authentication failed');
-        onAuthError?.(result.error || 'Authentication failed');
+        const msg = result.error || 'Authentication failed';
+        setError(msg);
+        onAuthError?.(msg);
+        toast.error(msg);
       }
     } catch (error) {
       setAuthStep('error');
@@ -119,21 +119,19 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
     setError(null);
 
     try {
-      const response = await fetch('/api/adscenter/oauth/auth-url', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(oauthConfig)
-      });
-
-      const result = await response.json();
+      const result = await http.post<{ success: boolean; authUrl?: string; error?: string }>(
+        '/adscenter/oauth/auth-url',
+        oauthConfig
+      );
 
       if (result.success) {
         setAuthUrl(result.authUrl);
         setAuthStep('auth');
+        toast.success('授权链接已生成');
       } else {
-        setError(result.error || 'Failed to generate auth URL');
+        const msg = result.error || 'Failed to generate auth URL';
+        setError(msg);
+        toast.error(msg);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate auth URL';
@@ -148,21 +146,19 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/adscenter/oauth/validate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ customerId })
-      });
-
-      const result = await response.json();
+      const result = await http.post<{ success: boolean; credentials?: unknown; error?: string }>(
+        '/adscenter/oauth/validate',
+        { customerId }
+      );
 
       if (result.success) {
         setSelectedAccount(customerId);
         onAuthSuccess?.(result.credentials);
+        toast.success('账户验证成功');
       } else {
-        setError(result.error || 'Account validation failed');
+        const msg = result.error || 'Account validation failed';
+        setError(msg);
+        toast.error(msg);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Account validation failed';
@@ -177,20 +173,18 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/adscenter/oauth/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ customerId })
-      });
-
-      const result = await response.json();
+      const result = await http.post<{ success: boolean; credentials?: unknown; error?: string }>(
+        '/adscenter/oauth/refresh',
+        { customerId }
+      );
 
       if (result.success) {
         onAuthSuccess?.(result.credentials);
+        toast.success('令牌刷新成功');
       } else {
-        setError(result.error || 'Token refresh failed');
+        const msg = result.error || 'Token refresh failed';
+        setError(msg);
+        toast.error(msg);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Token refresh failed';
@@ -205,23 +199,21 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/adscenter/oauth/remove', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ customerId })
-      });
-
-      const result = await response.json();
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/oauth/remove',
+        { customerId }
+      );
 
       if (result.success) {
         setAccounts(prev => prev.filter((account: any) => (account as any).customerId !== customerId));
         if (selectedAccount === customerId) {
           setSelectedAccount(null);
         }
+        toast.success('账户已删除');
       } else {
-        setError(result.error || 'Failed to remove account');
+        const msg = result.error || 'Failed to remove account';
+        setError(msg);
+        toast.error(msg);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to remove account';
@@ -235,11 +227,15 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
   useEffect(() => {
     const loadAccounts = async () => {
       try {
-        const response = await fetch('/api/adscenter/oauth/accounts');
-        const result = await response.json();
+        const result = await http.getCached<{ success: boolean; accounts: unknown[] }>(
+          '/adscenter/oauth/accounts',
+          undefined,
+          30_000,
+          false
+        );
 
-        if (result.success) {
-          setAccounts(result.accounts || []);
+        if ((result as any).success) {
+          setAccounts((result as any).accounts || []);
         }
       } catch (error) {
       logger.error('Failed to fetch accounts:', new EnhancedError('Failed to fetch accounts:', { error: error instanceof Error ? error.message : String(error)  }));

@@ -35,6 +35,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts'
+import { http } from '@/shared/http/client'
 
 interface SystemHealth {
   overall: 'healthy' | 'unhealthy' | 'degraded'
@@ -107,16 +108,10 @@ export default function MonitoringDashboard() {
     try {
       setLoading(true)
       
-      const [healthRes, alertsRes, metricsRes] = await Promise.all([
-        fetch('/api/admin/monitoring/health'),
-        fetch('/api/admin/monitoring/alerts'),
-        fetch('/api/admin/monitoring/alerts?type=metrics')
-      ])
-
       const [healthData, alertsData, metricsData] = await Promise.all([
-        healthRes.json(),
-        alertsRes.json(),
-        metricsRes.json()
+        http.get('/admin/monitoring/health'),
+        http.get('/admin/monitoring/alerts'),
+        http.get('/admin/monitoring/alerts', { type: 'metrics' })
       ])
 
       if (healthData.success) {
@@ -146,17 +141,11 @@ export default function MonitoringDashboard() {
 
   const acknowledgeAlert = async (alertId: string) => {
     try {
-      const response = await fetch('/api/admin/monitoring/alerts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'action',
-          action: 'acknowledge',
-          alertId
-        })
+      const data: any = await http.post('/admin/monitoring/alerts', {
+        type: 'action',
+        action: 'acknowledge',
+        alertId
       })
-
-      const data = await response.json()
       
       if (data.success) {
         toast.success('Alert acknowledged')
@@ -172,17 +161,11 @@ export default function MonitoringDashboard() {
 
   const resolveAlert = async (alertId: string) => {
     try {
-      const response = await fetch('/api/admin/monitoring/alerts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'action',
-          action: 'resolve',
-          alertId
-        })
+      const data: any = await http.post('/admin/monitoring/alerts', {
+        type: 'action',
+        action: 'resolve',
+        alertId
       })
-
-      const data = await response.json()
       
       if (data.success) {
         toast.success('Alert resolved')

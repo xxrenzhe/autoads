@@ -4,6 +4,7 @@ import { calculatePriority } from '@/lib/siterank/priority';
 import { createClientLogger } from "@/lib/utils/security/client-secure-logger";
 import { EnhancedError } from '@/lib/utils/error-handling';
 import { validateBatchQueryCount } from '@/lib/config/siterank';
+import { backend } from '@/shared/http/backend';
 const logger = createClientLogger('AnalysisEngine');
 
 interface AnalysisEngineProps {
@@ -139,42 +140,34 @@ export const useAnalysisEngine = ({
     try {
       const timeoutId = setTimeout(() => controller.abort(), 30000);
       
-      const response = await fetch(
-        `/api/siterank/rank?domain=${encodeURIComponent(domain)}&type=similarweb`,
-        { signal: controller.signal }
+      // 通过 Next 内置反代访问 Go 后端
+      const result = await backend.get<any>(
+        '/api/siterank/rank',
+        { domain, source: 'similarweb' }
       );
       
       clearTimeout(timeoutId);
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        
-        // 更新速率限制状态
-        if (response.status === 429 || response.status === 403) {
-          setRateLimitStatus({
-            remaining: 0,
-            resetTime: errorData.resetTime || Date.now() + 60000,
-            totalRequests: rateLimitStatus.totalRequests + 1,
-            isLimited: true
-          });
-        }
-        
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success && result.data) {
+      // 兼容多种响应结构（Next 内部API / Go 后端）
+      if (result?.success && result?.data) {
         return {
           domain,
-          globalRank: result.data.globalRank,
-          monthlyVisits: result.data.monthlyVisits,
+          globalRank: result.data.globalRank ?? result.data.global_rank ?? null,
+          monthlyVisits: result.data.monthlyVisits ?? result.data.monthly_visits ?? null,
           fromCache: result.fromCache || false,
           rateLimitInfo: result.rateLimitInfo
         };
-      } else {
-        throw new Error('Invalid response format');
       }
+      if (typeof result === 'object' && result) {
+        return {
+          domain,
+          globalRank: result.globalRank ?? result.global_rank ?? null,
+          monthlyVisits: result.monthlyVisits ?? result.monthly_visits ?? null,
+          fromCache: result.fromCache || false,
+          rateLimitInfo: result.rateLimitInfo
+        };
+      }
+      throw new Error('Invalid response format');
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('Request timeout');

@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { EnhancedError } from '@/lib/utils/error-handling';
+import { http } from '@/shared/http/client'
+import { toast } from 'sonner'
 
 interface PerformanceMetrics {
   count: number;
@@ -64,25 +66,34 @@ export default function MonitoringDashboard() {
       setLoading(true);
       
       // 获取性能指标
-      const metricsResponse = await fetch('/api/monitoring/metrics');
-      const metricsData = await metricsResponse.json();
+      const metricsData = await http.getCached<{ success: boolean; data: { aggregated: PerformanceMetrics; health: HealthStatus } }>(
+        '/monitoring/metrics',
+        undefined as any,
+        10_000,
+        false
+      );
       
-      if (metricsData.success) {
-        setMetrics(metricsData.data.aggregated);
-        setHealth(metricsData.data.health);
+      if ((metricsData as any).success) {
+        setMetrics((metricsData as any).data.aggregated);
+        setHealth((metricsData as any).data.health);
       }
 
       // 获取告警数据
-      const alertsResponse = await fetch('/api/monitoring/alerts');
-      const alertsData = await alertsResponse.json();
+      const alertsData = await http.getCached<{ success: boolean; data: { alerts: Alert[]; stats: AlertStats } }>(
+        '/monitoring/alerts',
+        undefined as any,
+        10_000,
+        false
+      );
       
-      if (alertsData.success) {
-        setAlerts(alertsData.data.alerts);
-        setAlertStats(alertsData.data.stats);
+      if ((alertsData as any).success) {
+        setAlerts((alertsData as any).data.alerts);
+        setAlertStats((alertsData as any).data.stats);
       }
     } catch (err) {
       setError('Failed to fetch monitoring data');
       console.error('Error fetching monitoring data:', err);
+      toast.error('加载监控数据失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -90,16 +101,12 @@ export default function MonitoringDashboard() {
 
   const acknowledgeAlert = async (alertId: string) => {
     try {
-      const response = await fetch('/api/monitoring/alerts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'acknowledge',
-          data: { alertId, acknowledgedBy: 'dashboard-user' }
-        })
-      });
+      const res = await http.post<{ success: boolean }>(
+        '/monitoring/alerts',
+        { action: 'acknowledge', data: { alertId, acknowledgedBy: 'dashboard-user' } }
+      );
 
-      if (response.ok) {
+      if ((res as any)?.success !== false) {
         setAlerts(prev => prev?.filter(Boolean)?.map((alert: any) => 
           alert.id === alertId ? { ...alert, acknowledged: true } : alert
         ));

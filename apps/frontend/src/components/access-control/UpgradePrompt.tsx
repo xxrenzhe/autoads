@@ -17,6 +17,7 @@ import {
   X,
   ArrowRight
 } from 'lucide-react'
+import { http } from '@/shared/http/client'
 
 interface UpgradeSuggestion {
   shouldUpgrade: boolean
@@ -53,11 +54,15 @@ export default function UpgradePrompt({
 
   const fetchUpgradeSuggestion = async () => {
     try {
-      const response = await fetch('/api/user/access-control/upgrade-suggestions')
-      const data = await response.json()
-      
-      if (data.success) {
-        setSuggestion(data.data)
+      const data = await http.getCached<{ success: boolean; data: UpgradeSuggestion }>(
+        '/user/access-control/upgrade-suggestions',
+        undefined,
+        60_000,
+        true
+      )
+      if ((data as any)?.shouldUpgrade !== undefined || (data as any)?.data) {
+        // unwrapData=true 时 data 已是 UpgradeSuggestion
+        setSuggestion((data as any).shouldUpgrade !== undefined ? (data as any) : (data as any).data)
       }
     } catch (error) {
       console.error('Error fetching upgrade suggestions:', error)

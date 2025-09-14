@@ -20,6 +20,8 @@ import {
   Crown,
   X
 } from 'lucide-react'
+import TokenBalanceInline from '@/token/components/TokenBalanceInline'
+import { useTokenBalance } from '@/lib/hooks/useTokenBalance'
 
 interface UserProfileModalProps {
   isOpen: boolean
@@ -29,6 +31,7 @@ interface UserProfileModalProps {
 export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState('profile')
+  const { data: tokenBalance } = useTokenBalance()
 
   if (!session?.user) {
     return null
@@ -43,9 +46,9 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
 
   // 模拟数据 - 实际应用中应该从API获取
   const mockTokenData = {
-    balance: 1250,
-    used: 750,
-    total: 2000,
+    balance: typeof tokenBalance?.remaining === 'number' ? tokenBalance?.remaining : 1250,
+    used: typeof tokenBalance?.used === 'number' ? tokenBalance?.used : 750,
+    total: typeof tokenBalance?.total === 'number' ? tokenBalance?.total : 2000,
     recentUsage: [
       { date: '2024-12-19', feature: '网站排名分析', tokens: 50, count: 25 },
       { date: '2024-12-18', feature: '批量打开URL', tokens: 30, count: 15 },
@@ -247,11 +250,13 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
               <CardContent>
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{mockTokenData.balance}</div>
-                    <div className="text-sm text-gray-600">剩余Token</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    <TokenBalanceInline fallback={mockTokenData.balance} />
                   </div>
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">{mockTokenData.used}</div>
+                  <div className="text-sm text-gray-600">剩余Token</div>
+                </div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <div className="text-2xl font-bold text-orange-600">{mockTokenData.used}</div>
                     <div className="text-sm text-gray-600">已使用</div>
                   </div>
                   <div className="text-center p-4 bg-gray-50 rounded-lg">

@@ -22,6 +22,9 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { toast } from 'sonner'
+import { http } from '@/shared/http/client'
 
 interface ExecutionContext {
   id: string;
@@ -68,6 +71,8 @@ export default function ExecutionsPage() {
   const [selectedExecution, setSelectedExecution] = useState<ExecutionContext | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
 
   useEffect(() => {
     loadExecutions();
@@ -129,11 +134,15 @@ export default function ExecutionsPage() {
 
   const loadActiveExecutions = async () => {
     try {
-      const response = await fetch('/api/adscenter/execute?action=list&userId=current_user');
-      const result = await response.json();
+      const result = await http.getCached<{ success: boolean; data: { executions: ExecutionContext[] } }>(
+        '/adscenter/execute',
+        { action: 'list', userId: 'current_user' },
+        15_000,
+        false
+      );
       
-      if (result.success) {
-        setActiveExecutions(result.data.executions);
+      if ((result as any).success) {
+        setActiveExecutions((result as any).data.executions);
       }
     } catch (error) {
       console.error('加载活跃执行失败:', error);
@@ -142,11 +151,15 @@ export default function ExecutionsPage() {
 
   const loadHistoryExecutions = async () => {
     try {
-      const response = await fetch('/api/adscenter/execute?action=history&userId=current_user&limit=20');
-      const result = await response.json();
+      const result = await http.getCached<{ success: boolean; data: { executions: ExecutionContext[] } }>(
+        '/adscenter/execute',
+        { action: 'history', userId: 'current_user', limit: 20 },
+        30_000,
+        false
+      );
       
-      if (result.success) {
-        setHistoryExecutions(result.data.executions);
+      if ((result as any).success) {
+        setHistoryExecutions((result as any).data.executions);
       }
     } catch (error) {
       console.error('加载历史执行失败:', error);
@@ -154,45 +167,42 @@ export default function ExecutionsPage() {
   };
 
   const handleCancelExecution = async (executionId: string) => {
-    if (!confirm('确定要取消这个执行吗？')) return;
-
     try {
-      const response = await fetch('/api/adscenter/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'cancel',
-          executionId
-        })
-      });
-
-      const result = await response.json();
+      setCancelingId(executionId);
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/execute',
+        { action: 'cancel', executionId }
+      );
       
-      if (result.success) {
+      if ((result as any).success) {
         loadActiveExecutions();
+        toast.success('执行已取消');
       } else {
-        alert('取消执行失败: ' + result.error);
+        toast.error('取消执行失败: ' + ((result as any).error || '请稍后重试'));
       }
     } catch (error) {
       console.error('取消执行失败:', error);
-      alert('取消执行失败');
+      toast.error('取消执行失败，请稍后重试');
     }
+    finally { setCancelingId(null); }
   };
 
   const openDetailDialog = async (executionId: string) => {
     try {
-      const response = await fetch(`/api/adscenter/execute?action=status&executionId=${executionId}`);
-      const result = await response.json();
+      const result = await http.get<{ success: boolean; data: ExecutionContext; error?: string }>(
+        '/adscenter/execute',
+        { action: 'status', executionId }
+      );
       
-      if (result.success) {
-        setSelectedExecution(result.data);
+      if ((result as any).success) {
+        setSelectedExecution((result as any).data);
         setShowDetailDialog(true);
       } else {
-        alert('获取执行详情失败: ' + result.error);
+        toast.error('获取执行详情失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('获取执行详情失败:', error);
-      alert('获取执行详情失败');
+      toast.error('获取执行详情失败，请稍后重试');
     }
   };
 
@@ -324,10 +334,11 @@ export default function ExecutionsPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleCancelExecution(execution.id)}
+                disabled={cancelingId === execution.id}
+                onClick={() => setConfirmCancelId(execution.id)}
               >
-                <Square className="h-4 w-4 mr-1" />
-                取消
+                <Square className={`h-4 w-4 mr-1 ${cancelingId === execution.id ? 'animate-pulse' : ''}`} />
+                {cancelingId === execution.id ? '取消中...' : '取消'}
               </Button>
             )}
           </div>

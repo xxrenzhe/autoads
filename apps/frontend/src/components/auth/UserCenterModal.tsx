@@ -28,6 +28,7 @@ import {
   Check
 } from 'lucide-react'
 import { getAccountStatus } from '@/lib/utils/account-status'
+import { http } from '@/shared/http/client'
 
 interface UserCenterModalProps {
   isOpen: boolean
@@ -97,11 +98,10 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
       if (activeTab === 'tokens' && session?.user?.id) {
         setIsLoading(true)
         try {
-          const response = await fetch('/api/user/tokens/usage?limit=20')
-          if (response.ok) {
-            const data = await response.json()
-            setTokenUsage(data.data?.records || [])
-            setMonthlyUsage(data.data?.analytics?.totalTokensUsed || 0)
+          const data = await http.get<{ success: boolean; data: any }>(`/user/tokens/usage?${new URLSearchParams({ limit: '20' })}`)
+          if ((data as any)?.success) {
+            setTokenUsage((data as any).data?.records || [])
+            setMonthlyUsage((data as any).data?.analytics?.totalTokensUsed || 0)
           }
         } catch (error) {
           console.error('Failed to fetch token usage:', error)
@@ -121,23 +121,31 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
         setIsLoading(true)
         try {
           // 获取邀请码和URL
-          const codeResponse = await fetch('/api/invitation/my-code')
-          if (codeResponse.ok) {
-            const codeData = await codeResponse.json()
+          const codeData = await http.getCached<{ success: boolean; data: any }>(
+            '/invitation/my-code',
+            undefined,
+            30_000,
+            false
+          )
+          if ((codeData as any)?.success) {
             setInvitationData(prev => ({
               ...prev,
-              code: codeData.data.invitationCode,
-              url: codeData.data.invitationUrl
+              code: (codeData as any).data.invitationCode,
+              url: (codeData as any).data.invitationUrl
             }))
           }
 
           // 获取邀请统计
-          const statsResponse = await fetch('/api/invitation/stats')
-          if (statsResponse.ok) {
-            const statsData = await statsResponse.json()
+          const statsData = await http.getCached<{ success: boolean; data: any }>(
+            '/invitation/stats',
+            undefined,
+            30_000,
+            false
+          )
+          if ((statsData as any)?.success) {
             setInvitationData(prev => ({
               ...prev,
-              stats: statsData.data
+              stats: (statsData as any).data
             }))
           }
         } catch (error) {

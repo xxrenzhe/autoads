@@ -37,6 +37,7 @@ import {
   Bell
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import TokenBalanceInline from '@/token/components/TokenBalanceInline'
 
 interface NavigationItem {
   title: string
@@ -326,6 +327,9 @@ export default function MainNavigation() {
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {session.user?.email}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        Token 余额：<TokenBalanceInline />
                       </p>
                     </div>
                   </DropdownMenuLabel>

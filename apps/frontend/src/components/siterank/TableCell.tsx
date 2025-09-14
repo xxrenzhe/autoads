@@ -1,15 +1,16 @@
 import React from 'react';
 import type { AnalysisResult } from '@/lib/siterank/types';
 import { getPriorityLevel } from '@/lib/siterank/priority';
+import React from 'react';
 
 interface TableCellProps {
   row: AnalysisResult;
   col: string;
   locale: string;
-  analysisResults: AnalysisResult[];
+  allPriorities: number[];
 }
 
-export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysisResults }) => {
+const TableCellBase: React.FC<TableCellProps> = ({ row, col, locale, allPriorities }) => {
   const value = row[col];
 
   if (col === "全球排名" || col === "rank" || col === "GlobalRank") {
@@ -97,10 +98,6 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
       );
     }
     if (typeof value === "number") {
-      const allPriorities = analysisResults
-        .map((r: any) => r.测试优先级)
-        .filter((p): p is number => typeof p === "number");
-
       const { level, color, borderColor, icon } = getPriorityLevel(
         value,
         allPriorities,
@@ -405,3 +402,20 @@ export const TableCell: React.FC<TableCellProps> = ({ row, col, locale, analysis
   }
   return value;
 };
+
+// 避免无关重渲染：当目标单元格值与关键参数未变动时跳过
+export const TableCell = React.memo(TableCellBase, (prev, next) => {
+  if (prev.col !== next.col) return false;
+  if (prev.locale !== next.locale) return false;
+  const prevVal = (prev.row as any)[prev.col];
+  const nextVal = (next.row as any)[next.col];
+  if (prevVal !== nextVal) return false;
+  // 对优先级列，比较 allPriorities 快照
+  if ((prev.col === '测试优先级' || prev.col === 'priority')) {
+    if (prev.allPriorities.length !== next.allPriorities.length) return false;
+    for (let i = 0; i < prev.allPriorities.length; i++) {
+      if (prev.allPriorities[i] !== next.allPriorities[i]) return false;
+    }
+  }
+  return true;
+});

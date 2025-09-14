@@ -7,6 +7,7 @@ import {
   ArrowRightIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline'
+import { http } from '@/shared/http/client'
 
 export default function SubscriptionSuccess() {
   const router = useRouter()
@@ -33,13 +34,11 @@ export default function SubscriptionSuccess() {
       if (sessionId) params.append('session_id', sessionId)
       if (subscriptionId) params.append('subscription_id', subscriptionId)
 
-      const response = await fetch(`/api/subscriptions/verify?${params}`)
-      const data = await response.json()
-
-      if (response.ok) {
-        setSubscriptionData(data)
+      const data = await http.get<{ error?: string }>(`/subscriptions/verify`, Object.fromEntries(params))
+      if ((data as any)?.error) {
+        setError((data as any).error)
       } else {
-        setError(data.error || 'Failed to verify subscription')
+        setSubscriptionData(data)
       }
     } catch (error) {
       console.error('Verification error:', error)

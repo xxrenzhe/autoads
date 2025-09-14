@@ -43,6 +43,8 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
+import TokenBalanceInline from '@/token/components/TokenBalanceInline'
+import { useTokenTransactions } from '@/lib/hooks/useTokenTransactions'
 
 interface TokenUsage {
   id: string
@@ -263,7 +265,7 @@ export default function UserTokensPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {apiData?.data.currentBalance || 0}
+              <TokenBalanceInline fallback={apiData?.data.currentBalance || 0} />
             </div>
             <p className="text-xs text-muted-foreground">
               可用Token数量
@@ -345,6 +347,40 @@ export default function UserTokensPage() {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 最近交易（后端直连补充展示） */}
+      {txData?.records && txData.records.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>最近交易（后端实时）</CardTitle>
+            <CardDescription>展示最近5条 Token 变动记录</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>时间</TableHead>
+                  <TableHead>功能</TableHead>
+                  <TableHead>操作</TableHead>
+                  <TableHead>消耗</TableHead>
+                  <TableHead>余额</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {txData.records.map((r: any) => (
+                  <TableRow key={r.id}>
+                    <TableCell>{r.timestamp ? format(new Date(r.timestamp), 'yyyy-MM-dd HH:mm:ss', { locale: zhCN }) : '-'}</TableCell>
+                    <TableCell>{r.feature || '-'}</TableCell>
+                    <TableCell>{r.action || '-'}</TableCell>
+                    <TableCell>{typeof r.amount === 'number' ? r.amount : '-'}</TableCell>
+                    <TableCell>{typeof r.balance === 'number' ? r.balance : '-'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}
@@ -582,6 +618,8 @@ export default function UserTokensPage() {
                   <div className="flex items-center space-x-2">
                     <Button
                       variant="outline"
+  // 通过后端直连获取最近5条交易，作为补充信息（不破坏原有统计）
+  const { data: txData } = useTokenTransactions(1, 5)
                       size="sm"
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage <= 1}

@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   Activity
 } from 'lucide-react';
+import { http } from '@/shared/http/client'
+import { toast } from 'sonner'
 
 interface TestResult {
   name: string;
@@ -45,12 +47,19 @@ export default function TestIntegrationPage() {
       for (const test of tests) {
         const result = await test.fn();
         setTestResults(prev => [...prev, result]);
+        if (result.status === 'error') {
+          toast.error(`${result.name}：${result.message}`);
+        } else {
+          toast.success(`${result.name}：通过`);
+        }
       }
 
       setIsRunning(false);
+      toast.success('所有测试完成');
     } catch (error) {
       console.error('Error in runAllTests:', error);
       setIsRunning(false);
+      toast.error('测试运行失败');
     }
   };
 
@@ -93,23 +102,20 @@ export default function TestIntegrationPage() {
   const testMonitoringAPIs = async (): Promise<TestResult> => {
     const startTime = Date.now();
     try {
-      const [metricsResponse, alertsResponse] = await Promise.all([
-        fetch('/api/monitoring/metrics'),
-        fetch('/api/monitoring/alerts')
+      const [metricsData, alertsData] = await Promise.all([
+        http.get('/monitoring/metrics'),
+        http.get('/monitoring/alerts')
       ]);
-
-      const metricsData = await metricsResponse.json();
-      const alertsData = await alertsResponse.json();
       const duration = Date.now() - startTime;
 
-      if (metricsResponse.ok && alertsResponse.ok) {
+      if (metricsData && alertsData) {
         return {
           name: 'Monitoring APIs',
           status: 'success',
           message: 'Both metrics and alerts APIs are working',
           data: {
-            metrics: metricsData.cpu ? 'Available' : 'Limited',
-            alerts: Array.isArray(alertsData.alerts) ? alertsData.alerts.length : 0
+            metrics: (metricsData as any).cpu ? 'Available' : 'Limited',
+            alerts: Array.isArray((alertsData as any).alerts) ? (alertsData as any).alerts.length : 0
           },
           timestamp: new Date().toISOString(),
           duration
@@ -137,23 +143,20 @@ export default function TestIntegrationPage() {
   const testGoogleAdsAPIs = async (): Promise<TestResult> => {
     const startTime = Date.now();
     try {
-      const [accountsResponse, campaignsResponse] = await Promise.all([
-        fetch('/api/google-ads/accounts'),
-        fetch('/api/google-ads/campaigns')
+      const [accountsData, campaignsData] = await Promise.all([
+        http.get<{ accounts: any[] }>('/google-ads/accounts'),
+        http.get<{ campaigns: any[] }>('/google-ads/campaigns')
       ]);
-
-      const accountsData = await accountsResponse.json();
-      const campaignsData = await campaignsResponse.json();
       const duration = Date.now() - startTime;
 
-      if (accountsResponse.ok && campaignsResponse.ok) {
+      if (accountsData && campaignsData) {
         return {
           name: 'Google Ads APIs',
           status: 'success',
           message: 'Google Ads APIs are responding correctly',
           data: {
-            accounts: Array.isArray(accountsData.accounts) ? accountsData.accounts.length : 0,
-            campaigns: Array.isArray(campaignsData.campaigns) ? campaignsData.campaigns.length : 0
+            accounts: Array.isArray((accountsData as any).accounts) ? (accountsData as any).accounts.length : 0,
+            campaigns: Array.isArray((campaignsData as any).campaigns) ? (campaignsData as any).campaigns.length : 0
           },
           timestamp: new Date().toISOString(),
           duration
@@ -181,27 +184,25 @@ export default function TestIntegrationPage() {
   const testChangeLinkAPIs = async (): Promise<TestResult> => {
     const startTime = Date.now();
     try {
-      const [configResponse, executeResponse] = await Promise.all([
-        fetch('/api/adscenter/configurations'),
-        fetch('/api/adscenter/execute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ configurationId: 'test-config' })
-        })
+      const [configData, executeData] = await Promise.all([
+        http.get<{ configurations: any[] }>(
+          '/adscenter/configurations'
+        ),
+        http.post<{ executionId?: string; success?: boolean }>(
+          '/adscenter/execute',
+          { configurationId: 'test-config' }
+        )
       ]);
-
-      const configData = await configResponse.json();
-      const executeData = await executeResponse.json();
       const duration = Date.now() - startTime;
 
-      if (configResponse.ok && executeResponse.ok) {
+      if (configData && executeData) {
         return {
           name: 'ChangeLink APIs',
           status: 'success',
           message: 'ChangeLink APIs are working correctly',
           data: {
-            configurations: Array.isArray(configData.configurations) ? configData.configurations.length : 0,
-            execution: executeData.executionId ? 'Started' : 'Failed'
+            configurations: Array.isArray((configData as any).configurations) ? (configData as any).configurations.length : 0,
+            execution: (executeData as any).executionId ? 'Started' : 'Failed'
           },
           timestamp: new Date().toISOString(),
           duration

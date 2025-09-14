@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { http } from '@/shared/http/client';
 
 export interface SubscriptionLimits {
   siterank: {
@@ -32,13 +33,7 @@ export function useSubscriptionLimits() {
   useEffect(() => {
     const fetchLimits = async () => {
       try {
-        const response = await fetch('/api/user/subscription/limits');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch subscription limits');
-        }
-        
-        const result = await response.json();
+        const result = await http.get<SubscriptionData>('/user/subscription/limits');
         setData(result);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -58,8 +53,7 @@ export function useSubscriptionLimits() {
       setLoading(true);
       setError(null);
       // Trigger refetch
-      fetch('/api/user/subscription/limits')
-        .then(response => response.json())
+      http.get<SubscriptionData>('/user/subscription/limits')
         .then(result => {
           setData(result);
           setLoading(false);

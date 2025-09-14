@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
+import { http } from '@/shared/http/client'
 
 export interface BatchOpenVersionInfo {
   available: boolean
@@ -25,11 +26,7 @@ export interface BatchOpenPermissions {
 }
 
 async function fetchBatchOpenPermissions(): Promise<BatchOpenPermissions> {
-  const response = await fetch('/api/batchopen/version?feature=batchopen')
-  if (!response.ok) {
-    throw new Error('Failed to fetch batchopen permissions')
-  }
-  return response.json()
+  return http.get<BatchOpenPermissions>('/batchopen/version', { feature: 'batchopen' })
 }
 
 export function useBatchOpenPermissions() {

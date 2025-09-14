@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     const errorRate = simpleMonitor.getErrorRate();
     const topEndpoints = simpleMonitor.getTopEndpoints(10);
 
-    // 返回简化的监控数据
-    return NextResponse.json({
+    // 返回简化的监控数据（带 ETag 缓存）
+    const payload = {
       timestamp: stats.lastUpdated,
       summary: {
         totalRequests: stats.totalRequests,
@@ -48,7 +48,17 @@ export async function GET(request: NextRequest) {
         highErrorRate: errorRate > 5,
         slowResponse: stats.averageResponseTime > 2000
       }
-    });
+    };
+
+    const etag = `W/"${Buffer.from(JSON.stringify(payload)).toString('base64')}"`;
+    const ifNoneMatch = request.headers.get('if-none-match');
+    if (ifNoneMatch === etag) {
+      return new NextResponse(null, { status: 304, headers: { 'ETag': etag, 'Cache-Control': 'private, max-age=15' } });
+    }
+    const res = NextResponse.json(payload);
+    res.headers.set('ETag', etag);
+    res.headers.set('Cache-Control', 'private, max-age=15');
+    return res;
 
   } catch (error) {
     logger.error('Failed to get monitoring data', error);

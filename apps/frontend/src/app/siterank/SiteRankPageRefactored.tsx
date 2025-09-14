@@ -168,19 +168,12 @@ export default function SiteRankPageRefactored() {
     // 检查Token余额
     setIsTokenChecking(true);
     try {
-      const response = await fetch('/api/user/tokens/check-availability', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: totalDomains,
-        }),
-      });
+      const data = await http.post<{ available: boolean }>(
+        '/user/tokens/check-availability',
+        { amount: totalDomains }
+      );
       
-      const data = await response.json();
-      
-      if (!data.available) {
+      if (!(data as any).available) {
         setTokenError("Token余额不足，请充值后重试");
         setIsTokenChecking(false);
         return;

@@ -22,6 +22,7 @@ import {
   Target
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { http } from '@/shared/http/client'
 
 interface TokenBalance {
   currentBalance: number
@@ -56,11 +57,14 @@ export default function TokenBalanceManager() {
   const fetchBalance = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/user/tokens/balance')
-      const data = await response.json()
-      
-      if (data.success) {
-        setBalance(data.data)
+      const data = await http.getCached<{ success: boolean; data: TokenBalance }>(
+        '/user/tokens/balance',
+        undefined,
+        5_000,
+        true
+      )
+      if (data) {
+        setBalance(data as any)
       } else {
         toast.error('Failed to fetch token balance')
       }
@@ -80,26 +84,21 @@ export default function TokenBalanceManager() {
 
     try {
       setIsTopUpLoading(true)
-      const response = await fetch('/api/user/tokens/balance', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const data = await http.post<{ success: boolean; data: { newBalance: number; message: string } }>(
+        '/user/tokens/balance',
+        {
           amount: topUpAmount,
           reason: `Token top-up: ${topUpAmount} tokens`
-        })
-      })
-
-      const data = await response.json()
-      
-      if (data.success) {
-        setBalance(prev => prev ? { ...prev, currentBalance: data.data.newBalance } : null)
+        }
+      )
+      if ((data as any)?.success && (data as any)?.data) {
+        const payload = (data as any).data
+        setBalance(prev => prev ? { ...prev, currentBalance: payload.newBalance } : null)
         setShowTopUpForm(false)
         setTopUpAmount(100)
-        toast.success(data.data.message)
+        toast.success(payload.message)
       } else {
-        toast.error(data.error || 'Failed to process top-up')
+        toast.error(((data as any)?.error) || 'Failed to process top-up')
       }
     } catch (error) {
       console.error('Error processing top-up:', error)

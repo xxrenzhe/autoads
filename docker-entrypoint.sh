@@ -4,6 +4,8 @@ set -e
 APP_DIR="/app/gofly_admin_v3"
 CONFIG_PATH="${ADMIN_CONFIG:-$APP_DIR/config.yaml}"
 PORT="${PORT:-8080}"
+NEXT_DIR="/app/frontend"
+NEXTJS_PORT="${NEXTJS_PORT:-3000}"
 
 echo "[entrypoint] 使用配置: $CONFIG_PATH"
 
@@ -41,6 +43,17 @@ if [ -f "$APP_DIR/resource/config.yaml.template" ]; then
     echo "[entrypoint] 警告: 未找到 envsubst，跳过 resource/config.yaml 渲染"
     cp "$APP_DIR/resource/config.yaml.template" "$APP_DIR/resource/config.yaml"
   fi
+fi
+
+# 启动 Next.js 前端（若存在构建产物）
+if [ -f "$NEXT_DIR/server.js" ]; then
+  echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
+  (
+    cd "$NEXT_DIR" && \
+    PORT="$NEXTJS_PORT" HOSTNAME="${HOSTNAME:-0.0.0.0}" node server.js >/dev/null 2>&1 &
+  ) || echo "[entrypoint] ⚠️ 启动 Next.js 失败，但继续启动后端"
+else
+  echo "[entrypoint] 未检测到 Next.js standalone 产物，跳过前端启动"
 fi
 
 echo "[entrypoint] 执行数据库迁移..."

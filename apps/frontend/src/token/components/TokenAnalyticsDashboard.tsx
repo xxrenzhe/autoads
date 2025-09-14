@@ -22,6 +22,8 @@ import {
   DollarSign
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { http } from '@/shared/http/client'
 
 export interface TokenUsageMetrics {
   totalTokensUsed: number
@@ -86,10 +88,8 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
       const params = new URLSearchParams({ timeRange })
       if (selectedFeature !== 'all') params.append('feature', selectedFeature)
       
-      const response = await fetch(`/api/admin/token-analytics/detailed?${params}`)
-      if (!response.ok) throw new Error('Failed to fetch token analytics')
-      const result = await response.json()
-      return result.data
+      const result = await http.get<{ data: any }>(`/admin/token-analytics/detailed`, Object.fromEntries(params))
+      return (result as any).data
     },
     staleTime: 2 * 60 * 1000,
   })
@@ -101,10 +101,11 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
   } = useQuery({
     queryKey: ['token-usage-patterns', timeRange],
     queryFn: async (): Promise<TokenUsagePattern[]> => {
-      const response = await fetch(`/api/admin/token-analytics/patterns?timeRange=${timeRange}`)
-      if (!response.ok) throw new Error('Failed to fetch usage patterns')
-      const result = await response.json()
-      return result.data || []
+      const result = await http.get<{ data: TokenUsagePattern[] }>(
+        `/admin/token-analytics/patterns`,
+        { timeRange }
+      )
+      return (result as any).data || []
     },
     staleTime: 5 * 60 * 1000,
   })
@@ -117,10 +118,10 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
     queryKey: ['token-forecasts', selectedFeature],
     queryFn: async (): Promise<TokenForecast[]> => {
       const params = selectedFeature !== 'all' ? `?feature=${selectedFeature}` : ''
-      const response = await fetch(`/api/admin/token-analytics/forecast${params}`)
-      if (!response.ok) throw new Error('Failed to fetch token forecasts')
-      const result = await response.json()
-      return result.data || []
+      const result = await http.get<{ data: TokenForecast[] }>(
+        `/admin/token-analytics/forecast${params}`
+      )
+      return (result as any).data || []
     },
     staleTime: 10 * 60 * 1000,
   })
@@ -132,10 +133,8 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
   } = useQuery({
     queryKey: ['token-alerts'],
     queryFn: async (): Promise<TokenAlert[]> => {
-      const response = await fetch('/api/admin/token-analytics/alerts')
-      if (!response.ok) throw new Error('Failed to fetch token alerts')
-      const result = await response.json()
-      return result.data || []
+      const result = await http.get<{ data: TokenAlert[] }>('/admin/token-analytics/alerts')
+      return (result as any).data || []
     },
     staleTime: 1 * 60 * 1000,
   })
@@ -207,6 +206,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
       document.body.removeChild(a)
     } catch (error) {
       console.error('Export failed:', error)
+      toast.error('导出失败，请稍后重试')
     }
   }
 

@@ -17,6 +17,7 @@ import {
   Download
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { http } from '@/shared/http/client'
 import {
   AreaChart,
   Area,
@@ -76,27 +77,24 @@ export default function TokenUsageAnalytics() {
     try {
       setLoading(true)
       
-      const [balanceRes, usageRes] = await Promise.all([
-        fetch('/api/user/tokens/balance'),
-        fetch(`/api/user/tokens/usage?${new URLSearchParams({
-          ...(dateRange !== 'all' && {
-            startDate: new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString()
-          }),
-          ...(selectedFeature !== 'all' && { feature: selectedFeature })
-        })}`)
-      ])
-
       const [balanceData, usageData] = await Promise.all([
-        balanceRes.json(),
-        usageRes.json()
+        http.getCached<{ success: boolean; data: TokenBalance }>('/user/tokens/balance', undefined, 5_000, false),
+        http.get<{ success: boolean; data: UsageData }>(
+          `/user/tokens/usage?${new URLSearchParams({
+            ...(dateRange !== 'all' && {
+              startDate: new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString()
+            }),
+            ...(selectedFeature !== 'all' && { feature: selectedFeature })
+          })}`
+        )
       ])
 
-      if (balanceData.success) {
-        setBalance(balanceData.data)
+      if ((balanceData as any)?.success) {
+        setBalance((balanceData as any).data)
       }
 
-      if (usageData.success) {
-        setUsage(usageData.data)
+      if ((usageData as any)?.success) {
+        setUsage((usageData as any).data)
       }
     } catch (error) {
       console.error('Error fetching token data:', error)
@@ -114,18 +112,18 @@ export default function TokenUsageAnalytics() {
 
   const exportUsage = async () => {
     try {
-      const response = await fetch(`/api/user/tokens/usage?${new URLSearchParams({
-        limit: '1000',
-        ...(dateRange !== 'all' && {
-          startDate: new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString()
-        }),
-        ...(selectedFeature !== 'all' && { feature: selectedFeature })
-      })}`)
+      const data = await http.get<{ success: boolean; data: UsageData }>(
+        `/user/tokens/usage?${new URLSearchParams({
+          limit: '1000',
+          ...(dateRange !== 'all' && {
+            startDate: new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString()
+          }),
+          ...(selectedFeature !== 'all' && { feature: selectedFeature })
+        })}`
+      )
 
-      const data = await response.json()
-      
-      if (data.success) {
-        const csv = convertToCSV(data.data.records)
+      if ((data as any)?.success) {
+        const csv = convertToCSV((data as any).data.records)
         downloadCSV(csv, `token-usage-${new Date().toISOString().split('T')[0]}.csv`)
         toast.success('Usage data exported successfully')
       }

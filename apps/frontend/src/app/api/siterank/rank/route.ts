@@ -8,49 +8,49 @@ import { validateBatchQueryCount, getSiteRankConfig } from '@/lib/config/siteran
 import { withTokenConsumption, siteRankTokenConfig } from '@/lib/middleware/token-consumption-middleware';
 import { prisma } from '@/lib/prisma';
 
-// 域名验证函数
-function isValidDomainFormat(domain: string): Promise<boolean> {
+// 域名验证函数（同步）
+function isValidDomainFormat(domain: string): boolean {
   if (!domain || typeof domain !== 'string') {
-    return Promise.resolve(false);
+    return false;
   }
-  
+
   // 基本清理
   domain = domain.trim().toLowerCase();
-  
+
   // 长度检查
   if (domain.length === 0 || domain.length > 253) {
-    return Promise.resolve(false);
+    return false;
   }
-  
+
   // 检查是否包含协议或路径
   if (domain.includes('://') || domain.includes('/') || domain.includes('?') || domain.includes('#')) {
-    return Promise.resolve(false);
+    return false;
   }
-  
+
   // 域名格式正则验证
   const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-  
+
   if (!domainRegex.test(domain)) {
-    return Promise.resolve(false);
+    return false;
   }
-  
+
   // 检查是否以点开头或结尾
   if (domain.startsWith('.') || domain.endsWith('.')) {
-    return Promise.resolve(false);
+    return false;
   }
-  
+
   // 检查是否有连续的点
   if (domain.includes('..')) {
-    return Promise.resolve(false);
+    return false;
   }
-  
+
   // 检查顶级域名
   const tld = domain.split('.').pop();
   if (!tld || tld.length < 2) {
-    return Promise.resolve(false);
+    return false;
   }
-  
-  return Promise.resolve(true);
+
+  return true;
 }
 
 // 获取用户的批量查询限制

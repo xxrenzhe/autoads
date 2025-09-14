@@ -152,35 +152,30 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
     setError('');
 
     try {
-      const response = await fetch('/api/payment/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const data = await http.post<{ success: boolean; sessionId?: string; paymentUrl?: string; error?: string }>(
+        '/payment/create-checkout-session',
+        {
           userId,
           packageId: selectedPackage.id,
           amount: selectedPackage.price,
           tokens: selectedPackage.tokens,
           bonus: selectedPackage.bonus,
           paymentMethod
-        }),
-      });
+        }
+      );
 
-      const data = await response.json();
-
-      if (data.success) {
+      if ((data as any).success) {
         if (paymentMethod === 'stripe') {
           const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
           if (stripe) {
-            await stripe.redirectToCheckout({ sessionId: data.sessionId });
+            await stripe.redirectToCheckout({ sessionId: (data as any).sessionId });
           }
         } else {
-          setPaymentUrl(data.paymentUrl);
+          setPaymentUrl((data as any).paymentUrl);
           setActiveStep(2);
         }
       } else {
-        setError(data.error || '创建支付订单失败');
+        setError(((data as any).error) || '创建支付订单失败');
       }
     } catch (err) {
       console.error('Payment error:', err);

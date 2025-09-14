@@ -1,12 +1,8 @@
-name: Build & Publish GoFly Admin
+name: Build & Publish GoFly Admin (Deprecated)
 
 on:
-  push:
-    branches:
-      - main
-      - production
-    tags:
-      - 'v*.*.*'
+  # 已由 docker.yml 统一，保留手动触发以便排障时临时使用
+  workflow_dispatch:
 
 jobs:
   build:
@@ -52,7 +48,8 @@ jobs:
         with:
           file: Dockerfile.standalone
           context: .
-          platforms: linux/amd64,linux/arm64
+          # 统一仅构建 linux/amd64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.vars.outputs.tags }}
           build-args: |
@@ -60,4 +57,3 @@ jobs:
             COMMIT=${{ github.sha }}
           cache-from: type=registry,ref=${{ steps.vars.outputs.image }}:buildcache
           cache-to: type=registry,ref=${{ steps.vars.outputs.image }}:buildcache,mode=max
-

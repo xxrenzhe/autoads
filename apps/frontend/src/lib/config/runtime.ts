@@ -193,6 +193,8 @@ export function getConfigMetadata(config: RuntimeConfig): ConfigMetadata {
 // 客户端配置存储
 let clientConfig: RuntimeConfig | null = null;
 
+import { http } from '@/shared/http/client'
+
 // 客户端获取配置
 export async function getClientConfig(): Promise<RuntimeConfig> {
   if (clientConfig) {
@@ -200,11 +202,8 @@ export async function getClientConfig(): Promise<RuntimeConfig> {
   }
 
   try {
-    const response = await fetch('/api/config');
-    if (!response.ok) {
-      throw new Error('Failed to fetch config');
-    }
-    const config = await response.json();
+    // 使用带TTL的轻缓存，减少抖动（60s）
+    const config = await http.getCached<RuntimeConfig>('/config', undefined, 60_000, false)
     clientConfig = config;
     return config;
   } catch (error) {

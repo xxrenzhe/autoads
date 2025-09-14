@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,17 +44,25 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   isBackgroundQuerying,
   progressText
 }) => {
-  // 过滤搜索结果
-  const filteredResults = results.filter((result: any) => {
+  // 预计算所有优先级（供子单元格复用）
+  const allPriorities = useMemo(() => {
+    return results
+      .map((r: any) => r.测试优先级)
+      .filter((p: unknown): p is number => typeof p === 'number');
+  }, [results]);
+
+  // 过滤搜索结果（memo，避免重复计算）
+  const filteredResults = useMemo(() => results.filter((result: any) => {
     const domain = result.domain || result.域名;
     return (
       domain &&
       typeof domain === "string" &&
       domain.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  });
-  // 排序结果
-  const sortedResults = [...filteredResults].sort((a, b) => {
+  }), [results, searchTerm]);
+
+  // 排序结果（memo）
+  const sortedResults = useMemo(() => [...filteredResults].sort((a, b) => {
     let aValue = getSortValue(a, sortField);
     let bValue = getSortValue(b, sortField);
 
@@ -75,7 +83,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
       return 0;
     }
     return 0;
-  });
+  }), [filteredResults, sortField, sortDirection]);
 
   // 导出Excel
   const exportToExcel = async () => {
@@ -226,10 +234,10 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                       className={`py-2 px-4 align-middle text-[15px] ${getColumnClass(col)} border-r border-gray-100 last:border-r-0`}
                     >
                       <TableCell 
-                        row={row} 
-                        col={col} 
-                        locale={locale} 
-                        analysisResults={results}
+                        row={row}
+                        col={col}
+                        locale={locale}
+                        allPriorities={allPriorities}
                       />
                     </td>
                   ))}

@@ -1,4 +1,5 @@
 import { offlineStorage, OfflineAction } from './offline-storage'
+import { http } from '@/shared/http/client'
 
 export interface SyncResult {
   success: boolean
@@ -91,92 +92,52 @@ export class OfflineSync {
    * Sync token usage
    */
   private async syncTokenUsage(action: OfflineAction): Promise<void> {
-    const response = await fetch('/api/user/tokens/usage/sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        feature: action.data.feature,
-        operation: action.data.operation,
-        tokensConsumed: action.data.tokensConsumed,
-        itemCount: action.data.itemCount,
-        timestamp: action.timestamp,
-        offlineId: action.id
-      })
+    await http.post('/user/tokens/usage/sync', {
+      feature: action.data.feature,
+      operation: action.data.operation,
+      tokensConsumed: action.data.tokensConsumed,
+      itemCount: action.data.itemCount,
+      timestamp: action.timestamp,
+      offlineId: action.id
     })
-
-    if (!response.ok) {
-      throw new Error(`Token usage sync failed: ${response.statusText}`)
-    }
   }
 
   /**
    * Sync feature usage
    */
   private async syncFeatureUsage(action: OfflineAction): Promise<void> {
-    const response = await fetch('/api/user/access-control/usage/sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        feature: action.data.feature,
-        operation: action.data.operation,
-        count: action.data.count,
-        timestamp: action.timestamp,
-        offlineId: action.id
-      })
+    await http.post('/user/access-control/usage/sync', {
+      feature: action.data.feature,
+      operation: action.data.operation,
+      count: action.data.count,
+      timestamp: action.timestamp,
+      offlineId: action.id
     })
-
-    if (!response.ok) {
-      throw new Error(`Feature usage sync failed: ${response.statusText}`)
-    }
   }
 
   /**
    * Sync user activity
    */
   private async syncUserActivity(action: OfflineAction): Promise<void> {
-    const response = await fetch('/api/user/activity/sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        action: action.data.action,
-        resource: action.data.resource,
-        metadata: action.data.metadata,
-        timestamp: action.timestamp,
-        offlineId: action.id
-      })
+    await http.post('/user/activity/sync', {
+      action: action.data.action,
+      resource: action.data.resource,
+      metadata: action.data.metadata,
+      timestamp: action.timestamp,
+      offlineId: action.id
     })
-
-    if (!response.ok) {
-      throw new Error(`User activity sync failed: ${response.statusText}`)
-    }
   }
 
   /**
    * Sync analytics event
    */
   private async syncAnalyticsEvent(action: OfflineAction): Promise<void> {
-    const response = await fetch('/api/analytics/events/sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        event: action.data.event,
-        properties: action.data.properties,
-        timestamp: action.timestamp,
-        offlineId: action.id
-      })
+    await http.post('/analytics/events/sync', {
+      event: action.data.event,
+      properties: action.data.properties,
+      timestamp: action.timestamp,
+      offlineId: action.id
     })
-
-    if (!response.ok) {
-      throw new Error(`Analytics event sync failed: ${response.statusText}`)
-    }
   }
 
   /**

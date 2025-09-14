@@ -13,6 +13,8 @@ export interface PWACapabilities {
   supportsBackgroundSync: boolean
 }
 
+import { http } from '@/shared/http/client'
+
 export class PWAManager {
   private installPrompt: PWAInstallPrompt | null = null
   private registration: ServiceWorkerRegistration | null = null
@@ -316,13 +318,7 @@ export class PWAManager {
       })
 
       // Send subscription to server
-      await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(subscription)
-      })
+      await http.post('/push/subscribe', subscription)
 
       return subscription
     } catch (error) {

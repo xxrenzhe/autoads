@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { CheckIcon, StarIcon } from '@heroicons/react/24/solid'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { http } from '@/shared/http/client'
 
 interface Plan {
   id: string
@@ -36,13 +37,43 @@ export default function PricingPlans() {
   const loadPlans = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/plans')
-      if (response.ok) {
-        const data = await response.json()
-        setPlans(data.plans || [])
-      } else {
-        // Mock data for development
-        setPlans([
+      // 读取公开套餐，使用轻缓存并解包 {success, data}
+      const data = await http.getCached<{ plans: any[]; currency: string; interval: string }>(
+        '/plans',
+        undefined,
+        300_000,
+        true
+      )
+
+      const normalizeFeatures = (f: any) => {
+        if (!f || typeof f !== 'object') return [] as string[]
+        const out: string[] = []
+        if (f.siterank) out.push('站点排名（SiteRank）')
+        if (f.batchopen) out.push('批量处理（BatchOpen）')
+        if (f.adscenter) out.push('广告中心（ChangeLink）')
+        if (f.analytics) out.push('高级分析（Analytics）')
+        if (f.support) out.push(f.support === 'priority' ? '优先支持' : f.support === 'email' ? '邮件支持' : '无专属支持')
+        return out
+      }
+
+      const mapped = (data?.plans || []).map((p: any) => ({
+        id: p.id,
+        name: p.displayName || p.name,
+        description: p.description,
+        price: p.price,
+        yearlyPrice: Math.round(p.price * 12 * 0.8),
+        currency: p.currency,
+        tokenQuota: p.tokenQuota,
+        features: normalizeFeatures(p.features),
+        isPopular: p.popular || p.name === 'pro',
+        isActive: true as const
+      }))
+
+      setPlans(mapped)
+    } catch (error) {
+      console.error('Error loading plans:', error)
+      // 回退到本地示例数据，保证页面可用
+      setPlans([
           {
             id: 'free',
             name: '免费版',
@@ -112,9 +143,6 @@ export default function PricingPlans() {
             stripeYearlyPriceId: 'price_max_yearly'
           }
         ])
-      }
-    } catch (error) {
-      console.error('Error loading plans:', error)
     } finally {
       setLoading(false)
     }
@@ -135,30 +163,21 @@ export default function PricingPlans() {
     setSubscribingPlan(plan.id)
 
     try {
-      const priceId = isYearly ? plan.stripeYearlyPriceId : plan.stripePriceId
-      
-      const response = await fetch('/api/subscriptions/create-checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          priceId,
-          planId: plan.id,
-          successUrl: `${window.location.origin}/subscription/success`,
-          cancelUrl: `${window.location.origin}/pricing`
-        })
-      })
+      // 支持“订阅变更”流程（当前已禁用外部支付时也能返回计算结果）
+      const payload = { newPlanId: plan.id, billingCycle: isYearly ? 'yearly' : 'monthly' }
+      const result = await http.post<{ clientSecret?: string; priceAdjustment?: any; newPlan?: any }>(
+        '/user/subscription/change',
+        payload
+      )
 
-      if (response.ok) {
-        const { url } = await response.json()
-        window.location.href = url
-      } else {
-        throw new Error('Failed to create checkout session')
+      // 成功后跳转到订阅管理页，便于后续支付/确认
+      if ((result as any)?.success === false) {
+        throw new Error((result as any)?.error || '订阅创建失败')
       }
+      router.push(`/settings/subscription?planId=${plan.id}`)
     } catch (error) {
       console.error('Error creating subscription:', error)
-      alert('订阅失败，请稍后重试')
+      alert('暂无法创建订阅，请稍后重试或前往“设置-订阅”页面处理。')
     } finally {
       setSubscribingPlan(null)
     }

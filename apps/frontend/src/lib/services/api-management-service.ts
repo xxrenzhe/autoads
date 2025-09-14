@@ -1,4 +1,5 @@
 import { APIEndpoint, APIKey } from '@/admin/components/api/APIManager'
+import { robustFetch } from '@/lib/utils/api/robust-client'
 
 export interface APIAnalytics {
   summary: {
@@ -96,123 +97,84 @@ export class APIManagementService {
     this.baseUrl = baseUrl
   }
 
+  private async requestJson<T = any>(url: string, init?: RequestInit): Promise<T> {
+    const res = await robustFetch(url, {
+      ...init,
+      headers: {
+        'Accept': 'application/json',
+        ...(init?.headers || {})
+      }
+    });
+    if (!res.ok) {
+      const msg = `${res.status} ${res.statusText}`
+      throw new Error(`API request failed: ${msg}`)
+    }
+    return res.json() as Promise<T>;
+  }
+
   // Endpoint Management
   async getEndpoints(): Promise<APIEndpoint[]> {
-    const response = await fetch(`${this.baseUrl}/endpoints`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch API endpoints')
-    }
-    const result = await response.json()
+    const result = await this.requestJson(`${this.baseUrl}/endpoints`)
     return result.data
   }
 
   async createEndpoint(endpointData: Partial<APIEndpoint>): Promise<APIEndpoint> {
-    const response = await fetch(`${this.baseUrl}/endpoints`, {
+    const result = await this.requestJson(`${this.baseUrl}/endpoints`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(endpointData),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(endpointData)
     })
-    if (!response.ok) {
-      throw new Error('Failed to create API endpoint')
-    }
-    const result = await response.json()
     return result.data
   }
 
   async updateEndpoint(id: string, endpointData: Partial<APIEndpoint>): Promise<APIEndpoint> {
-    const response = await fetch(`${this.baseUrl}/endpoints/${id}`, {
+    const result = await this.requestJson(`${this.baseUrl}/endpoints/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(endpointData),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(endpointData)
     })
-    if (!response.ok) {
-      throw new Error('Failed to update API endpoint')
-    }
-    const result = await response.json()
     return result.data
   }
 
   async deleteEndpoint(id: string): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/endpoints/${id}`, {
-      method: 'DELETE',
-    })
-    if (!response.ok) {
-      throw new Error('Failed to delete API endpoint')
-    }
+    await this.requestJson(`${this.baseUrl}/endpoints/${id}`, { method: 'DELETE' })
   }
 
   async toggleEndpoint(id: string): Promise<APIEndpoint> {
-    const response = await fetch(`${this.baseUrl}/endpoints/${id}/toggle`, {
-      method: 'POST',
-    })
-    if (!response.ok) {
-      throw new Error('Failed to toggle API endpoint')
-    }
-    const result = await response.json()
+    const result = await this.requestJson(`${this.baseUrl}/endpoints/${id}/toggle`, { method: 'POST' })
     return result.data
   }
 
   // API Key Management
   async getAPIKeys(): Promise<APIKey[]> {
-    const response = await fetch(`${this.baseUrl}/keys`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch API keys')
-    }
-    const result = await response.json()
+    const result = await this.requestJson(`${this.baseUrl}/keys`)
     return result.data
   }
 
   async createAPIKey(keyData: Partial<APIKey>): Promise<APIKey & { fullKey: string }> {
-    const response = await fetch(`${this.baseUrl}/keys`, {
+    const result = await this.requestJson(`${this.baseUrl}/keys`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(keyData),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(keyData)
     })
-    if (!response.ok) {
-      throw new Error('Failed to create API key')
-    }
-    const result = await response.json()
     return result.data
   }
 
   async updateAPIKey(id: string, keyData: Partial<APIKey>): Promise<APIKey> {
-    const response = await fetch(`${this.baseUrl}/keys/${id}`, {
+    const result = await this.requestJson(`${this.baseUrl}/keys/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(keyData),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(keyData)
     })
-    if (!response.ok) {
-      throw new Error('Failed to update API key')
-    }
-    const result = await response.json()
     return result.data
   }
 
   async deleteAPIKey(id: string): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/keys/${id}`, {
-      method: 'DELETE',
-    })
-    if (!response.ok) {
-      throw new Error('Failed to delete API key')
-    }
+    await this.requestJson(`${this.baseUrl}/keys/${id}`, { method: 'DELETE' })
   }
 
   async revokeAPIKey(id: string): Promise<APIKey> {
-    const response = await fetch(`${this.baseUrl}/keys/${id}/revoke`, {
-      method: 'POST',
-    })
-    if (!response.ok) {
-      throw new Error('Failed to revoke API key')
-    }
-    const result = await response.json()
+    const result = await this.requestJson(`${this.baseUrl}/keys/${id}/revoke`, { method: 'POST' })
     return result.data
   }
 
@@ -221,35 +183,22 @@ export class APIManagementService {
     const params = new URLSearchParams({ timeRange })
     if (endpoint) params.append('endpoint', endpoint)
     
-    const response = await fetch(`${this.baseUrl}/analytics?${params}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch API analytics')
-    }
-    const result = await response.json()
+    const result = await this.requestJson(`${this.baseUrl}/analytics?${params}`)
     return result.data
   }
 
   async getEndpointMetrics(endpointId: string, timeRange: string = '24h'): Promise<any> {
-    const response = await fetch(`${this.baseUrl}/endpoints/${endpointId}/metrics?timeRange=${timeRange}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch endpoint metrics')
-    }
-    const result = await response.json()
+    const result = await this.requestJson(`${this.baseUrl}/endpoints/${endpointId}/metrics?timeRange=${timeRange}`)
     return result.data
   }
 
   // Rate Limiting
   async updateRateLimit(endpointId: string, rateLimitConfig: RateLimitConfig): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/endpoints/${endpointId}/rate-limit`, {
+    await this.requestJson(`${this.baseUrl}/endpoints/${endpointId}/rate-limit`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(rateLimitConfig),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rateLimitConfig)
     })
-    if (!response.ok) {
-      throw new Error('Failed to update rate limit')
-    }
   }
 
   async getRateLimitStatus(userId?: string, apiKey?: string): Promise<any> {
@@ -257,68 +206,39 @@ export class APIManagementService {
     if (userId) params.append('userId', userId)
     if (apiKey) params.append('apiKey', apiKey)
     
-    const response = await fetch(`${this.baseUrl}/rate-limit/status?${params}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch rate limit status')
-    }
-    const result = await response.json()
+    const result = await this.requestJson(`${this.baseUrl}/rate-limit/status?${params}`)
     return result.data
   }
 
   // Documentation
   async getDocumentation(endpoint?: string): Promise<APIDocumentation[]> {
     const params = endpoint ? `?endpoint=${endpoint}` : ''
-    const response = await fetch(`${this.baseUrl}/documentation${params}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch API documentation')
-    }
-    const result = await response.json()
+    const result = await this.requestJson(`${this.baseUrl}/documentation${params}`)
     return result.data
   }
 
   async updateDocumentation(endpoint: string, documentation: Partial<APIDocumentation>): Promise<APIDocumentation> {
-    const response = await fetch(`${this.baseUrl}/documentation/${endpoint}`, {
+    const result = await this.requestJson(`${this.baseUrl}/documentation/${endpoint}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(documentation),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(documentation)
     })
-    if (!response.ok) {
-      throw new Error('Failed to update API documentation')
-    }
-    const result = await response.json()
     return result.data
   }
 
   async generateDocumentation(): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/documentation/generate`, {
-      method: 'POST',
-    })
-    if (!response.ok) {
-      throw new Error('Failed to generate API documentation')
-    }
+    await this.requestJson(`${this.baseUrl}/documentation/generate`, { method: 'POST' })
   }
 
   // Health Monitoring
   async getHealthStatus(): Promise<any> {
-    const response = await fetch(`${this.baseUrl}/health`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch API health status')
-    }
-    const result = await response.json()
+    const result = await this.requestJson(`${this.baseUrl}/health`)
     return result.data
   }
 
   async runHealthCheck(endpoint?: string): Promise<any> {
     const params = endpoint ? `?endpoint=${endpoint}` : ''
-    const response = await fetch(`${this.baseUrl}/health/check${params}`, {
-      method: 'POST',
-    })
-    if (!response.ok) {
-      throw new Error('Failed to run health check')
-    }
-    const result = await response.json()
+    const result = await this.requestJson(`${this.baseUrl}/health/check${params}`, { method: 'POST' })
     return result.data
   }
 

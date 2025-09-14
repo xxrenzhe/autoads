@@ -15,6 +15,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner'
 import { 
   Card, 
   CardContent, 
@@ -58,6 +59,7 @@ import {
   AutomationStep,
   VerificationStep
 } from './components';
+import { http } from '@/shared/http/client'
 
 interface SetupStep {
   id: string;
@@ -306,12 +308,10 @@ export default function SetupPage() {
   // 加载保存的进度
   const loadSavedProgress = async () => {
     try {
-      const response = await fetch('/api/adscenter/setup/progress?action=load', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      const result = await response.json();
+      const result = await http.post<{ success: boolean; data?: any }>(
+        '/adscenter/setup/progress',
+        { action: 'load' }
+      );
       if (result.success && result.data) {
         // 恢复当前步骤
         setCurrentStep(result.data.currentStep);
@@ -332,10 +332,9 @@ export default function SetupPage() {
     
     autoSaveTimeoutRef.current = setTimeout(async () => {
       try {
-        const response = await fetch('/api/adscenter/setup/progress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const result = await http.post<{ success: boolean; error?: string }>(
+          '/adscenter/setup/progress',
+          {
             action: 'save',
             currentStep,
             setupSteps: setupSteps?.filter(Boolean)?.map((step: any) => ({
@@ -352,10 +351,8 @@ export default function SetupPage() {
               adsPowerEnvironments,
               configurations
             }
-          })
-        });
-
-        const result = await response.json();
+          }
+        );
         if (result.success && isMountedRef.current) {
           setAutoSaveStatus('saved');
           console.log('✅ Setup progress auto-saved');
@@ -393,10 +390,9 @@ export default function SetupPage() {
   const manualSave = useCallback(async () => {
     setAutoSaveStatus('saving');
     try {
-      const response = await fetch('/api/adscenter/setup/progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/setup/progress',
+        {
           action: 'save',
           currentStep,
           setupSteps: setupSteps?.filter(Boolean)?.map((step: any) => ({
@@ -413,13 +409,11 @@ export default function SetupPage() {
             adsPowerEnvironments,
             configurations
           }
-        })
-      });
-
-      const result = await response.json();
+        }
+      );
       if (result.success) {
         setAutoSaveStatus('saved');
-        alert('✅ 进度已保存');
+        toast.success('进度已保存');
         setTimeout(() => {
           if (isMountedRef.current) {
             setAutoSaveStatus('idle');
@@ -427,12 +421,12 @@ export default function SetupPage() {
         }, 2000);
       } else {
         setAutoSaveStatus('error');
-        alert('❌ 保存失败: ' + (result.error || '未知错误'));
+        toast.error('保存失败: ' + (result.error || '未知错误'));
       }
     } catch (error) {
       console.error('Manual save failed:', error);
       setAutoSaveStatus('error');
-      alert('❌ 保存失败: 网络错误');
+      toast.error('保存失败: 网络错误');
     }
   }, [currentStep, setupSteps, googleAdsAccounts, affiliateLinks, adsPowerEnvironments, configurations]);
 
@@ -440,39 +434,39 @@ export default function SetupPage() {
     setLoading(true);
     try {
       // 加载Google Ads账号
-      const googleAdsResponse = await fetch('/api/adscenter/settings?type=google-ads-accounts');
-      if (googleAdsResponse.ok) {
-        const result = await googleAdsResponse.json();
-        if (result.success) {
-          setGoogleAdsAccounts(result.data || []);
-        }
+      const googleAdsResult = await http.get<{ success: boolean; data: any[] }>(
+        '/adscenter/settings',
+        { type: 'google-ads-accounts' }
+      );
+      if ((googleAdsResult as any).success) {
+        setGoogleAdsAccounts((googleAdsResult as any).data || []);
       }
 
       // 加载广告联盟链接
-      const affiliateResponse = await fetch('/api/adscenter/settings?type=affiliate-links');
-      if (affiliateResponse.ok) {
-        const result = await affiliateResponse.json();
-        if (result.success) {
-          setAffiliateLinks(result.data || []);
-        }
+      const affiliateResult = await http.get<{ success: boolean; data: any[] }>(
+        '/adscenter/settings',
+        { type: 'affiliate-links' }
+      );
+      if ((affiliateResult as any).success) {
+        setAffiliateLinks((affiliateResult as any).data || []);
       }
 
       // 加载AdsPower环境
-      const adsPowerResponse = await fetch('/api/adscenter/settings?type=adspower-environments');
-      if (adsPowerResponse.ok) {
-        const result = await adsPowerResponse.json();
-        if (result.success) {
-          setAdsPowerEnvironments(result.data || []);
-        }
+      const adsPowerResult = await http.get<{ success: boolean; data: any[] }>(
+        '/adscenter/settings',
+        { type: 'adspower-environments' }
+      );
+      if ((adsPowerResult as any).success) {
+        setAdsPowerEnvironments((adsPowerResult as any).data || []);
       }
 
       // 加载配置
-      const configurationsResponse = await fetch('/api/adscenter/settings?type=configurations');
-      if (configurationsResponse.ok) {
-        const result = await configurationsResponse.json();
-        if (result.success) {
-          setConfigurations(result.data.configurations || []);
-        }
+      const configurationsRes = await http.get<{ success: boolean; data: { configurations: any[] } }>(
+        '/adscenter/settings',
+        { type: 'configurations' }
+      );
+      if ((configurationsRes as any).success) {
+        setConfigurations((configurationsRes as any).data.configurations || []);
       }
     } catch (error) {
       console.error('加载配置失败:', error);
@@ -484,25 +478,22 @@ export default function SetupPage() {
   // 添加Google Ads账号
   const addGoogleAdsAccount = async () => {
     if (!newGoogleAdsAccount.name || !newGoogleAdsAccount.customerId) {
-      alert('请填写必要的账号信息');
+      toast.error('请填写必要的账号信息');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await http.post<{ success: boolean; data?: any; error?: string }>(
+        '/adscenter/settings',
+        {
           type: 'google-ads-account',
           data: {
             ...newGoogleAdsAccount,
             status: 'disconnected'
           }
-        })
-      });
-
-      const result = await response.json();
+        }
+      );
       if (result.success) {
         setGoogleAdsAccounts(prev => [...prev, result.data]);
         setNewGoogleAdsAccount({
@@ -514,13 +505,13 @@ export default function SetupPage() {
           refreshToken: '',
           loginCustomerId: ''
         });
-        alert('Google Ads账号添加成功！');
+        toast.success('Google Ads账号添加成功！');
       } else {
-        alert('添加失败: ' + result.error);
+        toast.error('添加失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('添加Google Ads账号失败:', error);
-      alert('添加失败');
+      toast.error('添加失败');
     } finally {
       setLoading(false);
     }
@@ -530,28 +521,22 @@ export default function SetupPage() {
   const testGoogleAdsConnection = async (accountId: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'test-google-ads-connection',
-          accountId
-        })
-      });
-
-      const result = await response.json();
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/settings',
+        { action: 'test-google-ads-connection', accountId }
+      );
       
       // 更新账号状态
       setGoogleAdsAccounts(prev => prev?.filter(Boolean)?.map((account: any) => 
         account.id === accountId 
-          ? { ...account, status: result.success ? 'connected' : 'error' }
+          ? { ...account, status: (result as any).success ? 'connected' : 'error' }
           : account
       ));
 
-      alert(result.success ? '连接测试成功！' : '连接测试失败: ' + result.error);
+      if ((result as any).success) toast.success('连接测试成功！'); else toast.error('连接测试失败: ' + (result as any).error);
     } catch (error) {
       console.error('测试连接失败:', error);
-      alert('测试连接失败');
+      toast.error('测试连接失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -560,40 +545,37 @@ export default function SetupPage() {
   // 添加广告联盟链接
   const addAffiliateLink = async () => {
     if (!newAffiliateLink.name || !newAffiliateLink.affiliateUrl) {
-      alert('请填写链接名称和URL');
+      toast.error('请填写链接名称和URL');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await http.post<{ success: boolean; data?: any; error?: string }>(
+        '/adscenter/settings',
+        {
           type: 'affiliate-link',
           data: {
             ...newAffiliateLink,
             status: 'untested'
           }
-        })
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setAffiliateLinks(prev => [...prev, result.data]);
+        }
+      );
+      if ((result as any).success) {
+        setAffiliateLinks(prev => [...prev, (result as any).data]);
         setNewAffiliateLink({
           name: '',
           affiliateUrl: '',
           description: '',
           category: ''
         });
-        alert('广告联盟链接添加成功！');
+        toast.success('广告联盟链接添加成功！');
       } else {
-        alert('添加失败: ' + result.error);
+        toast.error('添加失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('添加广告联盟链接失败:', error);
-      alert('添加失败');
+      toast.error('操作失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -603,28 +585,22 @@ export default function SetupPage() {
   const testAffiliateLink = async (linkId: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'test-affiliate-link',
-          linkId
-        })
-      });
-
-      const result = await response.json();
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/settings',
+        { action: 'test-affiliate-link', linkId }
+      );
       
       // 更新链接状态
       setAffiliateLinks(prev => prev?.filter(Boolean)?.map((link: any) => 
         link.id === linkId 
-          ? { ...link, status: result.success ? 'valid' : 'invalid' }
+          ? { ...link, status: (result as any).success ? 'valid' : 'invalid' }
           : link
       ));
 
-      alert(result.success ? '链接测试成功！' : '链接测试失败: ' + result.error);
+      if ((result as any).success) toast.success('链接测试成功！'); else toast.error('链接测试失败: ' + (result as any).error);
     } catch (error) {
       console.error('测试链接失败:', error);
-      alert('测试链接失败');
+      toast.error('测试链接失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -633,40 +609,37 @@ export default function SetupPage() {
   // 添加AdsPower环境
   const addAdsPowerEnvironment = async () => {
     if (!newAdsPowerEnv.name || !newAdsPowerEnv.environmentId) {
-      alert('请填写环境名称和环境ID');
+      toast.error('请填写环境名称和环境ID');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await http.post<{ success: boolean; data?: any; error?: string }>(
+        '/adscenter/settings',
+        {
           type: 'adspower-environment',
           data: {
             ...newAdsPowerEnv,
             status: 'disconnected'
           }
-        })
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setAdsPowerEnvironments(prev => [...prev, result.data]);
+        }
+      );
+      if ((result as any).success) {
+        setAdsPowerEnvironments(prev => [...prev, (result as any).data]);
         setNewAdsPowerEnv({
           name: '',
           environmentId: '',
           apiEndpoint: 'http://local.adspower.net:50325',
           apiKey: ''
         });
-        alert('AdsPower环境添加成功！');
+        toast.success('AdsPower环境添加成功！');
       } else {
-        alert('添加失败: ' + result.error);
+        toast.error('添加失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('添加AdsPower环境失败:', error);
-      alert('添加失败');
+      toast.error('操作失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -676,28 +649,22 @@ export default function SetupPage() {
   const testAdsPowerConnection = async (envId: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'test-adspower-connection',
-          environmentId: envId
-        })
-      });
-
-      const result = await response.json();
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/settings',
+        { action: 'test-adspower-connection', environmentId: envId }
+      );
       
       // 更新环境状态
       setAdsPowerEnvironments(prev => prev?.filter(Boolean)?.map((env: any) => 
         env.id === envId 
-          ? { ...env, status: result.success ? 'connected' : 'error' }
+          ? { ...env, status: (result as any).success ? 'connected' : 'error' }
           : env
       ));
 
-      alert(result.success ? 'AdsPower连接测试成功！' : '连接测试失败: ' + result.error);
+      if ((result as any).success) toast.success('AdsPower连接测试成功！'); else toast.error('连接测试失败: ' + (result as any).error);
     } catch (error) {
       console.error('测试AdsPower连接失败:', error);
-      alert('测试连接失败');
+      toast.error('测试连接失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -706,16 +673,15 @@ export default function SetupPage() {
   // 创建配置
   const createConfiguration = async () => {
     if (!newConfiguration.name || !newConfiguration.environmentId) {
-      alert('请填写配置名称和环境ID');
+      toast.error('请填写配置名称和环境ID');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await http.post<{ success: boolean; data?: any; error?: string }>(
+        '/adscenter/settings',
+        {
           type: 'configuration',
           action: 'create',
           data: {
@@ -726,12 +692,10 @@ export default function SetupPage() {
               adMappings: []
             })) || []
           }
-        })
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setConfigurations(prev => [...prev, result.data]);
+        }
+      );
+      if ((result as any).success) {
+        setConfigurations(prev => [...prev, (result as any).data]);
         setNewConfiguration({
           name: '',
           description: '',
@@ -742,13 +706,13 @@ export default function SetupPage() {
           googleAdsAccounts: [],
           adMappingConfig: []
         });
-        alert('配置创建成功！');
+        toast.success('配置创建成功！');
       } else {
-        alert('创建失败: ' + result.error);
+        toast.error('创建失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('创建配置失败:', error);
-      alert('创建失败');
+      toast.error('操作失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -758,24 +722,19 @@ export default function SetupPage() {
   const runSystemVerification = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/adscenter/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'system-verification'
-        })
-      });
-
-      const result = await response.json();
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/settings',
+        { action: 'system-verification' }
+      );
       
-      if (result.success) {
-        alert('系统验证通过！所有配置正常。');
+      if ((result as any).success) {
+        toast.success('系统验证通过！所有配置正常。');
       } else {
-        alert('系统验证失败: ' + result.error);
+        toast.error('系统验证失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('系统验证失败:', error);
-      alert('系统验证失败');
+      toast.error('系统验证失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -784,31 +743,25 @@ export default function SetupPage() {
   // 执行测试运行
   const runTestExecution = async () => {
     if (configurations.length === 0) {
-      alert('请先创建执行配置');
+      toast.error('请先创建执行配置');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('/api/adscenter/execution', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'test-execution',
-          configurationId: configurations[0].id
-        })
-      });
-
-      const result = await response.json();
+      const result = await http.post<{ success: boolean; error?: string }>(
+        '/adscenter/execution',
+        { action: 'test-execution', configurationId: configurations[0].id }
+      );
       
-      if (result.success) {
-        alert('测试执行成功！系统运行正常。');
+      if ((result as any).success) {
+        toast.success('测试执行成功！系统运行正常。');
       } else {
-        alert('测试执行失败: ' + result.error);
+        toast.error('测试执行失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('测试执行失败:', error);
-      alert('测试执行失败');
+      toast.error('测试执行失败，请稍后重试');
     } finally {
       setLoading(false);
     }

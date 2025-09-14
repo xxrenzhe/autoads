@@ -17,6 +17,7 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react'
+import { http } from '@/shared/http/client'
 
 interface FeatureAccess {
   feature: string
@@ -63,11 +64,15 @@ export default function FeatureGate({
 
   const checkAccess = async () => {
     try {
-      const response = await fetch(`/api/user/access-control/check?feature=${feature}`)
-      const data = await response.json()
+      const data = await http.getCached<{ success: boolean; data: FeatureAccess }>(
+        '/user/access-control/check',
+        { feature },
+        10_000,
+        false
+      )
       
-      if (data.success) {
-        setAccess(data.data)
+      if ((data as any)?.success) {
+        setAccess((data as any).data)
       } else {
         setAccess({
           feature,
@@ -332,11 +337,15 @@ export function useFeatureAccess(feature: string) {
 
   const checkAccess = async () => {
     try {
-      const response = await fetch(`/api/user/access-control/check?feature=${feature}`)
-      const data = await response.json()
+      const data = await http.getCached<{ success: boolean; data: FeatureAccess }>(
+        '/user/access-control/check',
+        { feature },
+        10_000,
+        false
+      )
       
-      if (data.success) {
-        setAccess(data.data)
+      if ((data as any)?.success) {
+        setAccess((data as any).data)
       }
     } catch (error) {
       console.error('Error checking feature access:', error)

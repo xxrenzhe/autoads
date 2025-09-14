@@ -60,13 +60,13 @@ AutoAds SaaS 采用单镜像部署架构，将 Go 后端和 Next.js 前端打包
 ./scripts/deploy-autoads-saas.sh production --build-only
 ```
 
-### 2. 本地运行
+### 2. 本地运行（单端口 3000）
 ```bash
 # 启动本地环境
 ./scripts/start-autoads-saas.sh local --build
 
 # 访问应用
-open http://localhost:8888
+open http://localhost:3000
 ```
 
 ### 3. 部署到生产
@@ -90,12 +90,15 @@ open http://localhost:8888
 - **镜像**: `ghcr.io/xxrenzhe/autoads:prod-latest`
 - **资源**: 2C/4G
 
-## 监控和维护
+## 监控和维护（单端口 3000）
 
 ### 健康检查
 ```bash
-# 检查服务状态
+# 检查服务状态（外部）
 curl https://www.autoads.dev/health
+
+# 检查服务状态（容器内 Next 前端监听的 3000）
+curl -f http://127.0.0.1:3000/api/health || true
 
 # 使用脚本检查
 ./scripts/health-check.sh production
@@ -110,9 +113,9 @@ docker logs autoads-saas-production
 ./scripts/start-autoads-saas.sh production --logs
 ```
 
-### 服务管理
+### 服务管理（外部仅暴露 3000）
 ```bash
-# 重启服务
+# 重启服务（平台仅允许单端口，确保映射 3000 → 3000）
 ./scripts/start-autoads-saas.sh production --restart
 
 # 停止服务
@@ -122,13 +125,26 @@ docker logs autoads-saas-production
 ./scripts/start-autoads-saas.sh production --status
 ```
 
-## 技术实现
+## 技术实现（单容器双服务，外部仅 3000）
 
 ### Dockerfile 特点
-- **多阶段构建**：前端构建 → 后端构建 → 运行时
-- **静态文件嵌入**：使用 Go embed 将前端文件打包
-- **Alpine Linux**：最小化镜像大小
-- **非 root 用户**：安全运行
+- **多阶段构建**：Next.js（apps/frontend）→ GoFly Admin Web（Vite）→ Go 后端 → 运行时
+- **单容器双服务**：容器内同时运行 Next(3000) 与 Go(8080)，外部仅暴露 3000
+- **Alpine/Node 运行层**：最小化镜像 + 内置 tini 作为 PID1
+- **非 root 用户**：安全运行（node 用户）
+ - **条件缓存**：前端 `backend.ts` 支持 ETag 条件 GET（If-None-Match/304），减少重复传输
+
+### 前端到后端的内置反代（Route Handler）
+- 新增 Next.js Route Handler：`/go/:path*` → 转发至容器内 `http://127.0.0.1:8080/:path*`
+- 文件位置：`apps/frontend/src/app/go/[...path]/route.ts`
+- 使用方式：
+  - 将原本对 Go 的请求，例如：`http://127.0.0.1:8080/api/v1/...`
+  - 改为同源路径：`/go/api/v1/...`
+  - 优点：无需配置 CORS，仅暴露 3000 端口，统一鉴权/日志更方便
+  
+  观测与排障：
+  - 反代会注入/透传 `X-Request-Id`，并在响应加上 `Server-Timing: upstream;dur=XXX`，可用来追踪延迟与端到端链路。
+  - 前端（开发环境）会在控制台输出 `[backend]` 调用的耗时、请求ID、Server-Timing 摘要。
 
 ### Go 服务器特点
 - **静态文件服务**：直接服务 Next.js 构建产物
@@ -153,7 +169,7 @@ go run main.go       # 后端开发服务器
 ./scripts/start-autoads-saas.sh local --build
 ```
 
-### 生产部署
+### 生产部署（平台单端口）
 ```bash
 # CI/CD 自动构建
 git push origin main        # 触发预发环境构建
@@ -161,6 +177,10 @@ git push origin production  # 触发生产环境构建
 
 # 手动部署
 ./scripts/deploy-autoads-saas.sh production
+
+# 平台端口映射（仅映射 3000）
+# 外部端口示例：3000（或你选择的公开端口） → 容器 3000
+# Go 服务保留在容器内 8080，不对外暴露
 ```
 
 ### 监控告警
@@ -199,7 +219,7 @@ docker exec autoads-saas-production netstat -tlnp
 - ✅ **性能优异**：零网络延迟，资源利用率高
 - ✅ **运维友好**：统一监控，简化管理
 
-## ClawCloud 运行时覆盖域名元信息（重要）
+## ClawCloud 运行时覆盖域名元信息（重要，单端口 3000）
 
 为配合 MustKnow.md 的两步部署流程，CI 会在构建镜像时注入“域名元信息”，并在容器启动时渲染 `gofly_admin_v3/resource/config.yaml`。在 ClawCloud 控制台你可以覆盖以下环境变量，无需改动镜像内容：
 
@@ -222,10 +242,27 @@ docker exec autoads-saas-production netstat -tlnp
 - 模板位置：`gofly_admin_v3/resource/config.yaml.template`（其中 `allowurl: ${ALLOW_ORIGINS}`）。
 - 渲染逻辑：`docker-entrypoint.sh` 使用 `envsubst` 只替换域名相关变量，不会覆盖其他保密配置位。
 
+额外环境变量：
+- `BACKEND_URL`（可选）：覆盖前端 Route Handler 反代的目标后端地址，默认 `http://127.0.0.1:8080`。
+
 验证步骤：
 - 部署后在容器日志中应看到“渲染 resource/config.yaml (ALLOW_ORIGINS, GOOGLE_REDIRECT_URI)”提示。
 - 进入容器检查：`/app/gofly_admin_v3/resource/config.yaml` 的 `allowurl` 是否为期望域名列表。
 - 跨域验证：带 `Origin: https://www.<domain>` 请求 API，应返回允许跨域的响应头。
+- Next 前端可通过容器内环回地址访问 Go：`http://127.0.0.1:8080`（无需暴露 8080）。
 - ✅ **成本可控**：2C4G 运行完整应用
+
+## 单端口平台部署要点
+
+- 仅映射容器端口 `3000` 到外部（如 3000 或 8888）。
+- Go 服务对外不暴露，容器内监听 `8080`，供前端内部调用。
+- 若需由 Next 前端转发到 Go 的 API，可在 Next 中配置服务端调用 `http://127.0.0.1:8080`（SSR/Route Handlers/Middleware）。
+
+### 运行时可配置变量（反代/后端）
+- `BACKEND_URL`（可选）：反代目标后端，默认 `http://127.0.0.1:8080`
+- `BACKEND_PROXY_MAX_BODY`（可选）：反代请求体大小限制（字节），默认 `2097152`（2MB）
+- `BACKEND_PROXY_TIMEOUT_MS`（可选）：反代上游超时（毫秒），默认 `15000`
+- `NEXT_PUBLIC_BACKEND_PREFIX`（可选）：前端 `backend.ts` 访问后端的前缀，默认 `/go`
+- `BACKEND_PROXY_ALLOW_PREFIXES`（可选）：允许反代的前缀列表，逗号分隔；默认 `/health,/ready,/live,/api/`
 
 这种架构特别适合中小型 SaaS 应用，在保证功能完整性的同时，最大化了部署和运维的效率。

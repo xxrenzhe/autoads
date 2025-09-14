@@ -1,12 +1,35 @@
 # syntax=docker/dockerfile:1.7
 
 ############################
-# Frontend build (Vite)
+# Frontend build (Vite for GoFly Admin)
 FROM node:20-alpine AS web
 WORKDIR /web
+# 仅复制依赖清单，利用缓存
 COPY gofly_admin_v3/web/package*.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci
+# 复制源码并构建
 COPY gofly_admin_v3/web/ ./
+RUN npm run build
+
+############################
+# Next.js build (apps/frontend)
+FROM node:20-alpine AS next
+WORKDIR /frontend
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1
+# 仅复制依赖清单以最大化缓存命中
+COPY apps/frontend/package*.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
+# 复制 Prisma schema 以缓存 generate
+COPY apps/frontend/prisma ./prisma
+RUN npx prisma generate
+# 复制其余源代码
+COPY apps/frontend/ ./
+# 传入环境并构建 standalone
+ARG NEXT_PUBLIC_DEPLOYMENT_ENV="preview"
+ARG NEXT_PUBLIC_DOMAIN="localhost"
+ENV NEXT_PUBLIC_DEPLOYMENT_ENV=${NEXT_PUBLIC_DEPLOYMENT_ENV} \
+    NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN}
 RUN npm run build
 
 ############################
@@ -16,36 +39,73 @@ ARG VERSION=dev
 ARG COMMIT=unknown
 WORKDIR /src
 RUN apk add --no-cache git
+# 先复制依赖声明以利用 go mod 缓存
+COPY gofly_admin_v3/go.mod gofly_admin_v3/go.sum ./gofly_admin_v3/
+WORKDIR /src/gofly_admin_v3
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+# 再复制完整源码
+WORKDIR /src
 COPY gofly_admin_v3/ ./gofly_admin_v3/
 WORKDIR /src/gofly_admin_v3
 ENV CGO_ENABLED=0
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    go build -ldflags "-X main.Version=${VERSION} -X main.GitCommit=${COMMIT}" -o /out/server cmd/server/main.go
+    go build -trimpath -ldflags "-s -w -X main.Version=${VERSION} -X main.GitCommit=${COMMIT}" -o /out/server cmd/server/main.go
 COPY --from=web /web/dist /out/web/dist
 
 ############################
-# Runtime image
-FROM alpine:3.20
+# Runtime image (Node + Go)
+FROM node:20-alpine
 WORKDIR /app/gofly_admin_v3
-# 需要 envsubst 渲染模板，安装 gettext
-RUN apk add --no-cache ca-certificates tzdata gettext && adduser -D -h /home/app app && chown -R app:app /app
-USER app
-COPY --from=build /out/server /app/gofly_admin_v3/server
-COPY --from=build /out/web/dist ./web/dist
-COPY gofly_admin_v3/config.yaml.template /app/gofly_admin_v3/config.yaml.template
-COPY gofly_admin_v3/resource/config.yaml.template /app/gofly_admin_v3/resource/config.yaml.template
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+
+# 工具与时区、envsubst、tini
+RUN apk add --no-cache ca-certificates tzdata gettext tini \
+    && update-ca-certificates
+
+# 创建非root用户（使用 node 用户）
+USER node
+
+# 复制 Go 服务与前端静态
+COPY --from=build --chown=node:node /out/server /app/gofly_admin_v3/server
+COPY --from=build --chown=node:node /out/web/dist /app/gofly_admin_v3/web/dist
+
+# 复制 Next.js standalone 运行产物
+WORKDIR /app
+COPY --from=next --chown=node:node /frontend/.next/standalone /app/frontend
+COPY --from=next --chown=node:node /frontend/.next/static /app/frontend/.next/static
+COPY --from=next --chown=node:node /frontend/public /app/frontend/public
+
+# 复制配置模板与入口脚本
+COPY --chown=node:node gofly_admin_v3/config.yaml.template /app/gofly_admin_v3/config.yaml.template
+COPY --chown=node:node gofly_admin_v3/resource/config.yaml.template /app/gofly_admin_v3/resource/config.yaml.template
+COPY --chown=node:node docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
+
+# OCI 元信息标签
+ARG VERSION=dev
+ARG COMMIT=unknown
+LABEL org.opencontainers.image.title="autoads" \
+      org.opencontainers.image.version="$VERSION" \
+      org.opencontainers.image.revision="$COMMIT"
+
+# 环境变量：Go 与 Next
+ENV PORT=8080 \
+    ADMIN_CONFIG=/app/gofly_admin_v3/config.yaml \
+    NEXTJS_PORT=3000 \
+    HOSTNAME=0.0.0.0
+
+# 运行时的域名元信息（可由运行环境覆盖）
 ARG NEXT_PUBLIC_DEPLOYMENT_ENV="preview"
 ARG NEXT_PUBLIC_DOMAIN="localhost"
 ARG ALLOW_ORIGINS="http://localhost:3000,http://localhost:8080,http://localhost:8081"
 ARG GOOGLE_REDIRECT_URI=""
-ENV PORT=8080 \
-    ADMIN_CONFIG=/app/gofly_admin_v3/config.yaml \
-    NEXT_PUBLIC_DEPLOYMENT_ENV=${NEXT_PUBLIC_DEPLOYMENT_ENV} \
+ENV NEXT_PUBLIC_DEPLOYMENT_ENV=${NEXT_PUBLIC_DEPLOYMENT_ENV} \
     NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN} \
     ALLOW_ORIGINS=${ALLOW_ORIGINS} \
     GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-EXPOSE 8080
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
+# 暴露端口：平台仅允许一个端口，对外仅暴露 Next(3000)
+EXPOSE 3000
+
+# 使用 tini 作为 PID 1 处理僵尸进程与信号
+ENTRYPOINT ["/sbin/tini", "-g", "--", "/app/docker-entrypoint.sh"]

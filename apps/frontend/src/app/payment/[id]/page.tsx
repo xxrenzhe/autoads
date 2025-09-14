@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CreditCard, Shield, CheckCircle } from 'lucide-react'
+import { http } from '@/shared/http/client'
 
 interface Subscription {
   id: string
@@ -41,11 +42,8 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
 
   const fetchSubscription = async () => {
     try {
-      const response = await fetch(`/api/subscriptions/${params.id}`)
-      if (response.ok) {
-        const data = await response.json()
-        setSubscription(data)
-      }
+      const data = await http.get<Subscription>(`/subscriptions/${params.id}`)
+      setSubscription(data as any)
     } catch (error) {
       console.error('Error fetching subscription:', error)
     }
@@ -56,25 +54,19 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
     setPaymentStatus('processing')
 
     try {
-      // Create Wise payment
-      const response = await fetch('/api/payments/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Create payment
+      const payment = await http.post<{ redirectUrl?: string }>(
+        '/payments/create',
+        {
           subscriptionId: params.id,
           amount: subscription?.plan.price,
           currency: subscription?.plan.currency,
-        }),
-      })
-
-      if (response.ok) {
-        const payment = await response.json()
+        }
+      )
         
-        // Redirect to Wise payment page
-        if (payment.redirectUrl) {
-          window.location.href = payment.redirectUrl
+        // Redirect to payment page
+        if ((payment as any).redirectUrl) {
+          window.location.href = (payment as any).redirectUrl
         } else {
           setPaymentStatus('completed')
           // Redirect to success page after a delay
@@ -82,9 +74,7 @@ export default function PaymentPage({ params }: { params: { id: string } }) {
             router.push('/payment/success')
           }, 2000)
         }
-      } else {
-        setPaymentStatus('failed')
-      }
+      
     } catch (error) {
       console.error('Error processing payment:', error)
       setPaymentStatus('failed')

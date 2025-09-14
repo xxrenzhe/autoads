@@ -37,6 +37,8 @@ import {
 } from '@mui/icons-material';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { toast } from 'sonner'
+import { http } from '@/shared/http/client'
 
 interface UsageReportProps {
   userId: string;
@@ -93,13 +95,11 @@ const UsageReport: React.FC<UsageReportProps> = ({ userId, onQuickRecharge }) =>
   const fetchUsageData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/user/usage-report?userId=${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUsageData(data);
-      }
+      const data = await http.get<UsageData>('/user/usage-report', { userId });
+      setUsageData(data as any);
     } catch (error) {
       console.error('Failed to fetch usage data:', error);
+      toast.error('加载使用报告失败，请稍后重试')
     } finally {
       setLoading(false);
       setLastRefresh(new Date());

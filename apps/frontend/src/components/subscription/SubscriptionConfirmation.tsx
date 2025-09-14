@@ -10,6 +10,8 @@ import {
   ArrowRightIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline'
+import { http } from '@/shared/http/client'
+import { toast } from 'sonner'
 
 interface Plan {
   id: string
@@ -56,13 +58,11 @@ export default function SubscriptionConfirmation({
 
   const loadSubscriptionDetails = async () => {
     try {
-      const response = await fetch(`/api/subscriptions/${subscriptionId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setSubscriptionDetails(data)
-      }
+      const data = await http.get<SubscriptionDetails>(`/subscriptions/${subscriptionId}`)
+      setSubscriptionDetails(data as any)
     } catch (error) {
       console.error('Failed to load subscription details:', error)
+      toast.error('加载订阅详情失败，请稍后重试')
     } finally {
       setLoading(false)
     }

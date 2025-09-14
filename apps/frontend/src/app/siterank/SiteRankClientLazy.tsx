@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import type { SiteRankData } from '@/lib/utils/common/types';
 import { Filter, Loader2, Search } from "lucide-react";
 import React, { useState, useCallback } from "react";
+import { http } from '@/shared/http/client'
 
 // 简化的域名提取函数
 function extractDomain(url: string): string {
@@ -39,16 +40,14 @@ function calculatePriority(rank: number): number {
 async function fetchRanks(
   domains: string[],
 ): Promise<{ domain: string; rank: number | null; monthlyVisits: string | null; source: string }[]> {
-  const resp = await fetch("/api/siterank/similarweb", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ domains }),
-  });
-  const result = await resp.json();
+  const result = await http.post<{ success: boolean; data?: any[] }>(
+    '/siterank/similarweb',
+    { domains }
+  );
   
   // 转换SimilarWeb响应格式
-  if (result.success && result.data) {
-    return result.data.map((item) => ({
+  if ((result as any).success && (result as any).data) {
+    return (result as any).data.map((item: any) => ({
       domain: item.domain,
       rank: item.globalRank,
       monthlyVisits: item.monthlyVisits,

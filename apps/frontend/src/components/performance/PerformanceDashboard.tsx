@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { http } from '@/shared/http/client'
+import { toast } from 'sonner'
 
 interface PerformanceData {
   memory: {
@@ -32,11 +34,11 @@ export const PerformanceDashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/api/admin/performance');
-        const result = await response.json();
-        setData(result);
+        const result = await http.getCached<PerformanceData>('/admin/performance', undefined as any, 5_000, false);
+        setData(result as any);
       } catch (error) {
         console.error('Failed to fetch performance data:', error);
+        toast.error('加载性能数据失败，请稍后重试');
       } finally {
         setLoading(false);
       }

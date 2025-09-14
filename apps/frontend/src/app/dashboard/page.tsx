@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { http } from '@/shared/http/client'
 
 interface UserStats {
   tokenBalance: number
@@ -36,15 +37,12 @@ export default function DashboardPage() {
   const fetchUserStats = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/user/tokens?timeRange=7d')
-      if (response.ok) {
-        const data = await response.json()
-        setUserStats({
-          tokenBalance: data.currentBalance || 0,
-          totalUsed: data.totalUsed || 0,
-          recentActivity: data.recentUsage?.length || 0
-        })
-      }
+      const data = await http.get<any>('/user/tokens', { timeRange: '7d' })
+      setUserStats({
+        tokenBalance: (data as any).currentBalance || 0,
+        totalUsed: (data as any).totalUsed || 0,
+        recentActivity: (data as any).recentUsage?.length || 0
+      })
     } catch (error) {
       console.error('获取用户统计失败:', error)
     } finally {

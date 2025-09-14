@@ -1,168 +1,163 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/v5-config'
-import { dbPool } from '@/lib/db-pool'
-import { tokenConfigService } from '@/lib/services/token-config'
-import { z } from 'zod'
-import { createAuthHandler } from '@/lib/utils/api-route-protection'
-import { withConnection, withTransaction } from '@/lib/utils/db-migration-helper'
+import { prisma } from '@/lib/db'
+import { TokenExpirationService } from '@/lib/services/token-expiration-service'
 
-// Force dynamic rendering for this route
+// Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
-const TopUpSchema = z.object({
-  amount: z.number().min(1).max(10000),
-  paymentMethodId: z.string().optional(),
-  reason: z.string().optional()
-})
+/**
+ * GET /api/user/tokens/balance
+ * Returns a normalized balance summary for analytics widgets
+ */
+// 简单的服务端内存缓存（同进程有效，Serverless 冷启动会失效）
+type CacheEntry = { expiresAt: number; payload: any }
+const serverCache = new Map<string, CacheEntry>()
 
-async function handleGET(request: NextRequest, context: any) {
-  const { user } = context;
-  
-  const userData = await withConnection('get_user_token_balance', (prisma) =>
-    prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        id: true,
-        tokenBalance: true,
-        subscriptions: {
-          select: {
-            plan: {
-              select: {
-                name: true,
-                tokenQuota: true
-              }
-            },
-            status: true
-          },
-          take: 1,
-          orderBy: { createdAt: 'desc' }
+function makeCacheKey(userId: string, params: URLSearchParams) {
+  const days = params.get('days') || '30'
+  const feature = params.get('feature') || ''
+  const includeOps = params.get('includeOpsCount') || 'false'
+  return `${userId}|days=${days}|feature=${feature}|ops=${includeOps}`
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth()
+    if (!session?.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+
+    // 读取筛选参数
+    const daysParam = parseInt(searchParams.get('days') || '30', 10)
+    const days = Number.isFinite(daysParam) && daysParam > 0 ? Math.min(daysParam, 365) : 30
+    const featureFilter = searchParams.get('feature') || undefined
+    const includeOpsCount = (searchParams.get('includeOpsCount') || 'false') === 'true'
+
+    // 简单服务端缓存（默认 5s，可通过 ?cacheTtlMs= 覆盖，最大 60s）
+    const cacheTtlParam = parseInt(searchParams.get('cacheTtlMs') || '5000', 10)
+    const cacheTtlMs = Number.isFinite(cacheTtlParam)
+      ? Math.min(Math.max(cacheTtlParam, 0), 60_000)
+      : 5000
+
+    const cacheKey = makeCacheKey(session.userId, searchParams)
+    const now = Date.now()
+    const cached = serverCache.get(cacheKey)
+    if (cached && cached.expiresAt > now) {
+      return new NextResponse(JSON.stringify(cached.payload), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          // 避免中间层共享缓存，允许浏览器短期私有缓存
+          'Cache-Control': 'private, max-age=5'
         }
-      }
+      })
+    }
+
+    // Current user
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { id: true, tokenBalance: true }
     })
-  )
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
-  if (!userData) {
-    return NextResponse.json(
-      { error: 'User not found' },
-      { status: 404 }
-    )
-  }
+    // Current subscription and plan quota
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        userId: session.userId,
+        status: 'ACTIVE',
+        currentPeriodEnd: { gt: new Date() }
+      },
+      include: { plan: true }
+    })
+    const planQuota = subscription?.plan?.tokenQuota ?? 100
 
-  // Get usage analytics for the current month
-  const startOfMonth = new Date()
-  startOfMonth.setDate(1)
-  startOfMonth.setHours(0, 0, 0, 0)
+    // Usage window（默认最近 30 天，可由 days 指定上限 365 天）
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    const monthlyUsageAgg = await prisma.token_usage.aggregate({
+      where: {
+        userId: session.userId,
+        createdAt: { gte: since }
+      },
+      _sum: { tokensConsumed: true },
+      _count: { _all: true }
+    })
 
-  const analytics = await tokenConfigService.getTokenAnalytics(
-    user.id,
-    startOfMonth
-  )
+    const monthlyUsage = monthlyUsageAgg._sum.tokensConsumed || 0
+    const operationsCount = includeOpsCount ? (monthlyUsageAgg._count._all || 0) : undefined
 
-  // Get forecast for next 30 days
-  const forecast = await tokenConfigService.getTokenForecast(user.id, 30)
+    // Feature breakdown for analytics（使用简化方式，避免 groupBy 类型差异）
+    const recentForBreakdown = await prisma.token_usage.findMany({
+      where: { userId: session.userId, createdAt: { gte: since } },
+      select: { feature: true, tokensConsumed: true }
+    })
+    const analyticsByFeature = recentForBreakdown.reduce((acc: Record<string, number>, row: any) => {
+      const key = String(row.feature)
+      // 可选 feature 过滤
+      if (featureFilter && key !== featureFilter) return acc
+      acc[key] = (acc[key] || 0) + (row.tokensConsumed || 0)
+      return acc
+    }, {} as Record<string, number>)
 
-  const planTokenQuota = userData.subscriptions?.[0]?.plan?.tokenQuota || 0
-  const usagePercentage = planTokenQuota > 0 
-    ? (analytics.totalConsumed / planTokenQuota) * 100 
-    : 0
+    // Efficiency = tokens per item (approx), derive from last 30 days
+    const itemAgg = await prisma.token_usage.aggregate({
+      where: { userId: session.userId, createdAt: { gte: since } },
+      _sum: { itemCount: true }
+    })
+    const totalItems = itemAgg._sum.itemCount || 0
+    const efficiency = totalItems > 0 ? monthlyUsage / totalItems : 0
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      currentBalance: userData.tokenBalance,
-      monthlyUsage: analytics.totalConsumed,
-      planQuota: planTokenQuota,
-      usagePercentage,
-      remainingQuota: Math.max(0, planTokenQuota - analytics.totalConsumed),
+    // Average daily
+    const averageDaily = monthlyUsage / Math.max(1, days)
+
+    // Forecasts (simple projection)
+    const projectedUsage = averageDaily * Math.max(1, days)
+    const confidence = 0.7
+    const willExceedQuota = projectedUsage > planQuota
+
+    // Days until depletion at current usage
+    const daysUntilDepletion = averageDaily > 0 ? Math.max(1, Math.floor(user.tokenBalance / averageDaily)) : null
+
+    const result: any = {
+      currentBalance: user.tokenBalance || 0,
+      monthlyUsage,
+      planQuota,
+      usagePercentage: planQuota > 0 ? Math.min(100, Math.round((monthlyUsage / planQuota) * 100)) : 0,
+      remainingQuota: Math.max(0, planQuota - monthlyUsage),
       forecast: {
-        projectedUsage: forecast.projectedUsage,
-        confidence: forecast.confidence,
-        willExceedQuota: forecast.projectedUsage > (planTokenQuota - analytics.totalConsumed),
-        daysUntilDepletion: userData.tokenBalance > 0 && analytics.averageDaily > 0
-          ? Math.floor(userData.tokenBalance / analytics.averageDaily)
-          : null
+        projectedUsage,
+        confidence,
+        willExceedQuota,
+        daysUntilDepletion
       },
       analytics: {
-        averageDaily: analytics.averageDaily,
-        byFeature: analytics.byFeature,
-        efficiency: analytics.efficiency
+        averageDaily,
+        byFeature: analyticsByFeature,
+        efficiency
       }
     }
-  })
+
+    if (includeOpsCount) {
+      result.operationsCount = operationsCount
+    }
+    const payload = { success: true, data: result }
+
+    // 写入服务端缓存
+    if (cacheTtlMs > 0) {
+      serverCache.set(cacheKey, { expiresAt: now + cacheTtlMs, payload })
+    }
+
+    return new NextResponse(JSON.stringify(payload), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'private, max-age=5'
+      }
+    })
+  } catch (error) {
+    console.error('Get user token balance error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
-
-async function handlePOST(request: NextRequest, context: any) {
-  const { user } = context;
-  const body = await request.json();
-  const { amount, paymentMethodId, reason } = TopUpSchema.parse(body);
-
-  // For now, we'll implement a simple top-up without payment processing
-  // In a real implementation, this would integrate with Stripe or other payment providers
-  
-  const result = await withTransaction(async (prisma) => {
-    // Get current balance
-    const currentUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { tokenBalance: true }
-    });
-    
-    if (!currentUser) {
-      throw new Error('User not found');
-    }
-    
-    // Update user balance
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        tokenBalance: {
-          increment: amount
-        }
-      },
-      select: {
-        tokenBalance: true
-      }
-    });
-
-    // Record the top-up transaction
-    await prisma.tokenTransaction.create({
-      data: {
-        userId: user.id,
-        type: 'PURCHASED',
-        amount,
-        balanceBefore: currentUser.tokenBalance,
-        balanceAfter: updatedUser.tokenBalance,
-        source: 'manual_topup',
-        description: reason || `Token top-up: ${amount} tokens`,
-        metadata: {
-          paymentMethodId,
-          reason
-        }
-      }
-    });
-    
-    return updatedUser;
-  });
-
-  return NextResponse.json({
-    success: true,
-    data: {
-      newBalance: result.tokenBalance,
-      topUpAmount: amount,
-      message: `Successfully added ${amount} tokens to your account`
-    }
-  })
-}
-
-// 使用新的安全处理器
-export const GET = createAuthHandler(handleGET, {
-  rateLimit: true,
-  requiredPermissions: ['read:own-data']
-});
-
-export const POST = createAuthHandler(async (request: NextRequest, context: any) => {
-  const result = await handlePOST(request, context);
-  return result;
-}, {
-  rateLimit: true,
-  requiredPermissions: ['update:profile']
-});

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { CheckIcon, StarIcon } from '@heroicons/react/24/solid'
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
+import { http } from '@/shared/http/client'
+import { toast } from 'sonner'
 
 interface Plan {
   id: string
@@ -32,13 +34,17 @@ export default function PlanSelector({ onPlanSelect, selectedPlan }: PlanSelecto
 
   const loadPlans = async () => {
     try {
-      const response = await fetch('/api/admin/plans?active=true')
-      if (response.ok) {
-        const data = await response.json()
-        setPlans(data.plans || [])
-      }
+      const data = await http.getCached<{ plans: Plan[] }>(
+        '/admin/plans',
+        { active: true },
+        5 * 60 * 1000,
+        false
+      )
+      const plansData = (data as any)?.plans || data || []
+      setPlans(plansData as any)
     } catch (error) {
       console.error('Failed to load plans:', error)
+      toast.error('加载套餐失败，请稍后重试')
     } finally {
       setLoading(false)
     }

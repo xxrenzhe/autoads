@@ -24,6 +24,7 @@ import {
   Shield
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { http } from '@/shared/http/client'
 
 export interface SystemHealth {
   overall: {
@@ -87,9 +88,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
   } = useQuery({
     queryKey: ['system-health'],
     queryFn: async (): Promise<SystemHealth> => {
-      const response = await fetch('/api/admin/monitoring/health')
-      if (!response.ok) throw new Error('Failed to fetch system health')
-      const result = await response.json()
+      const result: any = await http.get('/admin/monitoring/health')
       return result.data
     },
     staleTime: 30 * 1000,
@@ -103,9 +102,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
   } = useQuery({
     queryKey: ['error-logs'],
     queryFn: async (): Promise<ErrorLog[]> => {
-      const response = await fetch('/api/admin/monitoring/errors?limit=50')
-      if (!response.ok) throw new Error('Failed to fetch error logs')
-      const result = await response.json()
+      const result: any = await http.get('/admin/monitoring/errors', { limit: 50 })
       return result.data || []
     },
     staleTime: 60 * 1000,
@@ -119,9 +116,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
   } = useQuery({
     queryKey: ['performance-metrics'],
     queryFn: async () => {
-      const response = await fetch('/api/admin/performance/metrics?includeCache=true&includeDatabase=true')
-      if (!response.ok) throw new Error('Failed to fetch performance metrics')
-      const result = await response.json()
+      const result: any = await http.get('/admin/performance/metrics', { includeCache: true, includeDatabase: true })
       return result.data
     },
     staleTime: 30 * 1000,
@@ -182,10 +177,9 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
 
   const exportHealthReport = async () => {
     try {
-      const response = await fetch('/api/admin/monitoring/export?type=health')
-      if (!response.ok) throw new Error('Export failed')
-      
-      const blob = await response.blob()
+      const res = await fetch('/api/admin/monitoring/export?type=health')
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

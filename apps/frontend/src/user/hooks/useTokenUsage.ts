@@ -1,6 +1,7 @@
 'use client'
 import { useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { http } from '@/shared/http/client'
 
 export interface CurrentUsage {
   used: number
@@ -68,11 +69,7 @@ export function useTokenUsage(userId: string) {
   } = useQuery({
     queryKey: ['token-usage-current', userId],
     queryFn: async (): Promise<CurrentUsage> => {
-      const response = await fetch(`/api/user/${userId}/tokens/current`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch current usage')
-      }
-      return response.json()
+      return http.get<CurrentUsage>(`/user/${userId}/tokens/current`)
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
     refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
@@ -86,11 +83,7 @@ export function useTokenUsage(userId: string) {
   } = useQuery({
     queryKey: ['token-usage-history', userId],
     queryFn: async (): Promise<UsageHistoryPoint[]> => {
-      const response = await fetch(`/api/user/${userId}/tokens/history?days=90`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch usage history')
-      }
-      return response.json()
+      return http.get<UsageHistoryPoint[]>(`/user/${userId}/tokens/history`, { days: 90 })
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
   })
@@ -103,11 +96,7 @@ export function useTokenUsage(userId: string) {
   } = useQuery({
     queryKey: ['token-usage-features', userId],
     queryFn: async (): Promise<FeatureUsage[]> => {
-      const response = await fetch(`/api/user/${userId}/tokens/features`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch feature breakdown')
-      }
-      return response.json()
+      return http.get<FeatureUsage[]>(`/user/${userId}/tokens/features`)
     },
     staleTime: 15 * 60 * 1000, // 15 minutes
   })
@@ -120,11 +109,7 @@ export function useTokenUsage(userId: string) {
   } = useQuery({
     queryKey: ['token-usage-batches', userId],
     queryFn: async (): Promise<BatchOperation[]> => {
-      const response = await fetch(`/api/user/${userId}/tokens/batches`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch batch operations')
-      }
-      return response.json()
+      return http.get<BatchOperation[]>(`/user/${userId}/tokens/batches`)
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
@@ -137,11 +122,7 @@ export function useTokenUsage(userId: string) {
   } = useQuery({
     queryKey: ['token-usage-forecast', userId],
     queryFn: async (): Promise<UsageForecast> => {
-      const response = await fetch(`/api/user/${userId}/tokens/forecast`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch usage forecast')
-      }
-      return response.json()
+      return http.get<UsageForecast>(`/user/${userId}/tokens/forecast`)
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
   })
@@ -154,11 +135,7 @@ export function useTokenUsage(userId: string) {
   } = useQuery({
     queryKey: ['token-budget-alerts', userId],
     queryFn: async (): Promise<BudgetAlert[]> => {
-      const response = await fetch(`/api/user/${userId}/tokens/alerts`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch budget alerts')
-      }
-      return response.json()
+      return http.get<BudgetAlert[]>(`/user/${userId}/tokens/alerts`)
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
@@ -166,17 +143,7 @@ export function useTokenUsage(userId: string) {
   // Set budget alert mutation
   const setBudgetAlertMutation = useMutation({
     mutationFn: async ({ threshold, type }: { threshold: number; type: 'percentage' | 'absolute' }) => {
-      const response = await fetch(`/api/user/${userId}/tokens/alerts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ threshold, type }),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to set budget alert')
-      }
-      return response.json()
+      return http.post(`/user/${userId}/tokens/alerts`, { threshold, type })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-budget-alerts', userId] })
@@ -186,12 +153,9 @@ export function useTokenUsage(userId: string) {
   // Export usage data mutation
   const exportUsageDataMutation = useMutation({
     mutationFn: async (format: 'csv' | 'json' | 'xlsx') => {
-      const response = await fetch(`/api/user/${userId}/tokens/export?format=${format}`)
-      if (!response.ok) {
-        throw new Error('Failed to export usage data')
-      }
-      
-      const blob = await response.blob()
+      const blobResp = await fetch(`/api/user/${userId}/tokens/export?format=${format}`)
+      if (!blobResp.ok) throw new Error('Failed to export usage data')
+      const blob = await blobResp.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -208,13 +172,7 @@ export function useTokenUsage(userId: string) {
   // Delete budget alert mutation
   const deleteBudgetAlertMutation = useMutation({
     mutationFn: async (alertId: string) => {
-      const response = await fetch(`/api/user/${userId}/tokens/alerts/${alertId}`, {
-        method: 'DELETE',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to delete budget alert')
-      }
-      return response.json()
+      return http.delete(`/user/${userId}/tokens/alerts/${alertId}`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-budget-alerts', userId] })

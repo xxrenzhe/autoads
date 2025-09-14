@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { createClientLogger } from "@/lib/utils/security/client-secure-logger";
 const logger = createClientLogger('ChangeLinkClient');
+import { http } from '@/shared/http/client'
 
 import { 
   Play, 
@@ -25,6 +26,7 @@ import {
   Database,
   Activity
 } from 'lucide-react';
+import { toast } from 'sonner'
 
 interface GoogleAdsAccount {
   id: string;
@@ -64,6 +66,9 @@ export default function ChangeLinkClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [addingAccount, setAddingAccount] = useState(false);
+  const [addingConfig, setAddingConfig] = useState(false);
+  const [startingExecId, setStartingExecId] = useState<string | null>(null);
   
   // Form states
   const [showAddAccount, setShowAddAccount] = useState(false);
@@ -81,103 +86,137 @@ export default function ChangeLinkClient() {
       setError(null);
 
       // Fetch accounts
-      const accountsResponse = await fetch('/api/adscenter/accounts');
-      if (accountsResponse.ok) {
-        const accountsData = await accountsResponse.json();
-        setAccounts(accountsData.accounts || []);
-      }
+      const accountsData = await http.getCached<{ accounts: GoogleAdsAccount[] }>(
+        '/adscenter/accounts',
+        undefined,
+        30_000,
+        false
+      );
+      setAccounts((accountsData as any)?.accounts || []);
 
       // Fetch configurations
-      const configsResponse = await fetch('/api/adscenter/configurations');
-      if (configsResponse.ok) {
-        const configsData = await configsResponse.json();
-        setConfigurations(configsData.configurations || []);
-      }
+      const configsData = await http.getCached<{ configurations: Configuration[] }>(
+        '/adscenter/configurations',
+        undefined,
+        30_000,
+        false
+      );
+      setConfigurations((configsData as any)?.configurations || []);
 
       // Fetch executions
-      const executionsResponse = await fetch('/api/adscenter/executions');
-      if (executionsResponse.ok) {
-        const executionsData = await executionsResponse.json();
-        setExecutions(executionsData.executions || []);
-      }
+      const executionsData = await http.getCached<{ executions: Execution[] }>(
+        '/adscenter/executions',
+        undefined,
+        15_000,
+        false
+      );
+      setExecutions((executionsData as any)?.executions || []);
 
     } catch (err) {
       setError('Failed to fetch data');
+      toast.error('加载数据失败，请稍后重试');
       logger.error('Error fetching data:', new EnhancedError('Error fetching data:', { error: err instanceof Error ? err.message : String(err)  }));
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchFresh = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [acc, conf, execs] = await Promise.all([
+        http.get<{ accounts: GoogleAdsAccount[] }>('/adscenter/accounts'),
+        http.get<{ configurations: Configuration[] }>('/adscenter/configurations'),
+        http.get<{ executions: Execution[] }>('/adscenter/executions')
+      ]);
+      setAccounts((acc as any)?.accounts || []);
+      setConfigurations((conf as any)?.configurations || []);
+      setExecutions((execs as any)?.executions || []);
+    } catch (err) {
+      setError('Failed to fetch data');
+      toast.error('加载数据失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const handleAddAccount = async () => {
     try {
-      const response = await fetch('/api/adscenter/accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newAccount)
-      });
-
-      if (response.ok) {
-        setSuccessMessage('Account added successfully');
-        setShowAddAccount(false);
-        setNewAccount({ accountId: '', accountName: '' });
-        fetchData();
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to add account');
+      setAddingAccount(true);
+      const res = await http.post<{ success?: boolean; error?: string }>(
+        '/adscenter/accounts',
+        newAccount
+      );
+      if ((res as any)?.success === false) {
+        const msg = (res as any)?.error || '操作失败，请稍后重试';
+        setError(msg);
+        toast.error(msg);
+        return;
       }
+      setSuccessMessage('Account added successfully');
+      toast.success('账户添加成功');
+      setShowAddAccount(false);
+      setNewAccount({ accountId: '', accountName: '' });
+      fetchFresh();
     } catch (err) {
-      setError('Failed to add account');
+      setError('操作失败，请稍后重试');
+      toast.error('操作失败，请稍后重试');
     }
+    finally { setAddingAccount(false); }
   };
 
   const handleAddConfiguration = async () => {
     try {
-      const response = await fetch('/api/adscenter/configurations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newConfig.name,
-          description: newConfig.description,
-          config_data: JSON.parse(newConfig.configData)
-        })
-      });
-
-      if (response.ok) {
-        setSuccessMessage('Configuration added successfully');
-        setShowAddConfig(false);
-        setNewConfig({ name: '', description: '', configData: '' });
-        fetchData();
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to add configuration');
+      setAddingConfig(true);
+      const payload = {
+        name: newConfig.name,
+        description: newConfig.description,
+        config_data: JSON.parse(newConfig.configData || '{}')
+      };
+      const res = await http.post<{ success?: boolean; error?: string }>(
+        '/adscenter/configurations',
+        payload
+      );
+      if ((res as any)?.success === false) {
+        const msg = (res as any)?.error || '操作失败，请稍后重试';
+        setError(msg);
+        toast.error(msg);
+        return;
       }
+      setSuccessMessage('Configuration added successfully');
+      toast.success('配置创建成功');
+      setShowAddConfig(false);
+      setNewConfig({ name: '', description: '', configData: '' });
+      fetchFresh();
     } catch (err) {
-      setError('Failed to add configuration');
+      setError('操作失败，请稍后重试');
+      toast.error('操作失败，请稍后重试');
     }
+    finally { setAddingConfig(false); }
   };
 
   const handleStartExecution = async (configurationId: string) => {
     try {
-      const response = await fetch('/api/adscenter/executions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          configuration_id: configurationId,
-          total_items: 100 // This should come from configuration
-        })
-      });
-
-      if (response.ok) {
-        setSuccessMessage('Execution started successfully');
-        fetchData();
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to start execution');
+      setStartingExecId(configurationId);
+      const res = await http.post<{ success?: boolean; error?: string }>(
+        '/adscenter/executions',
+        { configuration_id: configurationId, total_items: 100 }
+      );
+      if ((res as any)?.success === false) {
+        const msg = (res as any)?.error || '操作失败，请稍后重试';
+        setError(msg);
+        toast.error(msg);
+        return;
       }
+      setSuccessMessage('Execution started successfully');
+      toast.success('执行已启动');
+      fetchFresh();
     } catch (err) {
-      setError('Failed to start execution');
+      setError('操作失败，请稍后重试');
+      toast.error('操作失败，请稍后重试');
     }
+    finally { setStartingExecId(null); }
   };
 
   const getStatusColor = (status: string) => {
@@ -303,8 +342,9 @@ export default function ChangeLinkClient() {
                   <ProtectedButton 
                     featureName="adscenter"
                     onClick={handleAddAccount}
+                    disabled={addingAccount}
                   >
-                    保存
+                    {addingAccount ? '保存中...' : '保存'}
                   </ProtectedButton>
                   <Button variant="outline" onClick={() => setShowAddAccount(false)}>取消</Button>
                 </div>
@@ -384,8 +424,9 @@ export default function ChangeLinkClient() {
                   <ProtectedButton 
                     featureName="adscenter"
                     onClick={handleAddConfiguration}
+                    disabled={addingConfig}
                   >
-                    保存
+                    {addingConfig ? '保存中...' : '保存'}
                   </ProtectedButton>
                   <Button variant="outline" onClick={() => setShowAddConfig(false)}>取消</Button>
                 </div>
@@ -414,9 +455,10 @@ export default function ChangeLinkClient() {
                     size="sm" 
                     onClick={() => handleStartExecution(config.id)}
                     className="w-full"
+                    disabled={startingExecId === config.id}
                   >
-                    <Play className="h-4 w-4 mr-2" />
-                    开始执行
+                    <Play className={`h-4 w-4 mr-2 ${startingExecId === config.id ? 'animate-pulse' : ''}`} />
+                    {startingExecId === config.id ? '启动中...' : '开始执行'}
                   </ProtectedButton>
                 </CardContent>
               </Card>

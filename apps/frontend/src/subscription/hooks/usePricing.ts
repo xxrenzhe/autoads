@@ -1,5 +1,6 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
+import { http } from '@/shared/http/client'
 
 export interface PricingPlan {
   id: string
@@ -29,11 +30,7 @@ export function usePricing() {
   } = useQuery({
     queryKey: ['pricing-plans'],
     queryFn: async (): Promise<PricingPlan[]> => {
-      const response = await fetch('/api/pricing/plans')
-      if (!response.ok) {
-        throw new Error('Failed to fetch pricing plans')
-      }
-      return response.json()
+      return http.get<PricingPlan[]>('/pricing/plans')
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
   })

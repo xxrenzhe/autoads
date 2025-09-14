@@ -45,6 +45,8 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { toast } from 'sonner'
+import { http } from '@/shared/http/client'
 
 interface TokenTransaction {
   id: string;
@@ -136,29 +138,26 @@ const TokenTransactionDashboard: React.FC = () => {
       if (filter.endDate) params.append('endDate', filter.endDate);
 
       // Fetch transactions
-      const [transactionsRes, statsRes, historyRes] = await Promise.all([
-        fetch(`/api/user/tokens/transactions?${params}`),
-        fetch('/api/user/tokens/transactions/stats', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ timeRange: { start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), end: new Date() } })
-        }),
-        fetch('/api/user/tokens/balance-history?days=30')
+      const [transactionsData, statsData, historyData] = await Promise.all([
+        http.get<{ success: boolean; data: { transactions: TokenTransaction[] } }>(
+          '/user/tokens/transactions', Object.fromEntries(params)
+        ),
+        http.post<{ success: boolean; data: TokenStats }>(
+          '/user/tokens/transactions/stats',
+          { timeRange: { start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), end: new Date() } }
+        ),
+        http.get<{ success: boolean; data: BalanceHistory[] }>(
+          '/user/tokens/balance-history', { days: 30 }
+        )
       ]);
 
-      if (!transactionsRes.ok || !statsRes.ok || !historyRes.ok) {
-        throw new Error('Failed to fetch data');
-      }
-
-      const transactionsData = await transactionsRes.json();
-      const statsData = await statsRes.json();
-      const historyData = await historyRes.json();
-
-      setTransactions(transactionsData.data.transactions);
-      setStats(statsData.data);
-      setBalanceHistory(historyData.data);
+      setTransactions((transactionsData as any).data?.transactions || []);
+      setStats((statsData as any).data || null);
+      setBalanceHistory((historyData as any).data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      setError(msg);
+      toast.error('加载交易数据失败：' + msg)
     } finally {
       setLoading(false);
     }
@@ -180,24 +179,23 @@ const TokenTransactionDashboard: React.FC = () => {
         if (value) params.append(key, value);
       });
 
-      const response = await fetch(`/api/admin/tokens/transactions/export`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(Object.fromEntries(params))
-      });
+      const data = await http.post<{ success: boolean; data: { filename: string; data: any[] } }>(
+        '/admin/tokens/transactions/export',
+        Object.fromEntries(params)
+      )
 
-      if (response.ok) {
-        const data = await response.json();
-        // Create and download CSV
-        const csv = convertToCSV(data.data.data);
+      if ((data as any)?.data) {
+        const payload = (data as any).data
+        const csv = convertToCSV(payload.data);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = data.data.filename;
+        link.download = payload.filename;
         link.click();
       }
     } catch (err) {
       console.error('Export failed:', err);
+      toast.error('导出失败，请稍后重试')
     }
   };
 

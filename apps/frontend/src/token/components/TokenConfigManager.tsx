@@ -17,6 +17,8 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { http } from '@/shared/http/client'
 
 export interface TokenConfig {
   id: string
@@ -53,86 +55,58 @@ export function TokenConfigManager({ className }: TokenConfigManagerProps) {
   } = useQuery({
     queryKey: ['token-configs'],
     queryFn: async (): Promise<TokenConfig[]> => {
-      const response = await fetch('/api/admin/token-config')
-      if (!response.ok) {
-        throw new Error('Failed to fetch token configurations')
-      }
-      const result = await response.json()
-      return result.data || []
+      const result = await http.get<{ data: TokenConfig[] }>('/admin/token-config')
+      return (result as any).data || []
     },
     staleTime: 5 * 60 * 1000,
   })
 
   const createConfigMutation = useMutation({
     mutationFn: async (configData: Partial<TokenConfig>) => {
-      const response = await fetch('/api/admin/token-config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(configData),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to create token configuration')
-      }
-      return response.json()
+      return http.post('/admin/token-config', configData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-configs'] })
       setShowCreateForm(false)
       resetForm()
+      toast.success('配置创建成功')
     },
+    onError: (err: any) => toast.error(err?.message || '配置创建失败')
   })
 
   const updateConfigMutation = useMutation({
     mutationFn: async ({ id, ...configData }: Partial<TokenConfig> & { id: string }) => {
-      const response = await fetch(`/api/admin/token-config/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(configData),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to update token configuration')
-      }
-      return response.json()
+      return http.put(`/admin/token-config/${id}`, configData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-configs'] })
       setEditingConfig(null)
       resetForm()
+      toast.success('配置已更新')
     },
+    onError: (err: any) => toast.error(err?.message || '更新配置失败')
   })
 
   const deleteConfigMutation = useMutation({
     mutationFn: async (configId: string) => {
-      const response = await fetch(`/api/admin/token-config/${configId}`, {
-        method: 'DELETE',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to delete token configuration')
-      }
-      return response.json()
+      return http.delete(`/admin/token-config/${configId}`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-configs'] })
+      toast.success('配置已删除')
     },
+    onError: (err: any) => toast.error(err?.message || '删除配置失败')
   })
 
   const toggleConfigMutation = useMutation({
     mutationFn: async (configId: string) => {
-      const response = await fetch(`/api/admin/token-config/${configId}/toggle`, {
-        method: 'POST',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to toggle token configuration')
-      }
-      return response.json()
+      return http.post(`/admin/token-config/${configId}/toggle`, undefined)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['token-configs'] })
+      toast.success('配置状态已切换')
     },
+    onError: (err: any) => toast.error(err?.message || '切换状态失败')
   })
 
   const resetForm = () => {

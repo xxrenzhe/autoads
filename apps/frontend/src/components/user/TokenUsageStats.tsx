@@ -21,6 +21,7 @@ import {
   Zap,
   Download
 } from 'lucide-react'
+import { http } from '@/shared/http/client'
 
 interface TokenUsageStatsData {
   currentBalance: number
@@ -95,13 +96,11 @@ export default function TokenUsageStats({ userId, className }: TokenUsageStatsPr
         timeRange
       })
       
-      const response = await fetch(`/api/user/tokens/stats?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        setStatsData(data.data)
-      } else {
-        setError('获取统计数据失败')
-      }
+      const data = await http.get<{ success: boolean; data: TokenUsageStatsData }>(
+        '/user/tokens/stats',
+        Object.fromEntries(params)
+      )
+      setStatsData(((data as any).data) || (data as any))
     } catch (error) {
       console.error('获取Token统计失败:', error)
       setError('网络错误，请重试')

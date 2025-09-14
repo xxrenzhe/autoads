@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import { createClientLogger } from "@/lib/utils/security/client-secure-logger";
 import { EnhancedError } from '@/lib/utils/error-handling';
 import { detectEnvironment } from '@/lib/domain-config';
+import { http } from '@/shared/http/client'
+import { backend } from '@/shared/http/backend'
 
 const logger = createClientLogger('DeploymentStatus');
 
@@ -85,8 +87,7 @@ export function DeploymentInfo() {
   const checkHealth = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/health');
-      const data = await response.json();
+      const data = await backend.get<Record<string, unknown>>('/health');
       setHealthStatus(data);
     } catch (error) { 
       logger.error('Health check failed:', new EnhancedError('Health check failed:', { 

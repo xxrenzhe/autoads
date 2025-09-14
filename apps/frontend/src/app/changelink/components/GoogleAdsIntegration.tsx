@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { EnhancedError } from '@/lib/utils/error-handling';
+import { http } from '@/shared/http/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -124,32 +125,16 @@ export function GoogleAdsIntegration() {
   });
 
   // API Functions
-  const apiCall = useCallback(async (endpoint: string, options: RequestInit = {}) => {
+  const apiCall = useCallback(async (endpoint: string) => {
     try {
-      const response = await fetch(`/api/google-ads?${new URLSearchParams(endpoint)}`, {
-        method: 'GET',
-        ...options
-      });
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
-      }
-
-      try {
-
-
-      return await response.json();
-
-
-      } catch (error) {
-
-
-        console.error(error);
-
-
-        return false;
-
-
-      }
+      const params = Object.fromEntries(new URLSearchParams(endpoint));
+      const result = await http.getCached<any>(
+        '/google-ads',
+        params,
+        30_000,
+        false
+      );
+      return result as any;
     } catch (error) {
       logger.error('API call failed:', new EnhancedError('API call failed:', { error: error instanceof Error ? error.message : String(error)  }));
       throw error;
@@ -158,34 +143,8 @@ export function GoogleAdsIntegration() {
 
   const apiPost = useCallback(async (action: string, data: unknown) => {
     try {
-      const response = await fetch('/api/google-ads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action, data })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
-      }
-
-      try {
-
-
-      return await response.json();
-
-
-      } catch (error) {
-
-
-        console.error(error);
-
-
-        return false;
-
-
-      }
+      const result = await http.post<any>('/google-ads', { action, data });
+      return result as any;
     } catch (error) {
       logger.error('API POST failed:', new EnhancedError('API POST failed:', { error: error instanceof Error ? error.message : String(error)  }));
       throw error;

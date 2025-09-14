@@ -41,6 +41,7 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { http } from '@/shared/http/client'
 
 interface Invitation {
   id: string;
@@ -89,13 +90,12 @@ const InvitationModule: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/user/invitation/create');
-      if (!response.ok) {
-        throw new Error('Failed to fetch invitation data');
-      }
-      const data = await response.json();
-      setCurrentInvitation(data.data.currentInvitation);
-      setStats(data.data.stats);
+      const data = await http.get<{ success: boolean; data: { currentInvitation: CurrentInvitation; stats: InvitationStats } }>(
+        '/user/invitation/create'
+      )
+      const payload = (data as any).data || data
+      setCurrentInvitation(payload.currentInvitation)
+      setStats(payload.stats)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -108,16 +108,13 @@ const InvitationModule: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/user/invitation/create', {
-        method: 'POST'
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create invitation');
+      const data = await http.post<{ success: boolean; data?: any; error?: string }>(
+        '/user/invitation/create',
+        undefined
+      )
+      if ((data as any)?.success === false) {
+        throw new Error((data as any)?.error || 'Failed to create invitation')
       }
-
       setSuccess('Invitation code created successfully');
       await fetchInvitationData();
     } catch (err) {
@@ -137,19 +134,14 @@ const InvitationModule: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/user/invitation/accept', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invitationCode: invitationCode.trim() })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to accept invitation');
+      const data = await http.post<{ success: boolean; data?: any; error?: string }>(
+        '/user/invitation/accept',
+        { invitationCode: invitationCode.trim() }
+      )
+      if ((data as any)?.success === false) {
+        throw new Error((data as any)?.error || 'Failed to accept invitation')
       }
-
-      setAcceptResult(data);
+      setAcceptResult(data as any);
       setShowSuccessDialog(true);
       setInvitationCode('');
       await fetchInvitationData();

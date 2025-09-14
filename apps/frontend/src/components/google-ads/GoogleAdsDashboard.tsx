@@ -30,6 +30,7 @@ import {
   Calendar,
   Settings
 } from 'lucide-react';
+import { http } from '@/shared/http/client'
 
 interface AccountData {
   id: string;
@@ -79,15 +80,16 @@ export default function GoogleAdsDashboard() {
       setError(null);
 
       const [accountsRes, statsRes] = await Promise.allSettled([
-        fetch('/api/google-ads/accounts'),
-        fetch('/api/google-ads/accounts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ operation: 'stats' })
-        })
-    ]);
+        http.get<{ success: boolean; data: AccountData[] }>(
+          '/google-ads/accounts'
+        ),
+        http.post<{ success: boolean; data: ServiceStats }>(
+          '/google-ads/accounts',
+          { operation: 'stats' }
+        )
+      ]);
       if (accountsRes.status === 'fulfilled') {
-        const accountsData = await accountsRes.value.json();
+        const accountsData = accountsRes.value as any;
         if (accountsData.success) {
           setAccounts(accountsData.data);
           if (accountsData.data.length > 0 && !selectedAccount) {
@@ -97,7 +99,7 @@ export default function GoogleAdsDashboard() {
       }
 
       if (statsRes.status === 'fulfilled') {
-        const statsData = await statsRes.value.json();
+        const statsData = statsRes.value as any;
         if (statsData.success) {
           setStats(statsData.data);
         }
@@ -113,11 +115,7 @@ export default function GoogleAdsDashboard() {
   const refreshData = async () => {
     try {
       setIsRefreshing(true);
-      await fetch('/api/google-ads/accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operation: 'refresh' })
-      });
+      await http.post('/google-ads/accounts', { operation: 'refresh' });
       await loadData();
     } catch (err) { setError('Failed to refresh data');
       logger.error('Error refreshing data:', new EnhancedError('Error refreshing data:', { error: err instanceof Error ? err.message : String(err)

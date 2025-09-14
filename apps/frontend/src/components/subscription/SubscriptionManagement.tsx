@@ -13,6 +13,9 @@ import {
   ArrowUpIcon,
   ArrowDownIcon
 } from '@heroicons/react/24/outline'
+import { http } from '@/shared/http/client'
+import { toast } from 'sonner'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 
 interface Subscription {
   id: string
@@ -59,40 +62,33 @@ export default function SubscriptionManagement() {
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<'downgrade' | 'cancel' | null>(null)
   const { data: session } = useSession()
   const router = useRouter()
 
   useEffect(() => {
     if (session?.userId) {
-      loadSubscriptionData()
+      loadSubscriptionData(true)
     }
   }, [session])
 
-  const loadSubscriptionData = async () => {
+  const loadSubscriptionData = async (useCache = false) => {
     setLoading(true)
     try {
-      const [subResponse, invoicesResponse, usageResponse] = await Promise.all([
-        fetch('/api/subscriptions/current'),
-        fetch('/api/subscriptions/invoices'),
-        fetch('/api/subscriptions/usage')
+      const getter = useCache ? http.getCached : http.get
+      const [subData, invoicesData, usageData] = await Promise.all([
+        getter<{ subscription: Subscription | null }>('/subscriptions/current', undefined as any, 30_000) as any,
+        getter<{ invoices: Invoice[] }>('/subscriptions/invoices', undefined as any, 30_000) as any,
+        getter<{ usage: UsageStats }>('/subscriptions/usage', undefined as any, 15_000) as any
       ])
 
-      if (subResponse.ok) {
-        const subData = await subResponse.json()
-        setSubscription(subData.subscription)
-      }
-
-      if (invoicesResponse.ok) {
-        const invoicesData = await invoicesResponse.json()
-        setInvoices(invoicesData.invoices || [])
-      }
-
-      if (usageResponse.ok) {
-        const usageData = await usageResponse.json()
-        setUsageStats(usageData.usage)
-      }
+      setSubscription((subData as any)?.subscription || null)
+      setInvoices((invoicesData as any)?.invoices || [])
+      setUsageStats((usageData as any)?.usage || null)
     } catch (error) {
       console.error('Error loading subscription data:', error)
+      toast.error('加载订阅数据失败，请稍后重试')
     } finally {
       setLoading(false)
     }
@@ -101,69 +97,60 @@ export default function SubscriptionManagement() {
   const handleUpgrade = async () => {
     setActionLoading('upgrade')
     try {
-      const response = await fetch('/api/subscriptions/upgrade-portal', {
-        method: 'POST'
-      })
-      
-      if (response.ok) {
-        const { url } = await response.json()
+      const { url } = await http.post<{ url: string }>(
+        '/subscriptions/upgrade-portal',
+        undefined
+      )
+      if (url) {
         window.location.href = url
       } else {
-        alert('升级失败，请稍后重试')
+        toast.error('升级失败，请稍后重试')
       }
     } catch (error) {
       console.error('Error upgrading subscription:', error)
-      alert('升级失败，请稍后重试')
+      toast.error('升级失败，请稍后重试')
     } finally {
       setActionLoading(null)
     }
   }
 
   const handleDowngrade = async () => {
-    if (!confirm('确定要降级订阅吗？降级将在当前计费周期结束时生效。')) {
-      return
-    }
-
     setActionLoading('downgrade')
     try {
-      const response = await fetch('/api/subscriptions/downgrade', {
-        method: 'POST'
-      })
-      
-      if (response.ok) {
-        loadSubscriptionData()
-        alert('降级请求已提交，将在当前计费周期结束时生效')
+      const res = await http.post<{ success: boolean }>(
+        '/subscriptions/downgrade',
+        undefined
+      )
+      if ((res as any)?.success !== false) {
+        await loadSubscriptionData()
+        toast.success('降级请求已提交，将在当前计费周期结束时生效')
       } else {
-        alert('降级失败，请稍后重试')
+        toast.error('降级失败，请稍后重试')
       }
     } catch (error) {
       console.error('Error downgrading subscription:', error)
-      alert('降级失败，请稍后重试')
+      toast.error('降级失败，请稍后重试')
     } finally {
       setActionLoading(null)
     }
   }
 
   const handleCancelSubscription = async () => {
-    if (!confirm('确定要取消订阅吗？取消后您将在当前计费周期结束时失去付费功能。')) {
-      return
-    }
-
     setActionLoading('cancel')
     try {
-      const response = await fetch('/api/subscriptions/cancel', {
-        method: 'POST'
-      })
-      
-      if (response.ok) {
-        loadSubscriptionData()
-        alert('订阅已取消，将在当前计费周期结束时停止')
+      const res = await http.post<{ success: boolean }>(
+        '/subscriptions/cancel',
+        undefined
+      )
+      if ((res as any)?.success !== false) {
+        await loadSubscriptionData()
+        toast.success('订阅已取消，将在当前计费周期结束时停止')
       } else {
-        alert('取消失败，请稍后重试')
+        toast.error('取消失败，请稍后重试')
       }
     } catch (error) {
       console.error('Error canceling subscription:', error)
-      alert('取消失败，请稍后重试')
+      toast.error('取消失败，请稍后重试')
     } finally {
       setActionLoading(null)
     }
@@ -172,19 +159,19 @@ export default function SubscriptionManagement() {
   const handleReactivate = async () => {
     setActionLoading('reactivate')
     try {
-      const response = await fetch('/api/subscriptions/reactivate', {
-        method: 'POST'
-      })
-      
-      if (response.ok) {
-        loadSubscriptionData()
-        alert('订阅已重新激活')
+      const res = await http.post<{ success: boolean }>(
+        '/subscriptions/reactivate',
+        undefined
+      )
+      if ((res as any)?.success !== false) {
+        await loadSubscriptionData()
+        toast.success('订阅已重新激活')
       } else {
-        alert('重新激活失败，请稍后重试')
+        toast.error('重新激活失败，请稍后重试')
       }
     } catch (error) {
       console.error('Error reactivating subscription:', error)
-      alert('重新激活失败，请稍后重试')
+      toast.error('重新激活失败，请稍后重试')
     } finally {
       setActionLoading(null)
     }
@@ -274,6 +261,38 @@ export default function SubscriptionManagement() {
 
   return (
     <div className="space-y-8">
+      {/* 通用确认弹窗 */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>请确认操作</DialogTitle>
+            <DialogDescription>
+              {confirmAction === 'downgrade' && '确定要降级订阅吗？降级将在当前计费周期结束时生效。'}
+              {confirmAction === 'cancel' && '确定要取消订阅吗？取消后您将在当前计费周期结束时失去付费功能。'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-4 py-2 rounded border"
+              onClick={() => setConfirmOpen(false)}
+            >
+              取消
+            </button>
+            <button
+              className="px-4 py-2 rounded bg-red-600 text-white disabled:opacity-50"
+              disabled={actionLoading !== null}
+              onClick={async () => {
+                setConfirmOpen(false)
+                if (confirmAction === 'downgrade') await handleDowngrade()
+                if (confirmAction === 'cancel') await handleCancelSubscription()
+                setConfirmAction(null)
+              }}
+            >
+              确认
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Current Subscription */}
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
@@ -331,7 +350,7 @@ export default function SubscriptionManagement() {
               </button>
               
               <button
-                onClick={handleDowngrade}
+                onClick={() => { setConfirmAction('downgrade'); setConfirmOpen(true) }}
                 disabled={actionLoading === 'downgrade'}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
@@ -340,7 +359,7 @@ export default function SubscriptionManagement() {
               </button>
               
               <button
-                onClick={handleCancelSubscription}
+                onClick={() => { setConfirmAction('cancel'); setConfirmOpen(true) }}
                 disabled={actionLoading === 'cancel'}
                 className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
               >

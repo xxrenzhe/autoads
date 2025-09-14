@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
     const batchopenUsage = stats.featureStats.batchopen.requests;
     const adscenterUsage = stats.featureStats.adscenter.requests;
 
-    // 返回简化的数据结构
-    return NextResponse.json({
+    // 返回简化的数据结构（带 ETag 缓存）
+    const payload = {
       // 基础统计
       totalUsers: totalUsersResult,
       activeUsers: activeUsersResult,
@@ -89,7 +89,17 @@ export async function GET(request: NextRequest) {
 
       // 更新时间
       lastUpdated: stats.lastUpdated
-    });
+    };
+
+    const etag = `W/"${Buffer.from(JSON.stringify(payload)).toString('base64')}"`;
+    const ifNoneMatch = request.headers.get('if-none-match');
+    if (ifNoneMatch === etag) {
+      return new NextResponse(null, { status: 304, headers: { 'ETag': etag, 'Cache-Control': 'private, max-age=30' } });
+    }
+    const res = NextResponse.json(payload);
+    res.headers.set('ETag', etag);
+    res.headers.set('Cache-Control', 'private, max-age=30');
+    return res;
 
   } catch (error) {
     logger.error('Failed to fetch dashboard stats', error);

@@ -1,6 +1,7 @@
 'use client'
 import { useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { http } from '@/shared/http/client'
 
 export interface SubscriptionPlan {
   id: string
@@ -61,11 +62,7 @@ export function useSubscriptionManagement() {
   } = useQuery({
     queryKey: ['subscription-plans'],
     queryFn: async (): Promise<SubscriptionPlan[]> => {
-      const response = await fetch('/api/subscription/plans')
-      if (!response.ok) {
-        throw new Error('Failed to fetch subscription plans')
-      }
-      return response.json()
+      return http.get<SubscriptionPlan[]>('/subscription/plans')
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
   })
@@ -78,11 +75,7 @@ export function useSubscriptionManagement() {
   } = useQuery({
     queryKey: ['subscription-analytics'],
     queryFn: async (): Promise<SubscriptionAnalytics> => {
-      const response = await fetch('/api/admin/subscription/analytics')
-      if (!response.ok) {
-        throw new Error('Failed to fetch subscription analytics')
-      }
-      return response.json()
+      return http.get<SubscriptionAnalytics>('/admin/subscription/analytics')
     },
     staleTime: 15 * 60 * 1000, // 15 minutes
   })
@@ -90,17 +83,7 @@ export function useSubscriptionManagement() {
   // Create plan mutation
   const createPlanMutation = useMutation({
     mutationFn: async (planData: Partial<SubscriptionPlan>) => {
-      const response = await fetch('/api/admin/subscription/plans', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(planData),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to create plan')
-      }
-      return response.json()
+      return http.post('/admin/subscription/plans', planData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-plans'] })
@@ -111,17 +94,7 @@ export function useSubscriptionManagement() {
   // Update plan mutation
   const updatePlanMutation = useMutation({
     mutationFn: async ({ planId, planData }: { planId: string; planData: Partial<SubscriptionPlan> }) => {
-      const response = await fetch(`/api/admin/subscription/plans/${planId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(planData),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to update plan')
-      }
-      return response.json()
+      return http.put(`/admin/subscription/plans/${planId}`, planData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-plans'] })
@@ -132,13 +105,7 @@ export function useSubscriptionManagement() {
   // Delete plan mutation
   const deletePlanMutation = useMutation({
     mutationFn: async (planId: string) => {
-      const response = await fetch(`/api/admin/subscription/plans/${planId}`, {
-        method: 'DELETE',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to delete plan')
-      }
-      return response.json()
+      return http.delete(`/admin/subscription/plans/${planId}`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-plans'] })
@@ -149,13 +116,7 @@ export function useSubscriptionManagement() {
   // Toggle plan status mutation
   const togglePlanStatusMutation = useMutation({
     mutationFn: async (planId: string) => {
-      const response = await fetch(`/api/admin/subscription/plans/${planId}/toggle`, {
-        method: 'POST',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to toggle plan status')
-      }
-      return response.json()
+      return http.post(`/admin/subscription/plans/${planId}/toggle`, undefined)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-plans'] })
@@ -165,17 +126,7 @@ export function useSubscriptionManagement() {
   // Subscribe to plan mutation
   const subscribeToPlanMutation = useMutation({
     mutationFn: async ({ planId, paymentMethodId }: { planId: string; paymentMethodId?: string }) => {
-      const response = await fetch('/api/subscription/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ planId, paymentMethodId }),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to subscribe to plan')
-      }
-      return response.json()
+      return http.post('/subscription/subscribe', { planId, paymentMethodId })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-subscription'] })
@@ -186,17 +137,7 @@ export function useSubscriptionManagement() {
   // Cancel subscription mutation
   const cancelSubscriptionMutation = useMutation({
     mutationFn: async ({ subscriptionId, immediate }: { subscriptionId: string; immediate?: boolean }) => {
-      const response = await fetch(`/api/subscription/${subscriptionId}/cancel`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ immediate }),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to cancel subscription')
-      }
-      return response.json()
+      return http.post(`/subscription/${subscriptionId}/cancel`, { immediate })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-subscription'] })

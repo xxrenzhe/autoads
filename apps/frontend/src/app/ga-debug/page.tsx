@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { http } from '@/shared/http/client'
 
 export default function GADebugPage() {
   const [debugInfo, setDebugInfo] = useState<any>({});
@@ -121,20 +122,19 @@ export default function GADebugPage() {
       
       setDebugInfo(info);
       
-      // Test config API
-      fetch('/api/config')
-        .then(response => response.json())
-        .then(config => {
+      // Test config API（短 TTL 缓存减少闪烁）
+      http.getCached<Record<string, any>>('/config', undefined, 60_000, false)
+        .then((config) => {
           setDebugInfo((prev: any) => ({
             ...prev,
             configApiResponse: config,
             configApiStatus: 'success'
           }));
         })
-        .catch(error => {
+        .catch((error: any) => {
           setDebugInfo((prev: any) => ({
             ...prev,
-            configApiError: error.message,
+            configApiError: error?.message || String(error),
             configApiStatus: 'error'
           }));
         });
