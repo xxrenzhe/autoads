@@ -6,7 +6,7 @@ export const API_ENDPOINTS = {
   USERS: '/api/users',
   SITERANK: '/api/siterank',
   BATCHOPEN: '/api/batchopen',
-  CHANGELINK: '/api/adscenter',
+  ADSCENTER: '/api/adscenter',
   ADMIN: '/api/admin',
 } as const
 

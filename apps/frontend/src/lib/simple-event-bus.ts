@@ -12,7 +12,7 @@ export const EventTypes = {
   // 业务功能事件
   SITERANK_USAGE: 'siterankUsage',
   BATCHOPEN_USAGE: 'batchopenUsage',
-  CHANGELINK_USAGE: 'adscenterUsage',
+  ADSCENTER_USAGE: 'adscenterUsage',
   
   // Token消耗事件
   TOKEN_CONSUMED: 'tokenConsumed',

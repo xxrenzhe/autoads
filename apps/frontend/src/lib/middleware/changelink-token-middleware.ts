@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { TokenService } from '@/lib/services/token-service'
 import { auth } from '@/lib/auth/v5-config'
 
-export interface ChangeLinkTokenOptions {
+export interface AdsCenterTokenOptions {
   extractLinkCount?: (request: NextRequest, body?: any) => number | Promise<number>
   extractOperationType?: (request: NextRequest, body?: any) => string | Promise<string>
   extractMetadata?: (request: NextRequest, body?: any) => any | Promise<any>
@@ -20,9 +20,9 @@ export interface ChangeLinkTokenOptions {
  * 为 AdsCenter API 添加 Token 消耗记录的中间件
  * 注意：这个中间件不会阻止现有功能，只是记录Token消耗
  */
-export function withChangeLinkTokenTracking(
+export function withAdsCenterTokenTracking(
   handler: (request: NextRequest, ...args: any[]) => Promise<NextResponse>,
-  options: ChangeLinkTokenOptions = {}
+  options: AdsCenterTokenOptions = {}
 ) {
   return async function(request: NextRequest, ...args: any[]): Promise<NextResponse> {
     let tokenResult: any = null
@@ -225,7 +225,7 @@ export function withChangeLinkTokenTracking(
 /**
  * 从请求体中提取链接数量
  */
-export function extractChangeLinkCount(request: NextRequest, body: any): number {
+export function extractAdsCenterCount(request: NextRequest, body: any): number {
   if (!body) return 1
 
   // 根据操作类型计算操作数量
@@ -243,7 +243,7 @@ export function extractChangeLinkCount(request: NextRequest, body: any): number 
 /**
  * 从请求体中提取操作类型
  */
-export function extractChangeLinkOperationType(request: NextRequest, body: any): string {
+export function extractAdsCenterOperationType(request: NextRequest, body: any): string {
   if (!body) return 'update_ad'
   try {
     const url = new URL(request.url)
@@ -257,9 +257,9 @@ export function extractChangeLinkOperationType(request: NextRequest, body: any):
 }
 
 /**
- * 从请求体中提取ChangeLink元数据
+ * 从请求体中提取 AdsCenter 元数据
  */
-export function extractChangeLinkMetadata(request: NextRequest, body: any): any {
+export function extractAdsCenterMetadata(request: NextRequest, body: any): any {
   const metadata: any = {
     endpoint: request.url,
     method: request.method,
@@ -310,10 +310,10 @@ export function extractChangeLinkMetadata(request: NextRequest, body: any): any 
 /**
  * 预定义的ChangeLink Token消耗配置
  */
-export const changeLinkTokenTrackingConfig: ChangeLinkTokenOptions = {
-  extractLinkCount: extractChangeLinkCount,
-  extractOperationType: extractChangeLinkOperationType,
-  extractMetadata: extractChangeLinkMetadata,
+export const adsCenterTokenTrackingConfig: AdsCenterTokenOptions = {
+  extractLinkCount: extractAdsCenterCount,
+  extractOperationType: extractAdsCenterOperationType,
+  extractMetadata: extractAdsCenterMetadata,
   skipTokenConsumption: (request, body) => {
     // 跳过GET请求的Token消耗（只有写操作消耗Token）
     if (request.method === 'GET') {
@@ -328,13 +328,13 @@ export const changeLinkTokenTrackingConfig: ChangeLinkTokenOptions = {
     return false
   },
   onTokenConsumed: async (result, tokenResult) => {
-    console.log('ChangeLink Token消耗记录:', {
+    console.log('AdsCenter Token消耗记录:', {
       consumed: tokenResult.consumed || tokenResult.totalConsumed,
       batchId: tokenResult.batchId,
       timestamp: new Date().toISOString()
     })
   },
   onTokenError: async (error) => {
-    console.warn('ChangeLink Token消耗失败:', error)
+    console.warn('AdsCenter Token消耗失败:', error)
   }
 }

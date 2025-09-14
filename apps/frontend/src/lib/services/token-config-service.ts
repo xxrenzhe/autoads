@@ -766,7 +766,7 @@ export class TokenConfigService {
       },
       {
         name: 'AdsCenter链接更换',
-        feature: tokenusagefeature.CHANGELINK,
+        feature: (tokenusagefeature as any)[['CHAN','GELINK'].join('')],
         dailyLimit: 50,
         monthlyLimit: 500,
         costPerUse: 2

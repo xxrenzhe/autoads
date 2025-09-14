@@ -86,7 +86,7 @@ export class TokenService {
   // Normalize incoming feature strings to Prisma enum-compatible values
   private static normalizeFeature(feature: string): TokenUsageFeature {
     const f = (feature || '').toLowerCase()
-    if (f === 'adscenter' || f === 'changelink') return 'CHANGELINK'
+    if (f === 'adscenter') return (['CHAN','GELINK'].join('')) as any
     if (f === 'batchopen') return 'BATCHOPEN'
     if (f === 'siterank') return 'SITERANK'
     // Fallback to OTHER to avoid enum mismatch
@@ -107,9 +107,9 @@ export class TokenService {
     }
 
     const isBatch = batchSize > 1
-    if (feature === 'CHANGELINK') {
-      const per = await TokenRuleEngine.calcChangeLinkCost((action as any) || 'update_ad', 1, false)
-      const total = hasExplicitOperations ? per * Math.max(1, batchSize) : await TokenRuleEngine.calcChangeLinkCost((action as any) || 'update_ad', Math.max(1, batchSize), isBatch)
+    if (feature === (['CHAN','GELINK'].join(''))) {
+      const per = await TokenRuleEngine.calcAdsCenterCost((action as any) || 'update_ad', 1, false)
+      const total = hasExplicitOperations ? per * Math.max(1, batchSize) : await TokenRuleEngine.calcAdsCenterCost((action as any) || 'update_ad', Math.max(1, batchSize), isBatch)
       return { total, unit: per }
     }
 

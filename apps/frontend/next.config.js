@@ -37,57 +37,44 @@ const nextConfig = {
     ];
   },
 
-  // 头部配置
+  // 头部配置（按环境分级）
   async headers() {
+    const env = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV || 'development';
+    const isProd = env === 'production';
+    const cspParts = [
+      "default-src 'self'",
+      // 生产禁用 unsafe-eval，保留必要的 inline 以兼容 GA 初始化
+      isProd
+        ? "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com"
+        : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https: blob: https://www.google.com https://www.google-analytics.com",
+      "font-src 'self'",
+      // 仅在开发环境允许本地 Adspower
+      isProd
+        ? "connect-src 'self' https://accounts.google.com https://www.googleapis.com https://data.similarweb.com https://api.similarweb.com https://similarweb.com https://urlchecker.dev https://www.urlchecker.dev https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://ipapi.co"
+        : "connect-src 'self' http://local.adspower.net:50325 https://accounts.google.com https://www.googleapis.com https://data.similarweb.com https://api.similarweb.com https://similarweb.com https://urlchecker.dev https://www.urlchecker.dev https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://ipapi.co",
+      "frame-src 'self' https://accounts.google.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ];
+
     return [
       {
         source: '/(.*)',
         headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on'
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY'
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block'
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()'
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=0'
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https: blob: https://www.google.com https://www.google-analytics.com",
-              "font-src 'self'",
-              "connect-src 'self' https://accounts.google.com https://www.googleapis.com http://local.adspower.net:50325 https://data.similarweb.com https://api.similarweb.com https://similarweb.com https://urlchecker.dev https://www.urlchecker.dev https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://ipapi.co",
-              "frame-src 'self' https://accounts.google.com",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join('; ')
-          }
-        ]
-      }
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          // 生产启用一年 HSTS，其他环境禁用
+          { key: 'Strict-Transport-Security', value: isProd ? 'max-age=31536000; includeSubDomains; preload' : 'max-age=0' },
+          { key: 'Content-Security-Policy', value: cspParts.join('; ') },
+        ],
+      },
     ];
   },
 
@@ -97,6 +84,11 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'autoads.dev',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.autoads.dev',
         pathname: '/**',
       },
       {

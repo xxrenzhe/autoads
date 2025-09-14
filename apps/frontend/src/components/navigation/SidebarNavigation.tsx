@@ -64,7 +64,7 @@ const userNavigationItems: NavigationItem[] = [
         description: 'Batch URL operations'
       },
       {
-        title: 'ChangeLink',
+        title: 'AdsCenter',
         href: '/features/adscenter',
         icon: FileText,
         description: 'Link management'

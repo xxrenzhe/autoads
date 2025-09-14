@@ -12,7 +12,7 @@ import {
   AdUpdateRequest,
   AdUpdateResult,
   AdsPerformance
-} from '@/app/changelink/types';
+} from '@/app/adscenter/types';
 
 export interface GoogleAdsAd {
   id: string;

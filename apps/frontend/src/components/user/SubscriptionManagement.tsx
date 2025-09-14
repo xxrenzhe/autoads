@@ -106,7 +106,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ subscri
       }
     }
 
-    // ChangeLink features
+    // AdsCenter features
     if (features.adscenter?.enabled) {
       featureList.push(
         <ListItem key="adscenter">

@@ -123,7 +123,7 @@ const searchableItems: SearchResult[] = [
   },
   {
     id: 'adscenter',
-    title: 'ChangeLink',
+    title: 'AdsCenter',
     description: 'Google Ads automation management',
     href: '/features/adscenter',
     category: 'feature',

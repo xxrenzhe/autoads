@@ -86,7 +86,7 @@ export class FeaturePermissionService {
       }
     },
     
-    // ChangeLink功能
+    // AdsCenter 功能
     {
       featureId: 'adscenter_basic',
       name: '自动化广告基础版',

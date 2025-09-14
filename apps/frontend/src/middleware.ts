@@ -5,9 +5,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createLogger } from "@/lib/utils/security/secure-logger";
-import { auth } from "@/lib/auth/v5-config";
-import { dbPool } from "@/lib/db-pool";
-import { redisClient } from "@/lib/redis";
 
 // 导入早期stdout捕获（确保在模块加载时立即执行）
 import '@/lib/early-stdout-capture';
@@ -125,44 +122,12 @@ export async function middleware(request: NextRequest) {
   const start = Date.now();
   const { pathname } = request.nextUrl;
 
-  // 301 跳转到 www 子域（仅页面路由，避免影响 API/Cookies）
-  const hostname = request.nextUrl.hostname;
   const isApiRoute = pathname.startsWith('/api/');
   // 路由改名：/changelink -> /adscenter（保持向后兼容）
   if (!isApiRoute && pathname.startsWith('/changelink')) {
     const target = new URL(request.url);
     target.pathname = pathname.replace('/changelink', '/adscenter');
     return NextResponse.redirect(target, 301);
-  }
-  if (!isApiRoute && (hostname === 'urlchecker.dev' || hostname === 'autoads.dev')) {
-    const target = new URL(request.url);
-    target.hostname = `www.${hostname}`;
-    return NextResponse.redirect(target, 301);
-  }
-
-  // 管理员路由保护
-  if (pathname.startsWith('/admin-dashboard') || pathname.startsWith('/api/admin')) {
-    try {
-      // 获取当前会话
-      const session = await auth()
-      
-      // 如果没有会话或用户不是管理员，重定向到管理员登录页
-      if (!session?.user || session.user.role !== 'ADMIN') {
-        const signInUrl = new URL('/auth/admin-signin', request.url)
-        signInUrl.searchParams.set('callbackUrl', pathname)
-        
-        return NextResponse.redirect(signInUrl)
-      }
-    } catch (error) {
-      console.error('Admin middleware error:', error)
-      
-      // 发生错误时重定向到管理员登录页
-      const signInUrl = new URL('/auth/admin-signin', request.url)
-      signInUrl.searchParams.set('callbackUrl', pathname)
-      signInUrl.searchParams.set('error', 'AuthError')
-      
-      return NextResponse.redirect(signInUrl)
-    }
   }
   
   // 初始化日志轮转（只执行一次，且不在 Edge Runtime 中运行）

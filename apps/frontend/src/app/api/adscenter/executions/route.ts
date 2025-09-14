@@ -35,6 +35,25 @@ async function setExecutions(userId: string, records: Execution[], updatedBy: st
 async function handleGET(_req: NextRequest): Promise<NextResponse> {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // 优先从规范化表读取，回退 SystemConfig
+  try {
+    const rows = await prisma.adsExecution.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'desc' }
+    })
+    if (rows && rows.length > 0) {
+      const data = rows.map((r: any) => ({
+        id: r.id,
+        configurationId: r.configurationId,
+        status: (r.status as any) || 'created',
+        message: r.message || undefined,
+        createdAt: r.createdAt.toISOString()
+      }))
+      return NextResponse.json({ success: true, data })
+    }
+  } catch (e) {
+    // ignore and fallback
+  }
   const list = await getExecutions(session.user.id)
   return NextResponse.json({ success: true, data: list })
 }
@@ -46,11 +65,26 @@ async function handlePOST(req: NextRequest): Promise<NextResponse> {
   if (!body || typeof body !== 'object') return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
   const { configurationId } = body as any
   if (!configurationId) return NextResponse.json({ error: 'configurationId is required' }, { status: 400 })
+  // 先写入规范化表
+  let newId = ''
+  try {
+    const created = await prisma.adsExecution.create({
+      data: {
+        userId: session.user.id,
+        configurationId,
+        status: 'created'
+      }
+    })
+    newId = created.id
+  } catch (e) {
+    // ignore and use fallback id
+  }
+  // 维护回退 SystemConfig 以兼容
   const list = await getExecutions(session.user.id)
-  const id = `exec_${Date.now()}`
+  const id = newId || `exec_${Date.now()}`
   const now = new Date().toISOString()
   list.unshift({ id, configurationId, status: 'created', createdAt: now })
-  await setExecutions(session.user.id, list.slice(0, 200), session.user.id) // cap list size
+  await setExecutions(session.user.id, list.slice(0, 200), session.user.id)
   return NextResponse.json({ success: true, data: { id } })
 }
 
@@ -60,7 +94,6 @@ export const POST = withFeatureGuard(handlePOST as any, {
   requireToken: true,
   getTokenCost: async () => {
     // Use rule engine to calculate cost of an execution (treat as update_ad, 1 item)
-    return await TokenRuleEngine.calcChangeLinkCost('update_ad', 1, false)
+    return await TokenRuleEngine.calcAdsCenterCost('update_ad', 1, false)
   }
 })
-

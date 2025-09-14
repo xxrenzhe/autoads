@@ -74,7 +74,7 @@ export default function BatchOperationDetail({ batchId, onClose }: BatchOperatio
     const names: Record<string, string> = {
       'siterank': 'SiteRank 域名分析',
       'batchopen': 'BatchOpen 批量访问',
-      'adscenter': 'ChangeLink 链接替换'
+      'adscenter': 'AdsCenter 链接替换'
     }
     return names[feature] || feature
   }

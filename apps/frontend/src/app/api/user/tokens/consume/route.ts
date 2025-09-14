@@ -5,7 +5,7 @@ import { recordTokenUsage } from '@/lib/services/token-usage'
 import { z } from 'zod'
 
 const ConsumeTokenSchema = z.object({
-  feature: z.enum(['BATCHOPEN', 'SITERANK', 'CHANGELINK']),
+  feature: z.enum(['BATCHOPEN', 'SITERANK', 'ADSCENTER']),
   operation: z.string(),
   tokens: z.number().positive(),
   itemCount: z.number().positive().optional(),
@@ -110,9 +110,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 记录Token使用
+    const feature = (validatedData.feature === 'ADSCENTER') ? 'CHANGELINK' as any : validatedData.feature
     const result = await recordTokenUsage({
       userId: session.user.id,
-      feature: validatedData.feature,
+      feature: feature,
       operation: validatedData.operation,
       tokensUsed: validatedData.tokens,
       itemCount: validatedData.itemCount,

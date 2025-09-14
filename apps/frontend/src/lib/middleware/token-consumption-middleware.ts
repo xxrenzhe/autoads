@@ -225,9 +225,9 @@ export const batchOpenTokenConfig: TokenConsumptionOptions = {
 }
 
 /**
- * 预定义的ChangeLink Token消耗配置
+ * 预定义的 AdsCenter Token 消耗配置
  */
-export const changeLinkTokenConfig: TokenConsumptionOptions = {
+export const adsCenterTokenConfig: TokenConsumptionOptions = {
   feature: tokenusagefeature.CHANGELINK,
   action: 'link_replace',
   extractBatchSize: (request, body) => {

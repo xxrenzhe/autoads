@@ -97,7 +97,7 @@ export const SERVICE_TOKENS = {
   // 业务服务
   SITERANK_SERVICE: Symbol('SiteRankService'),
   BATCHOPEN_SERVICE: Symbol('BatchOpenService'),
-  CHANGELINK_SERVICE: Symbol('ChangeLinkService'),
+  ADSCENTER_SERVICE: Symbol('AdsCenterService'),
 
   // 基础设施服务
   LOGGER_SERVICE: Symbol('LoggerService'),

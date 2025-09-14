@@ -1,5 +1,4 @@
-import Redis from 'ioredis'
-import { getRedisClient } from '@/lib/redis-config'
+import { getRedisClient } from '@/lib/cache/redis-client'
 
 /**
  * Cache Management System
@@ -34,7 +33,7 @@ export interface CacheEntry<T = any> {
 }
 
 export class CacheManager {
-  private redis: Redis
+  private redis: any
   private metrics: CacheMetrics
   private config: CacheConfig
 

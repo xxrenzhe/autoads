@@ -155,7 +155,7 @@ const CheckInModule: React.FC = () => {
 
     try {
       // Generate share content
-      const shareText = `我在 ChangeLink 已连续签到 ${checkInResult.checkIn.streak} 天，获得了 ${checkInResult.checkIn.tokens} Token 奖励！一起来签到赢取奖励吧！`;
+      const shareText = `我在 AdsCenter 已连续签到 ${checkInResult.checkIn.streak} 天，获得了 ${checkInResult.checkIn.tokens} Token 奖励！一起来签到赢取奖励吧！`;
       const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
       // Create share rewards record

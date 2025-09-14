@@ -50,7 +50,7 @@ export default function PricingPlans() {
         const out: string[] = []
         if (f.siterank) out.push('站点排名（SiteRank）')
         if (f.batchopen) out.push('批量处理（BatchOpen）')
-        if (f.adscenter) out.push('广告中心（ChangeLink）')
+        if (f.adscenter) out.push('广告中心（AdsCenter）')
         if (f.analytics) out.push('高级分析（Analytics）')
         if (f.support) out.push(f.support === 'priority' ? '优先支持' : f.support === 'email' ? '邮件支持' : '无专属支持')
         return out

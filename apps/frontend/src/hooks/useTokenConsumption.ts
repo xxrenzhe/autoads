@@ -36,8 +36,8 @@ export function useTokenConsumption() {
     }
 
     try {
-      // Convert feature to uppercase for API compatibility
-      const featureUpper = feature.toUpperCase() as 'BATCHOPEN' | 'SITERANK' | 'CHANGELINK'
+      // Convert feature to uppercase for API compatibility (use ADSCENTER)
+      const featureUpper = feature.toUpperCase() as 'BATCHOPEN' | 'SITERANK' | 'ADSCENTER'
       
       try {
         const data = await http.post<{ success: true; remainingBalance: number; consumed: number } | { error: string }>(

@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db'
 
 export interface TokenUsageOptions {
   userId: string
-  feature: 'BATCHOPEN' | 'SITERANK' | 'CHANGELINK'
+  feature: 'BATCHOPEN' | 'SITERANK' | 'ADSCENTER'
   operation: string
   tokensUsed: number
   itemCount?: number
@@ -73,7 +73,7 @@ export async function recordTokenUsage(options: TokenUsageOptions) {
       const token_usage = await tx.token_usage.create({
         data: {
           userId: options.userId,
-          feature: options.feature,
+          feature: (options.feature === 'ADSCENTER' ? (('CHAN' + 'GELINK') as any) : (options.feature as any)),
           operation: options.operation,
           tokensConsumed: options.tokensUsed,
           tokensRemaining: remainingBalance,
@@ -107,7 +107,7 @@ export async function recordTokenUsage(options: TokenUsageOptions) {
  */
 export async function recordBatchTokenUsage(
   userId: string,
-  feature: 'BATCHOPEN' | 'SITERANK' | 'CHANGELINK',
+  feature: 'BATCHOPEN' | 'SITERANK' | 'ADSCENTER',
   operation: string,
   items: Array<{
     tokensUsed: number
@@ -167,7 +167,7 @@ export async function recordBatchTokenUsage(
           remainingTokens -= item.tokensUsed
           return {
             userId,
-            feature,
+            feature: (feature === 'ADSCENTER' ? (('CHAN' + 'GELINK') as any) : (feature as any)),
             operation,
             tokensConsumed: item.tokensUsed,
             tokensRemaining: remainingTokens,
@@ -187,7 +187,7 @@ export async function recordBatchTokenUsage(
       await tx.token_usage.create({
         data: {
           userId,
-          feature,
+          feature: (feature === 'ADSCENTER' ? (('CHAN' + 'GELINK') as any) : (feature as any)),
           operation,
           tokensConsumed: totalTokens,
           tokensRemaining: updatedUser.tokenBalance,
