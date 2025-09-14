@@ -81,7 +81,7 @@ const permissionCategories = [
     permissions: [
       { id: 'siterank:access', name: '使用SiteRank' },
       { id: 'batchopen:access', name: '使用BatchOpen' },
-      { id: 'adscenter:access', name: '使用ChangeLink' },
+      { id: 'adscenter:access', name: '使用AdsCenter' },
     ],
   },
 ];

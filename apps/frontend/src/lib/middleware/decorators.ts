@@ -208,7 +208,7 @@ export const withBatchOpenAccess = withMiddleware({
   }
 })
 
-export const withChangeLinkAccess = withMiddleware({
+export const withAdsCenterAccess = withMiddleware({
   auth: true,
   feature: $Enums.tokenusagefeature.CHANGELINK,
   logging: true,

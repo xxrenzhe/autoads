@@ -474,7 +474,7 @@ export const PlanCreate: React.FC = () => {
           
           <TextInput
             source="limits.adscenter.maxCampaigns"
-            label="ChangeLink最大活动数"
+            label="AdsCenter最大活动数"
             type="number"
             defaultValue={0}
             fullWidth

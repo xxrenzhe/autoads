@@ -25,7 +25,7 @@ const apiUsageFilters = [
       { id: '/api/siterank/rank', name: 'SiteRank查询' },
       { id: '/api/batchopen/silent-start', name: 'BatchOpen启动' },
       { id: '/api/batchopen/silent-progress', name: 'BatchOpen进度' },
-      { id: '/api/adscenter/configurations', name: 'ChangeLink配置' },
+      { id: '/api/adscenter/configurations', name: 'AdsCenter配置' },
     ]}
   />,
   <SelectInput

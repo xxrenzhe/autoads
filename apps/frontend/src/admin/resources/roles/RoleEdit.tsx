@@ -63,7 +63,7 @@ const permissionCategories = [
     permissions: [
       { id: 'siterank:access', name: 'SiteRank访问', description: '使用SiteRank功能' },
       { id: 'batchopen:access', name: 'BatchOpen访问', description: '使用BatchOpen功能' },
-      { id: 'adscenter:access', name: 'ChangeLink访问', description: '使用ChangeLink功能' },
+      { id: 'adscenter:access', name: 'AdsCenter访问', description: '使用AdsCenter功能' },
       { id: 'admin:access', name: '后台管理', description: '访问后台管理系统' },
     ]
   },

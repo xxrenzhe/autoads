@@ -48,7 +48,7 @@ export const RateLimitEdit: React.FC = () => {
               { id: 'api', name: 'API调用' },
               { id: 'siterank', name: 'SiteRank查询' },
               { id: 'batchopen', name: 'BatchOpen任务' },
-              { id: 'adscenter', name: 'ChangeLink活动' },
+              { id: 'adscenter', name: 'AdsCenter活动' },
               { id: 'upload', name: '文件上传' },
               { id: 'export', name: '数据导出' },
             ]}
