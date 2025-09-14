@@ -1021,7 +1021,20 @@ export function APIManager({ className }: APIManagerProps) {
                 </div>
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Required Role</label>
-                  <Input value={endpointForm.requiredRole || ''} onChange={(e) => setEndpointForm(f => ({ ...f, requiredRole: e.target.value }))} placeholder="e.g., ADMIN" />
+                  <select 
+                    className="w-full border rounded h-9 bg-white dark:bg-gray-900 text-sm px-2"
+                    value={endpointForm.requiredRole || ''}
+                    onChange={(e) => setEndpointForm(f => ({ ...f, requiredRole: e.target.value }))}
+                    disabled={!endpointForm.requiresAuth}
+                  >
+                    <option value="">None</option>
+                    <option value="USER">USER</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                  </select>
+                  {!endpointForm.requiresAuth && (
+                    <p className="text-xs text-gray-500 mt-1">Requires Auth 关闭时，角色限制无效</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -1030,6 +1043,15 @@ export function APIManager({ className }: APIManagerProps) {
             <Button
               onClick={() => {
                 if (!editingEndpoint) return
+                // 联动校验：hour 不应小于 minute（简单规则）
+                if (
+                  endpointForm.rateLimitPerHour !== undefined &&
+                  endpointForm.rateLimitPerMinute !== undefined &&
+                  endpointForm.rateLimitPerHour < endpointForm.rateLimitPerMinute
+                ) {
+                  toast.error('Validation: per-hour limit should not be less than per-minute limit')
+                  return
+                }
                 updateEndpointMutation.mutate({ id: String(editingEndpoint.id || editingEndpoint.path), payload: endpointForm })
                 setEditingEndpoint(null)
               }}
@@ -1079,7 +1101,19 @@ export function APIManager({ className }: APIManagerProps) {
                 if (!editingKey) return
                 const payload: any = { name: keyForm.name, isActive: keyForm.isActive }
                 if (keyForm.rateLimitOverride !== undefined) payload.rateLimitOverride = keyForm.rateLimitOverride
-                if (keyForm.expiresAt && keyForm.expiresAt.length > 0) payload.expiresAt = keyForm.expiresAt
+                if (keyForm.expiresAt && keyForm.expiresAt.length > 0) {
+                  const today = new Date(); today.setHours(0,0,0,0)
+                  const exp = new Date(keyForm.expiresAt)
+                  if (isNaN(exp.getTime())) {
+                    toast.error('Invalid expiresAt date')
+                    return
+                  }
+                  if (exp.getTime() < today.getTime()) {
+                    toast.error('expiresAt cannot be in the past')
+                    return
+                  }
+                  payload.expiresAt = keyForm.expiresAt
+                }
                 if (keyForm.permissionsCSV && keyForm.permissionsCSV.trim().length > 0) {
                   payload.permissions = keyForm.permissionsCSV.split(',').map(s => s.trim()).filter(Boolean)
                 }

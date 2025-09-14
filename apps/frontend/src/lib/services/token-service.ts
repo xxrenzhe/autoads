@@ -93,7 +93,7 @@ export class TokenService {
     return 'OTHER'
   }
 
-  // Resolve total cost for an action; applies rule engine for ChangeLink
+  // Resolve total cost for an action; applies rule engine for AdsCenter
   private static async resolveTotalCost(
     feature: TokenUsageFeature,
     action: string,

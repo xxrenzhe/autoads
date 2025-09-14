@@ -1,5 +1,5 @@
 /**
- * Secure Storage Utilities for ChangeLink
+ * Secure Storage Utilities for AdsCenter
  * Provides encrypted local storage for sensitive data
  */
 

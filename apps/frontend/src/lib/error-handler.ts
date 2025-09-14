@@ -1,5 +1,5 @@
 /**
- * Enhanced Error Handling Utilities for ChangeLink
+ * Enhanced Error Handling Utilities for AdsCenter
  * Provides comprehensive error handling with retry logic and user-friendly messages
  */
 

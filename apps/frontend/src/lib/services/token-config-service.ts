@@ -765,7 +765,7 @@ export class TokenConfigService {
         costPerUse: 1
       },
       {
-        name: 'ChangeLink链接更换',
+        name: 'AdsCenter链接更换',
         feature: tokenusagefeature.CHANGELINK,
         dailyLimit: 50,
         monthlyLimit: 500,

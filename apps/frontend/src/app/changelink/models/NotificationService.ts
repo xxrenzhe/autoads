@@ -268,7 +268,7 @@ export class NotificationService {
 <html>
 <head>
     <meta charset="utf-8">
-    <title>ChangeLink 执行报告</title>
+    <title>AdsCenter 执行报告</title>
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -285,7 +285,7 @@ export class NotificationService {
 <body>
     <div class="container">
         <div class="header">
-            <h2>ChangeLink 执行报告</h2>
+            <h2>AdsCenter 执行报告</h2>
             <p><strong>配置名称:</strong> ${configurationName}</p>
             <p><strong>执行ID:</strong> ${report.executionId}</p>
             <p><strong>状态:</strong> <span class="status" style="background-color: ${statusColor}">${report.status.toUpperCase()}</span></p>
@@ -326,7 +326,7 @@ export class NotificationService {
         ` : ''}
 
         <div class="footer">
-            <p>此邮件由 ChangeLink 自动化系统发送</p>
+            <p>此邮件由 AdsCenter 自动化系统发送</p>
             <p>发送时间: ${new Date().toLocaleString('zh-CN')}</p>
         </div>
     </div>
@@ -378,7 +378,7 @@ export class NotificationService {
         ` : ''}
 
         <div class="footer">
-            <p>此邮件由 ChangeLink 监控系统发送</p>
+            <p>此邮件由 AdsCenter 监控系统发送</p>
         </div>
     </div>
 </body>
@@ -407,7 +407,7 @@ export class NotificationService {
       attachments: [
         {
           color: statusColor,
-          title: `${statusEmoji} ChangeLink 执行报告`,
+          title: `${statusEmoji} AdsCenter 执行报告`,
           fields: [
             {
               title: '配置名称',
@@ -435,7 +435,7 @@ export class NotificationService {
               short: true
             }
           ],
-          footer: 'ChangeLink',
+          footer: 'AdsCenter',
           ts: Math.floor(Date.now() / 1000)
         }
       ]
@@ -481,7 +481,7 @@ export class NotificationService {
               short: false
             }
           ],
-          footer: 'ChangeLink 监控系统',
+          footer: 'AdsCenter 监控系统',
           ts: Math.floor(alert.timestamp.getTime() / 1000)
         }
       ]

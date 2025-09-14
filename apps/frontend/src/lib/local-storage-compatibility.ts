@@ -1,5 +1,5 @@
 /**
- * LocalStorage compatibility layer for ChangeLink services
+ * LocalStorage compatibility layer for AdsCenter services
  * Provides the old array-based API using the new key-value LocalStorageService
  */
 

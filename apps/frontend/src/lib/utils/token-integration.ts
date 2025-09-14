@@ -133,7 +133,7 @@ export async function consumeTokensForBatchOpen(
 }
 
 /**
- * Wrapper for ChangeLink operations
+ * Wrapper for AdsCenter operations (backward compatible alias)
  */
 export async function consumeTokensForChangeLink(
   userId: string,
@@ -151,6 +151,9 @@ export async function consumeTokensForChangeLink(
     { changes: isBatch ? linkChanges.length : linkChanges }
   )
 }
+
+// Prefer new alias for clarity; keep old function for compatibility
+export const consumeTokensForAdsCenter = consumeTokensForChangeLink
 
 /**
  * Get user's current token balance and usage summary

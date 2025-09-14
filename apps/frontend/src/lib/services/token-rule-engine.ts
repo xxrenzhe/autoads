@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { redisService } from '@/lib/redis-config'
 
-// Lightweight rule engine focused on ChangeLink (aka AdsCenter/Chengelink)
+// Lightweight rule engine focused on AdsCenter (a.k.a. ChangeLink legacy)
 
 export type ChangeLinkOperation = 'extract_link' | 'update_ad'
 
@@ -25,7 +25,7 @@ const CACHE_KEY = 'token:rules:changelink'
 const CACHE_TTL_SECONDS = 300
 
 export class TokenRuleEngine {
-  // Load ChangeLink rules from configuration_items with fallback defaults
+  // Load AdsCenter rules from configuration_items with fallback defaults
   static async getChangeLinkRules(): Promise<ChangeLinkRuleConfig> {
     try {
       const cached = await redisService.get(CACHE_KEY)
@@ -67,7 +67,7 @@ export class TokenRuleEngine {
     }
   }
 
-  // Calculate total tokens for a ChangeLink operation
+  // Calculate total tokens for an AdsCenter operation
   static async calcChangeLinkCost(op: ChangeLinkOperation, itemCount = 1, isBatch = false) {
     const rules = await this.getChangeLinkRules()
     const unit = op === 'extract_link' ? rules.extract_link.costPerItem : rules.update_ad.costPerItem
@@ -78,4 +78,3 @@ export class TokenRuleEngine {
     return total
   }
 }
-

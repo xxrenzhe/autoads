@@ -1,6 +1,6 @@
 /**
- * ChangeLink Token消耗中间件
- * 为ChangeLink功能添加增强的Token消耗记录，同时保持现有功能不变
+ * AdsCenter Token消耗中间件（兼容旧 ChangeLink 名称）
+ * 为 AdsCenter 功能添加增强的 Token 消耗记录，同时保持现有功能不变
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -17,7 +17,7 @@ export interface ChangeLinkTokenOptions {
 }
 
 /**
- * 为ChangeLink API添加Token消耗记录的中间件
+ * 为 AdsCenter API 添加 Token 消耗记录的中间件
  * 注意：这个中间件不会阻止现有功能，只是记录Token消耗
  */
 export function withChangeLinkTokenTracking(
@@ -131,16 +131,16 @@ export function withChangeLinkTokenTracking(
             metadata: {
               ...metadata,
               operationIndex: i,
-              operationDescription: `ChangeLink操作 ${i + 1}/${operationCount}`,
+              operationDescription: `AdsCenter操作 ${i + 1}/${operationCount}`,
               timestamp: new Date().toISOString()
             },
-            description: `ChangeLink ${operationType} - 操作 ${i + 1}/${operationCount}`
+            description: `AdsCenter ${operationType} - 操作 ${i + 1}/${operationCount}`
           })
         }
 
         tokenResult = await TokenService.consumeBatchTokens(
           userId,
-          'changelink',
+          'adscenter',
           operationType,
           operations
         )
@@ -148,7 +148,7 @@ export function withChangeLinkTokenTracking(
         // 单个操作
         tokenResult = await TokenService.checkAndConsumeTokens(
           userId,
-          'changelink',
+          'adscenter',
           operationType,
           {
             metadata: {
@@ -164,13 +164,13 @@ export function withChangeLinkTokenTracking(
 
       // 如果Token消耗失败，记录但不阻止执行（保持向后兼容）
       if (!tokenResult.success) {
-        console.warn('ChangeLink Token消耗失败，但继续执行以保持兼容性:', tokenResult.error)
+        console.warn('AdsCenter Token消耗失败，但继续执行以保持兼容性:', tokenResult.error)
         
         if (options.onTokenError) {
           await options.onTokenError(tokenResult.error)
         }
       } else {
-        console.log('ChangeLink Token消耗成功:', {
+        console.log('AdsCenter Token消耗成功:', {
           consumed: tokenResult.consumed || tokenResult.totalConsumed,
           newBalance: tokenResult.newBalance,
           batchId: tokenResult.batchId,
@@ -184,7 +184,7 @@ export function withChangeLinkTokenTracking(
       }
 
     } catch (error) {
-      console.error('ChangeLink Token消耗中间件错误:', error)
+      console.error('AdsCenter Token消耗中间件错误:', error)
       // 不阻止原始功能执行
     }
 
