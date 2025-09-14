@@ -22,6 +22,7 @@ import {
   Zap
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAdminApiEndpoints, useAdminApiKeys, useAdminApiAnalytics } from '@/lib/hooks/admin/useAdminApiManagement'
 
 export interface APIEndpoint {
   id: string
@@ -118,63 +119,34 @@ export function APIManager({ className }: APIManagerProps) {
   }
 
   // Fetch API endpoints
-  const {
-    data: endpoints = [],
-    isLoading: isEndpointsLoading
-  } = useQuery({
-    queryKey: ['api-endpoints'],
-    queryFn: async (): Promise<APIEndpoint[]> => {
-      const response = await fetch('/api/admin/api-management/endpoints')
-      if (!response.ok) throw new Error('Failed to fetch endpoints')
-      const result = await response.json()
-      return result.data || []
-    },
-    staleTime: 2 * 60 * 1000,
-  })
+  const { data: endpoints = [], isLoading: isEndpointsLoading } = useAdminApiEndpoints()
 
   // Fetch API keys
-  const {
-    data: apiKeys = [],
-    isLoading: isKeysLoading
-  } = useQuery({
-    queryKey: ['api-keys'],
-    queryFn: async (): Promise<APIKey[]> => {
-      const response = await fetch('/api/admin/api-management/keys')
-      if (!response.ok) throw new Error('Failed to fetch API keys')
-      const result = await response.json()
-      return result.data || []
-    },
-    staleTime: 2 * 60 * 1000,
-  })
+  const { data: apiKeys = [], isLoading: isKeysLoading } = useAdminApiKeys()
 
   // Fetch API analytics
-  const {
-    data: analytics,
-    isLoading: isAnalyticsLoading
-  } = useQuery({
-    queryKey: ['api-analytics'],
-    queryFn: async () => {
-      const response = await fetch('/api/admin/api-management/analytics')
-      if (!response.ok) throw new Error('Failed to fetch analytics')
-      const result = await response.json()
-      return result.data
-    },
-    staleTime: 1 * 60 * 1000,
-  })
+  const { data: analytics, isLoading: isAnalyticsLoading } = useAdminApiAnalytics()
 
   // Create endpoint mutation
   const createEndpointMutation = useMutation({
     mutationFn: async (endpointData: Partial<APIEndpoint>) => {
-      const response = await fetch('/api/admin/api-management/endpoints', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(endpointData),
-      })
-      if (!response.ok) throw new Error('Failed to create endpoint')
-      return response.json()
+      // 优先后端直连，失败回退原API
+      try {
+        const res = await fetch('/go/admin/api-management/endpoints', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(endpointData)
+        })
+        if (res.ok) return res.json()
+        throw new Error('backend create failed')
+      } catch {
+        const response = await fetch('/api/admin/api-management/endpoints', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(endpointData)
+        })
+        if (!response.ok) throw new Error('Failed to create endpoint')
+        return response.json()
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['api-endpoints'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'endpoints'] })
       setShowCreateEndpoint(false)
     },
   })
@@ -182,16 +154,22 @@ export function APIManager({ className }: APIManagerProps) {
   // Create API key mutation
   const createKeyMutation = useMutation({
     mutationFn: async (keyData: Partial<APIKey>) => {
-      const response = await fetch('/api/admin/api-management/keys', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(keyData),
-      })
-      if (!response.ok) throw new Error('Failed to create API key')
-      return response.json()
+      try {
+        const res = await fetch('/go/admin/api-management/keys', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(keyData)
+        })
+        if (res.ok) return res.json()
+        throw new Error('backend create failed')
+      } catch {
+        const response = await fetch('/api/admin/api-management/keys', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(keyData)
+        })
+        if (!response.ok) throw new Error('Failed to create API key')
+        return response.json()
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['api-keys'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'keys'] })
       setShowCreateKey(false)
     },
   })
