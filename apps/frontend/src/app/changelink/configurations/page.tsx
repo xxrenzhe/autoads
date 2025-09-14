@@ -90,20 +90,29 @@ export default function ConfigurationsPage() {
     loadConfigurations();
   }, []);
   
-  // HTTP 客户端
-  import { http } from '@/shared/http/client'
-
   const loadConfigurations = async () => {
     try {
       setLoading(true);
-      const result = await http.get<{ success: boolean; data: { configurations: any[] } }>(
-        '/adscenter/settings',
-        { type: 'configurations' }
-      );
-      
-      if ((result as any).success) {
-        setConfigurations((result as any).data.configurations);
-      }
+      const res = await http.get<any>('/adscenter/configurations');
+      const list: any[] = Array.isArray(res) ? res : (res as any)?.data || [];
+      const normalized = list.map((c: any) => {
+        const payload = c.payload || {};
+        return {
+          id: c.id,
+          name: c.name,
+          environmentId: payload.environmentId || '',
+          repeatCount: payload.repeatCount || 1,
+          notificationEmail: payload.notificationEmail || '',
+          originalLinks: Array.isArray(payload.originalLinks) ? payload.originalLinks : [],
+          googleAdsAccounts: Array.isArray(payload.googleAdsAccounts) ? payload.googleAdsAccounts : [],
+          adMappingConfig: Array.isArray(payload.adMappingConfig) ? payload.adMappingConfig : [],
+          status: c.status || 'active',
+          createdAt: c.createdAt || new Date().toISOString(),
+          updatedAt: c.updatedAt || c.createdAt || new Date().toISOString(),
+          lastExecuted: payload.lastExecuted,
+        } as Configuration;
+      });
+      setConfigurations(normalized);
     } catch (error) {
       console.error('加载配置失败:', error);
     } finally {
@@ -113,29 +122,25 @@ export default function ConfigurationsPage() {
 
   const handleCreateConfiguration = async () => {
     try {
-      const result = await http.post<{ success: boolean; data?: any; error?: string }>(
-        '/adscenter/settings',
-        {
-          type: 'configuration',
-          action: 'create',
-          data: {
-            ...formData,
-            originalLinks: formData.originalLinks.filter((link: any) => link.trim()),
-            googleAdsAccounts: formData.googleAdsAccounts.filter((acc: any) => acc.accountId.trim()),
-            adMappingConfig: formData.originalLinks.filter((link: any) => link.trim())?.filter(Boolean)?.map((link: any) => ({
-              originalUrl: link,
-              adMappings: []
-            }))
-          }
-        }
+      const payload = {
+        environmentId: formData.environmentId,
+        repeatCount: formData.repeatCount,
+        notificationEmail: formData.notificationEmail,
+        originalLinks: formData.originalLinks.filter((link: any) => link.trim()),
+        googleAdsAccounts: formData.googleAdsAccounts.filter((acc: any) => acc.accountId.trim()),
+        adMappingConfig: formData.originalLinks.filter((link: any) => link.trim()).map((link: any) => ({ originalUrl: link, adMappings: [] }))
+      };
+      const result = await http.post<any>(
+        '/adscenter/configurations',
+        { name: formData.name, description: '', payload }
       );
-      
-      if ((result as any).success) {
+
+      if ((result as any)?.success === false) {
+        alert('创建配置失败: ' + ((result as any)?.error || '未知错误'));
+      } else {
         setShowCreateDialog(false);
         resetForm();
         loadConfigurations();
-      } else {
-        alert('创建配置失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('创建配置失败:', error);
@@ -147,31 +152,26 @@ export default function ConfigurationsPage() {
     if (!selectedConfig) return;
 
     try {
-      const result = await http.post<{ success: boolean; error?: string }>(
-        '/adscenter/settings',
-        {
-          type: 'configuration',
-          action: 'update',
-          id: selectedConfig.id,
-          data: {
-            ...formData,
-            originalLinks: formData.originalLinks.filter((link: any) => link.trim()),
-            googleAdsAccounts: formData.googleAdsAccounts.filter((acc: any) => acc.accountId.trim()),
-            adMappingConfig: formData.originalLinks.filter((link: any) => link.trim())?.filter(Boolean)?.map((link: any) => ({
-              originalUrl: link,
-              adMappings: []
-            }))
-          }
-        }
+      const payload = {
+        environmentId: formData.environmentId,
+        repeatCount: formData.repeatCount,
+        notificationEmail: formData.notificationEmail,
+        originalLinks: formData.originalLinks.filter((link: any) => link.trim()),
+        googleAdsAccounts: formData.googleAdsAccounts.filter((acc: any) => acc.accountId.trim()),
+        adMappingConfig: formData.originalLinks.filter((link: any) => link.trim()).map((link: any) => ({ originalUrl: link, adMappings: [] }))
+      };
+      const result = await http.put<any>(
+        `/adscenter/configurations/${selectedConfig.id}`,
+        { name: formData.name, payload }
       );
-      
-      if ((result as any).success) {
+
+      if ((result as any)?.success === false) {
+        alert('更新配置失败: ' + ((result as any)?.error || '未知错误'));
+      } else {
         setShowEditDialog(false);
         setSelectedConfig(null);
         resetForm();
         loadConfigurations();
-      } else {
-        alert('更新配置失败: ' + (result as any).error);
       }
     } catch (error) {
       console.error('更新配置失败:', error);
@@ -183,19 +183,11 @@ export default function ConfigurationsPage() {
     if (!confirm('确定要删除这个配置吗？')) return;
 
     try {
-      const result = await http.post<{ success: boolean; error?: string }>(
-        '/adscenter/settings',
-        {
-          type: 'configuration',
-          action: 'delete',
-          id
-        }
-      );
-      
-      if ((result as any).success) {
-        loadConfigurations();
+      const result = await http.delete<any>(`/adscenter/configurations/${id}`);
+      if ((result as any)?.success === false) {
+        alert('删除配置失败: ' + ((result as any)?.error || '未知错误'));
       } else {
-        alert('删除配置失败: ' + (result as any).error);
+        loadConfigurations();
       }
     } catch (error) {
       console.error('删除配置失败:', error);
@@ -205,20 +197,14 @@ export default function ConfigurationsPage() {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      const result = await http.post<{ success: boolean; error?: string }>(
-        '/adscenter/settings',
-        {
-          type: 'configuration',
-          action: 'update-status',
-          id,
-          data: { status }
-        }
+      const result = await http.put<any>(
+        `/adscenter/configurations/${id}`,
+        { status }
       );
-      
-      if ((result as any).success) {
-        loadConfigurations();
+      if ((result as any)?.success === false) {
+        alert('更新状态失败: ' + ((result as any)?.error || '未知错误'));
       } else {
-        alert('更新状态失败: ' + (result as any).error);
+        loadConfigurations();
       }
     } catch (error) {
       console.error('更新状态失败:', error);
@@ -228,19 +214,11 @@ export default function ConfigurationsPage() {
 
   const handleExecuteConfiguration = async (id: string) => {
     try {
-      const result = await http.post<{ success: boolean; data?: any; error?: string }>(
-        '/adscenter/execute',
-        {
-          action: 'start',
-          configurationId: id,
-          userId: 'current_user'
-        }
-      );
-      
-      if ((result as any).success) {
-        alert(`执行已启动，执行ID: ${(result as any).data.executionId}`);
+      const result = await http.post<any>('/adscenter/executions', { configurationId: id });
+      if ((result as any)?.success === false) {
+        alert('启动执行失败: ' + ((result as any)?.error || '未知错误'));
       } else {
-        alert('启动执行失败: ' + (result as any).error);
+        alert('执行已启动');
       }
     } catch (error) {
       console.error('启动执行失败:', error);

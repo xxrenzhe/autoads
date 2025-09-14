@@ -192,6 +192,87 @@ export function APIManager({ className }: APIManagerProps) {
     return <AlertTriangle className="h-4 w-4 text-red-600" />
   }
 
+  // Backend-first update/delete helpers (fallback to /api)
+  const updateEndpointMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: Partial<APIEndpoint> }) => {
+      try {
+        const res = await fetch(`/go/admin/api-management/endpoints/${id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if (res.ok) return res.json();
+        throw new Error('backend update failed');
+      } catch {
+        const r = await fetch(`/api/admin/api-management/endpoints/${id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if (!r.ok) throw new Error('Failed to update endpoint');
+        return r.json();
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'endpoints'] });
+      queryClient.invalidateQueries({ queryKey: ['api-endpoints'] });
+    }
+  });
+
+  const deleteEndpointMutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        const res = await fetch(`/go/admin/api-management/endpoints/${id}`, { method: 'DELETE' });
+        if (res.ok) return true;
+        throw new Error('backend delete failed');
+      } catch {
+        const r = await fetch(`/api/admin/api-management/endpoints/${id}`, { method: 'DELETE' });
+        if (!r.ok) throw new Error('Failed to delete endpoint');
+        return true;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'endpoints'] });
+      queryClient.invalidateQueries({ queryKey: ['api-endpoints'] });
+    }
+  });
+
+  const updateKeyMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: Partial<APIKey> }) => {
+      try {
+        const res = await fetch(`/go/admin/api-management/keys/${id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if (res.ok) return res.json();
+        throw new Error('backend update failed');
+      } catch {
+        const r = await fetch(`/api/admin/api-management/keys/${id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if (!r.ok) throw new Error('Failed to update API key');
+        return r.json();
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'keys'] });
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+    }
+  });
+
+  const deleteKeyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        const res = await fetch(`/go/admin/api-management/keys/${id}`, { method: 'DELETE' });
+        if (res.ok) return true;
+        throw new Error('backend delete failed');
+      } catch {
+        const r = await fetch(`/api/admin/api-management/keys/${id}`, { method: 'DELETE' });
+        if (!r.ok) throw new Error('Failed to delete API key');
+        return true;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'keys'] });
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+    }
+  });
+
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Live region for announcements */}
@@ -448,6 +529,12 @@ export function APIManager({ className }: APIManagerProps) {
                                 variant="outline" 
                                 size="sm"
                                 aria-label={`Edit ${endpoint.path} endpoint`}
+                                onClick={() => {
+                                  const newDesc = window.prompt('Update endpoint description:', endpoint.description || '')
+                                  if (newDesc !== null) {
+                                    updateEndpointMutation.mutate({ id: String(endpoint.id || endpoint.path), payload: { description: newDesc } })
+                                  }
+                                }}
                               >
                                 <Edit className="h-3 w-3" aria-hidden="true" />
                                 <span className="sr-only">Edit</span>
@@ -456,6 +543,11 @@ export function APIManager({ className }: APIManagerProps) {
                                 variant="destructive" 
                                 size="sm"
                                 aria-label={`Delete ${endpoint.path} endpoint`}
+                                onClick={() => {
+                                  if (window.confirm(`Delete endpoint ${endpoint.path}?`)) {
+                                    deleteEndpointMutation.mutate(String(endpoint.id || endpoint.path))
+                                  }
+                                }}
                               >
                                 <Trash2 className="h-3 w-3" aria-hidden="true" />
                                 <span className="sr-only">Delete</span>
@@ -610,6 +702,12 @@ export function APIManager({ className }: APIManagerProps) {
                               size="sm" 
                               className="flex-1"
                               aria-label={`Edit ${key.name} API key`}
+                              onClick={() => {
+                                const newName = window.prompt('Update API key name:', key.name)
+                                if (newName !== null && newName.trim().length > 0) {
+                                  updateKeyMutation.mutate({ id: String(key.id), payload: { name: newName } })
+                                }
+                              }}
                             >
                               <Edit className="h-3 w-3 mr-1" aria-hidden="true" />
                               Edit
@@ -618,6 +716,11 @@ export function APIManager({ className }: APIManagerProps) {
                               variant="destructive" 
                               size="sm"
                               aria-label={`Delete ${key.name} API key`}
+                              onClick={() => {
+                                if (window.confirm(`Delete API key ${key.name}?`)) {
+                                  deleteKeyMutation.mutate(String(key.id))
+                                }
+                              }}
                             >
                               <Trash2 className="h-3 w-3" aria-hidden="true" />
                               <span className="sr-only">Delete</span>
