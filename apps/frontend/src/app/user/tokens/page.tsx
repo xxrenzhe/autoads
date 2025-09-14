@@ -134,6 +134,8 @@ export default function UserTokensPage() {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null)
   const [batchDetails, setBatchDetails] = useState<BatchOperationDetails | null>(null)
   const [loadingBatchDetails, setLoadingBatchDetails] = useState(false)
+  // 通过后端直连获取最近5条交易，作为补充信息（不破坏原有统计）
+  const { data: txData } = useTokenTransactions(1, 5)
 
   useEffect(() => {
     if (session?.user) {
@@ -618,8 +620,6 @@ export default function UserTokensPage() {
                   <div className="flex items-center space-x-2">
                     <Button
                       variant="outline"
-  // 通过后端直连获取最近5条交易，作为补充信息（不破坏原有统计）
-  const { data: txData } = useTokenTransactions(1, 5)
                       size="sm"
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage <= 1}

@@ -4,6 +4,8 @@
  */
 
 import { getServerConfig, getSyncClientConfig } from './config/runtime';
+import { analyticsEnabled, debugModeEnabled } from './config/feature-flags';
+import { getCachedRemoteConfig, getConfigValue } from './config/remote-config';
 
 export type EnvironmentType = 'development' | 'preview' | 'production';
 
@@ -159,13 +161,13 @@ export function getDomainConfig(): DomainConfig {
         isLocal: true,
         isHttps: false,
         apiBaseUrl: `${currentProtocol}://${currentDomain}/api`,
-        adsPowerApiUrl: process.env.NEXT_PUBLIC_ADSPOWER_API_URL || 'http://local.adspower.net:50325',
+        adsPowerApiUrl: ((): string => { const snap = getCachedRemoteConfig(); const remote = snap ? (getConfigValue<string>('integrations.adsPower.apiUrl', snap) || getConfigValue<string>('Integrations.AdsPower.BaseURL', snap)) : undefined; return remote || process.env.NEXT_PUBLIC_ADSPOWER_API_URL || 'http://local.adspower.net:50325'; })(),
         enableHttps: false, // 开发环境禁用HTTPS重定向
         secureCookies: false,
-        enableAnalytics: config.ENABLE_ANALYTICS || false,
+        enableAnalytics: analyticsEnabled(),
         enableErrorReporting: false,
         enablePerformanceMonitoring: false,
-        debugMode: config.DEBUG_MODE || true,
+        debugMode: debugModeEnabled(),
       };
       break;
       
@@ -177,13 +179,13 @@ export function getDomainConfig(): DomainConfig {
         isLocal: false,
         isHttps: true,
         apiBaseUrl: `https://${currentDomain}/api`,
-        adsPowerApiUrl: process.env.NEXT_PUBLIC_ADSPOWER_API_URL || 'http://local.adspower.net:50325',
+        adsPowerApiUrl: ((): string => { const snap = getCachedRemoteConfig(); const remote = snap ? (getConfigValue<string>('integrations.adsPower.apiUrl', snap) || getConfigValue<string>('Integrations.AdsPower.BaseURL', snap)) : undefined; return remote || process.env.NEXT_PUBLIC_ADSPOWER_API_URL || 'http://local.adspower.net:50325'; })(),
         enableHttps: true, // 预发环境启用HTTPS
         secureCookies: true,
-        enableAnalytics: config.ENABLE_ANALYTICS || true,
+        enableAnalytics: analyticsEnabled(),
         enableErrorReporting: true,
         enablePerformanceMonitoring: true,
-        debugMode: config.DEBUG_MODE || true,
+        debugMode: debugModeEnabled(),
       };
       break;
       
@@ -195,13 +197,13 @@ export function getDomainConfig(): DomainConfig {
         isLocal: false,
         isHttps: true,
         apiBaseUrl: `https://${currentDomain}/api`,
-        adsPowerApiUrl: process.env.NEXT_PUBLIC_ADSPOWER_API_URL || 'http://local.adspower.net:50325',
+        adsPowerApiUrl: ((): string => { const snap = getCachedRemoteConfig(); const remote = snap ? (getConfigValue<string>('integrations.adsPower.apiUrl', snap) || getConfigValue<string>('Integrations.AdsPower.BaseURL', snap)) : undefined; return remote || process.env.NEXT_PUBLIC_ADSPOWER_API_URL || 'http://local.adspower.net:50325'; })(),
         enableHttps: true, // 生产环境启用HTTPS
         secureCookies: true,
-        enableAnalytics: config.ENABLE_ANALYTICS || true,
+        enableAnalytics: analyticsEnabled(),
         enableErrorReporting: true,
         enablePerformanceMonitoring: true,
-        debugMode: config.DEBUG_MODE || false,
+        debugMode: debugModeEnabled(),
       };
       break;
       

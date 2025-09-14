@@ -5,6 +5,8 @@
  */
 
 import axios, { AxiosInstance } from 'axios';
+import { getCachedRemoteConfig } from '@/lib/config/remote-config';
+import { getConfigValue } from '@/lib/config/remote-config';
 import { v4 as uuidv4 } from 'uuid';
 import { EnhancedError } from '@/lib/utils/error-handling';
 
@@ -78,7 +80,13 @@ export class AdsPowerApiClient {
   private baseUrl: string;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl || process.env.NEXT_PUBLIC_ADSPOWER_API_URL || 'http://local.adspower.net:50325';
+    if (baseUrl) {
+      this.baseUrl = baseUrl;
+    } else {
+      const snap = getCachedRemoteConfig();
+      const remote = snap ? (getConfigValue<string>('integrations.adsPower.apiUrl', snap) || getConfigValue<string>('Integrations.AdsPower.BaseURL', snap)) : undefined;
+      this.baseUrl = remote || process.env.NEXT_PUBLIC_ADSPOWER_API_URL || 'http://local.adspower.net:50325';
+    }
     
     this.client = axios.create({
       baseURL: this.baseUrl,

@@ -1,5 +1,6 @@
 import { google } from 'googleapis'
 import { configService } from './config-service'
+import { getRemoteConfig, getConfigValue } from '@/lib/config/remote-config'
 
 class GmailService {
   private oauth2Client: any = null
@@ -9,8 +10,23 @@ class GmailService {
       return this.oauth2Client
     }
 
-    // Get OAuth configuration
-    const config = await configService.get('gmail_oauth')
+    // Get OAuth configuration: remote config first, DB fallback
+    let config: any = null
+    try {
+      const snap = await getRemoteConfig()
+      // 支持多种命名：integrations.gmail.* / Integrations.Gmail.*
+      const enabled = getConfigValue<boolean>('integrations.gmail.enabled', snap) ?? getConfigValue<boolean>('Integrations.Gmail.Enabled', snap)
+      const clientId = getConfigValue<string>('integrations.gmail.clientId', snap) ?? getConfigValue<string>('Integrations.Gmail.ClientID', snap)
+      const clientSecret = getConfigValue<string>('integrations.gmail.clientSecret', snap) ?? getConfigValue<string>('Integrations.Gmail.ClientSecret', snap)
+      const redirectUri = getConfigValue<string>('integrations.gmail.redirectUri', snap) ?? getConfigValue<string>('Integrations.Gmail.RedirectURI', snap)
+      if (typeof enabled !== 'undefined' || clientId || clientSecret || redirectUri) {
+        config = { enabled: !!enabled, clientId, clientSecret, redirectUri }
+      }
+    } catch {}
+    if (!config) {
+      config = await configService.get('gmail_oauth')
+    }
+    // Tokens 依旧使用 DB（动态刷新）
     const tokens = await configService.get('gmail_oauth_tokens')
 
     if (!config || !tokens || !config.enabled) {

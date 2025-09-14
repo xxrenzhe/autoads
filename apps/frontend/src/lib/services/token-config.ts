@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { getRedisClient } from '@/lib/cache/redis-client'
+import { getRemoteConfig, getConfigValue } from '@/lib/config/remote-config'
 
 // Token configuration types (lightweight, no zod dependency)
 export interface TokenConfig {
@@ -56,25 +57,7 @@ export class TokenConfigService {
     if (cached) {
       return JSON.parse(cached)
     }
-
-    // Get from database
-    const configs = await prisma.systemConfig.findMany({
-      where: {
-        key: {
-          in: [
-            'token.siterank.costPerDomain',
-            'token.siterank.batchMultiplier',
-            'token.batchopen.costPerUrl', 
-            'token.batchopen.batchMultiplier',
-            'token.adscenter.costPerLinkChange',
-            'token.adscenter.batchMultiplier'
-          ]
-        }
-      },
-      select: { key: true, value: true }
-    })
-
-    // Build config object with defaults
+    // 默认配置（作为远端/数据库读取失败的兜底）
     const config: TokenConfig = {
       siterank: {
         costPerDomain: 1,
@@ -93,15 +76,43 @@ export class TokenConfigService {
       }
     }
 
-    // Apply database values
-    configs.forEach((item: any) => {
-      const [, feature, setting] = item.key.split('.')
-      if (feature && setting && (config as any)[feature]) {
-        const parsed = parseFloat(item.value)
-        const value = Number.isFinite(parsed) ? parsed : item.value
-        ;(config as any)[feature][setting] = value
-      }
-    })
+    // 1) 优先：远端只读配置（/go/admin/config/v1）
+    try {
+      const snap = await getRemoteConfig()
+      const sCost = getConfigValue<number>('token.siterank.costPerDomain', snap)
+      const sMul  = getConfigValue<number>('token.siterank.batchMultiplier', snap)
+      const bCost = getConfigValue<number>('token.batchopen.costPerUrl', snap)
+      const bMul  = getConfigValue<number>('token.batchopen.batchMultiplier', snap)
+      const aCost = getConfigValue<number>('token.adscenter.costPerLinkChange', snap)
+      const aMul  = getConfigValue<number>('token.adscenter.batchMultiplier', snap)
+      if (typeof sCost === 'number') config.siterank.costPerDomain = sCost
+      if (typeof sMul === 'number')  config.siterank.batchMultiplier = Math.max(0, Math.min(1, sMul))
+      if (typeof bCost === 'number') config.batchopen.costPerUrl = bCost
+      if (typeof bMul === 'number')  config.batchopen.batchMultiplier = Math.max(0, Math.min(1, bMul))
+      if (typeof aCost === 'number') config.adscenter.costPerLinkChange = aCost
+      if (typeof aMul === 'number')  config.adscenter.batchMultiplier = Math.max(0, Math.min(1, aMul))
+    } catch {
+      // 2) 兜底：从数据库读取旧配置（保持兼容）
+      const configs = await prisma.systemConfig.findMany({
+        where: { key: { in: [
+          'token.siterank.costPerDomain',
+          'token.siterank.batchMultiplier',
+          'token.batchopen.costPerUrl',
+          'token.batchopen.batchMultiplier',
+          'token.adscenter.costPerLinkChange',
+          'token.adscenter.batchMultiplier'
+        ]}},
+        select: { key: true, value: true }
+      })
+      configs.forEach((item: any) => {
+        const [, feature, setting] = item.key.split('.')
+        if (feature && setting && (config as any)[feature]) {
+          const parsed = parseFloat(item.value)
+          const value = Number.isFinite(parsed) ? parsed : item.value
+          ;(config as any)[feature][setting] = value
+        }
+      })
+    }
 
     // Cache the result
     await redis.setex(

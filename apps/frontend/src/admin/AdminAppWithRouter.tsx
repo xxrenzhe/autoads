@@ -22,8 +22,9 @@ import {
 } from '@mui/icons-material';
 import { Route } from 'react-router-dom';
 
-// Feature flag controlled by environment variable (default false)
-const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true';
+// Feature flag from remote-config (ENV fallback)
+import { paymentsEnabled } from '@/lib/config/feature-flags';
+const PAYMENTS_ENABLED = paymentsEnabled();
 
 // Providers
 import { autoAdsDataProvider } from './providers/AutoAdsDataProvider';

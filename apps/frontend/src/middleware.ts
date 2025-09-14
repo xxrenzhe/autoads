@@ -31,6 +31,29 @@ const logger = createLogger('AccessLogMiddleware');
 // 全局变量，确保只初始化一次
 let logRotationInitialized = false;
 
+// 轻量 per-IP 限流（内存级，最终以 Go 判定为准）
+// 注意：中间件运行于 Edge/无共享状态环境，以下实现仅作“尽力而为”的本地保护。
+// 生产环境真实限流以 Go/Redis 为准。
+type WindowEntry = { count: number; resetAt: number };
+const ipBuckets: Map<string, WindowEntry> = new Map();
+const RPM = Number(process.env.FRONTEND_LIGHT_RPM || '300');
+const WINDOW_MS = 60_000; // 1 分钟
+
+function ipRateLimited(ip: string): { limited: boolean; resetSec: number; remaining: number } {
+  const now = Date.now();
+  const entry = ipBuckets.get(ip);
+  if (!entry || entry.resetAt <= now) {
+    ipBuckets.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    return { limited: false, resetSec: Math.ceil(WINDOW_MS / 1000), remaining: RPM - 1 };
+  }
+  if (entry.count >= RPM) {
+    const remainingMs = Math.max(0, entry.resetAt - now);
+    return { limited: true, resetSec: Math.ceil(remainingMs / 1000), remaining: 0 };
+  }
+  entry.count++;
+  return { limited: false, resetSec: Math.ceil((entry.resetAt - now) / 1000), remaining: RPM - entry.count };
+}
+
 // 从请求中提取用户ID的辅助函数
 async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
   try {
@@ -123,6 +146,19 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isApiRoute = pathname.startsWith('/api/');
+  const isGoProxy = pathname.startsWith('/go/');
+
+  // 轻量 per-IP 保护：仅针对 Next 自身 API 路由，跳过 /go/* 以避免与后端限流重复
+  if (isApiRoute && !isGoProxy) {
+    const ip = (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const rl = ipRateLimited(String(ip));
+    if (rl.limited) {
+      return new NextResponse(
+        JSON.stringify({ code: 429, message: 'Too many requests (frontend light limit)' }),
+        { status: 429, headers: { 'content-type': 'application/json', 'Retry-After': String(rl.resetSec), 'X-RateLimit-Limit': String(RPM), 'X-RateLimit-Remaining': String(rl.remaining) } }
+      );
+    }
+  }
   // 路由改名：/changelink -> /adscenter（保持向后兼容）
   if (!isApiRoute && pathname.startsWith('/changelink')) {
     const target = new URL(request.url);
@@ -149,7 +185,7 @@ export async function middleware(request: NextRequest) {
   
   // 记录访问日志（生产环境和调试模式）
   const shouldLog = process.env.NODE_ENV === 'production' || 
-                   process.env.NEXT_PUBLIC_DEBUG_MODE === 'true';
+                   (process.env.NEXT_PUBLIC_DEBUG_MODE === 'true');
   
   if (shouldLog) {
     const url = new URL(request.url);
@@ -201,13 +237,17 @@ export async function middleware(request: NextRequest) {
     }
   } catch {}
 
+  // 注入/透传 X-Request-Id，贯穿链路
+  const reqId = request.headers.get('x-request-id') || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
   // 将安全事件写入“请求头”，供后续 Route Handler 读取
   const requestHeaders = new Headers(request.headers);
   if (securityHeader) {
     requestHeaders.set('x-security-event', securityHeader);
   }
+  requestHeaders.set('x-request-id', reqId);
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('x-response-time', responseTime.toString());
+  try { response.headers.set('x-request-id', reqId); } catch {}
   return response;
 }
 

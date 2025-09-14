@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/v5-config'
 import { prisma } from '@/lib/prisma'
 import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware'
+import { withApiProtection } from '@/lib/api-utils'
 import { getRedisClient } from '@/lib/cache/redis-client'
 
 export const dynamic = 'force-dynamic'
@@ -56,4 +57,4 @@ async function handlePOST(_req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({ success: true, updatedTable: updated })
 }
 
-export const POST = withFeatureGuard(handlePOST as any, { featureId: 'adscenter_basic', requireToken: false })
+export const POST = withFeatureGuard(withApiProtection('adsCenter')(handlePOST as any) as any, { featureId: 'adscenter_basic' })

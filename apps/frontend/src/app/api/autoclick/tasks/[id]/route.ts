@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/v5-config';
 import { AutoClickService } from '@/lib/autoclick-service';
 import { UpdateAutoClickTaskInput } from '@/types/autoclick';
+import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware';
 
 const autoClickService = new AutoClickService();
 
@@ -12,7 +13,7 @@ interface RouteParams {
 }
 
 // GET /api/autoclick/tasks/[id] - 获取单个任务
-export async function GET(request: NextRequest, { params }: RouteParams) {
+async function handleGET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await auth();
     if (!session?.userId) {
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 // PUT /api/autoclick/tasks/[id] - 更新任务
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+async function handlePUT(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await auth();
     if (!session?.userId) {
@@ -84,7 +85,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 // DELETE /api/autoclick/tasks/[id] - 删除任务
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+async function handleDELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await auth();
     if (!session?.userId) {
@@ -112,3 +113,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
+
+export const GET = withFeatureGuard(handleGET as any, { featureId: 'batchopen_pro' });
+export const PUT = withFeatureGuard(handlePUT as any, { featureId: 'batchopen_pro' });
+export const DELETE = withFeatureGuard(handleDELETE as any, { featureId: 'batchopen_pro' });

@@ -5,9 +5,12 @@ import { UI_CONSTANTS } from "@/components/ui/ui-constants";
 import GenericStepsSection from "@/components/common/GenericStepsSection";
 import { BatchOpenSection } from "@/components/BatchOpenSection";
 import { Link, Zap, Shield, Globe } from "lucide-react";
+import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal';
+import { Button } from '@/components/ui/button';
 
 export default function BatchOpenClientPage() {
   const { t, isLoading, locale } = useLanguage();
+  const [showWeChatModal, setShowWeChatModal] = React.useState(false);
 
   // 如果语言还在加载中，显示加载状态
   if (isLoading) {
@@ -32,12 +35,22 @@ export default function BatchOpenClientPage() {
     <div className={`min-h-screen ${UI_CONSTANTS.gradients.hero}`}>
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
+          <WeChatSubscribeModal
+            open={showWeChatModal}
+            onOpenChange={setShowWeChatModal}
+            scenario="batchopen_entry"
+          />
           {/* 页面标题 */}
           <header className="text-center mb-12">
             <h1 className={UI_CONSTANTS.typography.h1}>真实点击</h1>
             <p className={`${UI_CONSTANTS.typography.subtitle} max-w-3xl mx-auto`}>
               零插件实现云端真实访问，支持代理IP轮换，Referer随心设置，真实模拟用户请求
             </p>
+            <div className="mt-4 flex items-center justify-center">
+              <Button variant="outline" onClick={() => setShowWeChatModal(true)}>
+                了解与开通静默/自动化版本
+              </Button>
+            </div>
           </header>
 
           {/* 批量打开功能 - 免登录访问，但功能按钮需要登录 */}

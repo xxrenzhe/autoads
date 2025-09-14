@@ -108,3 +108,29 @@ cp .env.example .env
 ## 许可证
 
 MIT License
+## 运行时限流与缓存配置
+
+为便于运营与排障，Next 侧提供轻量限流与缓存控制。注意：最终限流以后端/Go 为权威；Next 侧用于提示/保护。
+
+### 速率限制（每分钟配额）
+
+通过环境变量热调：
+
+- `RATE_LIMIT_API_PER_MINUTE`（默认 100）
+- `RATE_LIMIT_SITERANK_PER_MINUTE`（默认 30）
+- `RATE_LIMIT_ADSCENTER_PER_MINUTE`（默认 20）
+- `RATE_LIMIT_BATCHOPEN_PER_MINUTE`（默认 10）
+- `RATE_LIMIT_AUTH_PER_MINUTE`（默认 5）
+
+路由返回头包含 `X-RateLimit-*`（提示用途），配合中间件 `withApiProtection` 使用。
+
+### SiteRank 缓存控制
+
+- 成功结果缓存 7 天，错误结果缓存 1 小时；命中缓存仅用于提速，“命中缓存仍全额扣费”。
+- 可用 `SITERANK_CACHE_DISABLED=true` 临时禁用 SiteRank 缓存（用于应急回滚与排障）。
+- `forceRefresh=true` 参数可强制刷新单个域名缓存（Rank 路由）。
+
+### 可观测
+
+- 全局注入/透传 `X-Request-Id`；核心路由返回 `Server-Timing: upstream;dur=<ms>`。
+- SiteRank 返回 `X-Cache-Hit: <hit>/<total>`（提示用途）。

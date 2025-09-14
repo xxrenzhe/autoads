@@ -5,8 +5,7 @@ import { FeaturePermissionService } from '@/lib/services/feature-permission-serv
 export interface FeatureGuardOptions {
   featureId?: string;
   featureIdResolver?: (session: any) => string | Promise<string>;
-  requireToken?: boolean; // 是否需要消耗Token
-  getTokenCost?: (request: NextRequest) => number | Promise<number>;
+  // 注意：根据最新策略，功能守卫仅负责权限校验，不做任何扣费与余额判断。
 }
 
 /**
@@ -58,39 +57,7 @@ export function withFeatureGuard(
         );
       }
 
-      // 如果需要Token检查
-      if (options.requireToken) {
-        const { TokenService } = await import('@/lib/services/token-service');
-        const tokenCost = options.getTokenCost 
-          ? await options.getTokenCost(request)
-          : 1;
-
-        const tokenResult = await TokenService.checkAndConsumeTokens(
-          userId,
-          featureId,
-          'access',
-          {
-            batchSize: tokenCost,
-            metadata: {
-              endpoint: request.url,
-              method: request.method,
-              featureId
-            }
-          }
-        );
-
-        if (!tokenResult.success) {
-          return NextResponse.json(
-            {
-              error: tokenResult.error || 'Insufficient tokens',
-              code: 'INSUFFICIENT_TOKENS',
-              required: tokenCost,
-              balance: tokenResult.newBalance
-            },
-            { status: 402 }
-          );
-        }
-      }
+      // 按最新策略：守卫只做权限校验，不做余额预检或扣费。
 
       // 在响应头中添加功能限制信息
       const response = await handler(request, userId, ...args);
@@ -115,26 +82,7 @@ export function withFeatureGuard(
   };
 }
 
-/**
- * 创建批量查询的Token消耗函数
- */
-export function createBatchTokenCostExtractor(
-  domainsKey: string = 'domains'
-) {
-  return async (request: NextRequest): Promise<number> => {
-    if (request.method !== 'POST') {
-      return 1;
-    }
-
-    try {
-      const body = await request.clone().json();
-      const domains = body[domainsKey] || [];
-      return domains.length;
-    } catch {
-      return 1;
-    }
-  };
-}
+// 已废弃：守卫不再参与 Token 计算或扣费
 
 /**
  * 权限检查Hook（用于客户端）

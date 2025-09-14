@@ -21,6 +21,8 @@ export function isDockerEnvironment(): boolean {
 /**
  * 获取 Docker 环境配置
  */
+import { debugModeEnabled } from '@/lib/config/feature-flags';
+
 export function getDockerConfig() {
   return {
     isDocker: isDockerEnvironment(),
@@ -30,7 +32,7 @@ export function getDockerConfig() {
     enableApplicationLogs: true,
     enableErrorTracking: true,
     environment: process.env.NODE_ENV || 'production',
-    debugMode: process.env.NEXT_PUBLIC_DEBUG_MODE === 'true'
+    debugMode: debugModeEnabled()
   };
 }
 
@@ -83,7 +85,7 @@ export function applyDockerConfiguration() {
     process.env.LOG_TO_STDOUT = 'true';
     
     // 设置日志级别
-    if (process.env.NEXT_PUBLIC_DEBUG_MODE === 'true') {
+    if (debugModeEnabled()) {
       process.env.LOG_LEVEL = 'debug';
     } else {
       process.env.LOG_LEVEL = 'info';

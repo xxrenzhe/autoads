@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const userId = session.user.id
 
   const stream = new ReadableStream({
-    start: (controller) => {
+    start: async (controller) => {
       const encoder = new TextEncoder()
 
       const send = (data: any) => {
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         } catch {}
       }
       try {
-        await redis.subscribe(channel)
+        if (redis.subscribe) await redis.subscribe(channel)
         if (redis.on) redis.on('message', onMessage)
       } catch {}
 

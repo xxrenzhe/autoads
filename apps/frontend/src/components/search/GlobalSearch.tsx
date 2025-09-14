@@ -134,57 +134,18 @@ const searchableItems: SearchResult[] = [
   {
     id: 'admin-panel',
     title: 'Admin Panel',
-    description: 'System administration dashboard',
-    href: '/admin',
+    description: 'System administration dashboard (GoFly Admin)',
+    href: '/go/admin/gofly-panel',
     category: 'admin',
     icon: Shield,
     requiresRole: ['ADMIN', 'SUPER_ADMIN']
   },
-  {
-    id: 'user-management',
-    title: 'User Management',
-    description: 'Manage users and permissions',
-    href: '/admin/users',
-    category: 'admin',
-    icon: User,
-    requiresRole: ['ADMIN', 'SUPER_ADMIN']
-  },
-  {
-    id: 'security-dashboard',
-    title: 'Security Dashboard',
-    description: 'Monitor security threats and audit logs',
-    href: '/admin/security',
-    category: 'admin',
-    icon: Shield,
-    requiresRole: ['ADMIN', 'SUPER_ADMIN']
-  },
-  {
-    id: 'system-monitoring',
-    title: 'System Monitoring',
-    description: 'Monitor system health and performance',
-    href: '/admin/monitoring',
-    category: 'admin',
-    icon: Activity,
-    requiresRole: ['ADMIN', 'SUPER_ADMIN']
-  },
-  {
-    id: 'token-config',
-    title: 'Token Configuration',
-    description: 'Configure token costs and pricing',
-    href: '/admin/tokens',
-    category: 'admin',
-    icon: Settings,
-    requiresRole: ['ADMIN', 'SUPER_ADMIN']
-  },
-  {
-    id: 'token-analytics',
-    title: 'Token Analytics',
-    description: 'View system-wide token analytics',
-    href: '/admin/tokens/analytics',
-    category: 'admin',
-    icon: BarChart3,
-    requiresRole: ['ADMIN', 'SUPER_ADMIN']
-  },
+  // 其余管理入口统一指向 GoFly Admin 面板
+  { id: 'user-management', title: 'User Management', description: 'Manage users and permissions', href: '/go/admin/gofly-panel', category: 'admin', icon: User, requiresRole: ['ADMIN','SUPER_ADMIN'] },
+  { id: 'security-dashboard', title: 'Security Dashboard', description: 'Monitor security threats and audit logs', href: '/go/admin/gofly-panel', category: 'admin', icon: Shield, requiresRole: ['ADMIN','SUPER_ADMIN'] },
+  { id: 'system-monitoring', title: 'System Monitoring', description: 'System health and performance', href: '/go/admin/gofly-panel', category: 'admin', icon: Activity, requiresRole: ['ADMIN','SUPER_ADMIN'] },
+  { id: 'token-config', title: 'Token Configuration', description: 'Configure token costs and pricing', href: '/go/admin/gofly-panel', category: 'admin', icon: Settings, requiresRole: ['ADMIN','SUPER_ADMIN'] },
+  { id: 'token-analytics', title: 'Token Analytics', description: 'View token analytics', href: '/go/admin/gofly-panel', category: 'admin', icon: BarChart3, requiresRole: ['ADMIN','SUPER_ADMIN'] },
 
   // Help & Documentation
   {

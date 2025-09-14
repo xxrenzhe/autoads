@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/v5-config'
 import { prisma } from '@/lib/prisma'
 import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware'
+import { withApiProtection } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -73,7 +74,6 @@ async function handleDELETE(_req: NextRequest, { params }: { params: { id: strin
   return NextResponse.json({ success: true })
 }
 
-export const GET = withFeatureGuard(handleGET as any, { featureId: 'adscenter_basic', requireToken: false })
-export const PUT = withFeatureGuard(handlePUT as any, { featureId: 'adscenter_basic', requireToken: false })
-export const DELETE = withFeatureGuard(handleDELETE as any, { featureId: 'adscenter_basic', requireToken: false })
-
+export const GET = withFeatureGuard(withApiProtection('adsCenter')(handleGET as any) as any, { featureId: 'adscenter_basic' })
+export const PUT = withFeatureGuard(withApiProtection('adsCenter')(handlePUT as any) as any, { featureId: 'adscenter_basic' })
+export const DELETE = withFeatureGuard(withApiProtection('adsCenter')(handleDELETE as any) as any, { featureId: 'adscenter_basic' })

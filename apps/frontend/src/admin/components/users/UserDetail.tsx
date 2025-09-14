@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { User } from './UserList'
 import { UserSubscriptionManager } from './UserSubscriptionManager'
+import UserTokenRecharge from './UserTokenRecharge'
 
 export interface UserDetailProps {
   user: User
@@ -182,7 +183,20 @@ export function UserDetail({
           >
             <Edit className="h-4 w-4 mr-2" />
             Edit
-          </Button>
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => {
+                  setActiveTab('subscription')
+                  setTimeout(() => {
+                    document.getElementById('user-token-recharge')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }, 50)
+                }}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Recharge Tokens
+              </Button>
           <Button
             variant="destructive"
             size="sm"
@@ -357,6 +371,13 @@ export function UserDetail({
             onSubscriptionChange={() => {
               // Refresh user data to show updated subscription
               window.location.reload()
+            }}
+          />
+          <UserTokenRecharge
+            userId={user.id}
+            id="user-token-recharge"
+            onRecharged={() => {
+              // 充值后可刷新页面或触发父级数据刷新
             }}
           />
         </TabsContent>

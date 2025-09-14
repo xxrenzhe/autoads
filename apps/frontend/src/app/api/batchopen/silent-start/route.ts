@@ -6,9 +6,11 @@ import { resultService } from '@/lib/services/result-service';
 import { BATCH_OPEN_CONFIG, getConcurrencyLimit } from '@/config/batch-open';
 import { preCalculateTotalVisits } from '@/lib/utils/visit-calculator';
 import { withBatchOpenTokenTracking, batchOpenTokenTrackingConfig } from '@/lib/middleware/batchopen-token-middleware';
+import { TokenService } from '@/lib/services/token-service';
 import { requireFeature } from '@/lib/utils/subscription-based-api';
 import { withApiErrorHandling } from '@/lib/utils/api-error-middleware';
 import { withFeatureMonitoring } from '@/lib/feature-monitor';
+import { withApiProtection } from '@/lib/api-utils';
 import { withConcurrentLimit } from '@/lib/concurrent-limit';
 import { taskQueue } from '@/lib/task-queue';
 
@@ -95,6 +97,22 @@ async function handlePOST(request: NextRequest, context: any) {
     let actualTotalVisits = parsedBody.actualTotalVisits;
     if (!actualTotalVisits) {
       actualTotalVisits = parsedBody.urls.length * parsedBody.cycleCount;
+    }
+
+    // 预检余额（不扣费），按“URL数量 × 循环次数”计费
+    const requiredTokens = actualTotalVisits || (parsedBody.urls.length * parsedBody.cycleCount);
+    const currentUserId = user?.id as string | undefined;
+    if (currentUserId) {
+      const check = await TokenService.checkTokenBalance(currentUserId, requiredTokens);
+      if (!check.sufficient) {
+        return {
+          success: false,
+          error: 'Insufficient token balance',
+          code: 'INSUFFICIENT_TOKENS',
+          required: check.required,
+          balance: check.currentBalance
+        } as any;
+      }
     }
     
     // 获取代理地理位置信息（如果启用优化）
@@ -196,6 +214,22 @@ async function handlePOST(request: NextRequest, context: any) {
         completed: result.completed,
         failed: result.failed
       });
+      // 成功后扣费：仅当任务成功
+      try {
+        if (result.success && currentUserId && requiredTokens > 0) {
+          await TokenService.consumeTokens(currentUserId, 'batchopen', 'url_access', {
+            batchSize: requiredTokens,
+            metadata: {
+              endpoint: '/api/batchopen/silent-start',
+              urls: parsedBody.urls.length,
+              cycleCount: parsedBody.cycleCount,
+              accessMode: parsedBody.accessMode || 'http'
+            }
+          });
+        }
+      } catch (e) {
+        logger.warn('Post-success token consumption failed for batchopen', { message: e instanceof Error ? e.message : String(e) });
+      }
       
     }).catch(async (error) => {
       logger.error('任务执行异常', error instanceof Error ? error : new Error(String(error)), { 
@@ -303,4 +337,4 @@ const enhancedHandler = withFeatureMonitoring('batchopen', async (request: NextR
   })(request);
 });
 
-export const POST = enhancedHandler;
+export const POST = withApiProtection('batchOpen')(enhancedHandler as any) as any;

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/v5-config';
 import { AutoClickService } from '@/lib/autoclick-service';
-import { CreateAutoClickTaskInput, UpdateAutoClickTaskInput } from '@/types/autoclick';
+import { CreateAutoClickTaskInput } from '@/types/autoclick';
+import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware';
 
 const autoClickService = new AutoClickService();
 
 // GET /api/autoclick/tasks - 获取任务列表
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.userId) {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/autoclick/tasks - 创建任务
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.userId) {
@@ -72,3 +73,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const GET = withFeatureGuard(handleGET as any, { featureId: 'batchopen_pro' });
+export const POST = withFeatureGuard(handlePOST as any, { featureId: 'batchopen_pro' });

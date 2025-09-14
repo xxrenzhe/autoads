@@ -10,6 +10,7 @@ import AutoClickProgressMonitor from '@/components/AutoClickProgressMonitor';
 import { AlertCircle, CheckCircle, Clock, Play, Pause, Square, Settings, BarChart3, Lock } from 'lucide-react';
 import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
 import Link from 'next/link';
+import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal';
 
 interface AutoClickTask {
   id: string;
@@ -51,6 +52,11 @@ export default function AutoClickBatch({ locale, t }: AutoClickBatchProps) {
 
   // Check if user has access to autoclick version
   const hasAutoClickAccess = subscriptionLimits?.limits?.batchopen?.versions?.includes('autoclick') || false;
+  // WeChat modal state
+  const [showWeChatModal, setShowWeChatModal] = useState(false);
+  const [modalScenario, setModalScenario] = useState<'insufficient_balance' | 'upgrade_required'>('upgrade_required');
+  const [modalRequired, setModalRequired] = useState<number | undefined>(undefined);
+  const [modalBalance, setModalBalance] = useState<number | undefined>(undefined);
 
   // 获取任务列表
   const fetchTasks = async () => {
@@ -99,8 +105,19 @@ export default function AutoClickBatch({ locale, t }: AutoClickBatchProps) {
         setShowForm(false);
         fetchTasks();
       } else {
-        const error = await response.json();
-        alert(error.error || '创建任务失败');
+        let error: any = null;
+        try { error = await response.json(); } catch {}
+        if (response.status === 402) {
+          setModalScenario('insufficient_balance');
+          setModalRequired(error?.required);
+          setModalBalance(error?.balance);
+          setShowWeChatModal(true);
+        } else if (response.status === 403) {
+          setModalScenario('upgrade_required');
+          setShowWeChatModal(true);
+        } else {
+          alert(error?.error || '创建任务失败');
+        }
       }
     } catch (error) {
       console.error('Failed to create task:', error);
@@ -120,8 +137,19 @@ export default function AutoClickBatch({ locale, t }: AutoClickBatchProps) {
       if (response.ok) {
         fetchTasks();
       } else {
-        const error = await response.json();
-        alert(error.error || '操作失败');
+        let error: any = null;
+        try { error = await response.json(); } catch {}
+        if (response.status === 402) {
+          setModalScenario('insufficient_balance');
+          setModalRequired(error?.required);
+          setModalBalance(error?.balance);
+          setShowWeChatModal(true);
+        } else if (response.status === 403) {
+          setModalScenario('upgrade_required');
+          setShowWeChatModal(true);
+        } else {
+          alert(error?.error || '操作失败');
+        }
       }
     } catch (error) {
       console.error('Failed to update task:', error);
@@ -160,6 +188,13 @@ export default function AutoClickBatch({ locale, t }: AutoClickBatchProps) {
 
   return (
     <div className="space-y-6">
+      <WeChatSubscribeModal
+        open={showWeChatModal}
+        onOpenChange={setShowWeChatModal}
+        scenario={modalScenario}
+        requiredTokens={modalRequired}
+        currentBalance={modalBalance}
+      />
   
       
       {/* 创建任务按钮 */}
@@ -170,7 +205,8 @@ export default function AutoClickBatch({ locale, t }: AutoClickBatchProps) {
             if (!session) {
               openLoginModal('autoclick');
             } else if (!hasAutoClickAccess) {
-              window.location.href = '/pricing';
+              setModalScenario('upgrade_required');
+              setShowWeChatModal(true);
             } else {
               setShowForm(!showForm);
             }

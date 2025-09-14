@@ -19,7 +19,10 @@ import { EnhancedError } from '@/lib/utils/error-handling';
 import { defaultSiteRankConfig, validateBatchQueryCount } from '@/lib/config/siterank';
 import { ProtectedButton } from '@/components/auth/ProtectedButton';
 import { useTokenConsumption } from '@/hooks/useTokenConsumption';
+import { getUiDefaultRpm, fetchUiDefaultRpm, getPlanFeatureRpmSync } from '@/lib/config/rate-limit';
+import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal';
 import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
+import { getUiDefaultRpm, fetchUiDefaultRpm } from '@/lib/config/rate-limit';
 const logger = createClientLogger('SiteRankClient');
 
 
@@ -50,6 +53,9 @@ export default function SiteRankClient() {
   const [hasQueried, setHasQueried] = useState(false);
   const [isBackgroundQuerying, setIsBackgroundQuerying] = useState(false);
   const [progressText, setProgressText] = useState("");
+  const [showWeChatModal, setShowWeChatModal] = useState(false);
+  const [modalRequired, setModalRequired] = useState<number | undefined>(undefined);
+  const [modalBalance, setModalBalance] = useState<number | undefined>(undefined);
 
   // 示例数据
   const exampleData = [
@@ -140,7 +146,7 @@ export default function SiteRankClient() {
   }, []);
 
   // 分析引擎
-  const { startAnalysis, rateLimitStatus, getEstimatedCompletionTime } = useAnalysisEngine({
+  const { startAnalysis, rateLimitStatus, getEstimatedCompletionTime, cacheStats } = useAnalysisEngine({
     domains: fileDomains.length > 0 ? fileDomains : domainList,
     originalData: fileDomains.length > 0 ? fileRows : domainList.map((domain: any) => ({ domain } as Record<string, string | number | null | undefined>)),
     locale: displayLocale,
@@ -154,6 +160,17 @@ export default function SiteRankClient() {
       }
     },
   });
+
+  // UI 限流提示（展示）
+  const [uiRateLimitMax, setUiRateLimitMax] = useState<number>(getUiDefaultRpm());
+  const [planRpm, setPlanRpm] = useState<number | undefined>(undefined);
+  const [featureRpm, setFeatureRpm] = useState<number | undefined>(undefined);
+  useEffect(() => { fetchUiDefaultRpm().then(setUiRateLimitMax).catch(() => {}); }, []);
+  useEffect(() => {
+    const planId = subscriptionData?.planId;
+    const { planRpm: p, featureRpm: f } = getPlanFeatureRpmSync(planId, 'siterank');
+    setPlanRpm(p); setFeatureRpm(f);
+  }, [subscriptionData?.planId]);
 
   // 开始分析处理
   const handleStartAnalysis = async () => {
@@ -172,21 +189,30 @@ export default function SiteRankClient() {
       const requiredTokens = domainCount;
       
       // 检查并消耗Token
-      const tokenResult = await consumeTokens(
-        'siterank',
-        'batch_analysis',
-        requiredTokens,
-        {
-          itemCount: domainCount,
-          description: `网站排名分析 - ${domainCount}个域名`,
-          onInsufficientBalance: () => {
-            setFileError('Token余额不足，请充值后重试');
+      // 默认改为后端路由处理预检与扣费；如需前置扣费，可设置 NEXT_PUBLIC_FRONTEND_EAGER_TOKEN_CONSUMPTION=true
+      if (process.env.NEXT_PUBLIC_FRONTEND_EAGER_TOKEN_CONSUMPTION === 'true') {
+        const tokenResult = await consumeTokens(
+          'siterank',
+          'batch_analysis',
+          requiredTokens,
+          {
+            itemCount: domainCount,
+            description: `网站排名分析 - ${domainCount}个域名`,
+            onInsufficientBalance: async () => {
+              // 展示客服微信弹窗
+              setFileError('Token余额不足，请联系顾问充值');
+              try {
+                const balance = await getTokenBalance();
+                setModalBalance(balance ?? undefined);
+              } catch {}
+              setModalRequired(requiredTokens);
+              setShowWeChatModal(true);
+            }
           }
+        );
+        if (!tokenResult.success) {
+          return;
         }
-      );
-      
-      if (!tokenResult.success) {
-        return;
       }
       
       setAnalysisResults([]);
@@ -197,17 +223,30 @@ export default function SiteRankClient() {
       await startAnalysis();
       
     } catch (error) {
-      logger.error('分析错误:', new EnhancedError('分析错误:', { error: error instanceof Error ? error.message : String(error)  }));
-      setFileError(
-        error instanceof Error
-          ? error.message
-          : "分析失败",
-      );
+      const e: any = error;
+      logger.error('分析错误:', new EnhancedError('分析错误:', { error: e?.message || String(e) }));
+      // 处理 402（余额不足）与 429（限流）
+      const status = e?.status ?? e?.details?.status;
+      if (status === 402 || e?.message === 'INSUFFICIENT_TOKENS') {
+        try { const balance = await getTokenBalance(); setModalBalance(balance ?? undefined); } catch {}
+        setModalRequired(undefined);
+        setShowWeChatModal(true);
+        setFileError('Token余额不足，请联系顾问充值或升级套餐');
+      } else if (status === 429) {
+        const retryAfter = e?.details?.retryAfter || e?.details?.RetryAfter;
+        setFileError(`请求过于频繁，请稍后再试${retryAfter ? `（建议 ${retryAfter}s 后重试）` : ''}`);
+      } else {
+        setFileError(e instanceof Error ? e.message : '分析失败');
+      }
       setIsAnalyzing(false);
       setIsBackgroundQuerying(false);
       setHasQueried(false);
     }
   };
+
+  // UI 速率上限（展示用途，后端为权威）
+  const [uiRateLimitMax, setUiRateLimitMax] = useState<number>(getUiDefaultRpm());
+  useEffect(() => { fetchUiDefaultRpm().then(setUiRateLimitMax).catch(() => {}); }, []);
 
   // 显示列配置
   const exampleColumns = [
@@ -248,6 +287,13 @@ export default function SiteRankClient() {
 
   return (
     <div className={`min-h-screen ${UI_CONSTANTS.gradients.hero}`}>
+      <WeChatSubscribeModal
+        open={showWeChatModal}
+        onOpenChange={setShowWeChatModal}
+        scenario="insufficient_balance"
+        requiredTokens={modalRequired}
+        currentBalance={modalBalance}
+      />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
@@ -403,8 +449,14 @@ export default function SiteRankClient() {
                             </>
                           ) : (
                             <>
-                              <span className="font-medium">📊 剩余请求配额:</span>
-                              <span className="font-semibold">{rateLimitStatus.remaining}/500</span>
+                        <span className="font-medium">📊 剩余请求配额:</span>
+                        <span className="font-semibold">{rateLimitStatus.remaining}/{uiRateLimitMax}</span>
+                        {planRpm ? (
+                          <span className="ml-3 text-gray-500">套餐上限: <span className="font-medium text-gray-700">{planRpm} RPM</span></span>
+                        ) : null}
+                        {featureRpm ? (
+                          <span className="ml-3 text-gray-500">功能上限: <span className="font-medium text-gray-700">{featureRpm} RPM</span></span>
+                        ) : null}
                               <span className="text-xs opacity-75">
                                 (已用: {rateLimitStatus.totalRequests})
                               </span>
@@ -434,10 +486,9 @@ export default function SiteRankClient() {
                         </span>
                       </div>
                       
-                      {/* 缓存提示 */}
-                      <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
-                        <span>💡 提示:</span>
-                        <span>已查询的域名会缓存7天，重复查询不消耗配额</span>
+                      {/* 缓存提示（仅提示，命中缓存仍全额扣费） */}
+                      <div className="flex items-center justify-center space-x-2 text-xs text-gray-600">
+                        <span>💡 缓存: 命中 {cacheStats.hits}/{cacheStats.total} · 用于提速，命中缓存仍全额扣费</span>
                       </div>
                     </div>
                   )}
@@ -496,4 +547,3 @@ export default function SiteRankClient() {
     </div>
   );
 }
-

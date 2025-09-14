@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/v5-config'
 import { prisma } from '@/lib/prisma'
 import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware'
+import { withApiProtection } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,6 +56,5 @@ async function handlePOST(req: NextRequest): Promise<NextResponse> {
   return NextResponse.json({ success: true, data: { id } })
 }
 
-export const GET = withFeatureGuard(handleGET as any, { featureId: 'adscenter_basic', requireToken: false })
-export const POST = withFeatureGuard(handlePOST as any, { featureId: 'adscenter_basic', requireToken: false })
-
+export const GET = withFeatureGuard(withApiProtection('adsCenter')(handleGET as any) as any, { featureId: 'adscenter_basic' })
+export const POST = withFeatureGuard(withApiProtection('adsCenter')(handlePOST as any) as any, { featureId: 'adscenter_basic' })

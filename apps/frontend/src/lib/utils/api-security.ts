@@ -34,6 +34,24 @@ export interface SecureHandlerOptions {
 
 export function createSecureHandler(options: SecureHandlerOptions) {
   return async (request: NextRequest) => {
+    // Admin API 迁移层：统一将部分 /api/admin/* 转发至 Go 面板或返回迁移提示
+    try {
+      const url = new URL(request.url)
+      const path = url.pathname
+      if (path.startsWith('/api/admin/')) {
+        // 全量透明转发：/api/admin/* → /go/admin/*
+        // 通过 Next /go 反代链路注入内部 JWT/Idempotency 等
+        const target = '/go' + path.replace('/api', '') + (url.search || '')
+        const headers = new Headers(request.headers)
+        headers.delete('host'); headers.delete('connection'); headers.delete('content-length'); headers.delete('accept-encoding')
+        const init: RequestInit = { method: request.method, headers, redirect: 'manual', body: ['GET','HEAD'].includes(request.method) ? undefined : request.body as any }
+        const resp = await fetch(target, init)
+        const h = new Headers(resp.headers)
+        h.set('x-admin-proxy', '1')
+        return new NextResponse(resp.body, { status: resp.status, headers: h })
+      }
+    } catch {}
+
     // 使用增强的API日志记录包装整个请求处理过程
     return logApiRequest(request, async (req: NextRequest, context: any) => {
       try {

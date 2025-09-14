@@ -4,6 +4,7 @@
  */
 
 import { createLogger } from "@/lib/utils/security/secure-logger";
+import { getCachedRemoteConfig } from './remote-config';
 import { EnhancedError } from '@/lib/utils/error-handling';
 
 const logger = createLogger('UnifiedConfigService');
@@ -166,8 +167,26 @@ export class UnifiedConfigService {
         },
         googleAds: {
           apiUrl: "https://googleads.googleapis.com",
-          version: process.env.NEXT_PUBLIC_GOOGLE_ADS_API_VERSION || "v14",
-          timeout: parseInt(process.env.GOOGLE_ADS_TIMEOUT || "30000"),
+          version: (() => {
+            try {
+              const snap = getCachedRemoteConfig();
+              if (snap && snap.config) {
+                const v = (snap.config as any)?.APIs?.GoogleAds?.Version || (snap.config as any)?.apis?.googleAds?.version;
+                if (typeof v === 'string' && v) return v;
+              }
+            } catch {}
+            return process.env.NEXT_PUBLIC_GOOGLE_ADS_API_VERSION || "v14";
+          })(),
+          timeout: (() => {
+            try {
+              const snap = getCachedRemoteConfig();
+              if (snap && snap.config) {
+                const t = (snap.config as any)?.HTTP?.Timeout;
+                if (typeof t === 'number' && isFinite(t)) return t;
+              }
+            } catch {}
+            return parseInt(process.env.GOOGLE_ADS_TIMEOUT || "30000");
+          })(),
         },
         adsPower: {
           apiUrl: process.env.NEXT_PUBLIC_ADSPOWER_API_URL || "http://local.adspower.net:50325",

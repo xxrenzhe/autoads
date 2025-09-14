@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db'
+import { getCachedRemoteConfig, getConfigValue } from '@/lib/config/remote-config'
 import { PrismaClient, Prisma } from '../types/prisma-types'
 
 type SystemConfig = Prisma.SystemConfigGetPayload<{
@@ -46,6 +47,30 @@ class ConfigService {
     }
 
     try {
+      // 远端只读配置优先：支持 system_configs.<key> 或直接 <key>（若快照包含平铺）
+      const snap = getCachedRemoteConfig()
+      if (snap && snap.config) {
+        const candidates = [
+          `system_configs.${key}`,
+          `SystemConfigs.${key}`,
+          key
+        ]
+        for (const p of candidates) {
+          const v: any = getConfigValue<any>(p, snap)
+          if (typeof v !== 'undefined' && v !== null) {
+            this.setCache(key, {
+              key,
+              value: v,
+              type: 'string' as any,
+              description: '',
+              isHotReloadable: true,
+              updatedAt: new Date()
+            })
+            return v
+          }
+        }
+      }
+
       const config = await prisma.systemConfig.findUnique({
         where: { key }
       })
@@ -434,18 +459,71 @@ class ConfigService {
    * Get configurations by category
    */
   async getByCategory(category: string): Promise<SystemConfig[]> {
-    return await prisma.systemConfig.findMany({
-      where: { category }
-    })
+    // Remote-first: try system_configs tree
+    try {
+      const snap = getCachedRemoteConfig();
+      const out: any[] = [];
+      if (snap && (snap as any).config) {
+        const tree: any = (snap as any).config.system_configs || (snap as any).config.SystemConfigs || null;
+        if (tree && typeof tree === 'object') {
+          for (const [k, v] of Object.entries(tree)) {
+            const prefix = String(k).split('.')[0];
+            if (k.startsWith(category + '.') || prefix === category) {
+              out.push({
+                key: k,
+                value: v as any,
+                category,
+                description: '',
+                isSecret: false,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              });
+            }
+          }
+        }
+      }
+      if (out.length > 0) {
+        return out as any as SystemConfig[];
+      }
+    } catch {}
+    // Fallback to DB
+    return await prisma.systemConfig.findMany({ where: { category } })
   }
 
   /**
    * Get many configurations by keys
    */
   async getMany(keys: string[]): Promise<SystemConfig[]> {
-    return await prisma.systemConfig.findMany({
-      where: { key: { in: keys } }
-    })
+    // Remote-first: resolve keys from system_configs
+    const snap = getCachedRemoteConfig();
+    const out: any[] = [];
+    const remaining: string[] = [];
+    for (const key of keys) {
+      let found = false;
+      try {
+        if (snap && (snap as any).config) {
+          const candidates = [
+            `system_configs.${key}`,
+            `SystemConfigs.${key}`,
+            key,
+          ];
+          for (const p of candidates) {
+            const v = getConfigValue<any>(p, snap);
+            if (typeof v !== 'undefined') {
+              out.push({ key, value: v, category: 'remote', description: '', isSecret: false, createdAt: new Date(), updatedAt: new Date() });
+              found = true;
+              break;
+            }
+          }
+        }
+      } catch {}
+      if (!found) remaining.push(key);
+    }
+    if (remaining.length > 0) {
+      const dbRows = await prisma.systemConfig.findMany({ where: { key: { in: remaining } } });
+      return [...out as any[], ...dbRows as any] as any as SystemConfig[];
+    }
+    return out as any as SystemConfig[];
   }
 
   /**

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"context"
 	"encoding/json"
 	"flag"
@@ -24,6 +25,7 @@ import (
 
 	"gofly-admin-v3/internal/auth"
 	"gofly-admin-v3/internal/batchgo"
+	"gofly-admin-v3/internal/audit"
 	"gofly-admin-v3/internal/cache"
 	"gofly-admin-v3/internal/checkin"
 	"gofly-admin-v3/internal/chengelink"
@@ -33,6 +35,7 @@ import (
 	dbinit "gofly-admin-v3/internal/init"
 	"gofly-admin-v3/internal/invitation"
 	"gofly-admin-v3/internal/metrics"
+	"gofly-admin-v3/internal/middleware"
 	"gofly-admin-v3/internal/siterankgo"
 	"gofly-admin-v3/internal/store"
 	"gofly-admin-v3/internal/user"
@@ -60,6 +63,7 @@ var (
 	tokenSvc          *user.TokenService
 	swebClient        *siterankgo.SimilarWebClient
 	chengelinkService *chengelink.ChengeLinkService
+	auditSvc          *audit.AutoAdsAuditService
 )
 
 // 适配器：将 user.TokenService 适配为 chengelink.TokenService
@@ -212,6 +216,9 @@ func main() {
 
 			// Chengelink 服务（使用适配器桥接Token能力）
 			chengelinkService = chengelink.NewChengeLinkService(gormDB, &tokenServiceAdapter{ts: tokenSvc})
+
+			// 审计服务
+			auditSvc = audit.NewAutoAdsAuditService(gormDB)
 		}
 	}
 
@@ -256,6 +263,27 @@ func main() {
 
 	// 11. 注册API路由
 	setupAPIRoutes(r)
+
+	// 11.1 配置聚合只读API（供前台只读下发）
+	r.GET("/admin/config/v1", func(c *gin.Context) {
+		cfg := configManager.GetConfig()
+		if cfg == nil {
+			c.JSON(503, gin.H{"code": 5000, "message": "config unavailable"})
+			return
+		}
+		// 生成快照与 ETag
+		b, _ := json.Marshal(cfg)
+		etag := fmt.Sprintf("W/\"%x\"", sha256sum(b))
+		if match := c.GetHeader("If-None-Match"); match != "" && match == etag {
+			c.Status(304)
+			return
+		}
+		c.Header("ETag", etag)
+		c.JSON(200, gin.H{
+			"version":  time.Now().UTC().Format(time.RFC3339),
+			"config":   cfg,
+		})
+	})
 
 	// 12. 设置静态文件服务
 	setupStaticFiles(r)
@@ -302,7 +330,13 @@ func main() {
 // setupAPIRoutes 设置API路由
 func setupAPIRoutes(r *gin.Engine) {
 	// API v1 路由组
-	v1 := r.Group("/api/v1")
+    v1 := r.Group("/api/v1")
+	// 可选：内部JWT验签（默认不强制，设置 INTERNAL_JWT_ENFORCE=true 强制）
+	if os.Getenv("INTERNAL_JWT_ENFORCE") == "true" {
+		v1.Use(middleware.InternalJWTAuth(true))
+	} else {
+		v1.Use(middleware.InternalJWTAuth(false))
+	}
 	{
 		// 认证路由
 		auth := v1.Group("/auth")
@@ -321,14 +355,123 @@ func setupAPIRoutes(r *gin.Engine) {
 			user.GET("/stats", handleGetUserStats)
 		}
 
-		// Token路由
-		tokens := v1.Group("/tokens")
-		tokens.Use(authMiddleware())
-		{
+        // Token路由
+        tokens := v1.Group("/tokens")
+        tokens.Use(authMiddleware())
+        {
 			tokens.GET("/balance", handleGetTokenBalance)
 			tokens.GET("/transactions", handleGetTokenTransactions)
 			tokens.POST("/purchase", handlePurchaseTokens)
-		}
+        }
+
+        // ===== SITERANK 原子端点（check/execute） =====
+		siterank := v1.Group("/siterank")
+		{
+            // 预检成本与可执行性
+            siterank.POST("/batch:check", func(c *gin.Context) {
+                type reqBody struct{ Domains []string `json:"domains"` }
+                var body reqBody
+                if err := c.ShouldBindJSON(&body); err != nil || len(body.Domains) == 0 {
+                    c.JSON(400, gin.H{"code": 400, "message": "invalid request: domains required"})
+                    return
+                }
+                userID := c.GetString("user_id")
+                if userID == "" {
+                    c.JSON(401, gin.H{"code": 401, "message": "unauthorized"})
+                    return
+                }
+                if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
+                // 使用 TokenService 规则计算
+                sufficient, balance, total, err := tokenSvc.CheckTokenSufficiency(userID, "siterank", "query", len(body.Domains))
+                if err != nil {
+                    c.JSON(500, gin.H{"code": 500, "message": err.Error()})
+                    return
+                }
+                c.JSON(200, gin.H{
+                    "sufficient": sufficient,
+                    "balance": balance,
+                    "required": total,
+                    "quantity": len(body.Domains),
+                })
+            })
+
+            // 原子扣费 + 执行
+            siterank.POST("/batch:execute", func(c *gin.Context) {
+                type reqBody struct{ Domains []string `json:"domains"` }
+                var body reqBody
+                if err := c.ShouldBindJSON(&body); err != nil || len(body.Domains) == 0 {
+                    c.JSON(400, gin.H{"code": 400, "message": "invalid request: domains required"})
+                    return
+                }
+                userID := c.GetString("user_id")
+                if userID == "" {
+                    c.JSON(401, gin.H{"code": 401, "message": "unauthorized"})
+                    return
+                }
+                // request id echo
+                if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
+                // 幂等键
+                idemKey := c.GetHeader("Idempotency-Key")
+                if idemKey == "" {
+                    // 容忍缺失但不保证幂等
+                    idemKey = "no-idem"
+                }
+                // Redis 幂等保护：存在即视为重复请求
+                if storeRedis != nil && idemKey != "no-idem" {
+                    ctx := c.Request.Context()
+                    key := "autoads:idem:" + userID + ":" + idemKey
+                    ok, err := storeRedis.GetClient().SetNX(ctx, key, "locked", 10*time.Minute).Result()
+                    if err == nil && !ok {
+                        c.JSON(200, gin.H{"code": 200, "duplicate": true, "message": "duplicate request"})
+                        return
+                    }
+                    // 保险：设置过期
+                    _ = storeRedis.Expire(ctx, key, 10*time.Minute)
+                }
+                // 再次校验余额
+                sufficient, balance, total, err := tokenSvc.CheckTokenSufficiency(userID, "siterank", "query", len(body.Domains))
+                if err != nil {
+                    c.JSON(500, gin.H{"code": 500, "message": err.Error()})
+                    return
+                }
+                if !sufficient {
+                    c.JSON(402, gin.H{"code": 402, "message": "INSUFFICIENT_TOKENS", "required": total, "balance": balance})
+                    return
+                }
+                // 先扣费（描述与引用）
+                if err := tokenSvc.ConsumeTokensByService(userID, "siterank", "query", len(body.Domains), "siterank.batch"); err != nil {
+                    c.JSON(402, gin.H{"code": 402, "message": err.Error(), "required": total, "balance": balance})
+                    return
+                }
+                // 执行业务（SimilarWeb 批量）
+                ctx := c.Request.Context()
+                data, execErr := swebClient.BatchGetWebsiteData(ctx, userID, body.Domains)
+                if execErr != nil {
+                    // 失败时尝试退款（best-effort）
+                    _ = tokenSvc.AddTokens(userID, total, "refund", "siterank batch failed", "")
+                    if auditSvc != nil {
+                        _ = auditSvc.LogSiteRankQuery(userID, "batch", map[string]any{"domains": len(body.Domains), "error": execErr.Error()}, c.ClientIP(), c.Request.UserAgent(), false, execErr.Error(), 0)
+                    }
+                    c.JSON(502, gin.H{"code": 502, "message": execErr.Error()})
+                    return
+                }
+                // 成功：返回结果与最新余额
+                newBalance, _ := tokenSvc.GetTokenBalance(userID)
+                // 幂等状态更新
+                if storeRedis != nil && idemKey != "no-idem" {
+                    _ = storeRedis.Set(ctx, "autoads:idem:"+userID+":"+idemKey, "done", 24*time.Hour)
+                }
+                if auditSvc != nil {
+                    _ = auditSvc.LogSiteRankQuery(userID, "batch", map[string]any{"domains": len(body.Domains)}, c.ClientIP(), c.Request.UserAgent(), true, "", 0)
+                }
+                c.JSON(200, gin.H{
+                    "consumed": total,
+                    "balance": newBalance,
+                    "quantity": len(body.Domains),
+                    "results": data,
+                })
+            })
+        }
 
 		// BatchGo路由
 		batchgo := v1.Group("/batchgo")
@@ -339,6 +482,161 @@ func setupAPIRoutes(r *gin.Engine) {
 			batchgo.POST("/silent-terminate", handleSilentTerminate)
 			batchgo.POST("/autoclick/tasks", handleAutoClickCreate)
 			batchgo.GET("/autoclick/tasks/:id/progress", handleAutoClickProgress)
+		}
+
+			// ===== BATCHOPEN 原子端点（silent 模式 check/execute） =====
+			batchopen := v1.Group("/batchopen")
+			{
+			// 预检：根据 urls 与 cycleCount 计算总量并检查余额
+			batchopen.POST("/silent:check", func(c *gin.Context) {
+				var body struct {
+					URLs       []string `json:"urls"`
+					CycleCount int      `json:"cycleCount"`
+					AccessMode string   `json:"accessMode"` // http | puppeteer
+				}
+				if err := c.ShouldBindJSON(&body); err != nil || len(body.URLs) == 0 {
+					c.JSON(400, gin.H{"code": 400, "message": "invalid request: urls required"})
+					return
+				}
+                userID := c.GetString("user_id")
+                if userID == "" {
+                    c.JSON(401, gin.H{"code": 401, "message": "unauthorized"})
+                    return
+                }
+                if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
+                cycle := body.CycleCount
+				if cycle <= 0 { cycle = 1 }
+				action := "http"
+				if body.AccessMode == "puppeteer" { action = "puppeteer" }
+				totalQty := len(body.URLs) * cycle
+				sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "batchgo", action, totalQty)
+				if err != nil {
+					c.JSON(500, gin.H{"code": 500, "message": err.Error()})
+					return
+				}
+				c.JSON(200, gin.H{"sufficient": sufficient, "balance": balance, "required": required, "quantity": totalQty})
+			})
+
+			// 原子执行：扣费 + 创建并启动 silent 任务
+			batchopen.POST("/silent:execute", func(c *gin.Context) {
+				var body struct {
+					TaskName   string            `json:"taskName"`
+					URLs       []string          `json:"urls"`
+					CycleCount int               `json:"cycleCount"`
+					AccessMode string            `json:"accessMode"` // http | puppeteer
+					Silent     map[string]any    `json:"silent"`
+				}
+				if err := c.ShouldBindJSON(&body); err != nil || len(body.URLs) == 0 {
+					c.JSON(400, gin.H{"code": 400, "message": "invalid request: urls required"})
+					return
+				}
+				userID := c.GetString("user_id")
+				if userID == "" {
+					c.JSON(401, gin.H{"code": 401, "message": "unauthorized"})
+					return
+				}
+				cycle := body.CycleCount
+				if cycle <= 0 { cycle = 1 }
+				action := "http"
+				if body.AccessMode == "puppeteer" { action = "puppeteer" }
+				totalQty := len(body.URLs) * cycle
+				// 幂等
+				iKey := c.GetHeader("Idempotency-Key")
+				if iKey != "" && storeRedis != nil {
+					ctx := c.Request.Context()
+					key := "autoads:idem_batch:" + userID + ":" + iKey
+					ok, _ := storeRedis.GetClient().SetNX(ctx, key, "locked", 10*time.Minute).Result()
+					if !ok {
+						c.JSON(200, gin.H{"duplicate": true, "message": "duplicate request"})
+						return
+					}
+					_ = storeRedis.Expire(ctx, key, 10*time.Minute)
+				}
+				// 再次余额校验
+				sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "batchgo", action, totalQty)
+				if err != nil { c.JSON(500, gin.H{"code": 500, "message": err.Error()}); return }
+				if !sufficient { c.JSON(402, gin.H{"code": 402, "message": "INSUFFICIENT_TOKENS", "required": required, "balance": balance}); return }
+				// 扣费
+				if err := tokenSvc.ConsumeTokensByService(userID, "batchgo", action, totalQty, "batchopen.silent"); err != nil {
+					c.JSON(402, gin.H{"code": 402, "message": err.Error(), "required": required, "balance": balance})
+					return
+				}
+				// 创建任务
+				cfg := batchgo.BatchTaskConfig{ Silent: &batchgo.SilentConfig{ Concurrency: 5, Timeout: 30, RetryCount: 3 } }
+				// 合并用户传参（非严格）
+				if body.Silent != nil {
+					if v, ok := body.Silent["concurrency"].(float64); ok { cfg.Silent.Concurrency = int(v) }
+					if v, ok := body.Silent["timeout"].(float64); ok { cfg.Silent.Timeout = int(v) }
+					if v, ok := body.Silent["retry_count"].(float64); ok { cfg.Silent.RetryCount = int(v) }
+				}
+				createReq := &batchgo.CreateTaskRequest{ Name: body.TaskName, Mode: batchgo.ModeSilent, URLs: body.URLs, Config: cfg }
+				task, err := batchService.CreateTask(userID, createReq)
+				if err != nil {
+					// 失败退款（best-effort）
+					_ = tokenSvc.AddTokens(userID, required, "refund", "batchopen create failed", "")
+					if auditSvc != nil { _ = auditSvc.LogBatchTaskAction(userID, "create", "", map[string]any{"urls": len(body.URLs), "mode": "silent", "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
+					c.JSON(500, gin.H{"code": 500, "message": err.Error()})
+					return
+				}
+				// 启动任务（异步）
+				go func() {
+					if err := batchService.StartTask(userID, task.ID); err != nil {
+						// 启动失败退款（best-effort）
+						_ = tokenSvc.AddTokens(userID, required, "refund", "batchopen start failed", task.ID)
+						if auditSvc != nil { _ = auditSvc.LogBatchTaskAction(userID, "start", task.ID, map[string]any{"urls": len(body.URLs), "mode": "silent", "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
+					} else {
+						if auditSvc != nil { _ = auditSvc.LogBatchTaskAction(userID, "start", task.ID, map[string]any{"urls": len(body.URLs), "mode": "silent"}, c.ClientIP(), c.Request.UserAgent(), true, "", 0) }
+					}
+				}()
+				newBalance, _ := tokenSvc.GetTokenBalance(userID)
+				if storeRedis != nil && iKey != "" { _ = storeRedis.Set(c.Request.Context(), "autoads:idem_batch:"+userID+":"+iKey, "done", 24*time.Hour) }
+				c.JSON(200, gin.H{"taskId": task.ID, "consumed": required, "balance": newBalance, "status": "running"})
+			})
+
+			// 任务进度查询（最小集：基于 batch_tasks 聚合）
+			batchopen.GET("/tasks/:id", func(c *gin.Context) {
+				userID := c.GetString("user_id")
+				if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+				if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
+				taskID := c.Param("id")
+				if taskID == "" { c.JSON(400, gin.H{"code": 400, "message": "missing id"}); return }
+				task, err := batchService.GetTask(userID, taskID)
+				if err != nil { c.JSON(404, gin.H{"success": false, "message": "TASK_NOT_FOUND"}); return }
+				processed := task.ProcessedCount
+				total := task.URLCount
+				percent := 0
+				if total > 0 { percent = int(float64(processed) / float64(total) * 100.0) }
+				pending := total - processed
+				message := task.ErrorMessage
+				if message == "" {
+					switch task.Status {
+					case batchgo.StatusPending:
+						message = "任务等待中"
+					case batchgo.StatusRunning:
+						message = "任务运行中"
+					case batchgo.StatusCompleted:
+						message = "任务已完成"
+					case batchgo.StatusFailed:
+						message = "任务失败"
+					case batchgo.StatusCancelled:
+						message = "任务已取消"
+					case batchgo.StatusPaused:
+						message = "任务已暂停"
+					}
+				}
+				c.JSON(200, gin.H{
+					"success":      true,
+					"status":       string(task.Status),
+					"progress":     percent,
+					"successCount": task.SuccessCount,
+					"failCount":    task.FailedCount,
+					"total":        total,
+					"pendingCount": pending,
+					"message":      message,
+					"timestamp":    time.Now().UnixMilli(),
+					"serverTime":   time.Now().Format(time.RFC3339),
+				})
+			})
 		}
 
 		// SiteRank路由
@@ -457,6 +755,77 @@ func setupAPIRoutes(r *gin.Engine) {
 				status = "degraded"
 				reason = "db ping failed"
 			}
+
+			// ===== ADSCENTER 原子端点（链接替换 check/execute） =====
+			adscenter := v1.Group("/adscenter")
+			{
+				// 预检：按 extract_link + update_ads 规则估算总消耗
+				adscenter.POST("/link:update:check", func(c *gin.Context) {
+					var body struct {
+						AffiliateLinks   []string `json:"affiliate_links"`
+						AdsPowerProfile  string   `json:"adspower_profile"`
+						GoogleAdsAccount string   `json:"google_ads_account"`
+					}
+					if err := c.ShouldBindJSON(&body); err != nil || len(body.AffiliateLinks) == 0 {
+						c.JSON(400, gin.H{"code": 400, "message": "invalid request: affiliate_links required"})
+						return
+					}
+					userID := c.GetString("user_id")
+					if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+					if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
+					// 估算消耗：分别按 extract 与 update_ads 规则
+					_, balance1, requiredExtract, err1 := tokenSvc.CheckTokenSufficiency(userID, "chengelink", "extract", len(body.AffiliateLinks))
+					if err1 != nil { c.JSON(500, gin.H{"code": 500, "message": err1.Error()}); return }
+					_, _, requiredUpdate, err2 := tokenSvc.CheckTokenSufficiency(userID, "chengelink", "update_ads", len(body.AffiliateLinks))
+					if err2 != nil { c.JSON(500, gin.H{"code": 500, "message": err2.Error()}); return }
+					required := requiredExtract + requiredUpdate
+					sufficient := balance1 >= required
+					c.JSON(200, gin.H{"sufficient": sufficient, "balance": balance1, "required": required, "quantity": len(body.AffiliateLinks)})
+				})
+
+				// 执行：创建并启动任务（任务内部阶段性扣费），保持原子化在服务内部
+				adscenter.POST("/link:update:execute", func(c *gin.Context) {
+					var body struct {
+						Name             string   `json:"name"`
+						AffiliateLinks   []string `json:"affiliate_links"`
+						AdsPowerProfile  string   `json:"adspower_profile"`
+						GoogleAdsAccount string   `json:"google_ads_account"`
+					}
+					if err := c.ShouldBindJSON(&body); err != nil || len(body.AffiliateLinks) == 0 {
+						c.JSON(400, gin.H{"code": 400, "message": "invalid request: affiliate_links required"})
+						return
+					}
+					userID := c.GetString("user_id")
+					if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+					if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
+					// 幂等键（可选）
+					iKey := c.GetHeader("Idempotency-Key")
+					if iKey != "" && storeRedis != nil {
+						ctx := c.Request.Context()
+						key := "autoads:idem_ads:" + userID + ":" + iKey
+						ok, _ := storeRedis.GetClient().SetNX(ctx, key, "locked", 10*time.Minute).Result()
+						if !ok { c.JSON(200, gin.H{"duplicate": true, "message": "duplicate request"}); return }
+						_ = storeRedis.Expire(ctx, key, 10*time.Minute)
+					}
+					// 创建任务
+					creq := &chengelink.CreateTaskRequest{ Name: body.Name, AffiliateLinks: body.AffiliateLinks, AdsPowerProfile: body.AdsPowerProfile, GoogleAdsAccount: body.GoogleAdsAccount }
+					task, err := chengelinkService.CreateTask(userID, creq)
+					if err != nil {
+						if auditSvc != nil { _ = auditSvc.LogChengeLinkAction(userID, "create", "", map[string]any{"links": len(body.AffiliateLinks), "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
+						c.JSON(500, gin.H{"code": 500, "message": err.Error()})
+						return
+					}
+					// 启动任务
+					go func() {
+						if err := chengelinkService.StartTask(task.ID); err != nil {
+							if auditSvc != nil { _ = auditSvc.LogChengeLinkAction(userID, "start", task.ID, map[string]any{"links": len(body.AffiliateLinks), "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
+						} else {
+							if auditSvc != nil { _ = auditSvc.LogChengeLinkAction(userID, "start", task.ID, map[string]any{"links": len(body.AffiliateLinks)}, c.ClientIP(), c.Request.UserAgent(), true, "", 0) }
+						}
+					}()
+					c.JSON(200, gin.H{"taskId": task.ID, "status": string(task.Status)})
+				})
+			}
 		}
 		c.JSON(200, gin.H{
 			"status":    status,
@@ -465,6 +834,13 @@ func setupAPIRoutes(r *gin.Engine) {
 			"version":   Version,
 		})
 	})
+}
+
+// sha256sum returns a 16-byte trimmed hex-like slice for ETag generation
+func sha256sum(b []byte) []byte {
+	h := sha256.Sum256(b)
+	// reduce size for weak etag aesthetics (still ok as identifier)
+	return h[:16]
 }
 
 // ====== 简易请求限流（100次/分钟） ======
@@ -490,70 +866,109 @@ func rateLimitMiddleware(limit int, window time.Duration) gin.HandlerFunc {
 			key = uid
 		}
 		// 使用Redis限流（可用时），否则回退到内存
-		if storeRedis != nil {
-			ctx := context.Background()
-			redisKey := "autoads:rl:" + key
-			n, err := storeRedis.Incr(ctx, redisKey)
-			if err == nil {
-				if n == 1 {
-					_ = storeRedis.Expire(ctx, redisKey, window)
-				}
-				if n > int64(limit) {
-					c.JSON(http.StatusTooManyRequests, gin.H{"code": 429, "message": "Too many requests"})
-					c.Abort()
-					return
-				}
-				c.Next()
-				return
-			}
-			// Redis异常时回退
-		}
-		now := time.Now()
-		rateLimiterStore.mu.Lock()
-		e, ok := rateLimiterStore.m[key]
-		if !ok || now.Sub(e.windowStart) >= window {
-			rateLimiterStore.m[key] = &rlEntry{count: 1, windowStart: now}
-			rateLimiterStore.mu.Unlock()
-			c.Next()
-			return
-		}
-		if e.count >= limit {
-			rateLimiterStore.mu.Unlock()
-			c.JSON(http.StatusTooManyRequests, gin.H{"code": 429, "message": "Too many requests"})
-			c.Abort()
-			return
-		}
-		e.count++
-		rateLimiterStore.mu.Unlock()
-		c.Next()
-	}
+        if storeRedis != nil {
+            ctx := context.Background()
+            redisKey := "autoads:rl:" + key
+            n, err := storeRedis.Incr(ctx, redisKey)
+            if err == nil {
+                if n == 1 {
+                    _ = storeRedis.Expire(ctx, redisKey, window)
+                }
+                if n > int64(limit) {
+                    c.JSON(http.StatusTooManyRequests, gin.H{"code": 429, "message": "Too many requests"})
+                    c.Abort()
+                    return
+                }
+                // Success path: set rate limit headers
+                remaining := limit - int(n)
+                if remaining < 0 { remaining = 0 }
+                // best-effort TTL
+                var resetAt int64
+                if ttl, err2 := storeRedis.GetClient().TTL(ctx, redisKey).Result(); err2 == nil && ttl > 0 {
+                    resetAt = time.Now().Add(ttl).Unix()
+                } else {
+                    resetAt = time.Now().Add(window).Unix()
+                }
+                c.Header("X-RateLimit-Limit", strconv.Itoa(limit))
+                c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
+                c.Header("X-RateLimit-Reset", strconv.FormatInt(resetAt, 10))
+                c.Next()
+                return
+            }
+            // Redis异常时回退
+        }
+        now := time.Now()
+        rateLimiterStore.mu.Lock()
+        e, ok := rateLimiterStore.m[key]
+        if !ok || now.Sub(e.windowStart) >= window {
+            rateLimiterStore.m[key] = &rlEntry{count: 1, windowStart: now}
+            rateLimiterStore.mu.Unlock()
+            // headers for first request of a window
+            c.Header("X-RateLimit-Limit", strconv.Itoa(limit))
+            c.Header("X-RateLimit-Remaining", strconv.Itoa(limit-1))
+            c.Header("X-RateLimit-Reset", strconv.FormatInt(now.Add(window).Unix(), 10))
+            c.Next()
+            return
+        }
+        if e.count >= limit {
+            rateLimiterStore.mu.Unlock()
+            c.JSON(http.StatusTooManyRequests, gin.H{"code": 429, "message": "Too many requests"})
+            c.Abort()
+            return
+        }
+        e.count++
+        rateLimiterStore.mu.Unlock()
+        // success headers for memory limiter
+        remaining := limit - e.count
+        if remaining < 0 { remaining = 0 }
+        c.Header("X-RateLimit-Limit", strconv.Itoa(limit))
+        c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
+        c.Header("X-RateLimit-Reset", strconv.FormatInt(e.windowStart.Add(window).Unix(), 10))
+        c.Next()
+    }
 }
 
 // ====== 结构化请求日志 ======
 func requestLogger() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		start := time.Now()
-		c.Next()
-		duration := time.Since(start)
-		uid := c.GetString("user_id")
-		entry := map[string]interface{}{
-			"ts":         start.Format(time.RFC3339Nano),
-			"method":     c.Request.Method,
-			"path":       c.Request.URL.Path,
-			"status":     c.Writer.Status(),
-			"latency_ms": float64(duration.Microseconds()) / 1000.0,
-			"ip":         c.ClientIP(),
-		}
-		if uid != "" {
-			entry["user_id"] = uid
-		}
-		if b, err := json.Marshal(entry); err == nil {
-			log.Printf("%s", string(b))
-		} else {
-			log.Printf("%v", entry)
-		}
-	}
+    return func(c *gin.Context) {
+        start := time.Now()
+        // ensure a request-id exists, and echo back
+        rid := c.GetHeader("X-Request-Id")
+        if rid == "" {
+            rid = fmt.Sprintf("%d-%s", start.UnixNano(), strconv.FormatInt(int64(randInt()), 36))
+            c.Request.Header.Set("X-Request-Id", rid)
+        }
+        c.Next()
+        duration := time.Since(start)
+        // set Server-Timing: app duration
+        if c.Writer.Header().Get("Server-Timing") == "" {
+            c.Header("Server-Timing", fmt.Sprintf("app;dur=%.3f", float64(duration.Microseconds())/1000.0))
+        }
+        // echo request id on response
+        c.Header("X-Request-Id", rid)
+        uid := c.GetString("user_id")
+        entry := map[string]interface{}{
+            "ts":         start.Format(time.RFC3339Nano),
+            "method":     c.Request.Method,
+            "path":       c.Request.URL.Path,
+            "status":     c.Writer.Status(),
+            "latency_ms": float64(duration.Microseconds()) / 1000.0,
+            "ip":         c.ClientIP(),
+            "request_id": rid,
+        }
+        if uid != "" {
+            entry["user_id"] = uid
+        }
+        if b, err := json.Marshal(entry); err == nil {
+            log.Printf("%s", string(b))
+        } else {
+            log.Printf("%v", entry)
+        }
+    }
 }
+
+// randInt provides a simple pseudo-random int for request id suffix
+func randInt() int { return int(time.Now().UnixNano() & 0xffff) }
 
 // setupLegacyAPIRoutes 设置兼容旧API的路由
 func setupLegacyAPIRoutes(r *gin.Engine) {

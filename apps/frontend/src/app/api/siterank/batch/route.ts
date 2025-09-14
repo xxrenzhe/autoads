@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withFeatureGuard, createBatchTokenCostExtractor } from '@/lib/middleware/feature-guard-middleware';
+import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware';
 import { withSecurityIntegration } from '@/lib/security/security-integration';
 import { SecurityMonitor } from '@/lib/security/security-integration';
 import { createLogger } from '@/lib/utils/security/secure-logger';
+import { UnifiedSimilarWebService } from '@/lib/siterank/unified-similarweb-service';
+import { TokenService } from '@/lib/services/token-service';
+import { getRedisClient } from '@/lib/cache/redis-client';
+import { withApiProtection } from '@/lib/api-utils';
 
 const logger = createLogger('SiteRankAPI');
 
@@ -43,16 +47,34 @@ const handler = withSecurityIntegration(
           );
         }
 
-        // 这里应该调用实际的SiteRank服务
-        // 为了演示，我们返回模拟数据
-        const results = domains.map((domain: any) => ({
-          domain,
-          globalRank: Math.floor(Math.random() * 1000000),
-          monthlyVisits: Math.floor(Math.random() * 10000000),
-          status: 'success',
-          timestamp: new Date(),
-          source: 'similarweb-api'
-        }));
+        // 预检余额（不扣费）
+        const requiredTokens = domains.length;
+        if (userId) {
+          const balance = await TokenService.checkTokenBalance(userId, requiredTokens);
+          if (!balance.sufficient) {
+            return NextResponse.json({
+              error: 'Insufficient token balance',
+              code: 'INSUFFICIENT_TOKENS',
+              required: balance.required,
+              balance: balance.currentBalance
+            }, { status: 402 });
+          }
+        }
+
+        // 统计缓存命中（全局7天缓存，跨用户）
+        let cacheHit = 0;
+        try {
+          const redis = getRedisClient();
+          const keys = domains.map((d: string) => `siterank:v1:${String(d).trim().toLowerCase()}`);
+          // ioredis.exists 支持多 key，返回存在的键数量
+          cacheHit = await (redis as any).exists(...keys);
+        } catch {}
+
+        // 调用统一的 SiteRank 服务（含全局缓存）
+        const service = new UnifiedSimilarWebService();
+        const t0 = Date.now();
+        const results = await service.queryMultipleDomains(domains);
+        const dur = Date.now() - t0;
 
         logger.info(`SiteRank批量查询完成`, {
           userId,
@@ -60,7 +82,7 @@ const handler = withSecurityIntegration(
           processingTime: Date.now()
         });
 
-        return NextResponse.json({
+        const response = NextResponse.json({
           success: true,
           data: results,
           metadata: {
@@ -69,6 +91,28 @@ const handler = withSecurityIntegration(
             version: '1.0'
           }
         });
+
+        // 设置缓存命中提示头与速率限制头（非契约，仅提示）
+        try { 
+          response.headers.set('X-Cache-Hit', `${cacheHit}/${domains.length}`);
+          response.headers.set('X-RateLimit-Limit', '5');
+          response.headers.set('X-RateLimit-Remaining', `${Math.max(0, 5 - domains.length)}`);
+          response.headers.set('Server-Timing', `upstream;dur=${dur}`);
+        } catch {}
+
+        // 成功后扣费（依然全额扣费，包括命中缓存的项）
+        try {
+          if (userId) {
+            await TokenService.consumeTokens(userId, 'siterank', 'batch_analysis', {
+              batchSize: requiredTokens,
+              metadata: { endpoint: '/api/siterank/batch', domainsCount: requiredTokens }
+            });
+          }
+        } catch (e) {
+          logger.warn('Post-success token consumption failed', { message: e instanceof Error ? e.message : String(e) });
+        }
+
+        return response;
       } catch (error) {
         logger.error('SiteRank批量查询失败:', error as Error);
         return NextResponse.json(
@@ -78,9 +122,7 @@ const handler = withSecurityIntegration(
       }
     },
     {
-      featureId: 'siterank_basic',
-      requireToken: true,
-      getTokenCost: createBatchTokenCostExtractor('domains')
+      featureId: 'siterank_basic'
     }
   ),
   {
@@ -91,4 +133,4 @@ const handler = withSecurityIntegration(
   }
 );
 
-export { handler as POST };
+export const POST = withApiProtection('siteRank')(handler as any) as any;

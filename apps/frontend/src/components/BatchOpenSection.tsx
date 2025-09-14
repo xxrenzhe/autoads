@@ -12,6 +12,7 @@ import { SimpleProgressBar } from "@/components/ui/SimpleProgressBar";
 import { getT } from "@/lib/utils/translation-helpers";
 import { ProtectedButton } from "@/components/auth/ProtectedButton";
 import { useTokenConsumption } from "@/hooks/useTokenConsumption";
+import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal';
 const logger = createClientLogger('BatchOpenSection');
 
 // Secure postMessage utility
@@ -99,7 +100,10 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
     // URL 输入
   const [input, setInput] = useState("");
   // 解析后的URL列表
-  const { consumeTokens } = useTokenConsumption();
+  const { consumeTokens, getTokenBalance } = useTokenConsumption();
+  const [showWeChatModal, setShowWeChatModal] = useState(false);
+  const [modalRequired, setModalRequired] = useState<number | undefined>(undefined);
+  const [modalBalance, setModalBalance] = useState<number | undefined>(undefined);
   const [urls, setUrls] = useState<string[]>([]);
   // 打开窗口的引用
   const openedWindows = useRef<Window[]>([]);
@@ -128,6 +132,13 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
   );
   const [isClearing, setIsClearing] = useState(false);
   const [isTerminated, setIsTerminated] = useState(false);
+  // UI 速率上限（展示用途，后端为权威）
+  const [uiRateLimitMax, setUiRateLimitMax] = useState<number>(getUiDefaultRpm());
+  const [planRpm, setPlanRpm] = useState<number | undefined>(undefined);
+  const [featureRpm, setFeatureRpm] = useState<number | undefined>(undefined);
+  const { data: subscriptionData } = useSubscriptionLimits();
+  useEffect(() => { fetchUiDefaultRpm().then(setUiRateLimitMax).catch(() => {}); }, []);
+  useEffect(() => { const { planRpm: p, featureRpm: f } = getPlanFeatureRpmSync(subscriptionData?.planId, 'batchopen'); setPlanRpm(p); setFeatureRpm(f); }, [subscriptionData?.planId]);
 
 
   // 计算进度数据（带memoization）
@@ -406,9 +417,12 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
         {
           itemCount: urls.length,
           description: `批量打开 - ${urls.length}个URL`,
-          onInsufficientBalance: () => {
-            setError('Token余额不足，请充值后重试');
-            showFeedback("error", 'Token余额不足，请充值后重试');
+          onInsufficientBalance: async () => {
+            setError('Token余额不足，请联系顾问充值');
+            showFeedback("error", 'Token余额不足，请联系顾问充值');
+            try { const balance = await getTokenBalance(); setModalBalance(balance ?? undefined); } catch {}
+            setModalRequired(urls.length);
+            setShowWeChatModal(true);
           }
         }
       );
@@ -569,6 +583,24 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
 
   return (
     <section className="w-full">
+      {/* 速率限制提示（展示用途，实际以后端 X-RateLimit-* 为准） */}
+      <div className="flex items-center justify-center text-xs text-gray-600 mb-2 gap-3">
+        <span>每分钟请求上限（展示）: <span className="font-semibold text-gray-800">{uiRateLimitMax}</span></span>
+        {planRpm ? (<span>套餐上限: <span className="font-semibold text-gray-800">{planRpm} RPM</span></span>) : null}
+        {featureRpm ? (<span>功能上限: <span className="font-semibold text-gray-800">{featureRpm} RPM</span></span>) : null}
+      </div>
+      {/* 速率限制提示（展示用途，实际以后端 X-RateLimit-* 为准） */}
+      <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
+        <span>每分钟请求上限（展示）:</span>
+        <span className="ml-2 font-semibold text-gray-800">{uiRateLimitMax}</span>
+      </div>
+      <WeChatSubscribeModal
+        open={showWeChatModal}
+        onOpenChange={setShowWeChatModal}
+        scenario="insufficient_balance"
+        requiredTokens={modalRequired}
+        currentBalance={modalBalance}
+      />
       {/* 版本切换按钮 */}
       <div className="flex justify-center gap-4 mb-8">
         <button

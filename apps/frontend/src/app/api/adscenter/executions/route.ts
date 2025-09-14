@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware'
 import { TokenRuleEngine } from '@/lib/services/token-rule-engine'
 import { getRedisClient } from '@/lib/cache/redis-client'
+import { TokenService } from '@/lib/services/token-service'
+import { withApiProtection } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +36,7 @@ async function setExecutions(userId: string, records: Execution[], updatedBy: st
 }
 
 async function handleGET(_req: NextRequest): Promise<NextResponse> {
+  const t0 = Date.now();
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   // 优先从规范化表读取，回退 SystemConfig
@@ -55,22 +58,50 @@ async function handleGET(_req: NextRequest): Promise<NextResponse> {
         started_at: r.startedAt ? r.startedAt.toISOString() : undefined,
         completed_at: r.completedAt ? r.completedAt.toISOString() : undefined
       }))
-      return NextResponse.json({ success: true, data })
+      const res = NextResponse.json({ success: true, data })
+      try {
+        res.headers.set('X-RateLimit-Limit', '30')
+        res.headers.set('X-RateLimit-Remaining', '30')
+        res.headers.set('Server-Timing', `upstream;dur=${Date.now() - t0}`)
+      } catch {}
+      return res
     }
   } catch (e) {
     // ignore and fallback
   }
   const list = await getExecutions(session.user.id)
-  return NextResponse.json({ success: true, data: list })
+  const resList = NextResponse.json({ success: true, data: list })
+  try { resList.headers.set('Server-Timing', `upstream;dur=${Date.now() - t0}`) } catch {}
+  return resList
 }
 
 async function handlePOST(req: NextRequest): Promise<NextResponse> {
+  const t0 = Date.now();
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await req.json().catch(() => null)
   if (!body || typeof body !== 'object') return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
   const { configurationId } = body as any
   if (!configurationId) return NextResponse.json({ error: 'configurationId is required' }, { status: 400 })
+  // 预检余额（不扣费）：按规则引擎估算一次执行的消耗
+  try {
+    const unitCost = await TokenRuleEngine.calcAdsCenterCost('update_ad', 1, false)
+    const check = await TokenService.checkTokenBalance(session.user.id, unitCost)
+    if (!check.sufficient) {
+      return NextResponse.json({
+        error: 'Insufficient token balance',
+        code: 'INSUFFICIENT_TOKENS',
+        required: check.required,
+        balance: check.currentBalance
+      }, { status: 402 })
+    }
+  } catch (e) {
+    // 如果估算失败，回退到1
+    const check = await TokenService.checkTokenBalance(session.user.id, 1)
+    if (!check.sufficient) {
+      return NextResponse.json({ error: 'Insufficient token balance', code: 'INSUFFICIENT_TOKENS', required: check.required, balance: check.currentBalance }, { status: 402 })
+    }
+  }
   // 先写入规范化表
   let newId = ''
   try {
@@ -93,15 +124,14 @@ async function handlePOST(req: NextRequest): Promise<NextResponse> {
   await setExecutions(session.user.id, list.slice(0, 200), session.user.id)
   // 发布通知
   try { const redis = getRedisClient(); await redis.publish('adscenter:executions:updates', JSON.stringify({ userId: session.user.id, id, configurationId, status: 'created' })); } catch {}
-  return NextResponse.json({ success: true, data: { id } })
+  const res = NextResponse.json({ success: true, data: { id } })
+  try {
+    res.headers.set('X-RateLimit-Limit', '10')
+    res.headers.set('X-RateLimit-Remaining', '10')
+    res.headers.set('Server-Timing', `upstream;dur=${Date.now() - t0}`)
+  } catch {}
+  return res
 }
 
-export const GET = withFeatureGuard(handleGET as any, { featureId: 'adscenter_basic', requireToken: false })
-export const POST = withFeatureGuard(handlePOST as any, {
-  featureId: 'adscenter_basic',
-  requireToken: true,
-  getTokenCost: async () => {
-    // Use rule engine to calculate cost of an execution (treat as update_ad, 1 item)
-    return await TokenRuleEngine.calcAdsCenterCost('update_ad', 1, false)
-  }
-})
+export const GET = withFeatureGuard(withApiProtection('adsCenter')(handleGET as any) as any, { featureId: 'adscenter_basic' })
+export const POST = withFeatureGuard(withApiProtection('adsCenter')(handlePOST as any) as any, { featureId: 'adscenter_basic' })

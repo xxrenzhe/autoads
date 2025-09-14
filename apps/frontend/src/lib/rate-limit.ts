@@ -95,33 +95,48 @@ export class RateLimiter {
   }
 }
 
+// 从环境变量读取速率限制（每分钟），支持动态配置
+function getEnvInt(name: string, fallback: number): number {
+  const v = process.env[name];
+  if (!v) return fallback;
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
 // 预定义的速率限制器
 export const rateLimiters = {
   // API通用限制：每分钟100次
   api: new RateLimiter({
     windowMs: 60 * 1000,
-    maxRequests: 100,
+    maxRequests: getEnvInt('RATE_LIMIT_API_PER_MINUTE', 100),
     keyPrefix: 'rate_limit:api'
   }),
   
   // 批量打开限制：每分钟10次
   batchOpen: new RateLimiter({
     windowMs: 60 * 1000,
-    maxRequests: 10,
+    maxRequests: getEnvInt('RATE_LIMIT_BATCHOPEN_PER_MINUTE', 10),
     keyPrefix: 'rate_limit:batchopen'
   }),
   
   // 站点排名限制：每分钟30次
   siteRank: new RateLimiter({
     windowMs: 60 * 1000,
-    maxRequests: 30,
+    maxRequests: getEnvInt('RATE_LIMIT_SITERANK_PER_MINUTE', 30),
     keyPrefix: 'rate_limit:siterank'
+  }),
+  
+  // AdsCenter 限制：每分钟20次
+  adsCenter: new RateLimiter({
+    windowMs: 60 * 1000,
+    maxRequests: getEnvInt('RATE_LIMIT_ADSCENTER_PER_MINUTE', 20),
+    keyPrefix: 'rate_limit:adscenter'
   }),
   
   // 登录限制：每分钟5次
   auth: new RateLimiter({
     windowMs: 60 * 1000,
-    maxRequests: 5,
+    maxRequests: getEnvInt('RATE_LIMIT_AUTH_PER_MINUTE', 5),
     keyPrefix: 'rate_limit:auth'
   })
 };

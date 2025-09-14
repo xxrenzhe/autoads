@@ -206,6 +206,14 @@ const nextConfig = {
       '@heroicons/react/24/solid': path.resolve(__dirname, 'src/stubs/heroicons-solid.tsx'),
       'framer-motion': path.resolve(__dirname, 'src/stubs/framer-motion.tsx'),
       'zod': path.resolve(__dirname, 'src/stubs/zod.ts'),
+      'ioredis': path.resolve(__dirname, 'src/stubs/ioredis.ts'),
+      '@auth/prisma-adapter': path.resolve(__dirname, 'src/stubs/auth-prisma-adapter.ts'),
+      'croner': path.resolve(__dirname, 'src/stubs/croner.ts'),
+      'redis': path.resolve(__dirname, 'src/stubs/redis.ts'),
+      'axios': path.resolve(__dirname, 'src/stubs/axios.ts'),
+      'https-proxy-agent': path.resolve(__dirname, 'src/stubs/https-proxy-agent.ts'),
+      'socks-proxy-agent': path.resolve(__dirname, 'src/stubs/socks-proxy-agent.ts'),
+      'puppeteer': path.resolve(__dirname, 'src/stubs/puppeteer.ts'),
     }
 
     return config;

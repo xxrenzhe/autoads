@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/v5-config'
 import { prisma } from '@/lib/prisma'
 import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware'
+import { withApiProtection } from '@/lib/api-utils'
 import { getRedisClient } from '@/lib/cache/redis-client'
 
 export const dynamic = 'force-dynamic'
@@ -37,6 +38,7 @@ async function setExecutions(userId: string, records: Execution[], updatedBy: st
 }
 
 async function handleGET(_req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+  const t0 = Date.now();
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   // 优先读规范化表
@@ -45,7 +47,7 @@ async function handleGET(_req: NextRequest, { params }: { params: { id: string }
       where: { id: params.id, userId: session.user.id },
     })
     if (row) {
-      return NextResponse.json({
+      const res = NextResponse.json({
         success: true,
         data: {
           id: row.id,
@@ -59,16 +61,20 @@ async function handleGET(_req: NextRequest, { params }: { params: { id: string }
           completed_at: row.completedAt?.toISOString(),
         }
       })
+      try { res.headers.set('X-RateLimit-Limit', '30'); res.headers.set('X-RateLimit-Remaining', '30'); } catch {}
+      return res
     }
   } catch {}
   // 回退 SystemConfig
   const list = await getExecutions(session.user.id)
   const item = list.find(e => e.id === params.id)
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ success: true, data: item })
+  const res = NextResponse.json({ success: true, data: item })
+  try { res.headers.set('X-RateLimit-Limit', '30'); res.headers.set('X-RateLimit-Remaining', '30'); res.headers.set('Server-Timing', `upstream;dur=${Date.now() - t0}`) } catch {}
+  return res
 }
 
-export const GET = withFeatureGuard(handleGET as any, { featureId: 'adscenter_basic', requireToken: false })
+export const GET = withFeatureGuard(withApiProtection('adsCenter')(handleGET as any) as any, { featureId: 'adscenter_basic' })
 
 async function handlePATCH(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
   const session = await auth()
@@ -121,7 +127,33 @@ async function handlePATCH(req: NextRequest, { params }: { params: { id: string 
     }))
   } catch {}
 
-  return NextResponse.json({ success: true })
+  // 若执行已完成且尚未扣费，则在此完成扣费（幂等）
+  try {
+    if (updates.status === 'completed') {
+      const exec = await prisma.adsExecution.findFirst({ where: { id: params.id, userId: session.user.id } })
+      if (exec) {
+        const charged = await prisma.token_usage.findFirst({
+          where: {
+            userId: session.user.id,
+            feature: 'CHANGELINK',
+            metadata: { path: ['adsExecutionId'], equals: params.id }
+          }
+        })
+        if (!charged) {
+          const unitCost = await (await import('@/lib/services/token-rule-engine')).TokenRuleEngine.calcAdsCenterCost('update_ad', 1, false)
+          await (await import('@/lib/services/token-service')).TokenService.consumeTokens(session.user.id, 'adscenter', 'update_ad', {
+            batchSize: 1,
+            customAmount: unitCost,
+            metadata: { endpoint: '/api/adscenter/executions', configurationId: exec.configurationId, adsExecutionId: params.id }
+          })
+        }
+      }
+    }
+  } catch {}
+
+  const res2 = NextResponse.json({ success: true })
+  try { res2.headers.set('X-RateLimit-Limit', '30'); res2.headers.set('X-RateLimit-Remaining', '30'); } catch {}
+  return res2
 }
 
-export const PATCH = withFeatureGuard(handlePATCH as any, { featureId: 'adscenter_basic', requireToken: false })
+export const PATCH = withFeatureGuard(withApiProtection('adsCenter')(handlePATCH as any) as any, { featureId: 'adscenter_basic' })

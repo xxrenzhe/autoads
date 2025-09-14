@@ -1,5 +1,14 @@
-import fs from 'fs'
-import path from 'path'
+// 说明：根据架构优化方案，移除对本地 JSON 配置（config/environments/*.json）的读取。
+// 本模块改为仅从 ENV 构建最小必需配置；更复杂、可热更的业务配置统一使用
+// 只读配置适配器（remote-config.ts）从 Go 的 /go/admin/config/v1 获取。
+//
+// 注意：为保持兼容，保留原有导出 API（getEnvironmentManager、config、getConfig、
+// isFeatureEnabled、isIntegrationEnabled 等），但内部实现不再访问本地文件。
+// ENV 为唯一写时来源；远端聚合配置请使用 lib/config/remote-config.ts。
+
+import type { } from 'node:fs'
+import type { } from 'node:path'
+import { getCachedRemoteConfig } from './remote-config'
 
 interface DatabaseConfig {
   url: string
@@ -212,11 +221,9 @@ export interface EnvironmentConfig {
 class EnvironmentManager {
   private config: EnvironmentConfig | null = null
   private environment: string
-  private configPath: string
 
   constructor() {
     this.environment = process.env.NODE_ENV || 'development'
-    this.configPath = path.join(process.cwd(), 'config', 'environments')
   }
 
   /**
@@ -226,29 +233,101 @@ class EnvironmentManager {
     if (this.config) {
       return this.config
     }
+    // 优先使用缓存的远端只读配置快照（异步拉取由 remote-config.ts 负责）
+    const remote = getCachedRemoteConfig()
 
-    const configFile = path.join(this.configPath, `${this.environment}.json`)
-    
-    if (!fs.existsSync(configFile)) {
-      throw new Error(`Configuration file not found for environment: ${this.environment}`)
+    // 基于 ENV 的最小可用配置（满足校验需求，不依赖本地 JSON）
+    const fallback: EnvironmentConfig = {
+      name: this.environment,
+      description: `Runtime environment (${this.environment}) from ENV-only`,
+      database: {
+        url: process.env.DATABASE_URL || '',
+        maxConnections: Number(process.env.DB_MAX_CONNECTIONS || '20'),
+        connectionTimeout: Number(process.env.DB_CONNECTION_TIMEOUT || '10000'),
+        enableLogging: (process.env.DB_LOGGING || 'false') === 'true',
+        logLevel: process.env.DB_LOG_LEVEL || 'warn',
+      },
+      redis: {
+        url: process.env.REDIS_URL || '',
+        maxRetries: Number(process.env.REDIS_MAX_RETRIES || '3'),
+        retryDelay: Number(process.env.REDIS_RETRY_DELAY || '250'),
+        keyPrefix: process.env.REDIS_PREFIX || 'autoads:',
+        ttl: Number(process.env.CACHE_TTL || '300'),
+      },
+      api: {
+        baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '',
+        timeout: Number(process.env.API_TIMEOUT || '30000'),
+        rateLimit: {
+          windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || '60000'),
+          maxRequests: Number(process.env.RATE_LIMIT_DEFAULT_REQUESTS || '100'),
+        },
+        cors: {
+          origins: (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean),
+          credentials: true,
+        },
+      },
+      auth: {
+        jwtSecret: process.env.AUTH_SECRET || '',
+        jwtExpiresIn: process.env.AUTH_JWT_EXPIRES_IN || '24h',
+        refreshTokenExpiresIn: process.env.AUTH_REFRESH_EXPIRES_IN || '168h',
+        bcryptRounds: Number(process.env.BCRYPT_ROUNDS || '10'),
+        sessionTimeout: Number(process.env.SESSION_TIMEOUT || '86400'),
+      },
+      email: {
+        provider: 'smtp',
+        smtp: {
+          host: process.env.SMTP_HOST || '',
+          port: Number(process.env.SMTP_PORT || '465'),
+          secure: (process.env.SMTP_SECURE || 'true') === 'true',
+          auth: { user: process.env.SMTP_USER || '', pass: process.env.SMTP_PASS || '' },
+        },
+        templates: { path: process.env.EMAIL_TEMPLATES_PATH || 'templates' },
+      },
+      storage: {
+        provider: (process.env.STORAGE_PROVIDER as any) || 'local',
+        local: { uploadPath: process.env.UPLOAD_PATH || 'uploads', maxFileSize: Number(process.env.UPLOAD_MAX_MB || '10') * 1024 * 1024, allowedTypes: ['*'] },
+      },
+      monitoring: {
+        enabled: (process.env.ENABLE_API_MONITORING || 'true') === 'true',
+        metricsInterval: Number(process.env.METRICS_INTERVAL_MS || '60000'),
+        healthCheckInterval: Number(process.env.HEALTH_CHECK_INTERVAL_MS || '30000'),
+        alerting: { enabled: !!process.env.SLACK_WEBHOOK_URL, webhookUrl: process.env.SLACK_WEBHOOK_URL, channels: undefined, escalation: { enabled: false, pagerDutyKey: '' } },
+      },
+      logging: {
+        level: process.env.LOG_LEVEL || 'info',
+        format: 'json',
+        destinations: ['stdout'],
+        sensitiveFields: ['password', 'authorization', 'cookie']
+      },
+      security: {
+        https: { enabled: (process.env.NODE_ENV === 'production'), redirectHttp: true, hsts: { maxAge: 31536000, includeSubDomains: true, preload: true } },
+        headers: { contentSecurityPolicy: '', hsts: true },
+        csrf: { enabled: false, secret: '' },
+        rateLimit: { enabled: true, windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || '60000'), maxRequests: Number(process.env.RATE_LIMIT_DEFAULT_REQUESTS || '100') },
+      },
+      features: {
+        registration: true,
+        emailVerification: true,
+        socialLogin: true,
+        analytics: true,
+        backup: false,
+        maintenance: false,
+      },
+      integrations: {
+        stripe: { enabled: (process.env.NEXT_PUBLIC_PAYMENTS_ENABLED || 'false') === 'true', publicKey: process.env.STRIPE_PUBLIC_KEY || '', secretKey: process.env.STRIPE_SECRET_KEY || '', webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '' },
+        gmail: { enabled: false, clientId: '', clientSecret: '', redirectUri: '' },
+        similarweb: { enabled: true, apiKey: process.env.SIMILARWEB_API_KEY || '', baseUrl: process.env.SIMILARWEB_API_URL || 'https://data.similarweb.com/api/v1/data' },
+      },
+      performance: { caching: { enabled: true, ttl: Number(process.env.CACHE_TTL || '300000'), maxSize: '1000' }, compression: { enabled: true, level: Number(process.env.COMPRESS_LEVEL || '6') }, clustering: { enabled: false, workers: 1 } },
     }
 
-    try {
-      const configContent = fs.readFileSync(configFile, 'utf8')
-      const rawConfig = JSON.parse(configContent)
-      
-      // Interpolate environment variables
-      this.config = this.interpolateEnvironmentVariables(rawConfig)
-      
-      // Validate configuration
-      if (this.config) {
-        this.validateConfig(this.config)
-      }
-      
-      return this.config!
-    } catch (error) {
-      throw new Error(`Failed to load configuration: ${error instanceof Error ? error.message : "Unknown error" as any}`)
-    }
+    // 若远端快照可用，则优先使用远端快照；否则用 ENV fallback
+    const finalConfig = (remote?.config as EnvironmentConfig) || fallback
+
+    // 校验并赋值
+    this.validateConfig(finalConfig)
+    this.config = finalConfig
+    return this.config
   }
 
   /**
@@ -363,6 +442,7 @@ class EnvironmentManager {
    * Interpolate environment variables in configuration
    */
   private interpolateEnvironmentVariables(config: any): any {
+    // 远端快照中若包含 ${ENV_VAR} 模板，可在此进行插值；
     const interpolated = JSON.parse(JSON.stringify(config))
     
     const interpolate = (obj: any): any => {
@@ -402,15 +482,15 @@ class EnvironmentManager {
     }
 
     // Validate specific configurations
-    if (!config.database.url) {
+    if (!config.database || !config.database.url) {
       throw new Error('Database URL is required')
     }
 
-    if (!config.auth.jwtSecret) {
+    if (!config.auth || !config.auth.jwtSecret) {
       throw new Error('JWT secret is required')
     }
 
-    if (config.security.csrf.enabled && !config.security.csrf.secret) {
+    if (config.security?.csrf?.enabled && !config.security.csrf.secret) {
       throw new Error('CSRF secret is required when CSRF is enabled')
     }
   }

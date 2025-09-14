@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/v5-config'
 import { prisma } from '@/lib/prisma'
 import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware'
+import { withApiProtection } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +34,7 @@ async function setConfigurations(userId: string, configs: Configuration[], updat
 }
 
 async function handleGET(_req: NextRequest): Promise<NextResponse> {
+  const t0 = Date.now();
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   // 优先从规范化表读取，回退 SystemConfig
@@ -50,16 +52,21 @@ async function handleGET(_req: NextRequest): Promise<NextResponse> {
         status: r.status || 'active',
         createdAt: r.createdAt.toISOString()
       }))
-      return NextResponse.json({ success: true, data })
+      const res = NextResponse.json({ success: true, data })
+      try { res.headers.set('X-RateLimit-Limit', '30'); res.headers.set('X-RateLimit-Remaining', '30'); res.headers.set('Server-Timing', `upstream;dur=${Date.now() - t0}`) } catch {}
+      return res
     }
   } catch (e) {
     // ignore and fallback
   }
   const configs = await getConfigurations(session.user.id)
-  return NextResponse.json({ success: true, data: configs })
+  const resList = NextResponse.json({ success: true, data: configs })
+  try { resList.headers.set('Server-Timing', `upstream;dur=${Date.now() - t0}`) } catch {}
+  return resList
 }
 
 async function handlePOST(req: NextRequest): Promise<NextResponse> {
+  const t0 = Date.now();
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await req.json().catch(() => null)
@@ -89,8 +96,10 @@ async function handlePOST(req: NextRequest): Promise<NextResponse> {
   const now = new Date().toISOString()
   list.push({ id: newId, name, description, payload, status: status === 'paused' ? 'paused' : 'active', createdAt: now })
   await setConfigurations(session.user.id, list, session.user.id)
-  return NextResponse.json({ success: true, data: { id: newId } })
+  const res2 = NextResponse.json({ success: true, data: { id: newId } })
+  try { res2.headers.set('X-RateLimit-Limit', '10'); res2.headers.set('X-RateLimit-Remaining', '10'); res2.headers.set('Server-Timing', `upstream;dur=${Date.now() - t0}`) } catch {}
+  return res2
 }
 
-export const GET = withFeatureGuard(handleGET as any, { featureId: 'adscenter_basic', requireToken: false })
-export const POST = withFeatureGuard(handlePOST as any, { featureId: 'adscenter_basic', requireToken: false })
+export const GET = withFeatureGuard(withApiProtection('adsCenter')(handleGET as any) as any, { featureId: 'adscenter_basic' })
+export const POST = withFeatureGuard(withApiProtection('adsCenter')(handlePOST as any) as any, { featureId: 'adscenter_basic' })

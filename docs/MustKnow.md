@@ -13,7 +13,7 @@
 - 测试环境域名：localhost
 - 预发环境域名：urlchecker.dev，容器内部域名是 autoads-preview-xxx-xxx:3000
 - 生成环境域名：autoads.dev，容器内部域名是 autoads-prod-xxx-xxx:3000
-3）301强制跳转
+3）301强制跳转（已在DNS解析层面实现，业务内部无需实现）
 - 预发环境，用户访问 https://urlchecker.dev 会301跳转到 https://www.urlchecker.dev
 - 生产环境，用户访问 https://autoads.dev 会301跳转到 https://www.autoads.dev
 4）预发/生产环境核心环境变量

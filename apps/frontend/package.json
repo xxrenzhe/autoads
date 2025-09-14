@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prestart": "node scripts/validate-env.js",
     "start": "next start",
     "test": "jest --config=jest.config.cjs",
     "lint": "next lint",

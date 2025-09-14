@@ -4,6 +4,7 @@ import { silentBatchTaskManager } from '@/lib/silent-batch-task-manager';
 import { withMiddleware } from '@/lib/middleware/api';
 import { auth } from '@/lib/auth/v5-config';
 import { requireFeature } from '@/lib/utils/subscription-based-api';
+import { withApiProtection } from '@/lib/api-utils';
 
 const logger = createLogger('SilentBatchOpenProgressAPI');
 
@@ -364,8 +365,11 @@ async function getHandler(request: NextRequest, context: any) {
     
     const duration = Date.now() - startTime;
     
-    // Add performance header
+    // Add performance + simple rate limit hint headers
     response.headers.set('X-Response-Time', `${duration}ms`);
+    try {
+      response.headers.set('X-RateLimit-Limit', '10');
+    } catch {}
     
     return response;
 
@@ -411,8 +415,10 @@ async function getHandler(request: NextRequest, context: any) {
 }
 
 // Apply rate limiting: Higher limit for progress polling
-export const GET = requireFeature('batchopen_basic', async (request: NextRequest, context: any) => {
-  return getHandler(request, context);
-}, {
-  customRateLimit: true
-});
+export const GET = requireFeature(
+  'batchopen_basic',
+  withApiProtection('batchOpen')(async (request: NextRequest, context: any) => {
+    return getHandler(request, context);
+  }) as any,
+  { customRateLimit: true }
+);

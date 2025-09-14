@@ -15,6 +15,8 @@ import { Progress } from '@/components/ui/progress';
 import { createClientLogger } from "@/lib/utils/security/client-secure-logger";
 const logger = createClientLogger('AdsCenterClient');
 import { http } from '@/shared/http/client'
+import { getUiDefaultRpm, fetchUiDefaultRpm, getPlanFeatureRpmSync } from '@/lib/config/rate-limit'
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits'
 
 import { 
   Play, 
@@ -27,6 +29,8 @@ import {
   Activity
 } from 'lucide-react';
 import { toast } from 'sonner'
+import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal'
+import type { HttpError } from '@/shared/http/client'
 
 interface GoogleAdsAccount {
   id: string;
@@ -44,6 +48,7 @@ interface Configuration {
   status: string;
   created_at: string;
   updated_at: string;
+  payload?: any;
 }
 
 interface Execution {
@@ -69,12 +74,23 @@ export default function AdsCenterClient() {
   const [addingAccount, setAddingAccount] = useState(false);
   const [addingConfig, setAddingConfig] = useState(false);
   const [startingExecId, setStartingExecId] = useState<string | null>(null);
+  const [showWeChatModal, setShowWeChatModal] = useState(false);
+  const [modalScenario, setModalScenario] = useState<'insufficient_balance' | 'upgrade_required' | 'adscenter_enable'>('adscenter_enable');
+  const [modalRequired, setModalRequired] = useState<number | undefined>(undefined);
+  const [modalBalance, setModalBalance] = useState<number | undefined>(undefined);
   
   // Form states
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showAddConfig, setShowAddConfig] = useState(false);
   const [newAccount, setNewAccount] = useState({ accountId: '', accountName: '' });
   const [newConfig, setNewConfig] = useState({ name: '', description: '', configData: '' });
+  // UI 速率上限（展示用途，后端为权威）
+  const [uiRateLimitMax, setUiRateLimitMax] = useState<number>(getUiDefaultRpm());
+  const { data: subscriptionData } = useSubscriptionLimits();
+  const [planRpm, setPlanRpm] = useState<number | undefined>(undefined);
+  const [featureRpm, setFeatureRpm] = useState<number | undefined>(undefined);
+  useEffect(() => { fetchUiDefaultRpm().then(setUiRateLimitMax).catch(() => {}); }, []);
+  useEffect(() => { const { planRpm: p, featureRpm: f } = getPlanFeatureRpmSync(subscriptionData?.planId, 'adscenter'); setPlanRpm(p); setFeatureRpm(f); }, [subscriptionData?.planId]);
 
   useEffect(() => {
     fetchData();
@@ -108,6 +124,7 @@ export default function AdsCenterClient() {
         status: c.status || 'active',
         created_at: c.createdAt || c.created_at || new Date().toISOString(),
         updated_at: c.updated_at || c.createdAt || new Date().toISOString(),
+        payload: c.payload || c.data || c.config || {}
       }));
       setConfigurations(normalizedConfigs);
 
@@ -238,6 +255,31 @@ export default function AdsCenterClient() {
   const handleStartExecution = async (configurationId: string) => {
     try {
       setStartingExecId(configurationId);
+      if (useGoAds) {
+        // 优先尝试走 Go 原子端点（从配置 payload 推断必要参数）
+        const cfg = configurations.find(c => c.id === configurationId)
+        const p = (cfg?.payload || {}) as any
+        // 兼容字段名
+        const links: string[] = p.affiliate_links || p.links || p.urls || []
+        const profile: string = p.adspower_profile || p.profile || ''
+        const account: string = p.google_ads_account || p.googleAdsAccount || p.account || ''
+        if (!links?.length || !profile || !account) {
+          toast.error('配置缺少必要字段（affiliate_links / adspower_profile / google_ads_account），请使用快速执行或补全配置')
+        } else {
+          const out = await runAdsCenterUpdate({
+            name: cfg?.name || `adscenter_${Date.now()}`,
+            affiliate_links: links,
+            adspower_profile: profile,
+            google_ads_account: account,
+          })
+          toast.success(`已发起执行，任务ID：${out.taskId}`)
+          setSuccessMessage('Execution started successfully')
+          setStartingExecId(null)
+          return
+        }
+      }
+
+      // 回退旧入口
       const res = await http.post<{ success?: boolean; error?: string }>(
         '/adscenter/executions',
         { configurationId }
@@ -252,8 +294,22 @@ export default function AdsCenterClient() {
       toast.success('执行已启动');
       fetchFresh();
     } catch (err) {
-      setError('操作失败，请稍后重试');
-      toast.error('操作失败，请稍后重试');
+      const e = err as HttpError;
+      // 根据错误场景展示客服微信弹窗
+      if (e?.status === 402) {
+        setModalScenario('insufficient_balance');
+        setModalRequired(e.details?.required);
+        setModalBalance(e.details?.balance);
+        setShowWeChatModal(true);
+        toast.error('余额不足，请联系顾问充值');
+      } else if (e?.status === 403) {
+        setModalScenario('upgrade_required');
+        setShowWeChatModal(true);
+        toast.error('当前套餐不包含该功能，请升级');
+      } else {
+        setError('操作失败，请稍后重试');
+        toast.error('操作失败，请稍后重试');
+      }
     }
     finally { setStartingExecId(null); }
   };
@@ -306,15 +362,32 @@ export default function AdsCenterClient() {
 
   return (
     <div className="space-y-6">
+      <WeChatSubscribeModal
+        open={showWeChatModal}
+        onOpenChange={setShowWeChatModal}
+        scenario={modalScenario}
+        requiredTokens={modalRequired}
+        currentBalance={modalBalance}
+      />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Google Ads 自动化系统</h1>
           <p className="text-muted-foreground">管理和监控 Google Ads 自动化流程</p>
+          <div className="mt-1 text-xs text-gray-600 flex items-center gap-3">
+            <span>每分钟请求上限（展示）: <span className="font-semibold text-gray-800">{uiRateLimitMax}</span></span>
+            {planRpm ? (<span>套餐上限: <span className="font-semibold text-gray-800">{planRpm} RPM</span></span>) : null}
+            {featureRpm ? (<span>功能上限: <span className="font-semibold text-gray-800">{featureRpm} RPM</span></span>) : null}
+          </div>
         </div>
-        <Button onClick={fetchData} variant="outline">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => { setModalScenario('adscenter_enable'); setShowWeChatModal(true); }}>
+            <ExternalLink className="h-4 w-4 mr-2" />启用引导
+          </Button>
+          <Button onClick={fetchData} variant="outline">
           <RefreshCw className="h-4 w-4 mr-2" />
           刷新
-        </Button>
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -424,6 +497,34 @@ export default function AdsCenterClient() {
               添加配置
             </ProtectedButton>
           </div>
+
+          {useGoAds && (
+            <Card>
+              <CardHeader>
+                <CardTitle>快速链接替换（Go 原子端点）</CardTitle>
+                <CardDescription>直接调用后端原子端点执行（check→execute），更稳健；不依赖本地配置。</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <Label>Affiliate Links（一行一个）</Label>
+                  <Textarea rows={4} value={goLinks} onChange={(e) => setGoLinks(e.target.value)} placeholder="https://example.com/aff1\nhttps://example.com/aff2" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label>AdsPower Profile</Label>
+                    <Input value={goAdsPowerProfile} onChange={(e) => setGoAdsPowerProfile(e.target.value)} placeholder="profile_xxx" />
+                  </div>
+                  <div>
+                    <Label>Google Ads Account</Label>
+                    <Input value={goGoogleAdsAccount} onChange={(e) => setGoGoogleAdsAccount(e.target.value)} placeholder="customers/1234567890" />
+                  </div>
+                </div>
+                <ProtectedButton featureName="adscenter" onClick={handleGoQuickUpdate} disabled={goRunning}>
+                  {goRunning ? '执行中...' : '立即执行（Go）'}
+                </ProtectedButton>
+              </CardContent>
+            </Card>
+          )}
 
           {showAddConfig && (
             <Card>

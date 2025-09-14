@@ -104,11 +104,13 @@ interface DashboardStats {
   };
 }
 
+import { paymentsEnabled } from '@/lib/config/feature-flags';
+
 const AdminDashboard: React.FC = () => {
   const [stats, setStats] = React.useState<DashboardStats | null>(null);
   const [loading, setLoading] = React.useState(true);
   const navigate = useNavigate();
-  const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true';
+  const PAYMENTS_ENABLED = paymentsEnabled();
 
   React.useEffect(() => {
     // Fetch dashboard statistics

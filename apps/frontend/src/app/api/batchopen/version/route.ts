@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireFeature } from '@/lib/utils/subscription-based-api'
+import { withApiProtection } from '@/lib/api-utils'
 import { BatchOpenPermissionService, BATCHOPEN_VERSIONS } from '@/lib/services/batchopen-permission-service'
 
 async function getBatchopenVersions(request: NextRequest, context: any) {
@@ -46,6 +47,8 @@ async function getBatchopenVersions(request: NextRequest, context: any) {
   }
 }
 
-export const GET = requireFeature('batchopen_basic', getBatchopenVersions, {
-  requireActiveSubscription: false
-});
+export const GET = requireFeature(
+  'batchopen_basic',
+  withApiProtection('batchOpen')(getBatchopenVersions as any) as any,
+  { requireActiveSubscription: false }
+);

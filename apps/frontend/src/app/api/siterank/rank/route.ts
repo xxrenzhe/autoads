@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { similarWebService } from '@/lib/siterank/similarweb-service';
+// 使用统一的 SimilarWeb 服务（含全局缓存与错误TTL）
+import { similarWebService } from '@/lib/siterank/unified-similarweb-service';
 import { createLogger } from "@/lib/utils/security/secure-logger";
 import { EnhancedError } from '@/lib/utils/error-handling';
 import { ipRateLimitManager, batchIpRateLimitManager } from '@/lib/security/ip-rate-limit';
 import { getClientIP, getUserAgent, isValidIP } from '@/lib/utils/ip-utils';
 import { validateBatchQueryCount, getSiteRankConfig } from '@/lib/config/siterank';
-import { withTokenConsumption, siteRankTokenConfig } from '@/lib/middleware/token-consumption-middleware';
 import { prisma } from '@/lib/prisma';
+import { TokenService } from '@/lib/services/token-service';
+import { withApiProtection } from '@/lib/api-utils';
+import { getRedisClient } from '@/lib/cache/redis-client';
 
 // 域名验证函数（同步）
 function isValidDomainFormat(domain: string): boolean {
@@ -62,6 +65,7 @@ async function getUserBatchLimit(userId?: string): Promise<number> {
   }
 
   try {
+    const reqId = request.headers.get('x-request-id') || '';
     // 获取用户的活跃订阅
     const subscription = await prisma.subscription.findFirst({
       where: {
@@ -164,16 +168,17 @@ async function handleGET(request: NextRequest, userId?: string) {
 const type = 'similarweb';
     const forceRefresh = searchParams.get('forceRefresh') === 'true';
 
-    // Check cache first (if not forcing refresh)
-    let cachedResult: { status: string; [key: string]: any } | null = null;
-    if (!forceRefresh) {
+    // 如果请求强制刷新，则清除统一缓存（L1+L2）
+    if (forceRefresh) {
       try {
-        // Simple in-memory cache check - in production you'd use Redis or similar
-        // For now, we'll just set cachedResult to null to avoid the undefined error
-        cachedResult = null;
-      } catch (error) {
-        logger.warn(`Cache check failed for ${domain}: ${error instanceof Error ? error.message : String(error)}`);
-        cachedResult = null;
+        similarWebService.clearCache();
+        const redis = getRedisClient();
+        await (redis as any).del(
+          `siterank:v1:${domain.trim().toLowerCase()}`,
+          `siterank:v1:err:${domain.trim().toLowerCase()}`
+        );
+      } catch (e) {
+        logger.warn('Force refresh cache clear failed', { message: e instanceof Error ? e.message : String(e) });
       }
     }
 
@@ -203,18 +208,31 @@ const type = 'similarweb';
 
     let result: { status: string; source?: string; [key: string]: any };
     let fromCache = false;
-    
-    if (cachedResult && typeof cachedResult === 'object' && 'status' in cachedResult && (cachedResult as any).status === 'success' && !forceRefresh) {
-      // 使用缓存结果
-      result = cachedResult;
-      fromCache = true;
-      logger.info(`返回缓存数据: ${domain}`);
-    } else {
-      // 执行实际查询 - 都使用SimilarWeb API
-      result = await similarWebService.queryDomainData(domain, {
-        forceRefresh
-      });
+    // 预检余额（不扣费）：单域名 = 1 Token
+    if (userId) {
+      const check = await TokenService.checkTokenBalance(userId, 1);
+      if (!check.sufficient) {
+        return NextResponse.json({
+          error: 'Insufficient token balance',
+          code: 'INSUFFICIENT_TOKENS',
+          required: check.required,
+          balance: check.currentBalance
+        }, { status: 402 });
+      }
     }
+    
+    // 统计缓存命中（查询前）用于提示
+    let cacheHit = 0;
+    try {
+      const redis = getRedisClient();
+      const key = `siterank:v1:${domain.trim().toLowerCase()}`;
+      cacheHit = await (redis as any).exists(key);
+    } catch {}
+
+    // 执行统一查询（内部自带缓存/错误TTL）
+    const t0 = Date.now();
+    result = await (similarWebService as any).queryDomainData(domain);
+    const t1 = Date.now();
 
     logger.info(`SiteRank查询完成: ${domain}`, { 
       status: result.status,
@@ -226,7 +244,9 @@ const type = 'similarweb';
       error: result.error 
     });
 
-    return NextResponse.json({ 
+    // fromCache 以 Redis 命中为准（提示用途）
+    fromCache = cacheHit > 0;
+    const response = NextResponse.json({ 
       success: true,
       data: result,
       type,
@@ -237,6 +257,25 @@ const type = 'similarweb';
         totalRequests: rateLimitResult.totalRequests
       }
     });
+    // 设置提示头：X-Cache-Hit 与 X-RateLimit-*
+    try { response.headers.set('X-Cache-Hit', `${cacheHit}/1`); } catch {}
+    try {
+      response.headers.set('X-RateLimit-Limit', '30');
+      response.headers.set('X-RateLimit-Remaining', `${rateLimitResult.remaining}`);
+      response.headers.set('X-RateLimit-Reset', `${rateLimitResult.resetTime}`);
+    } catch {}
+    try { if (reqId) response.headers.set('X-Request-Id', reqId); } catch {}
+    try { response.headers.set('Server-Timing', `upstream;dur=${t1 - t0}`); } catch {}
+    // 成功后扣费（单域名）
+    try {
+      if (userId) {
+        await TokenService.consumeTokens(userId, 'siterank', 'single_analysis', {
+          batchSize: 1,
+          metadata: { endpoint: '/api/siterank/rank', domain }
+        });
+      }
+    } catch {}
+    return response;
   } catch (error) { 
     logger.error('SiteRank查询API错误:', new EnhancedError('SiteRank查询API错误', { error: error instanceof Error ? error.message : String(error) }));
     return NextResponse.json(
@@ -331,15 +370,29 @@ async function handlePOST(request: NextRequest, userId?: string) {
       ip: isValidIP(clientIP) ? clientIP : 'anonymous'
     });
 
+    // 预检余额（不扣费）：按域名数计费
+    const requiredTokens = domains.length;
+    if (userId) {
+      const check = await TokenService.checkTokenBalance(userId, requiredTokens);
+      if (!check.sufficient) {
+        return NextResponse.json({
+          error: 'Insufficient token balance',
+          code: 'INSUFFICIENT_TOKENS',
+          required: check.required,
+          balance: check.currentBalance
+        }, { status: 402 });
+      }
+    }
+
     // 都使用SimilarWeb API批量查询
-    const results = await similarWebService.queryMultipleDomains(domains, {
-      concurrency
-    });
+    const t0b = Date.now();
+    const results = await similarWebService.queryMultipleDomains(domains, { concurrency });
+    const t1b = Date.now();
 
     const successful = results.filter((r: any) => r.status === 'success').length;
     const failed = results.filter((r: any) => r.status === 'error').length;
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true,
       data: results,
       type: 'similarweb',
@@ -348,6 +401,33 @@ async function handlePOST(request: NextRequest, userId?: string) {
       failed,
       successRate: results.length > 0 ? ((successful / results.length) * 100).toFixed(1) + '%' : '0%'
     });
+
+    // 扣费（成功路径）；附加缓存命中提示（非契约）
+    try {
+      // 计算缓存命中
+      try {
+        const redis = getRedisClient();
+        const keys = domains.map((d: string) => `siterank:v1:${String(d).trim().toLowerCase()}`);
+        const exists = (await (redis as any).exists(...keys)) as number;
+        response.headers.set('X-Cache-Hit', `${exists}/${domains.length}`);
+      } catch {}
+      // 设置速率限制提示头（与批量限额保持一致）
+      try {
+        response.headers.set('X-RateLimit-Limit', '5');
+        response.headers.set('X-RateLimit-Remaining', `${rateLimitResult.remaining}`);
+        response.headers.set('X-RateLimit-Reset', `${rateLimitResult.resetTime}`);
+      } catch {}
+      try { if (reqId) response.headers.set('X-Request-Id', reqId); } catch {}
+      try { response.headers.set('Server-Timing', `upstream;dur=${t1b - t0b}`); } catch {}
+      if (userId) {
+        await TokenService.consumeTokens(userId, 'siterank', 'batch_analysis', {
+          batchSize: requiredTokens,
+          metadata: { endpoint: '/api/siterank/rank', domainsCount: requiredTokens }
+        });
+      }
+    } catch {}
+
+    return response;
   } catch (error) { 
     logger.error('SiteRank批量查询API错误:', new EnhancedError('SiteRank批量查询API错误', { error: error instanceof Error ? error.message : String(error) }));
     return NextResponse.json(
@@ -361,7 +441,7 @@ async function handlePOST(request: NextRequest, userId?: string) {
 }
 
 // 导出包装了Token消耗和功能权限的处理器
-import { withFeatureGuard, createBatchTokenCostExtractor } from '@/lib/middleware/feature-guard-middleware';
+import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware';
 
 // 根据用户套餐确定功能ID
 async function getSiteRankFeatureId(userId?: string): Promise<string> {
@@ -396,19 +476,11 @@ async function getSiteRankFeatureId(userId?: string): Promise<string> {
 
 // 导出最终的处理器（使用动态特性解析）
 export const GET = withFeatureGuard(
-  handleGET,
-  {
-    featureIdResolver: async (session: any) => await getSiteRankFeatureId(session?.user?.id),
-    requireToken: true,
-    getTokenCost: () => 1
-  }
+  withApiProtection('siteRank')(handleGET as any) as any,
+  { featureIdResolver: async (session: any) => await getSiteRankFeatureId(session?.user?.id) }
 );
 
 export const POST = withFeatureGuard(
-  handlePOST,
-  {
-    featureIdResolver: async (session: any) => await getSiteRankFeatureId(session?.user?.id),
-    requireToken: true,
-    getTokenCost: createBatchTokenCostExtractor('domains')
-  }
+  withApiProtection('siteRank')(handlePOST as any) as any,
+  { featureIdResolver: async (session: any) => await getSiteRankFeatureId(session?.user?.id) }
 );

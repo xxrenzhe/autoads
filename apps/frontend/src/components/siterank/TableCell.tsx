@@ -223,16 +223,22 @@ const TableCellBase: React.FC<TableCellProps> = ({ row, col, locale, allPrioriti
   }
 
   if (col === "domain" || col === "域名") {
+    const fromCache = (row as any).fromCache === true;
     return (
-      <a
-        href={`https://${value}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-medium text-blue-600 hover:text-blue-800 underline"
-        title={value == null ? "" : String(value)}
-      >
-        {value}
-      </a>
+      <div className="flex items-center space-x-2">
+        <a
+          href={`https://${value}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-blue-600 hover:text-blue-800 underline"
+          title={value == null ? "" : String(value)}
+        >
+          {value}
+        </a>
+        {fromCache && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-700 border border-yellow-200" title="命中7天缓存，查询更快（仍全额扣费）">缓存</span>
+        )}
+      </div>
     );
   }
 

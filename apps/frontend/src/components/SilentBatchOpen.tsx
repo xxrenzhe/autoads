@@ -1,6 +1,7 @@
 "use client";
 
 import { EnhancedError } from '@/lib/utils/error-handling';
+import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal';
 import { useLanguage  } from "@/contexts/LanguageContext";
 import React from "react";
 import { useCallback, useEffect, useRef, useState, useMemo, useReducer } from "react";
@@ -477,6 +478,9 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
 
   const [state, dispatch] = useReducer(stateReducer, initialState);
   const { consumeTokens } = useTokenConsumption();
+  const [showWeChatModal, setShowWeChatModal] = useState(false);
+  const [modalRequired, setModalRequired] = useState<number | undefined>(undefined);
+  const [modalBalance, setModalBalance] = useState<number | undefined>(undefined);
   
   // 解构状态以便于使用
   const {
@@ -876,23 +880,78 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
       // 等待轮询启动并确保状态更新
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      // 发送启动请求
-      const response = await fetch('/api/batchopen/silent-start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
+      // 发送启动请求（优先走 Go 原子端点，回退到本地API）
+      let response: Response | null = null;
+      const useGo = process.env.NEXT_PUBLIC_USE_GO_BATCHOPEN === 'true';
+      if (useGo) {
+        try {
+          // 先预检
+          const check = await fetch('/go/api/v1/batchopen/silent:check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ urls: parsedUrls, cycleCount: currentCycleCount, accessMode: currentAccessMode })
+          });
+          if (!check.ok) {
+            // 尝试解析余额不足
+            let details: any = null; try { details = await check.json(); } catch {}
+            if (check.status === 402) {
+              setModalRequired(details?.required); setModalBalance(details?.balance); setShowWeChatModal(true);
+            }
+            throw new Error(`预检失败: ${check.status}`);
+          }
+          // 执行
+          response = await fetch('/go/api/v1/batchopen/silent:execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              taskName: newTaskId,
+              urls: parsedUrls,
+              cycleCount: currentCycleCount,
+              accessMode: currentAccessMode,
+              silent: { concurrency: maxConcurrency || 3, timeout: 30, retry_count: 3 }
+            })
+          });
+        } catch (e) {
+          // 回退到本地API
+          response = null;
+        }
+      }
+      if (!response) {
+        response = await fetch('/api/batchopen/silent-start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestData),
+        });
+      }
 
       if (!response.ok) {
+        // 尝试解析错误体，用于余额不足弹窗
+        let details: any = null;
+        try { details = await response.json(); } catch {}
+        if (response.status === 402) {
+          setModalRequired(details?.required);
+          setModalBalance(details?.balance);
+          setShowWeChatModal(true);
+        }
         throw new Error(`启动失败: ${response.status}`);
       }
 
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || '启动失败');
-      }
+      try {
+        const result = await response.json();
+        if (process.env.NEXT_PUBLIC_USE_GO_BATCHOPEN === 'true') {
+          // Go 端返回 { taskId, status, consumed, balance }
+          if (result?.taskId) {
+            // 用后端taskId覆盖本地生成的taskId，以便使用 /go 进度查询
+            dispatch({ type: 'SET_TASK_ID', payload: result.taskId });
+          } else {
+            throw new Error(result?.message || '启动失败');
+          }
+        } else {
+          if (!result?.success) {
+            throw new Error(result?.message || '启动失败');
+          }
+        }
+      } catch {}
 
       logger.info('任务启动成功，开始轮询进度:', { taskId: newTaskId });
 
@@ -1325,6 +1384,13 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
          }));
       }}
     >
+      <WeChatSubscribeModal
+        open={showWeChatModal}
+        onOpenChange={setShowWeChatModal}
+        scenario="insufficient_balance"
+        requiredTokens={modalRequired}
+        currentBalance={modalBalance}
+      />
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left: Main functionality */}
         <div className="flex-1 min-w-0">

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createLogger } from "@/lib/utils/security/secure-logger";
 import { proxyService } from "@/lib/services/proxy-service";
-import { apiRateLimit } from "@/lib/middleware/rate-limit";
+import { withApiProtection } from '@/lib/api-utils';
 import { validateInput, proxyUrlSchema } from "@/lib/utils/validation";
 
 const logger = createLogger('ProxyUrlValidationAPI');
@@ -38,7 +38,7 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 // Handle other HTTP methods for debugging
-export async function GET(request: NextRequest) {
+const rawGET = async function (request: NextRequest) {
   logger.warn('GET method not allowed for proxy-url-validate');
   
   // Add secure CORS headers
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
   });
 }
 
-export async function PUT(request: NextRequest) {
+const rawPUT = async function (request: NextRequest) {
   logger.warn('PUT method not allowed for proxy-url-validate');
   
   // Add secure CORS headers
@@ -94,7 +94,7 @@ export async function PUT(request: NextRequest) {
   });
 }
 
-export async function DELETE(request: NextRequest) {
+const rawDELETE = async function (request: NextRequest) {
   logger.warn('DELETE method not allowed for proxy-url-validate');
   
   // Add secure CORS headers
@@ -122,7 +122,11 @@ export async function DELETE(request: NextRequest) {
   });
 }
 
-export async function POST(request: NextRequest) {
+export const GET = withApiProtection('batchOpen')(rawGET as any) as any;
+export const PUT = withApiProtection('batchOpen')(rawPUT as any) as any;
+export const DELETE = withApiProtection('batchOpen')(rawDELETE as any) as any;
+
+async function handlePOST(request: NextRequest) {
   const startTime = Date.now();
   
   // Add secure CORS headers
@@ -140,19 +144,6 @@ export async function POST(request: NextRequest) {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
   };
-  
-  // 应用速率限制
-  const rateLimitResult = await apiRateLimit.isAllowed(request);
-  if (!rateLimitResult.allowed) {
-    return NextResponse.json({
-      success: false,
-      message: '请求过于频繁，请稍后重试',
-      code: 'RATE_LIMIT_EXCEEDED'
-    }, { 
-      status: 429,
-      headers 
-    });
-  }
   
   try {
     const body = await request.json();
@@ -235,3 +226,5 @@ export async function POST(request: NextRequest) {
     });
   }
 }
+
+export const POST = withApiProtection('batchOpen')(handlePOST as any) as any;

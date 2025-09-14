@@ -4,6 +4,7 @@ import { silentBatchTaskManager } from '@/lib/silent-batch-task-manager';
 import { withMiddleware } from '@/lib/middleware/api';
 import { auth } from '@/lib/auth/v5-config';
 import { requireFeature } from '@/lib/utils/subscription-based-api';
+import { withApiProtection } from '@/lib/api-utils';
 
 const logger = createLogger('SilentBatchOpenTerminateAPI');
 
@@ -84,9 +85,11 @@ async function postHandler(request: NextRequest, context: any) {
 }
 
 // Apply rate limiting: Standard limit for terminate operations
-export const POST = requireFeature('batchopen_basic', async (request: NextRequest, context: any) => {
-  const body = await request.json();
-  return postHandler(request, { ...context, validatedBody: body });
-}, {
-  customRateLimit: true
-});
+export const POST = requireFeature(
+  'batchopen_basic',
+  withApiProtection('batchOpen')(async (request: NextRequest, context: any) => {
+    const body = await request.json();
+    return postHandler(request, { ...context, validatedBody: body });
+  }) as any,
+  { customRateLimit: true }
+);

@@ -6,20 +6,15 @@
   - 用法：将原本对 Go 的请求改为同源路径 /go/... 即可
 */
 
+import { createInternalJWT, ensureIdempotencyKey, ensureRequestId } from '@/lib/security/internal-jwt';
+import { auth } from '@/lib/auth';
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const BACKEND_BASE = process.env.BACKEND_URL || 'http://127.0.0.1:8080';
 const MAX_BODY_BYTES = Number(process.env.BACKEND_PROXY_MAX_BODY || 2 * 1024 * 1024); // 2MB 默认
 const UPSTREAM_TIMEOUT_MS = Number(process.env.BACKEND_PROXY_TIMEOUT_MS || 15000);
-
-function ensureRequestId(headers: Headers): string {
-  const existing = headers.get('x-request-id');
-  if (existing) return existing;
-  const id = Math.random().toString(36).slice(2) + Date.now().toString(36);
-  headers.set('x-request-id', id);
-  return id;
-}
 
 async function readBodyWithLimit(req: Request, limit: number): Promise<BodyInit | undefined> {
   if (['GET', 'HEAD'].includes(req.method)) return undefined;
@@ -63,8 +58,20 @@ function getAllowedPrefixes(): string[] {
   // 默认最小必要集（可通过 BACKEND_PROXY_ALLOW_PREFIXES 覆盖）
   return [
     '/health', '/ready', '/live',
+    '/admin/gofly-panel',
     '/admin/gofly-panel/api/',
+    '/admin/config/v1',
     '/admin/api-management/',
+    '/api/batchopen',
+    '/api/batchopen/',
+    '/api/v1/batchopen',
+    '/api/v1/batchopen/',
+    '/api/v1/siterank',
+    '/api/v1/siterank/',
+    '/api/v1/adscenter',
+    '/api/v1/adscenter/',
+    '/api/adscenter',
+    '/api/adscenter/',
     '/api/user',
     '/api/tokens',
     '/api/siterank'
@@ -94,6 +101,25 @@ async function proxy(req: Request, path: string[]) {
   headers.set('x-forwarded-host', originalHost);
   const fwdFor = req.headers.get('x-forwarded-for');
   if (fwdFor) headers.set('x-forwarded-for', fwdFor);
+
+  // 注入内部 RSA JWT（若可获取会话）与幂等键（非 GET/HEAD）
+  try {
+    // 获取当前用户会话（允许匿名访问健康类前缀）
+    const session: any = await auth?.();
+    const userId: string | undefined = session?.user?.id || session?.userId;
+    // 为写操作注入幂等键
+    ensureIdempotencyKey(req.method, headers);
+    // 为受保护前缀签发内部 JWT（若拿到 userId 且配置了私钥）
+    if (userId) {
+      const role = session?.user?.role || session?.role;
+      const token = createInternalJWT({ sub: userId, role });
+      if (token) {
+        headers.set('authorization', `Bearer ${token}`);
+      }
+    }
+  } catch {
+    // 会话不可用时，保持匿名透传，让后端自行判定权限
+  }
 
   // 处理请求体（非 GET/HEAD）
   let body: BodyInit | undefined = undefined;

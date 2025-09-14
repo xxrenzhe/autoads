@@ -16,6 +16,7 @@ import {
 import { http } from '@/shared/http/client'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
+import { paymentsEnabled } from '@/lib/config/feature-flags'
 
 interface Subscription {
   id: string
@@ -56,7 +57,7 @@ interface UsageStats {
 }
 
 export default function SubscriptionManagement() {
-  const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true';
+  const PAYMENTS_ENABLED = paymentsEnabled();
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null)

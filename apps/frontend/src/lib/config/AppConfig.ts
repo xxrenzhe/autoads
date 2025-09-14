@@ -1,5 +1,6 @@
 // Unified application configuration
 import { getDomainConfig } from '../domain-config';
+import { getCachedRemoteConfig, getConfigValue } from './remote-config';
 
 // Base configurations for different domains
 const DOMAIN_BASE_CONFIGS = {
@@ -55,8 +56,19 @@ export const APP_CONFIG = {
   // External API Configuration
   external: {
     similarWeb: {
-      apiUrl: process.env.NEXT_PUBLIC_SIMILARWEB_API_URL || "https://data.similarweb.com/api/v1/data",
-      timeout: parseInt(process.env.NEXT_PUBLIC_SIMILARWEB_TIMEOUT || "30000"),
+      get apiUrl() {
+        const snap = getCachedRemoteConfig();
+        // 优先远端聚合配置（Go 的 Config.APIs.SimilarWeb.BaseURL）
+        const remote = snap ? getConfigValue<string>('APIs.SimilarWeb.BaseURL', snap) : undefined;
+        return remote || process.env.NEXT_PUBLIC_SIMILARWEB_API_URL || "https://data.similarweb.com/api/v1/data";
+      },
+      get timeout() {
+        const snap = getCachedRemoteConfig();
+        // 优先远端 HTTP 超时（Config.HTTP.Timeout，单位 ms）
+        const remote = snap ? getConfigValue<number>('HTTP.Timeout', snap) : undefined;
+        const envVal = parseInt(process.env.NEXT_PUBLIC_SIMILARWEB_TIMEOUT || "30000");
+        return (typeof remote === 'number' && Number.isFinite(remote)) ? remote : envVal;
+      },
     },
     googleAds: {
       apiUrl: "https://googleads.googleapis.com",

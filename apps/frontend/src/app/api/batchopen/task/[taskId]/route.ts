@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createLogger } from "@/lib/utils/security/secure-logger";
+import { withApiProtection } from '@/lib/api-utils';
 
 const logger = createLogger('TaskStatusAPI');
 
@@ -37,4 +38,4 @@ async function getHandler(request: NextRequest, { params }: { params: { taskId: 
   }
 }
 
-export const GET = getHandler;
+export const GET = withApiProtection('batchOpen')(getHandler as any) as any;

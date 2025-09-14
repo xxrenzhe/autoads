@@ -7,6 +7,7 @@ import { createLogger } from "@/lib/utils/security/secure-logger";
 import { APP_CONFIG } from '@/lib/config';
 import { SimpleHttpVisitor } from '@/lib/simple-http-visitor';
 import { EnhancedError } from '@/lib/utils/error-handling';
+import { getRedisClient } from '@/lib/cache/redis-client';
 
 const logger = createLogger('UnifiedSimilarWebService');
 
@@ -28,6 +29,7 @@ export interface SimilarWebData {
   error?: string;
   timestamp: Date;
   source: 'similarweb-api' | 'similarweb-scraping' | 'similarweb-playwright';
+  fromCache?: boolean;
 }
 
 export interface SimilarWebApiResponse {
@@ -69,6 +71,8 @@ export class UnifiedSimilarWebService {
   private serviceHealth: ServiceHealth;
   private baseUrl: string;
   private httpVisitor: SimpleHttpVisitor;
+  private redis = getRedisClient();
+  private cacheDisabled: boolean;
   
   constructor(config: SimilarWebConfig = {}) {
     this.config = {
@@ -102,6 +106,9 @@ export class UnifiedSimilarWebService {
     // Start periodic health checks
     this.startHealthChecks();
     
+    // 环境开关：可临时关闭缓存（风险控制）
+    this.cacheDisabled = (process.env.SITERANK_CACHE_DISABLED || '').toLowerCase() === 'true';
+    
     logger.info('UnifiedSimilarWebService initialized', {
       config: this.config,
       baseUrl: this.baseUrl
@@ -116,7 +123,7 @@ export class UnifiedSimilarWebService {
 
     try {
       // Check cache first
-      const cachedData = this.getCachedResult(domain);
+      const cachedData = await this.getCachedResult(domain);
       if (cachedData) {
         logger.info(`Using cached data: ${domain} (${cachedData.status})`);
         return cachedData;
@@ -142,7 +149,7 @@ export class UnifiedSimilarWebService {
       }
 
       // Cache result
-      this.setCachedResult(domain, result);
+      await this.setCachedResult(domain, result);
       
       return result;
 
@@ -161,7 +168,7 @@ export class UnifiedSimilarWebService {
       };
 
       // Cache error result
-      this.setCachedResult(domain, errorResult);
+      await this.setCachedResult(domain, errorResult);
       
       return errorResult;
     }
@@ -172,19 +179,8 @@ export class UnifiedSimilarWebService {
    */
   async queryMultipleDomains(domains: string[]): Promise<SimilarWebData[]> {
     logger.info(`Querying ${domains.length} domains`);
-
-    // First, check cache for all domains
-    const cachedResults = new Map<string, SimilarWebData>();
-    const uncachedDomains: string[] = [];
-
-    for (const domain of domains) {
-      const cached = this.getCachedResult(domain);
-      if (cached) {
-        cachedResults.set(domain, cached);
-      } else {
-        uncachedDomains.push(domain);
-      }
-    }
+    // First, batch check cache for all domains (Redis mget/pipeline when available)
+    const { cachedResults, uncachedDomains } = await this.getBatchCachedResults(domains);
 
     logger.info(`Found ${cachedResults.size} cached results, querying ${uncachedDomains.length} domains`);
 
@@ -204,19 +200,20 @@ export class UnifiedSimilarWebService {
           results.push(...scrapedResults);
           
           // Cache scraped results
-          scrapedResults.forEach((result: any) => {
-            this.setCachedResult(result.domain, result);
-          });
+          for (const result of scrapedResults) {
+            await this.setCachedResult(result.domain, result);
+          }
         } else {
           // Fallback to individual API queries
           const apiPromises = uncachedDomains?.filter(Boolean)?.map((domain: any) => this.queryViaAPI(domain));
           const apiResults = await Promise.allSettled(apiPromises);
-          
-          apiResults.forEach((promiseResult, index: any) => {
+
+          for (let index = 0; index < apiResults.length; index++) {
+            const promiseResult = apiResults[index] as PromiseSettledResult<SimilarWebData>;
             if (promiseResult.status === 'fulfilled') {
               const result = promiseResult.value;
               results.push(result);
-              this.setCachedResult(result.domain, result);
+              await this.setCachedResult(result.domain, result);
             } else {
               const domain = uncachedDomains[index];
               const errorResult: SimilarWebData = {
@@ -224,14 +221,14 @@ export class UnifiedSimilarWebService {
                 globalRank: null,
                 monthlyVisits: null,
                 status: 'error',
-                error: promiseResult.reason instanceof Error ? promiseResult.reason.message : 'API query failed',
+                error: (promiseResult as PromiseRejectedResult).reason instanceof Error ? (promiseResult as PromiseRejectedResult).reason.message : 'API query failed',
                 timestamp: new Date(),
                 source: 'similarweb-api'
               };
               results.push(errorResult);
-              this.setCachedResult(domain, errorResult);
+              await this.setCachedResult(domain, errorResult);
             }
-          });
+          }
         }
       } catch (error) {
         logger.error('Batch query failed, falling back to individual queries', new EnhancedError('Batch query failed, falling back to individual queries', { error: error instanceof Error ? error.message : String(error)
@@ -253,13 +250,114 @@ export class UnifiedSimilarWebService {
               source: 'similarweb-api'
             };
             results.push(errorResult);
-            this.setCachedResult(domain, errorResult);
+            await this.setCachedResult(domain, errorResult);
           }
         }
       }
     }
 
     return results;
+  }
+
+  /**
+   * Batch fetch cached results using Redis mget/pipeline when available
+   */
+  private async getBatchCachedResults(domains: string[]): Promise<{ cachedResults: Map<string, SimilarWebData>, uncachedDomains: string[] }> {
+    if (this.cacheDisabled) {
+      return { cachedResults: new Map<string, SimilarWebData>(), uncachedDomains: domains };
+    }
+    const cachedResults = new Map<string, SimilarWebData>();
+    const uncachedDomains: string[] = [];
+
+    const norm = (d: string) => String(d).trim().toLowerCase();
+    const okKeys = domains.map((d) => `siterank:v1:${norm(d)}`);
+    const errKeys = domains.map((d) => `siterank:v1:err:${norm(d)}`);
+
+    try {
+      // Prefer mget if supported
+      const hasMget = typeof (this.redis as any).mget === 'function';
+      if (hasMget) {
+        const okVals: (string | null)[] = await (this.redis as any).mget(...okKeys);
+        // Collect found OK cache
+        okVals.forEach((raw, idx) => {
+          if (raw) {
+            try {
+              const data = JSON.parse(raw) as SimilarWebData;
+              cachedResults.set(domains[idx], data);
+            } catch {}
+          }
+        });
+        // For remaining, try error caches via a second mget
+        const remainingIdx: number[] = [];
+        domains.forEach((d, i) => { if (!cachedResults.has(d)) remainingIdx.push(i); });
+        if (remainingIdx.length > 0) {
+          const errVals: (string | null)[] = await (this.redis as any).mget(...remainingIdx.map((i) => errKeys[i]));
+          errVals.forEach((raw, j) => {
+            if (raw) {
+              try {
+                const data = JSON.parse(raw) as SimilarWebData;
+                cachedResults.set(domains[remainingIdx[j]], data);
+              } catch {}
+            }
+          });
+        }
+      } else {
+        // Fallback: pipeline or sequential gets
+        const hasPipeline = typeof (this.redis as any).pipeline === 'function';
+        if (hasPipeline) {
+          const pipe = (this.redis as any).pipeline();
+          okKeys.forEach((k) => pipe.get(k));
+          const okRes = await pipe.exec();
+          okRes?.forEach((tuple: any, idx: number) => {
+            const raw = tuple?.[1];
+            if (typeof raw === 'string') {
+              try {
+                const data = JSON.parse(raw) as SimilarWebData;
+                cachedResults.set(domains[idx], data);
+              } catch {}
+            }
+          });
+          // Error keys
+          const remain: number[] = [];
+          domains.forEach((d, i) => { if (!cachedResults.has(d)) remain.push(i); });
+          if (remain.length > 0) {
+            const pipe2 = (this.redis as any).pipeline();
+            remain.forEach((i) => pipe2.get(errKeys[i]));
+            const errRes = await pipe2.exec();
+            errRes?.forEach((tuple: any, j: number) => {
+              const raw = tuple?.[1];
+              if (typeof raw === 'string') {
+                try {
+                  const data = JSON.parse(raw) as SimilarWebData;
+                  cachedResults.set(domains[remain[j]], data);
+                } catch {}
+              }
+            });
+          }
+        } else {
+          // Absolute fallback: sequential get (keeps behavior)
+          for (const d of domains) {
+            const cached = await this.getCachedResult(d);
+            if (cached) cachedResults.set(d, cached);
+          }
+        }
+      }
+    } catch (e) {
+      logger.warn('Batch cache read failed, fallback to per-key', { message: e instanceof Error ? e.message : String(e) });
+      // Fallback sequential
+      for (const d of domains) {
+        const cached = await this.getCachedResult(d);
+        if (cached) cachedResults.set(d, cached);
+      }
+    }
+
+    // Compute uncached domain list
+    for (const d of domains) {
+      if (!cachedResults.has(d)) uncachedDomains.push(d);
+    }
+
+    this.serviceHealth.cacheSize = this.cache.size;
+    return { cachedResults, uncachedDomains };
   }
 
   /**
@@ -646,24 +744,61 @@ export class UnifiedSimilarWebService {
   /**
    * Cache management
    */
-  private getCachedResult(domain: string): SimilarWebData | null {
+  private async getCachedResult(domain: string): Promise<SimilarWebData | null> {
+    if (this.cacheDisabled) return null;
+    // L1: in-process cache with TTL
     const cached = this.cache.get(domain);
     if (cached) {
-      const cacheTime = cached.data.status === 'error' 
-        ? this.config.errorCacheTTL! 
+      const cacheTime = cached.data.status === 'error'
+        ? this.config.errorCacheTTL!
         : this.config.cacheTTL!;
-      
       if (Date.now() - cached.timestamp < cacheTime) {
-        return cached.data;
+        return { ...cached.data, fromCache: true } as SimilarWebData;
       }
     }
-    return null as any;
+
+    // L2: Redis cache with key per domain
+    try {
+      const keyOk = `siterank:v1:${domain.trim().toLowerCase()}`;
+      const raw = await this.redis.get(keyOk);
+      if (raw) {
+        const data = { ...(JSON.parse(raw) as SimilarWebData), fromCache: true } as SimilarWebData;
+        this.cache.set(domain, { data, timestamp: Date.now() });
+        this.serviceHealth.cacheSize = this.cache.size;
+        return data;
+      }
+      // Backoff on error key
+      const keyErr = `siterank:v1:err:${domain.trim().toLowerCase()}`;
+      const rawErr = await this.redis.get(keyErr);
+      if (rawErr) {
+        try {
+          const errData = { ...(JSON.parse(rawErr) as SimilarWebData), fromCache: true } as SimilarWebData;
+          return errData;
+        } catch {}
+      }
+    } catch (e) {
+      logger.warn('Redis cache read failed', { message: e instanceof Error ? e.message : String(e) });
+    }
+    return null;
   }
 
-  private setCachedResult(domain: string, data: SimilarWebData): void {
+  private async setCachedResult(domain: string, data: SimilarWebData): Promise<void> {
+    if (this.cacheDisabled) return;
+    // Update in-process cache
     this.cache.set(domain, { data, timestamp: Date.now() });
     this.serviceHealth.cacheSize = this.cache.size;
-    logger.debug(`Cached data: ${domain} (${data.status})`);
+    logger.debug(`Cached data (L1): ${domain} (${data.status})`);
+
+    // Update Redis cache with TTL
+    try {
+      const isSuccess = data.status === 'success';
+      const key = `${isSuccess ? 'siterank:v1' : 'siterank:v1:err'}:${domain.trim().toLowerCase()}`;
+      const ttlSec = isSuccess ? Math.floor((this.config.cacheTTL || 7 * 24 * 60 * 60 * 1000) / 1000) : Math.floor((this.config.errorCacheTTL || 60 * 60 * 1000) / 1000);
+      await this.redis.setex(key, ttlSec, JSON.stringify(data));
+      logger.debug(`Cached data (L2): ${key} ttl=${ttlSec}s`);
+    } catch (e) {
+      logger.warn('Redis cache write failed', { message: e instanceof Error ? e.message : String(e) });
+    }
   }
 
   /**

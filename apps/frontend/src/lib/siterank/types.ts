@@ -35,6 +35,7 @@ export interface SiteRankResponse {
 export interface AnalysisResult {
   domain?: string;
   域名?: string;
+  fromCache?: boolean;
   rank?: number | null;
   全球排名?: number | null | "loading";
   相对排名?: number | null | "loading";

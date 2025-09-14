@@ -32,6 +32,11 @@ interface RateLimitStatus {
   isLimited: boolean;
 }
 
+interface CacheStats {
+  hits: number;
+  total: number;
+}
+
 export const useAnalysisEngine = ({
   domains,
   originalData,
@@ -47,6 +52,8 @@ export const useAnalysisEngine = ({
     totalRequests: 0,
     isLimited: false
   });
+  // 缓存命中统计（仅提示，不参与计费）
+  const [cacheStats, setCacheStats] = useState<CacheStats>({ hits: 0, total: 0 });
   
   // 请求队列
   const requestQueue = useRef<QueuedRequest[]>([]);
@@ -69,6 +76,38 @@ export const useAnalysisEngine = ({
     return uniqueList;
   }, [domains]);
   
+  // 批量执行（Go 原子扣费 + 执行），成功则一次性填充结果
+  const tryBatchExecute = useCallback(async (batchDomains: string[]) => {
+    if (!batchDomains || batchDomains.length === 0) return false;
+    // 若仅一个域名则不走批量
+    if (batchDomains.length === 1) return false;
+    // 预检（可能抛出 402/429）
+    await backend.post<any>('/api/v1/siterank/batch:check', { domains: batchDomains });
+    // 执行
+    const exec = await backend.post<any>('/api/v1/siterank/batch:execute', { domains: batchDomains });
+    const res = exec?.results || exec?.data || exec;
+    if (!res || typeof res !== 'object') return false;
+    const out: AnalysisResult[] = [];
+    for (const d of batchDomains) {
+      const sw = res[d];
+      if (!sw) {
+        out.push({ domain: d, GlobalRank: null, MonthlyVisits: null, status: 'error', error: 'No data' } as any);
+        continue;
+      }
+      const item = Array.isArray(sw.data) && sw.data.length > 0 ? sw.data[0] : null;
+      const rank = item?.rank ?? null;
+      const monthly = item?.traffic?.monthly_visits ?? item?.traffic?.MonthlyVisits ?? null;
+      out.push({
+        domain: d,
+        GlobalRank: (rank ?? null) as any,
+        MonthlyVisits: (typeof monthly === 'number' ? String(monthly) : (monthly ?? null)) as any,
+        status: 'success'
+      } as any);
+    }
+    onResultsUpdate(out);
+    return true;
+  }, [onResultsUpdate]);
+
   // 处理请求队列
   const processRequestQueue = useCallback(async () => {
     if (isProcessingQueue.current || requestQueue.current.length === 0) {
@@ -115,6 +154,7 @@ export const useAnalysisEngine = ({
         
         if (result.fromCache) {
           logger.info(`缓存命中: ${request.domain}`);
+          setCacheStats(prev => ({ ...prev, hits: prev.hits + 1 }));
         }
 
         // 根据剩余配额调整延迟
@@ -141,10 +181,8 @@ export const useAnalysisEngine = ({
       const timeoutId = setTimeout(() => controller.abort(), 30000);
       
       // 通过 Next 内置反代访问 Go 后端
-      const result = await backend.get<any>(
-        '/api/siterank/rank',
-        { domain, source: 'similarweb' }
-      );
+      // 改为直接调用 Go 的原子端点（通过 /go 反代）
+      const result = await backend.get<any>('/api/v1/siterank/rank', { domain, source: 'similarweb' });
       
       clearTimeout(timeoutId);
       
@@ -205,13 +243,14 @@ export const useAnalysisEngine = ({
         throw new Error(validation.error || "域名数量超过限制");
       }
 
-      // 重置速率限制状态
+      // 重置速率限制状态与缓存统计
       setRateLimitStatus({
         remaining: 500,
         resetTime: 0,
         totalRequests: 0,
         isLimited: false
       });
+      setCacheStats({ hits: 0, total: uniqueDomains.length });
 
       // 立即创建初始结果并显示，包含所有原始数据
       const initialResults: AnalysisResult[] = domains.map((domain, index: any) => {
@@ -237,6 +276,19 @@ export const useAnalysisEngine = ({
       onResultsUpdate(initialResults);
       onStatusUpdate(false, true); // 立即完成分析，开始后台查询
 
+      // 优先尝试批量执行（一次性扣费+执行），成功则直接产出结果
+      try {
+        const handled = await tryBatchExecute(uniqueDomains);
+        if (handled) {
+          onStatusUpdate(false, false);
+          onProgressUpdate("");
+          return;
+        }
+      } catch (e) {
+        // 将 402/429 交由上层处理；其他错误继续走单域查询兜底
+        throw e;
+      }
+
       // 存储所有查询结果用于重新计算优先级
       const allResults: Array<{
         domain: string;
@@ -255,7 +307,7 @@ export const useAnalysisEngine = ({
       
       logger.info('Domain to indices mapping:', Object.fromEntries(domainToIndices));
 
-      // 智能分批查询，提高分析速率 - 使用去重后的域名列表
+      // 智能分批查询，提高分析速率 - 使用去重后的域名列表（逐个查询兜底路径）
       let batchSize = 20; // 提高初始批次大小
       let consecutiveErrors = 0; // 连续错误计数
       const maxConsecutiveErrors = 3; // 最大连续错误数
@@ -267,7 +319,7 @@ export const useAnalysisEngine = ({
           onProgressUpdate(`${globalIndex + 1}/${uniqueDomains.length}`); // 实时更新进度
           
           // 确保无论成功还是失败，都会更新对应域名的状态（包括所有重复域名）
-          const updateDomainResult = (similarWebData: { globalRank?: number | null; monthlyVisits?: string | null } | null) => {
+          const updateDomainResult = (similarWebData: { globalRank?: number | null; monthlyVisits?: string | null; fromCache?: boolean } | null) => {
             onResultsUpdate((prev) => {
               const newResults = [...prev];
               const indices = domainToIndices.get(domain) || [];
@@ -289,6 +341,7 @@ export const useAnalysisEngine = ({
                     ...newResults[index],
                     GlobalRank: similarWebData?.globalRank ?? null,
                     MonthlyVisits: similarWebData?.monthlyVisits ?? null,
+                    fromCache: similarWebData?.fromCache === true ? true : newResults[index]?.fromCache,
                     测试优先级: hasValidData ? null : null, // 先设为null，稍后重新计算
                   };
                   logger.info(`Updated row ${index} for ${domain} (found ${indices.length} occurrences)`); // 调试日志
@@ -323,7 +376,7 @@ export const useAnalysisEngine = ({
               logger.info(`Added to allResults: ${domain} with globalRank=${globalRank}, monthlyVisits=${monthlyVisits}`);
 
               // 更新结果
-              updateDomainResult({ globalRank: globalRank, monthlyVisits: monthlyVisits });
+              updateDomainResult({ globalRank: globalRank, monthlyVisits: monthlyVisits, fromCache: !!similarWebData.fromCache });
               consecutiveErrors = 0; // 重置错误计数
               return { success: true, domain };
             } else {
@@ -496,7 +549,8 @@ export const useAnalysisEngine = ({
   return { 
     startAnalysis,
     rateLimitStatus,
-    getEstimatedCompletionTime
+    getEstimatedCompletionTime,
+    cacheStats
   };
 };
 

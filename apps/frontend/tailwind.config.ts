@@ -84,5 +84,15 @@ export default {
       },
     }
   },
-  plugins: [require("tailwindcss-animate")],
+  // 在离线/精简环境下，tailwindcss-animate 可能不可用，做兼容处理
+  plugins: [
+    (() => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        return require('tailwindcss-animate')
+      } catch {
+        return function () { /* noop plugin for offline builds */ }
+      }
+    })(),
+  ],
 } satisfies Config;

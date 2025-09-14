@@ -7,7 +7,8 @@ export default function AdminPage() {
   const router = useRouter()
 
   useEffect(() => {
-    router.push('/admin-dashboard')
+    // 前端不再承载管理台，跳转至 GoFly Admin（通过同源 /go 反代）
+    router.replace('/go/admin/gofly-panel')
   }, [router])
 
   return (

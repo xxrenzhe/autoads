@@ -30,7 +30,10 @@ export function useProgressPolling({
       return;
     }
     
-    const progressUrl = `/api/batchopen/silent-progress?taskId=${taskId}`;
+    const useGo = process.env.NEXT_PUBLIC_USE_GO_BATCHOPEN === 'true';
+    const progressUrl = useGo 
+      ? `/go/api/v1/batchopen/tasks/${taskId}`
+      : `/api/batchopen/silent-progress?taskId=${taskId}`;
     logger.info('Starting progress polling', { taskId, url: progressUrl });
     
     const pollingClient = apiClient.createProgressPoller(progressUrl, {

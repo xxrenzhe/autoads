@@ -108,6 +108,7 @@ import { InvitationList } from './resources/invitations/InvitationList';
 import { InvitationEdit } from './resources/invitations/InvitationEdit';
 import { InvitationCreate } from './resources/invitations/InvitationCreate';
 import { InvitationShow } from './resources/invitations/InvitationShow';
+import { paymentsEnabled } from '@/lib/config/feature-flags';
 
 // Anti-Cheat Management Resources
 import { AntiCheatAdmin } from './resources/anti-cheat';
@@ -131,7 +132,7 @@ import { RestrictionShow } from './resources/restrictions/RestrictionShow';
  */
 const InnerAdminApp: React.FC = () => {
   const authProvider = createNextAuthAuthProvider();
-  const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true';
+  const PAYMENTS_ENABLED = paymentsEnabled();
   
   return (
     <EnvReloadProvider>
