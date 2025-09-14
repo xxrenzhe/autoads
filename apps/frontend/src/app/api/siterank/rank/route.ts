@@ -394,53 +394,21 @@ async function getSiteRankFeatureId(userId?: string): Promise<string> {
   }
 }
 
-// SiteRank GET处理器包装
-const GETwithFeatureGuard = withFeatureGuard(
+// 导出最终的处理器（使用动态特性解析）
+export const GET = withFeatureGuard(
   handleGET,
   {
-    featureId: 'siterank_basic', // 基础功能，实际在运行时确定
-    requireToken: true,
-    getTokenCost: () => 1 // 单个查询消耗1个Token
-  }
-);
-
-// SiteRank POST处理器包装
-const POSTwithFeatureGuard = withFeatureGuard(
-  handlePOST,
-  {
-    featureId: 'siterank_basic', // 基础功能，实际在运行时确定
-    requireToken: true,
-    getTokenCost: createBatchTokenCostExtractor('domains')
-  }
-);
-
-// 导出最终的处理器
-export const GET = async (request: NextRequest, ...args: any[]) => {
-  // 动态确定功能ID
-  const userId = args[0];
-  const featureId = await getSiteRankFeatureId(userId);
-  
-  // 创建动态处理器
-  const dynamicHandler = withFeatureGuard(handleGET, {
-    featureId,
+    featureIdResolver: async (session: any) => await getSiteRankFeatureId(session?.user?.id),
     requireToken: true,
     getTokenCost: () => 1
-  });
-  
-  return dynamicHandler(request, ...args);
-};
+  }
+);
 
-export const POST = async (request: NextRequest, ...args: any[]) => {
-  // 动态确定功能ID
-  const userId = args[0];
-  const featureId = await getSiteRankFeatureId(userId);
-  
-  // 创建动态处理器
-  const dynamicHandler = withFeatureGuard(handlePOST, {
-    featureId,
+export const POST = withFeatureGuard(
+  handlePOST,
+  {
+    featureIdResolver: async (session: any) => await getSiteRankFeatureId(session?.user?.id),
     requireToken: true,
     getTokenCost: createBatchTokenCostExtractor('domains')
-  });
-  
-  return dynamicHandler(request, ...args);
-};
+  }
+);

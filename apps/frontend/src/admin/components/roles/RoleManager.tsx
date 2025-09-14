@@ -1,5 +1,6 @@
 'use client'
 import React, { useState } from 'react'
+import { useConfirm } from '@/components/providers/ConfirmProvider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/Card'
 import { Button } from '@/shared/components/ui/Button'
 import { Input } from '@/shared/components/ui/Input'
@@ -46,6 +47,7 @@ export function RoleManager({
   onRoleDelete,
   onRoleCreate
 }: RoleManagerProps) {
+  const confirm = useConfirm()
   const {
     roles,
     isLoading,
@@ -97,13 +99,13 @@ export function RoleManager({
   }
 
   const handleDeleteRole = async (roleId: string) => {
-    if (window.confirm('Are you sure you want to delete this role? This action cannot be undone.')) {
-      try {
-        await deleteRole(roleId)
-        onRoleDelete?.(roleId)
-      } catch (error) {
-        console.error('Error deleting role:', error)
-      }
+    const ok = await confirm({ title: '删除角色', description: '确定要删除该角色吗？该操作不可恢复。' })
+    if (!ok) return
+    try {
+      await deleteRole(roleId)
+      onRoleDelete?.(roleId)
+    } catch (error) {
+      console.error('Error deleting role:', error)
     }
   }
 

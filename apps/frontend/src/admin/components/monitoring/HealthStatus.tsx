@@ -20,6 +20,8 @@ import {
   Shield
 } from 'lucide-react'
 import { useSystemMonitoring } from '../../hooks/useSystemMonitoring'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { toast } from 'sonner'
 
 export interface ServiceStatus {
   name: string
@@ -83,13 +85,14 @@ export function HealthStatus({
     return Server
   }
 
+  const [confirmRestart, setConfirmRestart] = useState<string | null>(null)
   const handleRestartService = async (serviceName: string) => {
-    if (window.confirm(`Are you sure you want to restart ${serviceName}? This may cause temporary downtime.`)) {
-      try {
-        await restartService(serviceName)
-      } catch (error) {
-        console.error('Error restarting service:', error)
-      }
+    try {
+      await restartService(serviceName)
+      toast.success(`${serviceName} restart initiated`)
+    } catch (error) {
+      console.error('Error restarting service:', error)
+      toast.error('Failed to restart service')
     }
   }
 
@@ -167,6 +170,22 @@ export function HealthStatus({
       </Card>
 
       {/* Services List */}
+      {/* Restart Confirm */}
+      <Dialog open={!!confirmRestart} onOpenChange={(open) => { if (!open) setConfirmRestart(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Restart Service</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to restart {confirmRestart}? This may cause temporary downtime.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <button className="px-4 py-2 rounded border" onClick={() => setConfirmRestart(null)}>Cancel</button>
+            <button className="px-4 py-2 rounded bg-red-600 text-white" onClick={async ()=> { const s=confirmRestart as string; setConfirmRestart(null); await handleRestartService(s)}}>Confirm</button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {isServicesLoading ? (
           Array.from({ length: 4 }).map((_, index) => (
@@ -283,7 +302,7 @@ export function HealthStatus({
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleRestartService(service.name)
+                          setConfirmRestart(service.name)
                         }}
                         disabled={isRestartingService}
                       >

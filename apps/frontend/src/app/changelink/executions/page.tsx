@@ -509,6 +509,25 @@ export default function ExecutionsPage() {
 
   return (
     <div className="container mx-auto p-6">
+      {/* 取消确认弹窗 */}
+      <Dialog open={!!confirmCancelId} onOpenChange={(open) => { if (!open) setConfirmCancelId(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>取消执行</DialogTitle>
+            <DialogDescription>确定要取消该执行任务吗？此操作无法恢复。</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <button className="px-4 py-2 rounded border" onClick={() => setConfirmCancelId(null)}>关闭</button>
+            <button
+              className="px-4 py-2 rounded bg-red-600 text-white disabled:opacity-50"
+              disabled={cancelingId === confirmCancelId}
+              onClick={async () => { const id = confirmCancelId as string; setConfirmCancelId(null); await handleCancelExecution(id); }}
+            >
+              确认取消
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold mb-2">执行记录</h1>

@@ -12,6 +12,7 @@ import { SessionProvider } from "next-auth/react";
 import "@/lib/scheduled-task-init";
 import "@/lib/autoclick-init";
 import QueryProvider from "@/components/providers/QueryProvider";
+import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -151,7 +152,9 @@ export default function RootLayout({
           <AuthProvider>
             <LanguageProvider>
               <QueryProvider>
-                <AppLayout>{children}</AppLayout>
+                <ConfirmProvider>
+                  <AppLayout>{children}</AppLayout>
+                </ConfirmProvider>
               </QueryProvider>
             </LanguageProvider>
           </AuthProvider>

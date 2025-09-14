@@ -3,7 +3,8 @@ import { auth } from '@/lib/auth/v5-config';
 import { FeaturePermissionService } from '@/lib/services/feature-permission-service';
 
 export interface FeatureGuardOptions {
-  featureId: string;
+  featureId?: string;
+  featureIdResolver?: (session: any) => string | Promise<string>;
   requireToken?: boolean; // 是否需要消耗Token
   getTokenCost?: (request: NextRequest) => number | Promise<number>;
 }
@@ -29,10 +30,22 @@ export function withFeatureGuard(
 
       const userId = session.user.id;
 
+      // 解析功能ID
+      const featureId = options.featureIdResolver
+        ? await options.featureIdResolver(session)
+        : (options.featureId as string);
+
+      if (!featureId) {
+        return NextResponse.json(
+          { error: 'Feature not specified' },
+          { status: 400 }
+        );
+      }
+
       // 检查功能权限
       const featureAccess = await FeaturePermissionService.checkFeatureAccess(
         userId,
-        options.featureId
+        featureId
       );
 
       if (!featureAccess.hasAccess) {
@@ -54,14 +67,14 @@ export function withFeatureGuard(
 
         const tokenResult = await TokenService.checkAndConsumeTokens(
           userId,
-          options.featureId,
+          featureId,
           'access',
           {
             batchSize: tokenCost,
             metadata: {
               endpoint: request.url,
               method: request.method,
-              featureId: options.featureId
+              featureId
             }
           }
         );

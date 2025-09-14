@@ -28,6 +28,8 @@ import {
   Keyboard,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import GoFlyPanelStats from './gofly/GoFlyPanelStats';
+import GoFlyUsersPreview from './gofly/GoFlyUsersPreview';
 
 interface DashboardStats {
   totalUsers: number;
@@ -240,6 +242,9 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
+      {/* GoFly 后端实时统计与最近用户（零侵入式增强） */}
+      <GoFlyPanelStats />
+      <GoFlyUsersPreview />
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1">
           管理面板
