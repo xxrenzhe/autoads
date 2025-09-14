@@ -121,7 +121,7 @@ export const SetupSidebar = memo(({
             variant="outline"
             size="sm"
             className="w-full justify-start"
-            onClick={() => (window.location.href = '/adscenter/settings')}
+            onClick={() => (window.location.href = '/adscenter')}
           >
             <Settings className="h-4 w-4 mr-2" />
             高级设置

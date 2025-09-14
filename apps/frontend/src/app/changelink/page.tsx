@@ -277,11 +277,11 @@ const LegacyFeaturesPage = () => {
     },
     {
       title: '⚙️ 系统设置',
-      description: '管理Google Ads API配置、AdsPower环境设置、系统参数和数据管理',
-      href: '/adscenter/settings',
+      description: '管理Google Ads账户、AdsPower环境和执行配置',
+      href: '/adscenter',
       icon: Settings,
       color: 'bg-gray-50 text-gray-600',
-      features: ['API配置', '环境设置', '数据管理', '系统参数']
+      features: ['账户管理', '环境设置', '执行配置']
     }
   ];
 

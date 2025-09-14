@@ -308,13 +308,21 @@ export default function SetupPage() {
   // 加载保存的进度
   const loadSavedProgress = async () => {
     try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('adscenter_setup_progress') : null;
-      if (raw) {
-        const data = JSON.parse(raw);
-        if (typeof data.currentStep === 'number') setCurrentStep(data.currentStep);
-        console.log('Setup progress loaded from localStorage');
-      }
+      const res = await http.get<any>('/adscenter/setup/progress');
+      const data = (res as any)?.data || res;
+      if (data && typeof data.currentStep === 'number') setCurrentStep(data.currentStep);
+      // 同步到本地备用
+      if (typeof window !== 'undefined') localStorage.setItem('adscenter_setup_progress', JSON.stringify(data || {}));
+      console.log('Setup progress loaded');
     } catch (error) {
+      // 回退本地
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('adscenter_setup_progress') : null;
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (typeof data.currentStep === 'number') setCurrentStep(data.currentStep);
+        }
+      } catch {}
       console.error('Failed to load saved progress:', error);
     }
   };
@@ -346,9 +354,10 @@ export default function SetupPage() {
             configurations
           }
         };
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('adscenter_setup_progress', JSON.stringify(payload));
-        }
+        try {
+          await http.post('/adscenter/setup/progress', payload)
+        } catch {}
+        if (typeof window !== 'undefined') localStorage.setItem('adscenter_setup_progress', JSON.stringify(payload));
         if (isMountedRef.current) {
           setAutoSaveStatus('saved');
           console.log('✅ Setup progress auto-saved');
@@ -532,19 +541,34 @@ export default function SetupPage() {
       toast.error('请填写链接名称和URL');
       return;
     }
-    setAffiliateLinks(prev => [...prev, { id: `aff_${Date.now()}`, name: newAffiliateLink.name, affiliateUrl: newAffiliateLink.affiliateUrl, description: newAffiliateLink.description, category: newAffiliateLink.category, isActive: true, status: 'untested' } as any]);
-    setNewAffiliateLink({ name: '', affiliateUrl: '', description: '', category: '' });
-    // 持久化本地
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('adscenter_setup_extras', JSON.stringify({ affiliateLinks: [...affiliateLinks, newAffiliateLink], adsPowerEnvironments }));
+    try {
+      const res = await http.post<any>('/adscenter/affiliate-links', {
+        name: newAffiliateLink.name,
+        affiliateUrl: newAffiliateLink.affiliateUrl,
+        description: newAffiliateLink.description,
+        category: newAffiliateLink.category
+      })
+      if ((res as any)?.success === false) {
+        return toast.error('添加失败')
+      }
+      await loadExistingConfigurations()
+      setNewAffiliateLink({ name: '', affiliateUrl: '', description: '', category: '' });
+      toast.success('广告联盟链接添加成功！');
+    } catch {
+      toast.error('添加失败')
     }
-    toast.success('广告联盟链接添加成功！');
   };
 
   // 测试广告联盟链接
   const testAffiliateLink = async (linkId: string) => {
-    setAffiliateLinks(prev => prev.map((l: any) => l.id === linkId ? { ...l, status: 'valid' } : l));
-    toast.success('链接测试成功！');
+    try {
+      const res = await http.post<any>(`/adscenter/affiliate-links/${linkId}/test`, {});
+      const status = (res as any)?.data?.status || 'valid'
+      setAffiliateLinks(prev => prev.map((l: any) => l.id === linkId ? { ...l, status } : l));
+      toast.success('链接测试成功！');
+    } catch {
+      toast.error('链接测试失败');
+    }
   };
 
   // 添加AdsPower环境
@@ -553,18 +577,31 @@ export default function SetupPage() {
       toast.error('请填写环境名称和环境ID');
       return;
     }
-    setAdsPowerEnvironments(prev => [...prev, { id: `env_${Date.now()}`, name: newAdsPowerEnv.name, environmentId: newAdsPowerEnv.environmentId, apiEndpoint: newAdsPowerEnv.apiEndpoint, apiKey: newAdsPowerEnv.apiKey, isActive: true, status: 'disconnected' } as any]);
-    setNewAdsPowerEnv({ name: '', environmentId: '', apiEndpoint: 'http://local.adspower.net:50325', apiKey: '' });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('adscenter_setup_extras', JSON.stringify({ affiliateLinks, adsPowerEnvironments: [...adsPowerEnvironments, newAdsPowerEnv] }));
+    try {
+      const res = await http.post<any>('/adscenter/adspower/envs', {
+        name: newAdsPowerEnv.name,
+        environmentId: newAdsPowerEnv.environmentId,
+        apiEndpoint: newAdsPowerEnv.apiEndpoint,
+        apiKey: newAdsPowerEnv.apiKey
+      })
+      if ((res as any)?.success === false) return toast.error('添加失败')
+      await loadExistingConfigurations()
+      setNewAdsPowerEnv({ name: '', environmentId: '', apiEndpoint: 'http://local.adspower.net:50325', apiKey: '' });
+      toast.success('AdsPower环境添加成功！');
+    } catch {
+      toast.error('添加失败')
     }
-    toast.success('AdsPower环境添加成功！');
   };
 
   // 测试AdsPower连接
   const testAdsPowerConnection = async (envId: string) => {
-    setAdsPowerEnvironments(prev => prev.map((env: any) => env.id === envId ? { ...env, status: 'connected' } : env));
-    toast.success('AdsPower连接测试成功！');
+    try {
+      await http.post<any>(`/adscenter/adspower/envs/${envId}/test`, {});
+      setAdsPowerEnvironments(prev => prev.map((env: any) => env.id === envId ? { ...env, status: 'connected' } : env));
+      toast.success('AdsPower连接测试成功！');
+    } catch {
+      toast.error('连接测试失败');
+    }
   };
 
   // 创建配置

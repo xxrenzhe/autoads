@@ -360,7 +360,7 @@ export default function SimpleUnifiedDashboard() {
                     </Button>
                   </Link>
                   
-                  <Link href="/adscenter/settings">
+                  <Link href="/adscenter">
                     <Button
                       variant="outline"
                       className="h-auto p-4 flex flex-col items-start space-y-2 w-full"
@@ -457,7 +457,7 @@ export default function SimpleUnifiedDashboard() {
               <Settings className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">系统设置</h3>
               <p className="text-gray-600 mb-4">配置系统参数和管理数据</p>
-              <Link href="/adscenter/settings">
+              <Link href="/adscenter">
                 <Button>系统设置</Button>
               </Link>
             </div>

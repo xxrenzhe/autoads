@@ -189,7 +189,7 @@ export default function TestIntegrationPage() {
           '/adscenter/configurations'
         ),
         http.post<{ executionId?: string; success?: boolean }>(
-          '/adscenter/execute',
+          '/adscenter/executions',
           { configurationId: 'test-config' }
         )
       ]);
@@ -465,7 +465,7 @@ export default function TestIntegrationPage() {
                 </p>
                 <div className="mt-2 space-y-1">
                   <Badge>GET /api/adscenter/configurations</Badge>
-                  <Badge>POST /api/adscenter/execute</Badge>
+                  <Badge>POST /api/adscenter/executions</Badge>
                 </div>
               </CardContent>
             </Card>
