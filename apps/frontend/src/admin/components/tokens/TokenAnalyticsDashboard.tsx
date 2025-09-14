@@ -551,7 +551,7 @@ export default function TokenAnalyticsDashboard() {
               <option value="all">All features</option>
               <option value="siterank">SiteRank</option>
               <option value="batchopen">BatchOpen</option>
-              <option value="adscenter">ChangeLink</option>
+              <option value="adscenter">AdsCenter</option>
             </select>
           </div>
         </div>

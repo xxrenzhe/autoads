@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import redis from '@/lib/redis'
+import { getRedisClient } from '@/lib/cache/redis-client'
 
 export interface Permission {
   resource: string
@@ -47,6 +47,7 @@ export class PermissionManager {
       
       // Try cache first for basic permissions
       if (!context) {
+        const redis = getRedisClient()
         const cached = await redis.get(cacheKey)
         if (cached !== null) {
           return JSON.parse(cached)

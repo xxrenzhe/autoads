@@ -265,7 +265,7 @@ export const TokenRulesList: React.FC = () => {
     const featureNames: { [key: string]: string } = {
       siterank: 'SiteRank',
       batchopen: 'BatchOpen',
-      adscenter: 'ChangeLink',
+      adscenter: 'AdsCenter',
     };
     
     const baseName = featureNames[feature] || feature.toUpperCase();

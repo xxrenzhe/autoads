@@ -12,25 +12,24 @@ export async function GET(request: NextRequest) {
   const userId = session.user.id
 
   const stream = new ReadableStream({
-    start: (controller) => {
+    start: async (controller) => {
       const encoder = new TextEncoder()
-
       const send = (data: any) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
       }
 
-      // 初始事件（可选）
+      // 初始事件
       send({ type: 'connected', userId })
 
-      // 订阅Redis通道
-      const channel = 'token:balance:updated'
+      // Redis 订阅
+      const channel = 'adscenter:executions:updates'
       const redis = getRedisClient()
       const onMessage = (ch: string, message: string) => {
         try {
           if (ch !== channel) return
           const payload = JSON.parse(message)
           if (payload?.userId === userId) {
-            send({ type: 'balance_updated', ...payload })
+            send({ type: 'execution_update', ...payload })
           }
         } catch {}
       }
@@ -39,7 +38,6 @@ export async function GET(request: NextRequest) {
         if (redis.on) redis.on('message', onMessage)
       } catch {}
 
-      // 断开时清理
       const abort = () => {
         try {
           if (redis.off) redis.off('message', onMessage)
@@ -47,9 +45,9 @@ export async function GET(request: NextRequest) {
         } catch {}
         controller.close()
       }
-      // @ts-ignore - NextRequest doesn't expose signal type fully here
+      // @ts-ignore
       request.signal?.addEventListener?.('abort', abort)
-    },
+    }
   })
 
   return new Response(stream, {
@@ -58,6 +56,7 @@ export async function GET(request: NextRequest) {
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
-    },
+    }
   })
 }
+

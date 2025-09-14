@@ -39,7 +39,7 @@ const apiEndpoints = [
   },
   {
     id: '/api/adscenter/configurations',
-    name: 'ChangeLink 配置管理',
+    name: 'AdsCenter 配置管理',
     endpoint: '/api/adscenter/configurations',
     method: 'GET',
     description: '管理链接修改任务的配置信息。包括目标URL、替换规则、执行计划等设置。',
@@ -47,11 +47,11 @@ const apiEndpoints = [
     authRequired: true,
     rateLimit: '100次/分钟',
     active: true,
-    category: 'ChangeLink',
+    category: 'AdsCenter',
   },
   {
     id: '/api/adscenter/executions',
-    name: 'ChangeLink 执行控制',
+    name: 'AdsCenter 执行控制',
     endpoint: '/api/adscenter/executions',
     method: 'POST',
     description: '创建执行并启动，支持取消与查询详情。',
@@ -59,7 +59,7 @@ const apiEndpoints = [
     authRequired: true,
     rateLimit: '30次/分钟',
     active: true,
-    category: 'ChangeLink',
+    category: 'AdsCenter',
   },
   {
     id: '/api/user/profile',

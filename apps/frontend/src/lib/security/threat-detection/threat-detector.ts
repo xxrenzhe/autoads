@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import redis from '@/lib/redis'
+import { getRedisClient } from '@/lib/cache/redis-client'
 import { auditLogger } from '../audit/audit-logger'
 
 export interface ThreatPattern {

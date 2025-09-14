@@ -707,16 +707,16 @@ export const UserStatisticsDashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* ChangeLink Statistics */}
+              {/* AdsCenter Statistics */}
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    ChangeLink 统计
+                    AdsCenter 统计
                   </Typography>
-                  {/* Add ChangeLink table here */}
+                  {/* Add AdsCenter table here */}
                   <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
                     <Typography variant="body2">
-                      ChangeLink 详细统计正在开发中...
+                      AdsCenter 详细统计正在开发中...
                     </Typography>
                   </Box>
                 </CardContent>

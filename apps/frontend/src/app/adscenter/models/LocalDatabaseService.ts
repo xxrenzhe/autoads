@@ -86,7 +86,7 @@ export interface SystemMetricsRecord {
 
 export class LocalDatabaseService {
   private db: IDBDatabase | null = null;
-  private dbName = 'ChangeLink_LocalDB';
+  private dbName = 'AdsCenter_LocalDB';
   private dbVersion = 1;
   private isInitialized = false;
 

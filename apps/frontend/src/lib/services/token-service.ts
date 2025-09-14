@@ -4,7 +4,7 @@ import { TokenConsumptionService } from './token-consumption-service'
 import { TokenConfigService } from './token-config-service'
 import { TokenPriorityService } from './token-priority-service'
 import { TokenRuleEngine } from './token-rule-engine'
-import { redisService } from '@/lib/redis-config'
+import { getRedisClient } from '@/lib/cache/redis-client'
 import { $Enums } from '@prisma/client'
 
 type TokenType = $Enums.TokenType
@@ -297,7 +297,7 @@ export class TokenService {
 
       // 发布事件：余额已更新（事件驱动刷新）
       try {
-        await redisService.publish('token:balance:updated', JSON.stringify({ userId, balance: result, consumed: totalAmount }))
+        try { const redis = getRedisClient(); await redis.publish('token:balance:updated', JSON.stringify({ userId, balance: result, consumed: totalAmount })); } catch {}
       } catch {}
 
       return {
@@ -436,7 +436,7 @@ export class TokenService {
 
       // 事件通知：余额更新
       try {
-        await redisService.publish('token:balance:updated', JSON.stringify({ userId, balance: user?.tokenBalance || 0 }))
+        try { const redis = getRedisClient(); await redis.publish('token:balance:updated', JSON.stringify({ userId, balance: user?.tokenBalance || 0 })); } catch {}
       } catch {}
 
       return {
@@ -515,7 +515,7 @@ export class TokenService {
 
       // 事件通知：余额更新
       try {
-        await redisService.publish('token:balance:updated', JSON.stringify({ userId: request.userId, balance: updatedUser.tokenBalance }))
+        try { const redis = getRedisClient(); await redis.publish('token:balance:updated', JSON.stringify({ userId: request.userId, balance: updatedUser.tokenBalance })); } catch {}
       } catch {}
 
       return {

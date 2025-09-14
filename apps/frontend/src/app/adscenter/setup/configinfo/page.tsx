@@ -28,11 +28,11 @@ export default function ConfigInfoPage() {
             </Link>
             <div className="flex items-center gap-2">
               <FileText className="h-6 w-6 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">ChangeLink 系统配置文档</h1>
+              <h1 className="text-2xl font-bold text-gray-900">AdsCenter 系统配置文档</h1>
             </div>
           </div>
           <p className="text-gray-600">
-            详细说明 ChangeLink 系统设置页面中每个配置参数的含义、获取方式和使用注意事项。
+            详细说明 AdsCenter 系统设置页面中每个配置参数的含义、获取方式和使用注意事项。
           </p>
         </div>
 

@@ -162,8 +162,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Get ChangeLink usage today (if exists)
-    const todayChangeLinkUsage = await prisma.userBehaviorAnalytics.count({
+    // Get AdsCenter usage today (if exists)
+    const todayAdsCenterUsage = await prisma.userBehaviorAnalytics.count({
       where: {
         action: 'feature_usage',
         feature: tokenusagefeature.CHANGELINK,
@@ -377,7 +377,7 @@ export async function GET(request: NextRequest) {
       featureUsage: {
         siterank: todaySiteRankUsage,
         batchopen: todayBatchOpenUsage,
-        adscenter: todayChangeLinkUsage
+        adscenter: todayAdsCenterUsage
       },
       subscriptionByPlan,
       growth: {

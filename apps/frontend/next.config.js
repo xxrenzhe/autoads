@@ -111,14 +111,14 @@ const nextConfig = {
   // 构建配置 - 使用standalone模式优化生产部署
   // standalone模式包含所有必要的依赖，简化部署
   
-  // TypeScript配置
+  // TypeScript/ESLint 配置（预发先启用严格校验）
   typescript: {
-    ignoreBuildErrors: true,
+    // 开启 preview 与 production 的严格校验
+    ignoreBuildErrors: !['preview', 'production'].includes((process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || '').toLowerCase()),
   },
 
-  // ESLint配置
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: !['preview', 'production'].includes((process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || '').toLowerCase()),
   },
 
   // 服务器端外部模块

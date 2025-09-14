@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { createClientLogger } from "@/lib/utils/security/client-secure-logger";
-const logger = createClientLogger('ChangeLinkClient');
+const logger = createClientLogger('AdsCenterClient');
 import { http } from '@/shared/http/client'
 
 import { 
@@ -58,7 +58,7 @@ interface Execution {
   created_at: string;
 }
 
-export default function ChangeLinkClient() {
+export default function AdsCenterClient() {
   const [accounts, setAccounts] = useState<GoogleAdsAccount[]>([]);
   const [configurations, setConfigurations] = useState<Configuration[]>([]);
   const [executions, setExecutions] = useState<Execution[]>([]);

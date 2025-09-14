@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import redis from '@/lib/redis'
+import { getRedisClient } from '@/lib/cache/redis-client'
 import { randomBytes, createHash } from 'crypto'
 
 export interface SessionConfig {
@@ -125,6 +125,7 @@ export class SessionManager {
   async validateSession(sessionToken: string): Promise<SessionData | null> {
     try {
       // Try cache first
+      const redis = getRedisClient()
       const cached = await redis.get(`${SessionManager.CACHE_PREFIX}${sessionToken}`)
       if (cached) {
         const sessionData: SessionData = JSON.parse(cached)
@@ -212,6 +213,7 @@ export class SessionManager {
       }
 
       // Remove from cache
+      const redis = getRedisClient();
       await redis.del(`${SessionManager.CACHE_PREFIX}${sessionToken}`)
     } catch (error) {
       console.error('Error destroying session:', error)
@@ -236,6 +238,7 @@ export class SessionManager {
       // Remove from cache
       const cacheKeys = sessions.map((s: any) => `${SessionManager.CACHE_PREFIX}${s.sessionToken}`)
       if (cacheKeys.length > 0) {
+        const redis = getRedisClient();
         for (const key of cacheKeys) {
           await redis.del(key)
         }
@@ -302,6 +305,7 @@ export class SessionManager {
       const oneHourAgo = now - 60 * 60 * 1000
 
       // Check for rapid login attempts
+      const redis = getRedisClient();
       const recentLogins = await redis.get(`${SessionManager.SECURITY_PREFIX}logins:${userId}:${ipAddress}`)
       const loginCount = recentLogins ? parseInt(recentLogins) : 0
 
@@ -340,6 +344,7 @@ export class SessionManager {
    * Block IP address
    */
   async blockIP(ipAddress: string, reason: string, duration: number = 24 * 60 * 60): Promise<void> {
+    const redis = getRedisClient();
     await redis.setex(`${SessionManager.BLOCKED_IP_PREFIX}${ipAddress}`, duration, reason)
     
     // Log the block
@@ -380,6 +385,7 @@ export class SessionManager {
     ])
 
     // Count blocked IPs
+    const redis = getRedisClient();
     const blockedIPKeys = await redis.keys(`${SessionManager.BLOCKED_IP_PREFIX}*`)
     const blockedIPs = blockedIPKeys.length
 
@@ -401,6 +407,7 @@ export class SessionManager {
   private async cacheSession(sessionData: SessionData): Promise<void> {
     const ttl = Math.floor((sessionData.expires.getTime() - Date.now()) / 1000)
     if (ttl > 0) {
+      const redis = getRedisClient();
       await redis.setex(
         `${SessionManager.CACHE_PREFIX}${sessionData.sessionToken}`,
         ttl,

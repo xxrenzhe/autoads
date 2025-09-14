@@ -75,7 +75,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
   const [steps, setSteps] = useState<SetupStep[]>([
     {
       id: 'welcome',
-      title: '欢迎使用 ChangeLink',
+      title: '欢迎使用 AdsCenter',
       description: '让我们开始配置您的自动化系统',
       icon: CheckCircle,
       completed: false
@@ -111,7 +111,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
     {
       id: 'complete',
       title: '配置完成',
-      description: '开始使用 ChangeLink',
+      description: '开始使用 AdsCenter',
       icon: CheckCircle,
       completed: false
     }
@@ -227,9 +227,9 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
               <Settings className="w-12 h-12 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold mb-2">欢迎使用 ChangeLink</h2>
+              <h2 className="text-2xl font-bold mb-2">欢迎使用 AdsCenter</h2>
               <p className="text-gray-600 mb-4">
-                ChangeLink 是一个强大的自动化工具，帮助您管理 Google Ads 推广链接。
+                AdsCenter 是一个强大的自动化工具，帮助您管理 Google Ads 推广链接。
               </p>
               <p className="text-sm text-gray-500">
                 我们将引导您完成初始配置，整个过程大约需要 5 分钟。
@@ -433,7 +433,7 @@ export default function FirstTimeSetup({ onComplete }: { onComplete: () => void 
             <div>
               <h2 className="text-2xl font-bold mb-2">配置完成！</h2>
               <p className="text-gray-600 mb-4">
-                恭喜！您已成功完成 ChangeLink 的初始配置。
+                恭喜！您已成功完成 AdsCenter 的初始配置。
               </p>
               <p className="text-sm text-gray-500">
                 现在您可以开始创建配置并运行自动化任务了。

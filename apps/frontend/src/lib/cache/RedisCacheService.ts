@@ -1,4 +1,4 @@
-import redis from '@/lib/redis';
+import { getRedisClient } from '@/lib/cache/redis-client';
 
 export interface CacheOptions {
   ttl?: number; // Time to live in seconds
@@ -26,6 +26,7 @@ export class RedisCacheService {
   async get<T>(key: string): Promise<T | null> {
     try {
       const fullKey = this.generateKey(key);
+      const redis = getRedisClient();
       const value = await redis.get(fullKey);
       
       if (!value) return null as any;
@@ -46,6 +47,7 @@ export class RedisCacheService {
       const ttl = options.ttl || this.defaultTTL;
       const serialized = JSON.stringify(value);
       
+      const redis = getRedisClient();
       await redis.set(fullKey, serialized, { EX: ttl });
     } catch (error) {
       console.error('Cache set error:', error);
@@ -58,6 +60,7 @@ export class RedisCacheService {
   async delete(key: string): Promise<void> {
     try {
       const fullKey = this.generateKey(key);
+      const redis = getRedisClient();
       await redis.del(fullKey);
     } catch (error) {
       console.error('Cache delete error:', error);
@@ -69,6 +72,7 @@ export class RedisCacheService {
    */
   async clear(): Promise<void> {
     try {
+      const redis = getRedisClient();
       const keys = await redis.keys(`${this.keyPrefix}*`);
       if (keys.length > 0) {
         for (const key of keys) {

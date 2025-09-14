@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/v5-config'
 import { prisma } from '@/lib/prisma'
 import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware'
+import { getRedisClient } from '@/lib/cache/redis-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,13 +34,26 @@ async function setExecutions(userId: string, records: Execution[], updatedBy: st
 async function handlePOST(_req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // 先更新规范化表
+  let updated = false
+  try {
+    const exists = await prisma.adsExecution.findFirst({ where: { id: params.id, userId: session.user.id } })
+    if (exists) {
+      await prisma.adsExecution.update({ where: { id: params.id }, data: { status: 'cancelled' } })
+      updated = true
+    }
+  } catch {}
+
+  // 回退 SystemConfig 以保持兼容
   const list = await getExecutions(session.user.id)
   const idx = list.findIndex(e => e.id === params.id)
-  if (idx === -1) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  list[idx] = { ...list[idx], status: 'cancelled' }
-  await setExecutions(session.user.id, list, session.user.id)
-  return NextResponse.json({ success: true })
+  if (idx !== -1) {
+    list[idx] = { ...list[idx], status: 'cancelled' }
+    await setExecutions(session.user.id, list, session.user.id)
+  }
+  // 发布通知
+  try { const redis = getRedisClient(); await redis.publish('adscenter:executions:updates', JSON.stringify({ userId: session.user.id, id: params.id, status: 'cancelled' })); } catch {}
+  return NextResponse.json({ success: true, updatedTable: updated })
 }
 
 export const POST = withFeatureGuard(handlePOST as any, { featureId: 'adscenter_basic', requireToken: false })
-

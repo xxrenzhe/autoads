@@ -50,7 +50,7 @@ const permissionChoices = [
   { id: 'admin:access', name: 'Admin Access' },
   { id: 'siterank:access', name: 'SiteRank Access' },
   { id: 'batchopen:access', name: 'BatchOpen Access' },
-  { id: 'adscenter:access', name: 'ChangeLink Access' },
+  { id: 'adscenter:access', name: 'AdsCenter Access' },
 ];
 
 /**

@@ -78,7 +78,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
     smtpUser: '',
     smtpPassword: '',
     fromEmail: '',
-    fromName: 'ChangeLink'
+    fromName: 'AdsCenter'
   });
   const [showPasswords, setShowPasswords] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
@@ -102,7 +102,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
   const steps: SetupStep[] = [
     {
       id: 'welcome',
-      title: '欢迎使用 ChangeLink',
+      title: '欢迎使用 AdsCenter',
       description: '让我们开始配置您的智能广告管理平台',
       completed: false,
       required: true
@@ -124,7 +124,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
     {
       id: 'complete',
       title: '配置完成',
-      description: '所有配置已完成，开始使用ChangeLink',
+      description: '所有配置已完成，开始使用AdsCenter',
       completed: false,
       required: true
     }
@@ -371,9 +371,9 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
       </div>
       
       <div>
-        <h2 className="text-2xl font-bold mb-4">欢迎使用 ChangeLink 智能广告管理平台！</h2>
+        <h2 className="text-2xl font-bold mb-4">欢迎使用 AdsCenter 智能广告管理平台！</h2>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          ChangeLink 是一个功能强大的广告数据分析和管理平台。在开始使用之前，我们需要完成一些基本配置。
+          AdsCenter 是一个功能强大的广告数据分析和管理平台。在开始使用之前，我们需要完成一些基本配置。
           整个过程只需要几分钟，配置完成后您就可以享受自动化的广告数据分析服务。
         </p>
       </div>
@@ -844,7 +844,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
               value={emailConfig.fromName}
               onChange={(e) => setEmailConfig(prev => ({ ...prev, fromName: e.target.value }))}
               className="w-full px-3 py-2 border rounded-md"
-              placeholder="ChangeLink Reports"
+              placeholder="AdsCenter Reports"
             />
           </div>
         </div>
@@ -943,7 +943,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
       <div>
         <h2 className="text-2xl font-bold mb-4">🎉 配置完成！</h2>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          恭喜！您已经成功完成了ChangeLink的初始配置。现在您可以开始使用所有功能了。
+          恭喜！您已经成功完成了AdsCenter的初始配置。现在您可以开始使用所有功能了。
         </p>
       </div>
 
@@ -967,7 +967,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
 
       <div className="pt-4">
         <Button onClick={handleComplete} size="lg" className="px-8">
-          开始使用 ChangeLink
+          开始使用 AdsCenter
         </Button>
       </div>
     </div>
@@ -1066,7 +1066,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                   value={emailConfig.fromName}
                   onChange={(e) => setEmailConfig(prev => ({ ...prev, fromName: e.target.value }))}
                   className="w-full px-3 py-2 border rounded-md"
-                  placeholder="ChangeLink Reports"
+                  placeholder="AdsCenter Reports"
                 />
               </div>
             </div>
@@ -1143,7 +1143,7 @@ export default function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
         {/* 进度条 */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-lg font-semibold">ChangeLink 初始配置</h1>
+            <h1 className="text-lg font-semibold">AdsCenter 初始配置</h1>
             <span className="text-sm text-gray-600">
               步骤 {currentStep + 1} / {setupSteps.length}
             </span>

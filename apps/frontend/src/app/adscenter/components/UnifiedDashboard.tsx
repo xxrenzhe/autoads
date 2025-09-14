@@ -92,7 +92,7 @@ export default function SimpleUnifiedDashboard() {
           id: '1',
           type: 'configuration',
           title: '系统已启动',
-          description: 'ChangeLink 系统初始化完成',
+          description: 'AdsCenter 系统初始化完成',
           timestamp: new Date(),
           status: 'success'
         },

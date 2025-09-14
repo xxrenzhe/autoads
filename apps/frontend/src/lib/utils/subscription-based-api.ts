@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/v5-config';
 import { dbPool } from '@/lib/db-pool';
-import { getRedisClient } from '@/lib/redis-config';
+import { getRedisClient } from '@/lib/cache/redis-client';
 import { createLogger } from '@/lib/utils/security/secure-logger';
 import { FeaturePermissionService } from '@/lib/services/feature-permission-service';
 import { PlanFeaturesService } from '@/lib/services/plan-features-service';

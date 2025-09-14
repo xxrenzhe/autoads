@@ -605,12 +605,12 @@ export default function TokenConfigManager() {
             </CardContent>
           </Card>
 
-          {/* ChangeLink Configuration */}
+          {/* AdsCenter Configuration */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
-                ChangeLink Configuration
+                AdsCenter Configuration
               </CardTitle>
               <CardDescription>
                 Configure token costs for Google Ads link changes
@@ -683,7 +683,7 @@ export default function TokenConfigManager() {
                   >
                     <option value="siterank">SiteRank</option>
                     <option value="batchopen">BatchOpen</option>
-                    <option value="adscenter">ChangeLink</option>
+                    <option value="adscenter">AdsCenter</option>
                   </select>
                 </div>
                 <div className="space-y-2">

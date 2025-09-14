@@ -397,7 +397,7 @@ const TokenConsumptionRules: React.FC = () => {
 
                 <Box sx={{ mt: 3 }}>
                   <Typography variant="subtitle1" gutterBottom>
-                    3. ChangeLink 链接修改
+                    3. AdsCenter 链接修改
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     • 修改1个链接 = 消耗 2 Token<br/>

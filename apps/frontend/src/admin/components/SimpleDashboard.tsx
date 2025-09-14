@@ -183,7 +183,7 @@ const SimpleAdminDashboard: React.FC = () => {
         
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="ChangeLink使用"
+            title="AdsCenter使用"
             value={stats?.featureUsage?.adscenter || 0}
             icon={<Assessment />}
             color="#607d8b"
@@ -268,7 +268,7 @@ const SimpleAdminDashboard: React.FC = () => {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body2" color="text.secondary">
-                    ChangeLink
+                    AdsCenter
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
                     {stats?.tokenConsumption?.adscenter || 0} tokens

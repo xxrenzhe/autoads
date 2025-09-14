@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import redis from '@/lib/redis';
+import { getRedisClient } from '@/lib/cache/redis-client';
 
 interface LimitConfig {
   daily?: number;
@@ -25,6 +25,7 @@ export class FreeTierControl {
     };
     
     const key = `limit:${userId}:${resource}:${new Date().toDateString()}`;
+    const redis = getRedisClient();
     const count = await redis.incrby(key, 1);
     
     if (count === 1) {
@@ -41,6 +42,7 @@ export class FreeTierControl {
     };
     
     const key = `limit:${userId}:${feature}:${new Date().toDateString()}`;
+    const redis = getRedisClient();
     const count = await redis.incrby(key, 1);
     
     if (count === 1) {
@@ -59,6 +61,7 @@ export class FreeTierControl {
   
   async recordUsage(userId: string, feature: string, amount: number = 1): Promise<void> {
     const key = `usage:${userId}:${feature}:${new Date().toDateString()}`;
+    const redis = getRedisClient();
     await redis.incrby(key, amount);
     
     // Set expiry if this is the first usage today

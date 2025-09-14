@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
-import { redisService } from '@/lib/redis-config'
+import { getRedisClient } from '@/lib/cache/redis-client'
 
-// Lightweight rule engine focused on AdsCenter (a.k.a. ChangeLink legacy)
+// Lightweight rule engine focused on AdsCenter (a.k.a. AdsCenter legacy)
 
 export type AdsCenterOperation = 'extract_link' | 'update_ad'
 
@@ -28,7 +28,8 @@ export class TokenRuleEngine {
   // Load AdsCenter rules from configuration_items with fallback defaults
   static async getAdsCenterRules(): Promise<AdsCenterRuleConfig> {
     try {
-      const cached = await redisService.get(CACHE_KEY)
+      const redis = getRedisClient()
+      const cached = await redis.get(CACHE_KEY)
       if (cached) return JSON.parse(cached)
 
       // Read config keys if present
@@ -36,21 +37,18 @@ export class TokenRuleEngine {
         'token.adscenter.extract_link.costPerItem',
         'token.adscenter.update_ad.costPerItem',
         'token.adscenter.batchMultiplier',
-        // Backward-compat aliases (adscenter)
-        'token.adscenter.extract_link.costPerItem',
-        'token.adscenter.update_ad.costPerItem',
-        'token.adscenter.batchMultiplier',
       ]
 
-      const rows = await prisma.configuration_items.findMany({
+      const rows = await prisma.systemConfig.findMany({
         where: { key: { in: keys } },
-        select: { key: true, type: true, value: true },
+        select: { key: true, value: true },
       })
 
       const rules: AdsCenterRuleConfig = { ...DEFAULT_RULES }
       for (const row of rows) {
         const key = row.key
-        const val = row.type === 'number' ? Number(row.value) : row.value
+        const num = Number(row.value)
+        const val = Number.isFinite(num) ? num : row.value
         if (key.endsWith('extract_link.costPerItem') && typeof val === 'number') {
           rules.extract_link.costPerItem = val
         } else if (key.endsWith('update_ad.costPerItem') && typeof val === 'number') {
@@ -60,7 +58,7 @@ export class TokenRuleEngine {
         }
       }
 
-      await redisService.setex(CACHE_KEY, CACHE_TTL_SECONDS, JSON.stringify(rules))
+      await redis.setex(CACHE_KEY, CACHE_TTL_SECONDS, JSON.stringify(rules))
       return rules
     } catch {
       return { ...DEFAULT_RULES }

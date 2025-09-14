@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth/v5-config'
 import { prisma } from '@/lib/prisma'
 import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware'
 import { TokenRuleEngine } from '@/lib/services/token-rule-engine'
+import { getRedisClient } from '@/lib/cache/redis-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,7 +48,12 @@ async function handleGET(_req: NextRequest): Promise<NextResponse> {
         configurationId: r.configurationId,
         status: (r.status as any) || 'created',
         message: r.message || undefined,
-        createdAt: r.createdAt.toISOString()
+        createdAt: r.createdAt.toISOString(),
+        progress: r.progress ?? 0,
+        total_items: r.totalItems ?? 0,
+        processed_items: r.processedItems ?? 0,
+        started_at: r.startedAt ? r.startedAt.toISOString() : undefined,
+        completed_at: r.completedAt ? r.completedAt.toISOString() : undefined
       }))
       return NextResponse.json({ success: true, data })
     }
@@ -85,6 +91,8 @@ async function handlePOST(req: NextRequest): Promise<NextResponse> {
   const now = new Date().toISOString()
   list.unshift({ id, configurationId, status: 'created', createdAt: now })
   await setExecutions(session.user.id, list.slice(0, 200), session.user.id)
+  // 发布通知
+  try { const redis = getRedisClient(); await redis.publish('adscenter:executions:updates', JSON.stringify({ userId: session.user.id, id, configurationId, status: 'created' })); } catch {}
   return NextResponse.json({ success: true, data: { id } })
 }
 

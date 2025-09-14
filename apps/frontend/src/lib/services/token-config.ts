@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import redis from '@/lib/redis'
+import { getRedisClient } from '@/lib/cache/redis-client'
 
 // Token configuration types (lightweight, no zod dependency)
 export interface TokenConfig {
@@ -51,13 +51,14 @@ export class TokenConfigService {
    */
   async getTokenConfig(): Promise<TokenConfig> {
     // Try cache first
+    const redis = getRedisClient();
     const cached = await redis.get(TokenConfigService.CACHE_KEY)
     if (cached) {
       return JSON.parse(cached)
     }
 
     // Get from database
-    const configs = await prisma.configuration_items.findMany({
+    const configs = await prisma.systemConfig.findMany({
       where: {
         key: {
           in: [
@@ -69,7 +70,8 @@ export class TokenConfigService {
             'token.adscenter.batchMultiplier'
           ]
         }
-      }
+      },
+      select: { key: true, value: true }
     })
 
     // Build config object with defaults
@@ -94,9 +96,10 @@ export class TokenConfigService {
     // Apply database values
     configs.forEach((item: any) => {
       const [, feature, setting] = item.key.split('.')
-      if (feature && setting && config[feature as keyof TokenConfig]) {
-        const value = item.type === 'number' ? parseFloat(item.value) : item.value
-        ;(config[feature as keyof TokenConfig] as any)[setting] = value
+      if (feature && setting && (config as any)[feature]) {
+        const parsed = parseFloat(item.value)
+        const value = Number.isFinite(parsed) ? parsed : item.value
+        ;(config as any)[feature][setting] = value
       }
     })
 
@@ -184,14 +187,15 @@ export class TokenConfigService {
 
     // Perform database updates
     for (const update of updates) {
-      await prisma.configuration_items.upsert({
+      const existing = await prisma.systemConfig.findUnique({ where: { key: update.key } })
+      await prisma.systemConfig.upsert({
         where: { key: update.key },
         create: {
           key: update.key,
           value: update.value,
-          type: update.type,
           category: 'token',
           description: `Token configuration for ${update.key}`,
+          createdBy: updatedBy,
           updatedBy
         },
         update: {
@@ -200,10 +204,11 @@ export class TokenConfigService {
         }
       })
 
-      // Record change history
-      await prisma.configurationHistory.create({
+      // Record change history（写入 config_change_history）
+      await prisma.config_change_history.create({
         data: {
           configKey: update.key,
+          oldValue: existing?.value || null,
           newValue: update.value,
           changedBy: updatedBy,
           reason: reason || 'Token configuration update'
@@ -212,6 +217,7 @@ export class TokenConfigService {
     }
 
     // Clear cache
+    const redis = getRedisClient();
     await redis.del(TokenConfigService.CACHE_KEY)
 
     return validated
@@ -303,6 +309,7 @@ export class TokenConfigService {
     const cacheKey = `token:analytics:${userId}:${startDate?.getTime() || 'all'}:${endDate?.getTime() || 'all'}`
     
     // Try cache first
+    const redis = getRedisClient();
     const cached = await redis.get(cacheKey)
     if (cached) {
       return JSON.parse(cached)

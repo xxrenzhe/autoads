@@ -76,7 +76,7 @@ interface TokenRulesEditProps {
 const FEATURE_OPTIONS = [
   { value: 'siterank', label: 'SiteRank', description: '网站排名查询功能' },
   { value: 'batchopen', label: 'BatchOpen', description: '批量网页打开功能' },
-  { value: 'adscenter', label: 'ChangeLink', description: '链接转换功能' },
+  { value: 'adscenter', label: 'AdsCenter', description: '链接转换功能' },
   { value: 'api', label: 'API', description: 'API调用功能' },
   { value: 'webhook', label: 'Webhook', description: 'Webhook功能' },
   { value: 'notification', label: 'Notification', description: '通知功能' },

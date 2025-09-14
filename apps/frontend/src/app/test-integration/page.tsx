@@ -39,7 +39,7 @@ export default function TestIntegrationPage() {
         { name: 'Health Check API', fn: testHealthAPI },
         { name: 'Monitoring APIs', fn: testMonitoringAPIs },
         { name: 'Google Ads APIs', fn: testGoogleAdsAPIs },
-        { name: 'ChangeLink APIs', fn: testChangeLinkAPIs },
+        { name: 'AdsCenter APIs', fn: testAdsCenterAPIs },
         { name: 'Architecture APIs', fn: testArchitectureAPIs },
         { name: 'Deploy Status API', fn: testDeployStatusAPI }
       ];
@@ -181,7 +181,7 @@ export default function TestIntegrationPage() {
     }
   };
 
-  const testChangeLinkAPIs = async (): Promise<TestResult> => {
+  const testAdsCenterAPIs = async (): Promise<TestResult> => {
     const startTime = Date.now();
     try {
       const [configData, executeData] = await Promise.all([
@@ -197,9 +197,9 @@ export default function TestIntegrationPage() {
 
       if (configData && executeData) {
         return {
-          name: 'ChangeLink APIs',
+          name: 'AdsCenter APIs',
           status: 'success',
-          message: 'ChangeLink APIs are working correctly',
+          message: 'AdsCenter APIs are working correctly',
           data: {
             configurations: Array.isArray((configData as any).configurations) ? (configData as any).configurations.length : 0,
             execution: (executeData as any).executionId ? 'Started' : 'Failed'
@@ -209,18 +209,18 @@ export default function TestIntegrationPage() {
         };
       } else {
         return {
-          name: 'ChangeLink APIs',
+          name: 'AdsCenter APIs',
           status: 'error',
-          message: 'ChangeLink APIs failed',
+          message: 'AdsCenter APIs failed',
           timestamp: new Date().toISOString(),
           duration
         };
       }
     } catch (error) {
       return {
-        name: 'ChangeLink APIs',
+        name: 'AdsCenter APIs',
         status: 'error',
-        message: `ChangeLink APIs error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `AdsCenter APIs error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date().toISOString(),
         duration: Date.now() - startTime
       };
@@ -457,7 +457,7 @@ export default function TestIntegrationPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">ChangeLink</CardTitle>
+                <CardTitle className="text-sm">AdsCenter</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-xs text-muted-foreground">

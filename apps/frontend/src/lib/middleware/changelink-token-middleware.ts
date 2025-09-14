@@ -1,5 +1,5 @@
 /**
- * AdsCenter Token消耗中间件（兼容旧 ChangeLink 名称）
+ * AdsCenter Token消耗中间件（兼容旧 AdsCenter 名称）
  * 为 AdsCenter 功能添加增强的 Token 消耗记录，同时保持现有功能不变
  */
 
@@ -308,7 +308,7 @@ export function extractAdsCenterMetadata(request: NextRequest, body: any): any {
 }
 
 /**
- * 预定义的ChangeLink Token消耗配置
+ * 预定义的AdsCenter Token消耗配置
  */
 export const adsCenterTokenTrackingConfig: AdsCenterTokenOptions = {
   extractLinkCount: extractAdsCenterCount,

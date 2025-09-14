@@ -567,7 +567,7 @@ const AdminDashboard: React.FC = () => {
                 {stats?.featureUsage?.adscenter !== undefined && (
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="body2" color="text.secondary">
-                      ChangeLink
+                      AdsCenter
                     </Typography>
                     <Typography variant="body2" fontWeight="bold">
                       {stats.featureUsage.adscenter} 次
@@ -622,7 +622,7 @@ const AdminDashboard: React.FC = () => {
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                     <Typography variant="body2" color="text.secondary">
-                      ChangeLink
+                      AdsCenter
                     </Typography>
                     <Typography variant="body2" fontWeight="bold">
                       {stats.tokenConsumption.byFeature.today.adscenter} tokens
@@ -650,7 +650,7 @@ const AdminDashboard: React.FC = () => {
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body2" color="text.secondary">
-                      ChangeLink
+                      AdsCenter
                     </Typography>
                     <Typography variant="body2" fontWeight="bold">
                       {stats.tokenConsumption.byFeature.thisMonth.adscenter} tokens

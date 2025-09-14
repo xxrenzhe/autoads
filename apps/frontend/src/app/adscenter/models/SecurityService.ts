@@ -1,5 +1,5 @@
 /**
- * Security Service for ChangeLink
+ * Security Service for AdsCenter
  * Provides encryption, decryption, and security utilities
  */
 

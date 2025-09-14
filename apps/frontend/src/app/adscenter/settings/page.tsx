@@ -342,7 +342,7 @@ export default function SimpleSettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 text-sm">
-                  <div><strong>版本:</strong> ChangeLink v1.0</div>
+                  <div><strong>版本:</strong> AdsCenter v1.0</div>
                   <div><strong>框架:</strong> Next.js 14 + TypeScript</div>
                   <div><strong>数据库:</strong> 本地 IndexedDB</div>
                   <div><strong>最后更新:</strong> {new Date().toLocaleDateString()}</div>

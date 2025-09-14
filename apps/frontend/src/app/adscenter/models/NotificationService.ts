@@ -166,7 +166,7 @@ export class NotificationService {
 
       // 实际邮件发送逻辑
       const emailData = {
-        from: `${this.config.email?.fromName || 'ChangeLink'} <${this.config.email?.fromEmail}>`,
+        from: `${this.config.email?.fromName || 'AdsCenter'} <${this.config.email?.fromEmail}>`,
         to,
         subject,
         html: content
@@ -253,7 +253,7 @@ export class NotificationService {
       ? Math.round((report.summary.successfulExtractions / report.summary.totalExtractions) * 100)
       : 0;
 
-    return `[ChangeLink] ${configurationName} - ${statusText} (成功率: ${successRate}%)`;
+    return `[AdsCenter] ${configurationName} - ${statusText} (成功率: ${successRate}%)`;
   }
 
   /**

@@ -308,6 +308,9 @@ class OptimizedRedisClient {
     logger.info('初始化内存fallback客户端');
     
     const memoryStore = new Map<string, { value: any; expiry?: number }>();
+    // 简易发布订阅与事件
+    const channelMap = new Map<string, Set<(message: string) => void>>();
+    const eventHandlers = new Map<string, Set<(...args: any[]) => void>>();
     
     this.fallbackClient = {
       // 基础操作
@@ -423,7 +426,47 @@ class OptimizedRedisClient {
       // 管道操作（简化版）
       pipeline: () => ({
         exec: async () => []
-      })
+      }),
+
+      // 发布/订阅（简化版）
+      subscribe: async (channel: string) => {
+        if (!channelMap.has(channel)) channelMap.set(channel, new Set());
+        return 1;
+      },
+      unsubscribe: async (channel?: string) => {
+        if (!channel) {
+          channelMap.clear();
+          return 1;
+        }
+        channelMap.delete(channel);
+        return 1;
+      },
+      publish: async (channel: string, message: string) => {
+        let delivered = 0;
+        // 触发 message 事件监听
+        const listeners = eventHandlers.get('message');
+        if (listeners) {
+          for (const cb of listeners.values()) {
+            try { cb(channel, message); delivered++; } catch {}
+          }
+        }
+        // 触发按通道注册的处理器
+        const handlers = channelMap.get(channel);
+        if (handlers) {
+          for (const h of handlers.values()) {
+            try { h(message); delivered++; } catch {}
+          }
+        }
+        return delivered;
+      },
+      on: (event: string, cb: (...args: any[]) => void) => {
+        if (!eventHandlers.has(event)) eventHandlers.set(event, new Set());
+        eventHandlers.get(event)!.add(cb);
+      },
+      off: (event: string, cb: (...args: any[]) => void) => {
+        const set = eventHandlers.get(event);
+        if (set) set.delete(cb);
+      }
     };
     
     this.isConnected = true; // fallback总是"连接"的
