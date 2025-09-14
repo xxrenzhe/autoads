@@ -263,6 +263,23 @@ docker exec autoads-saas-production netstat -tlnp
 - `BACKEND_PROXY_MAX_BODY`（可选）：反代请求体大小限制（字节），默认 `2097152`（2MB）
 - `BACKEND_PROXY_TIMEOUT_MS`（可选）：反代上游超时（毫秒），默认 `15000`
 - `NEXT_PUBLIC_BACKEND_PREFIX`（可选）：前端 `backend.ts` 访问后端的前缀，默认 `/go`
-- `BACKEND_PROXY_ALLOW_PREFIXES`（可选）：允许反代的前缀列表，逗号分隔；默认 `/health,/ready,/live,/api/,/admin/`
+- `BACKEND_PROXY_ALLOW_PREFIXES`（可选）：允许反代的前缀列表，逗号分隔；默认最小集：
+  - `/health,/ready,/live,/admin/gofly-panel/api/,/admin/api-management/,/api/user,/api/tokens,/api/siterank`
+
+#### 示例配置
+
+本地/容器运行时可通过环境变量覆盖，例如：
+
+```bash
+# 仅允许必要后端路径通过 /go 反代
+export BACKEND_PROXY_ALLOW_PREFIXES="/health,/ready,/live,/admin/gofly-panel/api/,/admin/api-management/,/api/user,/api/tokens,/api/siterank"
+
+# 如后端在其它端口或地址
+export BACKEND_URL="http://127.0.0.1:8080"
+
+# 提高上游超时（毫秒）与请求体上限（字节）
+export BACKEND_PROXY_TIMEOUT_MS=20000
+export BACKEND_PROXY_MAX_BODY=5242880 # 5MB
+```
 
 这种架构特别适合中小型 SaaS 应用，在保证功能完整性的同时，最大化了部署和运维的效率。

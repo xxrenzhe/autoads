@@ -60,8 +60,15 @@ function getAllowedPrefixes(): string[] {
   if (env && env.trim()) {
     return env.split(',').map(s => s.trim()).filter(Boolean);
   }
-  // 默认仅允许健康检查与常用后端前缀，避免误转发
-  return ['/health', '/ready', '/live', '/api/', '/admin/'];
+  // 默认最小必要集（可通过 BACKEND_PROXY_ALLOW_PREFIXES 覆盖）
+  return [
+    '/health', '/ready', '/live',
+    '/admin/gofly-panel/api/',
+    '/admin/api-management/',
+    '/api/user',
+    '/api/tokens',
+    '/api/siterank'
+  ];
 }
 
 async function proxy(req: Request, path: string[]) {

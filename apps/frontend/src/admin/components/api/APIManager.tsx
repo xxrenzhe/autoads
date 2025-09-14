@@ -24,6 +24,75 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAdminApiEndpoints, useAdminApiKeys, useAdminApiAnalytics } from '@/lib/hooks/admin/useAdminApiManagement'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { toast } from 'sonner'
+
+// Lightweight chart primitives (no deps) -----------------------------------
+function MiniBarChart({ data, maxHeight = 160 }: { data: Array<{ label: string; value: number }>, maxHeight?: number }) {
+  const max = Math.max(1, ...data.map(d => d.value || 0))
+  const barWidth = data.length > 0 ? Math.max(8, Math.floor(260 / data.length)) : 12
+  return (
+    <div className="w-full" role="img" aria-label="bar chart">
+      <div className="flex items-end gap-1" style={{ height: maxHeight }}>
+        {data.map((d, i) => (
+          <div key={i} className="flex flex-col items-center" style={{ width: barWidth }}>
+            <div
+              className="bg-blue-500 rounded-t"
+              title={`${d.label}: ${d.value}`}
+              style={{ height: Math.max(2, Math.round((d.value / max) * (maxHeight - 20))) }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between text-xs text-gray-500 mt-2">
+        <span>{data[0]?.label || ''}</span>
+        <span>{data[data.length - 1]?.label || ''}</span>
+      </div>
+    </div>
+  )
+}
+
+function buildRequestSeries(analytics: any): Array<{ label: string; value: number }> {
+  const series: Array<{ label: string; value: number }> = []
+  const over = analytics?.requestsOverTime || analytics?.requestVolume?.overTime || analytics?.overTime?.requests
+  if (Array.isArray(over)) {
+    for (const p of over) {
+      const label = String(p.date || p.time || '')
+      const value = Number(p.count || p.value || 0)
+      if (label) series.push({ label, value })
+    }
+  }
+  return series.slice(-24) // limit
+}
+
+function buildResponseDistribution(analytics: any): Array<{ label: string; value: number }> {
+  const dist = analytics?.responseTimes || analytics?.responseTime || analytics?.latency
+  const out: Array<{ label: string; value: number }> = []
+  if (dist && typeof dist === 'object') {
+    const p50 = Number(dist.p50 ?? dist.p_50 ?? 0)
+    const p90 = Number(dist.p90 ?? dist.p_90 ?? 0)
+    const p99 = Number(dist.p99 ?? dist.p_99 ?? 0)
+    if (p50) out.push({ label: 'p50', value: p50 })
+    if (p90) out.push({ label: 'p90', value: p90 })
+    if (p99) out.push({ label: 'p99', value: p99 })
+  }
+  if (out.length === 0 && Array.isArray(dist)) {
+    for (const b of dist) {
+      out.push({ label: String(b.label || b.bucket || ''), value: Number(b.value || 0) })
+    }
+  }
+  return out
+}
+
+function buildErrorRates(analytics: any): Array<{ label: string; value: number }> {
+  const arr = analytics?.errorRatesByEndpoint || analytics?.errors?.byEndpoint || []
+  const out: Array<{ label: string; value: number }> = []
+  if (Array.isArray(arr)) {
+    for (const r of arr) {
+      out.push({ label: String(r.endpoint || r.path || ''), value: Math.round((Number(r.errorRate || r.rate || 0)) * 100) / 100 })
+    }
+  }
+  return out.slice(0, 10)
+}
 
 export interface APIEndpoint {
   id: string
@@ -68,8 +137,8 @@ export function APIManager({ className }: APIManagerProps) {
   const [showCreateKey, setShowCreateKey] = useState(false)
   const [editingEndpoint, setEditingEndpoint] = useState<APIEndpoint | null>(null)
   const [editingKey, setEditingKey] = useState<APIKey | null>(null)
-  const [endpointForm, setEndpointForm] = useState<{ description: string; isActive: boolean; rateLimitPerMinute?: number; requiresAuth?: boolean; requiredRole?: string }>({ description: '', isActive: true })
-  const [keyForm, setKeyForm] = useState<{ name: string; isActive: boolean; rateLimitOverride?: number }>({ name: '', isActive: true })
+  const [endpointForm, setEndpointForm] = useState<{ description: string; isActive: boolean; rateLimitPerMinute?: number; rateLimitPerHour?: number; requiresAuth?: boolean; requiredRole?: string }>({ description: '', isActive: true })
+  const [keyForm, setKeyForm] = useState<{ name: string; isActive: boolean; rateLimitOverride?: number; expiresAt?: string; permissionsCSV?: string }>({ name: '', isActive: true })
   const [announcement, setAnnouncement] = useState<string>('')
   const [confirmDeleteEndpointId, setConfirmDeleteEndpointId] = useState<string | null>(null)
   const [confirmDeleteEndpointLabel, setConfirmDeleteEndpointLabel] = useState<string>('')
@@ -220,6 +289,10 @@ export function APIManager({ className }: APIManagerProps) {
       queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'endpoints'] });
       queryClient.invalidateQueries({ queryKey: ['api-endpoints'] });
       setAnnouncement('Endpoint updated successfully')
+      toast.success('Endpoint updated')
+    },
+    onError: (e: any) => {
+      toast.error(`Update failed: ${e?.message || 'unknown error'}`)
     }
   });
 
@@ -240,6 +313,10 @@ export function APIManager({ className }: APIManagerProps) {
       queryClient.invalidateQueries({ queryKey: ['api-endpoints'] });
       setConfirmDeleteEndpointId(null)
       setAnnouncement('Endpoint deleted')
+      toast.success('Endpoint deleted')
+    },
+    onError: (e: any) => {
+      toast.error(`Delete failed: ${e?.message || 'unknown error'}`)
     }
   });
 
@@ -263,6 +340,10 @@ export function APIManager({ className }: APIManagerProps) {
       queryClient.invalidateQueries({ queryKey: ['admin', 'api-management', 'keys'] });
       queryClient.invalidateQueries({ queryKey: ['api-keys'] });
       setAnnouncement('API key updated successfully')
+      toast.success('API key updated')
+    },
+    onError: (e: any) => {
+      toast.error(`Update key failed: ${e?.message || 'unknown error'}`)
     }
   });
 
@@ -283,6 +364,10 @@ export function APIManager({ className }: APIManagerProps) {
       queryClient.invalidateQueries({ queryKey: ['api-keys'] });
       setConfirmDeleteKeyId(null)
       setAnnouncement('API key deleted')
+      toast.success('API key deleted')
+    },
+    onError: (e: any) => {
+      toast.error(`Delete key failed: ${e?.message || 'unknown error'}`)
     }
   });
 
@@ -720,8 +805,14 @@ export function APIManager({ className }: APIManagerProps) {
                               aria-label={`Edit ${key.name} API key`}
                               onClick={() => {
                                 setEditingKey(key)
-                                setKeyForm({ name: key.name, isActive: !!key.isActive, rateLimitOverride: key.rateLimitOverride })
-                              }}
+                                  setKeyForm({ 
+                                    name: key.name, 
+                                    isActive: !!key.isActive, 
+                                    rateLimitOverride: key.rateLimitOverride,
+                                    expiresAt: key.expiresAt ? String(key.expiresAt).slice(0,10) : '',
+                                    permissionsCSV: Array.isArray(key.permissions) ? key.permissions.join(',') : ''
+                                  })
+                                }}
                             >
                               <Edit className="h-3 w-3 mr-1" aria-hidden="true" />
                               Edit
@@ -769,13 +860,18 @@ export function APIManager({ className }: APIManagerProps) {
                     </h3>
                   </CardHeader>
                   <CardContent>
-                    <div 
-                      className="h-64 flex items-center justify-center text-gray-500"
-                      role="img"
-                      aria-label="Chart showing API request volume over time - data visualization placeholder"
-                    >
-                      Chart placeholder - Request volume over time
-                    </div>
+                    {isAnalyticsLoading ? (
+                      <div className="h-64 animate-pulse bg-gray-100 dark:bg-gray-800 rounded" />
+                    ) : (
+                      (() => {
+                        const series = buildRequestSeries(analytics)
+                        return series.length > 0 ? (
+                          <MiniBarChart data={series} />
+                        ) : (
+                          <div className="h-64 flex items-center justify-center text-gray-500">No data</div>
+                        )
+                      })()
+                    )}
                   </CardContent>
                 </Card>
                 
@@ -786,13 +882,18 @@ export function APIManager({ className }: APIManagerProps) {
                     </h3>
                   </CardHeader>
                   <CardContent>
-                    <div 
-                      className="h-64 flex items-center justify-center text-gray-500"
-                      role="img"
-                      aria-label="Chart showing API response time distribution - data visualization placeholder"
-                    >
-                      Chart placeholder - Response time distribution
-                    </div>
+                    {isAnalyticsLoading ? (
+                      <div className="h-64 animate-pulse bg-gray-100 dark:bg-gray-800 rounded" />
+                    ) : (
+                      (() => {
+                        const dist = buildResponseDistribution(analytics)
+                        return dist.length > 0 ? (
+                          <MiniBarChart data={dist} />
+                        ) : (
+                          <div className="h-64 flex items-center justify-center text-gray-500">No latency data</div>
+                        )
+                      })()
+                    )}
                   </CardContent>
                 </Card>
                 
@@ -803,13 +904,18 @@ export function APIManager({ className }: APIManagerProps) {
                     </h3>
                   </CardHeader>
                   <CardContent>
-                    <div 
-                      className="h-64 flex items-center justify-center text-gray-500"
-                      role="img"
-                      aria-label="Chart showing API error rates by endpoint - data visualization placeholder"
-                    >
-                      Chart placeholder - Error rates by endpoint
-                    </div>
+                    {isAnalyticsLoading ? (
+                      <div className="h-64 animate-pulse bg-gray-100 dark:bg-gray-800 rounded" />
+                    ) : (
+                      (() => {
+                        const er = buildErrorRates(analytics)
+                        return er.length > 0 ? (
+                          <MiniBarChart data={er} />
+                        ) : (
+                          <div className="h-64 flex items-center justify-center text-gray-500">No error data</div>
+                        )
+                      })()
+                    )}
                   </CardContent>
                 </Card>
                 
@@ -904,10 +1010,14 @@ export function APIManager({ className }: APIManagerProps) {
                   <label htmlFor="ep-auth" className="text-sm">Requires Auth</label>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Rate Limit (per minute)</label>
                   <Input type="number" value={endpointForm.rateLimitPerMinute ?? ''} onChange={(e) => setEndpointForm(f => ({ ...f, rateLimitPerMinute: e.target.value ? Number(e.target.value) : undefined }))} />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Rate Limit (per hour)</label>
+                  <Input type="number" value={endpointForm.rateLimitPerHour ?? ''} onChange={(e) => setEndpointForm(f => ({ ...f, rateLimitPerHour: e.target.value ? Number(e.target.value) : undefined }))} />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Required Role</label>
@@ -951,13 +1061,29 @@ export function APIManager({ className }: APIManagerProps) {
                   <Input type="number" value={keyForm.rateLimitOverride ?? ''} onChange={(e) => setKeyForm(f => ({ ...f, rateLimitOverride: e.target.value ? Number(e.target.value) : undefined }))} />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Expires At</label>
+                  <Input type="date" value={keyForm.expiresAt ?? ''} onChange={(e) => setKeyForm(f => ({ ...f, expiresAt: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Permissions (comma separated)</label>
+                  <Input value={keyForm.permissionsCSV ?? ''} onChange={(e) => setKeyForm(f => ({ ...f, permissionsCSV: e.target.value }))} placeholder="read,write,admin" />
+                </div>
+              </div>
             </div>
           )}
           <DialogFooter>
             <Button
               onClick={() => {
                 if (!editingKey) return
-                updateKeyMutation.mutate({ id: String(editingKey.id), payload: keyForm })
+                const payload: any = { name: keyForm.name, isActive: keyForm.isActive }
+                if (keyForm.rateLimitOverride !== undefined) payload.rateLimitOverride = keyForm.rateLimitOverride
+                if (keyForm.expiresAt && keyForm.expiresAt.length > 0) payload.expiresAt = keyForm.expiresAt
+                if (keyForm.permissionsCSV && keyForm.permissionsCSV.trim().length > 0) {
+                  payload.permissions = keyForm.permissionsCSV.split(',').map(s => s.trim()).filter(Boolean)
+                }
+                updateKeyMutation.mutate({ id: String(editingKey.id), payload })
                 setEditingKey(null)
               }}
             >Save</Button>

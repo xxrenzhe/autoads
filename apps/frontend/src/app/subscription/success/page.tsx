@@ -3,8 +3,8 @@ import { Suspense } from 'react'
 import SubscriptionSuccess from '@/components/subscription/SubscriptionSuccess'
 
 export const metadata: Metadata = {
-  title: '订阅成功 - ChangeLink',
-  description: '感谢您的订阅，欢迎使用 ChangeLink 高级功能',
+  title: '订阅成功 - AdsCenter',
+  description: '感谢您的订阅，欢迎使用 AdsCenter 高级功能',
 }
 
 export default function SubscriptionSuccessPage() {

@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import SubscriptionCancel from '@/components/subscription/SubscriptionCancel'
 
 export const metadata: Metadata = {
-  title: '订阅取消 - ChangeLink',
+  title: '订阅取消 - AdsCenter',
   description: '订阅流程已取消，您可以随时重新开始',
 }
 

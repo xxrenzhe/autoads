@@ -185,7 +185,7 @@ export default function SimpleUnifiedDashboard() {
             <div className="flex items-center space-x-4">
               <LayoutDashboard className="h-8 w-8 text-blue-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">ChangeLink 自动化平台</h1>
+                <h1 className="text-2xl font-bold text-gray-900">AdsCenter 自动化平台</h1>
                 <p className="text-sm text-gray-500">
                   统一管理面板 • 最后更新: {dashboardStats.lastUpdate.toLocaleTimeString()}
                 </p>

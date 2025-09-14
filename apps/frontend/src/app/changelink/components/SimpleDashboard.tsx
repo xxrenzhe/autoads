@@ -113,7 +113,7 @@ export default function SimpleDashboard() {
                 <LayoutDashboard className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">ChangeLink 自动化平台</h1>
+                <h1 className="text-3xl font-bold text-gray-900">AdsCenter 自动化平台</h1>
                 <p className="text-lg text-gray-600">
                   智能广告链接更新系统
                 </p>

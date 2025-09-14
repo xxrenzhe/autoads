@@ -114,7 +114,7 @@ async function recordSecurityEvent(request: NextRequest, userId: string | null, 
 function getFeatureFromPath(path: string): string {
   if (path.includes('/siterank')) return 'siterank';
   if (path.includes('/batchopen')) return 'batchopen';
-  if (path.includes('/changelink')) return 'changelink';
+  if (path.includes('/adscenter') || path.includes('/changelink')) return 'adscenter';
   if (path.includes('/token')) return 'token';
   if (path.includes('/user')) return 'user';
   if (path.includes('/admin')) return 'admin';
@@ -128,6 +128,12 @@ export async function middleware(request: NextRequest) {
   // 301 跳转到 www 子域（仅页面路由，避免影响 API/Cookies）
   const hostname = request.nextUrl.hostname;
   const isApiRoute = pathname.startsWith('/api/');
+  // 路由改名：/changelink -> /adscenter（保持向后兼容）
+  if (!isApiRoute && pathname.startsWith('/changelink')) {
+    const target = new URL(request.url);
+    target.pathname = pathname.replace('/changelink', '/adscenter');
+    return NextResponse.redirect(target, 301);
+  }
   if (!isApiRoute && (hostname === 'urlchecker.dev' || hostname === 'autoads.dev')) {
     const target = new URL(request.url);
     target.hostname = `www.${hostname}`;

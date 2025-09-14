@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import SubscriptionManagement from '@/components/subscription/SubscriptionManagement'
 
 export const metadata: Metadata = {
-  title: '订阅管理 - ChangeLink',
+  title: '订阅管理 - AdsCenter',
   description: '管理您的订阅计划、查看使用情况和账单历史',
 }
 
