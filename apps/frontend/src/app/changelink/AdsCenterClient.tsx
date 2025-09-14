@@ -86,31 +86,46 @@ export default function ChangeLinkClient() {
       setError(null);
 
       // Fetch accounts
-      const accountsData = await http.getCached<{ accounts: GoogleAdsAccount[] }>(
-        '/adscenter/accounts',
-        undefined,
-        30_000,
-        false
-      );
-      setAccounts((accountsData as any)?.accounts || []);
+      const accountsRes = await http.getCached<any>('/adscenter/accounts', undefined, 30_000);
+      const accountsList: any[] = Array.isArray(accountsRes) ? accountsRes : (accountsRes?.data || []);
+      const normalizedAccounts: GoogleAdsAccount[] = accountsList.map((a: any) => ({
+        id: a.accountId || a.id || a.account_id,
+        account_id: a.accountId || a.account_id,
+        account_name: a.accountName || a.account_name,
+        status: a.status || 'active',
+        created_at: a.createdAt || a.created_at || new Date().toISOString(),
+        updated_at: a.updated_at || a.createdAt || new Date().toISOString(),
+      }));
+      setAccounts(normalizedAccounts);
 
       // Fetch configurations
-      const configsData = await http.getCached<{ configurations: Configuration[] }>(
-        '/adscenter/configurations',
-        undefined,
-        30_000,
-        false
-      );
-      setConfigurations((configsData as any)?.configurations || []);
+      const configsRes = await http.getCached<any>('/adscenter/configurations', undefined, 30_000);
+      const configsList: any[] = Array.isArray(configsRes) ? configsRes : (configsRes?.data || []);
+      const normalizedConfigs: Configuration[] = configsList.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description || '',
+        status: c.status || 'active',
+        created_at: c.createdAt || c.created_at || new Date().toISOString(),
+        updated_at: c.updated_at || c.createdAt || new Date().toISOString(),
+      }));
+      setConfigurations(normalizedConfigs);
 
       // Fetch executions
-      const executionsData = await http.getCached<{ executions: Execution[] }>(
-        '/adscenter/executions',
-        undefined,
-        15_000,
-        false
-      );
-      setExecutions((executionsData as any)?.executions || []);
+      const execsRes = await http.getCached<any>('/adscenter/executions', undefined, 15_000);
+      const execsList: any[] = Array.isArray(execsRes) ? execsRes : (execsRes?.data || []);
+      const normalizedExecs: Execution[] = execsList.map((e: any) => ({
+        id: e.id,
+        configuration_id: e.configurationId || e.configuration_id,
+        status: e.status || 'created',
+        progress: e.progress ?? 0,
+        total_items: e.total_items ?? 0,
+        processed_items: e.processed_items ?? 0,
+        started_at: e.started_at || e.createdAt || new Date().toISOString(),
+        completed_at: e.completed_at,
+        created_at: e.created_at || e.createdAt || new Date().toISOString(),
+      }));
+      setExecutions(normalizedExecs);
 
     } catch (err) {
       setError('Failed to fetch data');
@@ -126,13 +141,40 @@ export default function ChangeLinkClient() {
       setLoading(true);
       setError(null);
       const [acc, conf, execs] = await Promise.all([
-        http.get<{ accounts: GoogleAdsAccount[] }>('/adscenter/accounts'),
-        http.get<{ configurations: Configuration[] }>('/adscenter/configurations'),
-        http.get<{ executions: Execution[] }>('/adscenter/executions')
+        http.get<any>('/adscenter/accounts'),
+        http.get<any>('/adscenter/configurations'),
+        http.get<any>('/adscenter/executions')
       ]);
-      setAccounts((acc as any)?.accounts || []);
-      setConfigurations((conf as any)?.configurations || []);
-      setExecutions((execs as any)?.executions || []);
+      const accList: any[] = Array.isArray(acc) ? acc : (acc as any)?.data || [];
+      const confList: any[] = Array.isArray(conf) ? conf : (conf as any)?.data || [];
+      const execList: any[] = Array.isArray(execs) ? execs : (execs as any)?.data || [];
+      setAccounts(accList.map((a: any) => ({
+        id: a.accountId || a.id || a.account_id,
+        account_id: a.accountId || a.account_id,
+        account_name: a.accountName || a.account_name,
+        status: a.status || 'active',
+        created_at: a.createdAt || new Date().toISOString(),
+        updated_at: a.updated_at || a.createdAt || new Date().toISOString(),
+      })));
+      setConfigurations(confList.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description || '',
+        status: c.status || 'active',
+        created_at: c.createdAt || new Date().toISOString(),
+        updated_at: c.updated_at || c.createdAt || new Date().toISOString(),
+      })));
+      setExecutions(execList.map((e: any) => ({
+        id: e.id,
+        configuration_id: e.configurationId || e.configuration_id,
+        status: e.status || 'created',
+        progress: e.progress ?? 0,
+        total_items: e.total_items ?? 0,
+        processed_items: e.processed_items ?? 0,
+        started_at: e.started_at || e.createdAt || new Date().toISOString(),
+        completed_at: e.completed_at,
+        created_at: e.created_at || e.createdAt || new Date().toISOString(),
+      })));
     } catch (err) {
       setError('Failed to fetch data');
       toast.error('加载数据失败，请稍后重试');
@@ -146,7 +188,7 @@ export default function ChangeLinkClient() {
       setAddingAccount(true);
       const res = await http.post<{ success?: boolean; error?: string }>(
         '/adscenter/accounts',
-        newAccount
+        { accountId: newAccount.accountId, accountName: newAccount.accountName }
       );
       if ((res as any)?.success === false) {
         const msg = (res as any)?.error || '操作失败，请稍后重试';
@@ -169,14 +211,11 @@ export default function ChangeLinkClient() {
   const handleAddConfiguration = async () => {
     try {
       setAddingConfig(true);
-      const payload = {
-        name: newConfig.name,
-        description: newConfig.description,
-        config_data: JSON.parse(newConfig.configData || '{}')
-      };
+      let parsed: any = {};
+      try { parsed = newConfig.configData ? JSON.parse(newConfig.configData) : {}; } catch { parsed = {}; }
       const res = await http.post<{ success?: boolean; error?: string }>(
         '/adscenter/configurations',
-        payload
+        { name: newConfig.name, description: newConfig.description, payload: parsed }
       );
       if ((res as any)?.success === false) {
         const msg = (res as any)?.error || '操作失败，请稍后重试';
@@ -201,7 +240,7 @@ export default function ChangeLinkClient() {
       setStartingExecId(configurationId);
       const res = await http.post<{ success?: boolean; error?: string }>(
         '/adscenter/executions',
-        { configuration_id: configurationId, total_items: 100 }
+        { configurationId }
       );
       if ((res as any)?.success === false) {
         const msg = (res as any)?.error || '操作失败，请稍后重试';
