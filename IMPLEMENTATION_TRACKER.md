@@ -1,0 +1,23 @@
+# Implementation Tracker (P0/P1/P2)
+
+This tracker mirrors docs/ArchitectureOptimization05.md gates, ensuring no gaps between design and code.
+
+## P0 – Pre-release (in progress)
+- [x] Single middleware: inject x-request-id; fix /api/auth/csrf CORS
+- [x] Add unified BFF: /api/go/[...path] → BACKEND_URL (X-BFF-Enforced; request-id passthrough)
+- [x] Remove legacy middlewares (edge/admin/csrf duplicates)
+- [ ] Map critical public APIs to /api/go (or keep current handlers but plan migration) – owner: FE
+- [ ] Verify headers contract (x-request-id/X-RateLimit-*) via integration test – owner: FE
+
+## P1 – Backend consolidation
+- [ ] Go implements BatchOpen (basic/silent/autoclick w/ dynamic http→puppeteer), SiteRank, AdsCenter
+- [ ] Next API routes forward (or thin wrappers) and remove Node executors
+- [ ] Admin features complete; SystemConfig write path removed; read-only window planned
+
+## P2 – Performance & cleanup
+- [ ] k6/Vegeta baseline meets SLO; readiness/health dashboards green
+- [ ] Remove deprecated code/flags; finalize docs and ownership checks
+
+---
+For each item: link PRs, test reports, and checklist confirmations.
+

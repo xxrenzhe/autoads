@@ -12,3 +12,5 @@ export const subsApi = {
   assign(userId, data) { return request({ url: `/ops/api/v1/console/users/${userId}/subscriptions/assign`, method: 'post', data }) },
   cancel(userId, subId) { return request({ url: `/ops/api/v1/console/users/${userId}/subscriptions/${subId}/cancel`, method: 'post' }) }
 }
+
+export default subsApi

@@ -38,7 +38,7 @@
   - `BatchJobItem(jobId, url, status, result, retries, lastError)`
   - 可选 `BatchJobProgress(jobId, total, success, fail, running, startedAt, finishedAt)`
 - 执行语义：
-  - BASIC：HTTP 直访（轻量）；SILENT：异步执行 + 进度；AUTOCLICK（BatchOpen 的第三版本）：浏览器执行（Playwright/Puppeteer 二选一，仅在 Go）。
+  - BASIC：HTTP 直访（轻量）；SILENT：异步执行 + 进度；AUTOCLICK（BatchOpen 的第三版本）：优先 HTTP，满足“批量失败阈值”后自动切换 Puppeteer（仅在 Go）。
   - 统一协程池 + 简单队列（Redis/内存），令牌扣费在“成功 item”或“入队”一致化（事务 + 行锁/版本号）。
 - BFF 映射（Next 保持路由不变）：
   - `/api/batchopen/silent-start|silent-progress|silent-terminate|version|proxy-url-validate` → BFF 校验+轻限流 → `http://127.0.0.1:8080/api/v1/batchopen/*`。
@@ -172,6 +172,18 @@
 ---
 
 如需按模块推进，建议从 P0 的中间件合并与 BFF 转发骨架开始，随后并行 Go 端 BatchOpen/SiteRank/AdsCenter 的 API 与执行器实现，最后以功能清单与压测门槛作为统一验收。
+
+## 43. 功能保障评估（不破坏用户空间）
+- 结论（在本方案与里程碑 Gate 下）：
+  - BatchOpen：保持原有 API 路径（silent-start/progress/terminate/version/proxy-url-validate），BFF 透传至 Go，UI 不变；Autoclick 动态访问策略在后端执行，进度与报表兼容；令牌扣费与流水一致且可审计。
+  - SiteRank：生产与预发固定使用 Go 端实现；Next 仅做薄 BFF；对外合同与响应头（限流、requestId）统一；缓存/错误 TTL/配额一致；功能正常且性能更稳。
+  - AdsCenter：accounts/configurations/executions 全量迁至 Go；Next API 透传；旧的 SystemConfig 仅作为只读回退窗口，完成对账后删除；用户操作流（新增账户、创建配置、触发执行、查看记录）保持不变。
+- 兼容性与可靠性保证措施：
+  - API 映射保持路径/方法/参数/响应合同不变（见第 15 节）；BFF 统一错误体与限流头（第 14、31 节）。
+  - 功能测试清单与压测基线作为上线门槛（第 8、9 节）；契约测试（第 33 节）覆盖关键接口。
+  - 可观测保障：统一 requestId、Server-Timing、liveness/readyz 探针、告警阈值（第 24 节）。
+  - 数据一致性：单写边界（第 16 节）、事务与幂等（第 18 节），确保扣费与任务状态的强一致。
+  - 回滚与时间盒：预发灰度、生产滚动、临时开关仅限短期且有删除计划（第 25、34 节）。
 
 ## 14. 统一错误与限流头规范（合同化）
 - 错误响应结构（BFF 与 Go 统一）：
@@ -426,7 +438,23 @@
   - 说明：
     - accessMode 表示“访问方式”而非版本：`http`（轻量直连）或 `puppeteer`（浏览器访问）。
     - 版本由 `type` 决定：`basic/silent/autoclick`。
-    - 一般约定：`basic` 不涉及 accessMode（前端开启标签页）；`silent` 可选 `http` 或 `puppeteer`；`autoclick` 固定浏览器执行（无需传 accessMode）。
+    - 一般约定：`basic` 不涉及 accessMode（前端开启标签页）；`silent` 可选 `http` 或 `puppeteer`；`autoclick` 默认 `http`，当出现批量失败时由后端自动切换到 `puppeteer`。
+
+### 3.2.1 Autoclick 动态访问模式策略（KISS）
+- 策略目标：在成功率与成本之间取得平衡，尽量使用 HTTP；当 HTTP 成功率过低时自动提级为 Puppeteer。
+- 简化规则（服务端 Go 执行器实现）：
+  - 起始模式：HTTP。
+  - 观察窗口：最近 50 个尝试（或“首轮执行完成”）。
+  - 切换条件（二选一满足其一）：
+    - 连续失败 ≥ 10；
+    - 观察窗口失败率 ≥ 30%。
+  - 切换后：对“剩余未处理 item”使用 Puppeteer 执行；已在队列中的 item 也改用 Puppeteer（避免混用）；不再降级回 HTTP（防抖动）。
+  - 计费策略：
+    - 每个 item 只按“最终成功的访问方式”计费（HTTP 成功按 HTTP 单价，Puppeteer 成功按 Puppeteer 单价）；失败不扣费。
+    - 切换事件记录审计日志（阈值与窗口统计），便于追溯与调参。
+  - UI/参数影响：
+    - 前端无需传 `accessMode`；`type=autoclick` 即启用上述动态策略；响应中回显最终使用的执行方式与数量占比。
+  - KISS：无需复杂“回退/多级策略”，只保留“单阈值切换 + 不回退”。
   - AutoClick 明确只是 BatchOpen 的第三种 `type`，不再有独立路径或独立参数语义。
 - 移除本地抓取/缓存旗标
   - 移除 `SITERANK_CACHE_DISABLED/USE_GO_BACKEND_SITERANK` 等运行时旗标；生产/预发固定走 Go。
@@ -465,6 +493,67 @@
 - 代码注释与文档：
   - 跨边界的函数（BFF→Go）必须有 1–2 行注释阐述契约与失败策略。
   - 文档与代码中的样例请求/响应保持同步，合约测试覆盖核心路径。
+
+## 44. 落地保障清单（无遗漏 · 无假实现）
+- 任务追踪（单一真相）
+  - 在仓库根目录维护 `IMPLEMENTATION_TRACKER.md`（或使用 GitHub Project）：按 P0/P1/P2 列出任务、Owner、截止日期、状态（TODO/DOING/DONE），与本文“里程碑与 Gate”逐项一一对应。
+  - 每个任务必须有对应 PR 链接与测试/验证证据（见“验收工件”）。
+- 可溯源矩阵（Traceability）
+  - 将本文关键章节与代码/测试建立映射（示例）：
+    - 第 15 节 API 映射 → `lib/bff/route-map.ts` + 合约测试 `tests/contract/bff-route-map.spec.ts`
+    - 第 16 节 表所有权 → CI 规则 `scripts/ci/schema-ownership-check.js`
+    - 第 18 节 幂等 → 中间件 `lib/bff/idempotency.ts` + 测试 `tests/integration/idempotency.spec.ts`
+    - 第 24 节 可观测 → BFF/Go 输出 `x-request-id/Server-Timing` + 测试 `tests/integration/headers.spec.ts`
+    - 第 35–37 节 UX → 组件目录 `lib/ui/*` + 交互测试 `tests/e2e/ux/*.spec.ts`
+  - CI 中校验“矩阵项是否具备对应实现与测试”，缺失则失败。
+- 运行时强信号（防假实现）
+  - BFF 统一加 `X-BFF-Enforced: 1` 响应头；Go 在响应加 `X-Go-Backend: 1`；灰度/对照期间可通过日志/探针验证真实路径。
+  - BFF 转发前检查 Go `/readyz`；未就绪直接 503 + `Retry-After`，避免悄悄回退到本地实现。
+- 合同化验收（不留空口）
+  - 合约测试：对映射表中每个 API 校验状态码、字段、错误码、限流头、requestId；作为 CI 必跑。
+  - 功能黑盒：使用 Jest+Playwright（或 Cypress）覆盖“登录→创建任务→轮询→扣费流水→报表”闭环；失败即阻塞发布。
+  - 压测阈值：k6/Vegeta 基线脚本 + 阈值（第 9 节）；不达标则 CI 失败或发布前阻断。
+- 清理与时间盒
+  - 废弃模块以 `@deprecated` 头注释与 TODO-删除日期标注；P2 结束统一删除。
+  - 临时开关一律在 P2 结束自动删除（CI 规则扫描命名：`USE_*|FEATURE_*`）。
+
+## 45. CI/CD 护栏（自动化检查）
+- 结构与所有权
+  - Schema 所有权检查：若 PR 修改“非认证域” Prisma schema 或 Next 写业务域，CI 失败。
+  - 禁止二实现：若出现新增 `optimized|enhanced|unified|simplified|websocket` 目录/文件名，CI 失败。
+- 合同与可观测
+  - 合约测试、响应头（`x-request-id/X-RateLimit-*`）校验必须通过。
+  - BFF/Go readiness 检查与健康探针必须通过。
+- 性能与资源
+  - k6/Vegeta 在 CI 的 smoke 模式（较小负载）至少运行 1 分钟并达标；完整压测在预发管道执行。
+- 变更规模控制
+  - 大改动需拆分多 PR；每 PR 附“文档章节引用 + 风险评估 + 回滚计划”。
+
+## 46. 验收工件（有据可依）
+- 合同化：合约测试报告与映射表快照（CI 产物）。
+- 功能：E2E 测试录屏/报告；操作审计抽样截图。
+- 性能：k6/Vegeta summary（P95/P99/错误率）与 Go 端 QPS/队列/延迟图表。
+- 数据一致性：扣费流水与报表对账清单（样本核对）。
+- 运维：/readyz 与告警看板截图。
+
+## 47. 角色与签发（谁来拍板）
+- 模块 Owner（建议）：
+  - BFF/前端：前端负责人 A
+  - Go 执行器/限流/队列：后端负责人 B
+  - 数据库/迁移/所有权：DBA/后端 C
+  - 观测/压测：平台/运维 D
+- Gate 审批：每个 Gate（0/1/2）需上述对应 Owner + 审批人签字（GitHub Review/Checklist 打勾）。
+
+## 48. 发布 Checklist（最后 1 小时）
+- [ ] /readyz 全绿；日志中 `X-BFF-Enforced` 与 `X-Go-Backend` 正常出现
+- [ ] 合同/功能/Smoke 压测通过；无新增 5xx/429 激增
+- [ ] 临时开关状态符合预期；回滚路径有效（上个镜像标签可用）
+- [ ] 监控/告警仪表盘指向正确环境；on-call 知悉发布窗口
+
+## 49. KISS 复核（避免过度工程）
+- 若存在可选 A/B 方案：优先“更少的模块/开关/命名”，拒绝多实现并存。
+- 拒绝“将来可能用”的扩展点进入主干；仅在确需时引入，并在 30 天内验证去留。
+- 所有新引入的机制必须在本文“唯一信息源”章节落档，否则不予合入。
 - 升级：
   - 预发：启用 Go 执行 → 功能清单回归 → 压测达标 → 观察 24h。
   - 生产：滚动发布，观测阈值（5xx、429、队列）达标。
