@@ -46,6 +46,7 @@ import (
     redisv8 "github.com/go-redis/redis/v8"
     "gofly-admin-v3/internal/ratelimit"
     "gofly-admin-v3/utils/gf"
+    "gorm.io/datatypes"
 )
 
 // 临时禁用静态文件嵌入，使用本地文件系统
@@ -57,6 +58,49 @@ var (
 	BuildTime = "unknown"
 	GitCommit = "unknown"
 )
+
+// ==== AdsCenter minimal models (map to Prisma tables) ====
+type AdsAccount struct {
+    ID          string    `json:"id" gorm:"primaryKey;size:36"`
+    UserID      string    `json:"userId" gorm:"index;size:36"`
+    AccountID   string    `json:"accountId"`
+    AccountName string    `json:"accountName"`
+    Status      string    `json:"status"`
+    CreatedAt   time.Time `json:"createdAt"`
+    UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+func (AdsAccount) TableName() string { return "ads_accounts" }
+
+type AdsConfiguration struct {
+    ID          string         `json:"id" gorm:"primaryKey;size:36"`
+    UserID      string         `json:"userId" gorm:"index;size:36"`
+    Name        string         `json:"name"`
+    Description string         `json:"description"`
+    Payload     datatypes.JSON `json:"payload" gorm:"type:json"`
+    Status      string         `json:"status"`
+    CreatedAt   time.Time      `json:"createdAt"`
+    UpdatedAt   time.Time      `json:"updatedAt"`
+}
+
+func (AdsConfiguration) TableName() string { return "ads_configurations" }
+
+type AdsExecution struct {
+    ID              string    `json:"id" gorm:"primaryKey;size:36"`
+    UserID          string    `json:"userId" gorm:"index;size:36"`
+    ConfigurationID string    `json:"configurationId"`
+    Status          string    `json:"status"`
+    Message         string    `json:"message" gorm:"type:text"`
+    Progress        int       `json:"progress"`
+    TotalItems      int       `json:"totalItems"`
+    ProcessedItems  int       `json:"processedItems"`
+    StartedAt       *time.Time `json:"startedAt"`
+    CompletedAt     *time.Time `json:"completedAt"`
+    CreatedAt       time.Time `json:"createdAt"`
+    UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+func (AdsExecution) TableName() string { return "ads_executions" }
 
 // 全局服务实例（用于旧API处理器中复用）
 var (
@@ -1041,10 +1085,10 @@ func setupAPIRoutes(r *gin.Engine) {
 			}
 
 			// ===== ADSCENTER 原子端点（链接替换 check/execute） =====
-			adscenter := v1.Group("/adscenter")
-			{
-				// 预检：按 extract_link + update_ads 规则估算总消耗
-				adscenter.POST("/link:update:check", func(c *gin.Context) {
+            adscenter := v1.Group("/adscenter")
+            {
+                // 预检：按 extract_link + update_ads 规则估算总消耗
+                adscenter.POST("/link:update:check", func(c *gin.Context) {
 					var body struct {
 						AffiliateLinks   []string `json:"affiliate_links"`
 						AdsPowerProfile  string   `json:"adspower_profile"`
@@ -1065,10 +1109,10 @@ func setupAPIRoutes(r *gin.Engine) {
 					required := requiredExtract + requiredUpdate
 					sufficient := balance1 >= required
 					c.JSON(200, gin.H{"sufficient": sufficient, "balance": balance1, "required": required, "quantity": len(body.AffiliateLinks)})
-				})
+                })
 
-				// 执行：创建并启动任务（任务内部阶段性扣费），保持原子化在服务内部
-				adscenter.POST("/link:update:execute", func(c *gin.Context) {
+                // 执行：创建并启动任务（任务内部阶段性扣费），保持原子化在服务内部
+                adscenter.POST("/link:update:execute", func(c *gin.Context) {
 					var body struct {
 						Name             string   `json:"name"`
 						AffiliateLinks   []string `json:"affiliate_links"`
@@ -1116,7 +1160,112 @@ func setupAPIRoutes(r *gin.Engine) {
                     if iKey != "" && gormDB != nil { _ = gormDB.Exec("UPDATE idempotency_requests SET status='DONE' WHERE user_id=? AND endpoint=? AND idem_key=?", userID, "adscenter.link.update.execute", iKey).Error }
                     c.JSON(200, gin.H{"taskId": task.ID, "status": string(task.Status)})
                 })
-			}
+
+                // ===== v1: minimal accounts/configurations/executions =====
+                // GET /api/v1/adscenter/accounts
+                adscenter.GET("/accounts", func(c *gin.Context) {
+                    if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
+                    userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+                    var rows []AdsAccount
+                    if err := gormDB.Where("user_id = ?", userID).Order("created_at DESC").Find(&rows).Error; err != nil {
+                        c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return
+                    }
+                    c.JSON(200, gin.H{"accounts": rows, "count": len(rows)})
+                })
+
+                // GET /api/v1/adscenter/configurations
+                adscenter.GET("/configurations", func(c *gin.Context) {
+                    if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
+                    userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+                    var rows []AdsConfiguration
+                    if err := gormDB.Where("user_id = ?", userID).Order("created_at DESC").Find(&rows).Error; err != nil {
+                        c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return
+                    }
+                    c.JSON(200, gin.H{"configurations": rows, "count": len(rows)})
+                })
+
+                // POST /api/v1/adscenter/configurations
+                adscenter.POST("/configurations", func(c *gin.Context) {
+                    if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
+                    userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+                    var body struct{ Name string `json:"name"`; Description string `json:"description"`; Payload map[string]any `json:"payload"` }
+                    if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.Name) == "" {
+                        c.JSON(400, gin.H{"code": 400, "message": "invalid request: name required"}); return
+                    }
+                    b, _ := json.Marshal(body.Payload)
+                    row := &AdsConfiguration{ ID: fmt.Sprintf("%d", time.Now().UnixNano()), UserID: userID, Name: body.Name, Description: body.Description, Payload: datatypes.JSON(b), Status: "active", CreatedAt: time.Now(), UpdatedAt: time.Now() }
+                    if err := gormDB.Create(row).Error; err != nil { c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return }
+                    c.JSON(200, gin.H{"configuration": row})
+                })
+
+                // POST /api/v1/adscenter/executions
+                adscenter.POST("/executions", func(c *gin.Context) {
+                    if gormDB == nil || tokenSvc == nil { c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"}); return }
+                    userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+                    var body struct{ ConfigurationID string `json:"configurationId"` }
+                    if err := c.ShouldBindJSON(&body); err != nil || body.ConfigurationID == "" { c.JSON(400, gin.H{"code": 400, "message": "configurationId required"}); return }
+                    var cfg AdsConfiguration
+                    if err := gormDB.Where("id = ? AND user_id = ?", body.ConfigurationID, userID).First(&cfg).Error; err != nil {
+                        c.JSON(404, gin.H{"code": 404, "message": "configuration not found"}); return
+                    }
+                    // compute quantity from payload
+                    qty := 1
+                    var payload map[string]any
+                    _ = json.Unmarshal([]byte(cfg.Payload), &payload)
+                    if payload != nil {
+                        if arr, ok := payload["affiliate_links"].([]any); ok && len(arr) > 0 { qty = len(arr) } else
+                        if arr2, ok2 := payload["links"].([]any); ok2 && len(arr2) > 0 { qty = len(arr2) }
+                    }
+                    // token check & consume (reuse chengelink.update_ads rule)
+                    sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "chengelink", "update_ads", qty)
+                    if err != nil { c.JSON(500, gin.H{"code": 500, "message": err.Error()}); return }
+                    if !sufficient { c.JSON(402, gin.H{"code": 402, "message": "INSUFFICIENT_TOKENS", "required": required, "balance": balance}); return }
+                    if err := tokenSvc.ConsumeTokensByService(userID, "chengelink", "update_ads", qty, "adscenter.execute" ); err != nil {
+                        c.JSON(402, gin.H{"code": 402, "message": err.Error(), "required": required, "balance": balance}); return }
+                    now := time.Now()
+                    exec := &AdsExecution{ ID: fmt.Sprintf("%d", now.UnixNano()), UserID: userID, ConfigurationID: cfg.ID, Status: "running", Message: "processing", Progress: 0, TotalItems: qty, ProcessedItems: 0, StartedAt: &now, CreatedAt: now, UpdatedAt: now }
+                    if err := gormDB.Create(exec).Error; err != nil { c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return }
+                    // async simulate processing
+                    go func(executionID string, total int) {
+                        processed := 0
+                        for processed < total {
+                            time.Sleep(150 * time.Millisecond)
+                            processed++
+                            prog := int(float64(processed) / float64(total) * 100.0)
+                            _ = gormDB.Model(&AdsExecution{}).Where("id = ?", executionID).Updates(map[string]any{"processed_items": processed, "progress": prog, "updated_at": time.Now()}).Error
+                        }
+                        done := time.Now()
+                        _ = gormDB.Model(&AdsExecution{}).Where("id = ?", executionID).Updates(map[string]any{"status": "completed", "message": "done", "completed_at": done, "updated_at": done}).Error
+                    }(exec.ID, qty)
+                    newBalance, _ := tokenSvc.GetTokenBalance(userID)
+                    c.Header("X-Tokens-Consumed", fmt.Sprintf("%d", required))
+                    c.Header("X-Tokens-Balance", fmt.Sprintf("%d", newBalance))
+                    c.JSON(200, gin.H{"execution": exec})
+                })
+
+                // GET /api/v1/adscenter/executions
+                adscenter.GET("/executions", func(c *gin.Context) {
+                    if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
+                    userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+                    var rows []AdsExecution
+                    if err := gormDB.Where("user_id = ?", userID).Order("created_at DESC").Limit(100).Find(&rows).Error; err != nil {
+                        c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return
+                    }
+                    c.JSON(200, gin.H{"executions": rows, "count": len(rows)})
+                })
+
+                // GET /api/v1/adscenter/executions/:id
+                adscenter.GET("/executions/:id", func(c *gin.Context) {
+                    if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
+                    userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+                    id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"code": 400, "message": "missing id"}); return }
+                    var exec AdsExecution
+                    if err := gormDB.Where("id = ? AND user_id = ?", id, userID).First(&exec).Error; err != nil {
+                        c.JSON(404, gin.H{"code": 404, "message": "execution not found"}); return
+                    }
+                    c.JSON(200, gin.H{"execution": exec})
+                })
+            }
 		}
 		c.JSON(200, gin.H{
 			"status":    status,

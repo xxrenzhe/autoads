@@ -291,10 +291,11 @@ func (s *Service) processSilentTask(ctx context.Context, task *BatchTask, urls [
 		close(resultChan)
 	}()
 
-	// 收集结果
-	processedCount := 0
-	successCount := 0
-	failedCount := 0
+    // 收集结果
+    processedCount := 0
+    successCount := 0
+    failedCount := 0
+    fallbackTriggered := false
 
 	for result := range resultChan {
 		urls[result.Retries] = result // 使用Retries字段临时存储索引
@@ -306,15 +307,44 @@ func (s *Service) processSilentTask(ctx context.Context, task *BatchTask, urls [
 			failedCount++
 		}
 
-		// 更新进度
-		s.updateTaskProgress(task.ID, processedCount, successCount, failedCount)
+        // 更新进度
+        s.updateTaskProgress(task.ID, processedCount, successCount, failedCount)
 
-		// 发送进度通知
-		s.sendProgressNotification(task.UserID, task.ID, processedCount, len(urls))
-	}
+        // 判定失败占比阈值 - 仅当设置了阈值且仍有未处理项时触发
+        if !fallbackTriggered && config.FailRateThreshold > 0 && processedCount > 0 {
+            failRate := float64(failedCount) / float64(processedCount) * 100.0
+            if failRate >= float64(config.FailRateThreshold) && processedCount < len(urls) {
+                // 取消剩余处理
+                if cancel := s.popCancel(task.ID); cancel != nil { cancel() }
+                fallbackTriggered = true
+            }
+        }
 
-	// 完成任务
-	s.completeTask(task.ID, urls, successCount, failedCount)
+        // 发送进度通知
+        s.sendProgressNotification(task.UserID, task.ID, processedCount, len(urls))
+    }
+    // 完成任务
+    s.completeTask(task.ID, urls, successCount, failedCount)
+
+    // 如果触发了回退：创建 AutoClick 任务处理剩余URL并调度
+    if fallbackTriggered {
+        remaining := make([]string, 0)
+        for _, u := range urls {
+            if u.Status != "success" && u.Status != "failed" {
+                if u.URL != "" { remaining = append(remaining, u.URL) }
+            }
+        }
+        if len(remaining) > 0 {
+            cfg := BatchTaskConfig{ AutoClick: &AutoClickConfig{ StartTime: time.Now().Add(1 * time.Minute).Format("15:04"), EndTime: time.Now().Add(61 * time.Minute).Format("15:04"), Interval: 10, RandomDelay: true, MaxRandomDelay: 5 } }
+            req := &CreateTaskRequest{ Name: task.Name + " (fallback)", Mode: ModeAutoClick, URLs: remaining, Config: cfg }
+            if newTask, err := s.CreateTask(task.UserID, req); err == nil {
+                _ = s.scheduleAutoClickTask(newTask)
+                s.updateTaskError(task.ID, fmt.Sprintf("fallback_to_puppeteer_spawned:%s", newTask.ID))
+            } else {
+                s.updateTaskError(task.ID, fmt.Sprintf("fallback_spawn_failed:%v", err))
+            }
+        }
+    }
 }
 
 // silentWorker Silent模式工作协程

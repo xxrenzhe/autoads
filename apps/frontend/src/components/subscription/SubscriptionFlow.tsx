@@ -33,6 +33,7 @@ export default function SubscriptionFlow() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
+  const isPreview = (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV || '').toLowerCase() === 'preview'
   
   const [currentStep, setCurrentStep] = useState<FlowStep>('plan-selection')
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
@@ -71,6 +72,14 @@ export default function SubscriptionFlow() {
 
   const handlePaymentSubmit = async (paymentData: any) => {
     if (!selectedPlan || !session?.user) return
+
+    // 预发环境：直接跳过扣款，生成模拟订阅ID
+    if (isPreview) {
+      const mockId = 'sub_mock_' + Math.random().toString(36).slice(2, 10)
+      setSubscriptionId(mockId)
+      setCurrentStep('success')
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -113,6 +122,15 @@ export default function SubscriptionFlow() {
     setCurrentStep('payment')
     setError(null)
   }
+
+  // 预发环境：在进入支付步骤时自动完成订阅（无感通过）
+  useEffect(() => {
+    if (isPreview && currentStep === 'payment' && selectedPlan) {
+      const mockId = 'sub_mock_' + Math.random().toString(36).slice(2, 10)
+      setSubscriptionId(mockId)
+      setCurrentStep('success')
+    }
+  }, [isPreview, currentStep, selectedPlan])
 
   if (status === 'loading') {
     return (
@@ -288,8 +306,7 @@ export default function SubscriptionFlow() {
             </h3>
             <div className="mt-2 text-sm text-blue-700">
               <p>
-                Your payment information is encrypted and processed securely through Stripe. 
-                We never store your credit card details on our servers.
+                预发环境不会发起真实扣款；在生产环境，支付将通过合规渠道加密处理，我们不会在服务器上存储您的卡片信息。
               </p>
             </div>
           </div>

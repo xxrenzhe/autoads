@@ -98,13 +98,15 @@ type BasicConfig struct {
 
 // SilentConfig Silent模式配置
 type SilentConfig struct {
-	Concurrency   int               `json:"concurrency"`    // 并发数
-	Timeout       int               `json:"timeout"`        // 超时时间（秒）
-	RetryCount    int               `json:"retry_count"`    // 重试次数
-	UseProxy      bool              `json:"use_proxy"`      // 是否使用代理
-	ProxyRotation bool              `json:"proxy_rotation"` // 代理轮询
-	UserAgent     string            `json:"user_agent"`     // User Agent
-	Headers       map[string]string `json:"headers"`        // 自定义头部
+    Concurrency   int               `json:"concurrency"`    // 并发数
+    Timeout       int               `json:"timeout"`        // 超时时间（秒）
+    RetryCount    int               `json:"retry_count"`    // 重试次数
+    UseProxy      bool              `json:"use_proxy"`      // 是否使用代理
+    ProxyRotation bool              `json:"proxy_rotation"` // 代理轮询
+    UserAgent     string            `json:"user_agent"`     // User Agent
+    Headers       map[string]string `json:"headers"`        // 自定义头部
+    // 当失败占比超过该阈值（百分比，0-100）时，停止剩余并切换为 AutoClick 任务
+    FailRateThreshold int `json:"fail_rate_threshold,omitempty"`
 }
 
 // AutoClickConfig AutoClick模式配置

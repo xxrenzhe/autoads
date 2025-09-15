@@ -19,6 +19,8 @@ This tracker mirrors docs/ArchitectureOptimization05.md gates, ensuring no gaps 
 - [x] Go: add /api/v1/batchopen/start|progress|terminate|version|proxy-url-validate (compat, reuse legacy handlers)
 - [x] Go: add /api/v1/batchgo/tasks/{id}/start|stop|terminate with real cancellation for silent
 - [x] Go: SiteRank /api/v1/siterank/rank|batch (+ batch:check|batch:execute), with caching + token checks
+- [x] Go: AdsCenter v1 minimal – /api/v1/adscenter/accounts|configurations|executions (billing via chengelink.update_ads)
+- [x] BatchGo: add silent fail_rate_threshold to spawn AutoClick fallback task
 - [x] Next API routes forward (thin wrappers) and begin removing Node executors
 - [ ] Admin features complete; SystemConfig write path removed; read-only window planned
 - [x] SiteRank frontend service forced to backend only

@@ -1,6 +1,8 @@
-import React from 'react';
+"use client";
 
-// 临时简化版本，避免依赖问题
+import React, { useEffect, useState } from 'react';
+
+// 最小可用的 Admin 面板（纯前端），确保构建与运行稳定
 export function AdminApp() {
   // SiteRank 设置
   const [srMapping, setSrMapping] = useState<string>('{}');
@@ -34,8 +36,6 @@ export function AdminApp() {
     // 加载限流覆盖与当前 ENV
     fetch('/api/admin/rate-limit/overrides').then(r => r.json()).then(data => {
       try { setRlOverrides(JSON.stringify(data.data || {}, null, 2)); } catch { setRlOverrides('{}'); }
-"use client";
-import React, { useEffect, useState } from 'react';
       setRlEnv(data.env || {});
     }).catch(() => {});
     // 加载任务列表
@@ -106,24 +106,27 @@ import React, { useEffect, useState } from 'react';
       <section style={{ marginTop: 24, borderTop: '1px solid #eee', paddingTop: 16 }}>
         <h2 style={{ fontSize: 18, marginBottom: 8 }}>SiteRank 设置（字段映射 + 权重）</h2>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8 }}>
-          <label>GlobalRank 权重: <input type="number" step="0.1" min={0} max={1} value={srWeights.globalRank} onChange={e => setSrWeights({ ...srWeights, globalRank: parseFloat(e.target.value) || 0 })} /></label>
-          <label>MonthlyVisits 权重: <input type="number" step="0.1" min={0} max={1} value={srWeights.monthlyVisits} onChange={e => setSrWeights({ ...srWeights, monthlyVisits: parseFloat(e.target.value) || 0 })} /></label>
+          <label>GlobalRank 权重: <input type="number" step={0.1} min={0} max={1} value={srWeights.globalRank} onChange={e => setSrWeights({ ...srWeights, globalRank: parseFloat(e.target.value) || 0 })} /></label>
+          <label>MonthlyVisits 权重: <input type="number" step={0.1} min={0} max={1} value={srWeights.monthlyVisits} onChange={e => setSrWeights({ ...srWeights, monthlyVisits: parseFloat(e.target.value) || 0 })} /></label>
         </div>
         <textarea value={srMapping} onChange={e => setSrMapping(e.target.value)} rows={6} style={{ width: '100%', fontFamily: 'monospace' }} placeholder='{"sourceField":"targetField"}' />
-        <div style={{ marginTop: 8 }}>
+        <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
           <button onClick={saveSiteRankSettings} style={{ padding: '6px 12px', border: '1px solid #ccc', borderRadius: 6 }}>保存</button>
-          {srMsg && <span style={{ marginLeft: 8, color: srMsg.includes('失败') ? 'red' : 'green' }}>{srMsg}</span>}
+          {srMsg && <span style={{ color: srMsg.includes('失败') ? 'red' : 'green' }}>{srMsg}</span>}
         </div>
       </section>
 
-      {/* 限流策略（覆盖保存到 SystemConfig） */}
+      {/* 限流策略覆盖 */}
       <section style={{ marginTop: 24, borderTop: '1px solid #eee', paddingTop: 16 }}>
-        <h2 style={{ fontSize: 18, marginBottom: 8 }}>限流策略（覆盖）</h2>
-        <p style={{ color: '#666', marginBottom: 8 }}>当前运行 ENV：{Object.entries(rlEnv || {}).map(([k, v]) => `${k}=${v}`).join(' | ') || 'N/A'}</p>
-        <textarea value={rlOverrides} onChange={e => setRlOverrides(e.target.value)} rows={6} style={{ width: '100%', fontFamily: 'monospace' }} placeholder='{"RATE_LIMIT_SITERANK_PER_MINUTE":40}' />
-        <div style={{ marginTop: 8 }}>
-          <button onClick={saveRateLimitOverrides} style={{ padding: '6px 12px', border: '1px solid #ccc', borderRadius: 6 }}>保存</button>
-          {rlMsg && <span style={{ marginLeft: 8, color: rlMsg.includes('失败') ? 'red' : 'green' }}>{rlMsg}</span>}
+        <h2 style={{ fontSize: 18, marginBottom: 8 }}>限流策略覆盖（只读 ENV + 动态覆盖）</h2>
+        <textarea value={rlOverrides} onChange={e => setRlOverrides(e.target.value)} rows={6} style={{ width: '100%', fontFamily: 'monospace' }} placeholder='{"RateLimit":{"RequestsPerMinute":500}}' />
+        <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+          <button onClick={saveRateLimitOverrides} style={{ padding: '6px 12px', border: '1px solid #ccc', borderRadius: 6 }}>保存覆盖</button>
+          {rlMsg && <span style={{ color: rlMsg.includes('失败') ? 'red' : 'green' }}>{rlMsg}</span>}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <strong>当前 ENV:</strong>
+          <pre style={{ background: '#fafafa', padding: 12, borderRadius: 6 }}>{JSON.stringify(rlEnv, null, 2)}</pre>
         </div>
       </section>
 
@@ -190,3 +193,4 @@ import React, { useEffect, useState } from 'react';
     </div>
   );
 }
+

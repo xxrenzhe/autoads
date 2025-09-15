@@ -13,7 +13,6 @@ import {
   Zap
 } from 'lucide-react'
 import { PricingPage, PricingPlan } from './PricingPage'
-import { PaymentProcessor } from './PaymentProcessor'
 import { useRouter } from 'next/navigation'
 
 export interface SubscriptionFlowProps {
@@ -34,6 +33,7 @@ export function SubscriptionFlow({
   className 
 }: SubscriptionFlowProps) {
   const router = useRouter()
+  const isPreview = (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV || '').toLowerCase() === 'preview'
   const [currentStep, setCurrentStep] = useState<FlowStep>('plan-selection')
   const [selectedPlan, setSelectedPlan] = useState<PricingPlan | null>(null)
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
@@ -123,6 +123,15 @@ export function SubscriptionFlow({
       setCurrentStep('payment')
     }
   }
+
+  // 预发环境：在支付步骤自动完成订阅（无感通过）
+  useEffect(() => {
+    if (isPreview && currentStep === 'payment' && selectedPlan) {
+      const mockId = 'sub_mock_' + Math.random().toString(36).slice(2, 10)
+      setSubscriptionId(mockId)
+      setCurrentStep('confirmation')
+    }
+  }, [isPreview, currentStep, selectedPlan])
 
   const getStepIndex = (step: FlowStep) => {
     return steps.findIndex(s => s.id === step)
@@ -241,18 +250,26 @@ export function SubscriptionFlow({
               </CardContent>
             </Card>
 
-            <PaymentProcessor
-              planId={selectedPlan.id}
-              planName={selectedPlan.name}
-              planPrice={billingCycle === 'monthly' 
-                ? selectedPlan.price.monthly 
-                : selectedPlan.price.yearly
-              }
-              currency={selectedPlan.price.currency}
-              onSuccess={handlePaymentSuccess}
-              onError={handlePaymentError}
-              onCancel={handleBack}
-            />
+            {isPreview ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    预发环境已自动完成订阅，无需支付，正在跳转...
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    支付功能未启用，请联系管理员或在生产环境完成支付。
+                  </p>
+                  <div className="flex justify-center space-x-3">
+                    <Button variant="outline" onClick={handleBack}>Back</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 

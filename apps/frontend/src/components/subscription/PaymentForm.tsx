@@ -368,7 +368,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
           <LockClosedIcon className="h-5 w-5 text-blue-400 mr-3 mt-0.5" />
           <div className="text-sm text-blue-700">
             <p className="font-medium">Secure Payment</p>
-            <p>Your payment information is encrypted and secure. We use Stripe to process payments.</p>
+            <p>预发环境不进行真实扣款；生产环境将通过合规支付渠道加密处理，我们不会存储您的卡片信息。</p>
           </div>
         </div>
       </div>
