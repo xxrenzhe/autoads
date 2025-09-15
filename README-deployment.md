@@ -104,6 +104,15 @@ curl -f http://127.0.0.1:3000/api/health || true
 ./scripts/health-check.sh production
 ```
 
+### BFF 与就绪守门
+- 前端统一通过 `\`/api/go/*\`` 代理到 Go 后端（`BACKEND_URL`）。
+- BFF 每次转发前会对 `BACKEND_URL/readyz` 做快速探测（带缓存 TTL），未就绪返回 503 并附加 `Retry-After`。
+- 所有 BFF 响应统一添加：`X-BFF-Enforced: 1`、`X-Robots-Tag: noindex`、贯通 `x-request-id`。
+
+相关环境变量（已在 `.env.*.template` 提供）
+- `BACKEND_URL`、`BFF_MAX_BODY`、`BFF_UPSTREAM_TIMEOUT_MS`、`BFF_READY_TIMEOUT_MS`、`BFF_READY_TTL_MS`
+- `/ops/*` 管理端反代：`BACKEND_PROXY_MAX_BODY`、`BACKEND_PROXY_TIMEOUT_MS`、`ADMIN_PROXY_ALLOW_PREFIXES`
+
 ### 日志查看
 ```bash
 # 查看容器日志

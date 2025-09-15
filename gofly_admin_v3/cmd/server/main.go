@@ -92,10 +92,14 @@ func (s *simpleUserSvc) GetUserByID(userID string) (*ratelimit.UserInfo, error) 
 type tokenServiceAdapter struct{ ts *user.TokenService }
 
 func (a *tokenServiceAdapter) ConsumeTokens(userID string, amount int, description string) error {
-	return a.ts.ConsumeTokens(userID, amount, description, "")
+    return a.ts.ConsumeTokens(userID, amount, description, "")
 }
 func (a *tokenServiceAdapter) GetBalance(userID string) (int, error) {
-	return a.ts.GetTokenBalance(userID)
+    return a.ts.GetTokenBalance(userID)
+}
+// 满足 chengelink.TokenService 接口
+func (a *tokenServiceAdapter) ConsumeTokensByService(userID, service, action string, quantity int, reference string) error {
+    return a.ts.ConsumeTokensByService(userID, service, action, quantity, reference)
 }
 
 // 适配器：为邀请/签到模块提供 AddTokens 简化签名
@@ -782,13 +786,13 @@ func setupAPIRoutes(r *gin.Engine) {
 			})
 		}
 
-		// SiteRank路由
-		siterank := v1.Group("/siterank")
-		siterank.Use(authMiddleware())
-		{
-			siterank.GET("/rank", handleSiteRank)
-			siterank.POST("/batch", handleBatchSiteRank)
-		}
+			// SiteRank路由（避免重复声明变量名）
+			siteRankGroup := v1.Group("/siterank")
+			siteRankGroup.Use(authMiddleware())
+			{
+				siteRankGroup.GET("/rank", handleSiteRank)
+				siteRankGroup.POST("/batch", handleBatchSiteRank)
+			}
 
 		// Chengelink路由
 		chengelink := v1.Group("/chengelink")

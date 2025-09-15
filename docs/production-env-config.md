@@ -189,6 +189,36 @@ METRICS_PORT=9090
 HEALTH_CHECK_PATH=/api/health
 ```
 
+### BFF / 就绪守门配置
+
+```bash
+# BFF 统一转发到 Go 后端
+BACKEND_URL=http://127.0.0.1:8080
+BFF_MAX_BODY=2097152
+BFF_UPSTREAM_TIMEOUT_MS=15000
+BFF_READY_TIMEOUT_MS=1200
+BFF_READY_TTL_MS=3000
+
+# 管理端反向代理（/ops/*）
+BACKEND_PROXY_MAX_BODY=2097152
+BACKEND_PROXY_TIMEOUT_MS=15000
+# 允许通过 /ops 访问的后端子路径前缀
+ADMIN_PROXY_ALLOW_PREFIXES=/console,/console/assets,/console/panel,/console/login,/api/v1/console
+```
+
+### Internal JWT（Next → Go 身份贯通）
+
+```bash
+# Next 用于签发内部 JWT 的 RSA 私钥（PEM 格式，多行需转义）
+INTERNAL_JWT_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----
+INTERNAL_JWT_ISS=autoads-next
+INTERNAL_JWT_AUD=internal-go
+INTERNAL_JWT_TTL_SECONDS=120
+
+# Go 端验证同一对公钥（在 Go 应用环境中）
+# INTERNAL_JWT_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----
+```
+
 ## 安全配置
 
 ```bash

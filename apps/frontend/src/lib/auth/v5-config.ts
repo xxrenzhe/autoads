@@ -13,6 +13,7 @@ import {
   getCookieDomain,
   logAuthConfig 
 } from './auth-config'
+import { createInternalJWT, ensureRequestId } from '@/lib/security/internal-jwt'
 
 // 简单设备指纹生成
 function generateSimpleDeviceFingerprint(request: NextRequest): string {
@@ -38,75 +39,37 @@ logAuthConfig()
 // 处理新用户的订阅创建（支持邀请码）
 export async function handleNewUserSubscription(userId: string, userEmail: string, invitationCode?: string) {
   try {
-    let subscriptionCreated = false
-    
+    // KISS：Next 不再直接写入业务库（订阅/Token）。
+    // 仅尝试：
+    // - 应用邀请码（若前端服务仍保留）；
+    // - 通过内部JWT访问 Go 后端的只读端点，触发后端侧的用户态初始化（若有）。
+
     if (invitationCode) {
-      // 如果有邀请码，尝试应用邀请
-      const { InvitationService } = await import('@/lib/services/invitation-service')
-      const invitationResult = await InvitationService.acceptInvitation(invitationCode, userId)
-      
-      if (invitationResult.success) {
-        console.log(`Applied invitation subscription for new OAuth user: ${userEmail}`)
-        subscriptionCreated = true
-      } else {
-        console.log(`Failed to apply invitation for new user ${userEmail}: ${invitationResult.error}`)
+      try {
+        const { InvitationService } = await import('@/lib/services/invitation-service')
+        const invitationResult = await InvitationService.acceptInvitation(invitationCode, userId)
+        if (invitationResult.success) {
+          console.log(`[auth] Invitation applied for user ${userEmail}`)
+        } else {
+          console.log(`[auth] Invitation apply failed: ${invitationResult.error}`)
+        }
+      } catch (e) {
+        console.warn('[auth] Invitation handler unavailable or failed:', e)
       }
     }
-    
-    // 如果没有创建订阅（没有邀请码或邀请失败），创建14天试用
-    if (!subscriptionCreated) {
-      const { SubscriptionHelper } = await import('@/lib/services/subscription-helper')
-      const proPlan = await prisma.plan.findFirst({
-        where: { name: 'pro', isActive: true }
-      })
-      
-      if (proPlan) {
-        const trialSubscription = await SubscriptionHelper.createTrialSubscription(userId, proPlan.id)
-        
-        // 标记试用已使用
-        await prisma.user.update({
-          where: { id: userId },
-          data: { trialUsed: true }
-        })
-        
-        console.log(`Created 14-day Pro trial for OAuth user: ${userEmail}`)
-      } else {
-        // 回退到免费计划
-        const freePlan = await prisma.plan.findFirst({
-          where: { name: 'free', isActive: true }
-        })
-        
-        if (freePlan) {
-          const startDate = new Date()
-          const endDate = new Date()
-          endDate.setFullYear(endDate.getFullYear() + 10)
-          
-          await prisma.subscription.create({
-            data: {
-              userId,
-              planId: freePlan.id,
-              status: 'ACTIVE',
-              currentPeriodStart: startDate,
-              currentPeriodEnd: endDate,
-              provider: 'system',
-              providerSubscriptionId: `free_${userId}_${Date.now()}`
-            }
-          })
-          
-          await prisma.user.update({
-            where: { id: userId },
-            data: {
-              subscriptionTokenBalance: freePlan.tokenQuota,
-              tokenBalance: Math.max(0, freePlan.tokenQuota)
-            }
-          })
-          
-          console.log(`Created free subscription for OAuth user: ${userEmail}`)
-        }
-      }
+
+    // 尝试调用 Go 后端只读端点以预热（不强依赖）
+    const token = createInternalJWT({ sub: userId })
+    if (token) {
+      const headers = new Headers({ 'Authorization': `Bearer ${token}` })
+      ensureRequestId(headers as any)
+      // 触发订阅只读查询
+      fetch('/api/go/api/v1/user/subscription/current', { headers }).catch(() => {})
+      // 触发 Token 余额只读查询
+      fetch('/api/go/api/v1/tokens/balance', { headers }).catch(() => {})
     }
   } catch (error) {
-    console.error('Error handling new user subscription:', error)
+    console.error('[auth] handleNewUserSubscription failed:', error)
   }
 }
 
@@ -416,8 +379,31 @@ const __nextAuth = NextAuth({
           
           return typedSession
         }
+        }
+
+        // 合并后端只读态（订阅/Token余额）
+        try {
+          const internal = createInternalJWT({ sub: token.userId as string })
+          if (internal) {
+            const headers = new Headers({ 'Authorization': `Bearer ${internal}` })
+            ensureRequestId(headers as any)
+            const [subResp, balResp] = await Promise.all([
+              fetch('/api/go/api/v1/user/subscription/current', { headers }),
+              fetch('/api/go/api/v1/tokens/balance', { headers })
+            ])
+            const subJson: any = await subResp.json().catch(() => null)
+            const balJson: any = await balResp.json().catch(() => null)
+            const planName = subJson?.data?.plan_name || subJson?.data?.plan || undefined
+            const goBalance = typeof balJson?.balance === 'number' ? balJson.balance : undefined
+            if (planName) (typedSession.user as any).planName = planName
+            if (typeof goBalance === 'number') (typedSession.user as any).tokenBalance = goBalance
+          }
+        } catch (e) {
+          // 只读合并失败不影响登录
+          if (process.env.AUTH_DEBUG === 'true') console.warn('[auth] merge Go read-only state failed', e)
+        }
       }
-      
+
       return session
     },
     async signIn({ user, account, profile }) {
