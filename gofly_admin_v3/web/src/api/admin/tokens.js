@@ -5,3 +5,5 @@ export const tokenApi = {
   adjust(userId, data) { return request({ url: `/ops/api/v1/console/tokens/adjust/${userId}`, method: 'post', data }) },
   listTx(params = {}) { return request({ url: '/ops/api/v1/console/tokens/transactions', method: 'get', params }) }
 }
+
+export default tokenApi
