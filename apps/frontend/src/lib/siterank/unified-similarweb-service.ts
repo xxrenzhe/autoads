@@ -119,151 +119,17 @@ export class UnifiedSimilarWebService {
    * Query domain data with intelligent fallback strategy
    */
   async queryDomainData(domain: string): Promise<SimilarWebData> {
-    logger.info(`Querying domain data: ${domain}`);
-
-    try {
-      // In production（或显式开启），统一由 Go 后端提供数据与计费/缓存
-      if ((process.env.USE_GO_BACKEND_SITERANK || '').toLowerCase() === 'true' || process.env.NODE_ENV === 'production') {
-        return await this.queryViaBackend(domain)
-      }
-      // Check cache first
-      const cachedData = await this.getCachedResult(domain);
-      if (cachedData) {
-        logger.info(`Using cached data: ${domain} (${cachedData.status})`);
-        return cachedData;
-      }
-
-      // Determine best approach based on configuration and health
-      const method = this.determineBestMethod();
-      logger.info(`Using method: ${method} for ${domain}`);
-
-      let result: SimilarWebData;
-
-      switch (method) {
-        case 'api':
-          result = await this.queryViaAPI(domain);
-          break;
-        case 'scraping':
-          result = await this.queryViaScraping(domain);
-          break;
-        case 'auto':
-        default:
-          result = await this.queryWithAutoFallback(domain);
-          break;
-      }
-
-      // Cache result
-      await this.setCachedResult(domain, result);
-      
-      return result;
-
-    } catch (error) {
-      logger.error(`Query failed for domain: ${domain}`, new EnhancedError(`Query failed for domain: ${domain}`, { error: error instanceof Error ? error.message : String(error)
-       }));
-      
-      const errorResult: SimilarWebData = {
-        domain,
-        globalRank: null,
-        monthlyVisits: null,
-        status: 'error',
-        error: error instanceof Error ? error.message : "Unknown error" as any,
-        timestamp: new Date(),
-        source: 'similarweb-api' // Default to API as the attempted method
-      };
-
-      // Cache error result
-      await this.setCachedResult(domain, errorResult);
-      
-      return errorResult;
-    }
+    logger.info(`Querying domain data via backend: ${domain}`)
+    // KISS: 前端不再做本地抓取或直连 API，一律走后端
+    return await this.queryViaBackend(domain)
   }
 
   /**
    * Query multiple domains with optimized batching
    */
   async queryMultipleDomains(domains: string[]): Promise<SimilarWebData[]> {
-    logger.info(`Querying ${domains.length} domains`);
-    if ((process.env.USE_GO_BACKEND_SITERANK || '').toLowerCase() === 'true' || process.env.NODE_ENV === 'production') {
-      return await this.queryMultipleViaBackend(domains)
-    }
-    // First, batch check cache for all domains (Redis mget/pipeline when available)
-    const { cachedResults, uncachedDomains } = await this.getBatchCachedResults(domains);
-
-    logger.info(`Found ${cachedResults.size} cached results, querying ${uncachedDomains.length} domains`);
-
-    const results: SimilarWebData[] = [];
-
-    // Add cached results
-    cachedResults.forEach((result: any) => results.push(result));
-
-    // Query uncached domains
-    if (uncachedDomains.length > 0) {
-      try {
-        const method = this.determineBestMethod();
-        
-        if (method === 'scraping' || method === 'auto') {
-          // Try batch scraping first for better performance
-          const scrapedResults = await this.queryMultipleViaScraping(uncachedDomains);
-          results.push(...scrapedResults);
-          
-          // Cache scraped results
-          for (const result of scrapedResults) {
-            await this.setCachedResult(result.domain, result);
-          }
-        } else {
-          // Fallback to individual API queries
-          const apiPromises = uncachedDomains?.filter(Boolean)?.map((domain: any) => this.queryViaAPI(domain));
-          const apiResults = await Promise.allSettled(apiPromises);
-
-          for (let index = 0; index < apiResults.length; index++) {
-            const promiseResult = apiResults[index] as PromiseSettledResult<SimilarWebData>;
-            if (promiseResult.status === 'fulfilled') {
-              const result = promiseResult.value;
-              results.push(result);
-              await this.setCachedResult(result.domain, result);
-            } else {
-              const domain = uncachedDomains[index];
-              const errorResult: SimilarWebData = {
-                domain,
-                globalRank: null,
-                monthlyVisits: null,
-                status: 'error',
-                error: (promiseResult as PromiseRejectedResult).reason instanceof Error ? (promiseResult as PromiseRejectedResult).reason.message : 'API query failed',
-                timestamp: new Date(),
-                source: 'similarweb-api'
-              };
-              results.push(errorResult);
-              await this.setCachedResult(domain, errorResult);
-            }
-          }
-        }
-      } catch (error) {
-        logger.error('Batch query failed, falling back to individual queries', new EnhancedError('Batch query failed, falling back to individual queries', { error: error instanceof Error ? error.message : String(error)
-         }));
-        
-        // Fallback to individual queries
-        for (const domain of uncachedDomains) {
-          try {
-            const result = await this.queryDomainData(domain);
-            results.push(result);
-          } catch (individualError) {
-            const errorResult: SimilarWebData = {
-              domain,
-              globalRank: null,
-              monthlyVisits: null,
-              status: 'error',
-              error: individualError instanceof Error ? individualError.message : 'Individual query failed',
-              timestamp: new Date(),
-              source: 'similarweb-api'
-            };
-            results.push(errorResult);
-            await this.setCachedResult(domain, errorResult);
-          }
-        }
-      }
-    }
-
-    return results;
+    logger.info(`Querying ${domains.length} domains via backend`)
+    return await this.queryMultipleViaBackend(domains)
   }
 
   /**

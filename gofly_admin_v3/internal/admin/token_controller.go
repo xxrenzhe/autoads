@@ -42,8 +42,9 @@ func (c *TokenController) AdjustBalance(ctx *gin.Context) {
         ctx.JSON(http.StatusOK, gin.H{"code":1001, "message":"amount and reason required"}); return
     }
     // 事务：更新余额 + 插入流水
-    tx := gf.DB().Begin()
-    _, err := tx.Exec(ctx, "UPDATE users SET token_balance = token_balance + ? WHERE id=?", body.Amount, userID)
+    tx, err := gf.DB().Begin(ctx)
+    if err != nil { ctx.JSON(http.StatusOK, gin.H{"code":5000, "message": err.Error()}); return }
+    _, err = tx.Exec(ctx, "UPDATE users SET token_balance = token_balance + ? WHERE id=?", body.Amount, userID)
     if err != nil { tx.Rollback(ctx); ctx.JSON(http.StatusOK, gin.H{"code":5001, "message": err.Error()}); return }
     _, err = tx.Exec(ctx, `INSERT INTO token_transactions (user_id, amount, type, service, action, ref_id, details, created_at) VALUES (?,?,?,?,?,?,?,NOW())`,
         userID, body.Amount, ifEmptyType(body.Action), body.Service, body.Action, body.RefID, body.Reason,
@@ -81,4 +82,3 @@ func (c *TokenController) ListTransactions(ctx *gin.Context) {
 }
 
 func ifEmptyType(action string) string { if action=="" { return "adjust" }; return "adjust" }
-
