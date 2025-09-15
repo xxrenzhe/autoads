@@ -169,7 +169,7 @@
   - [x] 实现 API：`/api/v1/batchopen/start|progress|terminate`（包含 type=basic|silent|autoclick）
   - [ ] 实现 API（BatchGo 单任务控制）：`POST /api/v1/batchgo/tasks/{id}/start|stop|terminate`（用于 Autoclick/调度的精确控制）
   - [x] 实现 API（BatchGo 单任务控制）：`POST /api/v1/batchgo/tasks/{id}/start|stop|terminate`（Silent 支持实时取消；Basic/AutoClick 保持合同，后续增强）
-  - [ ] SiteRank：`/api/v1/siterank/rank|batch`，统一缓存/错误 TTL/扣费/限流
+  - [x] SiteRank：`/api/v1/siterank/rank|batch`，统一缓存/错误 TTL/扣费/限流（新增 batch:check|batch:execute 原子端点）
   - [ ] AdsCenter：`/api/v1/adscenter/accounts|configurations|executions`，执行调度 + 令牌计费；SystemConfig 回退只读迁移
   - [ ] GoFly Admin：六模块（用户/订阅/Token/系统配置/API 管理/邀请+签到）页面与操作闭环
   - [ ] 观测：pprof、基础 metrics、结构化日志（含 request-id）
@@ -194,7 +194,7 @@
 - Go（必做）
   - [ ] 落库：BatchOpen 统一模型三表（Job/Item/Progress）与索引
   - [x] 实现 API：`/api/v1/batchopen/start|progress|terminate`（包含 type=basic|silent|autoclick）
-  - [ ] SiteRank：`/api/v1/siterank/rank|batch`，统一缓存/错误 TTL/扣费/限流
+  - [x] SiteRank：`/api/v1/siterank/rank|batch`，统一缓存/错误 TTL/扣费/限流（新增 batch:check|batch:execute 原子端点）
   - [ ] AdsCenter：`/api/v1/adscenter/accounts|configurations|executions`，执行调度 + 令牌计费；SystemConfig 回退只读迁移
   - [ ] GoFly Admin：六模块（用户/订阅/Token/系统配置/API 管理/邀请+签到）页面与操作闭环
   - [ ] 观测：pprof、基础 metrics、结构化日志（含 request-id）

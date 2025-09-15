@@ -18,6 +18,7 @@ This tracker mirrors docs/ArchitectureOptimization05.md gates, ensuring no gaps 
 - [ ] Go implements BatchOpen (basic/silent/autoclick w/ dynamic http→puppeteer), SiteRank, AdsCenter
 - [x] Go: add /api/v1/batchopen/start|progress|terminate|version|proxy-url-validate (compat, reuse legacy handlers)
 - [x] Go: add /api/v1/batchgo/tasks/{id}/start|stop|terminate with real cancellation for silent
+- [x] Go: SiteRank /api/v1/siterank/rank|batch (+ batch:check|batch:execute), with caching + token checks
 - [x] Next API routes forward (thin wrappers) and begin removing Node executors
 - [ ] Admin features complete; SystemConfig write path removed; read-only window planned
 - [x] SiteRank frontend service forced to backend only

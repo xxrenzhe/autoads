@@ -366,7 +366,7 @@ func (s *Service) StopTask(userID, taskID string) error {
 
 // TerminateTask 终止任务（运行中则取消，非运行直接标记取消）
 func (s *Service) TerminateTask(userID, taskID string) error {
-    task, err := s.GetTask(userID, taskID)
+    _, err := s.GetTask(userID, taskID)
     if err != nil {
         return err
     }
