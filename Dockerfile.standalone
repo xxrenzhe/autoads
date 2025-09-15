@@ -6,7 +6,8 @@ FROM node:20-alpine AS web
 WORKDIR /web
 # 仅复制依赖清单，利用缓存
 COPY gofly_admin_v3/web/package*.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci
+# 若无 package-lock.json 则回退到 npm install（开发包也安装）
+RUN --mount=type=cache,target=/root/.npm sh -lc 'if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi'
 # 复制源码并构建
 COPY gofly_admin_v3/web/ ./
 RUN npm run build
@@ -19,7 +20,7 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1
 # 仅复制依赖清单以最大化缓存命中
 COPY apps/frontend/package*.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
+RUN --mount=type=cache,target=/root/.npm sh -lc 'if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi'
 # 复制 Prisma schema 以缓存 generate
 COPY apps/frontend/prisma ./prisma
 RUN npx prisma generate
