@@ -50,7 +50,7 @@ func (c *AdminController) UpsertSystemConfig(ctx *gin.Context) {
     }
     // 发布Redis事件，触发系统内订阅者即时刷新
     if gf.Redis() != nil {
-        _ = gf.Redis().GroupPubSub().Publish(ctx, "system:config:updated", req.Key)
+        _, _ = gf.Redis().GroupPubSub().Publish(ctx, "system:config:updated", req.Key)
     }
     // 记录变更到用户操作日志（作为变更历史）
     adminID := ctx.GetString("admin_id")
@@ -77,7 +77,7 @@ func (c *AdminController) DeleteSystemConfig(ctx *gin.Context) {
         ctx.JSON(http.StatusOK, APIResponse{Code:5003, Message: err.Error()}); return
     }
     if gf.Redis() != nil {
-        _ = gf.Redis().GroupPubSub().Publish(ctx, "system:config:updated", key)
+        _, _ = gf.Redis().GroupPubSub().Publish(ctx, "system:config:updated", key)
     }
     // 记录删除到历史
     adminID := ctx.GetString("admin_id")
@@ -132,11 +132,11 @@ func (c *AdminController) BatchSystemConfig(ctx *gin.Context) {
         case "set":
             cat := it.Category; if cat == "" { cat = "general" }
             _, _ = gf.DB().Exec(ctx, "INSERT INTO system_configs(config_key,config_value,description,category,is_active) VALUES(?,?,?,?,1) ON DUPLICATE KEY UPDATE config_value=VALUES(config_value), description=VALUES(description), category=VALUES(category), is_active=1", key, it.Value, it.Desc, cat)
-            if gf.Redis() != nil { _ = gf.Redis().GroupPubSub().Publish(ctx, "system:config:updated", key) }
+            if gf.Redis() != nil { _, _ = gf.Redis().GroupPubSub().Publish(ctx, "system:config:updated", key) }
             _, _ = gf.Model("user_operation_logs").Insert(gf.Map{"admin_id":adminID, "target_user_id":"system", "operation":"system_config_upsert", "details": gf.ToJSON(gf.Map{"key":key, "value":it.Value, "category":cat}), "ip_address": ctx.ClientIP(), "created_at": time.Now()})
         case "unset":
             _, _ = gf.DB().Model("system_configs").Where("config_key", key).Update(gf.Map{"is_active": false})
-            if gf.Redis() != nil { _ = gf.Redis().GroupPubSub().Publish(ctx, "system:config:updated", key) }
+            if gf.Redis() != nil { _, _ = gf.Redis().GroupPubSub().Publish(ctx, "system:config:updated", key) }
             _, _ = gf.Model("user_operation_logs").Insert(gf.Map{"admin_id":adminID, "target_user_id":"system", "operation":"system_config_delete", "details": gf.ToJSON(gf.Map{"key":key}), "ip_address": ctx.ClientIP(), "created_at": time.Now()})
         }
     }

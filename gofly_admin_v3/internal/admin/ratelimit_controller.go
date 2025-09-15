@@ -87,7 +87,7 @@ func (c *RateLimitController) UpdatePlanConfig(ctx *gin.Context) {
 
     // 广播Redis事件，路由订阅后即时刷新
     if gf.Redis() != nil {
-        _ = gf.Redis().GroupPubSub().Publish(ctx, "ratelimit:plans:update", "1")
+        _, _ = gf.Redis().GroupPubSub().Publish(ctx, "ratelimit:plans:update", "1")
     }
 
     ctx.JSON(http.StatusOK, gin.H{"code": 0, "message": "updated"})
@@ -156,7 +156,7 @@ func (c *RateLimitController) GetUserUsageStats(ctx *gin.Context) {
 // BroadcastReload 主动广播一次刷新事件
 func (c *RateLimitController) BroadcastReload(ctx *gin.Context) {
     if gf.Redis() != nil {
-        _ = gf.Redis().GroupPubSub().Publish(ctx, "ratelimit:plans:update", "1")
+        _, _ = gf.Redis().GroupPubSub().Publish(ctx, "ratelimit:plans:update", "1")
     }
     ctx.JSON(http.StatusOK, gin.H{"code": 0, "message": "broadcasted"})
 }

@@ -6,8 +6,11 @@ This tracker mirrors docs/ArchitectureOptimization05.md gates, ensuring no gaps 
 - [x] Single middleware: inject x-request-id; fix /api/auth/csrf CORS
 - [x] Add unified BFF: /api/go/[...path] → BACKEND_URL (X-BFF-Enforced; request-id passthrough)
 - [x] Remove legacy middlewares (edge/admin/csrf duplicates)
-- [ ] Map critical public APIs to /api/go (or keep current handlers but plan migration) – owner: FE
-- [ ] Verify headers contract (x-request-id/X-RateLimit-*) via integration test – owner: FE
+- [x] Map critical public APIs to /api/go – owner: FE
+  - [x] SiteRank: rank, batch, batch-minimal
+  - [x] BatchOpen: silent-start, silent-progress, silent-terminate, version, proxy-url-validate
+  - [x] AdsCenter: accounts, configurations, executions
+- [x] Verify headers contract (x-request-id & X-BFF-Enforced) via integration test – owner: FE
 
 ## P1 – Backend consolidation
 - [ ] Go implements BatchOpen (basic/silent/autoclick w/ dynamic http→puppeteer), SiteRank, AdsCenter
@@ -20,4 +23,3 @@ This tracker mirrors docs/ArchitectureOptimization05.md gates, ensuring no gaps 
 
 ---
 For each item: link PRs, test reports, and checklist confirmations.
-

@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+    "context"
     "time"
     "gofly-admin-v3/utils/gf"
 )
@@ -9,9 +10,9 @@ import (
 type RefreshRateLimitsJob struct{}
 func (j *RefreshRateLimitsJob) GetName() string { return "refresh_rate_limits" }
 func (j *RefreshRateLimitsJob) GetDescription() string { return "Publish ratelimit:plans:update to refresh plan limits" }
-func (j *RefreshRateLimitsJob) Run(ctx interface{ GetName() string }) error {
+func (j *RefreshRateLimitsJob) Run(ctx context.Context) error {
     if gf.Redis() != nil {
-        _ = gf.Redis().GroupPubSub().Publish(nil, "ratelimit:plans:update", time.Now().Unix())
+        _, _ = gf.Redis().GroupPubSub().Publish(ctx, "ratelimit:plans:update", time.Now().Unix())
     }
     return nil
 }
@@ -20,8 +21,8 @@ func (j *RefreshRateLimitsJob) Run(ctx interface{ GetName() string }) error {
 type ExpireSubscriptionsJob struct{}
 func (j *ExpireSubscriptionsJob) GetName() string { return "expire_subscriptions" }
 func (j *ExpireSubscriptionsJob) GetDescription() string { return "Expire subscriptions whose ended_at < now" }
-func (j *ExpireSubscriptionsJob) Run(ctx interface{ GetName() string }) error {
-    _, _ = gf.DB().Exec(nil, "UPDATE subscriptions SET status='EXPIRED' WHERE status='ACTIVE' AND ended_at IS NOT NULL AND ended_at < NOW()")
+func (j *ExpireSubscriptionsJob) Run(ctx context.Context) error {
+    _, _ = gf.DB().Exec(ctx, "UPDATE subscriptions SET status='EXPIRED' WHERE status='ACTIVE' AND ended_at IS NOT NULL AND ended_at < NOW()")
     return nil
 }
 
@@ -29,8 +30,8 @@ func (j *ExpireSubscriptionsJob) Run(ctx interface{ GetName() string }) error {
 type CleanupIdempotencyAndTasksJob struct{}
 func (j *CleanupIdempotencyAndTasksJob) GetName() string { return "cleanup_idempotency_and_tasks" }
 func (j *CleanupIdempotencyAndTasksJob) GetDescription() string { return "Cleanup idempotency requests older than 7 days" }
-func (j *CleanupIdempotencyAndTasksJob) Run(ctx interface{ GetName() string }) error {
-    _, _ = gf.DB().Exec(nil, "DELETE FROM idempotency_requests WHERE created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)")
+func (j *CleanupIdempotencyAndTasksJob) Run(ctx context.Context) error {
+    _, _ = gf.DB().Exec(ctx, "DELETE FROM idempotency_requests WHERE created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)")
     return nil
 }
 
@@ -38,5 +39,4 @@ func (j *CleanupIdempotencyAndTasksJob) Run(ctx interface{ GetName() string }) e
 type DailyUsageReportJob struct{}
 func (j *DailyUsageReportJob) GetName() string { return "daily_usage_report" }
 func (j *DailyUsageReportJob) GetDescription() string { return "Generate daily usage/cost report (placeholder)" }
-func (j *DailyUsageReportJob) Run(ctx interface{ GetName() string }) error { return nil }
-
+func (j *DailyUsageReportJob) Run(ctx context.Context) error { return nil }
