@@ -67,6 +67,12 @@
     "scripts",
     "admin-api-backup",
     "backup",
-    "**/*.bak"
+    "**/*.bak",
+    "src/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "src/shared/testing/**"
   ]
 }
