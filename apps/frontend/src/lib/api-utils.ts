@@ -146,10 +146,10 @@ export const withApiProtection = (limiterKey?: keyof typeof rateLimiters) => {
       // Ensure headers: X-Request-Id, Server-Timing
       if (res instanceof NextResponse) {
         const reqId = req.headers.get('x-request-id') || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
-        try { res.headers.set('X-Request-Id', reqId) } catch {}
+        try { res.headers.set('X-Request-Id', reqId) } catch (_e) {}
         const existingTiming = res.headers.get('server-timing');
         const timing = `app;dur=${dur}`;
-        try { res.headers.set('Server-Timing', existingTiming ? `${existingTiming}, ${timing}` : timing) } catch {}
+        try { res.headers.set('Server-Timing', existingTiming ? `${existingTiming}, ${timing}` : timing) } catch (_e) {}
         // Structured log (unified fields)
         const ip = getRequestIp(req) || 'unknown';
         const ua = req.headers.get('user-agent') || undefined;
@@ -169,9 +169,9 @@ export const withApiProtection = (limiterKey?: keyof typeof rateLimiters) => {
         });
       }
       return res;
-    } as any);
+    }) as any;
     return limiterKey ? withRateLimit(limiterKey)(protectedHandler as any) : (protectedHandler as any);
-  } as any;
+  };
 };
 
 function detectFeatureFromPath(path: string): string {

@@ -1,4 +1,4 @@
-import { APIEndpoint, APIKey } from '@/admin/components/api/APIManager'
+import type { APIEndpoint, APIKey } from '@/admin/components/api/APIManager'
 import { robustFetch } from '@/lib/utils/api/robust-client'
 
 export interface APIAnalytics {

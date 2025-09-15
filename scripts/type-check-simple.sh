@@ -41,13 +41,19 @@ elif [ ! -f "tsconfig.json" ]; then
     exit 1
 fi
 
+# 优先使用轻量配置（若存在）
+TSCONFIG_ARG=""
+if [ -f "tsconfig.typecheck.json" ]; then
+    TSCONFIG_ARG="-p tsconfig.typecheck.json"
+fi
+
 # 使用 --skipLibCheck 来加快检查速度，并增加内存限制
-if NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit --skipLibCheck; then
+if NODE_OPTIONS="--max-old-space-size=4096" npx tsc $TSCONFIG_ARG --noEmit --skipLibCheck; then
     echo -e "${GREEN}✅ TypeScript check passed${NC}"
     exit 0
 else
     echo -e "${YELLOW}⚠️ TypeScript check failed${NC}"
     echo -e "${YELLOW}📋 Running detailed check...${NC}"
-    NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit --skipLibCheck --noErrorTruncation | head -50
+    NODE_OPTIONS="--max-old-space-size=4096" npx tsc $TSCONFIG_ARG --noEmit --skipLibCheck --noErrorTruncation | head -50
     exit 1
 fi
