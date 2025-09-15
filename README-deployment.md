@@ -199,6 +199,22 @@ git push origin production  # 触发生产环境构建
 # 持续监控
 ./scripts/health-check.sh production --monitor
 
+## 数据库迁移（镜像内集成）
+
+- 镜像包含 Prisma CLI，并在容器启动时自动执行：
+  - Go 后端迁移：`server -migrate`
+  - Prisma 迁移：`prisma migrate deploy --schema /app/frontend/prisma/schema.prisma`
+- 需要设置 `DATABASE_URL`（MySQL DSN），例如：`mysql://user:pass@host:3306/dbname`
+- 可选：`PRISMA_DB_PUSH_FALLBACK=true`，当迁移失败时使用 `prisma db push`（仅开发/临时环境，不建议生产）
+
+示例运行：
+```bash
+docker run --rm -p 3000:3000 \
+  -e NEXT_PUBLIC_DOMAIN=localhost \
+  -e DATABASE_URL="mysql://user:pass@db:3306/autoads" \
+  ghcr.io/xxrenzhe/autoads:latest
+```
+
 # 集成到监控系统
 curl -f https://www.autoads.dev/health || alert
 ```

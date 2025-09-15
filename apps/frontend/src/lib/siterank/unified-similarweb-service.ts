@@ -122,6 +122,10 @@ export class UnifiedSimilarWebService {
     logger.info(`Querying domain data: ${domain}`);
 
     try {
+      // In production（或显式开启），统一由 Go 后端提供数据与计费/缓存
+      if ((process.env.USE_GO_BACKEND_SITERANK || '').toLowerCase() === 'true' || process.env.NODE_ENV === 'production') {
+        return await this.queryViaBackend(domain)
+      }
       // Check cache first
       const cachedData = await this.getCachedResult(domain);
       if (cachedData) {
@@ -179,6 +183,9 @@ export class UnifiedSimilarWebService {
    */
   async queryMultipleDomains(domains: string[]): Promise<SimilarWebData[]> {
     logger.info(`Querying ${domains.length} domains`);
+    if ((process.env.USE_GO_BACKEND_SITERANK || '').toLowerCase() === 'true' || process.env.NODE_ENV === 'production') {
+      return await this.queryMultipleViaBackend(domains)
+    }
     // First, batch check cache for all domains (Redis mget/pipeline when available)
     const { cachedResults, uncachedDomains } = await this.getBatchCachedResults(domains);
 
@@ -257,6 +264,65 @@ export class UnifiedSimilarWebService {
     }
 
     return results;
+  }
+
+  /**
+   * Query via backend Go endpoint (single domain)
+   */
+  private async queryViaBackend(domain: string): Promise<SimilarWebData> {
+    const url = new URL('/go/api/siterank/rank', 'http://localhost')
+    url.searchParams.set('domain', domain)
+    const res = await fetch(url.pathname + url.search, { method: 'GET', credentials: 'include' })
+    const body = await res.json().catch(() => ({} as any))
+    const data = (body && body.data) || {}
+    const sw: SimilarWebData = {
+      domain,
+      globalRank: typeof data.globalRank === 'number' ? data.globalRank : (data.globalRank ?? null),
+      monthlyVisits: typeof data.monthlyVisits === 'string' ? data.monthlyVisits : (data.monthlyVisits ?? null),
+      status: res.ok && body.success ? 'success' : 'error',
+      error: res.ok && body.success ? undefined : (body.message || 'Backend error'),
+      timestamp: new Date(),
+      source: 'similarweb-api',
+      fromCache: (res.headers.get('X-Cache-Hit') || '').startsWith('1')
+    }
+    return sw
+  }
+
+  /**
+   * Query via backend Go endpoint (batch domains)
+   */
+  private async queryMultipleViaBackend(domains: string[]): Promise<SimilarWebData[]> {
+    const res = await fetch('/go/api/v1/siterank/batch:execute', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ domains })
+    })
+    const body = await res.json().catch(() => ({} as any))
+    if (!res.ok || !body || !body.data) {
+      return domains.map((d: string) => ({
+        domain: d,
+        globalRank: null,
+        monthlyVisits: null,
+        status: 'error',
+        error: body?.message || 'Backend error',
+        timestamp: new Date(),
+        source: 'similarweb-api',
+        fromCache: false
+      }))
+    }
+    // Backend returns array of items with fields globalRank/monthlyVisits or errors
+    const arr = body.data as any[]
+    const results: SimilarWebData[] = arr.map((item: any) => ({
+      domain: item.domain || '',
+      globalRank: typeof item.globalRank === 'number' ? item.globalRank : (item.globalRank ?? null),
+      monthlyVisits: typeof item.monthlyVisits === 'string' ? item.monthlyVisits : (item.monthlyVisits ?? null),
+      status: item.error ? 'error' : 'success',
+      error: item.error,
+      timestamp: new Date(),
+      source: 'similarweb-api',
+      fromCache: !!item.fromCache
+    }))
+    return results
   }
 
   /**

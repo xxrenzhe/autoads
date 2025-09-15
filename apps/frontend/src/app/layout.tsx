@@ -10,8 +10,7 @@ import { sanitizeHtml } from "@/lib/utils/security/sanitize";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SessionProvider } from "next-auth/react";
 // 内存优化模块已移除
-import "@/lib/scheduled-task-init";
-import "@/lib/autoclick-init";
+// 已迁移所有调度到 Go 服务端，移除 Next 内部调度初始化
 import QueryProvider from "@/components/providers/QueryProvider";
 import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
 

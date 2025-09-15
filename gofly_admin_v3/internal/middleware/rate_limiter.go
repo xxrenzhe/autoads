@@ -177,6 +177,7 @@ type RateLimitMiddleware struct {
     // plan-based
     planLimiters map[string]RateLimiter
     planWindow   time.Duration
+    planRates    map[string]PlanRateConfig
 }
 
 // NewRateLimitMiddleware 创建限流中间件
@@ -211,27 +212,33 @@ type PlanRateConfig struct {
 // SetPlanRates 初始化套餐限流器
 func (m *RateLimitMiddleware) SetPlanRates(rates map[string]PlanRateConfig, redisClient *redis.Client) {
     m.planLimiters = make(map[string]RateLimiter)
+    m.planRates = make(map[string]PlanRateConfig)
     if m.config.UseRedis && redisClient != nil {
         m.planWindow = m.config.Window
         for plan, r := range rates {
             m.planLimiters[plan] = NewRedisRateLimiter(redisClient, m.planWindow, int(r.RPS*m.planWindow.Seconds()))
+            m.planRates[plan] = r
         }
     } else {
         for plan, r := range rates {
             m.planLimiters[plan] = NewMemoryRateLimiter(r.RPS, r.Burst)
+            m.planRates[plan] = r
         }
     }
 }
 
 // GlobalRateLimit 全局限流
 func (m *RateLimitMiddleware) GlobalRateLimit() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if !m.globalLimiter.Allow("global") {
-			m.handleRateLimit(c, "global", m.globalLimiter)
-			return
-		}
-		c.Next()
-	}
+    return func(c *gin.Context) {
+        key := "global"
+        if !m.globalLimiter.Allow(key) {
+            m.handleRateLimit(c, key, m.globalLimiter)
+            return
+        }
+        // 成功也输出限流头
+        m.writeHeaders(c, key, m.globalLimiter, int(m.config.Window.Seconds()*m.config.GlobalRPS))
+        c.Next()
+    }
 }
 
 // UserRateLimit 用户限流
@@ -257,42 +264,45 @@ func (m *RateLimitMiddleware) UserRateLimit() gin.HandlerFunc {
             return
         }
 
-		key := fmt.Sprintf("user:%s", userID)
-		if !m.userLimiter.Allow(key) {
-			m.handleRateLimit(c, key, m.userLimiter)
-			return
-		}
-		c.Next()
-	}
+        key := fmt.Sprintf("user:%s", userID)
+        if !m.userLimiter.Allow(key) {
+            m.handleRateLimit(c, key, m.userLimiter)
+            return
+        }
+        m.writeHeaders(c, key, m.userLimiter, int(m.config.Window.Seconds()*m.config.UserRPS))
+        c.Next()
+    }
 }
 
 // IPRateLimit IP限流
 func (m *RateLimitMiddleware) IPRateLimit() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		ip := c.ClientIP()
-		key := fmt.Sprintf("ip:%s", ip)
+    return func(c *gin.Context) {
+        ip := c.ClientIP()
+        key := fmt.Sprintf("ip:%s", ip)
 
-		if !m.ipLimiter.Allow(key) {
-			m.handleRateLimit(c, key, m.ipLimiter)
-			return
-		}
-		c.Next()
-	}
+        if !m.ipLimiter.Allow(key) {
+            m.handleRateLimit(c, key, m.ipLimiter)
+            return
+        }
+        m.writeHeaders(c, key, m.ipLimiter, int(m.config.Window.Seconds()*m.config.IPRPS))
+        c.Next()
+    }
 }
 
 // APIRateLimit API限流
 func (m *RateLimitMiddleware) APIRateLimit() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		path := c.Request.URL.Path
-		method := c.Request.Method
-		key := fmt.Sprintf("api:%s:%s", method, path)
+    return func(c *gin.Context) {
+        path := c.Request.URL.Path
+        method := c.Request.Method
+        key := fmt.Sprintf("api:%s:%s", method, path)
 
-		if !m.apiLimiter.Allow(key) {
-			m.handleRateLimit(c, key, m.apiLimiter)
-			return
-		}
-		c.Next()
-	}
+        if !m.apiLimiter.Allow(key) {
+            m.handleRateLimit(c, key, m.apiLimiter)
+            return
+        }
+        m.writeHeaders(c, key, m.apiLimiter, int(m.config.Window.Seconds()*m.config.APIRPS))
+        c.Next()
+    }
 }
 
 // CustomRateLimit 自定义限流
@@ -334,6 +344,9 @@ func (m *RateLimitMiddleware) PlanAPIRateLimit(planResolver func(*gin.Context) s
                 return
             }
         }
+        // 标记选用的套餐策略，便于前端/运维观测
+        c.Header("X-RateLimit-Plan", plan)
+        c.Header("X-RateLimit-Policy", "plan")
         method := c.Request.Method
         path := c.Request.URL.Path
         key := fmt.Sprintf("plan:%s:%s:%s", plan, method, path)
@@ -341,6 +354,12 @@ func (m *RateLimitMiddleware) PlanAPIRateLimit(planResolver func(*gin.Context) s
             m.handleRateLimit(c, key, limiter)
             return
         }
+        // 使用该套餐配置的 RPS*Window 作为 Limit 值
+        limVal := int(m.config.Window.Seconds() * m.config.APIRPS)
+        if pr, ok := m.planRates[plan]; ok {
+            limVal = int(m.config.Window.Seconds() * pr.RPS)
+        }
+        m.writeHeaders(c, key, limiter, limVal)
         c.Next()
     }
 }
@@ -373,6 +392,16 @@ func (m *RateLimitMiddleware) GetRateLimitInfo(c *gin.Context, key string, limit
 		"reset_at":  resetTime.Unix(),
 		"window":    m.config.Window.Seconds(),
 	}
+}
+
+// writeHeaders 在成功通过限流校验时写入响应头
+func (m *RateLimitMiddleware) writeHeaders(c *gin.Context, key string, limiter RateLimiter, limit int) {
+    if limit <= 0 { limit = 0 }
+    remaining := limiter.GetRemaining(key)
+    resetTime := limiter.GetResetTime(key)
+    c.Header("X-RateLimit-Limit", strconv.Itoa(limit))
+    c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
+    c.Header("X-RateLimit-Reset", strconv.FormatInt(resetTime.Unix(), 10))
 }
 
 // 预定义的限流配置

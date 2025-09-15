@@ -1,6 +1,9 @@
 import { rateLimiters } from '@/lib/rate-limit';
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestIp } from '@/lib/utils/request-ip'
+import { createLogger } from '@/lib/utils/security/secure-logger'
+
+const apiLogger = createLogger('API');
 
 // 创建API路由的速率限制包装器
 export function withRateLimit(
@@ -136,7 +139,57 @@ export function compose<T extends (...args: any[]) => any>(
 // 常用的组合装饰器
 export const withApiProtection = (limiterKey?: keyof typeof rateLimiters) => {
   return <T extends (req: NextRequest, ...args: any[]) => any>(handler: T): T => {
-    const protectedHandler = withErrorHandler(handler);
-    return limiterKey ? withRateLimit(limiterKey)(protectedHandler) : protectedHandler;
-  };
+    const protectedHandler = withErrorHandler(async (req: NextRequest, ...args: any[]) => {
+      const start = Date.now();
+      const res = await (handler as any)(req, ...args);
+      const dur = Date.now() - start;
+      // Ensure headers: X-Request-Id, Server-Timing
+      if (res instanceof NextResponse) {
+        const reqId = req.headers.get('x-request-id') || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+        try { res.headers.set('X-Request-Id', reqId) } catch {}
+        const existingTiming = res.headers.get('server-timing');
+        const timing = `app;dur=${dur}`;
+        try { res.headers.set('Server-Timing', existingTiming ? `${existingTiming}, ${timing}` : timing) } catch {}
+        // Structured log (unified fields)
+        const ip = getRequestIp(req) || 'unknown';
+        const ua = req.headers.get('user-agent') || undefined;
+        const feature = detectFeatureFromPath(new URL(req.url).pathname);
+        const cacheHit = res.headers.get('X-Cache-Hit') || undefined;
+        apiLogger.info('api_call', {
+          request_id: reqId,
+          user_id: extractUserId(req) || 'anonymous',
+          feature,
+          latency_ms: dur,
+          tokens: undefined,
+          cache_hit: cacheHit,
+          method: req.method,
+          path: new URL(req.url).pathname,
+          ip,
+          user_agent: ua
+        });
+      }
+      return res;
+    } as any);
+    return limiterKey ? withRateLimit(limiterKey)(protectedHandler as any) : (protectedHandler as any);
+  } as any;
 };
+
+function detectFeatureFromPath(path: string): string {
+  if (path.includes('/siterank')) return 'siterank';
+  if (path.includes('/batchopen')) return 'batchopen';
+  if (path.includes('/adscenter') || path.includes('/changelink')) return 'adscenter';
+  if (path.includes('/token')) return 'token';
+  if (path.includes('/user')) return 'user';
+  if (path.includes('/admin') || path.includes('/console')) return 'admin';
+  return 'unknown';
+}
+
+function extractUserId(req: NextRequest): string | null {
+  // Prefer internal header if present
+  const h = req.headers.get('x-user-id');
+  if (h) return h;
+  // Otherwise attempt to parse from Authorization (opaque)
+  const auth = req.headers.get('authorization');
+  if (auth && auth.startsWith('Bearer ')) return null; // Avoid leaking tokens
+  return null;
+}

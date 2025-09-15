@@ -74,7 +74,9 @@ export function validateProductionSecurity(): void {
   const requiredSecurityEnvVars = [
     'ENCRYPTION_KEY',
     'JWT_SECRET',
-    'SESSION_SECRET'
+    'SESSION_SECRET',
+    // 前后端同源网关依赖内部JWT签发，用于后端鉴权/幂等
+    'INTERNAL_JWT_PRIVATE_KEY'
   ];
   
   const missingVars = requiredSecurityEnvVars.filter((varName: any) => !process.env[varName]);

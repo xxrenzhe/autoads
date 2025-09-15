@@ -40,12 +40,12 @@ export function validateCriticalEnvironmentVariables(): ValidationResult {
     result.valid = false;
   }
 
-  // Validate database URL format
+  // Validate database URL format (MySQL)
   if (process.env.DATABASE_URL) {
     try {
       const dbUrl = new URL(process.env.DATABASE_URL);
-      if (!dbUrl.hostname || !dbUrl.protocol.includes('postgresql')) {
-        result.errors.push('DATABASE_URL must be a valid PostgreSQL connection string');
+      if (!dbUrl.hostname || !dbUrl.protocol.includes('mysql')) {
+        result.errors.push('DATABASE_URL must be a valid MySQL connection string');
         result.valid = false;
       }
     } catch (error) {

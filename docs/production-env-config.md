@@ -47,6 +47,11 @@ DATABASE_URL=mysql://username:password@hostname:port/database_name?sslmode=requi
 
 # 示例：
 # DATABASE_URL=mysql://autoads_prod:secure_password@db-prod.autoads.internal:3306/autoads_production?sslmode=require
+
+> 说明：容器启动时会自动执行数据库迁移（Go 迁移 + Prisma 迁移）。
+> - 请确保在运行环境（Kubernetes Secret/ConfigMap、Docker 环境变量等）设置了 `DATABASE_URL`。
+> - CI/CD 部署脚本会校验该变量是否存在；默认依赖容器启动时迁移。
+> - 如需部署前预检，可设置 `MIGRATION_PRECHECK=true` 运行一次性检查。
 ```
 
 ### 可选配置

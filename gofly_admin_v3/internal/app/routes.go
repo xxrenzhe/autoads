@@ -1,17 +1,21 @@
 package app
 
 import (
-	// "fmt"
-	// "net/http"
-	// "time"
+    // "fmt"
+    // "net/http"
+    "time"
 
-	"github.com/gin-gonic/gin"
-	"gofly-admin-v3/internal/admin"
-	"gofly-admin-v3/internal/system"
-	"gofly-admin-v3/internal/upload"
-	"gofly-admin-v3/utils/gf"
-	"strings"
-	"path/filepath"
+    "github.com/gin-gonic/gin"
+    "gofly-admin-v3/internal/admin"
+    "gofly-admin-v3/internal/system"
+    "gofly-admin-v3/internal/upload"
+    "gofly-admin-v3/utils/gf"
+    "strings"
+    "path/filepath"
+    "gofly-admin-v3/internal/middleware"
+    "gofly-admin-v3/internal/subscription"
+    "encoding/json"
+    "sync"
 	// "gofly-admin-v3/internal/adscentergo"
 	// "gofly-admin-v3/internal/auth"
 	// "gofly-admin-v3/internal/batchgo"
@@ -74,9 +78,104 @@ system.On("allowed_file_types", func(key, value string) {
     })
 
 	// 全局中间件
-	router.Use(ErrorHandler())
-	router.Use(Logger())
-	router.Use(GlobalRateLimit())
+    router.Use(ErrorHandler())
+    router.Use(Logger())
+    router.Use(RequestContext())
+    // 统一限流中间件（默认内存实现；如需 Redis 可在初始化处注入）
+    rl := middleware.NewRateLimitMiddleware(middleware.DefaultRateLimitConfig, nil)
+    router.Use(rl.GlobalRateLimit())
+    router.Use(rl.IPRateLimit())
+    router.Use(rl.APIRateLimit())
+    // 套餐限流（可选，通过 Header: X-User-Plan 或其他上下文解析），并支持热更新
+    // 简易用户套餐缓存（TTL 60s）
+    type cacheItem struct{ v string; exp time.Time }
+    var (
+        planCache = struct {
+            mu sync.RWMutex
+            m  map[string]cacheItem
+        }{m: map[string]cacheItem{}}
+        cacheTTL = 60 * time.Second
+    )
+    resolvePlan := func(c *gin.Context) string {
+        // 1) Header 显式指定优先（便于调试）
+        if p := strings.ToUpper(strings.TrimSpace(c.GetHeader("X-User-Plan"))); p != "" {
+            return p
+        }
+        // 2) 根据 user_id 查询当前订阅的套餐名，并做短期缓存
+        uid := c.GetString("user_id")
+        if uid == "" { return "" }
+        now := time.Now()
+        // 2.1 Redis 缓存（多实例一致）
+        if r := gf.Redis(); r != nil {
+            if v, err := r.Do(c, "GET", "user:plan:"+uid); err == nil && v != nil {
+                if s := strings.ToUpper(strings.TrimSpace(gf.String(v))); s != "" {
+                    return s
+                }
+            }
+        }
+        planCache.mu.RLock()
+        if it, ok := planCache.m[uid]; ok && it.exp.After(now) {
+            planCache.mu.RUnlock()
+            return it.v
+        }
+        planCache.mu.RUnlock()
+        // 读取数据库
+        rec, err := gf.DB().Raw(`SELECT p.name FROM subscriptions s JOIN plans p ON p.id=s.plan_id WHERE s.user_id=? AND s.status='ACTIVE' ORDER BY s.updated_at DESC LIMIT 1`, uid).One()
+        if err != nil || rec == nil { return "" }
+        name := strings.ToUpper(strings.TrimSpace(rec["name"].String()))
+        planCache.mu.Lock()
+        planCache.m[uid] = cacheItem{ v: name, exp: now.Add(cacheTTL) }
+        planCache.mu.Unlock()
+        if r := gf.Redis(); r != nil && name != "" {
+            _, _ = r.Do(c, "SETEX", "user:plan:"+uid, int(cacheTTL.Seconds()), name)
+        }
+        return name
+    }
+    router.Use(rl.PlanAPIRateLimit(resolvePlan))
+
+    // 从 system_configs 加载套餐限流规则（JSON），并订阅 Redis 通知刷新
+    loadPlanRates := func() {
+        row, err := gf.DB().Raw("SELECT config_value FROM system_configs WHERE config_key=? AND is_active=1 LIMIT 1", "rate_limit_plans").One()
+        if err != nil || row == nil { return }
+        val := row["config_value"].String()
+        if strings.TrimSpace(val) == "" { return }
+        // 期望 JSON 形如：{"FREE":{"rps":5,"burst":10},"PRO":{"rps":50,"burst":100}}
+        type planItem struct { Rps float64 `json:"rps"`; Burst int `json:"burst"` }
+        var raw map[string]planItem
+        if err := json.Unmarshal([]byte(val), &raw); err != nil { return }
+        rates := map[string]middleware.PlanRateConfig{}
+        for k, v := range raw {
+            rates[strings.ToUpper(strings.TrimSpace(k))] = middleware.PlanRateConfig{ RPS: v.Rps, Burst: v.Burst }
+        }
+        rl.SetPlanRates(rates, nil)
+    }
+    loadPlanRates()
+    go func() {
+        r := gf.Redis(); if r == nil { return }
+        conn, _, err := r.GroupPubSub().Subscribe(nil, "ratelimit:plans:update")
+        if err != nil { return }
+        for {
+            _, err := conn.ReceiveMessage(nil)
+            if err == nil { loadPlanRates() }
+            time.Sleep(50 * time.Millisecond)
+        }
+    }()
+
+    // 订阅变更 -> 计划缓存失效
+    go func() {
+        r := gf.Redis(); if r == nil { return }
+        conn, _, err := r.GroupPubSub().Subscribe(nil, "user:plan:invalidate")
+        if err != nil { return }
+        for {
+            msg, err := conn.ReceiveMessage(nil)
+            if err != nil || msg == nil { time.Sleep(100 * time.Millisecond); continue }
+            uid := strings.TrimSpace(msg.Payload)
+            if uid == "" { continue }
+            planCache.mu.Lock()
+            delete(planCache.m, uid)
+            planCache.mu.Unlock()
+        }
+    }()
 	// API访问日志（用于Analytics/Performance）
 	router.Use(ApiAccessLogger())
 	router.Use(metrics.GetMetrics().HTTPMiddleware())
@@ -85,6 +184,8 @@ system.On("allowed_file_types", func(key, value string) {
     distDir := filepath.Join("web", "dist")
     router.Static("/console/assets", filepath.Join(distDir, "assets"))
     router.StaticFile("/console", filepath.Join(distDir, "index.html"))
+    // 配置聚合只读快照（供 Next 读取）：/ops/console/config/v1
+    router.GET("/ops/console/config/v1", system.GetEffectiveConfig)
     router.NoRoute(func(c *gin.Context) {
         p := c.Request.URL.Path
         if strings.HasPrefix(p, "/console") {
@@ -97,11 +198,13 @@ system.On("allowed_file_types", func(key, value string) {
 	// API版本分组
 	v1 := router.Group("/api/v1")
 	{
+        // 解析内部JWT（非强制），用于用户态只读接口
+        v1.Use(middleware.InternalJWTAuth(false))
         // 管理员登录（JWT）
         v1.POST("/console/login", admin.AdminLoginHandler)
         // 管理员受保护路由（JWT）
-        adminGroup := v1.Group("/console")
-        adminGroup.Use(admin.AdminJWT())
+			adminGroup := v1.Group("/console")
+			adminGroup.Use(admin.AdminJWT())
 		{
 			controller := admin.NewAdminController(nil, nil, nil, nil)
 			adminGroup.GET("/system/config", controller.GetSystemConfig)
@@ -151,6 +254,12 @@ system.On("allowed_file_types", func(key, value string) {
             // 管理员与角色
             admin.RegisterAdminAccountRoutes(adminGroup)
 		}
+
+        // 用户只读接口（依赖 InternalJWTAuth 提供的 user_id）
+        userGroup := v1.Group("/user")
+        {
+            userGroup.GET("/subscription/current", subscription.GetCurrentUserSubscription)
+        }
 
 		// 用户相关路由 - TODO: Fix user service initialization
 		/*

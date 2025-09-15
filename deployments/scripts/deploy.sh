@@ -111,18 +111,49 @@ build_and_push_image() {
 # Run database migrations
 run_migrations() {
     log_info "Running database migrations..."
-    
-    # Create a temporary pod to run migrations
-    kubectl run migration-job-$(date +%s) \
-        --image="$IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
-        --namespace="$NAMESPACE" \
-        --restart=Never \
-        --rm -i --tty \
-        --env-from=secret/app-secrets \
-        --env-from=configmap/app-config \
-        --command -- npx prisma migrate deploy
-    
-    log_success "Database migrations completed"
+
+    # Ensure DATABASE_URL is present in cluster env (secret or configmap)
+    local db_url_secret
+    local db_url_config
+    db_url_secret=$(kubectl get secret app-secrets -n "$NAMESPACE" -o jsonpath='{.data.DATABASE_URL}' 2>/dev/null || true)
+    db_url_config=$(kubectl get configmap app-config -n "$NAMESPACE" -o jsonpath='{.data.DATABASE_URL}' 2>/dev/null || true)
+    if [ -z "$db_url_secret$db_url_config" ]; then
+        log_error "DATABASE_URL is not configured in namespace $NAMESPACE (secret/app-secrets or configmap/app-config)"
+        log_error "Please add DATABASE_URL so that container startup migration can run."
+        exit 1
+    fi
+
+    # By default, migrations run on container startup via docker-entrypoint.sh
+    local STARTUP_MIGRATIONS=${STARTUP_MIGRATIONS:-true}
+    local MIGRATION_PRECHECK=${MIGRATION_PRECHECK:-false}
+
+    if [ "$STARTUP_MIGRATIONS" = "true" ]; then
+        log_info "Skipping explicit migration job: startup will run 'server -migrate' and 'prisma migrate deploy'."
+    else
+        log_warning "STARTUP_MIGRATIONS is disabled; running explicit Prisma migration job."
+        kubectl run migration-job-$(date +%s) \
+            --image="$IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
+            --namespace="$NAMESPACE" \
+            --restart=Never \
+            --rm -i --tty \
+            --env-from=secret/app-secrets \
+            --env-from=configmap/app-config \
+            --command -- sh -lc "prisma migrate deploy --schema /app/frontend/prisma/schema.prisma"
+        log_success "Explicit Prisma migration completed"
+    fi
+
+    if [ "$MIGRATION_PRECHECK" = "true" ]; then
+        log_info "Running migration precheck job (prisma migrate status)..."
+        kubectl run migration-check-$(date +%s) \
+            --image="$IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
+            --namespace="$NAMESPACE" \
+            --restart=Never \
+            --rm -i --tty \
+            --env-from=secret/app-secrets \
+            --env-from=configmap/app-config \
+            --command -- sh -lc "prisma migrate status --schema /app/frontend/prisma/schema.prisma || true"
+        log_success "Migration precheck finished"
+    fi
 }
 
 # Deploy to Kubernetes

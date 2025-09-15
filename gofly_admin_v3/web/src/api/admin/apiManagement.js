@@ -46,5 +46,8 @@ export const apiMgmt = {
   },
   getPerformance(params = {}) {
     return request({ url: '/ops/api/v1/console/api-management/performance', method: 'get', params })
+  },
+  getRequest(id) {
+    return request({ url: `/ops/api/v1/console/api-management/request/${id}`, method: 'get' })
   }
 }

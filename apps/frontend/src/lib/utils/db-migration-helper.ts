@@ -1,7 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../types/prisma-types';
 import { dbPool, dbQuery, dbTransaction } from '../db-pool';
 import { createLogger } from './security/secure-logger';
 import { getRedisClient } from '../redis-config';
+import { prisma } from '../prisma';
 
 const logger = createLogger('DatabaseMigrationHelper');
 
@@ -10,8 +11,8 @@ const logger = createLogger('DatabaseMigrationHelper');
  * 将直接使用 Prisma 的代码迁移到使用 dbPool
  */
 
-// 原有的 Prisma 实例（用于兼容性）
-export const prisma = new PrismaClient();
+// 统一使用全局单例 Prisma 实例（用于兼容性）
+export { prisma };
 
 /**
  * 执行查询的包装器，自动使用连接池

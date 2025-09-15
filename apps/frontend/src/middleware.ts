@@ -148,6 +148,20 @@ export async function middleware(request: NextRequest) {
   const isApiRoute = pathname.startsWith('/api/');
   const isGoProxy = pathname.startsWith('/go/');
 
+  // 统一管理台入口：
+  // - 所有 /admin/* 直接 308 到 /console/*（避免 Cloudflare 拦截 /admin）
+  // - 所有 /console/* 在边缘层改写到 /ops/console/*，由 /ops 反代到 Go 后端
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    const url = new URL(request.url);
+    url.pathname = '/console' + pathname.substring('/admin'.length);
+    return NextResponse.redirect(url, 308);
+  }
+  if (pathname === '/console' || pathname.startsWith('/console/')) {
+    const url = new URL(request.url);
+    url.pathname = '/ops' + pathname;
+    return NextResponse.rewrite(url);
+  }
+
   // 将所有 /api/admin/* 在边缘层重写到 /ops/api/v1/console/*，不经过本地 Next 路由
   if (pathname.startsWith('/api/admin/')) {
     const url = new URL(request.url);
@@ -172,6 +186,48 @@ export async function middleware(request: NextRequest) {
     const target = new URL(request.url);
     target.pathname = pathname.replace('/changelink', '/adscenter');
     return NextResponse.redirect(target, 301);
+  }
+
+  // 将核心写路径统一切换至 Go 原子端点（同源 /go/* 反代注入内部JWT/幂等/链路头）
+  // 仅针对 siterank/batchopen/adscenter 三大模块，避免误伤其他 Next 自身 API
+  if (
+    pathname.startsWith('/api/siterank') || pathname.startsWith('/api/batchopen') || pathname.startsWith('/api/adscenter') ||
+    pathname.startsWith('/api/v1/siterank') || pathname.startsWith('/api/v1/batchopen') || pathname.startsWith('/api/v1/adscenter')
+  ) {
+    const url = new URL(request.url);
+    // 精准映射到 Go 的 :check/:execute 原子端点（已实现的路径）
+    if (pathname === '/api/siterank/batch' && request.method === 'POST') {
+      url.pathname = '/go/api/v1/siterank/batch:execute';
+      return NextResponse.rewrite(url);
+    }
+    // 单域名 rank 查询：使用 Go 的兼容端点（非 v1）
+    if (pathname === '/api/siterank/rank' && request.method === 'GET') {
+      url.pathname = '/go/api/siterank/rank';
+      return NextResponse.rewrite(url);
+    }
+    if (pathname === '/api/batchopen/silent-start' && request.method === 'POST') {
+      url.pathname = '/go/api/v1/batchopen/silent:execute';
+      return NextResponse.rewrite(url);
+    }
+    if (pathname === '/api/batchopen/silent-progress' && request.method === 'GET') {
+      const id = url.searchParams.get('taskId') || url.searchParams.get('task_id');
+      if (id) {
+        url.pathname = `/go/api/v1/batchopen/tasks/${id}`;
+        // 移除冗余参数
+        url.searchParams.delete('taskId');
+        url.searchParams.delete('task_id');
+        return NextResponse.rewrite(url);
+      }
+    }
+    // 其余写路径统一走 /go 反代，让后端按原子端点/旧端点做兼容
+    if (pathname.startsWith('/api/v1/')) {
+      url.pathname = '/go' + pathname;
+    } else if (pathname.startsWith('/api/')) {
+      url.pathname = '/go' + pathname.replace('/api/', '/api/v1/');
+    } else {
+      url.pathname = '/go' + pathname;
+    }
+    return NextResponse.rewrite(url);
   }
   
   // 初始化日志轮转（只执行一次，且不在 Edge Runtime 中运行）

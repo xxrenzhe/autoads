@@ -16,6 +16,36 @@ export class SubscriptionService {
    * 获取用户当前订阅
    */
   static async getUserSubscription(userId: string) {
+    // 优先：调用 Go 只读端点（通过 /ops 反代）获取当前订阅；失败则回退本地 Prisma
+    try {
+      const res = await fetch('/ops/api/v1/user/subscription/current', {
+        headers: { 'accept': 'application/json' },
+        // 同源调用，凭据默认透传 cookie；内部 JWT 在边缘层不强制
+        credentials: 'include'
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.code === 0 && data.data) {
+          // 兼容 Go 返回的 started_at/ended_at 与本地结构
+          const d = data.data
+          return {
+            id: d.id,
+            userId: d.user_id,
+            planId: d.plan_id,
+            status: d.status,
+            currentPeriodStart: d.started_at ? new Date(d.started_at) : undefined,
+            currentPeriodEnd: d.ended_at ? new Date(d.ended_at) : undefined,
+            provider: d.provider || 'system',
+            providerSubscriptionId: d.provider_subscription_id || undefined,
+            plan: d.plan_name ? { id: d.plan_id, name: d.plan_name } : undefined,
+            payments: []
+          } as any
+        }
+      }
+    } catch (e) {
+      // ignore and fallback
+    }
+    // 回退：本地 Prisma 查询（将逐步淘汰）
     try {
       const subscription = await prisma.subscription.findFirst({
         where: {
@@ -31,10 +61,9 @@ export class SubscriptionService {
           }
         }
       })
-
       return subscription
     } catch (error) {
-      console.error('Error getting user subscription:', error)
+      console.error('Error getting user subscription (fallback):', error)
       throw error
     }
   }

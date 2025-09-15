@@ -190,30 +190,32 @@ const nextConfig = {
       config.externals.push('playwright', 'playwright-core');
     }
 
-    // 为缺失三方依赖提供本地构建桩，便于离线构建
-    config.resolve = config.resolve || {}
-    config.resolve.alias = {
-      ...(config.resolve.alias || {}),
-      'swagger-ui-react': path.resolve(__dirname, 'src/stubs/swagger-ui-react.tsx'),
-      '@radix-ui/react-dialog': path.resolve(__dirname, 'src/stubs/radix-dialog.tsx'),
-      '@radix-ui/react-avatar': path.resolve(__dirname, 'src/stubs/radix-avatar.tsx'),
-      '@radix-ui/react-dropdown-menu': path.resolve(__dirname, 'src/stubs/radix-dropdown.tsx'),
-      '@radix-ui/react-switch': path.resolve(__dirname, 'src/stubs/radix-switch.tsx'),
-      'exceljs': path.resolve(__dirname, 'src/stubs/exceljs.ts'),
-      '@stripe/stripe-js': path.resolve(__dirname, 'src/stubs/stripe-js.ts'),
-      '@stripe/react-stripe-js': path.resolve(__dirname, 'src/stubs/react-stripe-js.tsx'),
-      '@heroicons/react/24/outline': path.resolve(__dirname, 'src/stubs/heroicons-outline.tsx'),
-      '@heroicons/react/24/solid': path.resolve(__dirname, 'src/stubs/heroicons-solid.tsx'),
-      'framer-motion': path.resolve(__dirname, 'src/stubs/framer-motion.tsx'),
-      'zod': path.resolve(__dirname, 'src/stubs/zod.ts'),
-      'ioredis': path.resolve(__dirname, 'src/stubs/ioredis.ts'),
-      '@auth/prisma-adapter': path.resolve(__dirname, 'src/stubs/auth-prisma-adapter.ts'),
-      'croner': path.resolve(__dirname, 'src/stubs/croner.ts'),
-      'redis': path.resolve(__dirname, 'src/stubs/redis.ts'),
-      'axios': path.resolve(__dirname, 'src/stubs/axios.ts'),
-      'https-proxy-agent': path.resolve(__dirname, 'src/stubs/https-proxy-agent.ts'),
-      'socks-proxy-agent': path.resolve(__dirname, 'src/stubs/socks-proxy-agent.ts'),
-      'puppeteer': path.resolve(__dirname, 'src/stubs/puppeteer.ts'),
+    // 为缺失三方依赖提供本地构建桩（仅在开发或显式开启时生效）
+    if (dev || process.env.ALLOW_STUBS === 'true') {
+      config.resolve = config.resolve || {}
+      config.resolve.alias = {
+        ...(config.resolve.alias || {}),
+        'swagger-ui-react': path.resolve(__dirname, 'src/stubs/swagger-ui-react.tsx'),
+        '@radix-ui/react-dialog': path.resolve(__dirname, 'src/stubs/radix-dialog.tsx'),
+        '@radix-ui/react-avatar': path.resolve(__dirname, 'src/stubs/radix-avatar.tsx'),
+        '@radix-ui/react-dropdown-menu': path.resolve(__dirname, 'src/stubs/radix-dropdown.tsx'),
+        '@radix-ui/react-switch': path.resolve(__dirname, 'src/stubs/radix-switch.tsx'),
+        'exceljs': path.resolve(__dirname, 'src/stubs/exceljs.ts'),
+        '@stripe/stripe-js': path.resolve(__dirname, 'src/stubs/stripe-js.ts'),
+        '@stripe/react-stripe-js': path.resolve(__dirname, 'src/stubs/react-stripe-js.tsx'),
+        '@heroicons/react/24/outline': path.resolve(__dirname, 'src/stubs/heroicons-outline.tsx'),
+        '@heroicons/react/24/solid': path.resolve(__dirname, 'src/stubs/heroicons-solid.tsx'),
+        'framer-motion': path.resolve(__dirname, 'src/stubs/framer-motion.tsx'),
+        'zod': path.resolve(__dirname, 'src/stubs/zod.ts'),
+        'ioredis': path.resolve(__dirname, 'src/stubs/ioredis.ts'),
+        '@auth/prisma-adapter': path.resolve(__dirname, 'src/stubs/auth-prisma-adapter.ts'),
+        'croner': path.resolve(__dirname, 'src/stubs/croner.ts'),
+        'redis': path.resolve(__dirname, 'src/stubs/redis.ts'),
+        'axios': path.resolve(__dirname, 'src/stubs/axios.ts'),
+        'https-proxy-agent': path.resolve(__dirname, 'src/stubs/https-proxy-agent.ts'),
+        'socks-proxy-agent': path.resolve(__dirname, 'src/stubs/socks-proxy-agent.ts'),
+        'puppeteer': path.resolve(__dirname, 'src/stubs/puppeteer.ts'),
+      }
     }
 
     return config;

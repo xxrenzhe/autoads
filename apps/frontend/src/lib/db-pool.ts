@@ -1,5 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from './types/prisma-types';
 import { createLogger } from './utils/security/secure-logger';
+import { prisma as sharedPrisma } from './prisma';
 
 const logger = createLogger('DatabasePool');
 
@@ -45,28 +46,23 @@ export class PrismaConnectionPool {
       max: this.config.maxConnections
     };
 
-    // 创建Prisma客户端
-    this.prisma = new PrismaClient({
-      log: [
-        { level: 'query', emit: 'event' },
-        { level: 'info', emit: 'stdout' },
-        { level: 'warn', emit: 'stdout' },
-        { level: 'error', emit: 'stdout' }
-      ],
-      // 查询优化
-      errorFormat: 'pretty'
-    });
+    // 使用全局单例 Prisma 客户端，避免重复创建连接
+    this.prisma = sharedPrisma as unknown as PrismaClient;
 
-    // 监听查询事件
-    (this.prisma as any).$on('query', (e: any) => {
-      this.stats.active++;
-      logger.debug('Database query', {
-        query: e.query,
-        params: e.params,
-        duration: e.duration,
-        active: this.stats.active
+    // 监听查询事件（仅开发环境详细记录）
+    try {
+      (this.prisma as any).$on?.('query', (e: any) => {
+        this.stats.active++;
+        if (process.env.NODE_ENV !== 'production') {
+          logger.debug('Database query', {
+            query: e.query,
+            params: e.params,
+            duration: e.duration,
+            active: this.stats.active
+          });
+        }
       });
-    });
+    } catch {}
 
     // 启动定期清理
     this.startReaper();
@@ -208,8 +204,8 @@ export class PrismaConnectionPool {
     if (this.connectionTimeout) {
       clearInterval(this.connectionTimeout);
     }
-    
-    await this.prisma.$disconnect();
+    // 统一由全局 prisma 管理连接生命周期
+    try { await this.prisma.$disconnect(); } catch {}
     logger.info('Database connection pool closed');
   }
 }

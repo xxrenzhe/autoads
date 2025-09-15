@@ -99,6 +99,7 @@
       <h3>限速控制（套餐）</h3>
       <div class="toolbar">
         <button @click="loadRatePlans">刷新</button>
+        <button @click="broadcastReload" :disabled="loading">立即广播刷新</button>
       </div>
       <table class="table">
         <thead>
@@ -136,6 +137,38 @@
         <p v-if="rlError" class="error">{{ rlError }}</p>
       </div>
     </section>
+
+    <section class="card">
+      <h3>套餐限额 JSON（rate_limit_plans）</h3>
+      <div class="toolbar">
+        <button @click="loadRatePlansJSON">刷新</button>
+        <button @click="fillRatePlansTemplate">填充模板</button>
+        <button @click="saveRatePlansJSON" :disabled="loading">保存</button>
+        <button @click="saveAndReload" :disabled="loading">保存并刷新</button>
+      </div>
+      <textarea v-model="ratePlansJSON" rows="10" style="width:100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;"></textarea>
+      <p v-if="ratePlansJSONError" class="error">{{ ratePlansJSONError }}</p>
+    </section>
+
+    <section class="card">
+      <h3>限流策略探测器</h3>
+      <div class="toolbar">
+        <input v-model.trim="probeForm.plan" placeholder="套餐（如 FREE/PRO）" style="width: 160px" />
+        <select v-model="probeForm.method" style="width: 100px">
+          <option>GET</option>
+          <option>POST</option>
+          <option>PUT</option>
+          <option>DELETE</option>
+          <option>PATCH</option>
+        </select>
+        <input v-model.trim="probeForm.path" placeholder="测试路径（默认 /health）" style="width: 260px" />
+        <button @click="runProbe" :disabled="loading">执行</button>
+      </div>
+      <div v-if="Object.keys(probeHeaders).length">
+        <h4>响应头</h4>
+        <pre style="white-space:pre-wrap;word-break:break-all">{{ JSON.stringify(probeHeaders, null, 2) }}</pre>
+      </div>
+    </section>
   </div>
   
 </template>
@@ -160,7 +193,11 @@ export default {
       history: [],
       ratePlans: [],
       rlForm: { plan: 'PRO', api_per_minute: 100, api_per_hour: 5000, siterank_per_minute: 10, siterank_per_hour: 200, batch_concurrent: 5, batch_tasks_per_minute: 20 },
-      rlError: ''
+      rlError: '',
+      ratePlansJSON: '',
+      ratePlansJSONError: '',
+      probeForm: { plan: 'FREE', method: 'GET', path: '/health' },
+      probeHeaders: {}
     }
   },
   mounted() {
@@ -169,7 +206,7 @@ export default {
     this.loadHistory()
     this.loadRatePlans()
   },
-  methods: {
+    methods: {
     async loadEffective() {
       try {
         const res = await fetch('/ops/console/config/v1', { headers: this.authHeader() })
@@ -257,6 +294,60 @@ export default {
         const data = await res.json()
         if (data.code === 0) { this.loadRatePlans() } else { this.rlError = data.message || '更新失败' }
       } catch (e) { this.rlError = e.message || String(e) }
+    },
+    async broadcastReload() {
+      this.rlError = ''
+      try {
+        const res = await fetch('/api/v1/console/rate-limit/reload', { method: 'POST', headers: this.authHeader() })
+        const data = await res.json()
+        if (data.code === 0) { /* ok */ } else { this.rlError = data.message || '广播失败' }
+      } catch (e) { this.rlError = e.message || String(e) }
+    },
+    async loadRatePlansJSON() {
+      this.ratePlansJSONError = ''
+      try {
+        const res = await fetch('/api/v1/console/system/config?category=ratelimit', { headers: this.authHeader() })
+        const data = await res.json()
+        if (data.code === 0) {
+          const item = (data.data || []).find((x) => x.config_key === 'rate_limit_plans')
+          this.ratePlansJSON = item ? item.config_value : ''
+        }
+      } catch (e) { this.ratePlansJSONError = e.message || String(e) }
+    },
+    fillRatePlansTemplate() {
+      this.ratePlansJSON = JSON.stringify({
+        FREE: { rps: 5, burst: 10 },
+        BASIC: { rps: 20, burst: 40 },
+        PRO: { rps: 50, burst: 100 },
+        ENTERPRISE: { rps: 200, burst: 400 }
+      }, null, 2)
+    },
+    async saveRatePlansJSON() {
+      this.loading = true; this.ratePlansJSONError = ''
+      try {
+        try { JSON.parse(this.ratePlansJSON || '{}') } catch (e) { this.ratePlansJSONError = 'JSON 无效'; this.loading = false; return }
+        const body = { key: 'rate_limit_plans', value: this.ratePlansJSON, category: 'ratelimit', description: 'plan rates JSON', is_active: true }
+        const res = await fetch('/api/v1/console/system/config', { method: 'POST', headers: { 'Content-Type': 'application/json', ...this.authHeader() }, body: JSON.stringify(body) })
+        const data = await res.json()
+        if (data.code !== 0) this.ratePlansJSONError = data.message || '保存失败'
+      } catch (e) { this.ratePlansJSONError = e.message || String(e) } finally { this.loading = false }
+    },
+    async saveAndReload() {
+      await this.saveRatePlansJSON(); await this.broadcastReload()
+    },
+    async runProbe() {
+      this.loading = true; this.probeHeaders = {}
+      try {
+        const path = this.probeForm.path || '/health'
+        const method = this.probeForm.method || 'GET'
+        const plan = (this.probeForm.plan || '').trim()
+        const headers = plan ? { 'X-User-Plan': plan } : {}
+        const res = await fetch(path, { method, headers })
+        const wanted = ['x-ratelimit-plan','x-ratelimit-policy','x-ratelimit-limit','x-ratelimit-remaining','x-ratelimit-reset','x-request-id','server-timing']
+        const out = {}
+        wanted.forEach(k => { const v = res.headers.get(k); if (v) out[k] = v })
+        this.probeHeaders = out
+      } catch (e) { this.probeHeaders = { error: e.message || String(e) } } finally { this.loading = false }
     },
     authHeader() {
       const token = localStorage.getItem('admin_token')

@@ -67,6 +67,15 @@ func AdminLoginHandler(c *gin.Context) {
     // 生成 Admin JWT（加入 Admin=true, Role）
     id := record["id"].String()
     role := record["role"].String()
+    // 兼容历史 super_admin，统一映射为 ADMIN
+    switch strings.ToUpper(role) {
+    case "SUPER_ADMIN":
+        role = "ADMIN"
+    case "ADMIN":
+        role = "ADMIN"
+    default:
+        // 其他值一律按 ADMIN/非ADMIN 判定，这里不做降级
+    }
     token, err := signAdminToken(id, role)
     if err != nil {
         gf.Failed().SetMsg("生成令牌失败").Regin(c)
@@ -198,7 +207,7 @@ func AdminJWT() gin.HandlerFunc {
         }
         // 仅允许 ADMIN 角色（收敛角色模型）
         role := claims.Role
-        if !(role == "ADMIN" || role == "admin") {
+        if !(strings.EqualFold(role, "ADMIN")) {
             c.JSON(403, gin.H{"message":"需要管理员权限"}); c.Abort(); return
         }
         c.Set("is_admin", true)

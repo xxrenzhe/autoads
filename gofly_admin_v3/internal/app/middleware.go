@@ -1,11 +1,13 @@
 package app
 
 import (
-	"net/http"
-	"strings"
+    "net/http"
+    "strings"
+    "time"
+    "strconv"
 
-	"github.com/gin-gonic/gin"
-	"gofly-admin-v3/internal/auth"
+    "github.com/gin-gonic/gin"
+    "gofly-admin-v3/internal/auth"
 )
 
 // UserAuth 用户认证中间件
@@ -50,14 +52,45 @@ func ErrorHandler() gin.HandlerFunc {
 
 // Logger 日志中间件
 func Logger() gin.HandlerFunc {
-	return gin.Logger()
+    return gin.Logger()
 }
 
 // GlobalRateLimit 全局限流中间件
 func GlobalRateLimit() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Next()
-	}
+    return func(c *gin.Context) {
+        c.Next()
+    }
+}
+
+// RequestContext 统一请求上下文：X-Request-Id 与 Server-Timing
+func RequestContext() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        start := time.Now()
+        reqID := c.GetHeader("X-Request-Id")
+        if reqID == "" {
+            // 简单生成（时间戳+随机片段）
+            reqID = time.Now().UTC().Format("20060102T150405.000Z07:00")
+        }
+        c.Set("request_id", reqID)
+
+        // 禁止搜索引擎收录管理路径
+        p := c.Request.URL.Path
+        if strings.HasPrefix(p, "/ops/") || strings.HasPrefix(p, "/console") {
+            c.Writer.Header().Set("X-Robots-Tag", "noindex, nofollow")
+        }
+
+        // 继续处理
+        c.Next()
+
+        // 回显链路头与 server-timing
+        c.Writer.Header().Set("X-Request-Id", reqID)
+        dur := time.Since(start).Milliseconds()
+        // 追加 Server-Timing: app;dur=xx
+        // 若已存在则保留原值
+        if c.Writer.Header().Get("Server-Timing") == "" {
+            c.Writer.Header().Set("Server-Timing", "app;dur="+strconv.FormatInt(dur, 10))
+        }
+    }
 }
 
 // ValidateRequest 请求验证中间件

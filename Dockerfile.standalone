@@ -62,6 +62,9 @@ WORKDIR /app/gofly_admin_v3
 RUN apk add --no-cache ca-certificates tzdata gettext tini \
     && update-ca-certificates
 
+# 安装 Prisma CLI 以在容器启动时执行迁移
+RUN npm i -g prisma@6.16.0
+
 # 创建非root用户（使用 node 用户）
 USER node
 
@@ -69,11 +72,12 @@ USER node
 COPY --from=build --chown=node:node /out/server /app/gofly_admin_v3/server
 COPY --from=build --chown=node:node /out/web/dist /app/gofly_admin_v3/web/dist
 
-# 复制 Next.js standalone 运行产物
+# 复制 Next.js standalone 运行产物与 Prisma 目录（包含 migrations 与 schema）
 WORKDIR /app
 COPY --from=next --chown=node:node /frontend/.next/standalone /app/frontend
 COPY --from=next --chown=node:node /frontend/.next/static /app/frontend/.next/static
 COPY --from=next --chown=node:node /frontend/public /app/frontend/public
+COPY --from=next --chown=node:node /frontend/prisma /app/frontend/prisma
 
 # 复制配置模板与入口脚本
 COPY --chown=node:node gofly_admin_v3/config.yaml.template /app/gofly_admin_v3/config.yaml.template

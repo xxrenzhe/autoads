@@ -89,12 +89,13 @@ export class SchedulerService {
   }
 }
 
-// 在服务器启动时自动启动调度器（仅在生产环境）
-if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
+// 按架构优化方案：统一由 Go 端承载调度/重任务
+// 若确需在前端容器内启用轻量调度，需显式设置 FRONTEND_SCHEDULER_ENABLED=true
+if (process.env.FRONTEND_SCHEDULER_ENABLED === 'true' && typeof window === 'undefined') {
   // 延迟启动，确保数据库连接已建立
   setTimeout(() => {
     SchedulerService.startScheduler()
-  }, 5000) // 5秒延迟
+  }, 5000)
 
   // 优雅关闭
   process.on('SIGTERM', () => {

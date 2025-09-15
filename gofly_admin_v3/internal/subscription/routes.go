@@ -135,6 +135,8 @@ func assignSubscriptionHandler(c *gin.Context) {
     // 审计与失效缓存
     _ = logSubscriptionAudit("assign_or_update", req.UserID, planID)
     _ = cache.GetCache().Delete("user:plan:" + req.UserID)
+    if gf.Redis() != nil { _, _ = gf.Redis().Do(c, "DEL", "user:plan:"+req.UserID) }
+    if gf.Redis() != nil { _ = gf.Redis().GroupPubSub().Publish(c, "user:plan:invalidate", req.UserID) }
     gf.Success().SetMsg("订阅已更新").Regin(c)
 }
 
@@ -148,6 +150,8 @@ func cancelSubscriptionHandler(c *gin.Context) {
     userID := sub["user_id"].String()
     _ = logSubscriptionAudit("cancel", userID, sub["plan_id"].String())
     _ = cache.GetCache().Delete("user:plan:" + userID)
+    if gf.Redis() != nil { _, _ = gf.Redis().Do(c, "DEL", "user:plan:"+userID) }
+    if gf.Redis() != nil { _ = gf.Redis().GroupPubSub().Publish(c, "user:plan:invalidate", userID) }
     gf.Success().SetMsg("已取消").Regin(c)
 }
 
@@ -164,6 +168,8 @@ func renewSubscriptionHandler(c *gin.Context) {
     userID := sub["user_id"].String()
     _ = logSubscriptionAudit("renew", userID, sub["plan_id"].String())
     _ = cache.GetCache().Delete("user:plan:" + userID)
+    if gf.Redis() != nil { _, _ = gf.Redis().Do(c, "DEL", "user:plan:"+userID) }
+    if gf.Redis() != nil { _ = gf.Redis().GroupPubSub().Publish(c, "user:plan:invalidate", userID) }
     gf.Success().SetMsg("已续期").Regin(c)
 }
 
@@ -185,6 +191,8 @@ func changeSubscriptionPlanHandler(c *gin.Context) {
     userID := sub["user_id"].String()
     _ = logSubscriptionAudit("change_plan", userID, planID)
     _ = cache.GetCache().Delete("user:plan:" + userID)
+    if gf.Redis() != nil { _, _ = gf.Redis().Do(c, "DEL", "user:plan:"+userID) }
+    if gf.Redis() != nil { _ = gf.Redis().GroupPubSub().Publish(c, "user:plan:invalidate", userID) }
     gf.Success().SetMsg("已更换套餐").Regin(c)
 }
 

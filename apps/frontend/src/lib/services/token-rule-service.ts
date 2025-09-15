@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { Logger } from '@/lib/core/Logger';
+import { getRemoteConfig, getConfigValue } from '@/lib/config/remote-config';
 
 const logger = new Logger('TokenRuleService');
 
@@ -28,13 +29,24 @@ export class TokenRuleService {
    */
   private async initializeCache(): Promise<void> {
     try {
-      // Load default rules from environment variables
+      // Load defaults from ENV first（兼容历史）
       const defaultRules = {
         'siterank-default': parseInt(process.env.SITERANK_TOKEN_COST || '1'),
         'batchopen-http': parseInt(process.env.BATCHOPEN_HTTP_TOKEN_COST || '1'),
         'batchopen-puppeteer': parseInt(process.env.BATCHOPEN_PUPPETEER_TOKEN_COST || '2'),
         'adscenter-default': parseInt((process.env.ADSCENTER_TOKEN_COST || process.env[['CHAN','GELINK'].join('') + '_TOKEN_COST'] || '1') as string),
       };
+
+      // Prefer remote-config snapshot（只读快照，便于统一配置中心）
+      try {
+        const snap = await getRemoteConfig();
+        const sCost = getConfigValue<number>('token.siterank.costPerDomain', snap);
+        const bHttp = getConfigValue<number>('token.batchopen.costPerUrl', snap);
+        const aCost = getConfigValue<number>('token.adscenter.costPerLinkChange', snap);
+        if (typeof sCost === 'number' && Number.isFinite(sCost)) defaultRules['siterank-default'] = sCost;
+        if (typeof bHttp === 'number' && Number.isFinite(bHttp)) defaultRules['batchopen-http'] = bHttp;
+        if (typeof aCost === 'number' && Number.isFinite(aCost)) defaultRules['adscenter-default'] = aCost;
+      } catch {}
 
       // Set default rules in cache
       Object.entries(defaultRules).forEach(([key, cost]: any) => {

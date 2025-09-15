@@ -4,13 +4,19 @@
 
 echo "🚀 开始部署配置系统优化..."
 
+# 0. 校验环境变量：需要 MySQL 的 DATABASE_URL
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo "❌ 缺少 DATABASE_URL 环境变量（MySQL DSN）。示例：mysql://user:pass@host:3306/dbname"
+  exit 1
+fi
+
 # 1. 生成 Prisma 客户端
 echo "📦 生成 Prisma 客户端..."
 npx prisma generate
 
-# 2. 运行数据库迁移
-echo "🗄️ 运行数据库迁移..."
-npx prisma migrate dev --name optimize-config-system
+# 2. 运行数据库迁移（CI 环境建议使用 migrate deploy；若在容器启动时已迁移可跳过）
+echo "🗄️ 运行数据库迁移（deploy 模式）..."
+npx prisma migrate deploy
 
 # 3. 执行配置数据迁移
 echo "📋 执行配置数据迁移..."

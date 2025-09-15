@@ -1,20 +1,11 @@
-import { PrismaClient } from '@prisma/client';
+// 统一使用全局单例 Prisma 客户端
+export { prisma } from '../prisma';
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
-
-// 导出初始化函数
+// 导出初始化/关闭包装，避免多处 new PrismaClient()
 export async function initializeDatabase() {
   try {
-    // 测试数据库连接
     await prisma.$queryRaw`SELECT 1`;
     console.log('✅ Database connected successfully');
-    
     return true;
   } catch (error) {
     console.error('❌ Database connection failed:', error);
@@ -22,7 +13,8 @@ export async function initializeDatabase() {
   }
 }
 
-// 优雅关闭
 export async function shutdownDatabase() {
-  await prisma.$disconnect();
+  try {
+    await prisma.$disconnect();
+  } catch {}
 }

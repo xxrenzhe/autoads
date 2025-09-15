@@ -8,58 +8,61 @@ datasource db {
 }
 
 model User {
-  id                                             String                  @id @default(cuid())
-  email                                          String                  @unique
+  id                                             String                   @id @default(cuid())
+  email                                          String                   @unique
   name                                           String?
   avatar                                         String?
-  emailVerified                                  Boolean                 @default(false)
-  role                                           UserRole                @default(USER)
-  status                                         UserStatus              @default(ACTIVE) // 账户状态: ACTIVE(正常), INACTIVE(未激活), SUSPENDED(暂停), BANNED(封禁)
-  createdAt                                      DateTime                @default(now())
-  updatedAt                                      DateTime                @updatedAt
+  emailVerified                                  Boolean                  @default(false)
+  role                                           UserRole                 @default(USER)
+  status                                         UserStatus               @default(ACTIVE) // 账户状态: ACTIVE(正常), INACTIVE(未激活), SUSPENDED(暂停), BANNED(封禁)
+  createdAt                                      DateTime                 @default(now())
+  updatedAt                                      DateTime                 @updatedAt
   lastLoginAt                                    DateTime?
-  loginCount                                     Int                     @default(0)
+  loginCount                                     Int                      @default(0)
   preferences                                    Json?
-  stripeCustomerId                               String?                 @unique
-  tokenBalance                                   Int                     @default(0)
-  tokenUsedThisMonth                             Int                     @default(0)
+  stripeCustomerId                               String?                  @unique
+  tokenBalance                                   Int                      @default(0)
+  tokenUsedThisMonth                             Int                      @default(0)
   invitedById                                    String?
-  activityTokenBalance                           Int                     @default(0)
+  activityTokenBalance                           Int                      @default(0)
   password                                       String?
-  purchasedTokenBalance                          Int                     @default(0)
-  subscriptionTokenBalance                       Int                     @default(0)
-  trialUsed                                      Boolean                 @default(false)
+  purchasedTokenBalance                          Int                      @default(0)
+  subscriptionTokenBalance                       Int                      @default(0)
+  trialUsed                                      Boolean                  @default(false)
   accounts                                       Account[]
-  adminLogs                                      AdminLog[]              @relation("AdminLogs")
+  adminLogs                                      AdminLog[]               @relation("AdminLogs")
   api_access_logs                                ApiAccessLog[]
-  apiUsages                                      ApiUsage[]              @relation("ApiUsages")
+  apiUsages                                      ApiUsage[]               @relation("ApiUsages")
   audit_logs                                     AuditLog[]
   autoClickTasks                                 AutoClickTask[]
   checkIns                                       CheckIn[]
   config_change_history                          config_change_history[]
   configuration_history                          configuration_history[]
-  createdEnvVars                                 EnvironmentVariable[]   @relation("CreatedByUser")
-  updatedEnvVars                                 EnvironmentVariable[]   @relation("UpdatedByUser")
-  invitedBy                                      Invitation?             @relation("InvitedUser")
-  invitations                                    Invitation[]            @relation("InviterUser")
+  createdEnvVars                                 EnvironmentVariable[]    @relation("CreatedByUser")
+  updatedEnvVars                                 EnvironmentVariable[]    @relation("UpdatedByUser")
+  invitedBy                                      Invitation?              @relation("InvitedUser")
+  invitations                                    Invitation[]             @relation("InviterUser")
   notification_logs                              notification_logs[]
   payments                                       Payment[]
   sessions                                       Session[]
   subscriptions                                  Subscription[]
-  system_configs_system_configs_createdByTousers SystemConfig[]          @relation("system_configs_createdByTousers")
-  systemConfigs                                  SystemConfig[]          @relation("SystemConfigs")
+  system_configs_system_configs_createdByTousers SystemConfig[]           @relation("system_configs_createdByTousers")
+  systemConfigs                                  SystemConfig[]           @relation("SystemConfigs")
   tokenPurchases                                 TokenPurchase[]
   tokenTransactions                              TokenTransaction[]
   token_usage                                    token_usage[]
   usageLogs                                      UsageLog[]
-  userActivities                                 UserActivity[]          @relation("UserActivities")
+  userActivities                                 UserActivity[]           @relation("UserActivities")
   behaviorAnalytics                              UserBehaviorAnalytics[]
   devices                                        UserDevice[]
   userRestrictions                               UserRestriction[]
-  users                                          User?                   @relation("usersTousers", fields: [invitedById], references: [id])
-  other_users                                    User[]                  @relation("usersTousers")
-  changedSubscriptions                           SubscriptionHistory[]   @relation("ChangedSubscriptions")
+  users                                          User?                    @relation("usersTousers", fields: [invitedById], references: [id])
+  other_users                                    User[]                   @relation("usersTousers")
+  changedSubscriptions                           SubscriptionHistory[]    @relation("ChangedSubscriptions")
   queuedInvitationRewards                        QueuedInvitationReward[]
+  adsAccounts                                    AdsAccount[]
+  adsConfigurations                              AdsConfiguration[]
+  adsExecutions                                  AdsExecution[]
 
   @@map("users")
 }
@@ -120,32 +123,32 @@ model VerificationToken {
 }
 
 model Plan {
-  id                  String         @id @default(cuid())
-  name                String
-  description         String?
-  price               Float
-  currency            String         @default("USD")
-  interval            Interval       @default(MONTH)
-  features            Json
-  metadata            Json?
-  isActive            Boolean        @default(true)
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  limits              Json?
-  sortOrder           Int            @default(0)
-  stripePriceId       String?
-  stripeYearlyPriceId String?
-  tokenQuota          Int            @default(0)
-  tokenReset          String         @default("MONTHLY")
-  billingPeriod       String         @default("MONTHLY")
-  rateLimit           Int            @default(100)
-  extraTokenOptions   Json?
-  allowExtraTokens    Boolean?       @default(true)
-  subscriptions       Subscription[]
-  token_usage         token_usage[]
-  planFeatures        PlanFeature[]
-  previousPlans       SubscriptionHistory[] @relation("PreviousPlan")
-  newPlans            SubscriptionHistory[] @relation("NewPlan")
+  id                      String                   @id @default(cuid())
+  name                    String
+  description             String?
+  price                   Float
+  currency                String                   @default("USD")
+  interval                Interval                 @default(MONTH)
+  features                Json
+  metadata                Json?
+  isActive                Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  limits                  Json?
+  sortOrder               Int                      @default(0)
+  stripePriceId           String?
+  stripeYearlyPriceId     String?
+  tokenQuota              Int                      @default(0)
+  tokenReset              String                   @default("MONTHLY")
+  billingPeriod           String                   @default("MONTHLY")
+  rateLimit               Int                      @default(100)
+  extraTokenOptions       Json?
+  allowExtraTokens        Boolean?                 @default(true)
+  subscriptions           Subscription[]
+  token_usage             token_usage[]
+  planFeatures            PlanFeature[]
+  previousPlans           SubscriptionHistory[]    @relation("PreviousPlan")
+  newPlans                SubscriptionHistory[]    @relation("NewPlan")
   queuedInvitationRewards QueuedInvitationReward[]
 
   @@map("plans")
@@ -167,23 +170,23 @@ model PlanFeature {
 }
 
 model Subscription {
-  id                     String             @id @default(cuid())
+  id                     String                @id @default(cuid())
   userId                 String
   planId                 String
-  status                 SubscriptionStatus @default(ACTIVE)
+  status                 SubscriptionStatus    @default(ACTIVE)
   currentPeriodStart     DateTime
   currentPeriodEnd       DateTime
-  cancelAtPeriodEnd      Boolean            @default(false)
+  cancelAtPeriodEnd      Boolean               @default(false)
   canceledAt             DateTime?
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime           @updatedAt
-  provider               String             @default("stripe")
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  provider               String                @default("stripe")
   providerSubscriptionId String?
   metadata               Json?
-  source                 SubscriptionSource @default(MANUAL)
+  source                 SubscriptionSource    @default(MANUAL)
   payments               Payment[]
-  plan                   Plan               @relation(fields: [planId], references: [id])
-  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                   Plan                  @relation(fields: [planId], references: [id])
+  user                   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   subscriptionHistory    SubscriptionHistory[]
 
   @@map("subscriptions")
@@ -359,9 +362,9 @@ model SecurityThreat {
   type               String
   severity           String
   description        String
-  indicators         String[]
-  affectedResources  String[]
-  recommendedActions String[]
+  indicators         Json?
+  affectedResources  Json?
+  recommendedActions Json?
   triggeringEventId  String?
   status             String    @default("detected")
   notes              String?
@@ -764,34 +767,34 @@ enum TokenType {
 }
 
 model SubscriptionHistory {
-  id          String                   @id @default(cuid())
+  id             String                   @id @default(cuid())
   subscriptionId String
   previousPlanId String?
-  newPlanId     String?
-  changeType    SubscriptionChangeType
-  changeReason  SubscriptionChangeReason
-  changedBy     String
-  metadata      Json?
-  createdAt     DateTime                 @default(now())
-  subscription  Subscription             @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  previousPlan  Plan?                    @relation("PreviousPlan", fields: [previousPlanId], references: [id])
-  newPlan       Plan?                    @relation("NewPlan", fields: [newPlanId], references: [id])
-  changedByUser User                     @relation("ChangedSubscriptions", fields: [changedBy], references: [id])
+  newPlanId      String?
+  changeType     SubscriptionChangeType
+  changeReason   SubscriptionChangeReason
+  changedBy      String
+  metadata       Json?
+  createdAt      DateTime                 @default(now())
+  subscription   Subscription             @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  previousPlan   Plan?                    @relation("PreviousPlan", fields: [previousPlanId], references: [id])
+  newPlan        Plan?                    @relation("NewPlan", fields: [newPlanId], references: [id])
+  changedByUser  User                     @relation("ChangedSubscriptions", fields: [changedBy], references: [id])
 
   @@map("subscription_history")
 }
 
 model QueuedInvitationReward {
-  id          String   @id @default(cuid())
-  userId      String
-  planId      String
-  daysToAdd   Int      @default(30)
+  id           String    @id @default(cuid())
+  userId       String
+  planId       String
+  daysToAdd    Int       @default(30)
   invitationId String
-  status      String   @default("PENDING") // PENDING, PROCESSED, CANCELED
-  createdAt   DateTime @default(now())
-  processedAt DateTime?
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan        Plan     @relation(fields: [planId], references: [id])
+  status       String    @default("PENDING") // PENDING, PROCESSED, CANCELED
+  createdAt    DateTime  @default(now())
+  processedAt  DateTime?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan         Plan      @relation(fields: [planId], references: [id])
 
   @@index([userId, status])
   @@index([status, createdAt])
@@ -815,15 +818,15 @@ model AdsAccount {
 }
 
 model AdsConfiguration {
-  id          String   @id @default(cuid())
+  id          String         @id @default(cuid())
   userId      String
   name        String
   description String?
   payload     Json
-  status      String   @default("active")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      String         @default("active")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   executions  AdsExecution[]
 
   @@index([userId, createdAt])
@@ -831,20 +834,20 @@ model AdsConfiguration {
 }
 
 model AdsExecution {
-  id               String   @id @default(cuid())
-  userId           String
-  configurationId  String
-  status           String   @default("created")
-  message          String?
-  progress         Int      @default(0)
-  totalItems       Int      @default(0)
-  processedItems   Int      @default(0)
-  startedAt        DateTime? @db.Timestamp(6)
-  completedAt      DateTime? @db.Timestamp(6)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  configuration    AdsConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  id              String           @id @default(cuid())
+  userId          String
+  configurationId String
+  status          String           @default("created")
+  message         String?
+  progress        Int              @default(0)
+  totalItems      Int              @default(0)
+  processedItems  Int              @default(0)
+  startedAt       DateTime?        @db.Timestamp(6)
+  completedAt     DateTime?        @db.Timestamp(6)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  configuration   AdsConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([configurationId, createdAt])

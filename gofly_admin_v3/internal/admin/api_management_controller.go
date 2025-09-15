@@ -23,18 +23,20 @@ const (
 )
 
 // ======== 通用存取(system_configs) ========
+// 说明：统一以 config_key/config_value 持久化，避免与表保留字冲突；不依赖 created_by/updated_by 等不存在列。
 func (c *ApiManagementController) getConfigJSON(ctx *gin.Context, key string) ([]byte, error) {
-    row, err := gf.DB().Get(ctx, "SELECT config_value FROM system_configs WHERE `key`=? LIMIT 1", key)
+    row, err := gf.DB().Get(ctx, "SELECT config_value FROM system_configs WHERE config_key=? AND is_active=1 LIMIT 1", key)
     if err != nil || row == nil { return nil, err }
-    val := gf.String(row["config_value"]) 
+    val := gf.String(row["config_value"])
     return []byte(val), nil
 }
 
-func (c *ApiManagementController) saveConfigJSON(ctx *gin.Context, key string, jsonBytes []byte, isSecret bool) error {
-    adminID := ctx.GetString("admin_id")
-    // UPSERT
-    _, err := gf.DB().Exec(ctx, "INSERT INTO system_configs(`key`, `value`, `category`, `description`, `is_secret`, `created_by`, `updated_by`) VALUES(?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `value`=VALUES(`value`), updated_by=VALUES(updated_by), updated_at=NOW()",
-        key, string(jsonBytes), "api-management", "API Management Config", isSecret, adminID, adminID,
+func (c *ApiManagementController) saveConfigJSON(ctx *gin.Context, key string, jsonBytes []byte, _ bool) error {
+    // UPSERT 到统一列：config_key/config_value/category/description/is_active
+    _, err := gf.DB().Exec(
+        ctx,
+        "INSERT INTO system_configs(config_key,config_value,category,description,is_active,created_at,updated_at) VALUES(?,?,?,?,TRUE,NOW(),NOW()) ON DUPLICATE KEY UPDATE config_value=VALUES(config_value), category=VALUES(category), description=VALUES(description), is_active=VALUES(is_active), updated_at=NOW()",
+        key, string(jsonBytes), "api-management", "API Management Config",
     )
     return err
 }
@@ -328,6 +330,9 @@ func strconvBase(n int64, base int) string {
 func (c *ApiManagementController) GetAnalytics(ctx *gin.Context) {
     timeRange := strings.ToLower(strings.TrimSpace(ctx.DefaultQuery("timeRange", "24h")))
     endpointFilter := ctx.Query("endpoint")
+    methodFilter := strings.ToUpper(strings.TrimSpace(ctx.Query("method")))
+    userFilter := strings.TrimSpace(ctx.Query("userId"))
+    reqIdFilter := strings.TrimSpace(ctx.Query("requestId"))
     limit := gf.Int(ctx.DefaultQuery("limit", "100"))
     offset := gf.Int(ctx.DefaultQuery("offset", "0"))
     if limit <= 0 || limit > 1000 { limit = 100 }
@@ -341,6 +346,18 @@ func (c *ApiManagementController) GetAnalytics(ctx *gin.Context) {
     if endpointFilter != "" && endpointFilter != "all" {
         where += " AND endpoint = ?"
         args = append(args, endpointFilter)
+    }
+    if methodFilter != "" && methodFilter != "ALL" {
+        where += " AND method = ?"
+        args = append(args, methodFilter)
+    }
+    if userFilter != "" {
+        where += " AND user_id = ?"
+        args = append(args, userFilter)
+    }
+    if reqIdFilter != "" {
+        where += " AND id = ?"
+        args = append(args, reqIdFilter)
     }
 
     // 汇总统计
@@ -413,6 +430,9 @@ func (c *ApiManagementController) GetAnalytics(ctx *gin.Context) {
 func (c *ApiManagementController) GetPerformance(ctx *gin.Context) {
     timeRange := strings.ToLower(strings.TrimSpace(ctx.DefaultQuery("timeRange", "24h")))
     endpointFilter := ctx.Query("endpoint")
+    methodFilter := strings.ToUpper(strings.TrimSpace(ctx.Query("method")))
+    userFilter := strings.TrimSpace(ctx.Query("userId"))
+    reqIdFilter := strings.TrimSpace(ctx.Query("requestId"))
     start, end := resolveTimeRange(timeRange)
 
     where := "created_at >= ? AND created_at <= ?"
@@ -420,6 +440,18 @@ func (c *ApiManagementController) GetPerformance(ctx *gin.Context) {
     if endpointFilter != "" && endpointFilter != "all" {
         where += " AND endpoint = ?"
         args = append(args, endpointFilter)
+    }
+    if methodFilter != "" && methodFilter != "ALL" {
+        where += " AND method = ?"
+        args = append(args, methodFilter)
+    }
+    if userFilter != "" {
+        where += " AND user_id = ?"
+        args = append(args, userFilter)
+    }
+    if reqIdFilter != "" {
+        where += " AND id = ?"
+        args = append(args, reqIdFilter)
     }
 
     totalRows, _ := gf.DB().Query(ctx, "SELECT COUNT(*) AS c FROM api_access_logs WHERE "+where, args...)
@@ -449,6 +481,26 @@ func (c *ApiManagementController) GetPerformance(ctx *gin.Context) {
         "availability": availability,
     }
     ctx.JSON(http.StatusOK, gin.H{"code":0, "data": data})
+}
+
+// GET /api/v1/admin/api-management/request/:id
+// 返回单条 api_access_logs 记录，便于根据 Request ID 追踪链路
+func (c *ApiManagementController) GetRequestById(ctx *gin.Context) {
+    id := strings.TrimSpace(ctx.Param("id"))
+    if id == "" {
+        ctx.JSON(http.StatusOK, gin.H{"code": 1001, "message": "id required"})
+        return
+    }
+    row, err := gf.DB().Query(ctx, "SELECT id, user_id, endpoint, method, status_code, duration_ms, ip_address, user_agent, created_at FROM api_access_logs WHERE id=? LIMIT 1", id)
+    if err != nil {
+        ctx.JSON(http.StatusOK, gin.H{"code": 5001, "message": err.Error()})
+        return
+    }
+    if len(row) == 0 {
+        ctx.JSON(http.StatusOK, gin.H{"code": 404, "message": "not found"})
+        return
+    }
+    ctx.JSON(http.StatusOK, gin.H{"code": 0, "data": row[0]})
 }
 
 // 时间范围解析

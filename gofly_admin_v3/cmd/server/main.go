@@ -482,6 +482,7 @@ func setupAPIRoutes(r *gin.Engine) {
 
                 apiGroup.GET("/analytics", apiMgmt.GetAnalytics)
                 apiGroup.GET("/performance", apiMgmt.GetPerformance)
+                apiGroup.GET("/request/:id", apiMgmt.GetRequestById)
             }
         }
 
@@ -579,6 +580,8 @@ func setupAPIRoutes(r *gin.Engine) {
                 }
                 // 成功：返回结果与最新余额
                 newBalance, _ := tokenSvc.GetTokenBalance(userID)
+                c.Header("X-Tokens-Consumed", fmt.Sprintf("%d", total))
+                c.Header("X-Tokens-Balance", fmt.Sprintf("%d", newBalance))
                 // 幂等状态更新
                 if idemKey != "" {
                     if gormDB != nil {
@@ -716,7 +719,9 @@ func setupAPIRoutes(r *gin.Engine) {
 						if auditSvc != nil { _ = auditSvc.LogBatchTaskAction(userID, "start", task.ID, map[string]any{"urls": len(body.URLs), "mode": "silent"}, c.ClientIP(), c.Request.UserAgent(), true, "", 0) }
 					}
 				}()
-				newBalance, _ := tokenSvc.GetTokenBalance(userID)
+                newBalance, _ := tokenSvc.GetTokenBalance(userID)
+                c.Header("X-Tokens-Consumed", fmt.Sprintf("%d", required))
+                c.Header("X-Tokens-Balance", fmt.Sprintf("%d", newBalance))
                 if iKey != "" {
                     if gormDB != nil { _ = gormDB.Exec("UPDATE idempotency_requests SET status='DONE' WHERE user_id=? AND endpoint=? AND idem_key=?", userID, "batchopen.silent.execute", iKey).Error }
                     if storeRedis != nil { _ = storeRedis.Set(c.Request.Context(), "autoads:idem_batch:"+userID+":"+iKey, "done", 24*time.Hour) }
@@ -1097,6 +1102,18 @@ func requestLogger() gin.HandlerFunc {
         if uid != "" {
             entry["user_id"] = uid
         }
+        // feature detection based on path
+        path := c.Request.URL.Path
+        feature := "unknown"
+        if strings.Contains(path, "/siterank") { feature = "siterank" } else
+        if strings.Contains(path, "/batchopen") { feature = "batchopen" } else
+        if strings.Contains(path, "/console") || strings.Contains(path, "/admin") { feature = "admin" } else
+        if strings.Contains(path, "/tokens") { feature = "token" } else
+        if strings.Contains(path, "/user") { feature = "user" }
+        entry["feature"] = feature
+        // optional fields from response headers
+        if ch := c.Writer.Header().Get("X-Cache-Hit"); ch != "" { entry["cache_hit"] = ch }
+        if tk := c.Writer.Header().Get("X-Tokens-Consumed"); tk != "" { entry["tokens"] = tk }
         if b, err := json.Marshal(entry); err == nil {
             log.Printf("%s", string(b))
         } else {
@@ -1110,8 +1127,10 @@ func randInt() int { return int(time.Now().UnixNano() & 0xffff) }
 
 // setupLegacyAPIRoutes 设置兼容旧API的路由
 func setupLegacyAPIRoutes(r *gin.Engine) {
-	// 保持与现有前端100%兼容的API路径
-	r.POST("/api/batchopen/silent-start", handleSilentStart)
+    // 解析内部 JWT（非强制）以便从 Next 反代获取 user_id（用于计费等）
+    r.Use(middleware.InternalJWTAuth(false))
+    // 保持与现有前端100%兼容的API路径
+    r.POST("/api/batchopen/silent-start", handleSilentStart)
 	r.GET("/api/batchopen/silent-progress", handleSilentProgress)
 	r.POST("/api/batchopen/silent-terminate", handleSilentTerminate)
 	r.POST("/api/autoclick/tasks", handleAutoClickCreate)
@@ -1358,29 +1377,52 @@ func handleAutoClickProgress(c *gin.Context) {
 }
 
 func handleSiteRank(c *gin.Context) {
-	if swebClient == nil {
-		c.JSON(503, gin.H{"success": false, "message": "service unavailable"})
-		return
-	}
-	domain := c.Query("domain")
-	if domain == "" {
-		c.JSON(200, gin.H{"success": false, "message": "缺少domain参数"})
-		return
-	}
-	userID := c.GetString("user_id")
-	if userID == "" {
-		userID = c.GetHeader("X-User-Id")
-		if userID == "" {
-			userID = "anonymous"
-		}
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	data, err := swebClient.GetWebsiteData(ctx, userID, &siterankgo.SimilarWebRequest{Domain: domain, Country: "global", Granularity: "monthly"})
-	if err != nil {
-		c.JSON(200, gin.H{"success": false, "message": err.Error()})
-		return
-	}
+    if swebClient == nil {
+        c.JSON(503, gin.H{"success": false, "message": "service unavailable"})
+        return
+    }
+    domain := c.Query("domain")
+    if domain == "" {
+        c.JSON(200, gin.H{"success": false, "message": "缺少domain参数"})
+        return
+    }
+    userID := c.GetString("user_id")
+    if userID == "" {
+        userID = c.GetHeader("X-User-Id")
+        if userID == "" {
+            userID = "anonymous"
+        }
+    }
+    // 若有用户身份，则进行预检与扣费（单域名=1）
+    if userID != "anonymous" && tokenSvc != nil {
+        sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "siterank", "query", 1)
+        if err != nil {
+            c.JSON(500, gin.H{"success": false, "message": err.Error()})
+            return
+        }
+        if !sufficient {
+            c.JSON(402, gin.H{"success": false, "message": "INSUFFICIENT_TOKENS", "required": required, "balance": balance})
+            return
+        }
+        // 预先扣费（若失败再尝试退款）
+        if err := tokenSvc.ConsumeTokensByService(userID, "siterank", "query", 1, "siterank.single"); err != nil {
+            c.JSON(402, gin.H{"success": false, "message": err.Error(), "required": required, "balance": balance})
+            return
+        }
+        // 输出提示头（非契约）
+        c.Header("X-Tokens-Consumed", "1")
+    }
+    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancel()
+    data, err := swebClient.GetWebsiteData(ctx, userID, &siterankgo.SimilarWebRequest{Domain: domain, Country: "global", Granularity: "monthly"})
+    if err != nil {
+        // 失败时尝试退款（best-effort）
+        if userID != "anonymous" && tokenSvc != nil {
+            _ = tokenSvc.AddTokens(userID, 1, "refund", "siterank single failed", "")
+        }
+        c.JSON(200, gin.H{"success": false, "message": err.Error()})
+        return
+    }
 	// 组装兼容响应
 	resp := gin.H{
 		"globalRank":     data.GlobalRank,
@@ -1395,12 +1437,18 @@ func handleSiteRank(c *gin.Context) {
 		"topCountries":   data.TopCountries,
 		"lastUpdated":    data.LastUpdated,
 	}
-	c.JSON(200, gin.H{
-		"success":       true,
-		"data":          resp,
-		"fromCache":     false,
-		"rateLimitInfo": swebClient.GetRateLimitStats(),
-	})
+    // 如果进行了扣费，返回余额提示头
+    if userID != "anonymous" && tokenSvc != nil {
+        if newBal, e := tokenSvc.GetTokenBalance(userID); e == nil {
+            c.Header("X-Tokens-Balance", fmt.Sprintf("%d", newBal))
+        }
+    }
+    c.JSON(200, gin.H{
+        "success":       true,
+        "data":          resp,
+        "fromCache":     false,
+        "rateLimitInfo": swebClient.GetRateLimitStats(),
+    })
 }
 
 func handleBatchSiteRank(c *gin.Context) {

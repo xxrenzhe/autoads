@@ -19,7 +19,9 @@ function getAllowedPrefixes(): string[] {
     return env.split(',').map(s => s.trim()).filter(Boolean);
   }
   return [
+    '/console',
     '/console/',
+    '/console/assets',
     '/console/panel',
     '/console/login',
     '/api/v1/console/'
@@ -101,4 +103,3 @@ export async function PUT(req: Request, { params }: { params: { path: string[] }
 export async function PATCH(req: Request, { params }: { params: { path: string[] } }) { return proxy(req, params.path); }
 export async function DELETE(req: Request, { params }: { params: { path: string[] } }) { return proxy(req, params.path); }
 export async function OPTIONS(req: Request, { params }: { params: { path: string[] } }) { return proxy(req, params.path); }
-

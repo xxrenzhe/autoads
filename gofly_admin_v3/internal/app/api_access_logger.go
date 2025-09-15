@@ -34,12 +34,16 @@ func ApiAccessLogger() gin.HandlerFunc {
         endpoint := path
         if fp := c.FullPath(); fp != "" { endpoint = fp }
 
+        // 选用请求ID作为日志主键（若提供），便于链路排查
+        reqID := c.GetString("request_id")
+        id := reqID
+        if id == "" { id = gf.UUID() }
+
         // 异步写库，降低延迟
         go func() {
             _, _ = gf.DB().Exec(c, `INSERT INTO api_access_logs (id, user_id, endpoint, method, status_code, duration_ms, ip_address, user_agent, created_at) VALUES (?,?,?,?,?,?,?,?,NOW())`,
-                gf.UUID(), userID, endpoint, method, status, durationMs, ip, ua,
+                id, userID, endpoint, method, status, durationMs, ip, ua,
             )
         }()
     }
 }
-

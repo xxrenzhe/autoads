@@ -5,7 +5,16 @@ APP_DIR="/app/gofly_admin_v3"
 CONFIG_PATH="${ADMIN_CONFIG:-$APP_DIR/config.yaml}"
 PORT="${PORT:-8080}"
 NEXT_DIR="/app/frontend"
+PRISMA_SCHEMA="/app/frontend/prisma/schema.prisma"
 NEXTJS_PORT="${NEXTJS_PORT:-3000}"
+
+# 生产环境默认强制启用内部 JWT 验签（可通过显式设置覆盖）
+if [ -z "${INTERNAL_JWT_ENFORCE}" ]; then
+  if [ "${NEXT_PUBLIC_DEPLOYMENT_ENV}" = "production" ] || [ "${NODE_ENV}" = "production" ]; then
+    export INTERNAL_JWT_ENFORCE=true
+    echo "[entrypoint] INTERNAL_JWT_ENFORCE=true (production default)"
+  fi
+fi
 
 echo "[entrypoint] 使用配置: $CONFIG_PATH"
 
@@ -45,6 +54,29 @@ if [ -f "$APP_DIR/resource/config.yaml.template" ]; then
   fi
 fi
 
+# 执行数据库迁移（Go 后端 + Prisma）
+echo "[entrypoint] 执行数据库迁移 (Go) ..."
+"$APP_DIR/server" -migrate -config="$CONFIG_PATH" || true
+
+# Prisma 迁移（仅当检测到 schema 与 DATABASE_URL 存在时执行）
+if [ -f "$PRISMA_SCHEMA" ]; then
+  if [ -n "$DATABASE_URL" ]; then
+    echo "[entrypoint] 执行 Prisma 迁移: prisma migrate deploy"
+    # 使用全局 prisma CLI，schema 指定到 Next 应用内
+    if ! prisma migrate deploy --schema "$PRISMA_SCHEMA"; then
+      echo "[entrypoint] ⚠️ Prisma 迁移失败"
+      if [ "$PRISMA_DB_PUSH_FALLBACK" = "true" ]; then
+        echo "[entrypoint] 尝试回退到 prisma db push（仅用于开发/临时环境）"
+        prisma db push --accept-data-loss --schema "$PRISMA_SCHEMA" || true
+      fi
+    fi
+  else
+    echo "[entrypoint] 跳过 Prisma 迁移：未设置 DATABASE_URL"
+  fi
+else
+  echo "[entrypoint] 跳过 Prisma 迁移：未找到 $PRISMA_SCHEMA"
+fi
+
 # 启动 Next.js 前端（若存在构建产物）
 if [ -f "$NEXT_DIR/server.js" ]; then
   echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
@@ -55,9 +87,6 @@ if [ -f "$NEXT_DIR/server.js" ]; then
 else
   echo "[entrypoint] 未检测到 Next.js standalone 产物，跳过前端启动"
 fi
-
-echo "[entrypoint] 执行数据库迁移..."
-"$APP_DIR/server" -migrate -config="$CONFIG_PATH" || true
 
 echo "[entrypoint] 启动服务..."
 exec "$APP_DIR/server" -config="$CONFIG_PATH" -port="$PORT"
