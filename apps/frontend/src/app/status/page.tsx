@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -273,16 +274,16 @@ export default function StatusPage() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Button variant="outline" asChild>
-              <a href="/adscenter">主页面</a>
+              <Link href="/adscenter">主页面</Link>
             </Button>
             <Button variant="outline" asChild>
-              <a href="/adscenter/accounts">账号管理</a>
+              <Link href="/adscenter/accounts">账号管理</Link>
             </Button>
             <Button variant="outline" asChild>
-              <a href="/adscenter/executions">执行监控</a>
+              <Link href="/adscenter/executions">执行监控</Link>
             </Button>
             <Button variant="outline" asChild>
-              <a href="/api/adscenter/system?action=health">API 健康检查</a>
+              <Link href="/api/adscenter/system?action=health">API 健康检查</Link>
             </Button>
           </div>
         </CardContent>

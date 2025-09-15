@@ -92,7 +92,6 @@ async function request<T = any>(endpoint: string, options: RequestOptions = {}):
   if (method !== 'GET' && body !== undefined) {
     if (body instanceof FormData) {
       // Let the browser set the boundary
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete (reqHeaders as any)['Content-Type'];
       init.body = body;
     } else {

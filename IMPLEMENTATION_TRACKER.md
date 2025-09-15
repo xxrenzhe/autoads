@@ -21,6 +21,8 @@ This tracker mirrors docs/ArchitectureOptimization05.md gates, ensuring no gaps 
 - [x] Go: SiteRank /api/v1/siterank/rank|batch (+ batch:check|batch:execute), with caching + token checks
 - [x] Go: AdsCenter v1 minimal – /api/v1/adscenter/accounts|configurations|executions (billing via chengelink.update_ads)
 - [x] BatchGo: add silent fail_rate_threshold to spawn AutoClick fallback task
+- [x] DB: Auto-migrate BatchOpen unified tables (batch_jobs, batch_job_items, batch_job_progress)
+- [x] Billing: AdsCenter dedicated rule adscenter.update + staged per-item deduction
 - [x] Next API routes forward (thin wrappers) and begin removing Node executors
 - [ ] Admin features complete; SystemConfig write path removed; read-only window planned
 - [x] SiteRank frontend service forced to backend only

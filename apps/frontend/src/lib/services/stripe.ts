@@ -9,13 +9,8 @@ export interface StripeConfig {
 }
 
 export class StripeService {
-  // No underlying Stripe client when disabled
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private stripe: unknown;
-
   constructor(secretKey: string) {
     // Stripe disabled
-    this.stripe = null;
   }
 
   /**

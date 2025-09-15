@@ -100,7 +100,7 @@ func NewContext(cfg *Config) (*Context, error) {
 		SubService:       subscription.NewService(db),
 		RateLimitManager: rateLimitManager,
 
-		BatchGoService: batchgo.NewService(db.DB, nil, nil),
+		BatchGoService: batchgo.NewService(db.DB, nil, nil, nil),
 		// AdminService:         nil, // TODO: Initialize admin service
 		// TokenService:         nil, // TODO: Initialize token service
 		// SiteRankGoService:    nil, // TODO: Initialize siterankgo service

@@ -108,9 +108,9 @@ export const AutoClickTaskList = () => {
       title="自动化点击任务管理"
       exporter={false}
       filters={[
-        <SelectInput source="status" choices={statusChoices} label="任务状态" />,
-        <SelectInput source="country" choices={countryChoices} label="国家" />,
-        <SelectInput source="timeWindow" choices={timeWindowChoices} label="时间段" />,
+        <SelectInput key="status" source="status" choices={statusChoices} label="任务状态" />,
+        <SelectInput key="country" source="country" choices={countryChoices} label="国家" />,
+        <SelectInput key="timeWindow" source="timeWindow" choices={timeWindowChoices} label="时间段" />,
       ]}
     >
       <Datagrid rowClick="show">

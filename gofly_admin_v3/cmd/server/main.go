@@ -184,8 +184,8 @@ func main() {
 	}
 
 	// 2. 数据库初始化（如果需要）
-	if *initDB || *forceInit || *migrate {
-		log.Println("开始数据库操作...")
+    if *initDB || *forceInit || *migrate {
+        log.Println("开始数据库操作...")
 
 		if *forceInit {
 			log.Println("⚠️  警告：强制初始化将清空所有现有数据！")
@@ -202,11 +202,10 @@ func main() {
 			log.Fatalf("数据库操作失败: %v", err)
 		}
 
-		log.Println("✅ 数据库操作完成")
-		if *initDB || *migrate {
-			os.Exit(0)
-		}
-	}
+        log.Println("✅ 数据库初始化流程完成（基础表检查/创建）")
+        // 不在此处退出，允许后续基于 GORM 的模型迁移在同一进程内执行；
+        // 若仅需迁移，稍后将根据 *migrate 标记在建立 DB 连接后退出。
+    }
 
 	// 3. 初始化配置管理器
 	configManager := config.GetConfigManager()
@@ -247,12 +246,12 @@ func main() {
 			MaxOpen:     cfg2.DB.Pool.MaxOpen,
 			MaxLifetime: cfg2.DB.Pool.MaxLifetime,
 		}
-		if sdb, err := store.NewDB(dbConf); err != nil {
-			log.Printf("⚠️  数据库连接失败: %v", err)
-		} else {
-			storeDB = sdb
-			gormDB = sdb.DB
-			log.Println("✅ 数据库连接成功")
+        if sdb, err := store.NewDB(dbConf); err != nil {
+            log.Printf("⚠️  数据库连接失败: %v", err)
+        } else {
+            storeDB = sdb
+            gormDB = sdb.DB
+            log.Println("✅ 数据库连接成功")
 
 			// Redis
 			if r, err := store.NewRedis(&cfg2.Redis); err != nil {
@@ -265,7 +264,18 @@ func main() {
 				log.Println("✅ Redis 初始化成功")
 			}
 
-			// JWT 服务（优先使用环境变量 AUTH_SECRET）
+            // 执行模型迁移（在提供 -migrate 时执行，保证幂等）
+            if *migrate {
+                // 仅迁移模型相关表（幂等）
+                if err := gormDB.AutoMigrate(&batchgo.BatchJob{}, &batchgo.BatchJobItem{}, &batchgo.BatchJobProgress{}); err != nil {
+                    log.Fatalf("模型迁移失败: %v", err)
+                }
+                log.Println("✅ 模型迁移完成：batch_jobs / batch_job_items / batch_job_progress")
+                // 迁移完成即退出（部署阶段幂等执行）
+                os.Exit(0)
+            }
+
+            // JWT 服务（优先使用环境变量 AUTH_SECRET）
 			secret := os.Getenv("AUTH_SECRET")
 			if secret == "" {
 				secret = "autoads-saas-secret-key-2025"
@@ -280,7 +290,7 @@ func main() {
 			tokenSvc = user.NewTokenService(gormDB)
 
             // BatchGo 服务
-            batchService = batchgo.NewService(gormDB, tokenSvc, wsManager)
+            batchService = batchgo.NewService(gormDB, tokenSvc, wsManager, auditSvc)
 
             // Auto-migrate BatchOpen unified tables (minimal)
             if err := gormDB.AutoMigrate(&batchgo.BatchJob{}, &batchgo.BatchJobItem{}, &batchgo.BatchJobProgress{}); err != nil {

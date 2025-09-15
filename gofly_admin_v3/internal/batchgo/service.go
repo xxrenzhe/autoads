@@ -1,16 +1,17 @@
 package batchgo
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"math/rand"
-	"net/http"
-	"sync"
-	"time"
+    "context"
+    "encoding/json"
+    "fmt"
+    "math/rand"
+    "net/http"
+    "sync"
+    "time"
 
-	"github.com/google/uuid"
-	"gorm.io/gorm"
+    "github.com/google/uuid"
+    "gorm.io/gorm"
+    "gofly-admin-v3/internal/audit"
 )
 
 // Service BatchGo服务
@@ -19,6 +20,7 @@ type Service struct {
     tokenService TokenService // Token服务接口
     wsManager    WSManager    // WebSocket管理器接口
     httpClient   *http.Client
+    audit        *audit.AutoAdsAuditService
     // 运行中任务的取消函数（仅 Silent 可中断）
     cancelMu     sync.Mutex
     cancels      map[string]context.CancelFunc
@@ -37,7 +39,7 @@ type WSManager interface {
 }
 
 // NewService 创建BatchGo服务
-func NewService(db *gorm.DB, tokenService TokenService, wsManager WSManager) *Service {
+func NewService(db *gorm.DB, tokenService TokenService, wsManager WSManager, auditSvc *audit.AutoAdsAuditService) *Service {
     return &Service{
         db:           db,
         tokenService: tokenService,
@@ -46,6 +48,7 @@ func NewService(db *gorm.DB, tokenService TokenService, wsManager WSManager) *Se
             Timeout: 30 * time.Second,
         },
         cancels: make(map[string]context.CancelFunc),
+        audit:   auditSvc,
     }
 }
 
@@ -326,6 +329,14 @@ func (s *Service) processSilentTask(ctx context.Context, task *BatchTask, urls [
             req := &CreateTaskRequest{ Name: task.Name + " (fallback)", Mode: ModeAutoClick, URLs: remaining, Config: cfg }
             if newTask, err := s.CreateTask(task.UserID, req); err == nil {
                 _ = s.scheduleAutoClickTask(newTask)
+                if s.audit != nil {
+                    _ = s.audit.LogBatchTaskAction(task.UserID, "fallback_to_puppeteer", task.ID, map[string]interface{}{
+                        "threshold": config.FailRateThreshold,
+                        "processed": processedCount,
+                        "failed": failedCount,
+                        "new_task_id": newTask.ID,
+                    }, "", "", true, "", 0)
+                }
                 s.updateTaskError(task.ID, fmt.Sprintf("fallback_to_puppeteer_spawned:%s", newTask.ID))
             } else {
                 s.updateTaskError(task.ID, fmt.Sprintf("fallback_spawn_failed:%v", err))
@@ -484,10 +495,18 @@ func (s *Service) scheduleAutoClickTask(task *BatchTask) error {
 		return err
 	}
 
-	// 这里应该集成到定时任务系统中
-	// 暂时返回成功，实际实现需要cron job或类似机制
-
-	return nil
+    // 简化调度：在计划时间到达后启动执行
+    go func(t *BatchTask) {
+        now := time.Now()
+        start := now
+        if t.ScheduledTime != nil && t.ScheduledTime.After(now) {
+            start = *t.ScheduledTime
+        }
+        delay := time.Until(start)
+        if delay > 0 { time.Sleep(delay) }
+        _ = s.runAutoClickTask(t)
+    }(task)
+    return nil
 }
 
 // calculateNextExecutionTime 计算下次执行时间
@@ -552,6 +571,61 @@ func (s *Service) calculateNextExecutionTime(config *AutoClickConfig) (time.Time
 	}
 
 	return todayStart, nil
+}
+
+// runAutoClickTask 执行 AutoClick（按 Puppeteer 计费）
+func (s *Service) runAutoClickTask(task *BatchTask) error {
+    // 解析URL列表
+    var urls []BatchTaskURL
+    if err := json.Unmarshal(task.URLs, &urls); err != nil {
+        s.updateTaskError(task.ID, fmt.Sprintf("解析URL失败: %v", err))
+        return err
+    }
+    // 解析配置
+    var cfg BatchTaskConfig
+    if err := json.Unmarshal(task.Config, &cfg); err != nil {
+        s.updateTaskError(task.ID, fmt.Sprintf("解析配置失败: %v", err))
+        return err
+    }
+    // 标记运行
+    now := time.Now()
+    _ = s.db.Model(&BatchTask{}).Where("id=?", task.ID).Updates(map[string]any{"status": StatusRunning, "start_time": now, "updated_at": now}).Error
+    // 并行度：使用 Silent 的配置或默认 3
+    sc := &SilentConfig{Concurrency: 3, Timeout: 30, RetryCount: 2}
+    // 处理
+    ctx, cancel := context.WithCancel(context.Background())
+    s.registerCancel(task.ID, cancel)
+    defer s.popCancel(task.ID)
+
+    urlChan := make(chan int, len(urls))
+    resultChan := make(chan BatchTaskURL, len(urls))
+    var wg sync.WaitGroup
+    for i := 0; i < sc.Concurrency; i++ {
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            s.silentWorker(ctx, task.ID, urls, urlChan, resultChan, sc)
+        }()
+    }
+    for i := range urls { urlChan <- i }
+    close(urlChan)
+    go func(){ wg.Wait(); close(resultChan) }()
+    processed, success, failed := 0,0,0
+    for r := range resultChan {
+        urls[r.Retries] = r
+        processed++
+        if r.Status == "success" {
+            success++
+            _ = s.tokenService.ConsumeTokensByService(task.UserID, "batchgo", "puppeteer", 1, task.ID)
+        } else { failed++ }
+        s.updateTaskProgress(task.ID, processed, success, failed)
+        s.sendProgressNotification(task.UserID, task.ID, processed, len(urls))
+    }
+    s.completeTask(task.ID, urls, success, failed)
+    if s.audit != nil {
+        _ = s.audit.LogBatchTaskAction(task.UserID, "autoclick_execute", task.ID, map[string]interface{}{"success": success, "failed": failed}, "", "", true, "", 0)
+    }
+    return nil
 }
 
 // GetTask 获取任务
