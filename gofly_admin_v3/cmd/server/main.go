@@ -279,8 +279,15 @@ func main() {
 			// Token 服务
 			tokenSvc = user.NewTokenService(gormDB)
 
-			// BatchGo 服务
-			batchService = batchgo.NewService(gormDB, tokenSvc, wsManager)
+            // BatchGo 服务
+            batchService = batchgo.NewService(gormDB, tokenSvc, wsManager)
+
+            // Auto-migrate BatchOpen unified tables (minimal)
+            if err := gormDB.AutoMigrate(&batchgo.BatchJob{}, &batchgo.BatchJobItem{}, &batchgo.BatchJobProgress{}); err != nil {
+                log.Printf("警告：BatchOpen 统一模型迁移失败: %v", err)
+            } else {
+                log.Println("✅ BatchOpen 统一模型表已就绪（batch_jobs, batch_job_items, batch_job_progress）")
+            }
 
 			// SiteRank SimilarWeb 客户端
 			swebClient = siterankgo.NewSimilarWebClient()
@@ -1198,7 +1205,7 @@ func setupAPIRoutes(r *gin.Engine) {
                     c.JSON(200, gin.H{"configuration": row})
                 })
 
-                // POST /api/v1/adscenter/executions
+                // POST /api/v1/adscenter/executions（分阶段扣费：每处理1项扣1次）
                 adscenter.POST("/executions", func(c *gin.Context) {
                     if gormDB == nil || tokenSvc == nil { c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"}); return }
                     userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
@@ -1216,20 +1223,23 @@ func setupAPIRoutes(r *gin.Engine) {
                         if arr, ok := payload["affiliate_links"].([]any); ok && len(arr) > 0 { qty = len(arr) } else
                         if arr2, ok2 := payload["links"].([]any); ok2 && len(arr2) > 0 { qty = len(arr2) }
                     }
-                    // token check & consume (reuse chengelink.update_ads rule)
-                    sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "chengelink", "update_ads", qty)
+                    // 仅校验余额充足（不预扣），实际消费按处理进度逐步扣减
+                    sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "adscenter", "update", qty)
                     if err != nil { c.JSON(500, gin.H{"code": 500, "message": err.Error()}); return }
                     if !sufficient { c.JSON(402, gin.H{"code": 402, "message": "INSUFFICIENT_TOKENS", "required": required, "balance": balance}); return }
-                    if err := tokenSvc.ConsumeTokensByService(userID, "chengelink", "update_ads", qty, "adscenter.execute" ); err != nil {
-                        c.JSON(402, gin.H{"code": 402, "message": err.Error(), "required": required, "balance": balance}); return }
                     now := time.Now()
                     exec := &AdsExecution{ ID: fmt.Sprintf("%d", now.UnixNano()), UserID: userID, ConfigurationID: cfg.ID, Status: "running", Message: "processing", Progress: 0, TotalItems: qty, ProcessedItems: 0, StartedAt: &now, CreatedAt: now, UpdatedAt: now }
                     if err := gormDB.Create(exec).Error; err != nil { c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return }
-                    // async simulate processing
+                    // 异步处理：每处理1项，消费1次
                     go func(executionID string, total int) {
                         processed := 0
                         for processed < total {
                             time.Sleep(150 * time.Millisecond)
+                            // 消费 1 项；若失败（余额不足），终止并标记失败
+                            if err := tokenSvc.ConsumeTokensByService(userID, "adscenter", "update", 1, executionID); err != nil {
+                                _ = gormDB.Model(&AdsExecution{}).Where("id = ?", executionID).Updates(map[string]any{"status": "failed", "message": "INSUFFICIENT_TOKENS", "updated_at": time.Now()}).Error
+                                return
+                            }
                             processed++
                             prog := int(float64(processed) / float64(total) * 100.0)
                             _ = gormDB.Model(&AdsExecution{}).Where("id = ?", executionID).Updates(map[string]any{"processed_items": processed, "progress": prog, "updated_at": time.Now()}).Error
@@ -1237,8 +1247,9 @@ func setupAPIRoutes(r *gin.Engine) {
                         done := time.Now()
                         _ = gormDB.Model(&AdsExecution{}).Where("id = ?", executionID).Updates(map[string]any{"status": "completed", "message": "done", "completed_at": done, "updated_at": done}).Error
                     }(exec.ID, qty)
+                    // 创建响应（尚未消费）
                     newBalance, _ := tokenSvc.GetTokenBalance(userID)
-                    c.Header("X-Tokens-Consumed", fmt.Sprintf("%d", required))
+                    c.Header("X-Tokens-Consumed", "0")
                     c.Header("X-Tokens-Balance", fmt.Sprintf("%d", newBalance))
                     c.JSON(200, gin.H{"execution": exec})
                 })

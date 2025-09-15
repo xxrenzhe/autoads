@@ -40,7 +40,7 @@ func NewTokenConfigService() *TokenConfigService {
 
 // getDefaultConsumptionRules 获取默认消费规则
 func getDefaultConsumptionRules() []TokenConsumptionRule {
-	return []TokenConsumptionRule{
+    return []TokenConsumptionRule{
 		{
 			Service:     "siterank",
 			Action:      "query",
@@ -77,7 +77,13 @@ func getDefaultConsumptionRules() []TokenConsumptionRule {
 			TokenCost:   1,
 			Description: "API调用",
 		},
-	}
+		{
+			Service:     ServiceAdsCenter,
+			Action:      "update",
+			TokenCost:   3,
+			Description: "AdsCenter 更新/执行（每项）",
+		},
+    }
 }
 
 // getDefaultRechargePackages 获取默认充值包
@@ -199,6 +205,7 @@ const (
 	ServiceSiteRank   = "siterank"
 	ServiceBatchGo    = "batchgo"
 	ServiceChengeLink = "chengelink"
+	ServiceAdsCenter  = "adscenter"
 	ServiceAPI        = "api"
 )
 
@@ -238,6 +245,12 @@ var (
 	CostChengeLinkUpdateAds = TokenConsumptionRule{
 		Service: ServiceChengeLink, Action: ActionUpdateAds, TokenCost: 3,
 		Description: "Chengelink广告更新（每个广告）",
+	}
+
+	// AdsCenter 服务（专属计费，解耦 chengelink）
+	CostAdsCenterUpdate = TokenConsumptionRule{
+		Service: ServiceAdsCenter, Action: "update", TokenCost: 3,
+		Description: "AdsCenter 更新/执行（每项）",
 	}
 
 	// API服务

@@ -144,22 +144,7 @@ func (s *Service) StartTask(userID, taskID string) error {
 		return fmt.Errorf("任务状态不允许启动: %s", task.Status)
 	}
 
-	// 3. 消费Token
-	var action string
-	switch task.Mode {
-	case ModeBasic:
-		action = "http"
-	case ModeSilent:
-		action = "http"
-	case ModeAutoClick:
-		action = "puppeteer"
-	}
-
-	err = s.tokenService.ConsumeTokensByService(
-		userID, "batchgo", action, task.URLCount, taskID)
-	if err != nil {
-		return fmt.Errorf("Token消费失败: %w", err)
-	}
+    // 3. 不预扣：改为按成功的 item 分段扣费（Silent/AutoClick 在执行流程中逐步扣费）
 
 	// 4. 更新任务状态
 	now := time.Now()
@@ -171,7 +156,7 @@ func (s *Service) StartTask(userID, taskID string) error {
 		return err
 	}
 
-	// 5. 根据模式启动任务
+    // 5. 根据模式启动任务
 	switch task.Mode {
 	case ModeBasic:
 		return s.startBasicTask(task)
@@ -297,15 +282,17 @@ func (s *Service) processSilentTask(ctx context.Context, task *BatchTask, urls [
     failedCount := 0
     fallbackTriggered := false
 
-	for result := range resultChan {
-		urls[result.Retries] = result // 使用Retries字段临时存储索引
-		processedCount++
+    for result := range resultChan {
+        urls[result.Retries] = result // 使用Retries字段临时存储索引
+        processedCount++
 
-		if result.Status == "success" {
-			successCount++
-		} else {
-			failedCount++
-		}
+        if result.Status == "success" {
+            successCount++
+            // 成功即扣费（按最终执行方式：Silent 计为 HTTP）
+            _ = s.tokenService.ConsumeTokensByService(task.UserID, "batchgo", "http", 1, task.ID)
+        } else {
+            failedCount++
+        }
 
         // 更新进度
         s.updateTaskProgress(task.ID, processedCount, successCount, failedCount)
@@ -446,19 +433,19 @@ func (s *Service) processURL(client *http.Client, url BatchTaskURL, config *Sile
 
 		resp.Body.Close()
 
-		// 成功
-		endTime := time.Now()
-		url.EndTime = &endTime
-		url.Status = "success"
-		url.Response = map[string]interface{}{
-			"status_code": resp.StatusCode,
-			"headers":     resp.Header,
-			"duration":    endTime.Sub(startTime).Milliseconds(),
-		}
-		url.Retries = retry
+        // 成功
+        endTime := time.Now()
+        url.EndTime = &endTime
+        url.Status = "success"
+        url.Response = map[string]interface{}{
+            "status_code": resp.StatusCode,
+            "headers":     resp.Header,
+            "duration":    endTime.Sub(startTime).Milliseconds(),
+        }
+        url.Retries = retry
 
-		return url
-	}
+        return url
+    }
 
 	// 失败
 	endTime := time.Now()
@@ -467,7 +454,7 @@ func (s *Service) processURL(client *http.Client, url BatchTaskURL, config *Sile
 	url.Error = lastErr.Error()
 	url.Retries = config.RetryCount
 
-	return url
+    return url
 }
 
 // scheduleAutoClickTask 调度AutoClick模式任务

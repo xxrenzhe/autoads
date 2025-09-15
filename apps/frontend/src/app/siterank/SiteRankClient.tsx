@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { UI_CONSTANTS } from "@/components/ui/ui-constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,6 @@ import { useTokenConsumption } from '@/hooks/useTokenConsumption';
 import { getUiDefaultRpm, fetchUiDefaultRpm, getPlanFeatureRpmSync } from '@/lib/config/rate-limit';
 import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal';
 import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
-import { getUiDefaultRpm, fetchUiDefaultRpm } from '@/lib/config/rate-limit';
 const logger = createClientLogger('SiteRankClient');
 
 
@@ -245,8 +244,7 @@ export default function SiteRankClient() {
   };
 
   // UI 速率上限（展示用途，后端为权威）
-  const [uiRateLimitMax, setUiRateLimitMax] = useState<number>(getUiDefaultRpm());
-  useEffect(() => { fetchUiDefaultRpm().then(setUiRateLimitMax).catch(() => {}); }, []);
+  // 已在上方初始化并在首次渲染时异步刷新
 
   // 显示列配置
   const exampleColumns = [
