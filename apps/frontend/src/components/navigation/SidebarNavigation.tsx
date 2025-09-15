@@ -94,43 +94,43 @@ const userNavigationItems: NavigationItem[] = [
 const adminNavigationItems: NavigationItem[] = [
   {
     title: 'Admin Dashboard',
-    href: '/admin',
+    href: '/ops/console/panel',
     icon: Shield,
     description: 'Admin overview'
   },
   {
     title: 'User Management',
-    href: '/admin/users',
+    href: '/ops/console/users',
     icon: Users,
     description: 'Manage users'
   },
   {
     title: 'Security',
-    href: '/admin/security',
+    href: '/ops/console/security',
     icon: Shield,
     description: 'Security monitoring'
   },
   {
     title: 'System Monitoring',
-    href: '/admin/monitoring',
+    href: '/ops/console/monitoring',
     icon: Activity,
     description: 'System health'
   },
   {
     title: 'Token Management',
-    href: '/admin/tokens',
+    href: '/ops/console/tokens',
     icon: Database,
     description: 'Token configuration',
     children: [
       {
         title: 'Configuration',
-        href: '/admin/tokens',
+        href: '/ops/console/tokens',
         icon: Settings,
         description: 'Token settings'
       },
       {
         title: 'Analytics',
-        href: '/admin/tokens/analytics',
+        href: '/ops/console/tokens/analytics',
         icon: BarChart3,
         description: 'Token analytics'
       }
@@ -138,7 +138,7 @@ const adminNavigationItems: NavigationItem[] = [
   },
   {
     title: 'Notifications',
-    href: '/admin/notifications',
+    href: '/ops/console/notifications',
     icon: Bell,
     description: 'Notification management'
   }

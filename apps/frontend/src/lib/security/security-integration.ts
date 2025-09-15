@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/v5-config';
 import { suspiciousActivityDetector, UserActivity } from './suspicious-activity-detector';
-// behaviorAnalysisService is heavy and server-only; omit import in preview build
+// behaviorAnalysisService 体量较大且仅服务端使用，这里采用按需动态加载，避免预览/轻量构建时的静态引入
 // Note: Real-time alert system has been removed for performance optimization
 import { createLogger } from '@/lib/utils/security/secure-logger';
 
 const logger = createLogger('SecurityIntegrationMiddleware');
+
+async function getBehaviorAnalysisService() {
+  try {
+    const mod = await import('./behavior-analysis-service');
+    return mod.behaviorAnalysisService;
+  } catch (e) {
+    logger.warn('behaviorAnalysisService 动态加载失败，跳过行为分析');
+    return null as any;
+  }
+}
 
 export interface SecurityIntegrationOptions {
   enableSuspiciousDetection?: boolean;
@@ -335,7 +345,10 @@ export class SecurityMonitor {
     try {
       const [riskScore, behaviorProfile, recentAlerts] = await Promise.all([
         suspiciousActivityDetector.getUserRiskScore(userId),
-        behaviorAnalysisService.analyzeUserBehavior(userId),
+        (async () => {
+          const svc = await getBehaviorAnalysisService();
+          return svc ? svc.analyzeUserBehavior(userId) : null;
+        })(),
         suspiciousActivityDetector.getUserAlerts(userId, 10)
       ]);
 

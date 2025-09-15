@@ -17,7 +17,6 @@ const customJestConfig = {
     '^@/app/(.*)$': '<rootDir>/src/app/$1',
     '^@/shared/(.*)$': '<rootDir>/src/shared/$1',
     '^@/modules/(.*)$': '<rootDir>/src/modules/$1',
-    '^@/admin/(.*)$': '<rootDir>/src/admin/$1',
     '^@/infrastructure/(.*)$': '<rootDir>/src/infrastructure/$1',
   },
   testMatch: [

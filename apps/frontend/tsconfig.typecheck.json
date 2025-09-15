@@ -24,7 +24,6 @@
       "@/app/*": ["./src/app/*"],
       "@/shared/*": ["./src/shared/*"],
       "@/modules/*": ["./src/modules/*"],
-      "@/admin/*": ["./src/admin/*"],
       "@/infrastructure/*": ["./src/infrastructure/*"]
     },
     "forceConsistentCasingInFileNames": true,

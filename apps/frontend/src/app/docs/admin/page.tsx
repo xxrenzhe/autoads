@@ -69,10 +69,8 @@ const DOCUMENT_SECTIONS: DocumentSection[] = [
 const QUICK_LINKS = [
   { title: '快速开始', path: '/docs/admin/quick-start', icon: '🚀' },
   { title: '安全检查清单', path: '/docs/admin/security-checklist', icon: '🔒' },
-  { title: '性能监控', path: '/admin/monitoring', icon: '📊' },
-  { title: '系统状态', path: '/admin/system-health', icon: '💚' },
-  { title: '用户管理', path: '/admin/users', icon: '👤' },
-  { title: '配置管理', path: '/admin/config', icon: '⚙️' }
+  { title: '进入后台（GoFly Admin）', path: '/ops/console/panel', icon: '🛠️' },
+  { title: '系统配置（只读快照）', path: '/ops/console/config/v1', icon: '📦' }
 ];
 
 export default function AdminDocsPage() {
