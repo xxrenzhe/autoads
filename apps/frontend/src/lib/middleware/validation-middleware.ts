@@ -216,7 +216,7 @@ export function validateInput(data: any, rules: ValidationRule[]): any {
 export function validateWithZod<T>(schema: any, data: any): T {
   try {
     return schema.parse(data);
-  } catch (error) {
+  } catch (error: any) {
     if ((error as any)?.errors) {
       const formattedErrors = error.errors.map((err: any) => ({
         field: err.path.join('.'),
@@ -274,7 +274,7 @@ export function withValidation(
 
       return await handler(req, { ...context, validatedData });
 
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
         
         return NextResponse.json(

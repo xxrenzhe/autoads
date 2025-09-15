@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2016",
-    "lib": ["es2022", "dom"],
+    "lib": ["es2022", "dom", "dom.iterable"],
     "types": ["node"],
     "downlevelIteration": true,
     "allowJs": false,
@@ -46,6 +46,7 @@
     "src/lib/api-utils.ts",
     "src/lib/prisma-json.ts",
     "src/lib/startup/env-validation.ts",
+    "src/lib/services/token-config.ts",
     "src/types/**/*.d.ts"
   ],
   "exclude": [
@@ -66,6 +67,7 @@
     "src/lib/**",
     "!src/lib/api-utils.ts",
     "!src/lib/prisma-json.ts",
-    "!src/lib/startup/env-validation.ts"
+    "!src/lib/startup/env-validation.ts",
+    "!src/lib/services/token-config.ts"
   ]
 }

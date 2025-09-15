@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { randomUUID } from 'crypto';
 
 /**
  * Service for sending notifications
@@ -27,16 +28,12 @@ export class NotificationService {
     // Create a notification log entry
     await prisma.notification_logs.create({
       data: {
+        id: randomUUID(),
         userId,
         templateId: template,
-        type: type.toLowerCase() as any,
+        type: type as any,
         recipient: userId, // This would be email/phone in real implementation
-        status: 'SENT',
-        metadata: {
-          ...data,
-          priority,
-          sentAt: new Date().toISOString()
-        }
+        status: 'SENT'
       }
     });
 
@@ -56,16 +53,12 @@ export class NotificationService {
     const { userIds, type, template, data, priority = 'MEDIUM' } = params;
 
     const notifications = userIds.map((userId: any) => ({
+      id: randomUUID(),
       userId,
       templateId: template,
-      type: type.toLowerCase() as any,
+      type: type as any,
       recipient: userId,
-      status: 'PENDING',
-      metadata: {
-        ...data,
-        priority,
-        createdAt: new Date().toISOString()
-      }
+      status: 'PENDING'
     }));
 
     await prisma.notification_logs.createMany({

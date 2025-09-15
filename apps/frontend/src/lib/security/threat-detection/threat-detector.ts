@@ -212,6 +212,7 @@ export class ThreatDetector {
     ])
 
     // Count blocked IPs and suspended users
+    const redis = getRedisClient();
     const blockedIPKeys = await redis.keys(`${ThreatDetector.BLOCKED_IP_PREFIX}*`)
     const suspendedUsers = await prisma.user.count({
       where: { status: 'SUSPENDED' }
@@ -239,6 +240,7 @@ export class ThreatDetector {
     reason: string,
     duration: number = 24 * 60 * 60 // 24 hours
   ): Promise<void> {
+    const redis = getRedisClient();
     await redis.setex(
       `${ThreatDetector.BLOCKED_IP_PREFIX}${ipAddress}`,
       duration,
@@ -260,6 +262,7 @@ export class ThreatDetector {
    * Check if IP is blocked
    */
   async isIPBlocked(ipAddress: string): Promise<boolean> {
+    const redis = getRedisClient();
     const blocked = await redis.get(`${ThreatDetector.BLOCKED_IP_PREFIX}${ipAddress}`)
     return !!blocked
   }

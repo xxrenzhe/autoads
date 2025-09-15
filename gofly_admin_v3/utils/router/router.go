@@ -222,6 +222,11 @@ func InitRouter(path string) *gin.Engine {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+    // 标识 Go 后端响应，便于对照/探针
+    R.Use(func(c *gin.Context) {
+        c.Writer.Header().Set("X-Go-Backend", "1")
+        c.Next()
+    })
     // Prometheus HTTP请求指标
     R.Use(metrics.GetMetrics().HTTPMiddleware())
 

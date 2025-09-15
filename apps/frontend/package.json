@@ -10,7 +10,7 @@
     "start": "next start",
     "test": "jest --config=jest.config.cjs",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc -p tsconfig.typecheck.json --noEmit"
   },
   "dependencies": {
     "@mui/icons-material": "^5.15.11",

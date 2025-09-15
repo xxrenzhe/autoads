@@ -474,6 +474,16 @@ func SetupMetrics(router *gin.Engine) {
 		})
 	})
 
+	// 兼容 Kubernetes 常见探针路径 /readyz（与 /ready 等价）
+	router.GET("/readyz", func(c *gin.Context) {
+		cache := cache.GetCache()
+		if err := cache.Set("health_check", "ok", 5*time.Second); err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "not ready"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "ready", "timestamp": time.Now()})
+	})
+
 	// 存活检查
 	router.GET("/live", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{

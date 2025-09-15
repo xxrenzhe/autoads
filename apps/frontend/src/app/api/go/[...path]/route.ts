@@ -29,6 +29,7 @@ function resolveTarget(subPath: string, search: string) {
     '/api/v1/',
     '/health',
     '/healthz',
+    '/ready',
     '/readyz'
   ]
   const allowed = allow.some(p => s === p || s.startsWith(p))
@@ -82,14 +83,20 @@ async function proxy(req: Request, path: string[]) {
   }
 
   // Readiness check (skip for health endpoints)
-  if (!['/health', '/healthz', '/readyz'].some(h => subPath === h || subPath.startsWith(h))) {
+  if (!['/health', '/healthz', '/ready', '/readyz'].some(h => subPath === h || subPath.startsWith(h))) {
     const now = Date.now()
     const cache: any = (globalThis as any).__go_ready_cache || { ts: 0, ok: false }
     if (!cache.ts || now - cache.ts > READY_CHECK_TTL_MS) {
       try {
         const controller = new AbortController()
         const to = setTimeout(() => controller.abort(), READY_CHECK_TIMEOUT_MS)
-        const resp = await fetch(`${BACKEND_BASE}/readyz`, { method: 'GET', signal: controller.signal })
+        // Prefer /ready; fall back to /readyz for compatibility
+        let resp: Response
+        try {
+          resp = await fetch(`${BACKEND_BASE}/ready`, { method: 'GET', signal: controller.signal })
+        } catch {
+          resp = await fetch(`${BACKEND_BASE}/readyz`, { method: 'GET', signal: controller.signal })
+        }
         clearTimeout(to)
         cache.ts = Date.now()
         cache.ok = resp.ok

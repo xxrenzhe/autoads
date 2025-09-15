@@ -164,8 +164,10 @@
     - [x] `/api/siterank/[...path]` → `/api/v1/siterank/*`
     - [x] `/api/adscenter/[...path]` → `/api/v1/adscenter/*`
     - [x] `/api/batchopen/[...path]` → `/api/v1/batchopen/*`（含 silent-* 特殊映射保持旧合同）
+  - [x] 新增 OPS 管理反代：`/ops/[...path]` → Go 管理台（`/console/*`、`/api/v1/console/*`）
+  - [x] 健康检查透传：`GET /api/health` → `GET /health`（经 BFF 转发）
 - Go（必做）
-  - [ ] 落库：BatchOpen 统一模型三表（Job/Item/Progress）与索引
+  - [x] 落库：BatchOpen 统一模型三表（Job/Item/Progress）与索引
   - [x] 实现 API：`/api/v1/batchopen/start|progress|terminate`（包含 type=basic|silent|autoclick）
   - [x] 实现 API（BatchGo 单任务控制）：`POST /api/v1/batchgo/tasks/{id}/start|stop|terminate`（Silent 支持实时取消；Basic/AutoClick 保持合同，后续增强）
   - [x] SiteRank：`/api/v1/siterank/rank|batch`，统一缓存/错误 TTL/扣费/限流（新增 batch:check|batch:execute 原子端点）
@@ -199,7 +201,7 @@
   - [x] `/admin` 统一跳转 `/ops/console/panel`
   - [x] 统一错误体与配置入口（移除重复实现），Next 对业务库只读
 - Go（必做）
-  - [ ] 落库：BatchOpen 统一模型三表（Job/Item/Progress）与索引
+  - [x] 落库：BatchOpen 统一模型三表（Job/Item/Progress）与索引
   - [x] 实现 API：`/api/v1/batchopen/start|progress|terminate`（包含 type=basic|silent|autoclick）
   - [x] SiteRank：`/api/v1/siterank/rank|batch`，统一缓存/错误 TTL/扣费/限流（新增 batch:check|batch:execute 原子端点）
   - [x] AdsCenter：`/api/v1/adscenter/accounts|configurations|executions`，最小可用（创建/查询/执行），执行计费复用 chengelink.update_ads；后续对接完整调度与回退路径

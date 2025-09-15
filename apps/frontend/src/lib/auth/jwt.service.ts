@@ -232,7 +232,7 @@ export class JWTService extends BaseService {
         });
 
         return decoded;
-      } catch (error) {
+      } catch (error: any) {
         if (error instanceof (jwt as any).JsonWebTokenError) {
           throw new AuthError(
             AuthErrorType.INVALID_TOKEN,

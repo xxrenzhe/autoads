@@ -44,10 +44,10 @@ export class PermissionManager {
   ): Promise<boolean> {
     try {
       const cacheKey = `${PermissionManager.CACHE_PREFIX}${userId}:${resource}:${action}`
-      
+      const redis = getRedisClient()
+
       // Try cache first for basic permissions
       if (!context) {
-        const redis = getRedisClient()
         const cached = await redis.get(cacheKey)
         if (cached !== null) {
           return JSON.parse(cached)
@@ -254,6 +254,7 @@ export class PermissionManager {
    */
   async clearUserPermissionCache(userId: string): Promise<void> {
     const pattern = `${PermissionManager.CACHE_PREFIX}${userId}:*`
+    const redis = getRedisClient()
     const keys = await redis.keys(pattern)
     
     if (keys.length > 0) {

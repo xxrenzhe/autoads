@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getRedisClient } from '@/lib/cache/redis-client'
 import { getRemoteConfig, getConfigValue } from '@/lib/config/remote-config'
+import { $Enums } from '@prisma/client'
 
 // Token configuration types (lightweight, no zod dependency)
 export interface TokenConfig {
@@ -281,11 +282,18 @@ export class TokenConfigService {
     batchId?: string,
     metadata?: any
   ): Promise<void> {
+    const redis = getRedisClient();
+    const featureEnum: $Enums.tokenusagefeature =
+      feature === 'siterank'
+        ? $Enums.tokenusagefeature.SITERANK
+        : feature === 'batchopen'
+          ? $Enums.tokenusagefeature.BATCHOPEN
+          : $Enums.tokenusagefeature.CHANGELINK
     // Record in token usage table
     await prisma.token_usage.create({
       data: {
         userId,
-        feature,
+        feature: featureEnum,
         operation,
         tokensConsumed,
         itemCount,
