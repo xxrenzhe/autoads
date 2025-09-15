@@ -20,7 +20,7 @@ export default function TokenConfigAdminPage() {
 
   const load = async () => {
     try {
-      const res = await http.get<any>('/api/admin/token-config')
+      const res = await http.get<any>('/ops/api/v1/console/token-config')
       const data = (res as any)?.data || res
       setConfig(data)
     } catch (e) {
@@ -48,7 +48,7 @@ export default function TokenConfigAdminPage() {
           batchMultiplier: Number(config.adscenter.batchMultiplier)
         }
       }
-      await http.post('/api/admin/token-config', payload)
+      await http.post('/ops/api/v1/console/token-config', payload)
       toast.success('配置已保存')
     } catch {
       toast.error('保存失败')
@@ -105,4 +105,3 @@ export default function TokenConfigAdminPage() {
     </div>
   )
 }
-

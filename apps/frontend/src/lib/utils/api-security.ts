@@ -39,9 +39,8 @@ export function createSecureHandler(options: SecureHandlerOptions) {
       const url = new URL(request.url)
       const path = url.pathname
       if (path.startsWith('/api/admin/')) {
-        // 全量透明转发：/api/admin/* → /go/admin/*
-        // 通过 Next /go 反代链路注入内部 JWT/Idempotency 等
-        const target = '/go' + path.replace('/api', '') + (url.search || '')
+        // 迁移：/api/admin/* → /ops/api/v1/console/*（经 /ops 网关转发给 Go 后端）
+        const target = '/ops/api/v1/console' + path.replace('/api/admin', '') + (url.search || '')
         const headers = new Headers(request.headers)
         headers.delete('host'); headers.delete('connection'); headers.delete('content-length'); headers.delete('accept-encoding')
         const init: RequestInit = { method: request.method, headers, redirect: 'manual', body: ['GET','HEAD'].includes(request.method) ? undefined : request.body as any }

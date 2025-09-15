@@ -222,11 +222,6 @@ export function RequirePermission(resource: string, action: string) {
 
 // 预定义角色
 export const PREDEFINED_ROLES = {
-  SUPER_ADMIN: {
-    name: 'Super Admin',
-    description: '超级管理员，拥有所有权限',
-    permissions: [{ id: '1', resource: '*', action: '*' }],
-  },
   ADMIN: {
     name: 'Admin',
     description: '管理员，拥有大部分管理权限',

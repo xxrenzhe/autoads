@@ -130,22 +130,7 @@ const searchableItems: SearchResult[] = [
     requiresAuth: true
   },
 
-  // Admin
-  {
-    id: 'admin-panel',
-    title: 'Admin Panel',
-    description: 'System administration dashboard (GoFly Admin)',
-    href: '/go/admin/gofly-panel',
-    category: 'admin',
-    icon: Shield,
-    requiresRole: ['ADMIN', 'SUPER_ADMIN']
-  },
-  // 其余管理入口统一指向 GoFly Admin 面板
-  { id: 'user-management', title: 'User Management', description: 'Manage users and permissions', href: '/go/admin/gofly-panel', category: 'admin', icon: User, requiresRole: ['ADMIN','SUPER_ADMIN'] },
-  { id: 'security-dashboard', title: 'Security Dashboard', description: 'Monitor security threats and audit logs', href: '/go/admin/gofly-panel', category: 'admin', icon: Shield, requiresRole: ['ADMIN','SUPER_ADMIN'] },
-  { id: 'system-monitoring', title: 'System Monitoring', description: 'System health and performance', href: '/go/admin/gofly-panel', category: 'admin', icon: Activity, requiresRole: ['ADMIN','SUPER_ADMIN'] },
-  { id: 'token-config', title: 'Token Configuration', description: 'Configure token costs and pricing', href: '/go/admin/gofly-panel', category: 'admin', icon: Settings, requiresRole: ['ADMIN','SUPER_ADMIN'] },
-  { id: 'token-analytics', title: 'Token Analytics', description: 'View token analytics', href: '/go/admin/gofly-panel', category: 'admin', icon: BarChart3, requiresRole: ['ADMIN','SUPER_ADMIN'] },
+  // 管理后台入口已移除：后台仅支持 URL 直达（/ops/console/login 或 /ops/console/panel）
 
   // Help & Documentation
   {
@@ -223,11 +208,10 @@ export default function GlobalSearch({ trigger }: GlobalSearchProps) {
     navigation: 'Navigation',
     user: 'Dashboard',
     feature: 'Features',
-    admin: 'Administration',
     help: 'Help & Support'
   }
 
-  const categoryOrder = ['navigation', 'user', 'feature', 'admin', 'help']
+  const categoryOrder = ['navigation', 'user', 'feature', 'help']
 
   return (
     <>

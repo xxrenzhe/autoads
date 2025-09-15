@@ -89,9 +89,9 @@ export default function SubscriptionAnalyticsDashboard() {
       setLoading(true)
       
       const [analyticsResponse, trendsResponse, lifecycleResponse] = await Promise.all([
-        fetch('/api/admin/subscriptions/analytics'),
-        fetch(`/api/admin/subscriptions/trends?days=${dateRange}`),
-        fetch('/api/admin/subscriptions/lifecycle')
+        fetch('/ops/api/v1/console/subscriptions/analytics'),
+        fetch(`/ops/api/v1/console/subscriptions/trends?days=${dateRange}`),
+        fetch('/ops/api/v1/console/subscriptions/lifecycle')
       ])
 
       if (analyticsResponse.ok) {
@@ -124,7 +124,7 @@ export default function SubscriptionAnalyticsDashboard() {
 
   const exportData = async () => {
     try {
-      const response = await fetch(`/api/admin/subscriptions/export?days=${dateRange}`)
+      const response = await fetch(`/ops/api/v1/console/subscriptions/export?days=${dateRange}`)
       const data = await response.json()
       
       if (data.success) {

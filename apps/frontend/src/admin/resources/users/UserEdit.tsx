@@ -36,7 +36,7 @@ import { SubscriptionManager } from '@/admin/components/subscriptions/Subscripti
 const roleChoices = [
   { id: 'USER', name: 'User' },
   { id: 'ADMIN', name: 'Admin' },
-  { id: 'SUPER_ADMIN', name: 'Super Admin' },
+  // SUPER_ADMIN removed
 ];
 
 /**

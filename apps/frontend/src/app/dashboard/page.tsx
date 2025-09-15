@@ -73,9 +73,8 @@ export default function DashboardPage() {
             欢迎回来，{session.user?.name || session.user?.email}
           </p>
         </div>
-        <Badge variant={session.user?.role === 'ADMIN' || session.user?.role === 'SUPER_ADMIN' ? 'default' : 'secondary'}>
-          {session.user?.role === 'SUPER_ADMIN' ? '超级管理员' : 
-           session.user?.role === 'ADMIN' ? '管理员' : '用户'}
+        <Badge variant={session.user?.role === 'ADMIN' ? 'default' : 'secondary'}>
+          {session.user?.role === 'ADMIN' ? '管理员' : '用户'}
         </Badge>
       </div>
 
@@ -178,7 +177,7 @@ export default function DashboardPage() {
               <span>账户设置</span>
             </Button>
             
-            {(session.user?.role === 'ADMIN' || session.user?.role === 'SUPER_ADMIN') && (
+            {(session.user?.role === 'ADMIN') && (
               <Link href="/admin">
                 <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center space-y-2 border-purple-200 text-purple-600 hover:bg-purple-50">
                   <Settings className="h-6 w-6" />

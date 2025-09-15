@@ -33,7 +33,7 @@ const EmailConfigToolbar = (props: any) => {
 
   const handleTestEmail = async (testData: any) => {
     try {
-      const response = await fetch('/api/admin/notifications/test-email', {
+      const response = await fetch('/ops/api/v1/console/notifications/test-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

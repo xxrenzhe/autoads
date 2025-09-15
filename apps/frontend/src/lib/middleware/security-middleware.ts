@@ -345,7 +345,7 @@ export class SecurityMiddleware {
    * Check if path requires authentication
    */
   private requiresAuth(pathname: string): boolean {
-    const authRequiredPaths = ['/admin', '/api/admin', '/dashboard', '/profile']
+    const authRequiredPaths = ['/admin', '/dashboard', '/profile']
     return authRequiredPaths.some(path => pathname.startsWith(path))
   }
 

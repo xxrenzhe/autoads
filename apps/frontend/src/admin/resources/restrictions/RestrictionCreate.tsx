@@ -207,7 +207,7 @@ export const RestrictionCreate = () => {
             </Typography>
           </Box>
 
-          {permissions === 'SUPER_ADMIN' && (
+          {permissions === 'ADMIN' && (
             <Alert severity="error" sx={{ mt: 2 }}>
               <AlertTitle>超级管理员权限</AlertTitle>
               作为超级管理员，您可以创建任何类型的限制。请确保操作符合公司政策。

@@ -45,7 +45,7 @@ export default function BatchRechargePage() {
         // Heuristic: if contains '@', treat as email; else assume id
         if (item.raw.includes('@')) {
           const q = encodeURIComponent(item.raw)
-          const res = await fetch(`/api/admin/users?q=${q}&limit=1`)
+          const res = await fetch(`/ops/api/v1/console/users?q=${q}&limit=1`)
           if (res.ok) {
             const data = await res.json()
             const user = (data.items || []).find((u: any) => u.email?.toLowerCase() === item.raw.toLowerCase()) || (data.items || [])[0]
@@ -83,7 +83,7 @@ export default function BatchRechargePage() {
       const results: Candidate[] = []
       for (const c of resolved) {
         try {
-          const res = await fetch(`/api/admin/users/${c.userId}/tokens/recharge`, {
+          const res = await fetch(`/ops/api/v1/console/users/${c.userId}/tokens/recharge`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount, description })
@@ -180,4 +180,3 @@ export default function BatchRechargePage() {
     </div>
   )
 }
-

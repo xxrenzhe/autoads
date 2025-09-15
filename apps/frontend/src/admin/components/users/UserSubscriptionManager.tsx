@@ -74,7 +74,7 @@ export function UserSubscriptionManager({
 
   const fetchPlans = async () => {
     try {
-      const response = await fetch('/api/admin/plans?action=list&includeInactive=false')
+      const response = await fetch('/ops/api/v1/console/plans?action=list&includeInactive=false')
       const data = await response.json()
       if (data.success) {
         setPlans(data.data.plans)
@@ -105,7 +105,7 @@ export function UserSubscriptionManager({
         payload.duration = duration
       }
 
-      const response = await fetch(`/api/admin/users/${userId}/subscription`, {
+      const response = await fetch(`/ops/api/v1/console/users/${userId}/subscription`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -147,7 +147,7 @@ export function UserSubscriptionManager({
         payload.extendDays = extendDays
       }
 
-      const response = await fetch(`/api/admin/users/${userId}/subscription`, {
+      const response = await fetch(`/ops/api/v1/console/users/${userId}/subscription`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -180,7 +180,7 @@ export function UserSubscriptionManager({
     setMessage(null)
 
     try {
-      const response = await fetch(`/api/admin/users/${userId}/subscription`, {
+      const response = await fetch(`/ops/api/v1/console/users/${userId}/subscription`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

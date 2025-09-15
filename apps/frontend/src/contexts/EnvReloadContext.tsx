@@ -28,7 +28,7 @@ export function EnvReloadProvider({ children }: { children: React.ReactNode }) {
   const [lastChecked, setLastChecked] = useState<Date | null>(null)
 
   // Check if user is admin
-  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN'
+  const isAdmin = session?.user?.role === 'ADMIN'
 
   // Check for environment updates
   const checkForUpdates = async () => {
@@ -38,7 +38,7 @@ export function EnvReloadProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const response = await fetch('/api/admin/env-vars')
+      const response = await fetch('/ops/api/v1/console/env-vars')
       if (response.ok) {
         const data = await response.json()
         

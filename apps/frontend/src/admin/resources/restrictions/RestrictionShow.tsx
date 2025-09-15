@@ -191,7 +191,7 @@ export const RestrictionShow = () => {
           <RestrictionDescription />
         </Box>
 
-          {permissions === 'SUPER_ADMIN' && (
+          {permissions === 'ADMIN' && (
             <>
               <Divider sx={{ my: 3 }} />
               <Alert severity="info">

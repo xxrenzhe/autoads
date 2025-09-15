@@ -72,10 +72,9 @@ func (c *AdminAccountController) ResetPassword(ctx *gin.Context) {
 }
 
 func (c *AdminAccountController) ListRoles(ctx *gin.Context) {
-    // 简化：固定内置角色
-    roles := []map[string]string{{"value":"super_admin","label":"超级管理员"},{"value":"admin","label":"管理员"},{"value":"operator","label":"运营"},{"value":"viewer","label":"只读"}}
+    // 简化：仅保留 ADMIN 角色（与架构优化统一）
+    roles := []map[string]string{{"value":"admin","label":"管理员"}}
     ctx.JSON(http.StatusOK, gin.H{"code":0, "data": roles})
 }
 
 func ifEmpty(s, def string) string { if strings.TrimSpace(s)=="" { return def }; return s }
-

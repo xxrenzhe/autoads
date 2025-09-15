@@ -81,21 +81,21 @@ export function useAuth() {
    * 检查是否是管理员
    */
   const isAdmin = (): boolean => {
-    return ['ADMIN', 'SUPER_ADMIN'].includes(userRole || '')
+    return ['ADMIN'].includes(userRole || '')
   }
 
   /**
    * 检查是否是超级管理员
    */
   const isSuperAdmin = (): boolean => {
-    return userRole === 'SUPER_ADMIN'
+    return false
   }
 
   /**
    * 检查是否是高级用户
    */
   const isPremium = (): boolean => {
-    return ['PREMIUM', 'ADMIN', 'SUPER_ADMIN'].includes(userRole || '')
+    return ['PREMIUM', 'ADMIN'].includes(userRole || '')
   }
 
   return {

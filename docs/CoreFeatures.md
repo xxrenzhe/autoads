@@ -13,10 +13,10 @@
   我想要 通过邮箱+密码登录后台控制台,
   以便于 管理用户、订阅与系统配置。
   验收标准 (AC):
-    AC1: Given 用户为 ADMIN 且密码正确, When 访问 /auth/admin-signin 并提交表单, Then 登录成功并重定向至 /admin-dashboard。
+    AC1: Given 用户为 ADMIN 且密码正确, When 访问 /ops/console/login 并提交表单, Then 登录成功并重定向至 /ops/console/panel。
     AC2: Given 用户不是 ADMIN, When 使用凭证登录, Then 返回错误且不建立会话。
     AC3: Given 用户无密码或密码校验失败, When 提交登录, Then 返回“邮箱或密码错误”。
-    AC4: Given 未登录或非管理员, When 访问 /admin-dashboard 或 /api/admin/*, Then 重定向至 /auth/admin-signin 并附带 callbackUrl。
+    AC4: Given 未登录或非管理员, When 访问 /ops/* 管理网关, Then 重定向至 /ops/console/login 并附带 callbackUrl。
 
 功能点 [3]: 获取订阅限制
   作为 已登录用户,
@@ -208,10 +208,10 @@
 
 功能点 [22]: 管理后台 — 访问控制
   作为 管理员,
-  我想要 保护 /admin-dashboard 及 /api/admin/* 路由,
+  我想要 保护 /ops/* 管理网关（经 Next → Go 控制台）,
   以便于 仅授权管理员可访问后台功能。
   验收标准 (AC):
-    AC1: Given 未登录或非管理员, When 访问 /admin-dashboard, Then 重定向至 /auth/admin-signin 并携带 callbackUrl。
+    AC1: Given 未登录或非管理员, When 访问 /ops/* 管理网关, Then 重定向至 /ops/console/login 并携带 callbackUrl。
     AC2: Given 已登录管理员, When 访问后台路由, Then 正常返回页面或 JSON 数据。
     AC3: Given 后台中间件异常, When 访问, Then 重定向至 /auth/admin-signin?error=AuthError。
 
@@ -220,8 +220,8 @@
   我想要 配置 SITERANK/BATCHOPEN/ADSCENTER 的 Token 单价与批量系数,
   以便于 快速调优计费策略。
   验收标准 (AC):
-    AC1: Given 管理员身份, When GET /api/admin/tokens/config, Then 返回当前三大功能的价格与批量系数配置。
-    AC2: Given 管理员身份, When PUT /api/admin/tokens/config 传入合法配置, Then 原子性更新配置并记录变更历史(config_change_history)。
+    AC1: Given 管理员身份, When GET /ops/api/v1/console/token-config, Then 返回当前三大功能的价格与批量系数配置。
+    AC2: Given 管理员身份, When PUT /ops/api/v1/console/token-config 传入合法配置, Then 原子性更新配置并记录变更历史(config_change_history)。
     AC3: Given 非管理员, When 访问该接口, Then 返回 403。
     AC4: Given 高频访问, When 触发接口速率限制, Then 返回 429 并包含限流头信息。
 
@@ -230,7 +230,7 @@
   我想要 查看 Token 使用概览/按用户/按功能/时间序列,
   以便于 评估消耗与优化产品策略。
   验收标准 (AC):
-    AC1: Given 管理员身份, When GET /api/admin/tokens/usage/overview|by-user|by-feature|time-series, Then 返回统计 JSON(包含区间/聚合/计数)。
+    AC1: Given 管理员身份, When GET /ops/api/v1/console/tokens/usage/overview|by-user|by-feature|time-series, Then 返回统计 JSON(包含区间/聚合/计数)。
     AC2: Given 非管理员, When 调用上述接口, Then 返回 403。
     AC3: Given 查询窗口无数据, When 调用, Then 返回 200 且各项数值为 0。
 
@@ -239,7 +239,7 @@
   我想要 CRUD 通知模板,
   以便于 配置系统通知内容与变量。
   验收标准 (AC):
-    AC1: Given 管理员身份, When GET/PUT/DELETE /api/admin/notification-templates/[id], Then 分别返回读取/更新/删除结果及 200 状态码。
+    AC1: Given 管理员身份, When GET/PUT/DELETE /ops/api/v1/console/notification-templates/[id], Then 分别返回读取/更新/删除结果及 200 状态码。
     AC2: Given 模板不存在, When GET/DELETE, Then 返回 404。
     AC3: Given 非管理员, When 访问接口, Then 返回 403。
 
@@ -350,8 +350,8 @@
   我想要 管理支付提供商配置并校验连通性,
   以便于 确保计费链路健康。
   验收标准 (AC):
-    AC1: Given 管理员身份, When GET/POST/PUT /api/admin/payment-providers, Then 可查询与更新配置；敏感字段掩码返回。
-    AC2: Given 点击健康检查, When 调用 /api/admin/payment-providers/health-check, Then 返回各提供商连通性/延迟/错误详情。
+    AC1: Given 管理员身份, When GET/POST/PUT /ops/api/v1/console/payment-providers, Then 可查询与更新配置；敏感字段掩码返回。
+    AC2: Given 点击健康检查, When 调用 /ops/api/v1/console/payment-providers/health-check, Then 返回各提供商连通性/延迟/错误详情。
     AC3: Given 非管理员, When 访问上述接口, Then 返回 403。
 
 功能点 [38]: 管理后台 — Token 规则热加载与试算
@@ -359,8 +359,8 @@
   我想要 修改 Token 计费/折扣规则并在线热加载与试算,
   以便于 快速验证策略影响。
   验收标准 (AC):
-    AC1: Given 管理员身份, When POST /api/admin/tokens/rules/hot-reload, Then 返回 {success:true} 且新规则立即生效。
-    AC2: Given 管理员身份, When POST /api/admin/tokens/calculate 含示例 payload, Then 返回计算明细与总消耗并与预期匹配；非法 payload 返回 400。
+    AC1: Given 管理员身份, When POST /ops/api/v1/console/token/rules/hot-reload, Then 返回 {success:true} 且新规则立即生效。
+    AC2: Given 管理员身份, When POST /ops/api/v1/console/tokens/calculate 含示例 payload, Then 返回计算明细与总消耗并与预期匹配；非法 payload 返回 400。
     AC3: Given 非管理员, When 调用上述接口, Then 返回 403。
 
 功能点 [39]: 管理后台 — 系统监控与健康配置
@@ -368,6 +368,6 @@
   我想要 查看健康概览并在线调整监控开关/阈值,
   以便于 在不重启的情况下优化告警噪音与开销。
   验收标准 (AC):
-    AC1: Given 管理员身份, When GET /api/admin/monitoring/simple, Then 返回 CPU/内存/请求量/错误率等简版指标与最近窗口统计。
-    AC2: Given 管理员身份, When GET/PUT /api/admin/monitoring/config, Then 可查看/更新监控采样间隔、慢请求阈值、日志级别等配置并即时生效。
+    AC1: Given 管理员身份, When GET /ops/api/v1/console/monitoring/health, Then 返回 CPU/内存/请求量/错误率等基础指标与最近窗口统计。
+    AC2: Given 管理员身份, When GET/PUT /ops/api/v1/console/monitoring/config, Then 可查看/更新监控采样间隔、慢请求阈值、日志级别等配置并即时生效。
     AC3: Given 非管理员, When 访问上述接口, Then 返回 403。

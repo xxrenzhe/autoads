@@ -93,7 +93,7 @@ export interface APIDocumentation {
 export class APIManagementService {
   private baseUrl: string
 
-  constructor(baseUrl: string = '/api/admin/api-management') {
+  constructor(baseUrl: string = '/ops/api/v1/console/api-management') {
     this.baseUrl = baseUrl
   }
 

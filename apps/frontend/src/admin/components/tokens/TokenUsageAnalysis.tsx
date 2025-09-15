@@ -182,7 +182,7 @@ const TokenUsageAnalysis: React.FC = () => {
   };
 
   const fetchOverviewData = async (params: any) => {
-    const response = await fetch(`/api/admin/tokens/usage/overview?${new URLSearchParams(params)}`);
+    const response = await fetch(`/ops/api/v1/console/tokens/usage/overview?${new URLSearchParams(params)}`);
     const data = await response.json();
     
     setSummary(data.summary);
@@ -192,14 +192,14 @@ const TokenUsageAnalysis: React.FC = () => {
   };
 
   const fetchUserData = async (params: any) => {
-    const response = await fetch(`/api/admin/tokens/usage/by-user?${new URLSearchParams(params)}`);
+    const response = await fetch(`/ops/api/v1/console/tokens/usage/by-user?${new URLSearchParams(params)}`);
     const data = await response.json();
     
     setTopUsers(data.users);
   };
 
   const fetchFeatureData = async (params: any) => {
-    const response = await fetch(`/api/admin/tokens/usage/by-feature?${new URLSearchParams(params)}`);
+    const response = await fetch(`/ops/api/v1/console/tokens/usage/by-feature?${new URLSearchParams(params)}`);
     const data = await response.json();
     
     setFeatureUsage(data.features);
@@ -207,7 +207,7 @@ const TokenUsageAnalysis: React.FC = () => {
   };
 
   const fetchTimeSeriesData = async (params: any) => {
-    const response = await fetch(`/api/admin/tokens/usage/time-series?${new URLSearchParams(params)}`);
+    const response = await fetch(`/ops/api/v1/console/tokens/usage/time-series?${new URLSearchParams(params)}`);
     const data = await response.json();
     
     setTimeSeries(data.series);

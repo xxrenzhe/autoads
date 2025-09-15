@@ -47,7 +47,7 @@ export function useConfigManagement() {
   } = useQuery({
     queryKey: ['admin-configs'],
     queryFn: async (): Promise<ConfigItem[]> => {
-      const response = await fetch('/api/admin/configs')
+  const response = await fetch('/ops/api/v1/console/configs')
       if (!response.ok) {
         throw new Error('Failed to fetch configurations')
       }
@@ -63,7 +63,7 @@ export function useConfigManagement() {
   } = useQuery({
     queryKey: ['config-categories'],
     queryFn: async (): Promise<string[]> => {
-      const response = await fetch('/api/admin/configs/categories')
+  const response = await fetch('/ops/api/v1/console/configs/categories')
       if (!response.ok) {
         throw new Error('Failed to fetch categories')
       }
@@ -79,7 +79,7 @@ export function useConfigManagement() {
   } = useQuery({
     queryKey: ['config-history'],
     queryFn: async (): Promise<ConfigHistory[]> => {
-      const response = await fetch('/api/admin/configs/history')
+  const response = await fetch('/ops/api/v1/console/configs/history')
       if (!response.ok) {
         throw new Error('Failed to fetch configuration history')
       }
@@ -91,7 +91,7 @@ export function useConfigManagement() {
   // Create configuration mutation
   const createConfigMutation = useMutation({
     mutationFn: async (configData: Partial<ConfigItem>) => {
-      const response = await fetch('/api/admin/configs', {
+  const response = await fetch('/ops/api/v1/console/configs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export function useConfigManagement() {
   // Update configuration mutation
   const updateConfigMutation = useMutation({
     mutationFn: async ({ configId, configData }: { configId: string; configData: Partial<ConfigItem> }) => {
-      const response = await fetch(`/api/admin/configs/${configId}`, {
+  const response = await fetch(`/ops/api/v1/console/configs/${configId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export function useConfigManagement() {
   // Delete configuration mutation
   const deleteConfigMutation = useMutation({
     mutationFn: async (configId: string) => {
-      const response = await fetch(`/api/admin/configs/${configId}`, {
+  const response = await fetch(`/ops/api/v1/console/configs/${configId}`, {
         method: 'DELETE',
       })
       if (!response.ok) {
@@ -150,7 +150,7 @@ export function useConfigManagement() {
   // Duplicate configuration mutation
   const duplicateConfigMutation = useMutation({
     mutationFn: async ({ configId, newKey }: { configId: string; newKey: string }) => {
-      const response = await fetch(`/api/admin/configs/${configId}/duplicate`, {
+  const response = await fetch(`/ops/api/v1/console/configs/${configId}/duplicate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +170,7 @@ export function useConfigManagement() {
   // Validate configuration mutation
   const validateConfigMutation = useMutation({
     mutationFn: async ({ configId, value }: { configId: string; value: any }) => {
-      const response = await fetch(`/api/admin/configs/${configId}/validate`, {
+  const response = await fetch(`/ops/api/v1/console/configs/${configId}/validate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -192,7 +192,7 @@ export function useConfigManagement() {
         params.append('ids', configIds.join(','))
       }
       
-      const response = await fetch(`/api/admin/configs/export?${params}`)
+  const response = await fetch(`/ops/api/v1/console/configs/export?${params}`)
       if (!response.ok) {
         throw new Error('Failed to export configurations')
       }
@@ -218,7 +218,7 @@ export function useConfigManagement() {
       formData.append('file', file)
       formData.append('merge', String(merge))
       
-      const response = await fetch('/api/admin/configs/import', {
+  const response = await fetch('/ops/api/v1/console/configs/import', {
         method: 'POST',
         body: formData,
       })

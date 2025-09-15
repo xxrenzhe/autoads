@@ -141,14 +141,6 @@ export interface PermissionContext {
         { id: 'config-read', name: 'config:read', resource: 'config', action: 'read' },
         { id: 'config-write', name: 'config:write', resource: 'config', action: 'write' },
         { id: 'analytics-read', name: 'analytics:read', resource: 'analytics', action: 'read' }
-      ],
-      SUPER_ADMIN: [
-        { id: 'users-read', name: 'users:read', resource: 'users', action: 'read' },
-        { id: 'users-write', name: 'users:write', resource: 'users', action: 'write' },
-        { id: 'config-read', name: 'config:read', resource: 'config', action: 'read' },
-        { id: 'config-write', name: 'config:write', resource: 'config', action: 'write' },
-        { id: 'analytics-read', name: 'analytics:read', resource: 'analytics', action: 'read' },
-        { id: 'system-admin', name: 'system:admin', resource: 'system', action: 'admin' }
       ]
     }
 
@@ -181,7 +173,7 @@ export interface PermissionContext {
     const rolePermissions: RolePermissions[] = []
 
     // Add legacy roles for backward compatibility
-    const legacyRoles = ['USER', 'ADMIN', 'SUPER_ADMIN'] as const
+    const legacyRoles = ['USER', 'ADMIN'] as const
     for (const roleName of legacyRoles) {
       rolePermissions.push({
         role: roleName,
@@ -210,7 +202,7 @@ export interface PermissionContext {
       }
 
       // Using legacy system only
-      return user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'
+      return user.role === 'ADMIN'
     } catch (error) {
       console.error('Admin check failed:', error)
       return false
@@ -235,8 +227,8 @@ export interface PermissionContext {
         return false
       }
 
-      // Using legacy system only
-      return user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'
+      // Using legacy system only (ADMIN only)
+      return user.role === 'ADMIN'
     } catch (error) {
       console.error('Super admin check failed:', error)
       return false

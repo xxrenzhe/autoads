@@ -40,7 +40,7 @@ type APIResponse struct {
 // === 数据面板接口 ===
 
 // GetOverviewStats 获取概览统计
-// GET /api/admin/dashboard/overview
+// GET /api/v1/console/dashboard/overview
 func (c *AdminController) GetOverviewStats(ctx *gin.Context) {
 	stats, err := c.dashboardService.GetOverviewStats()
 	if err != nil {
@@ -59,7 +59,7 @@ func (c *AdminController) GetOverviewStats(ctx *gin.Context) {
 }
 
 // GetUserTrend 获取用户增长趋势
-// GET /api/admin/dashboard/user-trend?days=30
+// GET /api/v1/console/dashboard/user-trend?days=30
 func (c *AdminController) GetUserTrend(ctx *gin.Context) {
 	days, _ := strconv.Atoi(ctx.DefaultQuery("days", "30"))
 	if days <= 0 || days > 365 {
@@ -83,7 +83,7 @@ func (c *AdminController) GetUserTrend(ctx *gin.Context) {
 }
 
 // GetTokenTrend 获取Token使用趋势
-// GET /api/admin/dashboard/token-trend?days=30
+// GET /api/v1/console/dashboard/token-trend?days=30
 func (c *AdminController) GetTokenTrend(ctx *gin.Context) {
 	days, _ := strconv.Atoi(ctx.DefaultQuery("days", "30"))
 	if days <= 0 || days > 365 {
@@ -107,7 +107,7 @@ func (c *AdminController) GetTokenTrend(ctx *gin.Context) {
 }
 
 // GetTaskTrend 获取任务使用趋势
-// GET /api/admin/dashboard/task-trend?days=30
+// GET /api/v1/console/dashboard/task-trend?days=30
 func (c *AdminController) GetTaskTrend(ctx *gin.Context) {
 	days, _ := strconv.Atoi(ctx.DefaultQuery("days", "30"))
 	if days <= 0 || days > 365 {
@@ -131,7 +131,7 @@ func (c *AdminController) GetTaskTrend(ctx *gin.Context) {
 }
 
 // GetTopUsers 获取用户排行榜
-// GET /api/admin/dashboard/top-users?limit=10
+// GET /api/v1/console/dashboard/top-users?limit=10
 func (c *AdminController) GetTopUsers(ctx *gin.Context) {
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
 	if limit <= 0 || limit > 100 {
@@ -155,7 +155,7 @@ func (c *AdminController) GetTopUsers(ctx *gin.Context) {
 }
 
 // GetSystemHealth 获取系统健康状态
-// GET /api/admin/dashboard/system-health
+// GET /api/v1/console/dashboard/system-health
 func (c *AdminController) GetSystemHealth(ctx *gin.Context) {
 	health, err := c.dashboardService.GetSystemHealth()
 	if err != nil {
@@ -176,7 +176,7 @@ func (c *AdminController) GetSystemHealth(ctx *gin.Context) {
 // === 用户管理接口 ===
 
 // GetUsers 获取用户列表
-// GET /api/admin/users?page=1&size=20&search=keyword
+// GET /api/v1/console/users?page=1&size=20&search=keyword
 func (c *AdminController) GetUsers(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(ctx.DefaultQuery("size", "20"))
@@ -214,7 +214,7 @@ func (c *AdminController) GetUsers(ctx *gin.Context) {
 }
 
 // GetUserDetail 获取用户详情
-// GET /api/admin/users/:id
+// GET /api/v1/console/users/:id
 func (c *AdminController) GetUserDetail(ctx *gin.Context) {
 	userID := ctx.Param("id")
 	if userID == "" {
@@ -242,7 +242,7 @@ func (c *AdminController) GetUserDetail(ctx *gin.Context) {
 }
 
 // UpdateUserStatus 更新用户状态
-// POST /api/admin/users/:id/status
+// POST /api/v1/console/users/:id/status
 func (c *AdminController) UpdateUserStatus(ctx *gin.Context) {
 	userID := ctx.Param("id")
 	if userID == "" {
@@ -283,7 +283,7 @@ func (c *AdminController) UpdateUserStatus(ctx *gin.Context) {
 }
 
 // RechargeTokens 手动充值Token
-// POST /api/admin/users/:id/recharge
+// POST /api/v1/console/users/:id/recharge
 func (c *AdminController) RechargeTokens(ctx *gin.Context) {
 	userID := ctx.Param("id")
 	if userID == "" {
@@ -325,7 +325,7 @@ func (c *AdminController) RechargeTokens(ctx *gin.Context) {
 }
 
 // ChangePlan 更改用户套餐
-// POST /api/admin/users/:id/plan
+// POST /api/v1/console/users/:id/plan
 func (c *AdminController) ChangePlan(ctx *gin.Context) {
 	userID := ctx.Param("id")
 	if userID == "" {
@@ -388,7 +388,7 @@ func (c *AdminController) GetPlans(ctx *gin.Context) {
 }
 
 // CreatePlan 创建套餐
-// POST /api/admin/plans
+// POST /api/v1/console/plans
 func (c *AdminController) CreatePlan(ctx *gin.Context) {
 	var req CreatePlanRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -416,7 +416,7 @@ func (c *AdminController) CreatePlan(ctx *gin.Context) {
 }
 
 // UpdatePlan 更新套餐
-// PUT /api/admin/plans/:id
+// PUT /api/v1/console/plans/:id
 func (c *AdminController) UpdatePlan(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
@@ -453,7 +453,7 @@ func (c *AdminController) UpdatePlan(ctx *gin.Context) {
 }
 
 // TogglePlanStatus 切换套餐状态
-// POST /api/admin/plans/:id/toggle
+// POST /api/v1/console/plans/:id/toggle
 func (c *AdminController) TogglePlanStatus(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
@@ -481,7 +481,7 @@ func (c *AdminController) TogglePlanStatus(ctx *gin.Context) {
 // === Token管理接口 ===
 
 // GetTokenPackages 获取Token充值包列表
-// GET /api/admin/token-packages
+// GET /api/v1/console/token-packages
 func (c *AdminController) GetTokenPackages(ctx *gin.Context) {
 	packages, err := c.tokenService.GetTokenPackages()
 	if err != nil {
@@ -500,7 +500,7 @@ func (c *AdminController) GetTokenPackages(ctx *gin.Context) {
 }
 
 // CreateTokenPackage 创建Token充值包
-// POST /api/admin/token-packages
+// POST /api/v1/console/token-packages
 func (c *AdminController) CreateTokenPackage(ctx *gin.Context) {
 	var req CreateTokenPackageRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

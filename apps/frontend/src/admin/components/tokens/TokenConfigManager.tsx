@@ -110,7 +110,7 @@ export default function TokenConfigManager() {
   const fetchConfig = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/tokens/config')
+      const response = await fetch('/ops/api/v1/console/token-config')
       const data = await response.json()
       
       if (data.success) {
@@ -131,7 +131,7 @@ export default function TokenConfigManager() {
   const fetchConfigHistory = async () => {
     try {
       setHistoryLoading(true)
-      const response = await fetch('/api/admin/tokens/history?limit=20')
+      const response = await fetch('/ops/api/v1/console/tokens/history?limit=20')
       const data = await response.json()
       
       if (data.success) {
@@ -200,7 +200,7 @@ export default function TokenConfigManager() {
 
     try {
       setSaving(true)
-      const response = await fetch('/api/admin/tokens/config', {
+      const response = await fetch('/ops/api/v1/console/token-config', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -247,7 +247,7 @@ export default function TokenConfigManager() {
   const calculateCost = async () => {
     try {
       setCalculating(true)
-      const response = await fetch('/api/admin/tokens/calculate', {
+      const response = await fetch('/ops/api/v1/console/tokens/calculate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

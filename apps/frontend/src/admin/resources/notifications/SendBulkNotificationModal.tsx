@@ -74,7 +74,7 @@ export const SendBulkNotificationModal: React.FC<SendBulkNotificationModalProps>
 
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/notifications/send-bulk', {
+      const response = await fetch('/ops/api/v1/console/notifications/send-bulk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

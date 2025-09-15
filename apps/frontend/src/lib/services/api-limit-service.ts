@@ -290,7 +290,7 @@ export class ApiLimitService {
 
       // Admin endpoints - less restrictive
       {
-        endpoint: '/api/admin/*',
+        endpoint: '/ops/api/v1/console/*',
         method: 'GET',
         userRole: 'ADMIN',
         maxRequests: 500,
@@ -298,7 +298,7 @@ export class ApiLimitService {
         enabled: true
       },
       {
-        endpoint: '/api/admin/*',
+        endpoint: '/ops/api/v1/console/*',
         method: 'POST',
         userRole: 'ADMIN',
         maxRequests: 100,
@@ -308,7 +308,7 @@ export class ApiLimitService {
 
       // Admin - minimal restrictions
       {
-        endpoint: '/api/admin/*',
+        endpoint: '/ops/api/v1/console/*',
         method: 'GET',
         userRole: 'ADMIN',
         maxRequests: 1000,
@@ -316,7 +316,7 @@ export class ApiLimitService {
         enabled: true
       },
       {
-        endpoint: '/api/admin/*',
+        endpoint: '/ops/api/v1/console/*',
         method: 'POST',
         userRole: 'ADMIN',
         maxRequests: 200,

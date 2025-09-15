@@ -369,8 +369,8 @@ CREATE TABLE invitations (
 
 #### 认证相关
 - `POST /api/auth/google` - Google OAuth登录
-- `POST /api/admin/login` - 管理员账号密码登录
-- `POST /api/admin/logout` - 管理员登出
+- `POST /ops/api/v1/console/login` - 管理员账号密码登录（Go 控制台）
+- 管理台登录页：`/ops/console/login`，登录成功进入 `/ops/console/panel`
 
 #### 用户相关
 - `GET /api/user/profile` - 获取用户信息
@@ -1394,13 +1394,13 @@ const InvitationManagement = () => {
     }, []);
     
     const fetchLeaderboard = async () => {
-        const res = await fetch('/api/admin/invitation-leaderboard');
+        const res = await fetch('/ops/api/v1/console/invitation-leaderboard');
         const data = await res.json();
         setLeaderboard(data.leaderboard);
     };
     
     const fetchRecords = async (page = 1) => {
-        const res = await fetch(`/api/admin/invitation-records?page=${page}&search=${search}`);
+        const res = await fetch(`/ops/api/v1/console/invitation-records?page=${page}&search=${search}`);
         const data = await res.json();
         setRecords(data.data);
         setPagination(data.pagination);
@@ -2110,7 +2110,7 @@ const CheckInManagement = () => {
             ...filters,
         });
         
-        const res = await fetch(`/api/admin/checkin-records?${params}`);
+        const res = await fetch(`/ops/api/v1/console/checkin-records?${params}`);
         const data = await res.json();
         setRecords(data.data);
         setStats(data.stats);

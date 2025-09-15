@@ -231,7 +231,7 @@ const BulkRoleButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = []
       // Update each user's role
       await Promise.all(
         selectedIds.map((userId: string) =>
-          fetch(`/api/admin/users/${userId}/role`, {
+          fetch(`/ops/api/v1/console/users/${userId}/role`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
@@ -297,7 +297,7 @@ const BulkStatusButton: React.FC<{ selectedIds?: string[] }> = ({ selectedIds = 
       // Update each user's status
       await Promise.all(
         selectedIds.map((userId: string) =>
-          fetch(`/api/admin/users/${userId}/status`, {
+          fetch(`/ops/api/v1/console/users/${userId}/status`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
@@ -367,7 +367,7 @@ const BulkTokenRechargeButton: React.FC<{ selectedIds?: string[] }> = ({ selecte
       // Recharge tokens for each user
       await Promise.all(
         selectedIds.map((userId: string) =>
-          fetch(`/api/admin/users/${userId}/tokens/recharge`, {
+          fetch(`/ops/api/v1/console/users/${userId}/tokens/recharge`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -434,7 +434,7 @@ const BulkSubscriptionButton: React.FC<{ selectedIds?: string[] }> = ({ selected
   React.useEffect(() => {
     const loadPlans = async () => {
       try {
-        const response = await fetch('/api/admin/plans/available');
+        const response = await fetch('/ops/api/v1/console/plans/available');
         if (response.ok) {
           const data = await response.json();
           setPlans(data.plans);
@@ -453,7 +453,7 @@ const BulkSubscriptionButton: React.FC<{ selectedIds?: string[] }> = ({ selected
       // Assign subscription to each user
       await Promise.all(
         selectedIds.map((userId: string) =>
-          fetch(`/api/admin/users/${userId}/subscription`, {
+          fetch(`/ops/api/v1/console/users/${userId}/subscription`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

@@ -106,7 +106,7 @@ func (c *Controller) GetDataExportEventsHandler(ctx *gin.Context) {
 // GetAdminActionsHandler GET /api/v1/audit/events/admin-actions (需要管理员)
 func (c *Controller) GetAdminActionsHandler(ctx *gin.Context) {
     role := ctx.GetString("user_role")
-    if role != "admin" && role != "SUPER_ADMIN" && role != "ADMIN" {
+    if role != "admin" && role != "ADMIN" {
         ctx.JSON(http.StatusForbidden, APIResponse{Code: 403, Message: "需要管理员权限"})
         return
     }

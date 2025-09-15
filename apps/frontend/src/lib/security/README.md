@@ -200,12 +200,12 @@ console.log(securityReport.recommendations);
 
 #### 获取安全概览
 ```http
-GET /api/admin/security
+GET /ops/api/v1/console/security
 ```
 
 #### 执行管理操作
 ```http
-POST /api/admin/security
+POST /ops/api/v1/console/security
 Content-Type: application/json
 
 {
@@ -217,7 +217,7 @@ Content-Type: application/json
 
 #### 获取用户安全详情
 ```http
-GET /api/admin/security/users/{userId}
+GET /ops/api/v1/console/security/users/{userId}
 ```
 
 ## 风险等级定义

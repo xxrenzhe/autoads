@@ -58,38 +58,8 @@ const navigationItems: NavigationItem[] = [
   }
 ]
 
-const adminNavigationItems: NavigationItem[] = [
-  {
-    title: 'Admin Panel',
-    href: '/admin',
-    description: 'System administration',
-    requiresRole: ['ADMIN', 'SUPER_ADMIN']
-  },
-  {
-    title: 'Users',
-    href: '/admin/users',
-    description: 'Manage users',
-    requiresRole: ['ADMIN', 'SUPER_ADMIN']
-  },
-  {
-    title: 'Security',
-    href: '/admin/security',
-    description: 'Security monitoring',
-    requiresRole: ['ADMIN', 'SUPER_ADMIN']
-  },
-  {
-    title: 'Monitoring',
-    href: '/admin/monitoring',
-    description: 'System monitoring',
-    requiresRole: ['ADMIN', 'SUPER_ADMIN']
-  },
-  {
-    title: 'Tokens',
-    href: '/admin/tokens',
-    description: 'Token management',
-    requiresRole: ['ADMIN', 'SUPER_ADMIN']
-  }
-]
+// 架构统一：前端不提供后台入口（后台仅 URL 直达 /ops/console/*）
+const adminNavigationItems: NavigationItem[] = []
 
 export function NavigationLinks() {
   const { data: session } = useSession()

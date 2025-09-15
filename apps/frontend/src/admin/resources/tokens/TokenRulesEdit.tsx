@@ -204,7 +204,7 @@ export const TokenRulesEdit: React.FC<TokenRulesEditProps> = ({
     setError(null);
 
     try {
-      const url = rule ? `/api/admin/tokens/rules/${rule.id}` : '/api/admin/tokens/rules';
+      const url = rule ? `/ops/api/v1/console/token/rules/${rule.id}` : '/ops/api/v1/console/token/rules';
       const method = rule ? 'PUT' : 'POST';
 
       const response = await fetch(url, {

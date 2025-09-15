@@ -53,7 +53,7 @@ export default function UserCenterModal({ isOpen, onClose, user }: UserCenterMod
     const roleConfig = {
       USER: { label: '普通用户', variant: 'default', icon: User },
       ADMIN: { label: '管理员', variant: 'secondary', icon: Shield },
-      SUPER_ADMIN: { label: '超级管理员', variant: 'destructive', icon: Crown },
+      // SUPER_ADMIN removed in unified role model
     }
     
     const config = roleConfig[role as keyof typeof roleConfig] || roleConfig.USER

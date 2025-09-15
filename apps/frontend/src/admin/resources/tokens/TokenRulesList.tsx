@@ -105,7 +105,7 @@ export const TokenRulesList: React.FC = () => {
   const fetchTokenRules = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/tokens/rules');
+      const response = await fetch('/ops/api/v1/console/token/rules');
       
       if (!response.ok) {
         throw new Error('Failed to fetch token rules');
@@ -122,7 +122,7 @@ export const TokenRulesList: React.FC = () => {
 
   const fetchRuleHistory = async (ruleId: string) => {
     try {
-      const response = await fetch(`/api/admin/tokens/rules/${ruleId}/history`);
+      const response = await fetch(`/ops/api/v1/console/token/rules/${ruleId}/history`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch rule history');
@@ -166,7 +166,7 @@ export const TokenRulesList: React.FC = () => {
     if (!ruleId) return;
     
     try {
-      const response = await fetch(`/api/admin/tokens/rules/${ruleId}`, {
+      const response = await fetch(`/ops/api/v1/console/token/rules/${ruleId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -196,7 +196,7 @@ export const TokenRulesList: React.FC = () => {
 
   const handleToggleActive = async (ruleId: string, isActive: boolean) => {
     try {
-      const response = await fetch(`/api/admin/tokens/rules/${ruleId}`, {
+      const response = await fetch(`/ops/api/v1/console/token/rules/${ruleId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -239,7 +239,7 @@ export const TokenRulesList: React.FC = () => {
   const handleHotReload = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/tokens/rules/hot-reload', {
+      const response = await fetch('/ops/api/v1/console/token/rules/hot-reload', {
         method: 'POST',
       });
 

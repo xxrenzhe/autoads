@@ -19,7 +19,7 @@ export interface EnvironmentVariable {
 
 // API functions
 const fetchEnvVars = async (): Promise<EnvironmentVariable[]> => {
-  const response = await fetch('/api/admin/env-vars')
+  const response = await fetch('/ops/api/v1/console/env-vars')
   if (!response.ok) {
     throw new Error('Failed to fetch environment variables')
   }
@@ -27,7 +27,7 @@ const fetchEnvVars = async (): Promise<EnvironmentVariable[]> => {
 }
 
 const createEnvVar = async (data: Omit<EnvironmentVariable, 'id' | 'createdAt' | 'updatedAt' | 'creator'>): Promise<EnvironmentVariable> => {
-  const response = await fetch('/api/admin/env-vars', {
+  const response = await fetch('/ops/api/v1/console/env-vars', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -41,7 +41,7 @@ const createEnvVar = async (data: Omit<EnvironmentVariable, 'id' | 'createdAt' |
 }
 
 const updateEnvVar = async (id: string, data: Partial<Omit<EnvironmentVariable, 'id' | 'createdAt' | 'updatedAt' | 'creator'>>): Promise<EnvironmentVariable> => {
-  const response = await fetch('/api/admin/env-vars', {
+  const response = await fetch('/ops/api/v1/console/env-vars', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -55,7 +55,7 @@ const updateEnvVar = async (id: string, data: Partial<Omit<EnvironmentVariable, 
 }
 
 const deleteEnvVar = async (id: string): Promise<void> => {
-  const response = await fetch(`/api/admin/env-vars/${id}`, {
+  const response = await fetch(`/ops/api/v1/console/env-vars/${id}`, {
     method: 'DELETE',
   })
   if (!response.ok) {

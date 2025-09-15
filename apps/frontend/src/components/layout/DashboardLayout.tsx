@@ -34,7 +34,7 @@ export default function DashboardLayout({
   const { data: session } = useSession()
 
   // Determine if user has admin access
-  const hasAdminAccess = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN'
+  const hasAdminAccess = session?.user?.role === 'ADMIN'
   const actualType = type === 'admin' && hasAdminAccess ? 'admin' : 'user'
 
   return (

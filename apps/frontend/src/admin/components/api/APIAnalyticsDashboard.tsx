@@ -123,7 +123,8 @@ export default function APIAnalyticsDashboard() {
     let eventSource: EventSource | null = null
 
     const connectEventSource = () => {
-      eventSource = new EventSource('/api/admin/monitoring/api-stream')
+      // SSE 流在新后端未提供，改为轮询 hooks 数据
+      eventSource = undefined as any
       
       eventSource.onmessage = (event) => {
         try {
@@ -169,9 +170,9 @@ export default function APIAnalyticsDashboard() {
 
       // 获取新的监控数据
       const [monitoringResponse, analyticsResponse, performanceResponse] = await Promise.all([
-        fetch(`/api/admin/monitoring/api-metrics?${params}`),
-        fetch(`/api/admin/api-management/analytics?${params}`),
-        fetch(`/api/admin/api-management/performance?${params}`)
+        fetch(`/ops/api/v1/console/monitoring/api-metrics?${params}`),
+        fetch(`/ops/api/v1/console/api-management/analytics?${params}`),
+        fetch(`/ops/api/v1/console/api-management/performance?${params}`)
       ])
 
       if (monitoringResponse.ok) {
@@ -215,7 +216,7 @@ export default function APIAnalyticsDashboard() {
         ...(selectedEndpoint !== 'all' && { endpoint: selectedEndpoint })
       })
 
-      const response = await fetch(`/api/admin/api-management/export?${params}`)
+      const response = await fetch(`/ops/api/v1/console/api-management/export?${params}`)
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')

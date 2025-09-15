@@ -93,7 +93,7 @@ export const SystemTaskStatusDashboard: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/system/task-status');
+      const response = await fetch('/ops/api/v1/console/system/task-status');
       if (response.ok) {
         const result = await response.json();
         setData(result);

@@ -21,7 +21,7 @@ import { Box, Typography, Divider } from '@mui/material';
 const roleChoices = [
   { id: 'USER', name: 'User' },
   { id: 'ADMIN', name: 'Admin' },
-  { id: 'SUPER_ADMIN', name: 'Super Admin' },
+  // SUPER_ADMIN removed in unified role model
 ];
 
 /**

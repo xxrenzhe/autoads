@@ -76,7 +76,7 @@ export class TokenConfigService {
       }
     }
 
-    // 1) 优先：远端只读配置（/go/admin/config/v1）
+    // 1) 优先：远端只读配置（/ops/console/config/v1）
     try {
       const snap = await getRemoteConfig()
       const sCost = getConfigValue<number>('token.siterank.costPerDomain', snap)

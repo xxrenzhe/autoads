@@ -56,7 +56,7 @@ export function SubscriptionAnalytics({ className }: SubscriptionAnalyticsProps)
   } = useQuery({
     queryKey: ['subscription-analytics', period],
     queryFn: async (): Promise<SubscriptionAnalyticsData> => {
-      const response = await fetch(`/api/admin/subscription/analytics?period=${period}`)
+      const response = await fetch(`/ops/api/v1/console/subscription/analytics?period=${period}`)
       if (!response.ok) {
         throw new Error('Failed to fetch subscription analytics')
       }

@@ -93,7 +93,7 @@ export const SubscriptionActions: React.FC<SubscriptionActionsProps> = ({ record
     try {
       const { fetchJson } = fetchUtils;
       const { json } = await fetchJson(
-        `/api/admin/subscriptions/${subscription.id}/actions`,
+        `/ops/api/v1/console/subscriptions/${subscription.id}/actions`,
         {
           method: 'POST',
           body: JSON.stringify({

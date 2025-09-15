@@ -81,26 +81,26 @@ system.On("allowed_file_types", func(key, value string) {
 	router.Use(ApiAccessLogger())
 	router.Use(metrics.GetMetrics().HTTPMiddleware())
 
-	// 静态托管管理前端（Vite构建产物） /admin
-	distDir := filepath.Join("web", "dist")
-	router.Static("/admin/assets", filepath.Join(distDir, "assets"))
-	router.StaticFile("/admin", filepath.Join(distDir, "index.html"))
-	router.NoRoute(func(c *gin.Context) {
-		p := c.Request.URL.Path
-		if strings.HasPrefix(p, "/admin") {
-			c.File(filepath.Join(distDir, "index.html"))
-			return
-		}
-		c.JSON(404, gin.H{"message": "not found"})
-	})
+    // 静态托管管理前端（Vite构建产物） /console
+    distDir := filepath.Join("web", "dist")
+    router.Static("/console/assets", filepath.Join(distDir, "assets"))
+    router.StaticFile("/console", filepath.Join(distDir, "index.html"))
+    router.NoRoute(func(c *gin.Context) {
+        p := c.Request.URL.Path
+        if strings.HasPrefix(p, "/console") {
+            c.File(filepath.Join(distDir, "index.html"))
+            return
+        }
+        c.JSON(404, gin.H{"message": "not found"})
+    })
 
 	// API版本分组
 	v1 := router.Group("/api/v1")
 	{
         // 管理员登录（JWT）
-        v1.POST("/admin/login", admin.AdminLoginHandler)
+        v1.POST("/console/login", admin.AdminLoginHandler)
         // 管理员受保护路由（JWT）
-        adminGroup := v1.Group("/admin")
+        adminGroup := v1.Group("/console")
         adminGroup.Use(admin.AdminJWT())
 		{
 			controller := admin.NewAdminController(nil, nil, nil, nil)

@@ -58,7 +58,7 @@ const CheckInStats: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/admin/check-ins/stats');
+      const response = await fetch('/ops/api/v1/console/check-ins/stats');
       if (response.ok) {
         const data = await response.json();
         setStats(data);

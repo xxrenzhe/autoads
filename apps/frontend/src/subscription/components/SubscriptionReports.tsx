@@ -49,7 +49,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
       if (selectedPeriod !== 'all') params.append('period', selectedPeriod)
       if (selectedType !== 'all') params.append('type', selectedType)
 
-      const response = await fetch(`/api/admin/subscription/reports?${params}`)
+      const response = await fetch(`/ops/api/v1/console/subscription/reports?${params}`)
       if (!response.ok) {
         throw new Error('Failed to fetch reports')
       }
@@ -63,7 +63,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
     setGeneratingReports(prev => new Set(prev).add(`${type}-${period}`))
     
     try {
-      const response = await fetch('/api/admin/subscription/reports/generate', {
+      const response = await fetch('/ops/api/v1/console/subscription/reports/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +87,7 @@ export function SubscriptionReports({ className }: SubscriptionReportsProps) {
 
   const downloadReport = async (reportId: string) => {
     try {
-      const response = await fetch(`/api/admin/subscription/reports/${reportId}/download`)
+      const response = await fetch(`/ops/api/v1/console/subscription/reports/${reportId}/download`)
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)

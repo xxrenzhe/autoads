@@ -1,7 +1,7 @@
 import { fetchUtils } from 'react-admin'
 import { stringify } from 'query-string'
 
-const apiUrl = '/api/admin/anti-cheat/devices'
+const apiUrl = '/ops/api/v1/console/anti-cheat/devices'
 
 const httpClient = fetchUtils.fetchJson
 

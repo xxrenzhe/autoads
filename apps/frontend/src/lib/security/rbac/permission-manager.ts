@@ -112,18 +112,12 @@ export class PermissionManager {
    */
   private getRolePermissions(role: string): Permission[] {
     const permissions: Record<string, Permission[]> = {
-      'SUPER_ADMIN': [
-        // Full system access
-        { resource: '*', action: '*' },
-      ],
       'ADMIN': [
         // User management
         { resource: 'users', action: 'read' },
         { resource: 'users', action: 'create' },
         { resource: 'users', action: 'update' },
-        { resource: 'users', action: 'delete', conditions: [
-          { field: 'role', operator: 'not_equals', value: 'SUPER_ADMIN' }
-        ]},
+        { resource: 'users', action: 'delete' },
         
         // Configuration management
         { resource: 'config', action: 'read' },

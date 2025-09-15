@@ -134,7 +134,7 @@ export const RestrictionEdit = () => {
             </Alert>
           )}
 
-          {permissions === 'SUPER_ADMIN' && (
+          {permissions === 'ADMIN' && (
             <Alert severity="error" sx={{ mt: 2 }}>
               <AlertTitle>超级管理员权限</AlertTitle>
               作为超级管理员，您可以修改任何限制设置。请谨慎操作。

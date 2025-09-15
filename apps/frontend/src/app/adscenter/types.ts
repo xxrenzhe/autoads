@@ -486,7 +486,7 @@ export interface User {
   role?: UserRole;
 }
 
-export type UserRole = 'ADMIN' | 'USER' | 'SUPER_ADMIN';
+export type UserRole = 'ADMIN' | 'USER';
 
 export interface Permission {
   id: string;

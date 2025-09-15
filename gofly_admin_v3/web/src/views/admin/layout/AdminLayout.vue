@@ -8,7 +8,7 @@
         :openKeys="openKeys"
         @openChange="onOpenChange"
       >
-        <a-menu-item key="/admin/dashboard" @click="go('/admin/dashboard')">
+        <a-menu-item key="/console/dashboard" @click="go('/console/dashboard')">
           <template #icon><dashboard-outlined /></template>
           仪表盘
         </a-menu-item>
@@ -16,54 +16,54 @@
         <a-sub-menu key="user-center">
           <template #icon><user-outlined /></template>
           <template #title>用户中心</template>
-          <a-menu-item key="/admin/users" @click="go('/admin/users')">用户列表</a-menu-item>
+          <a-menu-item key="/console/users" @click="go('/console/users')">用户列表</a-menu-item>
         </a-sub-menu>
 
         <a-sub-menu key="subscriptions">
           <template #icon><profile-outlined /></template>
           <template #title>订阅与计划</template>
-          <a-menu-item key="/admin/plans" @click="go('/admin/plans')">计划管理</a-menu-item>
-          <a-menu-item key="/admin/user-subscriptions" @click="go('/admin/user-subscriptions')">用户订阅</a-menu-item>
+          <a-menu-item key="/console/plans" @click="go('/console/plans')">计划管理</a-menu-item>
+          <a-menu-item key="/console/user-subscriptions" @click="go('/console/user-subscriptions')">用户订阅</a-menu-item>
         </a-sub-menu>
 
         <a-sub-menu key="tokens">
           <template #icon><wallet-outlined /></template>
           <template #title>Token 管理</template>
-          <a-menu-item key="/admin/tokens/overview" @click="go('/admin/tokens/overview')">总览</a-menu-item>
-          <a-menu-item key="/admin/tokens/adjust" @click="go('/admin/tokens/adjust')">余额调整</a-menu-item>
-          <a-menu-item key="/admin/tokens/transactions" @click="go('/admin/tokens/transactions')">消费流水</a-menu-item>
+          <a-menu-item key="/console/tokens/overview" @click="go('/console/tokens/overview')">总览</a-menu-item>
+          <a-menu-item key="/console/tokens/adjust" @click="go('/console/tokens/adjust')">余额调整</a-menu-item>
+          <a-menu-item key="/console/tokens/transactions" @click="go('/console/tokens/transactions')">消费流水</a-menu-item>
         </a-sub-menu>
 
         <a-sub-menu key="api">
           <template #icon><api-outlined /></template>
           <template #title>API 管理</template>
-          <a-menu-item key="/admin/api-manager" @click="go('/admin/api-manager')">端点与Keys</a-menu-item>
-          <a-menu-item key="/admin/api-analytics" @click="go('/admin/api-analytics')">分析与性能</a-menu-item>
+          <a-menu-item key="/console/api-manager" @click="go('/console/api-manager')">端点与Keys</a-menu-item>
+          <a-menu-item key="/console/api-analytics" @click="go('/console/api-analytics')">分析与性能</a-menu-item>
         </a-sub-menu>
 
         <a-sub-menu key="rate-limit">
           <template #icon><thunderbolt-outlined /></template>
           <template #title>限速管理</template>
-          <a-menu-item key="/admin/rate-limit" @click="go('/admin/rate-limit')">套餐与统计</a-menu-item>
+          <a-menu-item key="/console/rate-limit" @click="go('/console/rate-limit')">套餐与统计</a-menu-item>
         </a-sub-menu>
 
         <a-sub-menu key="system">
           <template #icon><setting-outlined /></template>
           <template #title>系统设置</template>
-          <a-menu-item key="/admin/system" @click="go('/admin/system')">系统配置</a-menu-item>
+          <a-menu-item key="/console/system" @click="go('/console/system')">系统配置</a-menu-item>
         </a-sub-menu>
 
         <a-sub-menu key="monitoring">
           <template #icon><alert-outlined /></template>
           <template #title>监控与告警</template>
-          <a-menu-item key="/admin/monitoring" @click="go('/admin/monitoring')">指标与健康</a-menu-item>
+          <a-menu-item key="/console/monitoring" @click="go('/console/monitoring')">指标与健康</a-menu-item>
         </a-sub-menu>
 
         <a-sub-menu key="admins">
           <template #icon><team-outlined /></template>
           <template #title>管理员</template>
-          <a-menu-item key="/admin/admins" @click="go('/admin/admins')">账号管理</a-menu-item>
-          <a-menu-item key="/admin/roles" @click="go('/admin/roles')">角色权限</a-menu-item>
+          <a-menu-item key="/console/admins" @click="go('/console/admins')">账号管理</a-menu-item>
+          <a-menu-item key="/console/roles" @click="go('/console/roles')">角色权限</a-menu-item>
         </a-sub-menu>
       </a-menu>
     </a-layout-sider>
@@ -125,4 +125,3 @@ export default {
 .header { background:#fff; padding:0 16px; display:flex; align-items:center; justify-content:space-between; }
 .content { margin:16px; padding:12px; background:#fff; min-height: 360px; }
 </style>
-

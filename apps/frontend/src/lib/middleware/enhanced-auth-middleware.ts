@@ -233,7 +233,7 @@ export async function requireRole(
   const { roles, strict = false } = options
 
   // Define role hierarchy (higher index = higher privilege)
-  const roleHierarchy = ['USER', 'ADMIN', 'SUPER_ADMIN']
+  const roleHierarchy = ['USER', 'ADMIN']
   const userRoleIndex = roleHierarchy.indexOf(context.user.role)
   
   if (userRoleIndex === -1) {
@@ -274,26 +274,20 @@ export async function requireRole(
 }
 
 /**
- * Admin middleware - requires ADMIN or SUPER_ADMIN role
+ * Admin middleware - requires ADMIN role
  */
 export async function requireAdmin(request: NextRequest): Promise<{
   success: boolean
   context?: AuthContext
   response?: NextResponse
 }> {
-  return requireRole(request, { roles: ['ADMIN', 'SUPER_ADMIN'] })
+  return requireRole(request, { roles: ['ADMIN'] })
 }
 
 /**
- * Super Admin middleware - requires SUPER_ADMIN role only
+ * Super Admin middleware - removed; ADMIN is the highest role
  */
-export async function requireSuperAdmin(request: NextRequest): Promise<{
-  success: boolean
-  context?: AuthContext
-  response?: NextResponse
-}> {
-  return requireRole(request, { roles: ['SUPER_ADMIN'], strict: true })
-}
+export async function requireSuperAdmin(request: NextRequest): Promise<{ success: boolean; context?: AuthContext; response?: NextResponse }> { return requireRole(request, { roles: ['ADMIN'] }) }
 
 /**
  * Free access middleware - allows unauthenticated users with limited access

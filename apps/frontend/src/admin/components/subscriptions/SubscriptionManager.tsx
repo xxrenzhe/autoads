@@ -112,7 +112,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
   useEffect(() => {
     const loadPlans = async () => {
       try {
-        const response = await fetch('/api/admin/plans/available');
+        const response = await fetch('/ops/api/v1/console/plans/available');
         if (response.ok) {
           const data = await response.json();
           setPlans(data.plans);
@@ -130,7 +130,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/users/${effectiveUserId}/subscription/history`);
+      const response = await fetch(`/ops/api/v1/console/users/${effectiveUserId}/subscription/history`);
       if (response.ok) {
         const data = await response.json();
         setSubscriptions(data.subscriptions);
@@ -157,7 +157,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
     }
 
     try {
-      const response = await fetch(`/api/admin/users/${effectiveUserId}/subscription`, {
+      const response = await fetch(`/ops/api/v1/console/users/${effectiveUserId}/subscription`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -188,7 +188,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
     if (!selectedSubscription || !effectiveUserId) return;
 
     try {
-      const response = await fetch(`/api/admin/users/${effectiveUserId}/subscription`, {
+      const response = await fetch(`/ops/api/v1/console/users/${effectiveUserId}/subscription`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

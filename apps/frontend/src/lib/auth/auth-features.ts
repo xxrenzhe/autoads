@@ -10,7 +10,7 @@ export interface AuthFeatureConfig {
   requireAuth: boolean
   icon?: string
   category: 'core' | 'premium' | 'admin'
-  minRole?: 'USER' | 'PREMIUM' | 'ADMIN' | 'SUPER_ADMIN'
+  minRole?: 'USER' | 'PREMIUM' | 'ADMIN'
 }
 
 export const AUTH_FEATURES: Record<string, AuthFeatureConfig> = {
@@ -108,7 +108,7 @@ export function hasFeatureAccess(
   }
 
   // 检查角色权限
-  const roleHierarchy = ['USER', 'PREMIUM', 'ADMIN', 'SUPER_ADMIN']
+  const roleHierarchy = ['USER', 'PREMIUM', 'ADMIN']
   const userRoleIndex = roleHierarchy.indexOf(userRole || 'USER')
   const requiredRoleIndex = roleHierarchy.indexOf(feature.minRole)
 

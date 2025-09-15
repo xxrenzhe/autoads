@@ -59,7 +59,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
         providers: Record<string, any>
       }
     }> => {
-      const response = await fetch('/api/admin/payment-providers/status')
+      const response = await fetch('/ops/api/v1/console/payment-providers/status')
       if (!response.ok) {
         throw new Error('Failed to fetch payment provider status')
       }
@@ -70,7 +70,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
 
   const healthCheckMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/admin/payment-providers/health-check', {
+      const response = await fetch('/ops/api/v1/console/payment-providers/health-check', {
         method: 'POST'
       })
       if (!response.ok) {
@@ -85,7 +85,7 @@ export function PaymentProviderConfig({ className }: PaymentProviderConfigProps)
 
   const setDefaultMutation = useMutation({
     mutationFn: async (providerName: string) => {
-      const response = await fetch('/api/admin/payment-providers/set-default', {
+      const response = await fetch('/ops/api/v1/console/payment-providers/set-default', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

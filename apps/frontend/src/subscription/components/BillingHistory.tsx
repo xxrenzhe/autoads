@@ -59,7 +59,7 @@ export function BillingHistory({
       if (selectedPeriod !== 'all') params.append('period', selectedPeriod)
       params.append('limit', maxRecords.toString())
 
-      const endpoint = userId ? '/api/user/billing/history' : '/api/admin/billing/history'
+      const endpoint = userId ? '/api/user/billing/history' : '/ops/api/v1/console/billing/history'
       const response = await fetch(`${endpoint}?${params}`)
       
       if (!response.ok) {

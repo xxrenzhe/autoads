@@ -141,7 +141,7 @@ export const ApiList: React.FC = () => {
   const fetchApiList = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/documentation/apis');
+      const response = await fetch('/ops/api/v1/console/documentation/apis');
       
       if (!response.ok) {
         throw new Error('Failed to fetch API list');

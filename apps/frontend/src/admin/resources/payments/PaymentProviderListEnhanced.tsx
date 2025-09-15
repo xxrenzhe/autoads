@@ -262,7 +262,7 @@ const TestPaymentDialog: React.FC<{
   const runTest = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/payment-providers/test', {
+      const response = await fetch('/ops/api/v1/console/payment-providers/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -416,7 +416,7 @@ export const PaymentProviderListEnhanced: React.FC = () => {
 
   const handleHealthCheck = async (provider: PaymentProvider) => {
     try {
-      const response = await fetch('/api/admin/payment-providers/health-check', {
+      const response = await fetch('/ops/api/v1/console/payment-providers/health-check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

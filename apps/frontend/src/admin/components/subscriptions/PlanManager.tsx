@@ -101,7 +101,7 @@ export default function PlanManager() {
   const fetchPlans = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/plans')
+      const response = await fetch('/ops/api/v1/console/plans')
       const data = await response.json()
       
       if (data.success) {
@@ -120,7 +120,7 @@ export default function PlanManager() {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch('/api/admin/subscriptions/analytics')
+      const response = await fetch('/ops/api/v1/console/subscriptions/analytics')
       const data = await response.json()
       
       if (data.success) {
@@ -137,7 +137,7 @@ export default function PlanManager() {
   const savePlan = async (plan: Partial<SubscriptionPlan>) => {
     try {
       setSaving(true)
-      const url = plan.id ? `/api/admin/plans/${plan.id}` : '/api/admin/plans'
+      const url = plan.id ? `/ops/api/v1/console/plans/${plan.id}` : '/ops/api/v1/console/plans'
       const method = plan.id ? 'PUT' : 'POST'
       
       const response = await fetch(url, {
@@ -173,7 +173,7 @@ export default function PlanManager() {
     }
 
     try {
-      const response = await fetch(`/api/admin/plans/${planId}`, {
+      const response = await fetch(`/ops/api/v1/console/plans/${planId}`, {
         method: 'DELETE'
       })
 
@@ -194,7 +194,7 @@ export default function PlanManager() {
 
   const togglePlanStatus = async (planId: string, status: string) => {
     try {
-      const response = await fetch(`/api/admin/plans/${planId}/status`, {
+      const response = await fetch(`/ops/api/v1/console/plans/${planId}/toggle`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

@@ -62,7 +62,7 @@ const TokenTransactionActions = () => {
   return (
     <TopToolbar>
       <ExportButton />
-      {permissions === 'SUPER_ADMIN' && (
+      {permissions === 'ADMIN' && (
         <CreateButton label="创建交易" />
       )}
     </TopToolbar>

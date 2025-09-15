@@ -177,7 +177,7 @@ export function SystemHealthDashboard({ className }: SystemHealthDashboardProps)
 
   const exportHealthReport = async () => {
     try {
-      const res = await fetch('/api/admin/monitoring/export?type=health')
+      const res = await fetch('/ops/api/v1/console/monitoring/health')
       if (!res.ok) throw new Error('Export failed')
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)

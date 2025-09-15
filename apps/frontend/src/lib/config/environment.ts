@@ -1,6 +1,6 @@
 // 说明：根据架构优化方案，移除对本地 JSON 配置（config/environments/*.json）的读取。
 // 本模块改为仅从 ENV 构建最小必需配置；更复杂、可热更的业务配置统一使用
-// 只读配置适配器（remote-config.ts）从 Go 的 /go/admin/config/v1 获取。
+// 只读配置适配器（remote-config.ts）从 Go 的 /ops/console/config/v1 获取。
 //
 // 注意：为保持兼容，保留原有导出 API（getEnvironmentManager、config、getConfig、
 // isFeatureEnabled、isIntegrationEnabled 等），但内部实现不再访问本地文件。

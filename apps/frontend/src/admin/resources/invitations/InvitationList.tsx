@@ -70,7 +70,7 @@ const InvitationActions = () => {
         startIcon={<RefreshIcon />}
       />
       <ExportButton />
-      {permissions === 'SUPER_ADMIN' && (
+      {permissions === 'ADMIN' && (
         <CreateButton label="创建邀请码" />
       )}
     </TopToolbar>
@@ -121,7 +121,7 @@ const RevokeButton = () => {
   
   const handleRevoke = async () => {
     try {
-      const response = await fetch(`/api/admin/invitations/${record.id}/revoke`, {
+      const response = await fetch(`/ops/api/v1/console/invitations/${record.id}/revoke`, {
         method: 'POST'
       });
       
@@ -158,7 +158,7 @@ const InvitationStats: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/admin/invitations/stats');
+      const response = await fetch('/ops/api/v1/console/invitations/stats');
       if (response.ok) {
         const data = await response.json();
         setStats(data);

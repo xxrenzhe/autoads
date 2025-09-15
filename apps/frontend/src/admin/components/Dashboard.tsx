@@ -116,14 +116,14 @@ const AdminDashboard: React.FC = () => {
     // Fetch dashboard statistics
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/admin/dashboard/realtime-stats');
+        const response = await fetch('/ops/api/v1/console/dashboard/overview');
         const data = await response.json();
         setStats(data);
       } catch (error) {
         console.error('Failed to fetch dashboard stats:', error);
         // Fallback to basic stats
         try {
-          const fallbackResponse = await fetch('/api/admin/dashboard/stats');
+          const fallbackResponse = await fetch('/ops/api/v1/console/dashboard/overview');
           const fallbackData = await fallbackResponse.json();
           setStats(fallbackData);
         } catch (fallbackError) {

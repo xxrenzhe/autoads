@@ -8,15 +8,15 @@ export async function adminMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 检查是否是管理员路由
-  if (pathname.startsWith('/admin-dashboard') || pathname.startsWith('/api/admin')) {
+  if (pathname.startsWith('/admin-dashboard')) {
     try {
       // 获取当前会话
       const session = await auth()
       
       // 如果没有会话或用户不是管理员，重定向到管理员登录页
       if (!session?.user || !['ADMIN'].includes(session.user.role)) {
-        const signInUrl = new URL('/auth/admin-signin', request.url)
-        signInUrl.searchParams.set('callbackUrl', pathname)
+        const signInUrl = new URL('/ops/console/login', request.url)
+        signInUrl.searchParams.set('callbackUrl', '/ops/console/panel')
         
         return NextResponse.redirect(signInUrl)
       }
@@ -28,8 +28,8 @@ export async function adminMiddleware(request: NextRequest) {
       console.error('Admin middleware error:', error)
       
       // 发生错误时重定向到管理员登录页
-      const signInUrl = new URL('/auth/admin-signin', request.url)
-      signInUrl.searchParams.set('callbackUrl', pathname)
+      const signInUrl = new URL('/ops/console/login', request.url)
+      signInUrl.searchParams.set('callbackUrl', '/ops/console/panel')
       signInUrl.searchParams.set('error', 'AuthError')
       
       return NextResponse.redirect(signInUrl)
@@ -42,7 +42,6 @@ export async function adminMiddleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/admin-dashboard/:path*',
-    '/api/admin/:path*'
+    '/admin-dashboard/:path*'
   ]
 }

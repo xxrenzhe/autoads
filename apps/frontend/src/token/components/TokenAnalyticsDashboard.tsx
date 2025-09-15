@@ -192,7 +192,7 @@ export function TokenAnalyticsDashboard({ className }: TokenAnalyticsDashboardPr
 
   const exportData = async (type: 'usage' | 'patterns' | 'forecast') => {
     try {
-      const response = await fetch(`/api/admin/token-analytics/export?type=${type}&timeRange=${timeRange}`)
+      const response = await fetch(`/ops/api/v1/console/token-analytics/export?type=${type}&timeRange=${timeRange}`)
       if (!response.ok) throw new Error('Export failed')
       
       const blob = await response.blob()

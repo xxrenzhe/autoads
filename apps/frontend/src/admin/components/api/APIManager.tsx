@@ -208,13 +208,13 @@ export function APIManager({ className }: APIManagerProps) {
     mutationFn: async (endpointData: Partial<APIEndpoint>) => {
       // 优先后端直连，失败回退原API
       try {
-        const res = await fetch('/go/admin/api-management/endpoints', {
+        const res = await fetch('/ops/api/v1/console/api-management/endpoints', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(endpointData)
         })
         if (res.ok) return res.json()
         throw new Error('backend create failed')
       } catch {
-        const response = await fetch('/api/admin/api-management/endpoints', {
+        const response = await fetch('/ops/api/v1/console/api-management/endpoints', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(endpointData)
         })
         if (!response.ok) throw new Error('Failed to create endpoint')
@@ -231,13 +231,13 @@ export function APIManager({ className }: APIManagerProps) {
   const createKeyMutation = useMutation({
     mutationFn: async (keyData: Partial<APIKey>) => {
       try {
-        const res = await fetch('/go/admin/api-management/keys', {
+        const res = await fetch('/ops/api/v1/console/api-management/keys', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(keyData)
         })
         if (res.ok) return res.json()
         throw new Error('backend create failed')
       } catch {
-        const response = await fetch('/api/admin/api-management/keys', {
+        const response = await fetch('/ops/api/v1/console/api-management/keys', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(keyData)
         })
         if (!response.ok) throw new Error('Failed to create API key')
@@ -272,13 +272,13 @@ export function APIManager({ className }: APIManagerProps) {
   const updateEndpointMutation = useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: Partial<APIEndpoint> }) => {
       try {
-        const res = await fetch(`/go/admin/api-management/endpoints/${id}`, {
+        const res = await fetch(`/ops/api/v1/console/api-management/endpoints/${id}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
         });
         if (res.ok) return res.json();
         throw new Error('backend update failed');
       } catch {
-        const r = await fetch(`/api/admin/api-management/endpoints/${id}`, {
+        const r = await fetch(`/ops/api/v1/console/api-management/endpoints/${id}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
         });
         if (!r.ok) throw new Error('Failed to update endpoint');
@@ -299,11 +299,11 @@ export function APIManager({ className }: APIManagerProps) {
   const deleteEndpointMutation = useMutation({
     mutationFn: async (id: string) => {
       try {
-        const res = await fetch(`/go/admin/api-management/endpoints/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/ops/api/v1/console/api-management/endpoints/${id}`, { method: 'DELETE' });
         if (res.ok) return true;
         throw new Error('backend delete failed');
       } catch {
-        const r = await fetch(`/api/admin/api-management/endpoints/${id}`, { method: 'DELETE' });
+        const r = await fetch(`/ops/api/v1/console/api-management/endpoints/${id}`, { method: 'DELETE' });
         if (!r.ok) throw new Error('Failed to delete endpoint');
         return true;
       }
@@ -323,13 +323,13 @@ export function APIManager({ className }: APIManagerProps) {
   const updateKeyMutation = useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: Partial<APIKey> }) => {
       try {
-        const res = await fetch(`/go/admin/api-management/keys/${id}`, {
+        const res = await fetch(`/ops/api/v1/console/api-management/keys/${id}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
         });
         if (res.ok) return res.json();
         throw new Error('backend update failed');
       } catch {
-        const r = await fetch(`/api/admin/api-management/keys/${id}`, {
+        const r = await fetch(`/ops/api/v1/console/api-management/keys/${id}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
         });
         if (!r.ok) throw new Error('Failed to update API key');
@@ -350,11 +350,11 @@ export function APIManager({ className }: APIManagerProps) {
   const deleteKeyMutation = useMutation({
     mutationFn: async (id: string) => {
       try {
-        const res = await fetch(`/go/admin/api-management/keys/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/ops/api/v1/console/api-management/keys/${id}`, { method: 'DELETE' });
         if (res.ok) return true;
         throw new Error('backend delete failed');
       } catch {
-        const r = await fetch(`/api/admin/api-management/keys/${id}`, { method: 'DELETE' });
+        const r = await fetch(`/ops/api/v1/console/api-management/keys/${id}`, { method: 'DELETE' });
         if (!r.ok) throw new Error('Failed to delete API key');
         return true;
       }
@@ -1030,7 +1030,7 @@ export function APIManager({ className }: APIManagerProps) {
                     <option value="">None</option>
                     <option value="USER">USER</option>
                     <option value="ADMIN">ADMIN</option>
-                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                    {/* SUPER_ADMIN removed in unified role model */}
                   </select>
                   {!endpointForm.requiresAuth && (
                     <p className="text-xs text-gray-500 mt-1">Requires Auth 关闭时，角色限制无效</p>

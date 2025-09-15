@@ -115,7 +115,7 @@ export const RestrictionList = () => {
       sort={{ field: 'createdAt', order: 'DESC' }}
     >
       <Datagrid
-        bulkActionButtons={permissions === 'SUPER_ADMIN' ? (
+        bulkActionButtons={permissions === 'ADMIN' ? (
           <>
             <BulkDeleteButton />
             <BulkExportButton />
@@ -152,7 +152,7 @@ export const RestrictionList = () => {
           locales="zh-CN"
         />
         <EditButton />
-        {permissions === 'SUPER_ADMIN' && <DeleteButton />}
+        {permissions === 'ADMIN' && <DeleteButton />}
       </Datagrid>
     </List>
   );

@@ -100,7 +100,7 @@ export function EmailConfigEnhanced() {
   const fetchConfig = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/admin/email-config')
+      const response = await fetch('/ops/api/v1/console/email-config')
       if (response.ok) {
         const data = await response.json()
         setConfig(data.emailConfig)
@@ -117,7 +117,7 @@ export function EmailConfigEnhanced() {
 
     setSaving(true)
     try {
-      const response = await fetch('/api/admin/email-config', {
+      const response = await fetch('/ops/api/v1/console/email-config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +151,7 @@ export function EmailConfigEnhanced() {
     }
 
     try {
-      const response = await fetch('/api/admin/email-config/test', {
+      const response = await fetch('/ops/api/v1/console/email-config/test', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

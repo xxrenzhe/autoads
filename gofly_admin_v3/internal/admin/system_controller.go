@@ -108,6 +108,41 @@ func (c *AdminController) GetSystemConfigHistory(ctx *gin.Context) {
     ctx.JSON(http.StatusOK, APIResponse{Code: 0, Message: "获取成功", Data: rows})
 }
 
+// BatchSystemConfig 批量变更系统配置（set/unset）
+// PATCH /api/v1/console/system/config/batch
+func (c *AdminController) BatchSystemConfig(ctx *gin.Context) {
+    var ops []struct {
+        Op        string `json:"op"`
+        Key       string `json:"key"`
+        Value     string `json:"value"`
+        Category  string `json:"category"`
+        IsActive  *bool  `json:"is_active"`
+        Desc      string `json:"description"`
+    }
+    if err := ctx.ShouldBindJSON(&ops); err != nil || len(ops) == 0 {
+        ctx.JSON(http.StatusOK, APIResponse{Code:1001, Message:"invalid batch body"}); return
+    }
+
+    adminID := ctx.GetString("admin_id")
+    for _, it := range ops {
+        key := strings.ToLower(strings.TrimSpace(it.Key))
+        if key == "" { continue }
+        if isProtectedSystemKey(key) { continue }
+        switch strings.ToLower(strings.TrimSpace(it.Op)) {
+        case "set":
+            cat := it.Category; if cat == "" { cat = "general" }
+            _, _ = gf.DB().Exec(ctx, "INSERT INTO system_configs(config_key,config_value,description,category,is_active) VALUES(?,?,?,?,1) ON DUPLICATE KEY UPDATE config_value=VALUES(config_value), description=VALUES(description), category=VALUES(category), is_active=1", key, it.Value, it.Desc, cat)
+            if gf.Redis() != nil { _ = gf.Redis().GroupPubSub().Publish(ctx, "system:config:updated", key) }
+            _, _ = gf.Model("user_operation_logs").Insert(gf.Map{"admin_id":adminID, "target_user_id":"system", "operation":"system_config_upsert", "details": gf.ToJSON(gf.Map{"key":key, "value":it.Value, "category":cat}), "ip_address": ctx.ClientIP(), "created_at": time.Now()})
+        case "unset":
+            _, _ = gf.DB().Model("system_configs").Where("config_key", key).Update(gf.Map{"is_active": false})
+            if gf.Redis() != nil { _ = gf.Redis().GroupPubSub().Publish(ctx, "system:config:updated", key) }
+            _, _ = gf.Model("user_operation_logs").Insert(gf.Map{"admin_id":adminID, "target_user_id":"system", "operation":"system_config_delete", "details": gf.ToJSON(gf.Map{"key":key}), "ip_address": ctx.ClientIP(), "created_at": time.Now()})
+        }
+    }
+    ctx.JSON(http.StatusOK, APIResponse{Code:0, Message:"ok"})
+}
+
 // isProtectedSystemKey 判断是否为受保护的系统配置键
 func isProtectedSystemKey(key string) bool {
     // 只读项或高风险敏感项

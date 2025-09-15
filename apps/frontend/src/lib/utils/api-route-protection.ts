@@ -15,7 +15,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 
 // API路由权限配置
 const ROUTE_PERMISSIONS: Record<string, string[]> = {
-  '/api/admin': ['ADMIN'],
+  // '/ops/api/v1/console' is proxied to backend; backend enforces admin auth
   '/api/users': ['ADMIN', 'MANAGER'],
   '/api/tokens': ['USER', 'ADMIN', 'MANAGER'],
   '/api/subscription': ['USER', 'ADMIN', 'MANAGER'],
@@ -25,7 +25,7 @@ const ROUTE_PERMISSIONS: Record<string, string[]> = {
 
 // 速率限制配置
 const RATE_LIMITS: Record<string, { requests: number; windowMs: number }> = {
-  '/api/admin': { requests: 100, windowMs: 60000 }, // 100 requests per minute
+  // '/ops/api/v1/console': { requests: 100, windowMs: 60000 },
   '/api/batchopen': { requests: 1000, windowMs: 60000 }, // 1000 requests per minute
   '/api/siterank': { requests: 500, windowMs: 60000 }, // 500 requests per minute
   '/api/auth': { requests: 5, windowMs: 60000 }, // 5 requests per minute

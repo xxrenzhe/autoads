@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from '@tanstack/react-query';
-import { backend } from '@/shared/http/backend';
+import { robustFetch } from '@/lib/utils/api/robust-client';
 
 export type GoflyUser = {
   id?: string | number;
@@ -23,10 +23,17 @@ export type GoflyUsersResponse = {
 export function useAdminGoflyUsers({ search, status, page = 1, limit = 10 }: { search?: string; status?: string; page?: number; limit?: number; }) {
   return useQuery({
     queryKey: ['admin', 'gofly', 'users', search ?? '', status ?? '', page, limit],
-    queryFn: async (): Promise<GoflyUsersResponse> =>
-      backend.get<GoflyUsersResponse>('/admin/gofly-panel/api/users', { search, status, page, limit }),
+    queryFn: async (): Promise<GoflyUsersResponse> => {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (status) params.append('status', status);
+      params.append('page', String(page ?? 1));
+      params.append('limit', String(limit ?? 10));
+      const res = await robustFetch(`/ops/api/v1/console/users?${params.toString()}`);
+      if (!res.ok) throw new Error('failed to load users');
+      return res.json();
+    },
     keepPreviousData: true,
     staleTime: 60_000,
   });
 }
-

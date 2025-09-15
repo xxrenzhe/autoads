@@ -70,7 +70,7 @@ func InternalJWTAuth(enforce bool) gin.HandlerFunc {
     return func(c *gin.Context) {
         path := c.Request.URL.Path
         // Allowlist public paths
-        if strings.HasPrefix(path, "/health") || strings.HasPrefix(path, "/ready") || strings.HasPrefix(path, "/live") || strings.HasPrefix(path, "/api/health") || strings.HasPrefix(path, "/admin/gofly-panel/") {
+        if strings.HasPrefix(path, "/health") || strings.HasPrefix(path, "/ready") || strings.HasPrefix(path, "/live") || strings.HasPrefix(path, "/api/health") || strings.HasPrefix(path, "/console/") {
             c.Next()
             return
         }
@@ -125,4 +125,3 @@ func InternalJWTAuth(enforce bool) gin.HandlerFunc {
         c.Next()
     }
 }
-

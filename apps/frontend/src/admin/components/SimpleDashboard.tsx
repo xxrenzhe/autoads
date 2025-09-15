@@ -53,7 +53,7 @@ const SimpleAdminDashboard: React.FC = () => {
   React.useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/admin/dashboard/simple-stats');
+        const response = await fetch('/ops/api/v1/console/dashboard/overview');
         const data = await response.json();
         setStats(data);
       } catch (error) {

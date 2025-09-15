@@ -66,14 +66,14 @@ echo "🏥 Running health checks..."
 # Basic health check
 check_endpoint "/api/health" "200" "Basic health endpoint"
 
-# Admin health check
-check_json_endpoint "/api/admin/health" "status" "healthy" "Admin health endpoint"
+# Unified health check (new)
+check_json_endpoint "/health" "status" "healthy" "Health endpoint status"
 
-# Database connectivity
-check_json_endpoint "/api/admin/health" "database" "connected" "Database connectivity"
+# Database connectivity (via /health checks)
+check_json_endpoint "/health" "checks.database.status" "healthy" "Database connectivity"
 
-# Redis connectivity
-check_json_endpoint "/api/admin/health" "redis" "connected" "Redis connectivity"
+# Redis connectivity (via /health checks)
+check_json_endpoint "/health" "checks.redis.status" "healthy" "Redis connectivity"
 
 # Public pages
 check_endpoint "/" "200" "Home page"

@@ -52,7 +52,7 @@ const UserRoleField: React.FC = () => {
   const roleColors = {
     USER: 'default',
     ADMIN: 'primary',
-    SUPER_ADMIN: 'secondary',
+    // SUPER_ADMIN removed
   };
   
   return (

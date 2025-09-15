@@ -86,9 +86,9 @@ const apiEndpoints = [
     category: 'User',
   },
   {
-    id: '/api/admin/stats',
+    id: '/ops/api/v1/console/stats',
     name: '管理员统计数据',
-    endpoint: '/api/admin/stats',
+    endpoint: '/ops/api/v1/console/stats',
     method: 'GET',
     description: '获取系统级别的统计数据，包括用户活跃度、API使用情况、系统性能等指标。',
     features: ['系统统计', '用户分析', '性能监控', '使用报告'],
@@ -96,7 +96,7 @@ const apiEndpoints = [
     rateLimit: '100次/分钟',
     active: true,
     category: 'Admin',
-    roles: ['ADMIN', 'SUPER_ADMIN'],
+    roles: ['ADMIN'],
   },
 ];
 

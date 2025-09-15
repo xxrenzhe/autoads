@@ -15,7 +15,7 @@ const API_FEATURE_MAPPING: Record<string, string> = {
   '/api/adscenter': 'adscenter_pro',
   '/api/user/tokens': 'api_access',
   '/api/subscription': 'api_access',
-  '/api/admin': 'api_access_max'
+  // '/ops/api/v1/console': 'api_access_max'
 };
 
 // 速率限制配置（基于套餐）

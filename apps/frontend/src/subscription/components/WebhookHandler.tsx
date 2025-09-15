@@ -53,7 +53,7 @@ export function WebhookHandler({
       if (selectedStatus !== 'all') params.append('status', selectedStatus)
       params.append('limit', maxEvents.toString())
 
-      const response = await fetch(`/api/admin/webhooks/stripe?${params}`)
+      const response = await fetch(`/ops/api/v1/console/webhooks/stripe?${params}`)
       if (!response.ok) {
         throw new Error('Failed to fetch webhook events')
       }
@@ -83,7 +83,7 @@ export function WebhookHandler({
 
   const handleRetryWebhook = async (eventId: string) => {
     try {
-      const response = await fetch(`/api/admin/webhooks/stripe/${eventId}/retry`, {
+      const response = await fetch(`/ops/api/v1/console/webhooks/stripe/${eventId}/retry`, {
         method: 'POST'
       })
       

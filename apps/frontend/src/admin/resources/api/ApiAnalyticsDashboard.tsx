@@ -62,7 +62,7 @@ const ApiAnalyticsDashboard: React.FC = () => {
 
   const fetchApiStats = async () => {
     try {
-      const response = await fetch('/api/admin/api/stats');
+      const response = await fetch('/ops/api/v1/console/api/stats');
       const data = await response.json();
       setStats(data);
     } catch (error) {

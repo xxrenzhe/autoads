@@ -113,7 +113,7 @@ export async function createSubscription(formData: FormData) {
 export async function updateUserRole(userId: string, role: string) {
   const session = await auth()
   
-  if (!session?.user?.id || (session.user?.role !== 'ADMIN' && session.user?.role !== 'SUPER_ADMIN')) {
+  if (!session?.user?.id || (session.user?.role !== 'ADMIN')) {
     throw new Error('Unauthorized')
   }
 
@@ -137,7 +137,7 @@ export async function updateUserRole(userId: string, role: string) {
 export async function updateUserStatus(userId: string, status: string) {
   const session = await auth()
   
-  if (!session?.user?.id || (session.user?.role !== 'ADMIN' && session.user?.role !== 'SUPER_ADMIN')) {
+  if (!session?.user?.id || (session.user?.role !== 'ADMIN')) {
     throw new Error('Unauthorized')
   }
 
@@ -241,7 +241,7 @@ export async function createCustomerPortalSession() {
 export async function deleteUser(userId: string) {
   const session = await auth()
   
-  if (!session?.userId || (session.user?.role !== 'ADMIN' && session.user?.role !== 'SUPER_ADMIN')) {
+  if (!session?.userId || (session.user?.role !== 'ADMIN')) {
     throw new Error('Unauthorized')
   }
 

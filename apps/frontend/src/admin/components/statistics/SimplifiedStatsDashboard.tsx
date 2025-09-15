@@ -113,7 +113,7 @@ export const SimplifiedStatsDashboard: React.FC = () => {
         params.append('features', filters.features.join(','));
       }
 
-      const response = await fetch(`/api/admin/statistics/${endpoint}?${params.toString()}`);
+      const response = await fetch(`/ops/api/v1/console/statistics/${endpoint}?${params.toString()}`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch statistics');

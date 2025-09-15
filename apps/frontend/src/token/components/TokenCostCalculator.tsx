@@ -26,7 +26,7 @@ export function TokenCostCalculator({ className }: TokenCostCalculatorProps) {
   } = useQuery({
     queryKey: ['token-configs'],
     queryFn: async () => {
-      const response = await fetch('/api/admin/token-config')
+      const response = await fetch('/ops/api/v1/console/token-config')
       if (!response.ok) {
         throw new Error('Failed to fetch token configurations')
       }

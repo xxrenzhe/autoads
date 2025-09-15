@@ -21,8 +21,8 @@ export const createNextAuthAuthProvider = (): AuthProvider => {
     },
 
     logout: () => {
-      // 清理 NextAuth 会话
-      window.location.href = '/auth/admin-signin?callbackUrl=/admin';
+      // 清理 NextAuth 会话（后台独立登录页）
+      window.location.href = '/ops/console/login?callbackUrl=%2Fops%2Fconsole%2Fpanel';
       return Promise.resolve();
     },
 
@@ -35,8 +35,8 @@ export const createNextAuthAuthProvider = (): AuthProvider => {
     checkError: (error: ErrorResponse) => {
       const status = error.status;
       if (status === 401 || status === 403) {
-        // 如果 API 返回 401/403，重定向到登录页面
-        window.location.href = '/auth/admin-signin?callbackUrl=/admin';
+        // 如果 API 返回 401/403，重定向到后台登录
+        window.location.href = '/ops/console/login?callbackUrl=%2Fops%2Fconsole%2Fpanel';
         return Promise.reject();
       }
       return Promise.resolve();
@@ -49,18 +49,7 @@ export const createNextAuthAuthProvider = (): AuthProvider => {
       const userStr = localStorage.getItem('nextAuthUser');
       if (userStr) {
         const user = JSON.parse(userStr);
-        if (user.role === 'SUPER_ADMIN') {
-          return Promise.resolve([
-            'admin', 'super_admin',
-            'users:read', 'users:write', 'users:delete',
-            'subscriptions:read', 'subscriptions:write', 'subscriptions:delete',
-            'config:read', 'config:write', 'config:delete',
-            'payments:read', 'payments:write', 'payments:delete',
-            'notifications:read', 'notifications:write', 'notifications:delete',
-            'api:read', 'api:write',
-            'admin:settings'
-          ]);
-        } else if (user.role === 'ADMIN') {
+        if (user.role === 'ADMIN') {
           return Promise.resolve([
             'admin',
             'users:read', 'users:write',

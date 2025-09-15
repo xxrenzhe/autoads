@@ -26,7 +26,7 @@ const RoleIcon: React.FC = () => {
     case 'ADMIN':
       return <AdminIcon className="h-5 w-5" />;
     case 'SUPER_ADMIN':
-      return <SuperAdminIcon className="h-5 w-5" />;
+      return null;
     default:
       return <UserIcon className="h-5 w-5" />;
   }
@@ -90,33 +90,7 @@ const roleDescriptions = {
       'admin:access'
     ]
   },
-  SUPER_ADMIN: {
-    name: '超级管理员',
-    description: '所有系统权限',
-    defaultPermissions: [
-      'users:read',
-      'users:create',
-      'users:edit',
-      'users:delete',
-      'roles:read',
-      'roles:edit',
-      'subscriptions:read',
-      'subscriptions:edit',
-      'subscriptions:create',
-      'payments:read',
-      'payments:refund',
-      'config:read',
-      'config:edit',
-      'env:read',
-      'env:edit',
-      'tokens:read',
-      'tokens:edit',
-      'siterank:access',
-      'batchopen:access',
-      'adscenter:access',
-      'admin:access'
-    ]
-  }
+  // SUPER_ADMIN removed in unified role model
 };
 
 /**

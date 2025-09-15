@@ -29,7 +29,7 @@ const simplifiedUserFilters = [
     choices={[
       { id: 'USER', name: '普通用户' },
       { id: 'ADMIN', name: '管理员' },
-      { id: 'SUPER_ADMIN', name: '超级管理员' },
+      // SUPER_ADMIN removed
     ]}
     label="角色"
   />,
@@ -54,13 +54,13 @@ const RoleChip: React.FC<{ source?: string; label?: string; record?: any }> = ({
   const roleColors = {
     USER: 'default',
     ADMIN: 'primary',
-    SUPER_ADMIN: 'secondary',
+    // SUPER_ADMIN removed
   } as const;
   
   const roleLabels = {
     USER: '普通用户',
     ADMIN: '管理员',
-    SUPER_ADMIN: '超级管理员',
+    // SUPER_ADMIN removed
   } as const;
   
   return (

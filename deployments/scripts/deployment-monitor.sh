@@ -74,7 +74,7 @@ check_health() {
     local http_status=0
     
     # 测量响应时间和状态码
-    local curl_output=$(curl -s -o /dev/null -w "%{http_code}:%{time_total}" "$BASE_URL/api/health" 2>/dev/null || echo "000:0")
+    local curl_output=$(curl -s -o /dev/null -w "%{http_code}:%{time_total}" "$BASE_URL/health" 2>/dev/null || echo "000:0")
     http_status=$(echo "$curl_output" | cut -d: -f1)
     response_time=$(echo "$curl_output" | cut -d: -f2)
     
@@ -89,14 +89,16 @@ check_health() {
 
 # 检查数据库连接
 check_database() {
-    local db_status=$(curl -s "$BASE_URL/api/admin/health" 2>/dev/null | jq -r '.database' 2>/dev/null || echo "unknown")
-    echo "$db_status"
+    local db_json=$(curl -s "$BASE_URL/health" 2>/dev/null || echo "{}")
+    local status=$(echo "$db_json" | jq -r '.checks.database.status // "unknown"' 2>/dev/null || echo "unknown")
+    if [ "$status" = "healthy" ]; then echo "connected"; else echo "disconnected"; fi
 }
 
 # 检查Redis连接
 check_redis() {
-    local redis_status=$(curl -s "$BASE_URL/api/admin/health" 2>/dev/null | jq -r '.redis' 2>/dev/null || echo "unknown")
-    echo "$redis_status"
+    local r_json=$(curl -s "$BASE_URL/health" 2>/dev/null || echo "{}")
+    local status=$(echo "$r_json" | jq -r '.checks.redis.status // "unknown"' 2>/dev/null || echo "unknown")
+    if [ "$status" = "healthy" ]; then echo "connected"; else echo "disconnected"; fi
 }
 
 # 检查错误率

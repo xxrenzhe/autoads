@@ -91,7 +91,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
   const fetchRules = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/admin/api-management/rate-limits')
+      const response = await fetch('/ops/api/v1/console/api-management/rate-limits')
       if (response.ok) {
         const data = await response.json()
         setRules(data.data || [])
@@ -110,7 +110,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
     }
 
     try {
-      const response = await fetch('/api/admin/api-management/rate-limits', {
+      const response = await fetch('/ops/api/v1/console/api-management/rate-limits', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +170,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
     }
 
     try {
-      const response = await fetch(`/api/admin/api-management/rate-limits/${id}`, {
+      const response = await fetch(`/ops/api/v1/console/api-management/rate-limits/${id}`, {
         method: 'DELETE',
       })
 
@@ -315,7 +315,7 @@ export default function RateLimitConfig({ initialRules = [] }: RateLimitConfigPr
                           <SelectItem value="all">All Users</SelectItem>
                           <SelectItem value="USER">User</SelectItem>
                           <SelectItem value="ADMIN">Admin</SelectItem>
-                          <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                          {/* SUPER_ADMIN removed */}
                         </SelectContent>
                       </Select>
                     </div>

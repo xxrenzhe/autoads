@@ -68,7 +68,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
       'USER': { label: '普通用户', color: 'bg-gray-100 text-gray-800' },
       'PREMIUM': { label: '高级用户', color: 'bg-blue-100 text-blue-800' },
       'ADMIN': { label: '管理员', color: 'bg-purple-100 text-purple-800' },
-      'SUPER_ADMIN': { label: '超级管理员', color: 'bg-red-100 text-red-800' }
+      // SUPER_ADMIN removed in unified role model
     }
     
     const config = roleConfig[role as keyof typeof roleConfig] || roleConfig.USER

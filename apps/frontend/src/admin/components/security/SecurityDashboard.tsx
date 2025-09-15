@@ -82,9 +82,9 @@ export default function SecurityDashboard() {
       setLoading(true)
       
       const [threatsRes, sessionsRes, auditRes] = await Promise.all([
-        fetch('/api/admin/security/threats'),
-        fetch('/api/admin/security/sessions'),
-        fetch('/api/admin/security/audit?limit=50')
+        fetch('/ops/api/v1/console/security/threats'),
+        fetch('/ops/api/v1/console/security/sessions'),
+        fetch('/ops/api/v1/console/security/audit?limit=50')
       ])
 
       const [threatsData, sessionsData, auditData] = await Promise.all([
@@ -121,7 +121,7 @@ export default function SecurityDashboard() {
 
   const resolveThreat = async (threatId: string, resolution: 'resolved' | 'false_positive') => {
     try {
-      const response = await fetch('/api/admin/security/threats', {
+      const response = await fetch('/ops/api/v1/console/security/threats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -147,7 +147,7 @@ export default function SecurityDashboard() {
 
   const blockIP = async (ipAddress: string, reason: string) => {
     try {
-      const response = await fetch('/api/admin/security/threats', {
+      const response = await fetch('/ops/api/v1/console/security/threats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

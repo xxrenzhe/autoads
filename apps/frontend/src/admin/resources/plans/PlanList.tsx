@@ -121,7 +121,7 @@ const PlanListActions: React.FC = () => {
   const initializeDefaults = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/plans/initialize-defaults', {
+      const response = await fetch('/ops/api/v1/console/plans/initialize-defaults', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -58,10 +58,6 @@ function getAllowedPrefixes(): string[] {
   // 默认最小必要集（可通过 BACKEND_PROXY_ALLOW_PREFIXES 覆盖）
   return [
     '/health', '/ready', '/live',
-    '/admin/gofly-panel',
-    '/admin/gofly-panel/api/',
-    '/admin/config/v1',
-    '/admin/api-management/',
     '/api/batchopen',
     '/api/batchopen/',
     '/api/v1/batchopen',

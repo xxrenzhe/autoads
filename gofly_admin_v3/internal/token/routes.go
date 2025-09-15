@@ -10,15 +10,15 @@ import (
 )
 
 func init() {
-    // Admin APIs
-    gf.RegisterRoute("GET", "/admin/tokens/balance", adminGetBalance, false, nil)
-    gf.RegisterRoute("POST", "/admin/tokens/adjust", adminAdjustTokens, false, nil)
-    gf.RegisterRoute("POST", "/admin/tokens/purchase", adminPurchasePackage, false, nil)
-    gf.RegisterRoute("GET", "/admin/tokens/transactions", adminListTransactions, false, nil)
-    gf.RegisterRoute("GET", "/admin/token/rules", listRulesHandler, false, nil)
-    gf.RegisterRoute("POST", "/admin/token/rules", upsertRuleHandler, false, nil)
-    gf.RegisterRoute("PUT", "/admin/token/rules/:id", updateRuleHandler, false, nil)
-    gf.RegisterRoute("DELETE", "/admin/token/rules/:id", deleteRuleHandler, false, nil)
+    // Console Admin APIs
+    gf.RegisterRoute("GET", "/console/tokens/balance", adminGetBalance, false, nil)
+    gf.RegisterRoute("POST", "/console/tokens/adjust", adminAdjustTokens, false, nil)
+    gf.RegisterRoute("POST", "/console/tokens/purchase", adminPurchasePackage, false, nil)
+    gf.RegisterRoute("GET", "/console/tokens/transactions", adminListTransactions, false, nil)
+    gf.RegisterRoute("GET", "/console/token/rules", listRulesHandler, false, nil)
+    gf.RegisterRoute("POST", "/console/token/rules", upsertRuleHandler, false, nil)
+    gf.RegisterRoute("PUT", "/console/token/rules/:id", updateRuleHandler, false, nil)
+    gf.RegisterRoute("DELETE", "/console/token/rules/:id", deleteRuleHandler, false, nil)
 
     // User APIs
     gf.RegisterRoute("GET", "/user/token/balance", userGetBalance, false, nil)
@@ -27,10 +27,9 @@ func init() {
 
 func adminOnly(c *gin.Context, roles ...string) bool {
     if !c.GetBool("is_admin") { c.JSON(403, gin.H{"message":"需要管理员权限"}); c.Abort(); return false }
-    if len(roles) == 0 { return true }
-    role := c.GetString("admin_role")
-    for _, r := range roles { if strings.EqualFold(r, role) { return true } }
-    c.JSON(403, gin.H{"message":"角色权限不足"}); c.Abort(); return false
+    role := strings.ToUpper(c.GetString("admin_role"))
+    if role != "ADMIN" { c.JSON(403, gin.H{"message":"需要管理员权限"}); c.Abort(); return false }
+    return true
 }
 
 // Admin: balance
@@ -44,7 +43,7 @@ func adminGetBalance(c *gin.Context) {
 }
 
 func adminAdjustTokens(c *gin.Context) {
-    if !adminOnly(c, "super_admin", "admin") { return }
+    if !adminOnly(c) { return }
     var req struct{ UserID string; Delta int; Reason string }
     if err := c.ShouldBindJSON(&req); err != nil || req.UserID == "" || req.Delta == 0 {
         gf.Failed().SetMsg("参数错误").Regin(c); return
@@ -55,7 +54,7 @@ func adminAdjustTokens(c *gin.Context) {
 }
 
 func adminPurchasePackage(c *gin.Context) {
-    if !adminOnly(c, "super_admin", "admin") { return }
+    if !adminOnly(c) { return }
     var req struct{ UserID, PackageID string }
     if err := c.ShouldBindJSON(&req); err != nil || req.UserID == "" || req.PackageID == "" { gf.Failed().SetMsg("参数错误").Regin(c); return }
     if err := NewService(gf.DB()).PurchasePackage(req.UserID, req.PackageID); err != nil { gf.Failed().SetMsg(err.Error()).Regin(c); return }
@@ -86,7 +85,7 @@ func listRulesHandler(c *gin.Context) {
 }
 
 func upsertRuleHandler(c *gin.Context) {
-    if !adminOnly(c, "super_admin", "admin") { return }
+    if !adminOnly(c) { return }
     var req struct{ Service, Action string; TokenCost int }
     if err := c.ShouldBindJSON(&req); err != nil || req.Service == "" || req.Action == "" || req.TokenCost <= 0 {
         gf.Failed().SetMsg("参数错误").Regin(c); return
@@ -100,7 +99,7 @@ func upsertRuleHandler(c *gin.Context) {
 }
 
 func updateRuleHandler(c *gin.Context) {
-    if !adminOnly(c, "super_admin", "admin") { return }
+    if !adminOnly(c) { return }
     id := c.Param("id")
     var req struct{ TokenCost int; IsActive *bool }
     if err := c.ShouldBindJSON(&req); err != nil { gf.Failed().SetMsg("参数错误").Regin(c); return }
@@ -113,7 +112,7 @@ func updateRuleHandler(c *gin.Context) {
 }
 
 func deleteRuleHandler(c *gin.Context) {
-    if !adminOnly(c, "super_admin") { return }
+    if !adminOnly(c) { return }
     id := c.Param("id")
     if _, err := gf.DB().Model("token_consumption_rules").Where("id", id).Update(gf.Map{"is_active": false}); err != nil { gf.Failed().SetMsg(err.Error()).Regin(c); return }
     gf.Success().SetMsg("规则已禁用").Regin(c)

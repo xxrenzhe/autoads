@@ -108,14 +108,14 @@ const TokenConsumptionRules: React.FC = () => {
     setLoading(true);
     try {
       // Fetch token rules
-      const rulesResponse = await fetch('/api/admin/tokens/rules');
+      const rulesResponse = await fetch('/ops/api/v1/console/token/rules');
       if (rulesResponse.ok) {
         const rulesData = await rulesResponse.json();
         setRules(rulesData);
       }
 
       // Fetch token config
-      const configResponse = await fetch('/api/admin/tokens/config');
+      const configResponse = await fetch('/ops/api/v1/console/token-config');
       if (configResponse.ok) {
         const configData = await configResponse.json();
         setConfig(configData);
@@ -144,7 +144,7 @@ const TokenConsumptionRules: React.FC = () => {
     if (!editingRule) return;
 
     try {
-      const response = await fetch(`/api/admin/tokens/rules/${editingRule.id}`, {
+      const response = await fetch(`/ops/api/v1/console/token/rules/${editingRule.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),
@@ -166,7 +166,7 @@ const TokenConsumptionRules: React.FC = () => {
     if (!config) return;
 
     try {
-      const response = await fetch('/api/admin/tokens/config', {
+      const response = await fetch('/ops/api/v1/console/token-config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),

@@ -48,7 +48,7 @@ import React, { useEffect, useState } from 'react';
     setSrMsg('');
     try {
       const mapping = JSON.parse(srMapping || '{}');
-      const res = await fetch('/api/admin/siterank/settings', {
+      const res = await fetch('/ops/api/v1/console/siterank/settings', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mapping, weights: srWeights })
       });
       if (!res.ok) throw new Error('保存失败');
@@ -62,7 +62,7 @@ import React, { useEffect, useState } from 'react';
     setRlMsg('');
     try {
       const overrides = JSON.parse(rlOverrides || '{}');
-      const res = await fetch('/api/admin/rate-limit/overrides', {
+      const res = await fetch('/ops/api/v1/console/rate-limit/overrides', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(overrides)
       });
       if (!res.ok) throw new Error('保存失败');
@@ -75,7 +75,7 @@ import React, { useEffect, useState } from 'react';
   async function tryCalcTokens() {
     setTkMsg(''); setTkResult(null);
     try {
-      const res = await fetch('/api/admin/tokens/try-calc', {
+      const res = await fetch('/ops/api/v1/console/tokens/try-calc', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: tkFeature, action: tkAction, count: tkCount })
       });
       const data = await res.json();
@@ -151,8 +151,8 @@ import React, { useEffect, useState } from 'react';
         <h2 style={{ fontSize: 18, marginBottom: 8 }}>审计日志导出</h2>
         <p style={{ color: '#666', marginBottom: 8 }}>支持导出 JSON 或 CSV；可选时间范围参数 start/end（ISO 字符串）。</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <a href="/api/admin/audits/export?format=json" target="_blank" rel="noopener noreferrer" style={{ padding: '6px 12px', border: '1px solid #ccc', borderRadius: 6, textDecoration: 'none' }}>导出 JSON（全部）</a>
-          <a href="/api/admin/audits/export?format=csv" target="_blank" rel="noopener noreferrer" style={{ padding: '6px 12px', border: '1px solid #ccc', borderRadius: 6, textDecoration: 'none' }}>导出 CSV（全部）</a>
+          <a href="/ops/api/v1/console/audits/export?format=json" target="_blank" rel="noopener noreferrer" style={{ padding: '6px 12px', border: '1px solid #ccc', borderRadius: 6, textDecoration: 'none' }}>导出 JSON（全部）</a>
+          <a href="/ops/api/v1/console/audits/export?format=csv" target="_blank" rel="noopener noreferrer" style={{ padding: '6px 12px', border: '1px solid #ccc', borderRadius: 6, textDecoration: 'none' }}>导出 CSV（全部）</a>
         </div>
       </section>
 

@@ -7,7 +7,7 @@ export const API_ENDPOINTS = {
   SITERANK: '/api/siterank',
   BATCHOPEN: '/api/batchopen',
   ADSCENTER: '/api/adscenter',
-  ADMIN: '/api/admin',
+  ADMIN: '/ops/api/v1/console',
 } as const
 
 // 缓存键常量

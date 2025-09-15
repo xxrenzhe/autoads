@@ -146,6 +146,17 @@ docker logs autoads-saas-production
   - 反代会注入/透传 `X-Request-Id`，并在响应加上 `Server-Timing: upstream;dur=XXX`，可用来追踪延迟与端到端链路。
   - 前端（开发环境）会在控制台输出 `[backend]` 调用的耗时、请求ID、Server-Timing 摘要。
 
+### 管理后台访问与登录分离（重要）
+
+- 管理后台仅支持 URL 直达（Next 前端不提供任何入口），默认直达：
+  - `/ops/console/login`（登录页）或 `/ops/console/panel`（已登录时）
+- `/ops/*` 是 Next 的“管理网关”：
+  - 仅允许代理到容器内的 `/console/*`（GoFly Admin 前端）与 `/api/v1/console/*`（管理 API）
+  - 为所有响应添加 `X-Robots-Tag: noindex, nofollow`，避免被搜索引擎收录
+  - 不做 NextAuth 预检，权限由 Go 的 `AdminJWT` 严格判定（独立于站点的 NextAuth）
+- 普通用户登录站点（NextAuth）与管理员登录后台（AdminJWT）完全独立，Cookie/Session 不共享。
+- 旧前缀 `/admin/*` 与 `/api/v1/admin/*` 已下线，请使用 `/console/*` 与 `/api/v1/console/*`。
+
 ### Go 服务器特点
 - **静态文件服务**：直接服务 Next.js 构建产物
 - **API 路由**：RESTful API 和 WebSocket 支持
@@ -264,15 +275,15 @@ docker exec autoads-saas-production netstat -tlnp
 - `BACKEND_PROXY_TIMEOUT_MS`（可选）：反代上游超时（毫秒），默认 `15000`
 - `NEXT_PUBLIC_BACKEND_PREFIX`（可选）：前端 `backend.ts` 访问后端的前缀，默认 `/go`
 - `BACKEND_PROXY_ALLOW_PREFIXES`（可选）：允许反代的前缀列表，逗号分隔；默认最小集：
-  - `/health,/ready,/live,/admin/gofly-panel/api/,/admin/api-management/,/api/user,/api/tokens,/api/siterank`
+  - `/health,/ready,/live,/api/user,/api/tokens,/api/v1/siterank,/api/v1/adscenter,/api/v1/batchopen`
 
 #### 示例配置
 
 本地/容器运行时可通过环境变量覆盖，例如：
 
 ```bash
-# 仅允许必要后端路径通过 /go 反代
-export BACKEND_PROXY_ALLOW_PREFIXES="/health,/ready,/live,/admin/gofly-panel/api/,/admin/api-management/,/api/user,/api/tokens,/api/siterank"
+# 仅允许必要后端路径通过 /go 反代（业务前缀）
+export BACKEND_PROXY_ALLOW_PREFIXES="/health,/ready,/live,/api/user,/api/tokens,/api/v1/siterank,/api/v1/adscenter,/api/v1/batchopen"
 
 # 如后端在其它端口或地址
 export BACKEND_URL="http://127.0.0.1:8080"
@@ -281,5 +292,21 @@ export BACKEND_URL="http://127.0.0.1:8080"
 export BACKEND_PROXY_TIMEOUT_MS=20000
 export BACKEND_PROXY_MAX_BODY=5242880 # 5MB
 ```
+
+### CI 冒烟测试接入（示例）
+
+在部署完成后增加冒烟测试步骤，验证原子端点幂等、限流头与配置热更新 ETag：
+
+```bash
+# GitHub Actions 示例步骤
+- name: Smoke test
+  run: |
+    BASE_URL=${{ steps.deploy.outputs.url }} \
+    USER_TOKEN="Bearer $USER_JWT" \
+    ADMIN_TOKEN="Bearer $ADMIN_JWT" \
+    ./scripts/e2e-smoke.sh
+```
+
+若未使用 GitHub Actions，可在任何 CI 平台以相同方式调用 `scripts/e2e-smoke.sh`。脚本输出将包含 X-Request-Id、Server-Timing 与 X-RateLimit-* 等关键头部，便于快速诊断。
 
 这种架构特别适合中小型 SaaS 应用，在保证功能完整性的同时，最大化了部署和运维的效率。

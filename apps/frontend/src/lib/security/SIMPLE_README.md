@@ -98,12 +98,12 @@ if (!safety.safe) {
 
 ### 获取安全概览
 ```
-GET /api/admin/security-simple
+GET /ops/api/v1/console/security/simple
 ```
 
 ### 管理操作
 ```
-POST /api/admin/security-simple
+POST /ops/api/v1/console/security/simple
 {
   "action": "reset_user_risk",
   "userId": "user123",

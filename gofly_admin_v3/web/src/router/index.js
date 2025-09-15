@@ -21,26 +21,26 @@ const Placeholder = (name) => ({
 })
 
 const routes = [
-  { path: '/', redirect: '/admin/dashboard' },
-  { path: '/admin/dashboard', component: Dashboard },
+  { path: '/', redirect: '/console/dashboard' },
+  { path: '/console/dashboard', component: Dashboard },
 
-  { path: '/admin/api-manager', component: ApiManager },
-  { path: '/admin/api-analytics', component: ApiAnalytics },
+  { path: '/console/api-manager', component: ApiManager },
+  { path: '/console/api-analytics', component: ApiAnalytics },
 
-  { path: '/admin/rate-limit', component: RateLimitManager },
-  { path: '/admin/system', component: SystemManager },
+  { path: '/console/rate-limit', component: RateLimitManager },
+  { path: '/console/system', component: SystemManager },
 
-  { path: '/admin/users', component: UserList },
-  { path: '/admin/plans', component: PlanManager },
-  { path: '/admin/user-subscriptions', component: UserSubscription },
+  { path: '/console/users', component: UserList },
+  { path: '/console/plans', component: PlanManager },
+  { path: '/console/user-subscriptions', component: UserSubscription },
 
-  { path: '/admin/tokens/overview', component: TokenOverview },
-  { path: '/admin/tokens/adjust', component: TokenAdjust },
-  { path: '/admin/tokens/transactions', component: TokenTransactions },
+  { path: '/console/tokens/overview', component: TokenOverview },
+  { path: '/console/tokens/adjust', component: TokenAdjust },
+  { path: '/console/tokens/transactions', component: TokenTransactions },
 
-  { path: '/admin/monitoring', component: Monitoring },
-  { path: '/admin/admins', component: AdminAccounts },
-  { path: '/admin/roles', component: Placeholder('角色权限') },
+  { path: '/console/monitoring', component: Monitoring },
+  { path: '/console/admins', component: AdminAccounts },
+  { path: '/console/roles', component: Placeholder('角色权限') },
 ]
 
 export const router = createRouter({ history: createWebHistory(), routes })

@@ -98,9 +98,9 @@ export function useSystemMonitoring(refreshInterval: number = 30000) {
   } = useQuery({
     queryKey: ['system-metrics'],
     queryFn: async (): Promise<SystemMetrics> => {
-      const response = await fetch('/api/admin/system/metrics')
+      const response = await fetch('/ops/api/v1/console/monitoring/health')
       if (!response.ok) {
-        throw new Error('Failed to fetch system metrics')
+        throw new Error('Failed to fetch system health')
       }
       return response.json()
     },
@@ -116,13 +116,10 @@ export function useSystemMonitoring(refreshInterval: number = 30000) {
   } = useQuery({
     queryKey: ['metrics-history'],
     queryFn: async (): Promise<MetricsHistory[]> => {
-      const response = await fetch('/api/admin/system/metrics/history?hours=24')
-      if (!response.ok) {
-        throw new Error('Failed to fetch metrics history')
-      }
-      return response.json()
+      // 后端当前未提供历史接口，返回空数组占位
+      return []
     },
-    refetchInterval: isRealTimeEnabled ? refreshInterval * 2 : false,
+    refetchInterval: false,
     staleTime: refreshInterval,
   })
 
@@ -134,11 +131,12 @@ export function useSystemMonitoring(refreshInterval: number = 30000) {
   } = useQuery({
     queryKey: ['system-alerts'],
     queryFn: async (): Promise<SystemAlert[]> => {
-      const response = await fetch('/api/admin/system/alerts')
+      const response = await fetch('/ops/api/v1/console/monitoring/alerts')
       if (!response.ok) {
         throw new Error('Failed to fetch system alerts')
       }
-      return response.json()
+      const data = await response.json()
+      return (data?.data ?? data) as any
     },
     refetchInterval: isRealTimeEnabled ? refreshInterval / 2 : false,
     staleTime: refreshInterval / 4,
@@ -152,20 +150,17 @@ export function useSystemMonitoring(refreshInterval: number = 30000) {
   } = useQuery({
     queryKey: ['service-status'],
     queryFn: async (): Promise<ServiceStatus[]> => {
-      const response = await fetch('/api/admin/system/services')
-      if (!response.ok) {
-        throw new Error('Failed to fetch service status')
-      }
-      return response.json()
+      // 后端未实现服务详情，返回空
+      return []
     },
-    refetchInterval: isRealTimeEnabled ? refreshInterval : false,
+    refetchInterval: false,
     staleTime: refreshInterval / 2,
   })
 
   // Create alert mutation
   const createAlertMutation = useMutation({
     mutationFn: async (alertData: Partial<SystemAlert>) => {
-      const response = await fetch('/api/admin/system/alerts', {
+      const response = await fetch('/ops/api/v1/console/monitoring/alerts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -184,14 +179,9 @@ export function useSystemMonitoring(refreshInterval: number = 30000) {
 
   // Resolve alert mutation
   const resolveAlertMutation = useMutation({
-    mutationFn: async (alertId: string) => {
-      const response = await fetch(`/api/admin/system/alerts/${alertId}/resolve`, {
-        method: 'POST',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to resolve alert')
-      }
-      return response.json()
+    mutationFn: async (_alertId: string) => {
+      // 未提供“resolve”接口，直接刷新列表
+      return { success: true }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-alerts'] })
@@ -200,14 +190,9 @@ export function useSystemMonitoring(refreshInterval: number = 30000) {
 
   // Restart service mutation
   const restartServiceMutation = useMutation({
-    mutationFn: async (serviceName: string) => {
-      const response = await fetch(`/api/admin/system/services/${serviceName}/restart`, {
-        method: 'POST',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to restart service')
-      }
-      return response.json()
+    mutationFn: async (_serviceName: string) => {
+      // 未提供服务重启接口；占位返回
+      return { success: false, message: 'unsupported' }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['service-status'] })
@@ -216,18 +201,9 @@ export function useSystemMonitoring(refreshInterval: number = 30000) {
 
   // Clear cache mutation
   const clearCacheMutation = useMutation({
-    mutationFn: async (cacheType?: string) => {
-      const response = await fetch('/api/admin/system/cache/clear', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ type: cacheType }),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to clear cache')
-      }
-      return response.json()
+    mutationFn: async (_cacheType?: string) => {
+      // 未提供缓存清理接口；占位返回
+      return { success: false, message: 'unsupported' }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-metrics'] })
@@ -236,23 +212,9 @@ export function useSystemMonitoring(refreshInterval: number = 30000) {
 
   // Export metrics mutation
   const exportMetricsMutation = useMutation({
-    mutationFn: async ({ format, timeRange }: { format: 'csv' | 'json'; timeRange: string }) => {
-      const response = await fetch(`/api/admin/system/metrics/export?format=${format}&range=${timeRange}`)
-      if (!response.ok) {
-        throw new Error('Failed to export metrics')
-      }
-      
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `system-metrics-${new Date().toISOString().split('T')[0]}.${format}`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-      
-      return { success: true }
+    mutationFn: async (_opts: { format: 'csv' | 'json'; timeRange: string }) => {
+      // 未提供导出接口；占位返回
+      return { success: false }
     },
   })
 

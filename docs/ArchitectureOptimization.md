@@ -174,7 +174,7 @@
 //  - [x] 用只读配置适配器替换散落配置读取点（ENV 为 fallback）：FeatureFlags/SimilarWeb/AdsPower/Gmail/TokenConfig 等（其余按需补充）
 //      · 已覆盖：Token/AdsCenter/SimilarWeb/AdsPower/Gmail/FeatureFlags（payments/debug/analytics/maintenance）
 //  - [x] UI 限流上限展示（远端配置驱动）：已在 SiteRank/BatchOpen/AdsCenter 三处对齐（仅展示用途，权威以后端 X-RateLimit-* 为准；含 Plan/Feature 维度展示）
-//  - [x] Admin API 全量透明转发：`/api/admin/*` → `/go/admin/*`（通过同源反代注入内部JWT/幂等/链路头）
+//  - [x] Admin API 全量透明转发：`/api/admin/*` → `/ops/api/v1/console/*`（通过同源反代注入内部JWT/幂等/链路头）
 
 - Go：
   - [x] 新增中间件：RSA 验签（软启用/可强制）+ 结构化请求日志 + `X-Request-Id` 回显

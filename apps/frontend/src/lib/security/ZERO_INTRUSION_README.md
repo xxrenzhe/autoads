@@ -75,7 +75,7 @@ export const POST = withApiMonitoring(async function(request: NextRequest) {
 ### 不监控的路径
 
 - `/api/auth/*` - 认证相关
-- `/api/admin/security-minimal` - 避免循环
+- `/ops/api/v1/console/security/minimal` - 避免循环
 - `/api/health` - 健康检查
 - `/api/metrics` - 指标接口
 
@@ -83,14 +83,14 @@ export const POST = withApiMonitoring(async function(request: NextRequest) {
 
 ### 1. 管理界面
 
-访问 `/api/admin/security-minimal` 查看可疑事件：
+访问 `/ops/api/v1/console/security/minimal` 查看可疑事件：
 
 ```bash
 # 获取未解决的可疑事件
-curl "http://localhost:3000/api/admin/security-minimal?resolved=false"
+curl "http://localhost:3000/ops/api/v1/console/security/minimal?resolved=false"
 
 # 解决事件
-curl -X POST "http://localhost:3000/api/admin/security-minimal" \
+curl -X POST "http://localhost:3000/ops/api/v1/console/security/minimal" \
   -H "Content-Type: application/json" \
   -d '{
     "action": "resolve_event",

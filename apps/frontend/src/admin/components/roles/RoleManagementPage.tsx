@@ -88,7 +88,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
           sort: { field: 'createdAt', order: 'ASC' },
           filter: {}
         }),
-        fetch('/api/admin/permissions').then(res => res.json())
+        fetch('/ops/api/v1/console/permissions').then(res => res.json())
       ]);
 
       setRoles(rolesResponse.data);
@@ -137,7 +137,7 @@ const RoleManagement: React.FC<RoleManagementProps> = () => {
     if (!selectedRole) return;
 
     try {
-      const response = await fetch(`/api/admin/roles/${selectedRole.id}/permissions`, {
+      const response = await fetch(`/ops/api/v1/console/roles/${selectedRole.id}/permissions`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ permissions: selectedPermissions }),

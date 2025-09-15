@@ -140,7 +140,7 @@ export class ActivityTracker {
     const skipPatterns = [
       '/api/auth',
       '/api/health',
-      '/api/admin/analytics', // Don't track analytics API calls
+      '/ops/api/v1/console/api-management/analytics', // Don't track analytics API calls
       '/_next',
       '/favicon.ico',
       '/robots.txt',

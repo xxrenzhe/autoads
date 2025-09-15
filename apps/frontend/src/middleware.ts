@@ -148,6 +148,14 @@ export async function middleware(request: NextRequest) {
   const isApiRoute = pathname.startsWith('/api/');
   const isGoProxy = pathname.startsWith('/go/');
 
+  // 将所有 /api/admin/* 在边缘层重写到 /ops/api/v1/console/*，不经过本地 Next 路由
+  if (pathname.startsWith('/api/admin/')) {
+    const url = new URL(request.url);
+    const rest = pathname.replace('/api/admin', '');
+    url.pathname = `/ops/api/v1/console${rest}`;
+    return NextResponse.rewrite(url);
+  }
+
   // 轻量 per-IP 保护：仅针对 Next 自身 API 路由，跳过 /go/* 以避免与后端限流重复
   if (isApiRoute && !isGoProxy) {
     const ip = (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown';
@@ -217,7 +225,7 @@ export async function middleware(request: NextRequest) {
     const url = new URL(request.url);
     const path = url.pathname;
     if (path.startsWith('/api/') &&
-        !['/api/auth', '/api/admin/security-minimal', '/api/health', '/api/metrics'].some(p => path.startsWith(p))) {
+        !['/api/auth', '/api/health', '/api/metrics'].some(p => path.startsWith(p))) {
       const eventData = {
         userId: userId || 'anonymous',
         action: 'api_call' as const,
@@ -246,6 +254,10 @@ export async function middleware(request: NextRequest) {
   }
   requestHeaders.set('x-request-id', reqId);
   const response = NextResponse.next({ request: { headers: requestHeaders } });
+  // 管理网关响应禁止收录
+  if (pathname.startsWith('/ops/')) {
+    try { response.headers.set('X-Robots-Tag', 'noindex, nofollow') } catch {}
+  }
   response.headers.set('x-response-time', responseTime.toString());
   try { response.headers.set('x-request-id', reqId); } catch {}
   return response;

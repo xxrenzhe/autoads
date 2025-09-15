@@ -109,7 +109,7 @@ const UserStatisticsDashboard: React.FC = () => {
       }
 
       const response = await fetch(
-        `/api/admin/user-statistics?startDate=${startDate}&endDate=${endDate}&groupBy=${groupBy}`
+        `/ops/api/v1/console/user-statistics?startDate=${startDate}&endDate=${endDate}&groupBy=${groupBy}`
       );
 
       if (!response.ok) {

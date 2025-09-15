@@ -146,7 +146,7 @@ export default function TokenAnalyticsDashboard() {
         ...(selectedFeature !== 'all' && { feature: selectedFeature })
       })
 
-      const response = await fetch(`/api/admin/tokens/analytics?${params}`)
+      const response = await fetch(`/ops/api/v1/console/tokens/analytics?${params}`)
       const data = await response.json()
       
       if (data.success) {
@@ -181,7 +181,7 @@ export default function TokenAnalyticsDashboard() {
         ...(selectedFeature !== 'all' && { feature: selectedFeature })
       })
 
-      const response = await fetch(`/api/admin/tokens/analytics?${params}`)
+      const response = await fetch(`/ops/api/v1/console/tokens/analytics?${params}`)
       const data = await response.json()
       
       if (data.success) {

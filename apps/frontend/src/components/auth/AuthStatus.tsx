@@ -142,8 +142,8 @@ export function AuthStatus({
           </Link>
         </DropdownMenuItem>
 
-        {/* 管理员链接 */}
-        {session.user?.role && ['ADMIN', 'SUPER_ADMIN'].includes(session.user.role) && (
+        {/* 管理员链接（前台不再提供入口，保留占位示例） */}
+        {session.user?.role === 'ADMIN' && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>

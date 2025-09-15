@@ -147,7 +147,7 @@ export const UserStatisticsDashboard: React.FC = () => {
         params.append('maxTokenUsage', filters.maxTokenUsage.toString());
       }
 
-      const response = await fetch(`/api/admin/statistics/${endpoint}?${params.toString()}`);
+      const response = await fetch(`/ops/api/v1/console/statistics/${endpoint}?${params.toString()}`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch statistics');
@@ -209,7 +209,7 @@ export const UserStatisticsDashboard: React.FC = () => {
         params.append('userSegment', filters.userSegment);
       }
 
-      const response = await fetch(`/api/admin/statistics/${endpoint}/export?${params.toString()}`);
+      const response = await fetch(`/ops/api/v1/console/statistics/${endpoint}/export?${params.toString()}`);
       
       if (!response.ok) {
         throw new Error('Export failed');

@@ -10,8 +10,8 @@ import (
 )
 
 func init() {
-    // 用户列表（分页/搜索/排序）: GET /admin/users
-    gf.RegisterRoute("GET", "/admin/users", listUsersHandler, false, nil)
+    // 用户列表（分页/搜索/排序）: GET /console/users
+    gf.RegisterRoute("GET", "/console/users", listUsersHandler, false, nil)
     // 邮件验证码：发送/验证
     gf.RegisterRoute("POST", "/user/email/send_verification", sendEmailVerificationHandler, true, nil)
     gf.RegisterRoute("POST", "/user/email/verify", verifyEmailHandler, true, nil)
@@ -20,7 +20,7 @@ func init() {
     gf.RegisterRoute("POST", "/user/password/reset", resetPasswordHandler, true, nil)
 }
 
-// GET /admin/users?page=&size=&keyword=&sort=(created_at_desc|created_at_asc|username|email)
+// GET /console/users?page=&size=&keyword=&sort=(created_at_desc|created_at_asc|username|email)
 func listUsersHandler(c *gin.Context) {
     page, _ := strconv.Atoi(c.Query("page"))
     if page <= 0 { page = 1 }

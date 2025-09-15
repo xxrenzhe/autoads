@@ -179,9 +179,9 @@ func parseAdminToken(tokenStr string) (*adminClaims, error) {
 func AdminJWT() gin.HandlerFunc {
     return func(c *gin.Context) {
         path := c.Request.URL.Path
-        // 兼容 /admin/* 与 /api/v1/admin/* 两种前缀
-        isAdminPath := strings.HasPrefix(path, "/admin/") || strings.Contains(path, "/api/v1/admin/")
-        isLogin := strings.HasSuffix(path, "/admin/login") || strings.HasSuffix(path, "/api/v1/admin/login")
+        // 兼容 /admin/*、/console/* 与 /api/v1/admin/*、/api/v1/console/* 两种风格
+        isAdminPath := strings.HasPrefix(path, "/admin/") || strings.HasPrefix(path, "/console/") || strings.Contains(path, "/api/v1/admin/") || strings.Contains(path, "/api/v1/console/")
+        isLogin := strings.HasSuffix(path, "/admin/login") || strings.HasSuffix(path, "/console/login") || strings.HasSuffix(path, "/api/v1/admin/login") || strings.HasSuffix(path, "/api/v1/console/login")
         if !isAdminPath || isLogin {
             c.Next(); return
         }
@@ -196,9 +196,14 @@ func AdminJWT() gin.HandlerFunc {
         if err != nil || !claims.Admin {
             c.JSON(401, gin.H{"message":"管理员令牌无效"}); c.Abort(); return
         }
+        // 仅允许 ADMIN 角色（收敛角色模型）
+        role := claims.Role
+        if !(role == "ADMIN" || role == "admin") {
+            c.JSON(403, gin.H{"message":"需要管理员权限"}); c.Abort(); return
+        }
         c.Set("is_admin", true)
         c.Set("admin_id", claims.Subject)
-        c.Set("admin_role", claims.Role)
+        c.Set("admin_role", role)
         c.Next()
     }
 }

@@ -11,18 +11,18 @@ import (
 )
 
 func init() {
-    // Admin Plans
-    gf.RegisterRoute("GET", "/admin/plans", listPlansHandler, false, nil)
-    gf.RegisterRoute("POST", "/admin/plans", createPlanHandler, false, nil)
-    gf.RegisterRoute("PUT", "/admin/plans/:id", updatePlanHandler, false, nil)
-    gf.RegisterRoute("DELETE", "/admin/plans/:id", deletePlanHandler, false, nil)
+    // Console Plans
+    gf.RegisterRoute("GET", "/console/plans", listPlansHandler, false, nil)
+    gf.RegisterRoute("POST", "/console/plans", createPlanHandler, false, nil)
+    gf.RegisterRoute("PUT", "/console/plans/:id", updatePlanHandler, false, nil)
+    gf.RegisterRoute("DELETE", "/console/plans/:id", deletePlanHandler, false, nil)
 
-    // Admin Subscriptions
-    gf.RegisterRoute("GET", "/admin/subscriptions", listSubscriptionsHandler, false, nil)
-    gf.RegisterRoute("POST", "/admin/subscriptions", assignSubscriptionHandler, false, nil)
-    gf.RegisterRoute("POST", "/admin/subscriptions/:id/cancel", cancelSubscriptionHandler, false, nil)
-    gf.RegisterRoute("POST", "/admin/subscriptions/:id/renew", renewSubscriptionHandler, false, nil)
-    gf.RegisterRoute("POST", "/admin/subscriptions/:id/change_plan", changeSubscriptionPlanHandler, false, nil)
+    // Console Subscriptions
+    gf.RegisterRoute("GET", "/console/subscriptions", listSubscriptionsHandler, false, nil)
+    gf.RegisterRoute("POST", "/console/subscriptions", assignSubscriptionHandler, false, nil)
+    gf.RegisterRoute("POST", "/console/subscriptions/:id/cancel", cancelSubscriptionHandler, false, nil)
+    gf.RegisterRoute("POST", "/console/subscriptions/:id/renew", renewSubscriptionHandler, false, nil)
+    gf.RegisterRoute("POST", "/console/subscriptions/:id/change_plan", changeSubscriptionPlanHandler, false, nil)
 
     // User Subscriptions
     gf.RegisterRoute("GET", "/user/subscription", getMySubscriptionHandler, false, nil)
@@ -43,7 +43,7 @@ func listPlansHandler(c *gin.Context) {
 }
 
 func createPlanHandler(c *gin.Context) {
-    if !adminOnly(c, "super_admin", "admin") { return }
+    if !adminOnly(c) { return }
     var req struct{ ID, Name, Description, Features, Status string; Price float64; Duration int }
     if err := c.ShouldBindJSON(&req); err != nil || req.Name == "" || req.Duration <= 0 {
         gf.Failed().SetMsg("参数错误").Regin(c); return
@@ -59,7 +59,7 @@ func createPlanHandler(c *gin.Context) {
 }
 
 func updatePlanHandler(c *gin.Context) {
-    if !adminOnly(c, "super_admin", "admin") { return }
+    if !adminOnly(c) { return }
     id := c.Param("id")
     var req struct{ Name, Description, Features, Status string; Price *float64; Duration *int }
     if err := c.ShouldBindJSON(&req); err != nil { gf.Failed().SetMsg("参数错误").Regin(c); return }
@@ -77,7 +77,7 @@ func updatePlanHandler(c *gin.Context) {
 }
 
 func deletePlanHandler(c *gin.Context) {
-    if !adminOnly(c, "super_admin") { return }
+    if !adminOnly(c) { return }
     id := c.Param("id")
     _, err := gf.DB().Model("plans").Where("id", id).Delete()
     if err != nil { gf.Failed().SetMsg(err.Error()).Regin(c); return }
@@ -102,7 +102,7 @@ func listSubscriptionsHandler(c *gin.Context) {
 
 // 赋予/更新订阅
 func assignSubscriptionHandler(c *gin.Context) {
-    if !adminOnly(c, "super_admin", "admin") { return }
+    if !adminOnly(c) { return }
     var req struct{ UserID, PlanID, PlanName string; Days int }
     if err := c.ShouldBindJSON(&req); err != nil || req.UserID == "" || (req.PlanID == "" && req.PlanName == "") {
         gf.Failed().SetMsg("参数错误").Regin(c); return
@@ -139,7 +139,7 @@ func assignSubscriptionHandler(c *gin.Context) {
 }
 
 func cancelSubscriptionHandler(c *gin.Context) {
-    if !adminOnly(c, "super_admin", "admin") { return }
+    if !adminOnly(c) { return }
     id := c.Param("id")
     sub, err := gf.DB().Model("subscriptions").Where("id", id).One()
     if err != nil || sub == nil { gf.Failed().SetMsg("订阅不存在").Regin(c); return }
@@ -152,7 +152,7 @@ func cancelSubscriptionHandler(c *gin.Context) {
 }
 
 func renewSubscriptionHandler(c *gin.Context) {
-    if !adminOnly(c, "super_admin", "admin") { return }
+    if !adminOnly(c) { return }
     id := c.Param("id")
     var req struct{ Days int }
     if err := c.ShouldBindJSON(&req); err != nil || req.Days <= 0 { gf.Failed().SetMsg("参数错误").Regin(c); return }
@@ -168,7 +168,7 @@ func renewSubscriptionHandler(c *gin.Context) {
 }
 
 func changeSubscriptionPlanHandler(c *gin.Context) {
-    if !adminOnly(c, "super_admin", "admin") { return }
+    if !adminOnly(c) { return }
     id := c.Param("id")
     var req struct{ PlanID, PlanName string }
     if err := c.ShouldBindJSON(&req); err != nil || (req.PlanID == "" && req.PlanName == "") { gf.Failed().SetMsg("参数错误").Regin(c); return }
@@ -200,15 +200,10 @@ func getMySubscriptionHandler(c *gin.Context) {
 
 // 权限：仅管理员或特定角色
 func adminOnly(c *gin.Context, roles ...string) bool {
-    if !c.GetBool("is_admin") {
-        c.JSON(403, gin.H{"message":"需要管理员权限"}); c.Abort(); return false
-    }
-    if len(roles) == 0 { return true }
-    role := c.GetString("admin_role")
-    for _, r := range roles {
-        if strings.EqualFold(r, role) { return true }
-    }
-    c.JSON(403, gin.H{"message":"角色权限不足"}); c.Abort(); return false
+    if !c.GetBool("is_admin") { c.JSON(403, gin.H{"message":"需要管理员权限"}); c.Abort(); return false }
+    role := strings.ToUpper(c.GetString("admin_role"))
+    if role != "ADMIN" { c.JSON(403, gin.H{"message":"需要管理员权限"}); c.Abort(); return false }
+    return true
 }
 
 // 审计订阅操作（best-effort）

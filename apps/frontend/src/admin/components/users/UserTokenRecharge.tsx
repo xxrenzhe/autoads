@@ -28,7 +28,7 @@ export default function UserTokenRecharge({ userId, onRecharged, id }: Props) {
     setLoading(true)
     setMessage(null)
     try {
-      const res = await fetch(`/api/admin/users/${userId}/tokens/recharge`, {
+      const res = await fetch(`/ops/api/v1/console/users/${userId}/tokens/recharge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, description })

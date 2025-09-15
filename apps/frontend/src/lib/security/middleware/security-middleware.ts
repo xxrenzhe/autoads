@@ -174,12 +174,7 @@ export class SecurityMiddleware {
    * Check if route is protected
    */
   private isProtectedRoute(pathname: string): boolean {
-    const protectedPaths = [
-      '/admin',
-      '/api/admin',
-      '/dashboard',
-      '/api/user'
-    ]
+    const protectedPaths = ['/admin', '/dashboard', '/api/user']
 
     return protectedPaths.some(path => pathname.startsWith(path))
   }
@@ -234,7 +229,7 @@ export class SecurityMiddleware {
    */
   private mapRouteToPermission(pathname: string, method: string): { resource: string; action: string } {
     // Admin routes
-    if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    if (pathname.startsWith('/admin') || pathname.startsWith('/ops')) {
       if (pathname.includes('/users')) return { resource: 'users', action: method.toLowerCase() }
       if (pathname.includes('/config')) return { resource: 'config', action: method.toLowerCase() }
       if (pathname.includes('/tokens')) return { resource: 'tokens', action: 'configure' }

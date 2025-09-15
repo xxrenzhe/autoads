@@ -24,7 +24,7 @@ export default function ConfigHistoryPage() {
   const load = async () => {
     try {
       setLoading(true)
-      const res = await http.get<any>(`/api/admin/config/changes?prefix=${encodeURIComponent(prefix)}`)
+      const res = await http.get<any>(`/ops/api/v1/console/system/config/changes?prefix=${encodeURIComponent(prefix)}`)
       const data = (res as any)?.data || res
       setRows(data)
     } finally {
@@ -82,4 +82,3 @@ export default function ConfigHistoryPage() {
     </div>
   )
 }
-

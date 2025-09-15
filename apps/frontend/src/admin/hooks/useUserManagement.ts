@@ -72,7 +72,7 @@ export function useUserManagement() {
         ...filters
       })
       
-      const response = await fetch(`/api/admin/users?${params}`)
+      const response = await fetch(`/ops/api/v1/console/users?${params}`)
       if (!response.ok) {
         throw new Error('Failed to fetch users')
       }
@@ -92,7 +92,7 @@ export function useUserManagement() {
   } = useQuery<UserAnalytics, Error>({
     queryKey: ['user-analytics'],
     queryFn: async (): Promise<UserAnalytics> => {
-      const response = await fetch('/api/admin/users/analytics')
+      const response = await fetch('/ops/api/v1/console/dashboard/overview')
       if (!response.ok) {
         throw new Error('Failed to fetch user analytics')
       }
@@ -104,7 +104,7 @@ export function useUserManagement() {
   // Create user mutation
   const createUserMutation = useMutation<any, Error, Partial<User>>({
     mutationFn: async (userData: Partial<User>) => {
-      const response = await fetch('/api/admin/users', {
+      const response = await fetch('/ops/api/v1/console/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +125,7 @@ export function useUserManagement() {
   // Update user mutation
   const updateUserMutation = useMutation<any, Error, { userId: string; userData: Partial<User> }>({
     mutationFn: async ({ userId, userData }: { userId: string; userData: Partial<User> }) => {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetch(`/ops/api/v1/console/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -146,7 +146,7 @@ export function useUserManagement() {
   // Delete user mutation
   const deleteUserMutation = useMutation<any, Error, string>({
     mutationFn: async (userId: string) => {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetch(`/ops/api/v1/console/users/${userId}`, {
         method: 'DELETE',
       })
       if (!response.ok) {
@@ -163,7 +163,7 @@ export function useUserManagement() {
   // Bulk actions mutation
   const bulkActionMutation = useMutation<any, Error, { action: string; userIds: string[] }>({
     mutationFn: async ({ action, userIds }: { action: string; userIds: string[] }) => {
-      const response = await fetch('/api/admin/users/bulk', {
+      const response = await fetch('/ops/api/v1/console/users/bulk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ export function useUserManagement() {
         ...filters
       })
       
-      const response = await fetch(`/api/admin/users/export?${params}`)
+      const response = await fetch(`/ops/api/v1/console/users/export?${params}`)
       if (!response.ok) {
         throw new Error('Failed to export users')
       }
@@ -214,7 +214,7 @@ export function useUserManagement() {
       const formData = new FormData()
       formData.append('file', file)
       
-      const response = await fetch('/api/admin/users/import', {
+      const response = await fetch('/ops/api/v1/console/users/import', {
         method: 'POST',
         body: formData,
       })

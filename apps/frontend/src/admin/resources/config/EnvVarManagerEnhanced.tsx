@@ -82,7 +82,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
   const fetchEnvVars = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/admin/env-vars')
+      const response = await fetch('/ops/api/v1/console/env-vars')
       if (response.ok) {
         const data = await response.json()
         setEnvVars(data)
@@ -101,7 +101,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
     }
 
     try {
-      const response = await fetch('/api/admin/env-vars', {
+      const response = await fetch('/ops/api/v1/console/env-vars', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -165,7 +165,7 @@ export default function EnvVarManager({ initialVars = [] }: EnvVarManagerProps) 
     }
 
     try {
-      const response = await fetch(`/api/admin/env-vars/${id}`, {
+      const response = await fetch(`/ops/api/v1/console/env-vars/${id}`, {
         method: 'DELETE',
       })
 

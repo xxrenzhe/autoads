@@ -35,11 +35,16 @@ import (
 	dbinit "gofly-admin-v3/internal/init"
 	"gofly-admin-v3/internal/invitation"
 	"gofly-admin-v3/internal/metrics"
-	"gofly-admin-v3/internal/middleware"
-	"gofly-admin-v3/internal/siterankgo"
-	"gofly-admin-v3/internal/store"
-	"gofly-admin-v3/internal/user"
-	"gofly-admin-v3/internal/websocket"
+    "gofly-admin-v3/internal/middleware"
+    "gofly-admin-v3/internal/siterankgo"
+    "gofly-admin-v3/internal/store"
+    "gofly-admin-v3/internal/user"
+    "gofly-admin-v3/internal/websocket"
+    "gofly-admin-v3/internal/scheduler"
+    "gofly-admin-v3/internal/admin"
+    redisv8 "github.com/go-redis/redis/v8"
+    "gofly-admin-v3/internal/ratelimit"
+    "gofly-admin-v3/utils/gf"
 )
 
 // 临时禁用静态文件嵌入，使用本地文件系统
@@ -63,7 +68,8 @@ var (
 	tokenSvc          *user.TokenService
 	swebClient        *siterankgo.SimilarWebClient
 	chengelinkService *chengelink.ChengeLinkService
-	auditSvc          *audit.AutoAdsAuditService
+    auditSvc          *audit.AutoAdsAuditService
+    rateLimitManager  *ratelimit.RateLimitManager
 )
 
 // 适配器：将 user.TokenService 适配为 chengelink.TokenService
@@ -161,7 +167,7 @@ func main() {
 	}
 
 	// 4.1 初始化数据库与业务服务
-	if cfg2, err := config.Load(); err != nil {
+    if cfg2, err := config.Load(); err != nil {
 		log.Printf("⚠️  加载配置失败，无法初始化数据库: %v", err)
 	} else {
 		// 数据库
@@ -217,14 +223,36 @@ func main() {
 			// Chengelink 服务（使用适配器桥接Token能力）
 			chengelinkService = chengelink.NewChengeLinkService(gormDB, &tokenServiceAdapter{ts: tokenSvc})
 
-			// 审计服务
-			auditSvc = audit.NewAutoAdsAuditService(gormDB)
-		}
-	}
+            // 审计服务
+            auditSvc = audit.NewAutoAdsAuditService(gormDB)
+
+            // RateLimitManager（最小实现：通过 SQL 解析用户套餐）
+            type simpleUserSvc struct{}
+            func (s *simpleUserSvc) GetUserByID(userID string) (*ratelimit.UserInfo, error) {
+                if userID == "" { return &ratelimit.UserInfo{PlanName:"FREE", Plan:"FREE"}, nil }
+                rows, err := gf.DB().Query(context.Background(), `SELECT p.name AS plan_name FROM subscriptions s JOIN plans p ON p.id=s.plan_id WHERE s.user_id=? AND s.status='ACTIVE' ORDER BY s.updated_at DESC LIMIT 1`, userID)
+                if err != nil || len(rows)==0 { return &ratelimit.UserInfo{PlanName:"FREE", Plan:"FREE"}, nil }
+                plan := rows[0]["plan_name"].String()
+                if plan == "" { plan = "FREE" }
+                return &ratelimit.UserInfo{PlanName: plan, Plan: plan}, nil
+            }
+            rateLimitManager = ratelimit.NewRateLimitManager(cfg2, storeDB, &simpleUserSvc{})
+        }
+    }
 
 	// 5. 初始化监控和指标收集
 	metrics.InitializeDefaultChecks()
 	log.Println("✅ 监控系统初始化成功")
+
+    // 5.1 启动调度器（系统任务）
+    sch := scheduler.GetScheduler()
+    // 注册优化方案系统任务
+    sch.RegisterOptimizationJobs()
+    if err := sch.Start(); err != nil {
+        log.Printf("警告：调度器启动失败: %v", err)
+    } else {
+        log.Println("✅ 调度器启动成功")
+    }
 
 	// 6. 初始化健康检查
 	cfg, _ := config.Load()
@@ -251,8 +279,22 @@ func main() {
 	// 添加中间件
 	r.Use(requestLogger())
 	r.Use(gin.Recovery())
-	// 可根据需要添加自定义中间件（CORS、安全等）
-	r.Use(rateLimitMiddleware(100, time.Minute))
+    // 可根据需要添加自定义中间件（CORS、安全等）
+    // 统一限流（使用内部中间件，支持 Redis 与计划维度）
+    var rlConfig = middleware.DefaultRateLimitConfig
+    if cfgVal := configManager.GetRateLimitConfig(); cfgVal.Enabled {
+        if cfgVal.RequestsPerMinute > 0 { rlConfig.GlobalRPS = float64(cfgVal.RequestsPerMinute)/60.0 }
+        if cfgVal.Burst > 0 { rlConfig.GlobalBurst = cfgVal.Burst }
+    }
+    // Redis 开关
+    rconf := configManager.GetRedisConfig()
+    rlConfig.UseRedis = rconf.Enable
+    rlConfig.Window = time.Minute
+    var redisClient *redisv8.Client
+    if storeRedis != nil { redisClient = storeRedis.GetClient() }
+    rl := middleware.NewRateLimitMiddleware(rlConfig, redisClient)
+    r.Use(rl.GlobalRateLimit())
+    r.Use(rl.IPRateLimit())
 
 	// 10. 注册健康检查路由
 	if healthChecker != nil {
@@ -265,7 +307,7 @@ func main() {
 	setupAPIRoutes(r)
 
 	// 11.1 配置聚合只读API（供前台只读下发）
-	r.GET("/admin/config/v1", func(c *gin.Context) {
+	r.GET("/console/config/v1", func(c *gin.Context) {
 		cfg := configManager.GetConfig()
 		if cfg == nil {
 			c.JSON(503, gin.H{"code": 5000, "message": "config unavailable"})
@@ -359,9 +401,88 @@ func setupAPIRoutes(r *gin.Engine) {
         tokens := v1.Group("/tokens")
         tokens.Use(authMiddleware())
         {
-			tokens.GET("/balance", handleGetTokenBalance)
-			tokens.GET("/transactions", handleGetTokenTransactions)
-			tokens.POST("/purchase", handlePurchaseTokens)
+            tokens.GET("/balance", handleGetTokenBalance)
+            tokens.GET("/transactions", handleGetTokenTransactions)
+            tokens.POST("/purchase", handlePurchaseTokens)
+        }
+
+        // 管理路由（/api/v1/console）
+        // 登录（无需 AdminJWT）
+        v1.POST("/console/login", admin.AdminLoginHandler)
+        console := v1.Group("/console")
+        console.Use(admin.AdminJWT())
+        {
+            // 系统配置管理（热更新）
+            ctrl := admin.NewAdminController(nil, nil, nil, nil)
+            console.GET("/system/config", ctrl.GetSystemConfig)
+            console.POST("/system/config", ctrl.UpsertSystemConfig)
+            console.DELETE("/system/config/:key", ctrl.DeleteSystemConfig)
+            console.GET("/system/config/history", ctrl.GetSystemConfigHistory)
+            console.PATCH("/system/config/batch", ctrl.BatchSystemConfig)
+
+            // 最小可用管理能力（users/subscriptions/tokens/monitoring）
+            admin.RegisterUserRoutes(console)
+            admin.RegisterSubscriptionRoutes(console)
+            admin.RegisterTokenRoutes(console)
+            admin.RegisterMonitoringRoutes(console)
+
+            // 速率限制管理（需要 RateLimitManager）
+            if rateLimitManager != nil {
+                rlCtrl := admin.NewRateLimitController(rateLimitManager)
+                rlCtrl.RegisterRoutes(console)
+            }
+
+            // 调度器管理（列表/立即运行/启用禁用）
+            console.GET("/scheduler/jobs", func(c *gin.Context) {
+                jobs := scheduler.GetScheduler().GetJobs()
+                out := make([]map[string]interface{}, 0, len(jobs))
+                for name, j := range jobs {
+                    out = append(out, map[string]interface{}{
+                        "name": name,
+                        "enabled": j.Enabled,
+                        "schedule": j.Schedule,
+                        "desc": j.Description,
+                    })
+                }
+                c.JSON(200, gin.H{"code":0, "data": out})
+            })
+            console.POST("/scheduler/run", func(c *gin.Context) {
+                var body struct{ Name string `json:"name"` }
+                if err := c.ShouldBindJSON(&body); err != nil || body.Name == "" { c.JSON(200, gin.H{"code":1001, "message":"name required"}); return }
+                id, err := scheduler.GetScheduler().RunJobNow(body.Name, c.GetString("admin_id"))
+                if err != nil { c.JSON(200, gin.H{"code":5001, "message": err.Error()}); return }
+                c.JSON(200, gin.H{"code":0, "execution_id": id})
+            })
+            console.PATCH("/scheduler/jobs/:name", func(c *gin.Context) {
+                name := c.Param("name")
+                var body struct{ Enabled *bool `json:"enabled"` }
+                if name == "" || c.ShouldBindJSON(&body) != nil || body.Enabled == nil { c.JSON(200, gin.H{"code":1001, "message":"invalid body"}); return }
+                var err error
+                if *body.Enabled { err = scheduler.GetScheduler().EnableJob(name) } else { err = scheduler.GetScheduler().DisableJob(name) }
+                if err != nil { c.JSON(200, gin.H{"code":5001, "message": err.Error()}); return }
+                c.JSON(200, gin.H{"code":0, "message":"updated"})
+            })
+
+            // API 管理（端点与 Keys）
+            apiMgmt := &admin.ApiManagementController{}
+            apiGroup := console.Group("/api-management")
+            {
+                apiGroup.GET("/endpoints", apiMgmt.ListEndpoints)
+                apiGroup.POST("/endpoints", apiMgmt.CreateEndpoint)
+                apiGroup.PUT("/endpoints/:id", apiMgmt.UpdateEndpoint)
+                apiGroup.DELETE("/endpoints/:id", apiMgmt.DeleteEndpoint)
+                apiGroup.POST("/endpoints/:id/toggle", apiMgmt.ToggleEndpoint)
+                apiGroup.GET("/endpoints/:id/metrics", apiMgmt.GetEndpointMetrics)
+
+                apiGroup.GET("/keys", apiMgmt.ListKeys)
+                apiGroup.POST("/keys", apiMgmt.CreateKey)
+                apiGroup.PUT("/keys/:id", apiMgmt.UpdateKey)
+                apiGroup.DELETE("/keys/:id", apiMgmt.DeleteKey)
+                apiGroup.POST("/keys/:id/revoke", apiMgmt.RevokeKey)
+
+                apiGroup.GET("/analytics", apiMgmt.GetAnalytics)
+                apiGroup.GET("/performance", apiMgmt.GetPerformance)
+            }
         }
 
         // ===== SITERANK 原子端点（check/execute） =====
@@ -410,23 +531,24 @@ func setupAPIRoutes(r *gin.Engine) {
                 }
                 // request id echo
                 if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
-                // 幂等键
+                // 幂等：DB 唯一 + Redis SetNX 双重保护
                 idemKey := c.GetHeader("Idempotency-Key")
-                if idemKey == "" {
-                    // 容忍缺失但不保证幂等
-                    idemKey = "no-idem"
-                }
-                // Redis 幂等保护：存在即视为重复请求
-                if storeRedis != nil && idemKey != "no-idem" {
-                    ctx := c.Request.Context()
-                    key := "autoads:idem:" + userID + ":" + idemKey
-                    ok, err := storeRedis.GetClient().SetNX(ctx, key, "locked", 10*time.Minute).Result()
-                    if err == nil && !ok {
-                        c.JSON(200, gin.H{"code": 200, "duplicate": true, "message": "duplicate request"})
-                        return
+                if idemKey != "" {
+                    // 1) DB 唯一键
+                    if gormDB != nil {
+                        res := gormDB.Exec("INSERT IGNORE INTO idempotency_requests(user_id, endpoint, idem_key, status) VALUES (?,?,?,?)", userID, "siterank.batch.execute", idemKey, "PENDING")
+                        if res.Error == nil && res.RowsAffected == 0 {
+                            c.JSON(200, gin.H{"code":200, "duplicate": true, "message": "duplicate request"}); return
+                        }
                     }
-                    // 保险：设置过期
-                    _ = storeRedis.Expire(ctx, key, 10*time.Minute)
+                    // 2) Redis 锁（短期并发）
+                    if storeRedis != nil {
+                        ctx := c.Request.Context()
+                        key := "autoads:idem:" + userID + ":" + idemKey
+                        ok, _ := storeRedis.GetClient().SetNX(ctx, key, "locked", 10*time.Minute).Result()
+                        if !ok { c.JSON(200, gin.H{"code":200, "duplicate": true, "message":"duplicate request"}); return }
+                        _ = storeRedis.Expire(ctx, key, 10*time.Minute)
+                    }
                 }
                 // 再次校验余额
                 sufficient, balance, total, err := tokenSvc.CheckTokenSufficiency(userID, "siterank", "query", len(body.Domains))
@@ -458,8 +580,11 @@ func setupAPIRoutes(r *gin.Engine) {
                 // 成功：返回结果与最新余额
                 newBalance, _ := tokenSvc.GetTokenBalance(userID)
                 // 幂等状态更新
-                if storeRedis != nil && idemKey != "no-idem" {
-                    _ = storeRedis.Set(ctx, "autoads:idem:"+userID+":"+idemKey, "done", 24*time.Hour)
+                if idemKey != "" {
+                    if gormDB != nil {
+                        _ = gormDB.Exec("UPDATE idempotency_requests SET status='DONE' WHERE user_id=? AND endpoint=? AND idem_key=?", userID, "siterank.batch.execute", idemKey).Error
+                    }
+                    if storeRedis != nil { _ = storeRedis.Set(c.Request.Context(), "autoads:idem:"+userID+":"+idemKey, "done", 24*time.Hour) }
                 }
                 if auditSvc != nil {
                     _ = auditSvc.LogSiteRankQuery(userID, "batch", map[string]any{"domains": len(body.Domains)}, c.ClientIP(), c.Request.UserAgent(), true, "", 0)
@@ -542,16 +667,19 @@ func setupAPIRoutes(r *gin.Engine) {
 				totalQty := len(body.URLs) * cycle
 				// 幂等
 				iKey := c.GetHeader("Idempotency-Key")
-				if iKey != "" && storeRedis != nil {
-					ctx := c.Request.Context()
-					key := "autoads:idem_batch:" + userID + ":" + iKey
-					ok, _ := storeRedis.GetClient().SetNX(ctx, key, "locked", 10*time.Minute).Result()
-					if !ok {
-						c.JSON(200, gin.H{"duplicate": true, "message": "duplicate request"})
-						return
-					}
-					_ = storeRedis.Expire(ctx, key, 10*time.Minute)
-				}
+                if iKey != "" {
+                    if gormDB != nil {
+                        res := gormDB.Exec("INSERT IGNORE INTO idempotency_requests(user_id, endpoint, idem_key, status) VALUES (?,?,?,?)", userID, "batchopen.silent.execute", iKey, "PENDING")
+                        if res.Error == nil && res.RowsAffected == 0 { c.JSON(200, gin.H{"duplicate": true, "message": "duplicate request"}); return }
+                    }
+                    if storeRedis != nil {
+                        ctx := c.Request.Context()
+                        key := "autoads:idem_batch:" + userID + ":" + iKey
+                        ok, _ := storeRedis.GetClient().SetNX(ctx, key, "locked", 10*time.Minute).Result()
+                        if !ok { c.JSON(200, gin.H{"duplicate": true, "message": "duplicate request"}); return }
+                        _ = storeRedis.Expire(ctx, key, 10*time.Minute)
+                    }
+                }
 				// 再次余额校验
 				sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "batchgo", action, totalQty)
 				if err != nil { c.JSON(500, gin.H{"code": 500, "message": err.Error()}); return }
@@ -589,7 +717,10 @@ func setupAPIRoutes(r *gin.Engine) {
 					}
 				}()
 				newBalance, _ := tokenSvc.GetTokenBalance(userID)
-				if storeRedis != nil && iKey != "" { _ = storeRedis.Set(c.Request.Context(), "autoads:idem_batch:"+userID+":"+iKey, "done", 24*time.Hour) }
+                if iKey != "" {
+                    if gormDB != nil { _ = gormDB.Exec("UPDATE idempotency_requests SET status='DONE' WHERE user_id=? AND endpoint=? AND idem_key=?", userID, "batchopen.silent.execute", iKey).Error }
+                    if storeRedis != nil { _ = storeRedis.Set(c.Request.Context(), "autoads:idem_batch:"+userID+":"+iKey, "done", 24*time.Hour) }
+                }
 				c.JSON(200, gin.H{"taskId": task.ID, "consumed": required, "balance": newBalance, "status": "running"})
 			})
 
@@ -800,13 +931,19 @@ func setupAPIRoutes(r *gin.Engine) {
 					if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
 					// 幂等键（可选）
 					iKey := c.GetHeader("Idempotency-Key")
-					if iKey != "" && storeRedis != nil {
-						ctx := c.Request.Context()
-						key := "autoads:idem_ads:" + userID + ":" + iKey
-						ok, _ := storeRedis.GetClient().SetNX(ctx, key, "locked", 10*time.Minute).Result()
-						if !ok { c.JSON(200, gin.H{"duplicate": true, "message": "duplicate request"}); return }
-						_ = storeRedis.Expire(ctx, key, 10*time.Minute)
-					}
+                    if iKey != "" {
+                        if gormDB != nil {
+                            res := gormDB.Exec("INSERT IGNORE INTO idempotency_requests(user_id, endpoint, idem_key, status) VALUES (?,?,?,?)", userID, "adscenter.link.update.execute", iKey, "PENDING")
+                            if res.Error == nil && res.RowsAffected == 0 { c.JSON(200, gin.H{"duplicate": true, "message": "duplicate request"}); return }
+                        }
+                        if storeRedis != nil {
+                            ctx := c.Request.Context()
+                            key := "autoads:idem_ads:" + userID + ":" + iKey
+                            ok, _ := storeRedis.GetClient().SetNX(ctx, key, "locked", 10*time.Minute).Result()
+                            if !ok { c.JSON(200, gin.H{"duplicate": true, "message": "duplicate request"}); return }
+                            _ = storeRedis.Expire(ctx, key, 10*time.Minute)
+                        }
+                    }
 					// 创建任务
 					creq := &chengelink.CreateTaskRequest{ Name: body.Name, AffiliateLinks: body.AffiliateLinks, AdsPowerProfile: body.AdsPowerProfile, GoogleAdsAccount: body.GoogleAdsAccount }
 					task, err := chengelinkService.CreateTask(userID, creq)
@@ -822,9 +959,10 @@ func setupAPIRoutes(r *gin.Engine) {
 						} else {
 							if auditSvc != nil { _ = auditSvc.LogChengeLinkAction(userID, "start", task.ID, map[string]any{"links": len(body.AffiliateLinks)}, c.ClientIP(), c.Request.UserAgent(), true, "", 0) }
 						}
-					}()
-					c.JSON(200, gin.H{"taskId": task.ID, "status": string(task.Status)})
-				})
+                    }()
+                    if iKey != "" && gormDB != nil { _ = gormDB.Exec("UPDATE idempotency_requests SET status='DONE' WHERE user_id=? AND endpoint=? AND idem_key=?", userID, "adscenter.link.update.execute", iKey).Error }
+                    c.JSON(200, gin.H{"taskId": task.ID, "status": string(task.Status)})
+                })
 			}
 		}
 		c.JSON(200, gin.H{
@@ -985,13 +1123,23 @@ func setupLegacyAPIRoutes(r *gin.Engine) {
 
 // setupStaticFiles 设置静态文件服务
 func setupStaticFiles(r *gin.Engine) {
-	// 临时使用本地文件系统
-	if _, err := os.Stat("./web"); err == nil {
-		log.Println("使用本地静态文件目录: ./web")
-		r.Static("/", "./web")
-	} else {
-		log.Println("警告：未找到静态文件，仅提供API服务")
-	}
+    // 管理前端（GoFly Admin Web）托管到 /console
+    dist := "./web/dist"
+    if _, err := os.Stat(dist); err == nil {
+        log.Println("托管管理前端到 /console (web/dist)")
+        r.Static("/console/assets", dist+"/assets")
+        r.StaticFile("/console", dist+"/index.html")
+        r.NoRoute(func(c *gin.Context) {
+            p := c.Request.URL.Path
+            if strings.HasPrefix(p, "/console") {
+                c.File(dist+"/index.html")
+                return
+            }
+            c.JSON(404, gin.H{"message": "not found"})
+        })
+    } else {
+        log.Println("警告：未找到管理前端 web/dist，仅提供API与健康检查")
+    }
 }
 
 // 中间件和处理器函数（占位符）

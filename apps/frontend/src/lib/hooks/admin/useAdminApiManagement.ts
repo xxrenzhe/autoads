@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { backend } from '@/shared/http/backend';
+import { robustFetch } from '@/lib/utils/api/robust-client';
 
 export interface APIEndpoint {
   id: string; path: string; method: string; description?: string; isActive?: boolean;
@@ -15,23 +15,20 @@ export interface APIKey {
   rateLimitOverride?: number; isActive?: boolean; expiresAt?: string; lastUsed?: string; totalRequests?: number; createdAt?: string;
 }
 
-async function tryBackendThenFallback<T>(backendCall: () => Promise<T>, fallbackCall: () => Promise<T>): Promise<T> {
-  try { return await backendCall(); } catch { return await fallbackCall(); }
+async function requestJson<T = any>(url: string, init?: RequestInit): Promise<T> {
+  const res = await robustFetch(url, { ...(init || {}), headers: { 'Accept': 'application/json', ...(init?.headers || {}) } });
+  if (!res.ok) throw new Error(`${res.status}`);
+  const data = await res.json().catch(() => ({}));
+  return (data?.data ?? data) as T;
 }
 
 export function useAdminApiEndpoints() {
   return useQuery({
     queryKey: ['admin', 'api-management', 'endpoints'],
-    queryFn: async (): Promise<APIEndpoint[]> =>
-      tryBackendThenFallback(
-        async () => backend.get<APIEndpoint[]>('/admin/api-management/endpoints'),
-        async () => {
-          const res = await fetch('/api/admin/api-management/endpoints');
-          if (!res.ok) throw new Error('fallback endpoints failed');
-          const data = await res.json();
-          return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-        }
-      ),
+    queryFn: async (): Promise<APIEndpoint[]> => {
+      const data = await requestJson<any>('/ops/api/v1/console/api-management/endpoints');
+      return Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+    },
     staleTime: 60_000,
   });
 }
@@ -39,16 +36,10 @@ export function useAdminApiEndpoints() {
 export function useAdminApiKeys() {
   return useQuery({
     queryKey: ['admin', 'api-management', 'keys'],
-    queryFn: async (): Promise<APIKey[]> =>
-      tryBackendThenFallback(
-        async () => backend.get<APIKey[]>('/admin/api-management/keys'),
-        async () => {
-          const res = await fetch('/api/admin/api-management/keys');
-          if (!res.ok) throw new Error('fallback keys failed');
-          const data = await res.json();
-          return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-        }
-      ),
+    queryFn: async (): Promise<APIKey[]> => {
+      const data = await requestJson<any>('/ops/api/v1/console/api-management/keys');
+      return Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+    },
     staleTime: 60_000,
   });
 }
@@ -56,16 +47,7 @@ export function useAdminApiKeys() {
 export function useAdminApiAnalytics() {
   return useQuery({
     queryKey: ['admin', 'api-management', 'analytics'],
-    queryFn: async () =>
-      tryBackendThenFallback(
-        async () => backend.get<any>('/admin/api-management/analytics'),
-        async () => {
-          const res = await fetch('/api/admin/api-management/analytics');
-          if (!res.ok) throw new Error('fallback analytics failed');
-          const data = await res.json();
-          return data?.data ?? data;
-        }
-      ),
+    queryFn: async () => requestJson<any>('/ops/api/v1/console/api-management/analytics'),
     staleTime: 60_000,
   });
 }
@@ -73,11 +55,7 @@ export function useAdminApiAnalytics() {
 export function useCreateEndpoint() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: Partial<APIEndpoint>) =>
-      tryBackendThenFallback(
-        async () => backend.post('/admin/api-management/endpoints', payload),
-        async () => fetch('/api/admin/api-management/endpoints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-      ),
+    mutationFn: async (payload: Partial<APIEndpoint>) => requestJson('/ops/api/v1/console/api-management/endpoints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'api-management', 'endpoints'] }),
   });
 }
@@ -85,12 +63,7 @@ export function useCreateEndpoint() {
 export function useCreateApiKey() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: Partial[APIKey]) =>
-      tryBackendThenFallback(
-        async () => backend.post('/admin/api-management/keys', payload),
-        async () => fetch('/api/admin/api-management/keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-      ),
+    mutationFn: async (payload: Partial<APIKey>) => requestJson('/ops/api/v1/console/api-management/keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'api-management', 'keys'] }),
   });
 }
-

@@ -25,7 +25,8 @@ export async function getRemoteConfig(force = false): Promise<RemoteConfigSnapsh
   const headers: Record<string,string> = {}
   if (cache.etag) headers['If-None-Match'] = cache.etag
 
-  const res = await fetch('/go/admin/config/v1', { headers, credentials: 'include' })
+  // 新路由：通过 /ops → Go 的 /console/config/v1
+  const res = await fetch('/ops/console/config/v1', { headers, credentials: 'include' })
 
   if (res.status === 304 && cache.snapshot) {
     cache.fetchedAt = now()
@@ -63,4 +64,3 @@ export function getConfigValue<T = any>(path: string, snapshot?: RemoteConfigSna
   }
   return cur as T
 }
-

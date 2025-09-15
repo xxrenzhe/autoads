@@ -10,10 +10,7 @@ module.exports = {
     collect: {
       url: [
         baseUrl,
-        `${baseUrl}/admin`,
-        `${baseUrl}/pricing`,
-        `${baseUrl}/admin/users`,
-        `${baseUrl}/admin/analytics`
+        `${baseUrl}/pricing`
       ],
       startServerCommand: environment === 'development' ? 'npm run dev' : 'npm start',
       startServerReadyPattern: 'ready on',

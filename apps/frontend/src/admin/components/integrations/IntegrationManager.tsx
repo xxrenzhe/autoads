@@ -100,7 +100,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
     queryKey: ['integrations', selectedCategory],
     queryFn: async (): Promise<Integration[]> => {
       const params = selectedCategory !== 'all' ? `?category=${selectedCategory}` : ''
-      const response = await fetch(`/api/admin/integrations${params}`)
+      const response = await fetch(`/ops/api/v1/console/integrations${params}`)
       if (!response.ok) throw new Error('Failed to fetch integrations')
       const result = await response.json()
       return result.data || []
@@ -115,7 +115,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
   } = useQuery({
     queryKey: ['integration-templates'],
     queryFn: async (): Promise<IntegrationTemplate[]> => {
-      const response = await fetch('/api/admin/integrations/templates')
+      const response = await fetch('/ops/api/v1/console/integrations/templates')
       if (!response.ok) throw new Error('Failed to fetch integration templates')
       const result = await response.json()
       return result.data || []
@@ -126,7 +126,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
   // Create integration mutation
   const createIntegrationMutation = useMutation({
     mutationFn: async (integrationData: any) => {
-      const response = await fetch('/api/admin/integrations', {
+      const response = await fetch('/ops/api/v1/console/integrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(integrationData),
@@ -145,7 +145,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
   // Test integration mutation
   const testIntegrationMutation = useMutation({
     mutationFn: async (integrationId: string) => {
-      const response = await fetch(`/api/admin/integrations/${integrationId}/test`, {
+      const response = await fetch(`/ops/api/v1/console/integrations/${integrationId}/test`, {
         method: 'POST',
       })
       if (!response.ok) throw new Error('Failed to test integration')
@@ -159,7 +159,7 @@ export function IntegrationManager({ className }: IntegrationManagerProps) {
   // Toggle integration mutation
   const toggleIntegrationMutation = useMutation({
     mutationFn: async (integrationId: string) => {
-      const response = await fetch(`/api/admin/integrations/${integrationId}/toggle`, {
+      const response = await fetch(`/ops/api/v1/console/integrations/${integrationId}/toggle`, {
         method: 'POST',
       })
       if (!response.ok) throw new Error('Failed to toggle integration')

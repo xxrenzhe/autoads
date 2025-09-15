@@ -72,8 +72,8 @@
   - 套餐开通/调整：选择 Plan（立即/到期后生效）、写 `Subscription` 与 `SubscriptionHistory`；同步审计。
   - 快捷动作：一键赠送试用、延长有效期、恢复默认配额。
 - 影响范围：
-  - 后台 API：若已存在则对接，否则在 `/api/admin/*` 增补最小可用接口；沿用权限校验与速率限制。
-    - 迁移完成：Next 端 `/api/admin/*` 不再承载写入；`/api/admin/api-management/*` 透明转发至 `/go/admin/api-management/*`，其余统一返回 410 并引导 `/go/admin/gofly-panel`。
+  - 后台 API：若已存在则对接，否则在 `/ops/api/v1/console/*` 增补最小可用接口；沿用后端 Go 权限校验与速率限制。
+    - 迁移完成：Next 端不再承载本地管理 API；管理路径统一经 `/ops/api/v1/console/*` 反代至 Go `/api/v1/console/*`。
 
 ### 5) 配置读取统一走只读快照（远端优先）
 - 前端特性开关：
@@ -100,9 +100,9 @@
 - SiteRank 缓存命中提示 UI：已在分析进度区显示“命中 X/Y”，并在结果表格域名列以“缓存”徽标提示（不影响扣费）。
 - 任务中心（最小版）：/api/tasks 聚合 AdsCenter 执行与近 24h 的 SiteRank 批量使用记录，提供 /api/tasks/[id]/retry 重试占位；后续可接入前端页面。
 - 管理后台运营工具（最小版）：
-  - 限流策略页（仅查看/保存覆盖至 SystemConfig，实际生效以 ENV/后端为准）：/api/admin/rate-limit/overrides
-  - Token 规则试算页 API：/api/admin/tokens/try-calc（支持 siterank/batchopen/adscenter）
-  - SiteRank 设置（映射 + 权重）API：/api/admin/siterank/settings
+  - 限流策略页（仅查看/保存覆盖至 SystemConfig，实际生效以 ENV/后端为准）：/ops/api/v1/console/rate-limit/overrides
+  - Token 规则试算页 API：/ops/api/v1/console/tokens/try-calc（支持 siterank/batchopen/adscenter）
+  - SiteRank 设置（映射 + 权重）API：/ops/api/v1/console/siterank/settings
 
 ## P2（1 月内）
 - AdsCenter 执行链路：串联 Google Ads 更新 API 与 AdsPower，分阶段上线，失败重试与节流。
@@ -128,7 +128,7 @@
 - 客服微信弹窗
   - 抽取/导出 `pricing` 弹窗组件为 `components/common/WeChatSubscribeModal`；在前台多个场景调用。
 - 后台手工开通
-  - `/api/admin/*` 增补最小可用接口或对接现有接口；更新管理后台页面。
+  - `/ops/api/v1/console/*` 增补最小可用接口或对接现有接口；更新管理后台页面。
 - 中间件与限流
   - 废弃根 `security-middleware.ts`；集中到 `apps/frontend/src/middleware.ts`；统一 `rate-limit.ts` 使用方式。
 
@@ -159,7 +159,7 @@
 - 后台手工开通
   - [x] 增补/对接手动充值接口（页面对接待办）
   - [x] 增补/对接套餐开通/调整接口（既有接口对接，页面对接待办）
-  - [x] 审计日志接入（导出已完成：`/api/admin/audits/export?format=csv|json`）
+  - [x] 审计日志接入（导出已完成：`/ops/api/v1/console/audits/export?format=csv|json`）
 - 中间件与限流
   - [x] 移除根 `security-middleware.ts`
   - [x] 统一 `withApiProtection` 到 SiteRank/AdsCenter/BatchOpen 核心路由（含 `X-RateLimit-*` 提示头）

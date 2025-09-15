@@ -70,7 +70,7 @@ await SecurityEventHelper.recordBatchOperation(userId, 'siterank', batchSize);
 
 ### 获取可疑事件列表
 ```
-GET /api/admin/security-minimal
+GET /ops/api/v1/console/security/minimal
 ```
 
 查询参数：
@@ -80,7 +80,7 @@ GET /api/admin/security-minimal
 
 ### 解决事件
 ```
-POST /api/admin/security-minimal
+POST /ops/api/v1/console/security/minimal
 {
   "action": "resolve_event",
   "eventId": "event_id",
@@ -90,7 +90,7 @@ POST /api/admin/security-minimal
 
 ### 批量解决
 ```
-POST /api/admin/security-minimal
+POST /ops/api/v1/console/security/minimal
 {
   "action": "bulk_resolve",
   "eventIds": ["id1", "id2"],
@@ -100,7 +100,7 @@ POST /api/admin/security-minimal
 
 ### 获取用户事件历史
 ```
-POST /api/admin/security-minimal
+POST /ops/api/v1/console/security/minimal
 {
   "action": "get_user_events",
   "userId": "user123",

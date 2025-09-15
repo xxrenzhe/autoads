@@ -484,6 +484,18 @@ func (s *Scheduler) registerSystemJobs() {
 	})
 }
 
+// RegisterOptimizationJobs 注册优化方案中的系统任务
+func (s *Scheduler) RegisterOptimizationJobs() {
+    // 限额刷新（每 60s）
+    _ = s.AddJob(&CronJob{ Job: &RefreshRateLimitsJob{}, Schedule: "*/60 * * * * *", Enabled: true, Description: "Refresh rate limit plans", Timeout: 30 * time.Second })
+    // 订阅到期（每日 00:05）
+    _ = s.AddJob(&CronJob{ Job: &ExpireSubscriptionsJob{}, Schedule: "0 5 0 * * *", Enabled: true, Description: "Expire subscriptions", Timeout: 2 * time.Minute })
+    // 幂等与任务清理（每小时）
+    _ = s.AddJob(&CronJob{ Job: &CleanupIdempotencyAndTasksJob{}, Schedule: "0 0 * * * *", Enabled: true, Description: "Cleanup idempotency requests", Timeout: 2 * time.Minute })
+    // 日报（每日 01:00）
+    _ = s.AddJob(&CronJob{ Job: &DailyUsageReportJob{}, Schedule: "0 0 1 * * *", Enabled: true, Description: "Generate daily usage report", Timeout: 5 * time.Minute })
+}
+
 // JobContext 任务上下文
 type JobContext struct {
 	context.Context

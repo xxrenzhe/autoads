@@ -633,7 +633,7 @@ const user = await UserService.createUser({
         relatedFiles: [
           'src/lib/services/user-service.ts',
           'src/components/admin/UserManagement.tsx',
-          'src/app/api/admin/users/route.ts'
+          'ops/api/v1/console/users (backend)'
         ],
         dependencies: ['user-service', 'database'],
         usedBy: ['admin-dashboard', 'user-management-ui']

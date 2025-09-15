@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from '@tanstack/react-query';
-import { backend } from '@/shared/http/backend';
+import { robustFetch } from '@/lib/utils/api/robust-client';
 
 export type GoflyStats = {
   users?: { total?: number; active?: number; newToday?: number };
@@ -13,9 +13,13 @@ export type GoflyStats = {
 export function useAdminGoflyStats() {
   return useQuery({
     queryKey: ['admin', 'gofly', 'stats'],
-    queryFn: async (): Promise<GoflyStats> => backend.get<GoflyStats>('/admin/gofly-panel/api/stats'),
+    queryFn: async (): Promise<GoflyStats> => {
+      const res = await robustFetch('/ops/api/v1/console/monitoring/health');
+      if (!res.ok) throw new Error('failed to load stats');
+      const data = await res.json();
+      return (data?.data ?? data) as GoflyStats;
+    },
     staleTime: 60_000,
     refetchInterval: 120_000,
   });
 }
-

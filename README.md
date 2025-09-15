@@ -77,6 +77,21 @@ CI 会根据分支注入预发/生产域名信息，并在容器启动时渲染 
 
 注意：不注入 301 跳转相关开关（已在域名层实现）。详见《README-deployment.md》的“ClawCloud 运行时覆盖域名元信息”。
 
+### 管理后台访问与新前缀
+
+- 管理后台仅支持 URL 直达（Next 前端不提供入口）：
+  - 直达 URL：`/ops/console/login` 或 `/ops/console/panel`
+  - `/ops/*` 是 Next 的管理网关，内部反向代理至 Go 的 `/console/*`（管理前端）与 `/api/v1/console/*`（管理 API），并统一加 `X-Robots-Tag: noindex, nofollow`。
+- 业务 API 通过 `/go/*` 访问（Next 网关），后台管理 API 通过 `/ops/*` 访问（权限由 Go 的 AdminJWT 严格判定）。
+- 旧前缀 `/admin/*` 与 `/api/v1/admin/*` 已下线，**请改用** `/console/*` 与 `/api/v1/console/*`。
+
+### 一次性联调（冒烟）
+
+建议使用脚本 `scripts/e2e-smoke.sh`（见脚本内注释）进行冒烟：
+- 验证 siterank `:check/:execute` 幂等（重复请求返回 `duplicate=true`）
+- 验证响应头 `X-Request-Id` 与 `X-RateLimit-*` 存在
+- 验证系统配置热更新（`/ops/console/config/v1` 的 ETag/Version 随更新变化）
+
 ## 环境配置
 
 复制环境变量模板：

@@ -45,7 +45,7 @@ export function useRoleManagement() {
   } = useQuery({
     queryKey: ['admin-roles'],
     queryFn: async (): Promise<Role[]> => {
-      const response = await fetch('/api/admin/roles')
+      const response = await fetch('/ops/api/v1/console/roles')
       if (!response.ok) {
         throw new Error('Failed to fetch roles')
       }
@@ -62,7 +62,7 @@ export function useRoleManagement() {
   } = useQuery({
     queryKey: ['admin-permissions'],
     queryFn: async (): Promise<Permission[]> => {
-      const response = await fetch('/api/admin/permissions')
+      const response = await fetch('/ops/api/v1/console/permissions')
       if (!response.ok) {
         throw new Error('Failed to fetch permissions')
       }
@@ -79,7 +79,7 @@ export function useRoleManagement() {
   } = useQuery({
     queryKey: ['role-hierarchy'],
     queryFn: async (): Promise<RoleHierarchy[]> => {
-      const response = await fetch('/api/admin/roles/hierarchy')
+      const response = await fetch('/ops/api/v1/console/roles/hierarchy')
       if (!response.ok) {
         throw new Error('Failed to fetch role hierarchy')
       }
@@ -91,7 +91,7 @@ export function useRoleManagement() {
   // Create role mutation
   const createRoleMutation = useMutation({
     mutationFn: async (roleData: Partial<Role>) => {
-      const response = await fetch('/api/admin/roles', {
+      const response = await fetch('/ops/api/v1/console/roles', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export function useRoleManagement() {
   // Update role mutation
   const updateRoleMutation = useMutation({
     mutationFn: async ({ roleId, roleData }: { roleId: string; roleData: Partial<Role> }) => {
-      const response = await fetch(`/api/admin/roles/${roleId}`, {
+      const response = await fetch(`/ops/api/v1/console/roles/${roleId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export function useRoleManagement() {
   // Delete role mutation
   const deleteRoleMutation = useMutation({
     mutationFn: async (roleId: string) => {
-      const response = await fetch(`/api/admin/roles/${roleId}`, {
+      const response = await fetch(`/ops/api/v1/console/roles/${roleId}`, {
         method: 'DELETE',
       })
       if (!response.ok) {
@@ -150,7 +150,7 @@ export function useRoleManagement() {
   // Duplicate role mutation
   const duplicateRoleMutation = useMutation({
     mutationFn: async ({ roleId, newName }: { roleId: string; newName: string }) => {
-      const response = await fetch(`/api/admin/roles/${roleId}/duplicate`, {
+      const response = await fetch(`/ops/api/v1/console/roles/${roleId}/duplicate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +171,7 @@ export function useRoleManagement() {
   // Assign permissions mutation
   const assignPermissionsMutation = useMutation({
     mutationFn: async ({ roleId, permissions }: { roleId: string; permissions: string[] }) => {
-      const response = await fetch(`/api/admin/roles/${roleId}/permissions`, {
+      const response = await fetch(`/ops/api/v1/console/roles/${roleId}/permissions`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -192,7 +192,7 @@ export function useRoleManagement() {
   // Set role parent mutation
   const setRoleParentMutation = useMutation({
     mutationFn: async ({ roleId, parentRoleId }: { roleId: string; parentRoleId?: string }) => {
-      const response = await fetch(`/api/admin/roles/${roleId}/parent`, {
+      const response = await fetch(`/ops/api/v1/console/roles/${roleId}/parent`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

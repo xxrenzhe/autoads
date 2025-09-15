@@ -237,7 +237,7 @@ const PaymentStatsDashboard: React.FC = () => {
           break;
       }
 
-      const response = await fetch(`/api/admin/payments/stats?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
+      const response = await fetch(`/ops/api/v1/console/payments/stats?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
       if (response.ok) {
         const data = await response.json();
         setStats(data);
