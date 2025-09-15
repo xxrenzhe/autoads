@@ -174,56 +174,10 @@
 </template>
 
 <script>
+import TreeNode from '@/components/TreeNode.vue'
 export default {
   name: 'SystemManager',
-  components: {
-    TreeNode: {
-      name: 'TreeNode',
-      props: ['data', 'level', 'filter', 'path', 'expandedKeys'],
-      emits: ['toggle'],
-      computed: {
-        isObject() { return this.data && typeof this.data === 'object' && !Array.isArray(this.data) },
-        isArray() { return Array.isArray(this.data) },
-        entries() {
-          if (!this.isObject && !this.isArray) return []
-          const obj = this.data
-          const out = []
-          if (this.isArray) {
-            obj.forEach((v, i) => out.push([String(i), v]))
-          } else {
-            Object.keys(obj).forEach(k => out.push([k, obj[k]]))
-          }
-          return out
-        },
-        currentPath() { return this.path || '$root' },
-        visible() {
-          if (!this.filter) return true
-          const txt = JSON.stringify(this.data)
-          return txt && txt.toLowerCase().includes(this.filter.toLowerCase())
-        },
-        expanded() { return this.expandedKeys && this.expandedKeys.has(this.currentPath) }
-      },
-      methods: {
-        toggle() { this.$emit('toggle', this.currentPath) }
-      },
-      template: `
-        <div v-if="visible" class="tree-node" :style="{ marginLeft: (level*12) + 'px' }">
-          <template v-if="isObject || isArray">
-            <span class="toggle" @click="toggle">{{ expanded ? '▼' : '▶' }}</span>
-            <span class="node-type">{{ isArray ? 'Array' : 'Object' }}</span>
-            <div v-show="expanded">
-              <div v-for="([k,v], idx) in entries" :key="k+idx">
-                <TreeNode :data="v" :level="level+1" :filter="filter" :path="currentPath + '.' + k" :expanded-keys="expandedKeys" @toggle="$emit('toggle', $event)" />
-              </div>
-            </div>
-          </template>
-          <template v-else>
-            <span class="leaf">{{ data }}</span>
-          </template>
-        </div>
-      `
-    }
-  },
+  components: { TreeNode },
   data() {
     return {
       loading: false,

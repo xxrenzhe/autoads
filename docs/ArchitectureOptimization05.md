@@ -412,6 +412,59 @@
 - 状态模型
   - 统一以 `created|queued|running|completed|failed|terminated` 显示；颜色与图标统一。
   - 统一空态/加载态/错误态占位组件，减少视觉跳变。
+
+## 38. 进一步极简化清单（第六次评审结论）
+- 单入口 BFF（去分散）
+  - 新增统一入口：`/api/go/[...path]`（或 `/api/bff/[...path]`），在单处完成鉴权/限流/请求 ID/错误标准化，再根据映射表转发至 Go。
+  - 现有分散路由按阶段性保留，最终合流到统一入口（外部合同仍不变，内部实现简化为“薄壳 + 中央转发”）。
+- 去 WebSocket（全量使用轮询）
+  - 统一使用 HTTP 轮询（指数退避 + ETag/Last-Modified），删除 WebSocket 分支与连接管理，避免在多实例下的连接粘滞与状态同步问题。
+- 成本与配额唯一来源
+  - 令牌成本/配额/预算预估全部在 Go 端；前端/ BFF 不再硬编码任何 cost 值，仅调用“cost preview”接口用于 UI 预算提示。
+- 参数集简化（BatchOpen）
+  - 最小参数集合：`urls[], cycleCount, accessMode(http|puppeteer), proxyUrl?, maxConcurrent?`；其余全部使用服务器端默认（在响应中回显生效配置）。
+  - 说明：
+    - accessMode 表示“访问方式”而非版本：`http`（轻量直连）或 `puppeteer`（浏览器访问）。
+    - 版本由 `type` 决定：`basic/silent/autoclick`。
+    - 一般约定：`basic` 不涉及 accessMode（前端开启标签页）；`silent` 可选 `http` 或 `puppeteer`；`autoclick` 固定浏览器执行（无需传 accessMode）。
+  - AutoClick 明确只是 BatchOpen 的第三种 `type`，不再有独立路径或独立参数语义。
+- 移除本地抓取/缓存旗标
+  - 移除 `SITERANK_CACHE_DISABLED/USE_GO_BACKEND_SITERANK` 等运行时旗标；生产/预发固定走 Go。
+  - 开发态如需本地实验，使用 mock upstream 或 dev-only 开关，不进入生产镜像。
+- 统一“服务就绪”守门
+  - BFF 在转发前检查 Go readiness（/readyz）；未就绪时返回 503 与 `Retry-After`，不做任何本地 fallback。
+- 目录与命名约束
+  - 删除 `optimized/enhanced/unified/simplified` 等后缀命名，统一直白的功能名；将废弃目录标记 deprecated 并在 P2 删除。
+  - 建议结构：`lib/bff/ (proxy, errors, rate-limit)`, `lib/dto/ (typed contracts)`, `lib/ui/ (通用组件)`。
+
+## 39. “唯一信息源”定位（降低认知成本）
+- 成本/配额/速率：Go 的 Config/Rule 引擎（单处）
+- 错误码与响应格式：docs（第 14 节） + BFF 统一化器（单处）
+- API 映射：docs（第 15 节） + BFF 中央映射（单处）
+- 表所有权：docs（第 16 节） + CI 规则（单处）
+- 队列/缓存：Redis（单处）
+
+## 40. 代码移除与冻结计划（不破坏业务）
+- 立即移除（或标注 deprecated 并冻结提交）：
+  - Next 侧：`silent-batch-task-manager.ts`, `task-execution-service.ts`, `puppeteer-visitor.ts` 及其直接调用链。
+  - SiteRank 本地实现的分叉版本文件（保留最小 adapter 指向 Go）。
+  - AdsCenter 对 SystemConfig 的写路径（读路径保留至完成对账）。
+- 冻结渐进删除：
+  - WebSocket 实现、特性旗标、重复限流与错误实现、二级/三级“优化版”服务文件夹。
+
+## 41. 统一 DTO 与最小 typed client
+- 由 Go 的最小 OpenAPI 生成 typed client（只含 DTO 与调用方法），放置于 `lib/dto/`；BFF 与 UI 均使用此类型，避免多处定义。
+- 若暂不生成，先用手写最小 DTO（只包含 UI 实际使用字段），每个接口一处定义与导出。
+
+## 42. 可维护性“保底线”
+- PR 审查 Checklist：
+  - 是否引入了第二种实现/旗标/缓存/队列？若是，则拒绝。
+  - 是否触达“非认证域”的 Prisma 写/迁移？若是，则拒绝。
+  - API 返回是否符合“第 31 节统一响应包体”？若否，则拒绝。
+  - 是否新增了无法在 30 天内下线的临时开关？若是，则拒绝。
+- 代码注释与文档：
+  - 跨边界的函数（BFF→Go）必须有 1–2 行注释阐述契约与失败策略。
+  - 文档与代码中的样例请求/响应保持同步，合约测试覆盖核心路径。
 - 升级：
   - 预发：启用 Go 执行 → 功能清单回归 → 压测达标 → 观察 24h。
   - 生产：滚动发布，观测阈值（5xx、429、队列）达标。
