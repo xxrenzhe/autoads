@@ -21,6 +21,7 @@ This tracker mirrors docs/ArchitectureOptimization05.md gates, ensuring no gaps 
 - [x] SiteRank frontend service forced to backend only
 - [x] Puppeteer visitor stubbed; task-execution-service minimized (tools only)
 - [x] silentBatchTaskManager.terminateTask proxies to API
+- [x] Contract tests for siterank/batchopen/adscenter forward mapping
 
 ## P2 – Performance & cleanup
 - [ ] k6/Vegeta baseline meets SLO; readiness/health dashboards green

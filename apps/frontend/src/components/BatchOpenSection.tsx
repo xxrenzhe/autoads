@@ -81,6 +81,7 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   "batchOpenSection.silentVersion.title": "静默版本说明",
   "batchOpenSection.silentVersion.tip": "无需安装任何插件，通过后端Chromium浏览器实现真实的浏览器访问",
   "batchOpenSection.autoclickVersion.title": "自动化版本说明",
+  "batchOpenSection.autoclickVersion.tip": "自动化版本将优先使用 HTTP 访问以提升性能；若检测到连续失败或失败率过高，将自动切换为浏览器访问（Puppeteer）以提升成功率，切换后本次任务将保持浏览器方式执行。",
   "batchopen.btn.terminate": "终止"
 };
 
@@ -631,7 +632,13 @@ export const BatchOpenSection: React.FC<BatchOpenSectionProps> = React.memo((pro
           <SilentBatchOpen locale={locale} t={t} />
         ) : version === "autoclick" ? (
           // 自动化版本使用独立的组件
-          <AutoClickBatch locale={locale} t={t} />
+          <>
+            <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm text-blue-800">
+              <strong className="mr-2">提示</strong>
+              {getTranslation(t, "batchOpenSection.autoclickVersion.tip")}
+            </div>
+            <AutoClickBatch locale={locale} t={t} />
+          </>
         ) : (
           // 基础版本使用原有逻辑
           <div className="flex flex-col lg:flex-row gap-8">
