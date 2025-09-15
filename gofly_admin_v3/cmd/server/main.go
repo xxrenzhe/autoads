@@ -608,16 +608,16 @@ func setupAPIRoutes(r *gin.Engine) {
             })
         }
 
-		// BatchGo路由
-		batchgo := v1.Group("/batchgo")
-		batchgo.Use(authMiddleware())
-		{
-			batchgo.POST("/silent-start", handleSilentStart)
-			batchgo.GET("/silent-progress", handleSilentProgress)
-			batchgo.POST("/silent-terminate", handleSilentTerminate)
-			batchgo.POST("/autoclick/tasks", handleAutoClickCreate)
-			batchgo.GET("/autoclick/tasks/:id/progress", handleAutoClickProgress)
-		}
+        // BatchGo路由（避免与 package 名冲突）
+        batchGroup := v1.Group("/batchgo")
+        batchGroup.Use(authMiddleware())
+        {
+            batchGroup.POST("/silent-start", handleSilentStart)
+            batchGroup.GET("/silent-progress", handleSilentProgress)
+            batchGroup.POST("/silent-terminate", handleSilentTerminate)
+            batchGroup.POST("/autoclick/tasks", handleAutoClickCreate)
+            batchGroup.GET("/autoclick/tasks/:id/progress", handleAutoClickProgress)
+        }
 
 			// ===== BATCHOPEN 原子端点（silent 模式 check/execute） =====
 			batchopen := v1.Group("/batchopen")

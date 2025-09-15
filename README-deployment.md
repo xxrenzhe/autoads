@@ -326,3 +326,25 @@ export BACKEND_PROXY_MAX_BODY=5242880 # 5MB
 若未使用 GitHub Actions，可在任何 CI 平台以相同方式调用 `scripts/e2e-smoke.sh`。脚本输出将包含 X-Request-Id、Server-Timing 与 X-RateLimit-* 等关键头部，便于快速诊断。
 
 这种架构特别适合中小型 SaaS 应用，在保证功能完整性的同时，最大化了部署和运维的效率。
+## BFF 统一入口与健康探针
+
+前端所有业务 API 通过本地薄壳（/api/*）转发到统一 BFF 入口 `/api/go/[...path]`，该入口将请求安全地代理到后端 `BACKEND_URL`，并具备：
+
+- 路径白名单（仅允许 /api/*、/api/v1/*、/health(z)、/readyz）
+- 请求体大小限制（默认 2MB）与上游超时（默认 15s）
+- 在响应头注入 `x-request-id` 以及 `X-BFF-Enforced: 1`
+- 透传限流头（X-RateLimit-*）与 `Server-Timing: upstream;dur=...`
+- 转发前进行 `/readyz` 短超时健康探测（TTL 3s）；若未就绪，直接返回 503 并附带 `Retry-After: 2`
+
+环境变量（.env.preview/.env.production）：
+
+```
+BACKEND_URL=http://127.0.0.1:8080
+BFF_MAX_BODY=2097152
+BFF_UPSTREAM_TIMEOUT_MS=15000
+BFF_READY_TIMEOUT_MS=1200
+BFF_READY_TTL_MS=3000
+NEXT_PRISMA_GUARD=true
+```
+
+Prisma 写入守卫（NEXT_PRISMA_GUARD=true）会在 production/preview 环境拦截 Next 层对业务域模型的写操作，仅允许认证域表（user/account/session/verificationToken/userDevice）写入，确保“认证最小写，业务写入后移到 Go”。
