@@ -1,6 +1,5 @@
-/**
- * Tests for forwardToGo helper (no network)
- */
+/** @jest-environment node */
+/** Tests for forwardToGo helper (no network) */
 import { forwardToGo } from '@/lib/bff/forward'
 
 describe('forwardToGo', () => {
@@ -41,4 +40,3 @@ describe('forwardToGo', () => {
     expect(init?.method).toBe('POST')
   })
 })
-

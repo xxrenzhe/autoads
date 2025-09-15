@@ -1,6 +1,5 @@
-/**
- * Tests for unified BFF route /api/go/[...path]
- */
+/** @jest-environment node */
+/** Tests for unified BFF route /api/go/[...path] */
 import * as bff from '@/app/api/go/[...path]/route'
 
 describe('/api/go/[...path] route', () => {
@@ -28,4 +27,3 @@ describe('/api/go/[...path] route', () => {
     expect(res.headers.get('x-request-id')).toBeTruthy()
   })
 })
-

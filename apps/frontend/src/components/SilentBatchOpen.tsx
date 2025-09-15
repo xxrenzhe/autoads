@@ -880,49 +880,12 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
       // 等待轮询启动并确保状态更新
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      // 发送启动请求（优先走 Go 原子端点，回退到本地API）
-      let response: Response | null = null;
-      const useGo = process.env.NEXT_PUBLIC_USE_GO_BATCHOPEN === 'true';
-      if (useGo) {
-        try {
-          // 先预检
-          const check = await fetch('/go/api/v1/batchopen/silent:check', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ urls: parsedUrls, cycleCount: currentCycleCount, accessMode: currentAccessMode })
-          });
-          if (!check.ok) {
-            // 尝试解析余额不足
-            let details: any = null; try { details = await check.json(); } catch {}
-            if (check.status === 402) {
-              setModalRequired(details?.required); setModalBalance(details?.balance); setShowWeChatModal(true);
-            }
-            throw new Error(`预检失败: ${check.status}`);
-          }
-          // 执行
-          response = await fetch('/go/api/v1/batchopen/silent:execute', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              taskName: newTaskId,
-              urls: parsedUrls,
-              cycleCount: currentCycleCount,
-              accessMode: currentAccessMode,
-              silent: { concurrency: maxConcurrency || 3, timeout: 30, retry_count: 3 }
-            })
-          });
-        } catch (e) {
-          // 回退到本地API
-          response = null;
-        }
-      }
-      if (!response) {
-        response = await fetch('/api/batchopen/silent-start', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestData),
-        });
-      }
+      // 发送启动请求（统一通过本地薄壳 API 转发到后端）
+      const response = await fetch('/api/batchopen/silent-start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData),
+      });
 
       if (!response.ok) {
         // 尝试解析错误体，用于余额不足弹窗

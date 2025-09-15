@@ -1,3 +1,4 @@
+/** @jest-environment node */
 import * as bff from '@/app/api/go/[...path]/route'
 
 describe('BFF readiness and header passthrough', () => {
@@ -55,4 +56,3 @@ describe('BFF readiness and header passthrough', () => {
     expect(res.headers.get('X-BFF-Enforced')).toBe('1')
   })
 })
-

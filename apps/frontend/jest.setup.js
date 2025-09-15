@@ -1,4 +1,8 @@
-import '@testing-library/jest-dom'
+// Load DOM matchers only when jsdom is available
+try {
+  // eslint-disable-next-line global-require
+  if (typeof window !== 'undefined') require('@testing-library/jest-dom')
+} catch {}
 import { TextEncoder, TextDecoder } from 'util'
 
 // Polyfill for TextEncoder/TextDecoder
@@ -22,99 +26,115 @@ global.ResizeObserver = class ResizeObserver {
 }
 
 // Mock matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-})
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(), // deprecated
+      removeListener: jest.fn(), // deprecated
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  })
+}
 
 // Mock scrollTo
-global.scrollTo = jest.fn()
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+if (typeof global.scrollTo === 'undefined') global.scrollTo = jest.fn(() => {})
 
 // Mock fetch
 global.fetch = jest.fn()
 
 // Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
+if (typeof global.localStorage === 'undefined') {
+  const localStorageMock = {
+    getItem: jest.fn(),
+    setItem: jest.fn(),
+    removeItem: jest.fn(),
+    clear: jest.fn(),
+  }
+  // @ts-ignore
+  global.localStorage = localStorageMock
 }
-global.localStorage = localStorageMock
 
 // Mock sessionStorage
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
+if (typeof global.sessionStorage === 'undefined') {
+  const sessionStorageMock = {
+    getItem: jest.fn(),
+    setItem: jest.fn(),
+    removeItem: jest.fn(),
+    clear: jest.fn(),
+  }
+  // @ts-ignore
+  global.sessionStorage = sessionStorageMock
 }
-global.sessionStorage = sessionStorageMock
 
 // Mock crypto
-Object.defineProperty(global, 'crypto', {
-  value: {
-    randomUUID: () => 'test-uuid-' + Math.random().toString(36).substr(2, 9),
-    getRandomValues: (arr) => {
-      for (let i = 0; i < arr.length; i++) {
-        arr[i] = Math.floor(Math.random() * 256)
-      }
-      return arr
-    },
-  },
-})
-
-// Mock next/router
-jest.mock('next/router', () => ({
-  useRouter() {
-    return {
-      route: '/',
-      pathname: '/',
-      query: {},
-      asPath: '/',
-      push: jest.fn(),
-      pop: jest.fn(),
-      reload: jest.fn(),
-      back: jest.fn(),
-      prefetch: jest.fn().mockResolvedValue(undefined),
-      beforePopState: jest.fn(),
-      events: {
-        on: jest.fn(),
-        off: jest.fn(),
-        emit: jest.fn(),
+if (typeof global.crypto === 'undefined') {
+  Object.defineProperty(global, 'crypto', {
+    value: {
+      randomUUID: () => 'test-uuid-' + Math.random().toString(36).substr(2, 9),
+      getRandomValues: (arr) => {
+        for (let i = 0; i < arr.length; i++) {
+          arr[i] = Math.floor(Math.random() * 256)
+        }
+        return arr
       },
-    }
-  },
-}))
+    },
+  })
+}
+
+// Mock next/router (only if available in test)
+try {
+  // eslint-disable-next-line global-require
+  jest.mock('next/router', () => ({
+    useRouter() {
+      return {
+        route: '/',
+        pathname: '/',
+        query: {},
+        asPath: '/',
+        push: jest.fn(),
+        pop: jest.fn(),
+        reload: jest.fn(),
+        back: jest.fn(),
+        prefetch: jest.fn().mockResolvedValue(undefined),
+        beforePopState: jest.fn(),
+        events: {
+          on: jest.fn(),
+          off: jest.fn(),
+          emit: jest.fn(),
+        },
+      }
+    },
+  }))
+} catch {}
 
 // Mock next/navigation
-jest.mock('next/navigation', () => ({
-  useRouter() {
-    return {
-      push: jest.fn(),
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-      back: jest.fn(),
-      forward: jest.fn(),
-      refresh: jest.fn(),
-    }
-  },
-  useSearchParams() {
-    return new URLSearchParams()
-  },
-  usePathname() {
-    return '/'
-  },
-}))
+try {
+  jest.mock('next/navigation', () => ({
+    useRouter() {
+      return {
+        push: jest.fn(),
+        replace: jest.fn(),
+        prefetch: jest.fn(),
+        back: jest.fn(),
+        forward: jest.fn(),
+        refresh: jest.fn(),
+      }
+    },
+    useSearchParams() {
+      return new URLSearchParams()
+    },
+    usePathname() {
+      return '/'
+    },
+  }))
+} catch {}
 
 // Mock Next.js server components
 jest.mock('next/server', () => ({

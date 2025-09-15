@@ -136,7 +136,7 @@ export class UnifiedSimilarWebService {
    * Query via backend Go endpoint (single domain)
    */
   private async queryViaBackend(domain: string): Promise<SimilarWebData> {
-    const url = new URL('/go/api/siterank/rank', 'http://localhost')
+    const url = new URL('/api/go/api/v1/siterank/rank', 'http://localhost')
     url.searchParams.set('domain', domain)
     const res = await fetch(url.pathname + url.search, { method: 'GET', credentials: 'include' })
     const body = await res.json().catch(() => ({} as any))
@@ -158,7 +158,7 @@ export class UnifiedSimilarWebService {
    * Query via backend Go endpoint (batch domains)
    */
   private async queryMultipleViaBackend(domains: string[]): Promise<SimilarWebData[]> {
-    const res = await fetch('/go/api/v1/siterank/batch:execute', {
+    const res = await fetch('/api/go/api/v1/siterank/batch', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ domains })

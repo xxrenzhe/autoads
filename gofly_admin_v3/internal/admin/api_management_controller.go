@@ -25,7 +25,7 @@ const (
 // ======== 通用存取(system_configs) ========
 // 说明：统一以 config_key/config_value 持久化，避免与表保留字冲突；不依赖 created_by/updated_by 等不存在列。
 func (c *ApiManagementController) getConfigJSON(ctx *gin.Context, key string) ([]byte, error) {
-    row, err := gf.DB().Get(ctx, "SELECT config_value FROM system_configs WHERE config_key=? AND is_active=1 LIMIT 1", key)
+    row, err := gf.DB().GetOne(ctx, "SELECT config_value FROM system_configs WHERE config_key=? AND is_active=1 LIMIT 1", key)
     if err != nil || row == nil { return nil, err }
     val := gf.String(row["config_value"])
     return []byte(val), nil
@@ -387,13 +387,20 @@ func (c *ApiManagementController) GetAnalytics(ctx *gin.Context) {
     requestsByHour := make([]map[string]interface{}, 0, 24)
     for i := 0; i < 24; i++ {
         hourStr := func() string { if i < 10 { return "0" + gf.String(i) } ; return gf.String(i) }()
-        var found map[string]interface{}
-        for _, r := range hourlyRows { if gf.String(r["h"]) == hourStr { found = r; break } }
+        reqs, errs, avg := 0, 0, 0
+        for _, r := range hourlyRows {
+            if gf.String(r["h"]) == hourStr {
+                reqs = gf.Int(r["reqs"])
+                errs = gf.Int(r["errors"])
+                avg = gf.Int(r["avg_rt"])
+                break
+            }
+        }
         requestsByHour = append(requestsByHour, gf.Map{
             "hour": hourStr + ":00",
-            "requests": gf.Int(found["reqs"]),
-            "errors": gf.Int(found["errors"]),
-            "responseTime": gf.Int(found["avg_rt"]),
+            "requests": reqs,
+            "errors": errs,
+            "responseTime": avg,
         })
     }
 

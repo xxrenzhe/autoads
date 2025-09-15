@@ -118,10 +118,7 @@ func (c *RateLimitController) GetUserUsageStats(ctx *gin.Context) {
          WHERE user_id=? AND recorded_at >= ? AND recorded_at <= ?
          GROUP BY feature, period`, userID, startTime, endTime,
     )
-    if err != nil {
-        // 无数据表或查询失败时，降级返回空使用数据
-        rows = []map[string]interface{}{}
-    }
+    if err != nil { rows = nil }
 
     usage := map[string]map[string]int{"API": {"MINUTE":0, "HOUR":0}, "SITE_RANK": {"MINUTE":0, "HOUR":0}, "BATCH": {"MINUTE":0}}
     for _, r := range rows {
@@ -243,7 +240,7 @@ func (c *RateLimitController) GetUsageReport(ctx *gin.Context) {
          WHERE recorded_at >= ? AND recorded_at <= ?
          GROUP BY plan, feature, period`, startTime, endTime,
     )
-    if err != nil { rows = []map[string]interface{}{} }
+    if err != nil { rows = nil }
 
     planUsage := map[string]map[string]map[string]int{}
     for _, r := range rows {
@@ -279,6 +276,6 @@ func (c *RateLimitController) GetTopUsers(ctx *gin.Context) {
          ORDER BY total_used DESC
          LIMIT ?`, feature, startTime, endTime, limit,
     )
-    if err != nil { rows = []map[string]interface{}{} }
+    if err != nil { rows = nil }
     ctx.JSON(http.StatusOK, gin.H{"code":0, "data": rows})
 }

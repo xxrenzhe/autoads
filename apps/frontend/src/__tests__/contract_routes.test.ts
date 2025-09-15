@@ -1,3 +1,4 @@
+/** @jest-environment node */
 import * as rankRoute from '@/app/api/siterank/rank/route'
 import * as batchRoute from '@/app/api/siterank/batch/route'
 import * as batchMinimalRoute from '@/app/api/siterank/batch-minimal/route'
