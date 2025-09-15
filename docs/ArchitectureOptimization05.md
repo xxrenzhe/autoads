@@ -143,7 +143,37 @@
   - 压测达标；补充观测与慢查询采样；清理回退开关与冗余代码。
   - Gate 2：SLO 达标、容量余量 > 20%。
 
-## 13. 待办清单（供新 Session 继续）
+## 13. 待办清单与完成标记（供新 Session 继续）
+- Next（已完成/进行中）
+  - [x] 新建/合并 `apps/frontend/src/middleware.ts`，移除重复中间件（edge/csrf/admin）并注入 `x-request-id`
+  - [x] 为以下路由增加 BFF 薄壳转发（鉴权/校验/轻限流/错误体/请求 ID）：
+    - [x] `/api/batchopen/silent-start|silent-progress|silent-terminate|version|proxy-url-validate`
+    - [x] `/api/siterank/rank|batch|batch-minimal`
+    - [x] `/api/adscenter/accounts|configurations|executions`
+  - [x] 在 Next 层删除/封存重执行逻辑：
+    - [x] `lib/puppeteer-visitor.ts`（Stub）
+    - [x] `lib/services/task-execution-service.ts`（最小化为工具函数）
+    - [x] SiteRank 前端抓取/API 兜底删除，统一走后端
+    - [ ] `lib/silent-batch-task-manager.ts`（保兼容，P2 计划删除本地状态推进）
+  - [x] 实施 readiness 守门（/readyz）并在 BFF 注入 `X-BFF-Enforced`
+  - [ ] `apps/frontend/src/lib/auth/v5-config.ts` 与 Token/订阅写路径：改为调用 Go 的后登录/发放 API（Next 仅认证最小写）
+  - [ ] `/admin` 统一跳转 `/ops/console/panel`
+  - [ ] 统一错误体与配置入口（移除重复实现），Next 对业务库只读
+- Go（必做）
+  - [ ] 落库：BatchOpen 统一模型三表（Job/Item/Progress）与索引
+  - [ ] 实现 API：`/api/v1/batchopen/start|progress|terminate`（包含 type=basic|silent|autoclick）
+  - [ ] SiteRank：`/api/v1/siterank/rank|batch`，统一缓存/错误 TTL/扣费/限流
+  - [ ] AdsCenter：`/api/v1/adscenter/accounts|configurations|executions`，执行调度 + 令牌计费；SystemConfig 回退只读迁移
+  - [ ] GoFly Admin：六模块（用户/订阅/Token/系统配置/API 管理/邀请+签到）页面与操作闭环
+  - [ ] 观测：pprof、基础 metrics、结构化日志（含 request-id）
+- 测试与压测（上线门槛）
+  - [x] BFF/转发/限流头/readiness 的合同测试通过（Node 环境）
+  - [ ] 按“功能测试清单”全量通过（E2E）
+  - [ ] 按“压测基线与 SLO”执行并达标（k6/Vegeta）
+- 文档与运维
+  - [x] 标注“表所有者矩阵”（Prisma 仅认证域；Go 业务域）
+  - [ ] 更新 `.env.preview.template` / `.env.production.template`（仅变量名）
+  - [ ] 更新 `README-deployment.md` 与 `docs/production-env-config.md`（BFF/健康/限流头）
 - Next（必做）
   - [ ] 新建/合并 `apps/frontend/src/middleware.ts`，移除 `middleware.edge.ts / middleware-csrf.ts / middleware.admin.ts` 重复逻辑
   - [ ] 为以下路由增加 BFF 转发器（鉴权/校验/轻限流/错误体/请求 ID）：

@@ -59,7 +59,7 @@ var (
 
 // 全局服务实例（用于旧API处理器中复用）
 var (
-	gormDB            *gorm.DB
+    gormDB            *gorm.DB
 	storeDB           *store.DB
 	storeRedis        *store.Redis
 	jwtSvc            *auth.JWTService
@@ -71,6 +71,22 @@ var (
     auditSvc          *audit.AutoAdsAuditService
     rateLimitManager  *ratelimit.RateLimitManager
 )
+
+// simpleUserSvc: 为 RateLimitManager 提供最小化的用户查询实现
+type simpleUserSvc struct{}
+
+func (s *simpleUserSvc) GetUserByID(userID string) (*ratelimit.UserInfo, error) {
+    if userID == "" {
+        return &ratelimit.UserInfo{PlanName: "FREE", Plan: "FREE"}, nil
+    }
+    rows, err := gf.DB().Query(context.Background(), `SELECT p.name AS plan_name FROM subscriptions s JOIN plans p ON p.id=s.plan_id WHERE s.user_id=? AND s.status='ACTIVE' ORDER BY s.updated_at DESC LIMIT 1`, userID)
+    if err != nil || len(rows) == 0 {
+        return &ratelimit.UserInfo{PlanName: "FREE", Plan: "FREE"}, nil
+    }
+    plan := gf.String(rows[0]["plan_name"])
+    if plan == "" { plan = "FREE" }
+    return &ratelimit.UserInfo{PlanName: plan, Plan: plan}, nil
+}
 
 // 适配器：将 user.TokenService 适配为 chengelink.TokenService
 type tokenServiceAdapter struct{ ts *user.TokenService }
@@ -227,15 +243,6 @@ func main() {
             auditSvc = audit.NewAutoAdsAuditService(gormDB)
 
             // RateLimitManager（最小实现：通过 SQL 解析用户套餐）
-            type simpleUserSvc struct{}
-            func (s *simpleUserSvc) GetUserByID(userID string) (*ratelimit.UserInfo, error) {
-                if userID == "" { return &ratelimit.UserInfo{PlanName:"FREE", Plan:"FREE"}, nil }
-                rows, err := gf.DB().Query(context.Background(), `SELECT p.name AS plan_name FROM subscriptions s JOIN plans p ON p.id=s.plan_id WHERE s.user_id=? AND s.status='ACTIVE' ORDER BY s.updated_at DESC LIMIT 1`, userID)
-                if err != nil || len(rows)==0 { return &ratelimit.UserInfo{PlanName:"FREE", Plan:"FREE"}, nil }
-                plan := rows[0]["plan_name"].String()
-                if plan == "" { plan = "FREE" }
-                return &ratelimit.UserInfo{PlanName: plan, Plan: plan}, nil
-            }
             rateLimitManager = ratelimit.NewRateLimitManager(cfg2, storeDB, &simpleUserSvc{})
         }
     }

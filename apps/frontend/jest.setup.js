@@ -160,14 +160,21 @@ jest.mock('next/server', () => ({
 }))
 
 // Mock NextAuth
-jest.mock('next-auth', () => ({
-  default: jest.fn(),
-}))
+try {
+  jest.mock('next-auth', () => ({
+    default: jest.fn(),
+  }))
+} catch {}
 
-jest.mock('@auth/core', () => ({
-  Auth: jest.fn(),
-  customFetch: jest.fn(),
-}))
+try {
+  // Only mock if module exists
+  // eslint-disable-next-line global-require
+  require.resolve('@auth/core')
+  jest.mock('@auth/core', () => ({
+    Auth: jest.fn(),
+    customFetch: jest.fn(),
+  }))
+} catch {}
 
 // Mock auth config
 jest.mock('@/lib/auth/v5-config', () => ({
