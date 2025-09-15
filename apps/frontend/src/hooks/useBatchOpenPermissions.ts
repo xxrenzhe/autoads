@@ -44,9 +44,10 @@ export function useBatchOpenPermissions() {
 export function useBatchOpenVersion(version: string) {
   const { data: permissions } = useBatchOpenPermissions()
   
+  const key = (version === 'autoclick' ? 'automated' : (version as 'basic' | 'silent' | 'automated'))
   return {
-    hasAccess: permissions?.versions[version as 'basic' | 'silent' | 'automated']?.available || false,
-    versionInfo: permissions?.versions[version as 'basic' | 'silent' | 'automated'] || null,
+    hasAccess: permissions?.versions[key]?.available || false,
+    versionInfo: permissions?.versions[key] || null,
     isLoading: !permissions
   }
 }

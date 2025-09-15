@@ -1,66 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth/v5-config';
-import { AutoClickService } from '@/lib/autoclick-service';
+import { forwardToGo } from '@/lib/bff/forward'
 
-const autoClickService = new AutoClickService();
-
-interface RouteParams {
-  params: {
-    id: string;
-    action: string;
-  };
-}
-
-// POST /api/autoclick/tasks/[id]/[action] - 任务操作（启动/停止/终止）
-export async function POST(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await auth();
-    if (!session?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { action } = params;
-    const taskId = params.id;
-
-    let result;
-    switch (action) {
-      case 'start':
-        result = await autoClickService.startTask(taskId, session.userId);
-        break;
-      case 'stop':
-        result = await autoClickService.stopTask(taskId, session.userId);
-        break;
-      case 'terminate':
-        result = await autoClickService.terminateTask(taskId, session.userId);
-        break;
-      default:
-        return NextResponse.json(
-          { error: 'Invalid action' },
-          { status: 400 }
-        );
-    }
-
-    // 记录用户活动
-    // TODO: 集成到 UserActivity 系统
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error(`Error performing action ${params.action} on task:`, error);
-    if (error instanceof Error) {
-      if (error.message === 'Task not found') {
-        return NextResponse.json(
-          { error: 'Task not found' },
-          { status: 404 }
-        );
-      }
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
-    }
-    return NextResponse.json(
-      { error: 'Failed to perform action' },
-      { status: 500 }
-    );
+// BFF: POST /api/autoclick/tasks/[id]/[action]
+// - start -> /api/v1/batchgo/tasks/{id}/start
+// - stop|terminate -> /api/v1/batchgo/stop-all (best-effort)
+export async function POST(req: Request, ctx: { params: { id: string, action: string } }) {
+  const { id, action } = ctx.params
+  if (action === 'start') {
+    return forwardToGo(req, { targetPath: `/api/v1/batchgo/tasks/${id}/start`, appendSearch: false, method: 'POST' })
   }
+  if (action === 'stop') {
+    return forwardToGo(req, { targetPath: `/api/v1/batchgo/tasks/${id}/stop`, appendSearch: false, method: 'POST' })
+  }
+  if (action === 'terminate') {
+    return forwardToGo(req, { targetPath: `/api/v1/batchgo/tasks/${id}/terminate`, appendSearch: false, method: 'POST' })
+  }
+  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: { 'content-type': 'application/json' } })
 }

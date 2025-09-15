@@ -70,7 +70,7 @@ export class FeaturePermissionService {
       limits: {
         maxUrlsPerBatch: 200,
         tokensPerUrl: 1,
-        versions: ['basic', 'silent', 'automated']
+        versions: ['basic', 'silent', 'autoclick', 'automated']
       }
     },
     {
@@ -82,7 +82,7 @@ export class FeaturePermissionService {
       limits: {
         maxUrlsPerBatch: 1000,
         tokensPerUrl: 1,
-        versions: ['basic', 'silent', 'automated']
+        versions: ['basic', 'silent', 'autoclick', 'automated']
       }
     },
     

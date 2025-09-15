@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db'
 import getCacheService from '@/lib/cache'
 
 export interface BatchOpenVersion {
-  id: 'basic' | 'silent' | 'automated'
+  id: 'basic' | 'silent' | 'autoclick' | 'automated'
   name: string
   description: string
   maxUrls: number
@@ -32,6 +32,14 @@ export const BATCHOPEN_VERSIONS: Record<string, BatchOpenVersion> = {
     name: '自动化版',
     description: '支持定时任务和脚本控制',
     maxUrls: -1, // 无限制
+    maxConcurrent: 50,
+    features: ['定时任务', 'API控制', '脚本自动化', '高级代理管理']
+  },
+  autoclick: {
+    id: 'autoclick',
+    name: '自动化版',
+    description: '支持定时任务和脚本控制（autoclick）',
+    maxUrls: -1,
     maxConcurrent: 50,
     features: ['定时任务', 'API控制', '脚本自动化', '高级代理管理']
   }
@@ -72,7 +80,7 @@ export class BatchOpenPermissionService {
       const result = {
         available: [],
         highest: null,
-        versions: { basic: false, silent: false, automated: false }
+        versions: { basic: false, silent: false, automated: false, autoclick: false } as any
       }
       await cacheService.set(cacheKey, result, { ttl: 300 }) // 缓存5分钟
       return result
@@ -82,17 +90,20 @@ export class BatchOpenPermissionService {
     const limits = subscription.plan.limits as any
     const allowedVersions = limits?.batchopen?.versions || []
 
-    const versions = {
+    const versions: any = {
       basic: allowedVersions.includes('basic'),
       silent: allowedVersions.includes('silent'),
-      automated: allowedVersions.includes('automated') || allowedVersions.includes('platinum') // 兼容旧的 platinum
+      automated: allowedVersions.includes('automated') || allowedVersions.includes('platinum'), // 兼容旧的 platinum
+      autoclick: allowedVersions.includes('autoclick') || allowedVersions.includes('automated') // 别名兼容
     }
 
     const available = Object.entries(versions)
       .filter(([_, hasAccess]) => hasAccess)
       .map(([version]) => version)
 
-    const highest = available.includes('automated') 
+    const highest = available.includes('autoclick')
+      ? 'autoclick'
+      : available.includes('automated') 
       ? 'automated' 
       : available.includes('silent') 
         ? 'silent' 

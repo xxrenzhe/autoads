@@ -67,6 +67,9 @@ async function readBodyWithLimit(req: Request, limit: number): Promise<BodyInit 
   return Buffer.concat(chunks)
 }
 
+import { auth } from '@/lib/auth/v5-config'
+import { createInternalJWT } from '@/lib/security/internal-jwt'
+
 async function proxy(req: Request, path: string[]) {
   const url = new URL(req.url)
   const subPath = `/${path.join('/')}`
@@ -117,6 +120,19 @@ async function proxy(req: Request, path: string[]) {
   // Inject request id if absent
   if (!headers.get('x-request-id')) {
     headers.set('x-request-id', `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`)
+  }
+
+  // Bridge NextAuth session -> Internal JWT for Go if Authorization is missing
+  if (!headers.get('authorization')) {
+    try {
+      const session: any = await auth()
+      const uid = session?.user?.id
+      const role = session?.user?.role
+      if (uid) {
+        const ijwt = createInternalJWT({ sub: uid, role })
+        if (ijwt) headers.set('authorization', `Bearer ${ijwt}`)
+      }
+    } catch { /* no-op */ }
   }
 
   let body: BodyInit | undefined | Response = undefined

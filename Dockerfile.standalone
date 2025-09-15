@@ -29,8 +29,11 @@ COPY apps/frontend/ ./
 # 传入环境并构建 standalone
 ARG NEXT_PUBLIC_DEPLOYMENT_ENV="preview"
 ARG NEXT_PUBLIC_DOMAIN="localhost"
+# 允许在预发/本地构建中使用本地桩以减少依赖
+ARG ALLOW_STUBS="true"
 ENV NEXT_PUBLIC_DEPLOYMENT_ENV=${NEXT_PUBLIC_DEPLOYMENT_ENV} \
-    NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN}
+    NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN} \
+    ALLOW_STUBS=${ALLOW_STUBS}
 RUN npm run build
 
 ############################

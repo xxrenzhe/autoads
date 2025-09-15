@@ -15,10 +15,13 @@ import (
 
 // Service BatchGo服务
 type Service struct {
-	db           *gorm.DB
-	tokenService TokenService // Token服务接口
-	wsManager    WSManager    // WebSocket管理器接口
-	httpClient   *http.Client
+    db           *gorm.DB
+    tokenService TokenService // Token服务接口
+    wsManager    WSManager    // WebSocket管理器接口
+    httpClient   *http.Client
+    // 运行中任务的取消函数（仅 Silent 可中断）
+    cancelMu     sync.Mutex
+    cancels      map[string]context.CancelFunc
 }
 
 // TokenService Token服务接口
@@ -35,14 +38,31 @@ type WSManager interface {
 
 // NewService 创建BatchGo服务
 func NewService(db *gorm.DB, tokenService TokenService, wsManager WSManager) *Service {
-	return &Service{
-		db:           db,
-		tokenService: tokenService,
-		wsManager:    wsManager,
-		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
-	}
+    return &Service{
+        db:           db,
+        tokenService: tokenService,
+        wsManager:    wsManager,
+        httpClient: &http.Client{
+            Timeout: 30 * time.Second,
+        },
+        cancels: make(map[string]context.CancelFunc),
+    }
+}
+
+// registerCancel 记录任务的取消函数
+func (s *Service) registerCancel(taskID string, cancel context.CancelFunc) {
+    s.cancelMu.Lock()
+    s.cancels[taskID] = cancel
+    s.cancelMu.Unlock()
+}
+
+// popCancel 取出并删除取消函数
+func (s *Service) popCancel(taskID string) (cancel context.CancelFunc) {
+    s.cancelMu.Lock()
+    cancel, _ = s.cancels[taskID]
+    delete(s.cancels, taskID)
+    s.cancelMu.Unlock()
+    return
 }
 
 // CreateTask 创建批处理任务
@@ -235,14 +255,15 @@ func (s *Service) startSilentTask(task *BatchTask) {
 		}
 	}
 
-	// 并发处理URL
-	s.processSilentTask(task, urls, silentConfig)
+    // 并发处理URL（注册可取消上下文）
+    ctx, cancel := context.WithCancel(context.Background())
+    s.registerCancel(task.ID, cancel)
+    defer s.popCancel(task.ID)
+    s.processSilentTask(ctx, task, urls, silentConfig)
 }
 
-// processSilentTask 处理Silent模式任务
-func (s *Service) processSilentTask(task *BatchTask, urls []BatchTaskURL, config *SilentConfig) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+// processSilentTask 处理Silent模式任务（由调用者提供ctx，以支持取消）
+func (s *Service) processSilentTask(ctx context.Context, task *BatchTask, urls []BatchTaskURL, config *SilentConfig) {
 
 	// 创建工作池
 	urlChan := make(chan int, len(urls))
@@ -298,7 +319,7 @@ func (s *Service) processSilentTask(task *BatchTask, urls []BatchTaskURL, config
 
 // silentWorker Silent模式工作协程
 func (s *Service) silentWorker(ctx context.Context, taskID string, urls []BatchTaskURL,
-	urlChan <-chan int, resultChan chan<- BatchTaskURL, config *SilentConfig) {
+    urlChan <-chan int, resultChan chan<- BatchTaskURL, config *SilentConfig) {
 
 	client := &http.Client{
 		Timeout: time.Duration(config.Timeout) * time.Second,
@@ -319,6 +340,45 @@ func (s *Service) silentWorker(ctx context.Context, taskID string, urls []BatchT
 			resultChan <- result
 		}
 	}
+}
+
+// StopTask 暂停任务（仅对 running 的 silent 模式生效）
+func (s *Service) StopTask(userID, taskID string) error {
+    task, err := s.GetTask(userID, taskID)
+    if err != nil {
+        return err
+    }
+    if task.Status != StatusRunning {
+        return fmt.Errorf("任务非运行态: %s", task.Status)
+    }
+    if task.Mode != ModeSilent {
+        return fmt.Errorf("仅 Silent 模式支持停止")
+    }
+    if cancel := s.popCancel(taskID); cancel != nil {
+        cancel()
+    }
+    now := time.Now()
+    return s.db.Model(&BatchTask{}).Where("id = ?", taskID).Updates(map[string]interface{}{
+        "status":     StatusPaused,
+        "updated_at": now,
+    }).Error
+}
+
+// TerminateTask 终止任务（运行中则取消，非运行直接标记取消）
+func (s *Service) TerminateTask(userID, taskID string) error {
+    task, err := s.GetTask(userID, taskID)
+    if err != nil {
+        return err
+    }
+    if cancel := s.popCancel(taskID); cancel != nil {
+        cancel()
+    }
+    now := time.Now()
+    return s.db.Model(&BatchTask{}).Where("id = ?", taskID).Updates(map[string]interface{}{
+        "status":     StatusCancelled,
+        "end_time":   now,
+        "updated_at": now,
+    }).Error
 }
 
 // processURL 处理单个URL

@@ -1,20 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { loadStripe } from '@stripe/stripe-js'
-import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements
-} from '@stripe/react-stripe-js'
 import { 
   CreditCardIcon,
   LockClosedIcon,
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline'
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 interface Plan {
   id: string
@@ -46,9 +37,6 @@ interface BillingDetails {
 }
 
 function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
-  const stripe = useStripe()
-  const elements = useElements()
-  
   const [billingDetails, setBillingDetails] = useState<BillingDetails>({
     name: '',
     email: '',
@@ -64,6 +52,11 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
   
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [cardError, setCardError] = useState<string | null>(null)
+
+  // Basic card fields (UI only; no Stripe integration)
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardCvc, setCardCvc] = useState('')
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -101,45 +94,24 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
 
-    if (!stripe || !elements || loading) {
-      return
-    }
+    if (loading) return
 
     if (!validateForm()) {
       return
     }
 
-    const cardElement = elements.getElement(CardElement)
-    if (!cardElement) {
+
+    // Very basic client-side validation for demo purposes
+    if (!cardNumber.trim() || !cardExpiry.trim() || !cardCvc.trim()) {
+      setCardError('Please fill in all card fields')
       return
     }
 
-    // Create payment method
-    const { error, paymentMethod } = await stripe.createPaymentMethod({
-      type: 'card',
-      card: cardElement,
-      billing_details: {
-        name: billingDetails.name,
-        email: billingDetails.email,
-        address: {
-          line1: billingDetails.address.line1,
-          line2: billingDetails.address.line2 || undefined,
-          city: billingDetails.address.city,
-          state: billingDetails.address.state,
-          postal_code: billingDetails.address.postal_code,
-          country: billingDetails.address.country,
-        },
-      },
-    })
+    // No real payment processing. Generate a placeholder id.
+    const mockPaymentMethodId = 'pm_mock_' + Math.random().toString(36).slice(2, 10)
 
-    if (error) {
-      setCardError(error.message || 'An error occurred with your card')
-      return
-    }
-
-    // Submit to parent component
     await onSubmit({
-      paymentMethodId: paymentMethod.id,
+      paymentMethodId: mockPaymentMethodId,
       billingDetails
     })
   }
@@ -170,20 +142,8 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
     }
   }
 
-  const cardElementOptions = {
-    style: {
-      base: {
-        fontSize: '16px',
-        color: '#424770',
-        '::placeholder': {
-          color: '#aab7c4',
-        },
-      },
-      invalid: {
-        color: '#9e2146',
-      },
-    },
-  }
+  // Basic input styling; keep parity with previous look
+  const inputClass = 'w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -349,15 +309,49 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
           Payment Information
         </h3>
         
-        <div className="border border-gray-300 rounded-md p-3">
-          <CardElement
-            options={cardElementOptions}
-            onChange={(event) => {
-              // Stripe types may not be available; keep loose typing
-              // @ts-ignore - event type depends on Stripe SDK typing presence
-              setCardError(event.error ? event.error.message : null)
-            }}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Card Number
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="cc-number"
+              placeholder="4242 4242 4242 4242"
+              className={inputClass}
+              value={cardNumber}
+              onChange={(e) => setCardNumber(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Expiry
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="cc-exp"
+              placeholder="MM/YY"
+              className={inputClass}
+              value={cardExpiry}
+              onChange={(e) => setCardExpiry(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              CVC
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="cc-csc"
+              placeholder="CVC"
+              className={inputClass}
+              value={cardCvc}
+              onChange={(e) => setCardCvc(e.target.value)}
+            />
+          </div>
         </div>
         
         {cardError && (
@@ -382,7 +376,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
       {/* Submit Button */}
       <button
         type="submit"
-        disabled={!stripe || loading}
+        disabled={loading}
         className="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? (
@@ -402,9 +396,5 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
 }
 
 export default function PaymentForm(props: PaymentFormProps) {
-  return (
-    <Elements stripe={stripePromise}>
-      <PaymentFormContent {...props} />
-    </Elements>
-  )
+  return <PaymentFormContent {...props} />
 }

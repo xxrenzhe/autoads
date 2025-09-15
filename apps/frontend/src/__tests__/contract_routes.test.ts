@@ -1,14 +1,7 @@
 /** @jest-environment node */
-import * as rankRoute from '@/app/api/siterank/rank/route'
-import * as batchRoute from '@/app/api/siterank/batch/route'
-import * as batchMinimalRoute from '@/app/api/siterank/batch-minimal/route'
-import * as silentStart from '@/app/api/batchopen/silent-start/route'
-import * as silentProgress from '@/app/api/batchopen/silent-progress/route'
-import * as accountsRoute from '@/app/api/adscenter/accounts/route'
-import * as configsRoute from '@/app/api/adscenter/configurations/route'
-import * as execsRoute from '@/app/api/adscenter/executions/route'
-import * as versionRoute from '@/app/api/batchopen/version/route'
-import * as proxyValidateRoute from '@/app/api/batchopen/proxy-url-validate/route'
+import * as siterankCatchAll from '@/app/api/siterank/[...path]/route'
+import * as batchopenCatchAll from '@/app/api/batchopen/[...path]/route'
+import * as adscenterCatchAll from '@/app/api/adscenter/[...path]/route'
 
 describe('Contract routes forward to /api/go', () => {
   const originalFetch = global.fetch
@@ -25,7 +18,7 @@ describe('Contract routes forward to /api/go', () => {
   it('siterank rank forwards with query', async () => {
     const req = new Request('http://localhost/api/siterank/rank?domain=abc.com', { method: 'GET' })
     // @ts-expect-error route signature
-    const res = await rankRoute.GET(req)
+    const res = await siterankCatchAll.GET(req, { params: { path: ['rank'] } })
     expect(res.status).toBe(200)
     const [url] = (global.fetch as jest.Mock).mock.calls[0]
     expect(String(url)).toContain('/api/go/api/v1/siterank/rank?domain=abc.com')
@@ -34,7 +27,7 @@ describe('Contract routes forward to /api/go', () => {
   it('siterank batch forwards', async () => {
     const req = new Request('http://localhost/api/siterank/batch', { method: 'POST', body: JSON.stringify({ domains: ['a.com'] }), headers: { 'content-type': 'application/json' } })
     // @ts-expect-error route signature
-    const res = await batchRoute.POST(req)
+    const res = await siterankCatchAll.POST(req, { params: { path: ['batch'] } })
     expect(res.status).toBe(200)
     const [url] = (global.fetch as jest.Mock).mock.calls[0]
     expect(String(url)).toContain('/api/go/api/v1/siterank/batch')
@@ -43,7 +36,7 @@ describe('Contract routes forward to /api/go', () => {
   it('batchopen silent-start forwards', async () => {
     const req = new Request('http://localhost/api/batchopen/silent-start', { method: 'POST', body: JSON.stringify({ urls: ['https://a.com'], cycleCount: 1 }), headers: { 'content-type': 'application/json' } })
     // @ts-expect-error route signature
-    const res = await silentStart.POST(req)
+    const res = await batchopenCatchAll.POST(req, { params: { path: ['silent-start'] } })
     expect(res.status).toBe(200)
     const [url] = (global.fetch as jest.Mock).mock.calls[0]
     expect(String(url)).toContain('/api/go/api/v1/batchopen/start?type=silent')
@@ -52,7 +45,7 @@ describe('Contract routes forward to /api/go', () => {
   it('batchopen silent-progress forwards', async () => {
     const req = new Request('http://localhost/api/batchopen/silent-progress?taskId=abc', { method: 'GET' })
     // @ts-expect-error route signature
-    const res = await silentProgress.GET(req)
+    const res = await batchopenCatchAll.GET(req, { params: { path: ['silent-progress'] } })
     expect(res.status).toBe(200)
     const [url] = (global.fetch as jest.Mock).mock.calls[0]
     expect(String(url)).toContain('/api/go/api/v1/batchopen/progress?taskId=abc')
@@ -61,9 +54,7 @@ describe('Contract routes forward to /api/go', () => {
   it('batchopen silent-terminate forwards', async () => {
     const req = new Request('http://localhost/api/batchopen/silent-terminate', { method: 'POST', body: JSON.stringify({ taskId: 'abc' }), headers: { 'content-type': 'application/json' } })
     // @ts-expect-error route signature
-    const route = await import('@/app/api/batchopen/silent-terminate/route')
-    // @ts-expect-error route signature
-    const res = await route.POST(req)
+    const res = await batchopenCatchAll.POST(req, { params: { path: ['silent-terminate'] } })
     expect(res.status).toBe(200)
     const [url] = (global.fetch as jest.Mock).mock.calls[0]
     expect(String(url)).toContain('/api/go/api/v1/batchopen/terminate')
@@ -72,7 +63,7 @@ describe('Contract routes forward to /api/go', () => {
   it('adscenter executions GET forwards', async () => {
     const req = new Request('http://localhost/api/adscenter/executions', { method: 'GET' })
     // @ts-expect-error route signature
-    const res = await execsRoute.GET(req)
+    const res = await adscenterCatchAll.GET(req, { params: { path: ['executions'] } })
     expect(res.status).toBe(200)
     const [url] = (global.fetch as jest.Mock).mock.calls[0]
     expect(String(url)).toContain('/api/go/api/v1/adscenter/executions')
@@ -81,7 +72,7 @@ describe('Contract routes forward to /api/go', () => {
   it('adscenter accounts forwards', async () => {
     const req = new Request('http://localhost/api/adscenter/accounts', { method: 'GET' })
     // @ts-expect-error route signature
-    const res = await accountsRoute.GET(req)
+    const res = await adscenterCatchAll.GET(req, { params: { path: ['accounts'] } })
     expect(res.status).toBe(200)
     const [url] = (global.fetch as jest.Mock).mock.calls[0]
     expect(String(url)).toContain('/api/go/api/v1/adscenter/accounts')
@@ -90,7 +81,7 @@ describe('Contract routes forward to /api/go', () => {
   it('adscenter configurations forwards', async () => {
     const req = new Request('http://localhost/api/adscenter/configurations', { method: 'GET' })
     // @ts-expect-error route signature
-    const res = await configsRoute.GET(req)
+    const res = await adscenterCatchAll.GET(req, { params: { path: ['configurations'] } })
     expect(res.status).toBe(200)
     const [url] = (global.fetch as jest.Mock).mock.calls[0]
     expect(String(url)).toContain('/api/go/api/v1/adscenter/configurations')
@@ -99,7 +90,7 @@ describe('Contract routes forward to /api/go', () => {
   it('adscenter executions POST forwards', async () => {
     const req = new Request('http://localhost/api/adscenter/executions', { method: 'POST', body: JSON.stringify({ configurationId: 'cfg1' }), headers: { 'content-type': 'application/json' } })
     // @ts-expect-error route signature
-    const res = await execsRoute.POST(req)
+    const res = await adscenterCatchAll.POST(req, { params: { path: ['executions'] } })
     expect(res.status).toBe(200)
     const [url] = (global.fetch as jest.Mock).mock.calls[0]
     expect(String(url)).toContain('/api/go/api/v1/adscenter/executions')
@@ -108,7 +99,7 @@ describe('Contract routes forward to /api/go', () => {
   it('batchopen version forwards', async () => {
     const req = new Request('http://localhost/api/batchopen/version?feature=batchopen', { method: 'GET' })
     // @ts-expect-error route signature
-    const res = await versionRoute.GET(req)
+    const res = await batchopenCatchAll.GET(req, { params: { path: ['version'] } })
     expect(res.status).toBe(200)
     const [url] = (global.fetch as jest.Mock).mock.calls[0]
     expect(String(url)).toContain('/api/go/api/v1/batchopen/version?feature=batchopen')
@@ -117,7 +108,7 @@ describe('Contract routes forward to /api/go', () => {
   it('batchopen proxy-url-validate forwards', async () => {
     const req = new Request('http://localhost/api/batchopen/proxy-url-validate', { method: 'POST', body: JSON.stringify({ proxyUrl: 'http://1.2.3.4:8080' }), headers: { 'content-type': 'application/json' } })
     // @ts-expect-error route signature
-    const res = await proxyValidateRoute.POST(req)
+    const res = await batchopenCatchAll.POST(req, { params: { path: ['proxy-url-validate'] } })
     expect(res.status).toBe(200)
     const [url] = (global.fetch as jest.Mock).mock.calls[0]
     expect(String(url)).toContain('/api/go/api/v1/batchopen/proxy-url-validate')

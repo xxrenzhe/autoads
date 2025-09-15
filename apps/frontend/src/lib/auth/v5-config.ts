@@ -379,7 +379,6 @@ const __nextAuth = NextAuth({
           
           return typedSession
         }
-        }
 
         // 合并后端只读态（订阅/Token余额）
         try {
@@ -387,16 +386,19 @@ const __nextAuth = NextAuth({
           if (internal) {
             const headers = new Headers({ 'Authorization': `Bearer ${internal}` })
             ensureRequestId(headers as any)
-            const [subResp, balResp] = await Promise.all([
+            const [subResp, balResp, statsResp] = await Promise.all([
               fetch('/api/go/api/v1/user/subscription/current', { headers }),
-              fetch('/api/go/api/v1/tokens/balance', { headers })
+              fetch('/api/go/api/v1/tokens/balance', { headers }),
+              fetch('/api/go/api/v1/tokens/stats', { headers })
             ])
             const subJson: any = await subResp.json().catch(() => null)
             const balJson: any = await balResp.json().catch(() => null)
+            const statsJson: any = await statsResp.json().catch(() => null)
             const planName = subJson?.data?.plan_name || subJson?.data?.plan || undefined
             const goBalance = typeof balJson?.balance === 'number' ? balJson.balance : undefined
             if (planName) (typedSession.user as any).planName = planName
             if (typeof goBalance === 'number') (typedSession.user as any).tokenBalance = goBalance
+            if (statsJson && typeof statsJson === 'object') (typedSession.user as any).tokenStats = statsJson
           }
         } catch (e) {
           // 只读合并失败不影响登录

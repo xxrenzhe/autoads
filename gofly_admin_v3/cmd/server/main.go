@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -616,6 +617,28 @@ func setupAPIRoutes(r *gin.Engine) {
         batchGroup := v1.Group("/batchgo")
         batchGroup.Use(authMiddleware())
         {
+            // 任务级控制（用于 AutoClick/调度的精确控制）
+            batchGroup.POST("/tasks/:id/start", func(c *gin.Context) {
+                if batchService == nil { c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"}); return }
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"code": 400, "message": "missing id"}); return }
+                if err := batchService.StartTask(userID, id); err != nil { c.JSON(400, gin.H{"code": 400, "message": err.Error()}); return }
+                c.JSON(200, gin.H{"code": 0, "message": "started"})
+            })
+            batchGroup.POST("/tasks/:id/stop", func(c *gin.Context) {
+                if batchService == nil { c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"}); return }
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"code": 400, "message": "missing id"}); return }
+                if err := batchService.StopTask(userID, id); err != nil { c.JSON(400, gin.H{"code": 400, "message": err.Error()}); return }
+                c.JSON(200, gin.H{"code": 0, "message": "stopped"})
+            })
+            batchGroup.POST("/tasks/:id/terminate", func(c *gin.Context) {
+                if batchService == nil { c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"}); return }
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"code": 400, "message": "missing id"}); return }
+                if err := batchService.TerminateTask(userID, id); err != nil { c.JSON(400, gin.H{"code": 400, "message": err.Error()}); return }
+                c.JSON(200, gin.H{"code": 0, "message": "terminated"})
+            })
             batchGroup.POST("/silent-start", handleSilentStart)
             batchGroup.GET("/silent-progress", handleSilentProgress)
             batchGroup.POST("/silent-terminate", handleSilentTerminate)
@@ -784,15 +807,129 @@ func setupAPIRoutes(r *gin.Engine) {
 					"serverTime":   time.Now().Format(time.RFC3339),
 				})
 			})
+
+			// ===== 为 Next BFF 提供的统一端点（保持合同） =====
+			// POST /api/v1/batchopen/start?type=silent|basic|autoclick
+			batchopen.POST("/start", func(c *gin.Context) {
+				// 目前仅实现 silent，basic/autoclick 预留
+				// 复用现有兼容处理器，确保老合同可用
+				mode := strings.ToLower(c.DefaultQuery("type", "silent"))
+				switch mode {
+				case "silent":
+					handleSilentStart(c)
+				case "basic":
+					// 直接复用 silent pipeline，后续按需拆分
+					handleSilentStart(c)
+				case "autoclick":
+					// 先走通创建流程（与 silent 一致），未来接入定时/调度
+					handleSilentStart(c)
+				default:
+					c.JSON(400, gin.H{"code": 400, "message": "unsupported type"})
+				}
+			})
+
+			// GET /api/v1/batchopen/progress?taskId=xxx
+			batchopen.GET("/progress", func(c *gin.Context) {
+				handleSilentProgress(c)
+			})
+
+			// POST /api/v1/batchopen/terminate { taskId }
+			batchopen.POST("/terminate", func(c *gin.Context) {
+				handleSilentTerminate(c)
+			})
+
+			// GET /api/v1/batchopen/version
+			batchopen.GET("/version", func(c *gin.Context) {
+				c.JSON(200, gin.H{
+					"name":     "batchopen-go",
+					"version":  Version,
+					"build":    BuildTime,
+					"commit":   GitCommit,
+					"provider": "go",
+				})
+			})
+
+			// POST /api/v1/batchopen/proxy-url-validate { proxyUrl }
+			batchopen.POST("/proxy-url-validate", func(c *gin.Context) {
+				var body struct{ ProxyURL string `json:"proxyUrl"` }
+				if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.ProxyURL) == "" {
+					c.JSON(400, gin.H{"code": 400, "message": "invalid request: proxyUrl required"})
+					return
+				}
+				u, err := url.Parse(body.ProxyURL)
+				if err != nil {
+					c.JSON(200, gin.H{"valid": false, "message": "parse error", "error": err.Error()})
+					return
+				}
+				if u.Scheme == "" || u.Host == "" {
+					c.JSON(200, gin.H{"valid": false, "message": "missing scheme or host"})
+					return
+				}
+				// 允许 http/https/socks5 三类
+				switch strings.ToLower(u.Scheme) {
+				case "http", "https", "socks5":
+					// ok
+				default:
+					c.JSON(200, gin.H{"valid": false, "message": "unsupported scheme"})
+					return
+				}
+				// 校验端口
+				host := u.Host
+				if !strings.Contains(host, ":") {
+					c.JSON(200, gin.H{"valid": false, "message": "missing port"})
+					return
+				}
+				c.JSON(200, gin.H{"valid": true, "normalized": u.String()})
+			})
 		}
 
 			// SiteRank路由（避免重复声明变量名）
-			siteRankGroup := v1.Group("/siterank")
-			siteRankGroup.Use(authMiddleware())
-			{
-				siteRankGroup.GET("/rank", handleSiteRank)
-				siteRankGroup.POST("/batch", handleBatchSiteRank)
-			}
+        siteRankGroup := v1.Group("/siterank")
+        siteRankGroup.Use(authMiddleware())
+        {
+            siteRankGroup.GET("/rank", handleSiteRank)
+            siteRankGroup.POST("/batch", handleBatchSiteRank)
+            // 原子端点：预检与执行（供前端 BFF 使用）
+            siteRankGroup.POST("/batch:check", func(c *gin.Context) {
+                if tokenSvc == nil { c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"}); return }
+                var body struct { Domains []string `json:"domains"` }
+                if err := c.ShouldBindJSON(&body); err != nil || len(body.Domains) == 0 {
+                    c.JSON(400, gin.H{"code": 400, "message": "invalid request: domains required"}); return
+                }
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+                qty := len(body.Domains)
+                sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "siterank", "batch", qty)
+                if err != nil { c.JSON(500, gin.H{"code": 500, "message": err.Error()}); return }
+                c.JSON(200, gin.H{"sufficient": sufficient, "balance": balance, "required": required, "quantity": qty})
+            })
+            siteRankGroup.POST("/batch:execute", func(c *gin.Context) {
+                if tokenSvc == nil || swebClient == nil { c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"}); return }
+                var body struct { Domains []string `json:"domains"`; Force bool `json:"force"` }
+                if err := c.ShouldBindJSON(&body); err != nil || len(body.Domains) == 0 {
+                    c.JSON(400, gin.H{"code": 400, "message": "invalid request: domains required"}); return
+                }
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+                qty := len(body.Domains)
+                sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "siterank", "batch", qty)
+                if err != nil { c.JSON(500, gin.H{"code": 500, "message": err.Error()}); return }
+                if !sufficient { c.JSON(402, gin.H{"code": 402, "message": "INSUFFICIENT_TOKENS", "required": required, "balance": balance}); return }
+                if err := tokenSvc.ConsumeTokensByService(userID, "siterank", "batch", qty, "siterank.batch"); err != nil {
+                    c.JSON(402, gin.H{"code": 402, "message": err.Error(), "required": required, "balance": balance}); return
+                }
+                // 执行批量查询
+                ctx := c.Request.Context()
+                data, execErr := swebClient.BatchGetWebsiteData(ctx, userID, body.Domains)
+                if execErr != nil {
+                    // 失败退款（best-effort）
+                    _ = tokenSvc.AddTokens(userID, required, "refund", "siterank batch failed", "")
+                    c.JSON(502, gin.H{"code": 502, "message": execErr.Error()}); return
+                }
+                newBalance, _ := tokenSvc.GetTokenBalance(userID)
+                c.Header("X-Tokens-Consumed", fmt.Sprintf("%d", required))
+                c.Header("X-Tokens-Balance", fmt.Sprintf("%d", newBalance))
+                c.JSON(200, gin.H{"success": true, "results": data, "consumed": required, "balance": newBalance})
+            })
+        }
 
 		// Chengelink路由
 		chengelink := v1.Group("/chengelink")

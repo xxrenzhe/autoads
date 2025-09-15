@@ -19,7 +19,7 @@ const VERSION_CONFIG = [
     color: 'bg-purple-50 border-purple-200'
   },
   {
-    id: 'automated',
+    id: 'autoclick',
     icon: Bot,
     color: 'bg-green-50 border-green-200'
   }
@@ -74,7 +74,8 @@ export function BatchOpenVersionShowcase() {
 
       <div className="grid gap-6 md:grid-cols-3">
         {VERSION_CONFIG.map((config: any) => {
-          const version = permissions.versions[config.id as keyof typeof permissions.versions]
+          const verKey = (config.id === 'autoclick' ? 'automated' : config.id) as keyof typeof permissions.versions
+          const version = permissions.versions[verKey]
           const Icon = config.icon
           const hasAccess = version.available
 

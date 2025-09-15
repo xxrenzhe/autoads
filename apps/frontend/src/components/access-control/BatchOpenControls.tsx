@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Play, Pause, Clock, Bot, Eye, EyeOff, AlertCircle } from 'lucide-react'
 
 interface BatchOpenControlsProps {
-  version: 'basic' | 'silent' | 'automated'
+  version: 'basic' | 'silent' | 'automated' | 'autoclick'
 }
 
 export function BatchOpenControls({ version }: BatchOpenControlsProps) {
@@ -74,7 +74,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
             <p className="text-gray-600">
               {version === 'basic' && '基础的批量URL打开功能'}
               {version === 'silent' && '后台批量打开，无浏览器界面'}
-              {version === 'automated' && '支持定时任务和脚本控制'}
+              {(version === 'automated' || version === 'autoclick') && '支持定时任务和脚本控制'}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -173,7 +173,7 @@ export function BatchOpenControls({ version }: BatchOpenControlsProps) {
                           <>
                             <SelectItem value="10">10个</SelectItem>
                             <SelectItem value="20">20个</SelectItem>
-                            {version === 'automated' && (
+                            {(version === 'automated' || version === 'autoclick') && (
                               <SelectItem value="50">50个</SelectItem>
                             )}
                           </>

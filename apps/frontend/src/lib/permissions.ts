@@ -98,7 +98,7 @@ export function hasResourcePermission(permissions: Permission[] | string[], reso
  * Get available versions for a feature based on permissions
  */
 export function getAvailableVersions(permissions: Permission[] | string[], feature: string): string[] {
-  const versions = ['basic', 'silent', 'automated']
+  const versions = ['basic', 'silent', 'automated', 'autoclick']
   
   return versions.filter((version: any) => {
     const requiredPermission = `${feature}:${version}`
@@ -112,6 +112,7 @@ export function getAvailableVersions(permissions: Permission[] | string[], featu
 export function getHighestVersion(permissions: Permission[] | string[], feature: string): string | null {
   const availableVersions = getAvailableVersions(permissions, feature)
   
+  if (availableVersions.includes('autoclick')) return 'autoclick'
   if (availableVersions.includes('automated')) return 'automated'
   if (availableVersions.includes('silent')) return 'silent'
   if (availableVersions.includes('basic')) return 'basic'

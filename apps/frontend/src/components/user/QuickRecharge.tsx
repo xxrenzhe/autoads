@@ -32,7 +32,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Payments as PaymentsIcon
 } from '@mui/icons-material';
-import { loadStripe } from '@stripe/stripe-js';
+// 移除 Stripe 集成：无需真实支付跳转
 
 interface QuickRechargeProps {
   userId: string;
@@ -53,7 +53,7 @@ interface RechargePackage {
 const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, onRechargeSuccess }) => {
   const [open, setOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<RechargePackage | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState('stripe');
+  const [paymentMethod, setPaymentMethod] = useState('alipay');
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
@@ -108,7 +108,7 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
   const resetForm = () => {
     setActiveStep(0);
     setSelectedPackage(null);
-    setPaymentMethod('stripe');
+    setPaymentMethod('alipay');
     setCustomAmount('');
     setCustomTokens('');
     setError('');
@@ -165,14 +165,13 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
       );
 
       if ((data as any).success) {
-        if (paymentMethod === 'stripe') {
-          const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-          if (stripe) {
-            await stripe.redirectToCheckout({ sessionId: (data as any).sessionId });
-          }
-        } else {
-          setPaymentUrl((data as any).paymentUrl);
+        // 仅保留本地支付方式（支付宝/微信），Stripe 路径直接走模拟或扫码
+        if (paymentMethod === 'alipay' || paymentMethod === 'wechat') {
+          setPaymentUrl((data as any).paymentUrl || '');
           setActiveStep(2);
+        } else {
+          // 不支持的方式，直接模拟成功
+          simulatePaymentSuccess();
         }
       } else {
         setError(((data as any).error) || '创建支付订单失败');
@@ -311,19 +310,6 @@ const QuickRecharge: React.FC<QuickRechargeProps> = ({ userId, currentBalance, o
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod((e.target as HTMLInputElement).value)}
               >
-                <Card variant="outlined" sx={{ mb: 2, cursor: 'pointer' }}>
-                  <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Radio value="stripe" />
-                    <CreditCardIcon color="primary" />
-                    <Box>
-                      <Typography variant="subtitle1">信用卡/借记卡</Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        支持Visa、Mastercard等国际信用卡
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-
                 <Card variant="outlined" sx={{ mb: 2, cursor: 'pointer' }}>
                   <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Radio value="alipay" />
