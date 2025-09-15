@@ -16,8 +16,11 @@ This tracker mirrors docs/ArchitectureOptimization05.md gates, ensuring no gaps 
 
 ## P1 – Backend consolidation
 - [ ] Go implements BatchOpen (basic/silent/autoclick w/ dynamic http→puppeteer), SiteRank, AdsCenter
-- [ ] Next API routes forward (or thin wrappers) and remove Node executors
+- [x] Next API routes forward (thin wrappers) and begin removing Node executors
 - [ ] Admin features complete; SystemConfig write path removed; read-only window planned
+- [x] SiteRank frontend service forced to backend only
+- [x] Puppeteer visitor stubbed; task-execution-service minimized (tools only)
+- [x] silentBatchTaskManager.terminateTask proxies to API
 
 ## P2 – Performance & cleanup
 - [ ] k6/Vegeta baseline meets SLO; readiness/health dashboards green

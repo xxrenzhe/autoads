@@ -525,21 +525,23 @@ export class SilentBatchTaskManager {
     };
   }
 
-  // 终止任务
+  // 终止任务（代理到后端，再同步本地状态）
   async terminateTask(taskId: string): Promise<boolean> {
-    const task = this.getTask(taskId);
-    if (task) {
-      const now = Date.now();
-      const taskDuration = now - (task.startTime || now);
-      
-      // 记录任务完成分析
-      
-      task.status = 'terminated';
-      task.message = '任务已终止';
-      await this.setTask(taskId, task);
-      return true;
+    try {
+      const res = await fetch('/api/batchopen/silent-terminate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ taskId })
+      })
+      if (!res.ok) return false
+    } catch {
+      // 即使后端失败，也尽量更新本地状态避免卡死
     }
-    return false;
+    const task = this.getTask(taskId) || {}
+    task.status = 'terminated'
+    task.message = '任务已终止'
+    await this.setTask(taskId, task)
+    return true
   }
 }
 

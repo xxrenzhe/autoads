@@ -1,6 +1,7 @@
 /**
  * 进展状态一致性验证服务
  * 确保前后端进展状态的一致性和完整性
+ * @deprecated 统一由后端提供权威进度；仅保留以兼容历史导入。
  */
 
 import { createLogger } from '@/lib/utils/security/secure-logger';
@@ -87,9 +88,12 @@ export class ProgressConsistencyService {
     const startTime = Date.now();
     
     try {
-      // 获取后端状态
-      const backendTask = silentBatchTaskManager.getTask(taskId);
-      const backendState = backendTask ? this.transformTaskToState(backendTask) : null;
+      // 获取后端状态（通过 API）
+      const url = new URL('/api/batchopen/silent-progress', 'http://localhost')
+      url.searchParams.set('taskId', taskId)
+      const resp = await fetch(url.pathname + url.search)
+      const data = await resp.json().catch(() => ({} as any))
+      const backendState = data && data.data ? (data.data as ProgressState) : undefined
 
       const inconsistencies: Inconsistency[] = [];
       const recommendations: string[] = [];

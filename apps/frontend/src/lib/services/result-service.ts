@@ -1,6 +1,7 @@
 /**
  * Simplified Result Service
  * 简化的结果处理服务，整合任务结果管理和存储
+ * @deprecated 结果与报表由后端提供；此处仅保留最小缓存兼容。
  */
 
 import { getLogger } from '@/lib/core/logger-manager';

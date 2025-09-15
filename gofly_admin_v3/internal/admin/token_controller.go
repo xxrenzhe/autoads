@@ -44,13 +44,13 @@ func (c *TokenController) AdjustBalance(ctx *gin.Context) {
     // 事务：更新余额 + 插入流水
     tx, err := gf.DB().Begin(ctx)
     if err != nil { ctx.JSON(http.StatusOK, gin.H{"code":5000, "message": err.Error()}); return }
-    _, err = tx.Exec(ctx, "UPDATE users SET token_balance = token_balance + ? WHERE id=?", body.Amount, userID)
-    if err != nil { tx.Rollback(ctx); ctx.JSON(http.StatusOK, gin.H{"code":5001, "message": err.Error()}); return }
-    _, err = tx.Exec(ctx, `INSERT INTO token_transactions (user_id, amount, type, service, action, ref_id, details, created_at) VALUES (?,?,?,?,?,?,?,NOW())`,
+    _, err = tx.Exec("UPDATE users SET token_balance = token_balance + ? WHERE id=?", body.Amount, userID)
+    if err != nil { tx.Rollback(); ctx.JSON(http.StatusOK, gin.H{"code":5001, "message": err.Error()}); return }
+    _, err = tx.Exec(`INSERT INTO token_transactions (user_id, amount, type, service, action, ref_id, details, created_at) VALUES (?,?,?,?,?,?,?,NOW())`,
         userID, body.Amount, ifEmptyType(body.Action), body.Service, body.Action, body.RefID, body.Reason,
     )
-    if err != nil { tx.Rollback(ctx); ctx.JSON(http.StatusOK, gin.H{"code":5002, "message": err.Error()}); return }
-    if err := tx.Commit(ctx); err != nil { ctx.JSON(http.StatusOK, gin.H{"code":5003, "message": err.Error()}); return }
+    if err != nil { tx.Rollback(); ctx.JSON(http.StatusOK, gin.H{"code":5002, "message": err.Error()}); return }
+    if err := tx.Commit(); err != nil { ctx.JSON(http.StatusOK, gin.H{"code":5003, "message": err.Error()}); return }
     ctx.JSON(http.StatusOK, gin.H{"code":0, "message":"ok"})
 }
 

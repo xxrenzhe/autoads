@@ -1,6 +1,7 @@
 /**
  * Simple single proxy executor
  * 简单的单代理执行器 - 替代已删除的策略服务
+ * @deprecated 执行器逻辑已迁移至后端，仅保留以兼容历史导入。请不要在新代码中使用。
  */
 import { createLogger } from '@/lib/utils/security/secure-logger';
 import { SimpleConcurrentExecutor } from './simple-concurrent-executor';

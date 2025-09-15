@@ -72,6 +72,7 @@ export interface SimpleConcurrentResult {
 
 /**
  * 简单的并发执行器
+ * @deprecated 执行器逻辑已迁移至后端，仅保留以兼容历史导入。请不要在新代码中使用。
  */
 export class SimpleConcurrentExecutor {
   private options: SimpleConcurrentOptions;
