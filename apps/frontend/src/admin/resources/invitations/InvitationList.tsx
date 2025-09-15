@@ -82,7 +82,9 @@ const StatusField = () => {
   
   if (!record) return null as any;
   
-  const statusConfig = {
+  const status = String(record.status || '').toUpperCase();
+  const statusKey = status === 'COMPLETED' ? 'ACCEPTED' : status; // 兼容后端 completed
+  const statusConfig: Record<string, { icon: any; color: string; label: string }> = {
     PENDING: {
       icon: <PendingIcon />,
       color: 'warning',
@@ -100,7 +102,7 @@ const StatusField = () => {
     }
   };
   
-  const config = statusConfig[record.status as keyof typeof statusConfig] || statusConfig.PENDING;
+  const config = statusConfig[statusKey] || statusConfig.PENDING;
   
   return (
     <Chip
@@ -160,8 +162,19 @@ const InvitationStats: React.FC = () => {
     try {
       const response = await fetch('/ops/api/v1/console/invitations/stats');
       if (response.ok) {
-        const data = await response.json();
-        setStats(data);
+        const json = await response.json();
+        // 后端返回 { code, data } 包装
+        const payload = (json && json.data) ? json.data : json;
+        setStats({
+          totalInvitations: payload.totalInvitations ?? payload.total ?? 0,
+          todayInvitations: payload.todayInvitations ?? 0,
+          monthInvitations: payload.monthInvitations ?? 0,
+          pendingInvitations: payload.pendingInvitations ?? 0,
+          acceptedInvitations: payload.acceptedInvitations ?? payload.successful ?? 0,
+          expiredInvitations: payload.expiredInvitations ?? 0,
+          totalTokensReward: payload.totalTokensReward ?? payload.totalTokens ?? 0,
+          acceptanceRate: payload.acceptanceRate ?? payload.successRate ?? 0,
+        });
       }
     } catch (error) {
       console.error('Error fetching invitation stats:', error);
@@ -179,15 +192,15 @@ const InvitationStats: React.FC = () => {
   }
 
   const { 
-    totalInvitations,
-    todayInvitations,
-    monthInvitations,
-    pendingInvitations,
-    acceptedInvitations,
-    expiredInvitations,
-    totalTokensReward,
-    acceptanceRate,
-  } = stats;
+    totalInvitations = 0,
+    todayInvitations = 0,
+    monthInvitations = 0,
+    pendingInvitations = 0,
+    acceptedInvitations = 0,
+    expiredInvitations = 0,
+    totalTokensReward = 0,
+    acceptanceRate = 0,
+  } = stats || {};
 
   return (
     <Box sx={{ mb: 2 }}>

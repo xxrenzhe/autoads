@@ -138,10 +138,10 @@ export class ThreatDetector {
       patternId: threat.type, // Using type as pattern ID for now
       patternName: threat.type,
       severity: threat.severity,
-      userId: threat.userId || undefined,
-      ipAddress: threat.ipAddress || undefined,
+      userId: undefined,
+      ipAddress: undefined,
       description: threat.description,
-      evidence: threat.metadata,
+      evidence: threat.indicators,
       status: threat.status as any,
       detectedAt: threat.detectedAt,
       resolvedAt: threat.resolvedAt || undefined,
@@ -163,11 +163,7 @@ export class ThreatDetector {
       data: {
         status: resolution === 'resolved' ? 'resolved' : 'resolved',
         resolvedAt: new Date(),
-        metadata: {
-          resolution,
-          resolvedBy,
-          notes
-        }
+        notes: JSON.stringify({ resolution, resolvedBy, notes })
       }
     })
 
@@ -435,9 +431,10 @@ export class ThreatDetector {
 
     const since = new Date(Date.now() - timeWindow * 1000)
     
-    return await prisma.securityEvent.count({
+    return await prisma.auditLog.count({
       where: {
-        eventType: 'failed_login',
+        category: 'security',
+        action: 'failed_login',
         ipAddress,
         timestamp: { gte: since }
       }
@@ -462,10 +459,11 @@ export class ThreatDetector {
 
     const since = new Date(Date.now() - timeWindow * 1000)
     
-    return await prisma.securityEvent.count({
+    return await prisma.auditLog.count({
       where: {
+        category: 'security',
         userId,
-        eventType: 'unauthorized_access',
+        action: 'unauthorized_access',
         timestamp: { gte: since }
       }
     })
@@ -514,9 +512,7 @@ export class ThreatDetector {
         severity: pattern.severity,
         status: 'active',
         description: `${pattern.name}: ${pattern.description}`,
-        ipAddress: context.ipAddress,
-        userId: context.userId,
-        metadata: {
+        indicators: {
           patternId: pattern.id,
           evidence: context.evidence,
           context

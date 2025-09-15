@@ -58,10 +58,20 @@ const CheckInStats: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/ops/api/v1/console/check-ins/stats');
+      const response = await fetch('/ops/api/v1/console/checkins/stats');
       if (response.ok) {
-        const data = await response.json();
-        setStats(data);
+        const json = await response.json();
+        const payload = (json && json.data) ? json.data : json;
+        setStats({
+          todayCheckIns: payload.todayCheckIns ?? payload.today ?? 0,
+          monthCheckIns: payload.monthCheckIns ?? payload.thisMonth ?? 0,
+          totalCheckIns: payload.totalCheckIns ?? payload.totalDays ?? 0,
+          uniqueUsers: payload.uniqueUsers ?? 0,
+          todayTokensAwarded: payload.todayTokensAwarded ?? 0,
+          monthTokensAwarded: payload.monthTokensAwarded ?? 0,
+          averageStreak: payload.averageStreak ?? 0,
+          activeStreaks: payload.activeStreaks ?? 0,
+        });
       }
     } catch (error) {
       console.error('Error fetching check-in stats:', error);

@@ -1,5 +1,6 @@
 import { permissionManager, Permission, PolicyCondition, SecurityContext } from './permission-manager'
 import { prisma } from '@/lib/prisma'
+import { auditLogger } from '@/lib/security/audit/audit-logger'
 
 export interface PolicyRule {
   id: string
@@ -316,18 +317,18 @@ export class PolicyEngine {
    * Check for suspicious activity
    */
   private async checkSuspiciousActivity(userId: string, ipAddress: string): Promise<boolean> {
-    // Check for rapid requests from the same IP
-    const recentRequests = await prisma.securityEvent.count({
+    // 使用 ApiAccessLog 统计相同 IP 的快速请求（5 分钟内）
+    const recentRequests = await prisma.apiAccessLog.count({
       where: {
         userId,
         ipAddress,
-        timestamp: {
-          gte: new Date(Date.now() - 5 * 60 * 1000) // Last 5 minutes
+        createdAt: {
+          gte: new Date(Date.now() - 5 * 60 * 1000) // 最近 5 分钟
         }
       }
     })
 
-    return recentRequests > 50 // More than 50 requests in 5 minutes
+    return recentRequests > 50
   }
 
   /**
@@ -365,11 +366,12 @@ export class PolicyEngine {
    * Get recent request count
    */
   private async getRecentRequestCount(userId: string): Promise<number> {
-    return await prisma.securityEvent.count({
+    // 使用 ApiAccessLog 统计用户最近 1 小时的请求数
+    return await prisma.apiAccessLog.count({
       where: {
         userId,
-        timestamp: {
-          gte: new Date(Date.now() - 60 * 60 * 1000) // Last hour
+        createdAt: {
+          gte: new Date(Date.now() - 60 * 60 * 1000) // 最近 1 小时
         }
       }
     })
@@ -385,21 +387,19 @@ export class PolicyEngine {
     metadata?: any
   ): Promise<void> {
     try {
-      await prisma.securityEvent.create({
-        data: {
-          userId,
-          eventType,
-          severity: this.getEventSeverity(eventType),
-          description: this.getEventDescription(eventType),
-          ipAddress: context?.ipAddress,
-          userAgent: context?.userAgent,
-          metadata: {
-            ...metadata,
-            sessionId: context?.sessionId,
-            timestamp: context?.timestamp || new Date()
-          }
-        }
-      })
+      // 统一走审计日志安全分类
+      await auditLogger.logSecurity(
+        eventType,
+        'success',
+        {
+          ...metadata,
+          sessionId: context?.sessionId,
+          contextTimestamp: context?.timestamp || new Date()
+        },
+        userId,
+        context?.ipAddress,
+        context?.userAgent
+      )
     } catch (error) {
       console.error('Failed to log security event:', error)
     }

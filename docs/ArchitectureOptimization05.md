@@ -179,7 +179,7 @@
   - [x] 管理端点：`GET/DELETE /admin/badurls`、`DELETE /admin/badurls/:hash`（分页/查询/清理）
   - [x] 落库（自动迁移）：新增 `batch_jobs / batch_job_items / batch_job_progress` 三表
   - [x] AdsCenter：专属计费规则（`adscenter.update`），执行采用“分阶段扣费（逐项）”策略
-  - [ ] GoFly Admin：六模块（用户/订阅/Token/系统配置/API 管理/邀请+签到）页面与操作闭环
+  - [x] GoFly Admin：六模块（用户/订阅/Token/系统配置/API 管理/邀请+签到）页面与操作闭环
   - [ ] 观测：pprof、基础 metrics、结构化日志（含 request-id）
 - 测试与压测（上线门槛）
   - [x] BFF/转发/限流头/readiness 的合同测试通过（Node 环境）
@@ -206,7 +206,7 @@
   - [x] SiteRank：`/api/v1/siterank/rank|batch`，统一缓存/错误 TTL/扣费/限流（新增 batch:check|batch:execute 原子端点）
   - [x] AdsCenter：`/api/v1/adscenter/accounts|configurations|executions`，最小可用（创建/查询/执行），执行计费复用 chengelink.update_ads；后续对接完整调度与回退路径
   - [x] BatchGo：Silent `fail_rate_threshold` 支持；超过失败率阈值自动生成 AutoClick 回退任务并调度（最小实现）
-  - [ ] GoFly Admin：六模块（用户/订阅/Token/系统配置/API 管理/邀请+签到）页面与操作闭环
+  - [x] GoFly Admin：六模块（用户/订阅/Token/系统配置/API 管理/邀请+签到）页面与操作闭环
   - [ ] 观测：pprof、基础 metrics、结构化日志（含 request-id）
 - 测试与压测（上线门槛）
   - [ ] 按“功能测试清单”全量通过

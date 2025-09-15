@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { auditLogger } from '@/lib/security/audit/audit-logger'
 import { getRedisClient } from '@/lib/cache/redis-client'
 import { randomBytes, createHash } from 'crypto'
 
@@ -347,17 +348,14 @@ export class SessionManager {
     const redis = getRedisClient();
     await redis.setex(`${SessionManager.BLOCKED_IP_PREFIX}${ipAddress}`, duration, reason)
     
-    // Log the block
-    await prisma.securityEvent.create({
-      data: {
-        userId: 'system',
-        eventType: 'ip_blocked',
-        severity: 'high',
-        description: `IP address blocked: ${reason}`,
-        ipAddress,
-        metadata: { reason, duration }
-      }
-    })
+    // 记录安全事件到审计日志（security 类别）
+    await auditLogger.logSecurity(
+      'ip_blocked',
+      'success',
+      { reason, duration },
+      'system',
+      ipAddress
+    )
   }
 
   /**
@@ -370,15 +368,17 @@ export class SessionManager {
           expires: { gt: new Date() }
         }
       }),
-      prisma.securityEvent.count({
+      prisma.auditLog.count({
         where: {
-          eventType: { in: ['suspicious_activity', 'failed_login'] },
+          category: 'security',
+          action: { in: ['suspicious_activity', 'failed_login'] },
           timestamp: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
         }
       }),
-      prisma.securityEvent.count({
+      prisma.auditLog.count({
         where: {
-          eventType: 'failed_login',
+          category: 'security',
+          action: 'failed_login',
           timestamp: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
         }
       })
@@ -452,15 +452,12 @@ export class SessionManager {
     metadata?: any
   ): Promise<void> {
     try {
-      await prisma.securityEvent.create({
-        data: {
-          userId,
-          eventType,
-          severity: this.getEventSeverity(eventType),
-          description: this.getEventDescription(eventType),
-          metadata
-        }
-      })
+      await auditLogger.logSecurity(
+        eventType,
+        'success',
+        metadata,
+        userId
+      )
     } catch (error) {
       console.error('Failed to log security event:', error)
     }

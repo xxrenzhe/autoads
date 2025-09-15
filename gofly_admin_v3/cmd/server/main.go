@@ -509,6 +509,10 @@ func setupAPIRoutes(r *gin.Engine) {
             admin.RegisterTokenRoutes(console)
             admin.RegisterMonitoringRoutes(console)
 
+            // 邀请与签到管理（列表/统计/排行榜）
+            admin.RegisterInvitationRoutes(console)
+            admin.RegisterCheckinAdminRoutes(console)
+
             // 速率限制管理（需要 RateLimitManager）
             if rateLimitManager != nil {
                 rlCtrl := admin.NewRateLimitController(rateLimitManager)
