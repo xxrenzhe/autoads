@@ -184,6 +184,7 @@
   - [x] 标注“表所有者矩阵”（Prisma 仅认证域；Go 业务域）
   - [x] 更新 `.env.preview.template` / `.env.production.template`（新增 BFF/OPS/内部JWT 相关变量）
   - [x] 更新 `README-deployment.md` 与 `docs/production-env-config.md`（BFF/健康/限流头/内部JWT）
+  - [x] 迁移集成：部署阶段执行 Go 模型迁移（server -migrate）+ Prisma 迁移，均为幂等；支持禁用启动迁移时的显式 Job 触发
 - Next（必做）
   - [x] 新建/合并 `apps/frontend/src/middleware.ts`，移除 `middleware.edge.ts / middleware-csrf.ts / middleware.admin.ts` 重复逻辑
   - [x] 为以下路由增加 BFF 转发器（鉴权/校验/轻限流/错误体/请求 ID）：

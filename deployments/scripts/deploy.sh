@@ -130,8 +130,20 @@ run_migrations() {
     if [ "$STARTUP_MIGRATIONS" = "true" ]; then
         log_info "Skipping explicit migration job: startup will run 'server -migrate' and 'prisma migrate deploy'."
     else
-        log_warning "STARTUP_MIGRATIONS is disabled; running explicit Prisma migration job."
-        kubectl run migration-job-$(date +%s) \
+        log_warning "STARTUP_MIGRATIONS is disabled; running explicit migration jobs (Go + Prisma)."
+        # 1) Go backend model migration (idempotent)
+        kubectl run go-migrate-$(date +%s) \
+            --image="$IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
+            --namespace="$NAMESPACE" \
+            --restart=Never \
+            --rm -i --tty \
+            --env-from=secret/app-secrets \
+            --env-from=configmap/app-config \
+            --command -- sh -lc \
+            "/app/gofly_admin_v3/server -migrate -config=/app/gofly_admin_v3/config.yaml"
+        log_success "Go model migration completed"
+        # 2) Prisma migration (idempotent)
+        kubectl run prisma-migrate-$(date +%s) \
             --image="$IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
             --namespace="$NAMESPACE" \
             --restart=Never \

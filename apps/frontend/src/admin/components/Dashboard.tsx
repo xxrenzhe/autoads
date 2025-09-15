@@ -32,8 +32,6 @@ import GoFlyPanelStats from './gofly/GoFlyPanelStats';
 import GoFlyUsersPreview from './gofly/GoFlyUsersPreview';
 import GoFlyTasksPreview from './gofly/GoFlyTasksPreview';
 import GoFlyConfigPanel from './gofly/GoFlyConfigPanel';
-import GoFlyPanelStats from './gofly/GoFlyPanelStats';
-import GoFlyUsersPreview from './gofly/GoFlyUsersPreview';
 
 interface DashboardStats {
   totalUsers: number;

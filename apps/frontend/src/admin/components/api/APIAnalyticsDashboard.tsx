@@ -125,25 +125,26 @@ export default function APIAnalyticsDashboard() {
     const connectEventSource = () => {
       // SSE 流在新后端未提供，改为轮询 hooks 数据
       eventSource = undefined as any
-      
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          if (data.type === 'metrics') {
-            setRealTimeData(data.data)
-          }
-        } catch (error) {
-          console.error('Error parsing SSE message:', error)
-        }
-      }
 
-      eventSource.onerror = () => {
-        console.error('EventSource connection error')
-        if (eventSource) {
-          eventSource.close()
+      // 如果没有可用的 SSE，则跳过事件绑定，依赖上层轮询/查询逻辑
+      if (eventSource) {
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            if (data.type === 'metrics') {
+              setRealTimeData(data.data)
+            }
+          } catch (error) {
+            console.error('Error parsing SSE message:', error)
+          }
         }
-        // 5秒后重连
-        setTimeout(connectEventSource, 5000)
+
+        eventSource.onerror = () => {
+          console.error('EventSource connection error')
+          eventSource?.close?.()
+          // 5秒后重连
+          setTimeout(connectEventSource, 5000)
+        }
       }
     }
 

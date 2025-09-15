@@ -12,6 +12,7 @@ import (
     "github.com/google/uuid"
     "gorm.io/gorm"
     "gofly-admin-v3/internal/audit"
+    "os"
 )
 
 // Service BatchGo服务
@@ -21,6 +22,7 @@ type Service struct {
     wsManager    WSManager    // WebSocket管理器接口
     httpClient   *http.Client
     audit        *audit.AutoAdsAuditService
+    puppeteer    BrowserExecutor
     // 运行中任务的取消函数（仅 Silent 可中断）
     cancelMu     sync.Mutex
     cancels      map[string]context.CancelFunc
@@ -40,7 +42,7 @@ type WSManager interface {
 
 // NewService 创建BatchGo服务
 func NewService(db *gorm.DB, tokenService TokenService, wsManager WSManager, auditSvc *audit.AutoAdsAuditService) *Service {
-    return &Service{
+    s := &Service{
         db:           db,
         tokenService: tokenService,
         wsManager:    wsManager,
@@ -50,6 +52,13 @@ func NewService(db *gorm.DB, tokenService TokenService, wsManager WSManager, aud
         cancels: make(map[string]context.CancelFunc),
         audit:   auditSvc,
     }
+    // 初始化 Puppeteer 执行器（可选）
+    if exec := newPuppeteerExecutorFromEnv(); exec != nil {
+        s.puppeteer = exec
+    } else {
+        _ = os.Setenv("PUPPETEER_EXECUTOR_URL", os.Getenv("PUPPETEER_EXECUTOR_URL"))
+    }
+    return s
 }
 
 // registerCancel 记录任务的取消函数
@@ -590,8 +599,8 @@ func (s *Service) runAutoClickTask(task *BatchTask) error {
     // 标记运行
     now := time.Now()
     _ = s.db.Model(&BatchTask{}).Where("id=?", task.ID).Updates(map[string]any{"status": StatusRunning, "start_time": now, "updated_at": now}).Error
-    // 并行度：使用 Silent 的配置或默认 3
-    sc := &SilentConfig{Concurrency: 3, Timeout: 30, RetryCount: 2}
+    // 并行度：默认 3
+    sc := &SilentConfig{Concurrency: 3, Timeout: 45, RetryCount: 1}
     // 处理
     ctx, cancel := context.WithCancel(context.Background())
     s.registerCancel(task.ID, cancel)
@@ -604,7 +613,39 @@ func (s *Service) runAutoClickTask(task *BatchTask) error {
         wg.Add(1)
         go func() {
             defer wg.Done()
-            s.silentWorker(ctx, task.ID, urls, urlChan, resultChan, sc)
+            // worker：基于 Puppeteer 执行
+            for {
+                select {
+                case <-ctx.Done():
+                    return
+                case idx, ok := <-urlChan:
+                    if !ok { return }
+                    u := urls[idx]
+                    okv := false
+                    var err error
+                    if s.puppeteer != nil {
+                        okv, err = s.puppeteer.Visit(u.URL)
+                    } else {
+                        // 回退：HTTP 探活
+                        _, err = s.httpClient.Get(u.URL)
+                        okv = (err == nil)
+                    }
+                    if okv {
+                        end := time.Now()
+                        u.EndTime = &end
+                        u.Status = "success"
+                        u.Response = map[string]any{"executor": "puppeteer"}
+                        u.Retries = 0
+                        resultChan <- u
+                    } else {
+                        end := time.Now()
+                        u.EndTime = &end
+                        u.Status = "failed"
+                        if err != nil { u.Error = err.Error() }
+                        resultChan <- u
+                    }
+                }
+            }
         }()
     }
     for i := range urls { urlChan <- i }

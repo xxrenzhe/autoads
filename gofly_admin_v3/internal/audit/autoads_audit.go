@@ -83,7 +83,12 @@ func (aas *AutoAdsAuditService) LogSiteRankQuery(userID, domain string, queryDet
 
 // LogChengeLinkAction 记录Chengelink操作
 func (aas *AutoAdsAuditService) LogChengeLinkAction(userID, action, taskID string, linkDetails map[string]interface{}, ipAddress, userAgent string, success bool, errorMsg string, duration time.Duration) error {
-	return aas.LogUserAction(userID, action, "chengelink_task", taskID, linkDetails, ipAddress, userAgent, success, errorMsg, duration)
+    return aas.LogUserAction(userID, action, "chengelink_task", taskID, linkDetails, ipAddress, userAgent, success, errorMsg, duration)
+}
+
+// LogAdsCenterAction 记录 AdsCenter 执行相关操作
+func (aas *AutoAdsAuditService) LogAdsCenterAction(userID, action, executionID string, details map[string]interface{}, ipAddress, userAgent string, success bool, errorMsg string, duration time.Duration) error {
+    return aas.LogUserAction(userID, action, "adscenter_execution", executionID, details, ipAddress, userAgent, success, errorMsg, duration)
 }
 
 // LogTokenTransaction 记录Token交易

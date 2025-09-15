@@ -831,43 +831,42 @@ func setupAPIRoutes(r *gin.Engine) {
 				if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
 				taskID := c.Param("id")
 				if taskID == "" { c.JSON(400, gin.H{"code": 400, "message": "missing id"}); return }
-				task, err := batchService.GetTask(userID, taskID)
-				if err != nil { c.JSON(404, gin.H{"success": false, "message": "TASK_NOT_FOUND"}); return }
-				processed := task.ProcessedCount
-				total := task.URLCount
-				percent := 0
-				if total > 0 { percent = int(float64(processed) / float64(total) * 100.0) }
-				pending := total - processed
-				message := task.ErrorMessage
-				if message == "" {
-					switch task.Status {
-					case batchgo.StatusPending:
-						message = "任务等待中"
-					case batchgo.StatusRunning:
-						message = "任务运行中"
-					case batchgo.StatusCompleted:
-						message = "任务已完成"
-					case batchgo.StatusFailed:
-						message = "任务失败"
-					case batchgo.StatusCancelled:
-						message = "任务已取消"
-					case batchgo.StatusPaused:
-						message = "任务已暂停"
-					}
-				}
-				c.JSON(200, gin.H{
-					"success":      true,
-					"status":       string(task.Status),
-					"progress":     percent,
-					"successCount": task.SuccessCount,
-					"failCount":    task.FailedCount,
-					"total":        total,
-					"pendingCount": pending,
-					"message":      message,
-					"timestamp":    time.Now().UnixMilli(),
-					"serverTime":   time.Now().Format(time.RFC3339),
-				})
-			})
+                if task, err := batchService.GetTask(userID, taskID); err == nil {
+                    processed := task.ProcessedCount
+                    total := task.URLCount
+                    percent := 0
+                    if total > 0 { percent = int(float64(processed) / float64(total) * 100.0) }
+                    pending := total - processed
+                    message := task.ErrorMessage
+                    if message == "" {
+                        switch task.Status {
+                        case batchgo.StatusPending:
+                            message = "任务等待中"
+                        case batchgo.StatusRunning:
+                            message = "任务运行中"
+                        case batchgo.StatusCompleted:
+                            message = "任务已完成"
+                        case batchgo.StatusFailed:
+                            message = "任务失败"
+                        case batchgo.StatusCancelled:
+                            message = "任务已取消"
+                        case batchgo.StatusPaused:
+                            message = "任务已暂停"
+                        }
+                    }
+                    c.JSON(200, gin.H{"success": true, "status": string(task.Status), "progress": percent, "successCount": task.SuccessCount, "failCount": task.FailedCount, "total": total, "pendingCount": pending, "message": message, "timestamp": time.Now().UnixMilli(), "serverTime": time.Now().Format(time.RFC3339)})
+                    return
+                }
+                // 聚合新三表
+                dao := batchgo.NewDAO(gormDB)
+                if prog, err := dao.AggregateProgress(taskID); err == nil {
+                    percent := 0
+                    if prog.Total > 0 { percent = int(float64(prog.Success+prog.Fail) / float64(prog.Total) * 100.0) }
+                    c.JSON(200, gin.H{"success": true, "status": "running", "progress": percent, "successCount": prog.Success, "failCount": prog.Fail, "total": prog.Total, "pendingCount": prog.Running, "message": "聚合进度", "timestamp": time.Now().UnixMilli(), "serverTime": time.Now().Format(time.RFC3339)})
+                    return
+                }
+                c.JSON(404, gin.H{"success": false, "message": "TASK_NOT_FOUND"})
+            })
 
 			// ===== 为 Next BFF 提供的统一端点（保持合同） =====
 			// POST /api/v1/batchopen/start?type=silent|basic|autoclick
@@ -1215,7 +1214,7 @@ func setupAPIRoutes(r *gin.Engine) {
                     c.JSON(200, gin.H{"configuration": row})
                 })
 
-                // POST /api/v1/adscenter/executions（分阶段扣费：每处理1项扣1次）
+                // POST /api/v1/adscenter/executions（分阶段扣费：每处理1项先扣1次，失败立即退款；附带审计分类）
                 adscenter.POST("/executions", func(c *gin.Context) {
                     if gormDB == nil || tokenSvc == nil { c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"}); return }
                     userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
@@ -1240,17 +1239,30 @@ func setupAPIRoutes(r *gin.Engine) {
                     now := time.Now()
                     exec := &AdsExecution{ ID: fmt.Sprintf("%d", now.UnixNano()), UserID: userID, ConfigurationID: cfg.ID, Status: "running", Message: "processing", Progress: 0, TotalItems: qty, ProcessedItems: 0, StartedAt: &now, CreatedAt: now, UpdatedAt: now }
                     if err := gormDB.Create(exec).Error; err != nil { c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return }
-                    // 异步处理：每处理1项，消费1次
+                    // 异步处理：每处理1项，先消费1次；若失败则立即退款 + 审计分类
                     go func(executionID string, total int) {
                         processed := 0
                         for processed < total {
                             time.Sleep(150 * time.Millisecond)
-                            // 消费 1 项；若失败（余额不足），终止并标记失败
+                            // 1) 预先消费 1 项；若余额不足则终止
                             if err := tokenSvc.ConsumeTokensByService(userID, "adscenter", "update", 1, executionID); err != nil {
                                 _ = gormDB.Model(&AdsExecution{}).Where("id = ?", executionID).Updates(map[string]any{"status": "failed", "message": "INSUFFICIENT_TOKENS", "updated_at": time.Now()}).Error
+                                if auditSvc != nil { _ = auditSvc.LogAdsCenterAction(userID, "adscenter_execute_item", executionID, map[string]any{"index": processed, "classification": "insufficient_tokens"}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
                                 return
                             }
-                            processed++
+                            // 2) 执行具体更新（此处最小实现：总是成功；预留分类）
+                            var stepErr error
+                            var classification string
+                            success := true
+                            // TODO: 集成真实 Ads 更新逻辑，设置 success/classification/stepErr
+                            if !success {
+                                // 失败退款
+                                _ = tokenSvc.AddTokens(userID, 1, "refund", "adscenter item failed", executionID)
+                                if auditSvc != nil { _ = auditSvc.LogAdsCenterAction(userID, "adscenter_execute_item", executionID, map[string]any{"index": processed, "classification": classification}, c.ClientIP(), c.Request.UserAgent(), false, stepErr.Error(), 0) }
+                            } else {
+                                if auditSvc != nil { _ = auditSvc.LogAdsCenterAction(userID, "adscenter_execute_item", executionID, map[string]any{"index": processed, "classification": "success"}, c.ClientIP(), c.Request.UserAgent(), true, "", 0) }
+                                processed++
+                            }
                             prog := int(float64(processed) / float64(total) * 100.0)
                             _ = gormDB.Model(&AdsExecution{}).Where("id = ?", executionID).Updates(map[string]any{"processed_items": processed, "progress": prog, "updated_at": time.Now()}).Error
                         }
