@@ -84,6 +84,8 @@ CI 会根据分支注入预发/生产域名信息，并在容器启动时渲染 
   - `/ops/*` 是 Next 的管理网关，内部反向代理至 Go 的 `/console/*`（管理前端）与 `/api/v1/console/*`（管理 API），并统一加 `X-Robots-Tag: noindex, nofollow`。
 - 业务 API 通过 `/go/*` 访问（Next 网关），后台管理 API 通过 `/ops/*` 访问（权限由 Go 的 AdminJWT 严格判定）。
 - 旧前缀 `/admin/*` 与 `/api/v1/admin/*` 已下线，**请改用** `/console/*` 与 `/api/v1/console/*`。
+  - React Admin（Next 内置管理台）已彻底下线，相关代码与路由已移除；唯一后台为 GoFly Admin，经 `/ops/console/*` 访问。
+  - 如需本地验证管理 API，请使用 `/ops/api/v1/console/*`（由 Next BFF 反代至 Go）。
 
 ### 一次性联调（冒烟）
 

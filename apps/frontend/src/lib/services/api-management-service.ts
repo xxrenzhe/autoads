@@ -1,4 +1,3 @@
-import type { APIEndpoint, APIKey } from '@/admin/components/api/APIManager'
 import { robustFetch } from '@/lib/utils/api/robust-client'
 
 export interface APIAnalytics {
@@ -88,6 +87,40 @@ export interface APIDocumentation {
     description: string
   }
   rateLimit: RateLimitConfig
+}
+
+// React Admin 已下线；在此定义最小类型以便独立使用
+export interface APIEndpoint {
+  id: string
+  path: string
+  method: string
+  description: string
+  isActive: boolean
+  rateLimitPerMinute: number
+  rateLimitPerHour: number
+  requiresAuth: boolean
+  requiredRole: string
+  responseTime: number
+  successRate: number
+  totalRequests: number
+  errorCount: number
+  lastAccessed: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface APIKey {
+  id: string
+  name: string
+  keyPrefix: string
+  userId: string
+  permissions: string[]
+  rateLimitOverride?: number
+  isActive: boolean
+  expiresAt?: string
+  lastUsed?: string
+  totalRequests: number
+  createdAt: string
 }
 
 export class APIManagementService {

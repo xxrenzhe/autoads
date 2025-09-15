@@ -36,7 +36,7 @@ export default function AdminSignIn() {
         setError('邮箱或密码错误')
       } else {
         // Redirect to admin dashboard
-        const callbackUrl = searchParams.get('callbackUrl') || '/admin-dashboard'
+        const callbackUrl = searchParams.get('callbackUrl') || '/ops/console/panel'
         router.push(callbackUrl)
         router.refresh()
       }

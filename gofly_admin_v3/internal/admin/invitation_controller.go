@@ -4,6 +4,7 @@ import (
     "net/http"
     "strconv"
     "strings"
+    "time"
 
     "github.com/gin-gonic/gin"
     "gofly-admin-v3/utils/gf"
@@ -61,7 +62,6 @@ func (c *InvitationController) GetStats(ctx *gin.Context) {
         total, success, pending, expired int
         todayInv, monthInv int
         totalTokens int
-        err error
     )
     // 时间边界
     today := time.Now().Format("2006-01-02")
