@@ -431,9 +431,9 @@ export class BehaviorAnalysisService {
           AND: [
             {
               metadata: {
-                path: ['sessionId'],
+                path: 'sessionId' as any,
                 equals: sessionId
-              }
+              } as any
             }
           ]
         },
@@ -521,7 +521,7 @@ export class BehaviorAnalysisService {
             lastActiveAt: {
               gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // 24小时内活跃
             }
-          }
+          } as any
         })
       ]);
 

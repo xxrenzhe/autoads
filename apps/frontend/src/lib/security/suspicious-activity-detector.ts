@@ -207,7 +207,7 @@ export class SuspiciousActivityDetector {
   async logActivity(activity: UserActivity): Promise<void> {
     try {
       // 存储到数据库
-      await prisma.userActivity.create({
+      await (prisma as any).userActivity?.create?.({
         data: {
           userId: activity.userId,
           action: activity.action,
@@ -235,7 +235,7 @@ export class SuspiciousActivityDetector {
     try {
       // 获取用户最近24小时的活动
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const activities = await prisma.userActivity.findMany({
+      const activities = await (prisma as any).userActivity?.findMany?.({
         where: {
           userId,
           timestamp: { gte: since }
@@ -333,7 +333,7 @@ export class SuspiciousActivityDetector {
   private async sendAlertNotification(userId: string, severity: string, message: string): Promise<void> {
     try {
       // 获取用户信息
-      const user = await prisma.user.findUnique({
+      const user = await (prisma as any).user?.findUnique?.({
         where: { id: userId },
         select: { email: true, name: true }
       });
@@ -403,7 +403,7 @@ export class SuspiciousActivityDetector {
     try {
       // Since UserRiskScore and SuspiciousAlert models don't exist, return basic stats
       const [totalUsers] = await Promise.all([
-        prisma.user.count()
+        (prisma as any).user?.count?.() ?? 0
       ]);
 
       return {

@@ -16,6 +16,7 @@ import { UrlValidator } from "@/lib/utils/url/UrlValidator";
 import type { AnalysisResult } from "@/lib/siterank/types";
 import { createClientLogger } from "@/lib/utils/security/client-secure-logger";
 import { EnhancedError } from '@/lib/utils/error-handling';
+import { http } from '@/shared/http/client'
 import { useSession } from "next-auth/react";
 const logger = createClientLogger('SiteRankPageRefactored');
 

@@ -1,5 +1,6 @@
 // 统一使用全局单例 Prisma 客户端
-export { prisma } from '../prisma';
+import { prisma } from '../prisma';
+export { prisma };
 
 // 导出初始化/关闭包装，避免多处 new PrismaClient()
 export async function initializeDatabase() {

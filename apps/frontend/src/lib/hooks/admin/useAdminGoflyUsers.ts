@@ -33,7 +33,6 @@ export function useAdminGoflyUsers({ search, status, page = 1, limit = 10 }: { s
       if (!res.ok) throw new Error('failed to load users');
       return res.json();
     },
-    keepPreviousData: true,
     staleTime: 60_000,
   });
 }

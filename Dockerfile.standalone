@@ -60,19 +60,20 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 COPY --from=web /web/dist /out/web/dist
 
 ############################
-# Runtime image (Node + Go)
-FROM node:20-alpine
+# Runtime image (Node + Go + Chromium minimal)
+FROM node:20-bookworm-slim
 WORKDIR /app/gofly_admin_v3
 
-# 工具与时区、envsubst、tini
-RUN apk add --no-cache ca-certificates tzdata gettext tini \
-    && update-ca-certificates
+# 切换 root 安装运行时依赖（tini、时区、CA 等）
+USER root
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates tzdata gettext-base tini curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && update-ca-certificates
 
 # 安装 Prisma CLI 以在容器启动时执行迁移
 RUN npm i -g prisma@6.16.0
-
-# 创建非root用户（使用 node 用户）
-USER node
 
 # 复制 Go 服务与前端静态
 COPY --from=build --chown=node:node /out/server /app/gofly_admin_v3/server
@@ -84,6 +85,15 @@ COPY --from=next --chown=node:node /frontend/.next/standalone /app/frontend
 COPY --from=next --chown=node:node /frontend/.next/static /app/frontend/.next/static
 COPY --from=next --chown=node:node /frontend/public /app/frontend/public
 COPY --from=next --chown=node:node /frontend/prisma /app/frontend/prisma
+
+# 复制本地执行器（Puppeteer/AdsCenter），并安装 Playwright（仅 Chromium）
+WORKDIR /app/executors
+COPY --chown=node:node executors /app/executors
+# 安装 Playwright 依赖（仅 chromium）并安装浏览器（带依赖）
+RUN npm init -y \
+ && npm i playwright@1.47.0 --omit=dev \
+ && npx playwright install --with-deps chromium \
+ && rm -rf /var/lib/apt/lists/*
 
 # 复制配置模板与入口脚本
 COPY --chown=node:node gofly_admin_v3/config.yaml.template /app/gofly_admin_v3/config.yaml.template
@@ -118,4 +128,6 @@ ENV NEXT_PUBLIC_DEPLOYMENT_ENV=${NEXT_PUBLIC_DEPLOYMENT_ENV} \
 EXPOSE 3000
 
 # 使用 tini 作为 PID 1 处理僵尸进程与信号
-ENTRYPOINT ["/sbin/tini", "-g", "--", "/app/docker-entrypoint.sh"]
+# 切回非 root 运行
+USER node
+ENTRYPOINT ["/usr/bin/tini", "-g", "--", "/app/docker-entrypoint.sh"]

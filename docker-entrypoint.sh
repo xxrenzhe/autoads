@@ -7,6 +7,8 @@ PORT="${PORT:-8080}"
 NEXT_DIR="/app/frontend"
 PRISMA_SCHEMA="/app/frontend/prisma/schema.prisma"
 NEXTJS_PORT="${NEXTJS_PORT:-3000}"
+PUPPETEER_EXECUTOR_PORT="${PUPPETEER_EXECUTOR_PORT:-8081}"
+ADSCENTER_EXECUTOR_PORT="${ADSCENTER_EXECUTOR_PORT:-8082}"
 
 # 生产环境默认强制启用内部 JWT 验签（可通过显式设置覆盖）
 if [ -z "${INTERNAL_JWT_ENFORCE}" ]; then
@@ -89,4 +91,17 @@ else
 fi
 
 echo "[entrypoint] 启动服务..."
+
+# 启动本地执行器（Puppeteer / AdsCenter），仅当未显式设置外部 URL 时启动本地版本
+if [ -z "$PUPPETEER_EXECUTOR_URL" ]; then
+  export PUPPETEER_EXECUTOR_URL="http://127.0.0.1:${PUPPETEER_EXECUTOR_PORT}"
+  echo "[entrypoint] 启动本地 Playwright 执行器: $PUPPETEER_EXECUTOR_URL"
+  ( node /app/executors/puppeteer-server.js >/dev/null 2>&1 & ) || echo "[entrypoint] ⚠️ 启动 Playwright 执行器失败"
+fi
+if [ -z "$ADSCENTER_EXECUTOR_URL" ]; then
+  export ADSCENTER_EXECUTOR_URL="http://127.0.0.1:${ADSCENTER_EXECUTOR_PORT}"
+  echo "[entrypoint] 启动本地 AdsCenter 执行器: $ADSCENTER_EXECUTOR_URL"
+  ( node /app/executors/adscenter-update-server.js >/dev/null 2>&1 & ) || echo "[entrypoint] ⚠️ 启动 AdsCenter 执行器失败"
+fi
+
 exec "$APP_DIR/server" -config="$CONFIG_PATH" -port="$PORT"

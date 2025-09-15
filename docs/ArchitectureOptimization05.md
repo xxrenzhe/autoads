@@ -172,6 +172,9 @@
   - [x] AdsCenter：`/api/v1/adscenter/accounts|configurations|executions`，最小可用（创建/查询/执行），执行计费复用 chengelink.update_ads；后续对接完整调度与回退路径
   - [x] BatchGo：Silent `fail_rate_threshold` 支持；超过失败率阈值自动生成 AutoClick 回退任务并调度（最小实现，含审计日志）
   - [x] AutoClick：接入真实执行流（计费按 `batchgo.puppeteer`），按计划时间启动，执行成功逐项扣费并记录审计
+  - [x] 执行器（单镜像内置）：Puppeteer/AdsCenter 本地 HTTP 执行器，内置并发/排队/限流/熔断/健康与 `/metrics` 指标
+  - [x] Bad URL 共享：将批量 HTTP 失败 URL 标记升级为 Redis 共享（键：`autoads:badurl:<sha256(url)>`，值为原始 URL，带 TTL），跨实例优先走 Puppeteer
+  - [x] 管理端点：`GET/DELETE /admin/badurls`、`DELETE /admin/badurls/:hash`（分页/查询/清理）
   - [x] 落库（自动迁移）：新增 `batch_jobs / batch_job_items / batch_job_progress` 三表
   - [x] AdsCenter：专属计费规则（`adscenter.update`），执行采用“分阶段扣费（逐项）”策略
   - [ ] GoFly Admin：六模块（用户/订阅/Token/系统配置/API 管理/邀请+签到）页面与操作闭环

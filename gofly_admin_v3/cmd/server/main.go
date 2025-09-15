@@ -35,9 +35,10 @@ import (
 	"gofly-admin-v3/internal/health"
 	dbinit "gofly-admin-v3/internal/init"
 	"gofly-admin-v3/internal/invitation"
-	"gofly-admin-v3/internal/metrics"
+    "gofly-admin-v3/internal/metrics"
     "gofly-admin-v3/internal/middleware"
     "gofly-admin-v3/internal/siterankgo"
+    "gofly-admin-v3/internal/adscentergo"
     "gofly-admin-v3/internal/store"
     "gofly-admin-v3/internal/user"
     "gofly-admin-v3/internal/websocket"
@@ -115,6 +116,7 @@ var (
 	chengelinkService *chengelink.ChengeLinkService
     auditSvc          *audit.AutoAdsAuditService
     rateLimitManager  *ratelimit.RateLimitManager
+    adsUpdater        adscentergo.AdsUpdater
 )
 
 // simpleUserSvc: 为 RateLimitManager 提供最小化的用户查询实现
@@ -289,8 +291,8 @@ func main() {
 			// Token 服务
 			tokenSvc = user.NewTokenService(gormDB)
 
-            // BatchGo 服务
-            batchService = batchgo.NewService(gormDB, tokenSvc, wsManager, auditSvc)
+            // BatchGo 服务（注入 Redis 以共享 BadURL 标记）
+            batchService = batchgo.NewService(gormDB, tokenSvc, wsManager, auditSvc, storeRedis)
 
             // Auto-migrate BatchOpen unified tables (minimal)
             if err := gormDB.AutoMigrate(&batchgo.BatchJob{}, &batchgo.BatchJobItem{}, &batchgo.BatchJobProgress{}); err != nil {
@@ -310,6 +312,14 @@ func main() {
 
             // RateLimitManager（最小实现：通过 SQL 解析用户套餐）
             rateLimitManager = ratelimit.NewRateLimitManager(cfg2, storeDB, &simpleUserSvc{})
+
+            // AdsCenter 执行器（外部服务，可选）
+            if u := os.Getenv("ADSCENTER_EXECUTOR_URL"); u != "" {
+                adsUpdater = adscentergo.NewHTTPAdsUpdater(u)
+                log.Printf("✅ AdsCenter 执行器已配置: %s", u)
+            } else {
+                log.Printf("ℹ️ AdsCenter 执行器未配置（ADSCENTER_EXECUTOR_URL 为空），执行将使用占位逻辑")
+            }
         }
     }
 
@@ -1068,14 +1078,80 @@ func setupAPIRoutes(r *gin.Engine) {
 	r.GET("/ws", handleWebSocket)
 
 	// 管理员路由
-	admin := r.Group("/admin")
-	admin.Use(adminAuthMiddleware())
-	{
-		admin.GET("/users", handleAdminGetUsers)
-		admin.PUT("/users/:id", handleAdminUpdateUser)
-		admin.GET("/stats", handleAdminGetStats)
-		admin.GET("/dashboard", handleAdminDashboard)
-	}
+    admin := r.Group("/admin")
+    admin.Use(adminAuthMiddleware())
+    {
+        admin.GET("/users", handleAdminGetUsers)
+        admin.PUT("/users/:id", handleAdminUpdateUser)
+        admin.GET("/stats", handleAdminGetStats)
+        admin.GET("/dashboard", handleAdminDashboard)
+        // Bad URL 管理（共享 Redis 标记）
+        admin.GET("/badurls", func(c *gin.Context) {
+            if storeRedis == nil { c.JSON(503, gin.H{"code": 5000, "message": "redis unavailable"}); return }
+            q := c.Query("q")
+            page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+            size, _ := strconv.Atoi(c.DefaultQuery("size", "50"))
+            if page < 1 { page = 1 }; if size < 1 || size > 200 { size = 50 }
+            pattern := "autoads:badurl:*"
+            ctx := context.Background()
+            var cursor uint64 = 0
+            items := make([]map[string]any, 0, size)
+            collected := 0
+            skipped := 0
+            start := (page-1)*size
+            // naive scan and paginate
+            for {
+                keys, cur, err := storeRedis.GetClient().Scan(ctx, cursor, pattern, 1000).Result()
+                if err != nil { c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return }
+                cursor = cur
+                for _, k := range keys {
+                    // read value (original URL) and ttl
+                    val, _ := storeRedis.Get(ctx, k)
+                    if q != "" && !strings.Contains(val, q) { continue }
+                    if skipped < start { skipped++; continue }
+                    ttl, _ := storeRedis.GetClient().TTL(ctx, k).Result()
+                    hash := strings.TrimPrefix(k, "autoads:badurl:")
+                    item := map[string]any{"hash": hash, "url": val}
+                    if ttl > 0 { item["ttlSeconds"] = int(ttl.Seconds()); item["expiresAt"] = time.Now().Add(ttl).Format(time.RFC3339) }
+                    items = append(items, item)
+                    collected++
+                    if collected >= size { break }
+                }
+                if cursor == 0 || collected >= size { break }
+            }
+            c.JSON(200, gin.H{"items": items, "page": page, "size": size})
+        })
+        admin.DELETE("/badurls/:hash", func(c *gin.Context) {
+            if storeRedis == nil { c.JSON(503, gin.H{"code": 5000, "message": "redis unavailable"}); return }
+            hash := c.Param("hash")
+            if hash == "" { c.JSON(400, gin.H{"code": 400, "message": "missing hash"}); return }
+            key := "autoads:badurl:" + hash
+            if err := storeRedis.Delete(context.Background(), key); err != nil { c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return }
+            c.JSON(200, gin.H{"code": 0, "message": "deleted"})
+        })
+        admin.DELETE("/badurls", func(c *gin.Context) {
+            if storeRedis == nil { c.JSON(503, gin.H{"code": 5000, "message": "redis unavailable"}); return }
+            q := c.Query("q")
+            ctx := context.Background()
+            pattern := "autoads:badurl:*"
+            var cursor uint64 = 0
+            deleted := 0
+            for {
+                keys, cur, err := storeRedis.GetClient().Scan(ctx, cursor, pattern, 1000).Result()
+                if err != nil { c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return }
+                cursor = cur
+                for _, k := range keys {
+                    if q != "" {
+                        v, _ := storeRedis.Get(ctx, k)
+                        if !strings.Contains(v, q) { continue }
+                    }
+                    if err := storeRedis.Delete(ctx, k); err == nil { deleted++ }
+                }
+                if cursor == 0 { break }
+            }
+            c.JSON(200, gin.H{"code": 0, "deleted": deleted})
+        })
+    }
 
 	// API健康检查
 	r.GET("/api/health", func(c *gin.Context) {
@@ -1224,13 +1300,19 @@ func setupAPIRoutes(r *gin.Engine) {
                     if err := gormDB.Where("id = ? AND user_id = ?", body.ConfigurationID, userID).First(&cfg).Error; err != nil {
                         c.JSON(404, gin.H{"code": 404, "message": "configuration not found"}); return
                     }
-                    // compute quantity from payload
+                    // compute quantity from payload + extract items list
                     qty := 1
+                    links := make([]string, 0)
                     var payload map[string]any
                     _ = json.Unmarshal([]byte(cfg.Payload), &payload)
                     if payload != nil {
-                        if arr, ok := payload["affiliate_links"].([]any); ok && len(arr) > 0 { qty = len(arr) } else
-                        if arr2, ok2 := payload["links"].([]any); ok2 && len(arr2) > 0 { qty = len(arr2) }
+                        if arr, ok := payload["affiliate_links"].([]any); ok && len(arr) > 0 {
+                            qty = len(arr)
+                            for _, v := range arr { if s, ok := v.(string); ok { links = append(links, s) } }
+                        } else if arr2, ok2 := payload["links"].([]any); ok2 && len(arr2) > 0 {
+                            qty = len(arr2)
+                            for _, v := range arr2 { if s, ok := v.(string); ok { links = append(links, s) } }
+                        }
                     }
                     // 仅校验余额充足（不预扣），实际消费按处理进度逐步扣减
                     sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "adscenter", "update", qty)
@@ -1239,9 +1321,10 @@ func setupAPIRoutes(r *gin.Engine) {
                     now := time.Now()
                     exec := &AdsExecution{ ID: fmt.Sprintf("%d", now.UnixNano()), UserID: userID, ConfigurationID: cfg.ID, Status: "running", Message: "processing", Progress: 0, TotalItems: qty, ProcessedItems: 0, StartedAt: &now, CreatedAt: now, UpdatedAt: now }
                     if err := gormDB.Create(exec).Error; err != nil { c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return }
-                    // 异步处理：每处理1项，先消费1次；若失败则立即退款 + 审计分类
-                    go func(executionID string, total int) {
+                // 异步处理：每处理1项，先消费1次；若失败则立即退款 + 审计分类
+                    go func(executionID string, items []string) {
                         processed := 0
+                        total := len(items)
                         for processed < total {
                             time.Sleep(150 * time.Millisecond)
                             // 1) 预先消费 1 项；若余额不足则终止
@@ -1252,9 +1335,12 @@ func setupAPIRoutes(r *gin.Engine) {
                             }
                             // 2) 执行具体更新（此处最小实现：总是成功；预留分类）
                             var stepErr error
-                            var classification string
+                            classification := "success"
                             success := true
-                            // TODO: 集成真实 Ads 更新逻辑，设置 success/classification/stepErr
+                            if adsUpdater != nil && processed < len(items) {
+                                link := items[processed]
+                                success, classification, stepErr = adsUpdater.Update(link)
+                            }
                             if !success {
                                 // 失败退款
                                 _ = tokenSvc.AddTokens(userID, 1, "refund", "adscenter item failed", executionID)
@@ -1268,7 +1354,7 @@ func setupAPIRoutes(r *gin.Engine) {
                         }
                         done := time.Now()
                         _ = gormDB.Model(&AdsExecution{}).Where("id = ?", executionID).Updates(map[string]any{"status": "completed", "message": "done", "completed_at": done, "updated_at": done}).Error
-                    }(exec.ID, qty)
+                    }(exec.ID, links)
                     // 创建响应（尚未消费）
                     newBalance, _ := tokenSvc.GetTokenBalance(userID)
                     c.Header("X-Tokens-Consumed", "0")
@@ -1647,11 +1733,23 @@ func handleSilentProgress(c *gin.Context) {
 			userID = "anonymous"
 		}
 	}
-	task, err := batchService.GetTask(userID, taskID)
-	if err != nil {
-		c.JSON(200, gin.H{"success": false, "message": "任务不存在"})
-		return
-	}
+    task, err := batchService.GetTask(userID, taskID)
+    if err != nil {
+        // 尝试从三表聚合落地读取进度（兼容新模型）
+        if gormDB != nil {
+            prog, e2 := batchgo.NewDAO(gormDB).AggregateProgress(taskID)
+            if e2 == nil {
+                percentage := 0.0
+                total := prog.Total
+                processed := prog.Success + prog.Fail
+                if total > 0 { percentage = float64(processed) / float64(total) * 100 }
+                c.JSON(200, gin.H{"success": true, "task_id": taskID, "status": "running", "processed": processed, "total": total, "percentage": percentage})
+                return
+            }
+        }
+        c.JSON(200, gin.H{"success": false, "message": "任务不存在"})
+        return
+    }
 	processed := task.ProcessedCount
 	total := task.URLCount
 	percentage := 0.0

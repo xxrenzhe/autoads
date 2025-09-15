@@ -51,7 +51,7 @@ export interface AnalysisResult {
   trafficValue?: string;
   status?: string;
   originalUrl?: string;
-  [key: string]: string | number | null | undefined | "loading"; // 允许动态属性
+  [key: string]: string | number | boolean | null | undefined | "loading"; // 允许动态属性
 }
 
 export interface PriorityLevel {

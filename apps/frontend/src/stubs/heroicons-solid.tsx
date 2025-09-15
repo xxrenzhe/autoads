@@ -7,4 +7,5 @@ const makeIcon = (name: string) => {
 }
 export const CheckIcon = makeIcon('CheckIcon')
 export const XMarkIcon = makeIcon('XMarkIcon')
+export const StarIcon = makeIcon('StarIcon')
 export default {}

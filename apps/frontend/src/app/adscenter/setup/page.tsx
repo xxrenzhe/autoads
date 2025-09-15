@@ -442,7 +442,7 @@ export default function SetupPage() {
         refreshToken: '',
         loginCustomerId: '',
         isActive: true,
-        status: 'disconnected'
+        status: 'disconnected' as const
       }))
       setGoogleAdsAccounts(normalizedAcc)
 
@@ -549,7 +549,8 @@ export default function SetupPage() {
         category: newAffiliateLink.category
       })
       if ((res as any)?.success === false) {
-        return toast.error('添加失败')
+        toast.error('添加失败')
+        return
       }
       await loadExistingConfigurations()
       setNewAffiliateLink({ name: '', affiliateUrl: '', description: '', category: '' });
@@ -557,6 +558,7 @@ export default function SetupPage() {
     } catch {
       toast.error('添加失败')
     }
+    return
   };
 
   // 测试广告联盟链接
@@ -584,13 +586,17 @@ export default function SetupPage() {
         apiEndpoint: newAdsPowerEnv.apiEndpoint,
         apiKey: newAdsPowerEnv.apiKey
       })
-      if ((res as any)?.success === false) return toast.error('添加失败')
+      if ((res as any)?.success === false) {
+        toast.error('添加失败')
+        return
+      }
       await loadExistingConfigurations()
       setNewAdsPowerEnv({ name: '', environmentId: '', apiEndpoint: 'http://local.adspower.net:50325', apiKey: '' });
       toast.success('AdsPower环境添加成功！');
     } catch {
       toast.error('添加失败')
     }
+    return
   };
 
   // 测试AdsPower连接

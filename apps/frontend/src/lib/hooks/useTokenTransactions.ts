@@ -32,8 +32,6 @@ export function useTokenTransactions(page: number = 1, limit: number = 20) {
     queryKey: ['backend', 'tokens', 'transactions', page, limit],
     queryFn: async (): Promise<TokenTransactionsResponse> =>
       backend.get<TokenTransactionsResponse>('/api/tokens/transactions', { page, limit }),
-    keepPreviousData: true,
     staleTime: 30_000,
   });
 }
-

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { http } from '@/shared/http/client'
 import {
   Box,
   Card,

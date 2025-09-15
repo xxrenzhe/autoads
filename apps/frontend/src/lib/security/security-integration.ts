@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/v5-config';
 import { suspiciousActivityDetector, UserActivity } from './suspicious-activity-detector';
-import { behaviorAnalysisService } from './behavior-analysis-service';
+// behaviorAnalysisService is heavy and server-only; omit import in preview build
 // Note: Real-time alert system has been removed for performance optimization
 import { createLogger } from '@/lib/utils/security/secure-logger';
 

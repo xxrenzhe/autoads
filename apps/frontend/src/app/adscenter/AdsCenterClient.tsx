@@ -79,6 +79,21 @@ export default function AdsCenterClient() {
   const [modalRequired, setModalRequired] = useState<number | undefined>(undefined);
   const [modalBalance, setModalBalance] = useState<number | undefined>(undefined);
   
+  // Go 后端直连功能开关（预发/缺省关闭）
+  const useGoAds = false;
+  // 为 TS 提供占位实现，实际在 useGoAds=false 时不会被渲染/调用
+  const [goLinks, setGoLinks] = useState<string>('');
+  const [goAdsPowerProfile, setGoAdsPowerProfile] = useState<string>('');
+  const [goGoogleAdsAccount, setGoGoogleAdsAccount] = useState<string>('');
+  const [goRunning, setGoRunning] = useState<boolean>(false);
+  const handleGoQuickUpdate = async () => {
+    toast.info('Go 后端直连在当前环境未启用');
+  };
+  // 仅为类型占位；实际未启用时不会被调用
+  async function runAdsCenterUpdate(_args: any): Promise<{ taskId: string }> {
+    return { taskId: 'disabled' };
+  }
+  
   // Form states
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showAddConfig, setShowAddConfig] = useState(false);

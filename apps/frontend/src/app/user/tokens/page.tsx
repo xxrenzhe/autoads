@@ -354,7 +354,7 @@ export default function UserTokensPage() {
       )}
 
       {/* 最近交易（后端直连补充展示） */}
-      {txData?.records && txData.records.length > 0 && (
+      {Array.isArray((txData as any)?.records) && (txData as any).records.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>最近交易（后端实时）</CardTitle>
@@ -372,7 +372,7 @@ export default function UserTokensPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {txData.records.map((r: any) => (
+                {(txData as any).records.map((r: any) => (
                   <TableRow key={r.id}>
                     <TableCell>{r.timestamp ? format(new Date(r.timestamp), 'yyyy-MM-dd HH:mm:ss', { locale: zhCN }) : '-'}</TableCell>
                     <TableCell>{r.feature || '-'}</TableCell>

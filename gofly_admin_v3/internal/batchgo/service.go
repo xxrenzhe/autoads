@@ -4,6 +4,8 @@ import (
     "context"
     "encoding/json"
     "fmt"
+    "crypto/sha256"
+    "encoding/hex"
     "math/rand"
     "net/http"
     "sync"
@@ -12,7 +14,9 @@ import (
     "github.com/google/uuid"
     "gorm.io/gorm"
     "gofly-admin-v3/internal/audit"
+    "gofly-admin-v3/internal/store"
     "os"
+    "strconv"
 )
 
 // Service BatchGo服务
@@ -23,9 +27,14 @@ type Service struct {
     httpClient   *http.Client
     audit        *audit.AutoAdsAuditService
     puppeteer    BrowserExecutor
+    redis        *store.Redis
     // 运行中任务的取消函数（仅 Silent 可中断）
     cancelMu     sync.Mutex
     cancels      map[string]context.CancelFunc
+    // HTTP 失败 URL 标记（内存版），下次优先使用 Puppeteer
+    badURLMu     sync.Mutex
+    badURL       map[string]time.Time
+    badURLTTL    time.Duration
 }
 
 // TokenService Token服务接口
@@ -41,7 +50,7 @@ type WSManager interface {
 }
 
 // NewService 创建BatchGo服务
-func NewService(db *gorm.DB, tokenService TokenService, wsManager WSManager, auditSvc *audit.AutoAdsAuditService) *Service {
+func NewService(db *gorm.DB, tokenService TokenService, wsManager WSManager, auditSvc *audit.AutoAdsAuditService, redis *store.Redis) *Service {
     s := &Service{
         db:           db,
         tokenService: tokenService,
@@ -51,6 +60,7 @@ func NewService(db *gorm.DB, tokenService TokenService, wsManager WSManager, aud
         },
         cancels: make(map[string]context.CancelFunc),
         audit:   auditSvc,
+        redis:   redis,
     }
     // 初始化 Puppeteer 执行器（可选）
     if exec := newPuppeteerExecutorFromEnv(); exec != nil {
@@ -58,6 +68,12 @@ func NewService(db *gorm.DB, tokenService TokenService, wsManager WSManager, aud
     } else {
         _ = os.Setenv("PUPPETEER_EXECUTOR_URL", os.Getenv("PUPPETEER_EXECUTOR_URL"))
     }
+    s.badURL = make(map[string]time.Time)
+    ttlHours := 24 * 7
+    if v := os.Getenv("BATCHGO_BADURL_TTL_HOURS"); v != "" {
+        if n, err := strconv.Atoi(v); err == nil && n > 0 { ttlHours = n }
+    }
+    s.badURLTTL = time.Duration(ttlHours) * time.Hour
     return s
 }
 
@@ -371,12 +387,65 @@ func (s *Service) silentWorker(ctx context.Context, taskID string, urls []BatchT
 				return
 			}
 
-			url := urls[index]
-			result := s.processURL(client, url, config)
-			result.Retries = index // 临时存储索引
-			resultChan <- result
-		}
-	}
+            url := urls[index]
+            // 若标记为 HTTP 失败 URL 且可用 Puppeteer，则直接走 Puppeteer
+            if s.puppeteer != nil && s.isBadURL(url.URL) {
+                okv, err := s.puppeteer.Visit(url.URL)
+                end := time.Now()
+                url.EndTime = &end
+                if okv {
+                    url.Status = "success"
+                    url.Response = map[string]any{"executor": "puppeteer"}
+                } else {
+                    url.Status = "failed"
+                    if err != nil { url.Error = err.Error() }
+                }
+                url.Retries = index
+                resultChan <- url
+                continue
+            }
+            result := s.processURL(client, url, config)
+            if result.Status == "failed" { s.markBadURL(result.URL) }
+            result.Retries = index // 临时存储索引
+            resultChan <- result
+        }
+    }
+}
+
+func (s *Service) markBadURL(u string) {
+    if u == "" { return }
+    // Prefer Redis shared marker
+    if s.redis != nil {
+        ctx := context.Background()
+        key := s.badURLKey(u)
+        _ = s.redis.Set(ctx, key, u, s.badURLTTL)
+        return
+    }
+    s.badURLMu.Lock()
+    s.badURL[u] = time.Now().Add(s.badURLTTL)
+    s.badURLMu.Unlock()
+}
+
+func (s *Service) isBadURL(u string) bool {
+    if u == "" { return false }
+    // Prefer Redis shared marker
+    if s.redis != nil {
+        ctx := context.Background()
+        key := s.badURLKey(u)
+        ok, _ := s.redis.Exists(ctx, key)
+        return ok
+    }
+    now := time.Now()
+    s.badURLMu.Lock()
+    exp, ok := s.badURL[u]
+    if ok && now.After(exp) { delete(s.badURL, u); ok = false }
+    s.badURLMu.Unlock()
+    return ok
+}
+
+func (s *Service) badURLKey(u string) string {
+    sum := sha256.Sum256([]byte(u))
+    return "autoads:badurl:" + hex.EncodeToString(sum[:])
 }
 
 // StopTask 暂停任务（仅对 running 的 silent 模式生效）
@@ -471,7 +540,7 @@ func (s *Service) processURL(client *http.Client, url BatchTaskURL, config *Sile
 	endTime := time.Now()
 	url.EndTime = &endTime
 	url.Status = "failed"
-	url.Error = lastErr.Error()
+    if lastErr != nil { url.Error = lastErr.Error() } else { url.Error = "unknown" }
 	url.Retries = config.RetryCount
 
     return url

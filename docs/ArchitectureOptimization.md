@@ -144,6 +144,20 @@
   - `INTERNAL_JWT_AUD=internal-go`
 - Go：
   - `INTERNAL_JWT_PUBLIC_KEY`（PEM）
+  - 单镜像内置执行器（本地 HTTP，默认启用）
+    - Puppeteer/Playwright（AutoClick 浏览器执行）
+      - `PUPPETEER_EXECUTOR_URL`：默认 `http://127.0.0.1:8081`（未设置则 entrypoint 启动本地执行器）
+      - `PUPPETEER_EXECUTOR_PORT`：本地执行器监听端口，默认 `8081`
+      - `PUPPETEER_MAX_CONCURRENCY`：最大并发处理数，默认 `3`
+      - `PUPPETEER_RL_LIMIT`：固定窗口内请求上限，默认 `60`
+      - `PUPPETEER_RL_WINDOW_MS`：固定窗口时长，默认 `60000`
+    - AdsCenter 更新执行器
+      - `ADSCENTER_EXECUTOR_URL`：默认 `http://127.0.0.1:8082`
+      - `ADSCENTER_EXECUTOR_PORT`：本地执行器监听端口，默认 `8082`
+      - `ADSCENTER_MAX_CONCURRENCY`：最大并发处理数，默认 `5`
+      - `ADSCENTER_RL_LIMIT`：固定窗口内请求上限，默认 `120`
+      - `ADSCENTER_RL_WINDOW_MS`：固定窗口时长，默认 `60000`
+  - `PUPPETEER_EXECUTOR_URL`（可选；AutoClick 出站执行器基础地址，如 `https://puppeteer-exec.svc:8080`）
 
 其余 ENV（数据库/Redis/域名/镜像标签/资源）按 docs/MustKnow.md 执行。
 
@@ -180,14 +194,17 @@
   - [x] 新增中间件：RSA 验签（软启用/可强制）+ 结构化请求日志 + `X-Request-Id` 回显
   - [x] `GET /admin/config/v1` 配置聚合（ETag/版本）与热更回调（只读快照）
   - [x] `POST /api/v1/siterank/batch:check|:execute`（原子扣费/幂等/审计）
-  - [x] `POST /api/v1/batchopen/silent:check|:execute` + `GET /api/v1/batchopen/tasks/:id`（原子扣费/幂等/进度/审计）
+  - [x] `POST /api/v1/batchopen/silent:check|:execute` + `GET /api/v1/batchopen/tasks/:id`（原子扣费/幂等/进度/审计；兼容旧表并可回退到三表聚合）
   - [x] 成功路径输出 `X-RateLimit-*` 头（Redis/内存）与 `Server-Timing: app;dur=...`
-  - [x] AdsCenter 原子端点（check/execute，按 extract+update_ads 规则估算；执行在服务内分阶段扣费）
+  - [x] AdsCenter 原子端点（check/execute，估算与扣费按 `adscenter.update` 规则；执行分阶段逐项扣费，失败立即退款并记录审计分类）
+  - [x] BatchOpen 三表与最小 DAO：`batch_jobs/batch_job_items/batch_job_progress` + `AggregateProgress`；逐步替换旧读路径
+  - [x] BatchGo：Silent `fail_rate_threshold` 动态回退 AutoClick（含审计），AutoClick 执行接入 Puppeteer 执行器（出站 HTTP）并按 `batchgo.puppeteer` 逐项计费
 
 - 运维/CI：
   - [x] 启动前 ENV 校验脚本（keys/DB/Redis/域名/镜像 tag）
   - [x] 健康检查/回滚脚本更新（保持单镜像、外部仅 3000）
   - [x] 端到端 E2E 验证脚本（预检→执行→幂等→审计头）
+  - [x] 部署阶段迁移（幂等）：容器启动执行 `server -migrate`（Go 模型）+ `prisma migrate deploy`；支持禁用启动迁移时通过显式 Job 触发
 
 ## 未完成项与后续计划（评估）
 - UI 限流提示扩展（已覆盖主流程）
@@ -201,3 +218,13 @@
   - 已覆盖 FeatureFlags/SimilarWeb/AdsPower/Gmail/TokenConfig 的只读化读取；其余零散 ENV 读取（如 Stripe 显示开关、部分 runtime 变量）保持 ENV-only，符合“基础设施配置走 ENV、业务配置走只读快照”的原则。
 
 > 注：P0 已实现核心闭环（内部 JWT、配置聚合、SiteRank/BatchOpen/AdsCenter 原子端点与前端接入开关）。下一步：用只读配置适配器替换散落读取点，并将 AdsCenter 既有入口全量切换到新 Hook（保留回退）。
+
+## 单镜像内置执行器（实现说明）
+- 目标：保持“单镜像、单容器”，浏览器与 AdsCenter 执行无需额外服务。
+- 实现：在镜像内附带极简 Node 执行器（`/app/executors`），容器启动时由 entrypoint 自动拉起；Go 通过回环 URL 调用。
+- 端口与默认地址：`127.0.0.1:8081`（Puppeteer）、`127.0.0.1:8082`（AdsCenter）；可通过环境变量覆盖或显式指向外部服务以平滑迁移。
+- 限制与保护：执行器内置最大并发与固定窗口限流（返回 429 与标准限流头），Go 端亦有上层限流与超时保护。
+- Docker 实现：
+  - 基于 `node:20-bookworm-slim` 作为运行时镜像，仅安装运行 Playwright/Chromium 的必要依赖。
+  - 构建阶段执行 `npx playwright install --with-deps chromium`，仅安装 Chromium（不包含 WebKit/Firefox），减少体积。
+  - 使用 `tini` 作为 init，entrypoint 并行启动 Next/Go/执行器与迁移脚本。

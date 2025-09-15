@@ -258,7 +258,7 @@ export class AuditLogger {
       prisma.auditLog.count({ where: { ...whereClause, outcome: 'failure' } }),
       prisma.auditLog.count({ where: { ...whereClause, severity: 'critical' } }),
       prisma.auditLog.groupBy({
-        by: ['userId', 'userEmail'],
+        by: ['userId'],
         where: whereClause,
         _count: true,
         orderBy: { _count: { userId: 'desc' } },
@@ -372,18 +372,17 @@ export class AuditLogger {
     try {
       await prisma.auditLog.createMany({
         data: events?.filter(Boolean)?.map((event: any) => ({
-          userId: event.userId,
-          userEmail: event.userEmail,
-          action: event.action,
-          resource: event.resource,
-          category: event.category,
-          severity: event.severity,
-          outcome: event.outcome,
-          ipAddress: event.ipAddress,
-          userAgent: event.userAgent,
-          details: event.details,
+          userId: String(event.userId || ''),
+          action: String(event.action || ''),
+          resource: String(event.resource || ''),
+          category: String(event.category || ''),
+          severity: String(event.severity || ''),
+          outcome: String(event.outcome || ''),
+          ipAddress: String(event.ipAddress || ''),
+          userAgent: String(event.userAgent || ''),
+          details: typeof event.details === 'string' ? event.details : JSON.stringify(event.details ?? ''),
           metadata: event.metadata,
-          timestamp: (event as any).timestamp
+          timestamp: (event as any).timestamp as Date
         }))
       })
     } catch (error) {
@@ -397,18 +396,17 @@ export class AuditLogger {
     try {
       await prisma.auditLog.create({
         data: {
-          userId: event.userId,
-          userEmail: event.userEmail,
-          action: event.action,
-          resource: event.resource,
-          category: event.category,
-          severity: event.severity,
-          outcome: event.outcome,
-          ipAddress: event.ipAddress,
-          userAgent: event.userAgent,
-          details: event.details,
+          userId: String(event.userId || ''),
+          action: String(event.action || ''),
+          resource: String(event.resource || ''),
+          category: String(event.category || ''),
+          severity: String(event.severity || ''),
+          outcome: String(event.outcome || ''),
+          ipAddress: String(event.ipAddress || ''),
+          userAgent: String(event.userAgent || ''),
+          details: typeof event.details === 'string' ? event.details : JSON.stringify(event.details ?? ''),
           metadata: event.metadata,
-          timestamp: event.timestamp
+          timestamp: event.timestamp as Date
         }
       })
     } catch (error) {
@@ -437,6 +435,7 @@ export class AuditLogger {
         by: ['userId'],
         where: whereClause,
         _count: true,
+        orderBy: { _count: { userId: 'desc' } },
         take: 10
       })
     ])

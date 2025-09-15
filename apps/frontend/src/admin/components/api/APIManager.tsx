@@ -963,9 +963,9 @@ export function APIManager({ className }: APIManagerProps) {
                             </div>
                             <span 
                               className="text-sm text-gray-600"
-                              aria-label={`${formatNumber(endpoint.totalRequests)} total requests`}
+                              aria-label={`${formatNumber(endpoint.totalRequests ?? 0)} total requests`}
                             >
-                              {formatNumber(endpoint.totalRequests)}
+                              {formatNumber(endpoint.totalRequests ?? 0)}
                             </span>
                           </div>
                         ))}

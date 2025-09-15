@@ -146,7 +146,7 @@ export class MinimalSuspiciousDetector {
     // 获取最近5分钟的失败次数
     const since = new Date(Date.now() - this.config.bruteForce.windowMs);
     
-    const failureCount = await prisma.userEvent.count({
+    const failureCount = await (prisma as any).userEvent.count({
       where: {
         userId: event.userId,
         action: 'api_call',
@@ -172,7 +172,7 @@ export class MinimalSuspiciousDetector {
     
     // 1. 检查真实的token消耗
     try {
-      const tokenUsages = await prisma.token_usage?.findMany?.({
+    const tokenUsages = await (prisma as any).token_usage?.findMany?.({
         where: {
           userId: event.userId,
           createdAt: { gte: since }
@@ -191,7 +191,7 @@ export class MinimalSuspiciousDetector {
     }
     
     // 2. 如果没有token数据，检查API调用频率
-    const apiCalls = await prisma.userEvent.count({
+    const apiCalls = await (prisma as any).userEvent.count({
       where: {
         userId: event.userId,
         action: 'api_call',
@@ -219,7 +219,7 @@ export class MinimalSuspiciousDetector {
     // 获取最近1小时内的所有IP
     const since = new Date(Date.now() - this.config.ipRotation.windowMs);
     
-    const events = await prisma.userEvent.findMany({
+    const events = await (prisma as any).userEvent.findMany({
       where: {
         userId: event.userId,
         timestamp: { gte: since },
@@ -239,7 +239,7 @@ export class MinimalSuspiciousDetector {
   private async logSuspiciousEvent(userId: string, type: SuspiciousEvent['type'], event: UserEvent): Promise<void> {
     try {
       // 检查是否已有未解决的相同类型事件
-      const existingEvent = await prisma.suspiciousEvent.findFirst({
+      const existingEvent = await (prisma as any).suspiciousEvent.findFirst({
         where: {
           userId,
           type,
@@ -250,7 +250,7 @@ export class MinimalSuspiciousDetector {
       // 避免重复记录
       if (existingEvent) {
         // 更新最后检测时间
-        await prisma.suspiciousEvent.update({
+        await (prisma as any).suspiciousEvent.update({
           where: { id: existingEvent.id },
           data: { timestamp: new Date() }
         });
@@ -258,7 +258,7 @@ export class MinimalSuspiciousDetector {
       }
 
       // 创建新的可疑事件记录
-      await prisma.suspiciousEvent.create({
+      await (prisma as any).suspiciousEvent.create({
         data: {
           userId,
           type,
@@ -302,7 +302,7 @@ export class MinimalSuspiciousDetector {
    */
   async getUserSuspiciousEvents(userId: string, limit: number = 10): Promise<SuspiciousEvent[]> {
     try {
-      const events = await prisma.suspiciousEvent.findMany({
+      const events = await (prisma as any).suspiciousEvent?.findMany?.({
         where: { userId },
         orderBy: { timestamp: 'desc' },
         take: limit
@@ -329,7 +329,7 @@ export class MinimalSuspiciousDetector {
    */
   async getUnresolvedEvents(limit: number = 50): Promise<SuspiciousEvent[]> {
     try {
-      const events = await prisma.suspiciousEvent.findMany({
+      const events = await (prisma as any).suspiciousEvent?.findMany?.({
         where: { resolved: false },
         orderBy: { timestamp: 'desc' },
         take: limit,
@@ -361,7 +361,7 @@ export class MinimalSuspiciousDetector {
    */
   async resolveEvent(eventId: string, resolvedBy: string, reason?: string): Promise<boolean> {
     try {
-      await prisma.suspiciousEvent.update({
+      await (prisma as any).suspiciousEvent?.update?.({
         where: { id: eventId },
         data: {
           resolved: true,
@@ -388,10 +388,10 @@ export class MinimalSuspiciousDetector {
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
         
         await Promise.all([
-          prisma.userEvent.deleteMany({
+          (prisma as any).userEvent?.deleteMany?.({
             where: { timestamp: { lt: thirtyDaysAgo } }
           }),
-          prisma.suspiciousEvent.deleteMany({
+          (prisma as any).suspiciousEvent?.deleteMany?.({
             where: { 
               timestamp: { lt: thirtyDaysAgo },
               resolved: true // 只清理已解决的

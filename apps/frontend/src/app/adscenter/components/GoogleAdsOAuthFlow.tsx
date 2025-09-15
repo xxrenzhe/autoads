@@ -125,7 +125,7 @@ export function GoogleAdsOAuthFlow({ onAuthSuccess, onAuthError }: GoogleAdsOAut
       );
 
       if (result.success) {
-        setAuthUrl(result.authUrl);
+        setAuthUrl(result.authUrl || '');
         setAuthStep('auth');
         toast.success('授权链接已生成');
       } else {

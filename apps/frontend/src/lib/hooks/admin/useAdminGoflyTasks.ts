@@ -28,6 +28,5 @@ export function useAdminGoflyTasks({ page = 1, limit = 10 }: { page?: number; li
       } catch { return [] }
     },
     staleTime: 60_000,
-    keepPreviousData: true,
   });
 }

@@ -19,5 +19,8 @@ declare module '@/admin/components/api/APIManager' {
     fullKey?: string
     [key: string]: any
   }
-}
 
+  // Ensure consumers see a valid React component default export in type space
+  const APIManager: import('react').ComponentType<any>
+  export default APIManager
+}

@@ -85,7 +85,7 @@ export const getColumnClass = (col: string) => {
 
 // 获取排序值
 export const getSortValue = (
-  row: Record<string, string | number | null | undefined>,
+  row: Record<string, string | number | boolean | null | undefined>,
   col: string,
 ) => {
   const value = row[col];
