@@ -68,11 +68,16 @@
       <a-table :data-source="analytics.list||[]" :columns="listCols" size="small" rowKey="id" />
       <div style="margin-top:6px">共 {{ analytics.pagination?.total || 0 }} 条</div>
     </a-card>
+
+    <!-- 请求详情弹窗 -->
+    <a-modal v-model:open="showReq" title="请求详情" :footer="null" width="720px">
+      <pre style="white-space:pre-wrap;word-break:break-all">{{ JSON.stringify(reqDetail, null, 2) }}</pre>
+    </a-modal>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, h } from 'vue'
 import { apiMgmt } from '@/api/admin/apiManagement'
 
 export default {
@@ -131,17 +136,6 @@ export default {
 }
 </script>
 
-<script setup>
-import { h } from 'vue'
-</script>
-
-<template>
-  <!-- 追加在末尾：请求详情弹窗 -->
-  <a-modal v-model:open="showReq" title="请求详情" :footer="null" width="720px">
-    <pre style="white-space:pre-wrap;word-break:break-all">{{ JSON.stringify(reqDetail, null, 2) }}</pre>
-  </a-modal>
-  <!-- 原模板内容已在上方 -->
-</template>
 
 <style scoped>
 .api-analytics { padding: 16px; }
