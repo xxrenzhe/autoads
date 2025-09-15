@@ -1,203 +1,45 @@
 /**
- * Puppeteer访问器 - 用于绕过CloudFlare等高级防护
+ * Puppeteer Visitor Stub (frontend)
+ * 执行器已迁移到后端；此处仅保留接口以兼容引用。
  */
 
-import puppeteer, { Browser, LaunchOptions } from 'puppeteer';
-import { createLogger } from '@/lib/utils/security/secure-logger';
-import { ProxyConfig } from '@/lib/utils/proxy-utils';
-
-const logger = createLogger('PuppeteerVisitor');
+import { ProxyConfig } from '@/lib/utils/proxy-utils'
 
 export interface PuppeteerVisitOptions {
-  url: string;
-  proxy?: ProxyConfig;
-  userAgent?: string;
-  timeout?: number;
-  referer?: string;
-  stealthMode?: boolean;
-  headers?: Record<string, string>;
+  url: string
+  proxy?: ProxyConfig
+  userAgent?: string
+  timeout?: number
+  referer?: string
+  stealthMode?: boolean
+  headers?: Record<string, string>
 }
 
 export interface PuppeteerVisitResult {
-  success: boolean;
-  error?: string;
-  loadTime?: number;
-  finalUrl?: string;
-  content?: string;
-  title?: string;
-  proxyUsed: boolean;
+  success: boolean
+  error?: string
+  loadTime?: number
+  finalUrl?: string
+  content?: string
+  title?: string
+  proxyUsed: boolean
 }
 
 export class PuppeteerVisitor {
-  /**
-   * 访问URL
-   */
-  async visit(options: PuppeteerVisitOptions): Promise<PuppeteerVisitResult> {
-    const startTime = Date.now();
-    const visitId = `visit_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-    let browser: Browser | undefined;
-    
-    try {
-      logger.info('🚀 开始使用Puppeteer访问', {
-        visitId,
-        url: options.url,
-        proxy: options.proxy ? `${options.proxy.host}:${options.proxy.port}` : 'direct',
-        proxyProtocol: options.proxy?.protocol,
-        proxyProvider: options.proxy?.provider,
-        referer: options.referer,
-        timeout: options.timeout || 120000,
-        stealthMode: options.stealthMode || false
-      });
+  async visit(_options: PuppeteerVisitOptions): Promise<PuppeteerVisitResult> {
+    return {
+      success: false,
+      error: 'Puppeteer execution runs on backend now. Use API via BFF.',
+      proxyUsed: false
+    }
+  }
 
-      // 启动浏览器
-      const launchOptions: LaunchOptions = {
-        headless: true,
-        // 在Docker环境中使用系统Chromium
-        executablePath: process.env.NODE_ENV === 'production' ? '/usr/bin/chromium-browser' : undefined,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu',
-          '--disable-features=VizDisplayCompositor',
-          '--ignore-certificate-errors',
-          '--ignore-ssl-errors',
-          '--disable-blink-features=AutomationControlled',
-          '--disable-web-security',
-          '--disable-features=IsolateOrigins,site-per-process',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-features=TranslateUI',
-          '--disable-ipc-flooding-protection',
-          '--enable-unsafe-swiftshader',
-          '--disable-extensions',
-          '--disable-plugins',
-          '--disable-images',
-          '--disable-javascript-harmony-promises',
-          '--disable-notifications',
-          '--disable-default-apps',
-          '--disable-sync',
-          '--proxy-bypass-list=<-loopback>', // 绕过本地地址
-          '--disable-features=VizDisplayCompositor' // 禁用合成器，减少GPU使用
-        ]
-      };
+  async visitUrl(options: PuppeteerVisitOptions): Promise<PuppeteerVisitResult> {
+    return this.visit(options)
+  }
+}
 
-      // 配置代理
-      if (options.proxy) {
-        const proxyUrl = `${options.proxy.protocol}://${options.proxy.host}:${options.proxy.port}`;
-        launchOptions.args?.push(`--proxy-server=${proxyUrl}`);
-        
-        // 在 Docker 环境中，需要设置代理认证为环境变量
-        if (options.proxy.username && options.proxy.password) {
-          // 设置代理认证为命令行参数
-          launchOptions.args?.push(
-            `--proxy-auth=${options.proxy.username}:${options.proxy.password}`
-          );
-        }
-        
-        logger.info('配置代理', {
-          proxyUrl: proxyUrl.replace(/:([^:@]+)@/, ':***@'),
-          hasAuth: !!(options.proxy.username && options.proxy.password)
-        });
-        
-        // 添加代理相关的额外参数
-        launchOptions.args?.push(
-          '--disable-features=CrossSiteDocumentBlockingIfIsolating',
-          '--disable-site-isolation-trials'
-        );
-      }
-
-      const launchStartTime = Date.now();
-      logger.info('🔧 正在启动浏览器...', {
-        visitId,
-        headless: launchOptions.headless,
-        executablePath: launchOptions.executablePath || 'default',
-        argsCount: launchOptions.args?.length || 0
-      });
-      
-      // 启动浏览器，添加超时保护
-      browser = await Promise.race([
-        puppeteer.launch(launchOptions),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Browser launch timeout')), 30000)
-        )
-      ]) as Browser | undefined;
-      const launchEndTime = Date.now();
-      
-      logger.info('✅ 浏览器启动成功', {
-        visitId,
-        launchTime: launchEndTime - launchStartTime,
-        browserVersion: browser ? await browser.version() : 'unknown'
-      });
-      
-      const pageStartTime = Date.now();
-      logger.info('📄 正在创建新页面...', { visitId });
-      
-      const page = await (browser as Browser).newPage();
-      const pageEndTime = Date.now();
-      
-      logger.info('✅ 页面创建成功', {
-        visitId,
-        pageCreateTime: pageEndTime - pageStartTime
-      });
-      
-      // 启用请求拦截以优化性能
-      await page.setRequestInterception(true);
-      
-      // 拦截和过滤不必要的请求
-      page.on('request', (request) => {
-        const resourceType = request.resourceType();
-        const url = request.url();
-        
-        // 阻止的资源类型
-        const blockedTypes = ['image', 'media', 'font', 'texttrack', 'object', 'subresource', 'beacon', 'csp_report', 'imageset'];
-        
-        // 阻止的域名模式（analytics、tracking等）
-        const blockedPatterns = [
-          /google-analytics\.com/,
-          /doubleclick\.net/,
-          /facebook\.com\/tr/,
-          /facebook\.net/,
-          /googletagmanager\.com/,
-          /googlesyndication\.com/,
-          /hotjar\.com/,
-          /mixpanel\.com/,
-          /amplitude\.com/,
-          /segment\.io/,
-          /fullstory\.com/,
-          /cdn\.inspectlet\.com/,
-          /newrelic\.com/,
-          /datadome\.com/,
-          /cloudflare\.com\/cdn-cgi\/trace/
-        ];
-        
-        // 检查是否应该阻止
-        const shouldBlock = blockedTypes.includes(resourceType) || 
-                           blockedPatterns.some(pattern => pattern.test(url));
-        
-        if (shouldBlock) {
-          request.abort('blockedbyclient');
-        } else {
-          request.continue();
-        }
-      });
-      
-      // 如果有代理认证，需要在页面级别设置认证
-      if (options.proxy && options.proxy.username && options.proxy.password) {
-        const authStartTime = Date.now();
-        logger.info('🔐 正在设置页面级代理认证...', { visitId });
-        
-        try {
-          await Promise.race([
-            page.authenticate({
-              username: options.proxy.username,
-              password: options.proxy.password
-            }),
-            new Promise((_, reject) => 
+export const puppeteerVisitor = new PuppeteerVisitor()
               setTimeout(() => reject(new Error('Proxy authentication timeout')), 10000)
             )
           ]);

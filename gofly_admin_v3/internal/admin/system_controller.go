@@ -27,7 +27,7 @@ func (c *AdminController) GetSystemConfig(ctx *gin.Context) {
 // POST /api/v1/admin/system/config
 func (c *AdminController) UpsertSystemConfig(ctx *gin.Context) {
     var req struct {
-        Key         string `json:"key" binding:"required"
+        Key         string `json:"key" binding:"required"`
         Value       string `json:"value"`
         Description string `json:"description"`
         Category    string `json:"category"`

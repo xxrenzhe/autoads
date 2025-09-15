@@ -15,6 +15,8 @@ export const dynamic = 'force-dynamic'
 const BACKEND_BASE = process.env.BACKEND_URL || 'http://127.0.0.1:8080'
 const MAX_BODY_BYTES = Number(process.env.BFF_MAX_BODY || 2 * 1024 * 1024)
 const UPSTREAM_TIMEOUT_MS = Number(process.env.BFF_UPSTREAM_TIMEOUT_MS || 15000)
+const READY_CHECK_TIMEOUT_MS = Number(process.env.BFF_READY_TIMEOUT_MS || 1200)
+const READY_CHECK_TTL_MS = Number(process.env.BFF_READY_TTL_MS || 3000)
 
 function resolveTarget(subPath: string, search: string) {
   // Allow only API and health endpoints
@@ -76,6 +78,37 @@ async function proxy(req: Request, path: string[]) {
     })
   }
 
+  // Readiness check (skip for health endpoints)
+  if (!['/health', '/healthz', '/readyz'].some(h => subPath === h || subPath.startsWith(h))) {
+    const now = Date.now()
+    const cache: any = (globalThis as any).__go_ready_cache || { ts: 0, ok: false }
+    if (!cache.ts || now - cache.ts > READY_CHECK_TTL_MS) {
+      try {
+        const controller = new AbortController()
+        const to = setTimeout(() => controller.abort(), READY_CHECK_TIMEOUT_MS)
+        const resp = await fetch(`${BACKEND_BASE}/readyz`, { method: 'GET', signal: controller.signal })
+        clearTimeout(to)
+        cache.ts = Date.now()
+        cache.ok = resp.ok
+      } catch {
+        cache.ts = Date.now()
+        cache.ok = false
+      }
+      ;(globalThis as any).__go_ready_cache = cache
+    }
+    if (!cache.ok) {
+      return new Response(JSON.stringify({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Upstream not ready' } }), {
+        status: 503,
+        headers: {
+          'content-type': 'application/json',
+          'X-BFF-Enforced': '1',
+          'X-Robots-Tag': 'noindex',
+          'Retry-After': '2'
+        }
+      })
+    }
+  }
+
   const headers = new Headers(req.headers)
   headers.delete('host')
   headers.delete('connection')
@@ -120,4 +153,3 @@ export async function PUT(req: Request, ctx: { params: { path: string[] } }) { r
 export async function PATCH(req: Request, ctx: { params: { path: string[] } }) { return proxy(req, ctx.params.path) }
 export async function DELETE(req: Request, ctx: { params: { path: string[] } }) { return proxy(req, ctx.params.path) }
 export async function OPTIONS(req: Request, ctx: { params: { path: string[] } }) { return proxy(req, ctx.params.path) }
-

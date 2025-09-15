@@ -1,203 +1,43 @@
 /**
- * Simplified Task Execution Service
- * 简化的任务执行服务，处理批量URL访问任务
+ * 前端最小兼容层：仅保留 UI 依赖的工具函数（UA/Referer/间隔）。
+ * 执行器逻辑已迁移至 Go 后端。
  */
 
-import { getLogger } from '@/lib/core/logger-manager';
-import { globalStateManager } from '@/lib/core/global-state-manager';
-import { silentBatchTaskManager } from '@/lib/silent-batch-task-manager';
-import { simpleHttpVisitor } from '@/lib/simple-http-visitor';
-import { puppeteerVisitor } from '@/lib/puppeteer-visitor';
-import { proxyService, fetchProxyPool } from './proxy-service';
-import { ProxyConfig } from '@/lib/utils/proxy-utils';
-import { 
-  handleProxyError, 
-  createProxyErrorContext, 
-  ProxyErrorCategory,
-  shouldRetryProxyOperation 
-} from '@/lib/utils/proxy-error-handler';
-import { EnhancedError } from '@/lib/utils/error-handling';
-import { SimpleConcurrentExecutor } from './simple-concurrent-executor';
-import { SimpleSingleProxyExecutor } from './simple-single-proxy-executor';
-
-const logger = getLogger('TaskExecutionService');
-
-/**
- * Type guard to check if result is from SimpleHttpVisitor
- */
-function isHttpResult(result: any): result is import('@/lib/simple-http-visitor').VisitResult {
-  return result && typeof result.statusCode === 'number';
-}
-
-/**
- * Normalize visitor result to common interface
- */
-function normalizeVisitorResult(result: any, accessMode: 'http' | 'puppeteer') {
-  if (accessMode === 'puppeteer') {
-    // PuppeteerResult doesn't have statusCode, proxyVerification, etc.
-    return {
-      success: result.success,
-      error: result.error,
-      loadTime: result.loadTime,
-      statusCode: result.success ? 200 : undefined, // Assume 200 if success
-      proxyVerification: result.proxyUsed ? { success: true, proxyStatus: 'Used' } : undefined,
-      refererVerification: undefined
-    };
-  }
-  
-  // HTTP result already has the required properties
-  return result;
-}
-
-/**
- * 检查任务是否被终止（高优先级检查）
- */
-function isTaskTerminated(taskId?: string): boolean {
-  if (!taskId) return false;
-  
-  // 使用统一的全局状态管理器
-  if (globalStateManager.isTaskTerminated(taskId)) {
-    logger.info(`检测到终止标志，任务 ${taskId} 被终止`);
-    return true;
-  }
-  
-  // 检查任务管理器中的状态
-  const taskStatus = silentBatchTaskManager.getTask(taskId);
-  if (taskStatus && taskStatus.status === 'terminated') {
-    logger.info(`任务管理器中任务 ${taskId} 已终止`);
-    return true;
-  }
-  
-  return false;
-}
-
-// 社交媒体Referer列表
-const SOCIAL_MEDIA_REFERERS = [
-  "https://www.google.com/",
-  "https://www.facebook.com/",
-  "https://www.youtube.com/",
-  "https://www.whatsapp.com/",
-  "https://www.instagram.com/",
-  "https://www.tiktok.com/",
-  "https://www.messenger.com/",
-  "https://telegram.org/",
-  "https://www.snapchat.com/",
-  "https://x.com/",
-  "https://www.linkedin.com/",
-  "https://www.pinterest.com/",
-  "https://www.reddit.com/",
-  "https://www.quora.com/",
-  "https://www.tumblr.com/",
-  "https://www.twitch.tv/",
-  "https://discord.com/"
-];
-
-
-// 轮询索引记录
-let socialRefererIndex = 0;
-
-export interface TaskExecutionOptions {
-  taskId: string;
-  urls: string[];
-  cycleCount: number;
-  openCount?: number; // 可选，仅普通模式使用
-  openInterval: number;
-  proxyUrl: string;
-  refererOption: 'social' | 'custom';
-  selectedSocialMedia?: string; // 新增：选择的特定社交媒体
-  customReferer?: string;
-  proxyValidated?: boolean;
-  concurrencyLimit?: number;
-  isSilentMode?: boolean; // 标识是否为静默模式
-  urlVisits?: number[]; // 前置计算的每个URL的访问次数
-  actualTotalVisits?: number; // 前置计算的实际总访问次数
-  useSingleProxyStrategy?: boolean; // 是否使用单代理每轮访问策略
-  randomSeed?: number; // 随机种子，确保随机化的一致性
-  // 新增并发执行配置
-  enableSimpleConcurrency?: boolean; // 是否启用简单双层并发（推荐）
-  enableRoundConcurrency?: boolean; // 是否启用轮次并发，默认true
-  maxConcurrentRounds?: number; // 最大并发轮次数，默认3
-  enableUrlConcurrency?: boolean; // 是否启用URL并发，默认true
-  maxConcurrentUrls?: number; // 单轮次内最大并发URL数，默认5
-  verifyProxyIP?: boolean; // 是否验证代理IP一致性，默认false
-  enableConcurrentExecution?: boolean; // 是否启用并发执行（复杂版）
-  maxConcurrency?: number; // 最大并发数，默认3
-  proxyReuseInterval?: number; // 代理复用间隔（毫秒），默认1000
-  proxyGeoInfo?: any; // 代理的地理位置信息
-  accessMode?: 'http' | 'puppeteer'; // 访问模式
-  }
-
-export interface TaskExecutionResult {
-  success: boolean;
-  completed: number;
-  failed: number;
-  errors: string[];
-  duration: number;
-  errorSummary?: ErrorSummary;
-  errorCategory?: string;
-}
-
-export interface ErrorSummary {
-  totalErrors: number;
-  byCategory: Record<string, number>;
-  hasErrors: boolean;
-  hasSignificantErrors: boolean;
-  mostCommonError?: string;
-}
-
-// 简单的UA列表
+// 极简 UA 池（稳定且足够）
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
-];
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+]
 
-/**
- * 获取随机User-Agent (保持向后兼容)
- */
 export function getRandomUserAgent(): string {
-  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)]
 }
 
-/**
- * 获取社交媒体Referer（轮询方式）
- */
-export function getSocialRefererRoundRobin(): string {
-  const referer = SOCIAL_MEDIA_REFERERS[socialRefererIndex];
-  // 更新索引，实现轮询
-  socialRefererIndex = (socialRefererIndex + 1) % SOCIAL_MEDIA_REFERERS.length;
-  return referer;
+const SOCIAL_MEDIA_REFERERS = [
+  'https://www.facebook.com/',
+  'https://www.youtube.com/',
+  'https://x.com/'
+]
+let socialRefererIndex = 0
+
+export function getReferer(
+  refererOption: 'social' | 'custom',
+  customReferer?: string,
+  selectedSocialMedia?: string
+): string | undefined {
+  if (refererOption === 'custom') return customReferer || undefined
+  if (selectedSocialMedia) return selectedSocialMedia
+  const ref = SOCIAL_MEDIA_REFERERS[socialRefererIndex]
+  socialRefererIndex = (socialRefererIndex + 1) % SOCIAL_MEDIA_REFERERS.length
+  return ref
 }
 
-/**
- * 获取Referer
- */
-export function getReferer(refererOption: 'social' | 'custom', customReferer?: string, selectedSocialMedia?: string): string | undefined {
-  // 添加调试日志来跟踪参数传递
-  logger.debug('getReferer called with parameters:', {
-    refererOption,
-    customReferer: customReferer || '[undefined]',
-    selectedSocialMedia: selectedSocialMedia || '[undefined]'
-  });
-  
-  if (refererOption === 'custom') {
-    // 自定义模式下，如果customReferer为空，则返回undefined（不发送Referer）
-    const result = customReferer || undefined;
-    logger.debug('getReferer - custom mode result:', { result: result || '[undefined]' });
-    return result;
-  }
-  
-  // 如果指定了特定的社交媒体，使用它；否则使用轮询
-  if (selectedSocialMedia) {
-    logger.debug('getReferer - using selected social media:', { selectedSocialMedia });
-    return selectedSocialMedia;
-  } else {
-    const roundRobinResult = getSocialRefererRoundRobin();
-    logger.debug('getReferer - using round robin social media:', { roundRobinResult });
-    return roundRobinResult;
-  }
+export function calculateInterval(baseInterval: number): number {
+  if (baseInterval <= 0) return 100
+  return baseInterval * 1000
 }
+
+export const __DEPRECATED__ = true
 
 /**
  * 计算间隔时间
