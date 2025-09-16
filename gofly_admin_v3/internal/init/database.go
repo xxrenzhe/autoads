@@ -8,6 +8,7 @@ import (
     "sort"
     "strings"
     "time"
+    "os"
 
 	"gofly-admin-v3/internal/config"
 	"gorm.io/driver/mysql"
@@ -155,7 +156,15 @@ func (di *DatabaseInitializer) Initialize() error {
 
 // createDatabase 创建数据库（如果不存在）
 func (di *DatabaseInitializer) createDatabase() error {
-	dbName := di.config.DB.Database
+    dbName := di.config.DB.Database
+
+    // 可选：强制重建数据库（仅在显式设置 DB_RECREATE=true/1 时生效）
+    if v := strings.ToLower(strings.TrimSpace(os.Getenv("DB_RECREATE"))); v == "true" || v == "1" {
+        di.logger.Printf("检测到 DB_RECREATE 标志，准备删除并重建数据库: %s", dbName)
+        if err := di.db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", dbName)).Error; err != nil {
+            return fmt.Errorf("删除数据库失败: %w", err)
+        }
+    }
 
     // 检查数据库是否存在（使用计数更稳妥避免类型转换问题）
     var count int64

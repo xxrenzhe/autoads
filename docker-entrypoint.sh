@@ -72,6 +72,12 @@ if [ -f "$PRISMA_SCHEMA" ]; then
         prisma db push --accept-data-loss --schema "$PRISMA_SCHEMA" || true
       fi
     fi
+
+    # 可选：执行 Prisma Seed（仅在显式设置 PRISMA_DB_SEED=true 时执行）
+    if [ "$PRISMA_DB_SEED" = "true" ]; then
+      echo "[entrypoint] 执行 Prisma 数据种子: prisma db seed"
+      prisma db seed --schema "$PRISMA_SCHEMA" || echo "[entrypoint] ⚠️ Prisma seed 失败，继续启动"
+    fi
   else
     echo "[entrypoint] 跳过 Prisma 迁移：未设置 DATABASE_URL"
   fi
