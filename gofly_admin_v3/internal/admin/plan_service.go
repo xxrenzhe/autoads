@@ -51,19 +51,19 @@ func (s *PlanService) CreatePlan(req *CreatePlanRequest) (*PlanConfig, error) {
 		return nil, fmt.Errorf("套餐名称已存在")
 	}
 
-	plan := &PlanConfig{
+    plan := &PlanConfig{
 		Name:               req.Name,
 		DisplayName:        req.DisplayName,
 		Description:        req.Description,
 		Price:              req.Price,
 		Duration:           req.Duration,
-		BatchGoEnabled:     req.BatchGoEnabled,
-		SiteRankEnabled:    req.SiteRankEnabled,
-		ChengeLinkEnabled:  req.ChengeLinkEnabled,
-		MaxBatchSize:       req.MaxBatchSize,
-		MaxConcurrency:     req.MaxConcurrency,
-		MaxSiteRankQueries: req.MaxSiteRankQueries,
-		MaxChengeLinkTasks: req.MaxChengeLinkTasks,
+        BatchGoEnabled:       req.BatchGoEnabled,
+        SiteRankEnabled:      req.SiteRankEnabled,
+        AdsCenterEnabled:     req.AdsCenterEnabled,
+        MaxBatchSize:         req.MaxBatchSize,
+        MaxConcurrency:       req.MaxConcurrency,
+        MaxSiteRankQueries:   req.MaxSiteRankQueries,
+        MaxAdsCenterAccounts: req.MaxAdsCenterAccounts,
 		InitialTokens:      req.InitialTokens,
 		DailyTokens:        req.DailyTokens,
 		IsActive:           true,
@@ -113,9 +113,9 @@ func (s *PlanService) UpdatePlan(id uint, req *UpdatePlanRequest) (*PlanConfig, 
 	}
 
 	// 功能权限
-	plan.BatchGoEnabled = req.BatchGoEnabled
-	plan.SiteRankEnabled = req.SiteRankEnabled
-	plan.ChengeLinkEnabled = req.ChengeLinkEnabled
+    plan.BatchGoEnabled = req.BatchGoEnabled
+    plan.SiteRankEnabled = req.SiteRankEnabled
+    plan.AdsCenterEnabled = req.AdsCenterEnabled
 
 	// 参数限制
 	if req.MaxBatchSize > 0 {
@@ -124,12 +124,12 @@ func (s *PlanService) UpdatePlan(id uint, req *UpdatePlanRequest) (*PlanConfig, 
 	if req.MaxConcurrency > 0 {
 		plan.MaxConcurrency = req.MaxConcurrency
 	}
-	if req.MaxSiteRankQueries >= 0 {
-		plan.MaxSiteRankQueries = req.MaxSiteRankQueries
-	}
-	if req.MaxChengeLinkTasks >= 0 {
-		plan.MaxChengeLinkTasks = req.MaxChengeLinkTasks
-	}
+    if req.MaxSiteRankQueries >= 0 {
+        plan.MaxSiteRankQueries = req.MaxSiteRankQueries
+    }
+    if req.MaxAdsCenterAccounts >= 0 {
+        plan.MaxAdsCenterAccounts = req.MaxAdsCenterAccounts
+    }
 
 	// Token相关
 	if req.InitialTokens >= 0 {
@@ -227,13 +227,13 @@ type CreatePlanRequest struct {
 	Description        string  `json:"description"`
 	Price              float64 `json:"price"`
 	Duration           int     `json:"duration" binding:"required,min=1"`
-	BatchGoEnabled     bool    `json:"batchgo_enabled"`
-	SiteRankEnabled    bool    `json:"siterank_enabled"`
-	ChengeLinkEnabled  bool    `json:"chengelink_enabled"`
+    BatchGoEnabled     bool    `json:"batchgo_enabled"`
+    SiteRankEnabled    bool    `json:"siterank_enabled"`
+    AdsCenterEnabled   bool    `json:"adscenter_enabled"`
 	MaxBatchSize       int     `json:"max_batch_size" binding:"required,min=1"`
 	MaxConcurrency     int     `json:"max_concurrency" binding:"required,min=1"`
-	MaxSiteRankQueries int     `json:"max_siterank_queries"`
-	MaxChengeLinkTasks int     `json:"max_chengelink_tasks"`
+    MaxSiteRankQueries   int     `json:"max_siterank_queries"`
+    MaxAdsCenterAccounts int     `json:"max_adscenter_accounts"`
 	InitialTokens      int     `json:"initial_tokens"`
 	DailyTokens        int     `json:"daily_tokens"`
 }
@@ -245,13 +245,13 @@ type UpdatePlanRequest struct {
 	Description        string  `json:"description"`
 	Price              float64 `json:"price"`
 	Duration           int     `json:"duration"`
-	BatchGoEnabled     bool    `json:"batchgo_enabled"`
-	SiteRankEnabled    bool    `json:"siterank_enabled"`
-	ChengeLinkEnabled  bool    `json:"chengelink_enabled"`
+    BatchGoEnabled     bool    `json:"batchgo_enabled"`
+    SiteRankEnabled    bool    `json:"siterank_enabled"`
+    AdsCenterEnabled   bool    `json:"adscenter_enabled"`
 	MaxBatchSize       int     `json:"max_batch_size"`
 	MaxConcurrency     int     `json:"max_concurrency"`
-	MaxSiteRankQueries int     `json:"max_siterank_queries"`
-	MaxChengeLinkTasks int     `json:"max_chengelink_tasks"`
+    MaxSiteRankQueries   int     `json:"max_siterank_queries"`
+    MaxAdsCenterAccounts int     `json:"max_adscenter_accounts"`
 	InitialTokens      int     `json:"initial_tokens"`
 	DailyTokens        int     `json:"daily_tokens"`
 }

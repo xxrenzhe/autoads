@@ -51,12 +51,12 @@ CREATE TABLE IF NOT EXISTS plan_configs (
     
     batchgo_enabled BOOLEAN DEFAULT TRUE,
     siterank_enabled BOOLEAN DEFAULT TRUE,
-    chengelink_enabled BOOLEAN DEFAULT FALSE,
+    adscenter_enabled BOOLEAN DEFAULT FALSE,
     
     max_batch_size INT DEFAULT 10,
     max_concurrency INT DEFAULT 3,
     max_siterank_queries INT DEFAULT 100,
-    max_chengelink_tasks INT DEFAULT 0,
+    max_adscenter_accounts INT DEFAULT 0,
     
     initial_tokens INT DEFAULT 100,
     daily_tokens INT DEFAULT 10,
@@ -138,28 +138,28 @@ VALUES
 ('admin', 'admin@autoads.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin'),
 ('manager', 'manager@autoads.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
 
-INSERT IGNORE INTO plan_configs (name, display_name, description, price, duration, batchgo_enabled, siterank_enabled, chengelink_enabled, max_batch_size, max_concurrency, max_siterank_queries, max_chengelink_tasks, initial_tokens, daily_tokens)
+INSERT IGNORE INTO plan_configs (name, display_name, description, price, duration, batchgo_enabled, siterank_enabled, adscenter_enabled, max_batch_size, max_concurrency, max_siterank_queries, max_adscenter_accounts, initial_tokens, daily_tokens)
 VALUES
-('free', '免费版', '基础功能，适合个人用户试用', 0.00, 30, TRUE, TRUE, FALSE, 5, 1, 50, 0, 50, 5),
-('basic', '基础版', '标准功能，适合小型团队', 29.99, 30, TRUE, TRUE, FALSE, 10, 2, 100, 0, 100, 10),
-('pro', '专业版', '全功能版本，适合专业用户', 99.99, 30, TRUE, TRUE, TRUE, 50, 5, 500, 10, 500, 50),
-('enterprise', '企业版', '企业级功能，无限制使用', 299.99, 30, TRUE, TRUE, TRUE, 200, 10, 2000, 50, 2000, 200);
+('free', '免费套餐（Free）', '“真实点击”功能（初级/静默）；“网站排名”批量查询上限100个/次；包含1,000 tokens', 0.00, 30, TRUE, TRUE, FALSE, 10, 1, 100, 0, 1000, 0),
+('pro', '高级套餐（Pro）', '支持免费套餐全部功能；“真实点击”新增自动化版本；“网站排名”上限500个/次；“自动化广告”支持管理至多10个ads账号；包含10,000 tokens', 298.00, 30, TRUE, TRUE, TRUE, 50, 3, 500, 10, 10000, 0),
+('max', '白金套餐（Max）', '支持高级套餐全部功能；“网站排名”上限5000个/次；“自动化广告”支持管理至多100个ads账号；包含100,000 tokens', 998.00, 30, TRUE, TRUE, TRUE, 200, 10, 5000, 100, 100000, 0);
 
 INSERT IGNORE INTO token_packages (name, token_amount, price, bonus_tokens, description, sort_order)
 VALUES
-('小包装', 100, 9.99, 10, '100 Token + 10 赠送Token', 1),
-('标准包', 500, 39.99, 100, '500 Token + 100 赠送Token', 2),
-('大包装', 1000, 69.99, 300, '1000 Token + 300 赠送Token', 3),
-('超值包', 2000, 119.99, 800, '2000 Token + 800 赠送Token', 4),
-('企业包', 5000, 249.99, 2500, '5000 Token + 2500 赠送Token', 5);
+('小包', 10000, 99.00, 0, '¥99 = 10,000 tokens', 1),
+('中包', 50000, 299.00, 0, '¥299 = 50,000 tokens', 2),
+('大包', 200000, 599.00, 0, '¥599 = 200,000 tokens', 3),
+('超大包', 500000, 999.00, 0, '¥999 = 500,000 tokens', 4);
 
 INSERT IGNORE INTO token_consumption_rules (service, action, token_cost, description)
 VALUES
 ('batchgo', 'basic_task', 1, 'BatchGo基础任务每个URL消费1个Token'),
 ('batchgo', 'advanced_task', 2, 'BatchGo高级任务每个URL消费2个Token'),
 ('siterank', 'query', 1, 'SiteRank查询每个域名消费1个Token'),
-('chengelink', 'extract_link', 1, '链接提取每个链接消费1个Token'),
-('chengelink', 'update_ad', 3, '广告更新每个广告消费3个Token'),
+('adscenter', 'extract_link', 1, '自动化广告：链接提取消费1个Token'),
+('adscenter', 'update_ad', 3, '自动化广告：广告更新每个广告消费3个Token'),
+-- 兼容历史服务名（chengelink），与 adscenter 等价
+('chengelink', 'extract_link', 1, '兼容：chengelink 链接提取消费1个Token'),
+('chengelink', 'update_ad', 3, '兼容：chengelink 广告更新每个广告消费3个Token'),
 ('invitation', 'reward', 50, '邀请成功奖励50个Token'),
 ('checkin', 'daily', 10, '每日签到奖励10个Token');
-

@@ -106,15 +106,15 @@ type PlanConfig struct {
 	Duration    int     `json:"duration" gorm:"default:30"` // 天数
 
 	// 功能权限
-	BatchGoEnabled    bool `json:"batchgo_enabled" gorm:"default:true"`
-	SiteRankEnabled   bool `json:"siterank_enabled" gorm:"default:true"`
-	ChengeLinkEnabled bool `json:"chengelink_enabled" gorm:"default:false"`
+    BatchGoEnabled    bool `json:"batchgo_enabled" gorm:"default:true"`
+    SiteRankEnabled   bool `json:"siterank_enabled" gorm:"default:true"`
+    AdsCenterEnabled  bool `json:"adscenter_enabled" gorm:"column:adscenter_enabled;default:false"`
 
 	// 参数限制
 	MaxBatchSize       int `json:"max_batch_size" gorm:"default:10"`
 	MaxConcurrency     int `json:"max_concurrency" gorm:"default:3"`
-	MaxSiteRankQueries int `json:"max_siterank_queries" gorm:"default:100"`
-	MaxChengeLinkTasks int `json:"max_chengelink_tasks" gorm:"default:0"`
+    MaxSiteRankQueries   int `json:"max_siterank_queries" gorm:"default:100"`
+    MaxAdsCenterAccounts int `json:"max_adscenter_accounts" gorm:"column:max_adscenter_accounts;default:0"`
 
 	// Token相关
 	InitialTokens int `json:"initial_tokens" gorm:"default:100"`
@@ -142,7 +142,7 @@ type TokenPackage struct {
 // TokenConsumptionRule Token消费规则
 type TokenConsumptionRule struct {
 	ID          uint      `json:"id" gorm:"primaryKey"`
-	Service     string    `json:"service" gorm:"type:varchar(50);not null"` // batchgo, siterank, chengelink
+    Service     string    `json:"service" gorm:"type:varchar(50);not null"` // batchgo, siterank, adscenter
 	Action      string    `json:"action" gorm:"type:varchar(50);not null"`  // 具体操作
 	TokenCost   int       `json:"token_cost" gorm:"not null"`
 	Description string    `json:"description" gorm:"type:text"`
