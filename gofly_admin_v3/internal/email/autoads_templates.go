@@ -34,14 +34,14 @@ func (es *EmailService) GetAutoAdsTemplate(name string) (*EmailTemplate, error) 
 			Variables:   []string{"Username", "PlanName", "ExpiryDate", "RenewURL"},
 		}, nil
 
-	case "invitation_reward":
-		return &EmailTemplate{
-			Name:        "invitation_reward",
-			Subject:     "邀请奖励已到账 - {{.AppName}}",
-			HTMLContent: invitationRewardHTMLTemplate,
-			TextContent: invitationRewardTextTemplate,
-			Variables:   []string{"Username", "InviteeName", "RewardTokens", "RewardDays", "AppName"},
-		}, nil
+    case "invitation_reward":
+        return &EmailTemplate{
+            Name:        "invitation_reward",
+            Subject:     "邀请奖励已到账 - {{.AppName}}",
+            HTMLContent: invitationRewardHTMLTemplate,
+            TextContent: invitationRewardTextTemplate,
+            Variables:   []string{"Username", "InviteeName", "RewardDays", "AppName"},
+        }, nil
 
 	case "security_alert":
 		return &EmailTemplate{
