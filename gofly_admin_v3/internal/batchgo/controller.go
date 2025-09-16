@@ -251,7 +251,7 @@ func (c *Controller) GetTasks(ctx *gin.Context) {
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param request body LegacySilentRequest true "Silent请求"
+// @Param request body LegacySilentRequest true "Silent请求（向后兼容，支持 proxyUrl/Referer 字段）"
 // @Success 200 {object} gin.H
 // @Router /api/batchopen/silent-start [post]
 func (c *Controller) SilentStart(ctx *gin.Context) {
@@ -264,32 +264,52 @@ func (c *Controller) SilentStart(ctx *gin.Context) {
 		return
 	}
 
-	var req LegacySilentRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid_request",
-			"message": err.Error(),
-		})
-		return
-	}
+    // 扩展载荷：兼容 legacy 字段并支持 proxyUrl/cycleCount/referer*
+    type SilentStartPayload struct {
+        LegacySilentRequest
+        ProxyURL            string            `json:"proxyUrl"`
+        CycleCount          int               `json:"cycleCount"`
+        RefererOption       string            `json:"refererOption"`
+        SelectedSocialMedia string            `json:"selectedSocialMedia"`
+        CustomReferer       string            `json:"customReferer"`
+        ExtraHeaders        map[string]string `json:"headers"`
+    }
+    var req SilentStartPayload
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, gin.H{
+            "error":   "invalid_request",
+            "message": err.Error(),
+        })
+        return
+    }
 
 	// 转换为新的请求格式
-	newReq := &CreateTaskRequest{
-		Name: "Silent批处理任务",
-		Mode: ModeSilent,
-		URLs: req.URLs,
-		Config: BatchTaskConfig{
-			Silent: &SilentConfig{
-				Concurrency:   req.Concurrency,
-				Timeout:       req.Timeout,
-				RetryCount:    req.RetryCount,
-				UseProxy:      req.UseProxy,
-				ProxyRotation: req.ProxyRotation,
-				UserAgent:     req.UserAgent,
-				Headers:       req.Headers,
-			},
-		},
-	}
+    // 生成 Referer 头（可选）
+    headers := req.Headers
+    if headers == nil { headers = map[string]string{} }
+    if req.RefererOption == "custom" && strings.TrimSpace(req.CustomReferer) != "" {
+        headers["Referer"] = strings.TrimSpace(req.CustomReferer)
+    }
+    // TODO: 社媒 referer 可按 selectedSocialMedia 映射预置值，这里保留透传逻辑
+
+    newReq := &CreateTaskRequest{
+        Name: "Silent批处理任务",
+        Mode: ModeSilent,
+        URLs: req.URLs,
+        Config: BatchTaskConfig{
+            Silent: &SilentConfig{
+                Concurrency:   req.Concurrency,
+                Timeout:       req.Timeout,
+                RetryCount:    req.RetryCount,
+                UseProxy:      req.UseProxy,
+                ProxyRotation: req.ProxyRotation,
+                UserAgent:     req.UserAgent,
+                Headers:       headers,
+                ProxyAPI:      strings.TrimSpace(req.ProxyURL),
+                RotatePerRound: req.ProxyRotation, // 轮训即按轮处理
+            },
+        },
+    }
 
 	// 创建并启动任务
 	task, err := c.service.CreateTask(userID.(string), newReq)

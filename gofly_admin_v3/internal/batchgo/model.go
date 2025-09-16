@@ -105,6 +105,11 @@ type SilentConfig struct {
     ProxyRotation bool              `json:"proxy_rotation"` // 代理轮询
     UserAgent     string            `json:"user_agent"`     // User Agent
     Headers       map[string]string `json:"headers"`        // 自定义头部
+    // 代理来源：支持 API 返回代理列表或直接提供列表
+    ProxyAPI      string            `json:"proxy_api,omitempty"` // 代理API（返回代理IP列表或单个代理）
+    ProxyList     []string          `json:"proxy_list,omitempty"` // 直接提供的代理列表（优先于 ProxyAPI）
+    // 轮训策略：为 true 时按“每个代理一轮URL”的方式依次执行
+    RotatePerRound bool             `json:"rotate_per_round,omitempty"`
     // 当失败占比超过该阈值（百分比，0-100）时，停止剩余并切换为 AutoClick 任务
     FailRateThreshold int `json:"fail_rate_threshold,omitempty"`
 }

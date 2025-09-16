@@ -1236,6 +1236,39 @@ func setupAPIRoutes(r *gin.Engine) {
                 }
             })
 
+            // 快照：提供降级轮询（全量同步）接口
+            // GET /api/v1/batchopen/autoclick/executions/snapshot?userId=&scheduleId=&executionId=
+            v1.GET("/batchopen/autoclick/executions/snapshot", func(c *gin.Context) {
+                uid := strings.TrimSpace(c.Query("userId"))
+                sid := strings.TrimSpace(c.Query("scheduleId"))
+                eid := strings.TrimSpace(c.Query("executionId"))
+                q := gormDB.Model(&autoclick.AutoClickExecution{})
+                if eid != "" {
+                    var exec autoclick.AutoClickExecution
+                    if err := q.Where("id=?", eid).First(&exec).Error; err != nil {
+                        c.JSON(404, gin.H{"code": 404, "message": "not_found"}); return
+                    }
+                    c.JSON(200, gin.H{"code":0, "data": gin.H{
+                        "type":"execution_update", "id": exec.ID, "scheduleId": exec.ScheduleID, "status": exec.Status,
+                        "progress": exec.Progress, "processedItems": exec.Success+exec.Fail, "totalItems": exec.Total,
+                        "timestamp": time.Now().UnixMilli(),
+                    }})
+                    return
+                }
+                if sid == "" && uid == "" { c.JSON(400, gin.H{"code":1001, "message":"scheduleId or userId required"}); return }
+                if sid != "" { q = q.Where("schedule_id = ?", sid) }
+                if uid != "" { q = q.Where("user_id = ?", uid) }
+                var exec autoclick.AutoClickExecution
+                if err := q.Order("updated_at DESC").First(&exec).Error; err != nil {
+                    c.JSON(404, gin.H{"code": 404, "message": "not_found"}); return
+                }
+                c.JSON(200, gin.H{"code":0, "data": gin.H{
+                    "type":"execution_update", "id": exec.ID, "scheduleId": exec.ScheduleID, "status": exec.Status,
+                    "progress": exec.Progress, "processedItems": exec.Success+exec.Fail, "totalItems": exec.Total,
+                    "timestamp": time.Now().UnixMilli(),
+                }})
+            })
+
 			// POST /api/v1/batchopen/proxy-url-validate { proxyUrl }
 			batchopen.POST("/proxy-url-validate", func(c *gin.Context) {
 				var body struct{ ProxyURL string `json:"proxyUrl"` }
@@ -1513,10 +1546,10 @@ func setupAPIRoutes(r *gin.Engine) {
 			}
 
 			// ===== ADSCENTER 原子端点（链接替换 check/execute） =====
-            adscenter := v1.Group("/adscenter")
+            adscenterRG := v1.Group("/adscenter")
             {
                 // 预检：按 extract_link + update_ads 规则估算总消耗
-                adscenter.POST("/link:update:check", func(c *gin.Context) {
+                adscenterRG.POST("/link:update:check", func(c *gin.Context) {
 					var body struct {
 						AffiliateLinks   []string `json:"affiliate_links"`
 						AdsPowerProfile  string   `json:"adspower_profile"`
@@ -1530,9 +1563,9 @@ func setupAPIRoutes(r *gin.Engine) {
 					if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
 					if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
 					// 估算消耗：分别按 extract 与 update_ads 规则
-					_, balance1, requiredExtract, err1 := tokenSvc.CheckTokenSufficiency(userID, "chengelink", "extract", len(body.AffiliateLinks))
+                    _, balance1, requiredExtract, err1 := tokenSvc.CheckTokenSufficiency(userID, "adscenter", "extract_link", len(body.AffiliateLinks))
 					if err1 != nil { c.JSON(500, gin.H{"code": 500, "message": err1.Error()}); return }
-					_, _, requiredUpdate, err2 := tokenSvc.CheckTokenSufficiency(userID, "chengelink", "update_ads", len(body.AffiliateLinks))
+                    _, _, requiredUpdate, err2 := tokenSvc.CheckTokenSufficiency(userID, "adscenter", "update_ads", len(body.AffiliateLinks))
 					if err2 != nil { c.JSON(500, gin.H{"code": 500, "message": err2.Error()}); return }
 					required := requiredExtract + requiredUpdate
 					sufficient := balance1 >= required
@@ -1540,7 +1573,7 @@ func setupAPIRoutes(r *gin.Engine) {
                 })
 
                 // 执行：创建并启动任务（任务内部阶段性扣费），保持原子化在服务内部
-                adscenter.POST("/link:update:execute", func(c *gin.Context) {
+                adscenterRG.POST("/link:update:execute", func(c *gin.Context) {
 					var body struct {
 						Name             string   `json:"name"`
 						AffiliateLinks   []string `json:"affiliate_links"`
@@ -1571,15 +1604,15 @@ func setupAPIRoutes(r *gin.Engine) {
                     }
 					// 创建任务
                 creq := &adscenter.CreateTaskRequest{ Name: body.Name, AffiliateLinks: body.AffiliateLinks, AdsPowerProfile: body.AdsPowerProfile, GoogleAdsAccount: body.GoogleAdsAccount }
-					task, err := chengelinkService.CreateTask(userID, creq)
+                    task, err := adscenterService.CreateTask(userID, creq)
 					if err != nil {
                         if auditSvc != nil { _ = auditSvc.LogAdsCenterAction(userID, "create", "", map[string]any{"links": len(body.AffiliateLinks), "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
 						c.JSON(500, gin.H{"code": 500, "message": err.Error()})
 						return
 					}
 					// 启动任务
-					go func() {
-						if err := chengelinkService.StartTask(task.ID); err != nil {
+                    go func() {
+                        if err := adscenterService.StartTask(task.ID); err != nil {
                             if auditSvc != nil { _ = auditSvc.LogAdsCenterAction(userID, "start", task.ID, map[string]any{"links": len(body.AffiliateLinks), "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
 						} else {
                             if auditSvc != nil { _ = auditSvc.LogAdsCenterAction(userID, "start", task.ID, map[string]any{"links": len(body.AffiliateLinks)}, c.ClientIP(), c.Request.UserAgent(), true, "", 0) }
@@ -1591,7 +1624,7 @@ func setupAPIRoutes(r *gin.Engine) {
 
                 // ===== v1: minimal accounts/configurations/executions =====
                 // GET /api/v1/adscenter/accounts
-                adscenter.GET("/accounts", func(c *gin.Context) {
+                adscenterRG.GET("/accounts", func(c *gin.Context) {
                     if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
                     userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
                     var rows []AdsAccount
@@ -1602,7 +1635,7 @@ func setupAPIRoutes(r *gin.Engine) {
                 })
 
                 // GET /api/v1/adscenter/configurations
-                adscenter.GET("/configurations", func(c *gin.Context) {
+                adscenterRG.GET("/configurations", func(c *gin.Context) {
                     if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
                     userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
                     var rows []AdsConfiguration
@@ -1613,7 +1646,7 @@ func setupAPIRoutes(r *gin.Engine) {
                 })
 
                 // POST /api/v1/adscenter/configurations
-                adscenter.POST("/configurations", func(c *gin.Context) {
+                adscenterRG.POST("/configurations", func(c *gin.Context) {
                     if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
                     userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
                     var body struct{ Name string `json:"name"`; Description string `json:"description"`; Payload map[string]any `json:"payload"` }
@@ -1627,7 +1660,7 @@ func setupAPIRoutes(r *gin.Engine) {
                 })
 
                 // POST /api/v1/adscenter/executions（分阶段扣费：每处理1项先扣1次，失败立即退款；附带审计分类）
-                adscenter.POST("/executions", func(c *gin.Context) {
+                adscenterRG.POST("/executions", func(c *gin.Context) {
                     if gormDB == nil || tokenSvc == nil { c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"}); return }
                     userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
                     var body struct{ ConfigurationID string `json:"configurationId"` }
@@ -1699,7 +1732,7 @@ func setupAPIRoutes(r *gin.Engine) {
                 })
 
                 // GET /api/v1/adscenter/executions
-                adscenter.GET("/executions", func(c *gin.Context) {
+                adscenterRG.GET("/executions", func(c *gin.Context) {
                     if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
                     userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
                     var rows []AdsExecution
@@ -1710,7 +1743,7 @@ func setupAPIRoutes(r *gin.Engine) {
                 })
 
                 // GET /api/v1/adscenter/executions/:id
-                adscenter.GET("/executions/:id", func(c *gin.Context) {
+                adscenterRG.GET("/executions/:id", func(c *gin.Context) {
                     if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
                     userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
                     id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"code": 400, "message": "missing id"}); return }

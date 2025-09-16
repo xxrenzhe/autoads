@@ -1,12 +1,29 @@
 package gf
 
 import (
-	"gofly-admin-v3/utils/tools/gconv"
+    "strconv"
+    "strings"
+    "gofly-admin-v3/utils/tools/gconv"
 )
 
 // any数据类型转成int
 func Int(i interface{}) int {
-	return gconv.Int(i)
+    return gconv.Int(i)
+}
+
+// IntDefault 将任意类型转成 int；若为空/无法解析则返回默认值
+func IntDefault(i interface{}, def int) int {
+    if i == nil {
+        return def
+    }
+    s := strings.TrimSpace(gconv.String(i))
+    if s == "" {
+        return def
+    }
+    if n, err := strconv.Atoi(s); err == nil {
+        return n
+    }
+    return def
 }
 
 // any数据类型转成int8

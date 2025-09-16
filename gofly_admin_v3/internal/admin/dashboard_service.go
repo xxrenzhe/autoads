@@ -145,7 +145,7 @@ func (s *DashboardService) GetTokenTrend(days int) ([]DailyTokenStats, error) {
 
 // GetTaskTrend 获取任务使用趋势
 func (s *DashboardService) GetTaskTrend(days int) ([]DailyTaskStats, error) {
-	var stats []DailyTaskStats
+    var stats []DailyTaskStats
 
 	// 获取BatchGo任务趋势
 	batchQuery := `
@@ -176,10 +176,27 @@ func (s *DashboardService) GetTaskTrend(days int) ([]DailyTaskStats, error) {
 		GROUP BY DATE(created_at)
 	`
 
-	var siteRankStats []DailyTaskStats
-	if err := s.db.Raw(siteRankQuery, days).Scan(&siteRankStats).Error; err != nil {
-		return nil, err
-	}
+    var siteRankStats []DailyTaskStats
+    if err := s.db.Raw(siteRankQuery, days).Scan(&siteRankStats).Error; err != nil {
+        return nil, err
+    }
+
+    // 获取 AdsCenter 任务趋势
+    adsCenterQuery := `
+        SELECT 
+            DATE(created_at) as date,
+            0 as batch_tasks,
+            0 as siterank_queries,
+            COUNT(*) as adscenter_tasks
+        FROM adscenter_tasks 
+        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+        GROUP BY DATE(created_at)
+    `
+
+    var adsCenterStats []DailyTaskStats
+    if err := s.db.Raw(adsCenterQuery, days).Scan(&adsCenterStats).Error; err != nil {
+        return nil, err
+    }
 
 	// 合并数据（简化实现）
 	dateMap := make(map[string]*DailyTaskStats)
@@ -193,10 +210,10 @@ func (s *DashboardService) GetTaskTrend(days int) ([]DailyTaskStats, error) {
         }
 	}
 
-	for _, stat := range siteRankStats {
-		if existing, exists := dateMap[stat.Date]; exists {
-			existing.SiteRankQueries = stat.SiteRankQueries
-		} else {
+    for _, stat := range siteRankStats {
+        if existing, exists := dateMap[stat.Date]; exists {
+            existing.SiteRankQueries = stat.SiteRankQueries
+        } else {
             dateMap[stat.Date] = &DailyTaskStats{
                 Date:            stat.Date,
                 BatchTasks:      0,
@@ -206,12 +223,25 @@ func (s *DashboardService) GetTaskTrend(days int) ([]DailyTaskStats, error) {
         }
     }
 
-	// 转换为切片
-	for _, stat := range dateMap {
-		stats = append(stats, *stat)
-	}
+    for _, stat := range adsCenterStats {
+        if existing, exists := dateMap[stat.Date]; exists {
+            existing.AdsCenterTasks = stat.AdsCenterTasks
+        } else {
+            dateMap[stat.Date] = &DailyTaskStats{
+                Date:            stat.Date,
+                BatchTasks:      0,
+                SiteRankQueries: 0,
+                AdsCenterTasks:  stat.AdsCenterTasks,
+            }
+        }
+    }
 
-	return stats, nil
+	// 转换为切片
+    for _, stat := range dateMap {
+        stats = append(stats, *stat)
+    }
+
+    return stats, nil
 }
 
 // GetTopUsers 获取用户排行榜

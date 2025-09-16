@@ -224,8 +224,9 @@
 - 执行引擎 V2（部分完成）：
   - 已接入 Node/浏览器执行器（支持代理/Referer/超时/等待/截图/分类）。
   - 待完善：动作脚本（click/type/evaluate 等）、稳定性与资源管理、截图/指标持久化、代理池健康检查与更细审计分类。
-- SSE 可靠性与降级（未完成）：
-  - 前端在 SSE 断开场景缺少自动“降级轮询 + 周期性全量同步”补偿策略，需在 `useAutoClickLiveChannel` 等处补齐并做断线重连/抖动控制。
+- SSE 可靠性与降级（部分完成）：
+  - 已实现：SSE 断线自动降级为快照轮询（/api/v1/batchopen/autoclick/executions/snapshot，经 BFF /api/autoclick/snapshot 透传），并进行事件去重；
+  - 待完善：更细的抖动控制、按执行/小时维度的“定期全量同步”补偿策略与 UI 级提示。
 - 并发池与隔离：
   - 将 per-tick 并发提升为长期 HTTP/Browser 池，并支持用户/计划维度并发隔离与队列可视化。
 - 压测与回归（未完成）：
