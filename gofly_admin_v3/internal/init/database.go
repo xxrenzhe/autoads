@@ -354,14 +354,48 @@ func splitSQLStatements(sql string) []string {
     return res
 }
 
+// stripLeadingSQLComments removes leading SQL comments ("-- ..." and /* ... */)
+// and whitespace so prefix detection works regardless of comment headers.
+func stripLeadingSQLComments(s string) string {
+    t := strings.TrimSpace(s)
+    for {
+        t = strings.TrimLeft(t, " \t\r\n")
+        if t == "" {
+            return t
+        }
+        // Line comment: -- ...\n
+        if strings.HasPrefix(t, "--") {
+            if idx := strings.IndexByte(t, '\n'); idx >= 0 {
+                t = t[idx+1:]
+                continue
+            }
+            // Only comments remaining
+            return ""
+        }
+        // Block comment: /* ... */
+        if strings.HasPrefix(t, "/*") {
+            if idx := strings.Index(t, "*/"); idx >= 0 {
+                t = t[idx+2:]
+                continue
+            }
+            // Unclosed comment; treat as empty
+            return ""
+        }
+        break
+    }
+    return strings.TrimLeft(t, " \t\r\n")
+}
+
 // handleCompatibilityStatements 处理不兼容的 IF NOT EXISTS 语法，返回是否已处理
 func (di *DatabaseInitializer) handleCompatibilityStatements(stmt string) (bool, error) {
-    upper := strings.ToUpper(strings.TrimSpace(stmt))
+    // Strip leading comments so detection works with commented headers
+    cleaned := stripLeadingSQLComments(stmt)
+    upper := strings.ToUpper(strings.TrimSpace(cleaned))
     // 处理 CREATE INDEX IF NOT EXISTS
     if strings.HasPrefix(upper, "CREATE INDEX IF NOT EXISTS") {
         // CREATE INDEX IF NOT EXISTS idx ON table (cols)
-        re := regexp.MustCompile(`(?i)^CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+([`+"`"+`\w]+)\s+ON\s+([`+"`"+`\w\.]+)\s*\((.+)\)$`)
-        m := re.FindStringSubmatch(stmt)
+        re := regexp.MustCompile(`(?is)^CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+([`+"`"+`\w]+)\s+ON\s+([`+"`"+`\w\.]+)\s*\((.+)\)$`)
+        m := re.FindStringSubmatch(cleaned)
         if len(m) == 4 {
             idx := strings.Trim(m[1], "`")
             tbl := strings.Trim(m[2], "`")
@@ -382,14 +416,14 @@ func (di *DatabaseInitializer) handleCompatibilityStatements(stmt string) (bool,
     if strings.HasPrefix(upper, "ALTER TABLE ") && strings.Contains(upper, "IF NOT EXISTS") {
         // 提取表名
         reTbl := regexp.MustCompile(`(?i)^ALTER\s+TABLE\s+([`+"`"+`\w\.]+)\s`)
-        mt := reTbl.FindStringSubmatch(stmt)
+        mt := reTbl.FindStringSubmatch(cleaned)
         if len(mt) < 2 {
             return false, nil
         }
         tbl := strings.Trim(mt[1], "`")
 
         // 按行拆分处理 ADD COLUMN IF NOT EXISTS 与 ADD INDEX IF NOT EXISTS
-        lines := strings.Split(stmt, "\n")
+        lines := strings.Split(cleaned, "\n")
         var leftovers []string
         // ADD COLUMN IF NOT EXISTS <col> <def>
         reAddCol := regexp.MustCompile(`(?i)ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+([`+"`"+`\w]+)\s+(.*?)(,)?\s*$`)

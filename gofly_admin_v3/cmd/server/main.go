@@ -1052,169 +1052,19 @@ func setupAPIRoutes(r *gin.Engine) {
             batchGroup.GET("/autoclick/tasks/:id/progress", handleAutoClickProgress)
         }
 
-			// ===== BATCHOPEN 原子端点（silent 模式 check/execute） =====
+        // ===== BATCHOPEN 原子端点迁移到 internal/app =====
+        app.RegisterBatchOpenAtomic(v1, batchOpenPlanLimiter, authMiddleware(), tokenSvc, batchService, gormDB, storeRedis, auditSvc)
+
 			batchopen := v1.Group("/batchopen")
 			if batchOpenPlanLimiter != nil {
 				batchopen.Use(batchOpenPlanLimiter)
 			}
 			{
-			// 预检：根据 urls 与 cycleCount 计算总量并检查余额
-			batchopen.POST("/silent:check", func(c *gin.Context) {
-				var body struct {
-					URLs       []string `json:"urls"`
-					CycleCount int      `json:"cycleCount"`
-					AccessMode string   `json:"accessMode"` // http | puppeteer
-				}
-				if err := c.ShouldBindJSON(&body); err != nil || len(body.URLs) == 0 {
-					c.JSON(400, gin.H{"code": 400, "message": "invalid request: urls required"})
-					return
-				}
-                userID := c.GetString("user_id")
-                if userID == "" {
-                    c.JSON(401, gin.H{"code": 401, "message": "unauthorized"})
-                    return
-                }
-                if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
-                cycle := body.CycleCount
-				if cycle <= 0 { cycle = 1 }
-				action := "http"
-				if body.AccessMode == "puppeteer" { action = "puppeteer" }
-				totalQty := len(body.URLs) * cycle
-				sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "batchgo", action, totalQty)
-				if err != nil {
-					c.JSON(500, gin.H{"code": 500, "message": err.Error()})
-					return
-				}
-				c.JSON(200, gin.H{"sufficient": sufficient, "balance": balance, "required": required, "quantity": totalQty})
-			})
+			// moved to internal/app.RegisterBatchOpenAtomic
 
-			// 原子执行：扣费 + 创建并启动 silent 任务
-			batchopen.POST("/silent:execute", func(c *gin.Context) {
-				var body struct {
-					TaskName   string            `json:"taskName"`
-					URLs       []string          `json:"urls"`
-					CycleCount int               `json:"cycleCount"`
-					AccessMode string            `json:"accessMode"` // http | puppeteer
-					Silent     map[string]any    `json:"silent"`
-				}
-				if err := c.ShouldBindJSON(&body); err != nil || len(body.URLs) == 0 {
-					c.JSON(400, gin.H{"code": 400, "message": "invalid request: urls required"})
-					return
-				}
-				userID := c.GetString("user_id")
-				if userID == "" {
-					c.JSON(401, gin.H{"code": 401, "message": "unauthorized"})
-					return
-				}
-				cycle := body.CycleCount
-				if cycle <= 0 { cycle = 1 }
-				action := "http"
-				if body.AccessMode == "puppeteer" { action = "puppeteer" }
-				totalQty := len(body.URLs) * cycle
-				// 幂等
-				iKey := c.GetHeader("Idempotency-Key")
-                if iKey != "" {
-                    if gormDB != nil {
-                        res := gormDB.Exec("INSERT IGNORE INTO idempotency_requests(user_id, endpoint, idem_key, status) VALUES (?,?,?,?)", userID, "batchopen.silent.execute", iKey, "PENDING")
-                        if res.Error == nil && res.RowsAffected == 0 { c.JSON(200, gin.H{"duplicate": true, "message": "duplicate request"}); return }
-                    }
-                    if storeRedis != nil {
-                        ctx := c.Request.Context()
-                        key := "autoads:idem_batch:" + userID + ":" + iKey
-                        ok, _ := storeRedis.GetClient().SetNX(ctx, key, "locked", 10*time.Minute).Result()
-                        if !ok { c.JSON(200, gin.H{"duplicate": true, "message": "duplicate request"}); return }
-                        _ = storeRedis.Expire(ctx, key, 10*time.Minute)
-                    }
-                }
-				// 再次余额校验
-				sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "batchgo", action, totalQty)
-				if err != nil { c.JSON(500, gin.H{"code": 500, "message": err.Error()}); return }
-				if !sufficient { c.JSON(402, gin.H{"code": 402, "message": "INSUFFICIENT_TOKENS", "required": required, "balance": balance}); return }
-				// 扣费
-				if err := tokenSvc.ConsumeTokensByService(userID, "batchgo", action, totalQty, "batchopen.silent"); err != nil {
-					c.JSON(402, gin.H{"code": 402, "message": err.Error(), "required": required, "balance": balance})
-					return
-				}
-				// 创建任务
-				cfg := batchgo.BatchTaskConfig{ Silent: &batchgo.SilentConfig{ Concurrency: 5, Timeout: 30, RetryCount: 3 } }
-				// 合并用户传参（非严格）
-				if body.Silent != nil {
-					if v, ok := body.Silent["concurrency"].(float64); ok { cfg.Silent.Concurrency = int(v) }
-					if v, ok := body.Silent["timeout"].(float64); ok { cfg.Silent.Timeout = int(v) }
-					if v, ok := body.Silent["retry_count"].(float64); ok { cfg.Silent.RetryCount = int(v) }
-				}
-				createReq := &batchgo.CreateTaskRequest{ Name: body.TaskName, Mode: batchgo.ModeSilent, URLs: body.URLs, Config: cfg }
-				task, err := batchService.CreateTask(userID, createReq)
-				if err != nil {
-					// 失败退款（best-effort）
-					_ = tokenSvc.AddTokens(userID, required, "refund", "batchopen create failed", "")
-					if auditSvc != nil { _ = auditSvc.LogBatchTaskAction(userID, "create", "", map[string]any{"urls": len(body.URLs), "mode": "silent", "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
-					c.JSON(500, gin.H{"code": 500, "message": err.Error()})
-					return
-				}
-				// 启动任务（异步）
-				go func() {
-					if err := batchService.StartTask(userID, task.ID); err != nil {
-						// 启动失败退款（best-effort）
-						_ = tokenSvc.AddTokens(userID, required, "refund", "batchopen start failed", task.ID)
-						if auditSvc != nil { _ = auditSvc.LogBatchTaskAction(userID, "start", task.ID, map[string]any{"urls": len(body.URLs), "mode": "silent", "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
-					} else {
-						if auditSvc != nil { _ = auditSvc.LogBatchTaskAction(userID, "start", task.ID, map[string]any{"urls": len(body.URLs), "mode": "silent"}, c.ClientIP(), c.Request.UserAgent(), true, "", 0) }
-					}
-				}()
-                newBalance, _ := tokenSvc.GetTokenBalance(userID)
-                c.Header("X-Tokens-Consumed", fmt.Sprintf("%d", required))
-                c.Header("X-Tokens-Balance", fmt.Sprintf("%d", newBalance))
-                if iKey != "" {
-                    if gormDB != nil { _ = gormDB.Exec("UPDATE idempotency_requests SET status='DONE' WHERE user_id=? AND endpoint=? AND idem_key=?", userID, "batchopen.silent.execute", iKey).Error }
-                    if storeRedis != nil { _ = storeRedis.Set(c.Request.Context(), "autoads:idem_batch:"+userID+":"+iKey, "done", 24*time.Hour) }
-                }
-				c.JSON(200, gin.H{"taskId": task.ID, "consumed": required, "balance": newBalance, "status": "running"})
-			})
+			// moved to internal/app.RegisterBatchOpenAtomic
 
-			// 任务进度查询（最小集：基于 batch_tasks 聚合）
-			batchopen.GET("/tasks/:id", func(c *gin.Context) {
-				userID := c.GetString("user_id")
-				if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
-				if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
-				taskID := c.Param("id")
-				if taskID == "" { c.JSON(400, gin.H{"code": 400, "message": "missing id"}); return }
-                if task, err := batchService.GetTask(userID, taskID); err == nil {
-                    processed := task.ProcessedCount
-                    total := task.URLCount
-                    percent := 0
-                    if total > 0 { percent = int(float64(processed) / float64(total) * 100.0) }
-                    pending := total - processed
-                    message := task.ErrorMessage
-                    if message == "" {
-                        switch task.Status {
-                        case batchgo.StatusPending:
-                            message = "任务等待中"
-                        case batchgo.StatusRunning:
-                            message = "任务运行中"
-                        case batchgo.StatusCompleted:
-                            message = "任务已完成"
-                        case batchgo.StatusFailed:
-                            message = "任务失败"
-                        case batchgo.StatusCancelled:
-                            message = "任务已取消"
-                        case batchgo.StatusPaused:
-                            message = "任务已暂停"
-                        }
-                    }
-                    c.JSON(200, gin.H{"success": true, "status": string(task.Status), "progress": percent, "successCount": task.SuccessCount, "failCount": task.FailedCount, "total": total, "pendingCount": pending, "message": message, "timestamp": time.Now().UnixMilli(), "serverTime": time.Now().Format(time.RFC3339)})
-                    return
-                }
-                // 聚合新三表
-                dao := batchgo.NewDAO(gormDB)
-                if prog, err := dao.AggregateProgress(taskID); err == nil {
-                    percent := 0
-                    if prog.Total > 0 { percent = int(float64(prog.Success+prog.Fail) / float64(prog.Total) * 100.0) }
-                    c.JSON(200, gin.H{"success": true, "status": "running", "progress": percent, "successCount": prog.Success, "failCount": prog.Fail, "total": prog.Total, "pendingCount": prog.Running, "message": "聚合进度", "timestamp": time.Now().UnixMilli(), "serverTime": time.Now().Format(time.RFC3339)})
-                    return
-                }
-                c.JSON(404, gin.H{"success": false, "message": "TASK_NOT_FOUND"})
-            })
+            // moved to internal/app.RegisterBatchOpenAtomic: GET /batchopen/tasks/:id
 
 			// ===== 为 Next BFF 提供的统一端点（保持合同） =====
 			// POST /api/v1/batchopen/start?type=silent|basic|autoclick
@@ -1275,36 +1125,7 @@ func setupAPIRoutes(r *gin.Engine) {
                 ac.POST("/schedules/:id/disable", ctrl.DisableSchedule)
             }
 
-            // SSE: /api/v1/batchopen/tasks/:id/live （最小实现：轮询DB推送）
-            v1.GET("/batchopen/tasks/:id/live", func(c *gin.Context) {
-                id := c.Param("id"); if id == "" { c.String(400, "missing id"); return }
-                c.Writer.Header().Set("Content-Type", "text/event-stream")
-                c.Writer.Header().Set("Cache-Control", "no-cache")
-                c.Writer.Header().Set("Connection", "keep-alive")
-                if f, ok := c.Writer.(http.Flusher); ok {
-                    ticker := time.NewTicker(1 * time.Second)
-                    defer ticker.Stop()
-                    for i := 0; i < 300; i++ { // 最多5分钟
-                        select {
-                        case <-c.Request.Context().Done():
-                            return
-                        case <-ticker.C:
-                            var exec autoclick.AutoClickExecution
-                            if err := gormDB.Where("id = ?", id).First(&exec).Error; err != nil {
-                                fmt.Fprintf(c.Writer, "data: %s\n\n", `{"type":"not_found"}`)
-                                f.Flush();
-                                return
-                            }
-                            payload := fmt.Sprintf(`{"type":"execution_update","id":"%s","status":"%s","progress":%d,"processedItems":%d,"totalItems":%d}`, exec.ID, exec.Status, exec.Progress, exec.Success+exec.Fail, exec.Total)
-                            fmt.Fprintf(c.Writer, "data: %s\n\n", payload)
-                            f.Flush()
-                            if strings.EqualFold(exec.Status, "completed") { return }
-                        }
-                    }
-                } else {
-                    c.String(500, "stream unsupported")
-                }
-            })
+            // moved to internal/app.RegisterBatchOpenAtomic: GET /batchopen/tasks/:id/live
 
             // SSE: 订阅 AutoClick 执行事件（Redis Pub/Sub）
             // GET /api/v1/batchopen/autoclick/executions/live?userId=&scheduleId=&executionId=
@@ -1619,56 +1440,8 @@ func setupAPIRoutes(r *gin.Engine) {
     v2.Use(middleware.InternalJWTAuth(false))
     v2.Use(authMiddleware())
     {
-        // 统一任务快照
-        v2.GET("/tasks/:id", func(c *gin.Context) {
-            id := strings.TrimSpace(c.Param("id"))
-            if id == "" { c.JSON(400, gin.H{"message":"missing id"}); return }
-            snap, ok, err := buildExecutionUpdateSnapshot(c, id)
-            if err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
-            if !ok { c.JSON(404, gin.H{"message":"not found"}); return }
-            c.JSON(200, snap)
-        })
-
-        // 统一任务 SSE
-        v2.GET("/stream/tasks/:id", func(c *gin.Context) {
-            id := strings.TrimSpace(c.Param("id"))
-            if id == "" { c.String(400, "missing id"); return }
-            c.Writer.Header().Set("Content-Type", "text/event-stream")
-            c.Writer.Header().Set("Cache-Control", "no-cache")
-            c.Writer.Header().Set("Connection", "keep-alive")
-            f, ok := c.Writer.(http.Flusher)
-            if !ok { c.String(500, "stream unsupported"); return }
-            if snap, ok2, _ := buildExecutionUpdateSnapshot(c, id); ok2 {
-                b, _ := json.Marshal(snap)
-                fmt.Fprintf(c.Writer, "data: %s\n\n", string(b))
-                f.Flush()
-            }
-            ticker := time.NewTicker(1 * time.Second)
-            defer ticker.Stop()
-            lastKey := ""
-            for i := 0; i < 900; i++ {
-                select {
-                case <-c.Request.Context().Done():
-                    return
-                case <-ticker.C:
-                    snap, ok3, _ := buildExecutionUpdateSnapshot(c, id)
-                    if !ok3 {
-                        fmt.Fprintf(c.Writer, "data: %s\n\n", `{"type":"not_found"}`)
-                        f.Flush();
-                        return
-                    }
-                    key := fmt.Sprintf("%v:%v", snap["id"], snap["progress"]) 
-                    if key != lastKey {
-                        lastKey = key
-                        b, _ := json.Marshal(snap)
-                        fmt.Fprintf(c.Writer, "data: %s\n\n", string(b))
-                        f.Flush()
-                    }
-                    st := strings.ToLower(gf.String(snap["status"]))
-                    if st == "completed" || st == "failed" || st == "cancelled" { return }
-                }
-            }
-        })
+        // v2 任务统一快照与 SSE 迁移至 internal/app
+        app.RegisterV2TaskSnapshot(v2, gormDB)
 
         // BatchOpen Silent v2
         batchV2 := v2.Group("/batchopen")
@@ -2256,6 +2029,8 @@ func setupAPIRoutes(r *gin.Engine) {
 			// ===== ADSCENTER 原子端点（链接替换 check/execute） =====
             adscenterRG := v1.Group("/adscenter")
             {
+                // 注册 v1 minimal 端点到 internal/app（accounts/configurations/executions 只读与创建配置）
+                app.RegisterAdsCenterMinimal(v1, authMiddleware(), gormDB)
                 // 预检：按 extract_link + update_ads 规则估算总消耗
                 adscenterRG.POST("/link:update:check", func(c *gin.Context) {
 					var body struct {
@@ -2331,41 +2106,11 @@ func setupAPIRoutes(r *gin.Engine) {
                 })
 
                 // ===== v1: minimal accounts/configurations/executions =====
-                // GET /api/v1/adscenter/accounts
-                adscenterRG.GET("/accounts", func(c *gin.Context) {
-                    if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
-                    userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
-                    var rows []AdsAccount
-                    if err := gormDB.Where("user_id = ?", userID).Order("created_at DESC").Find(&rows).Error; err != nil {
-                        c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return
-                    }
-                    c.JSON(200, gin.H{"accounts": rows, "count": len(rows)})
-                })
+                // 已迁移至 internal/app：RegisterAdsCenterMinimal
 
-                // GET /api/v1/adscenter/configurations
-                adscenterRG.GET("/configurations", func(c *gin.Context) {
-                    if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
-                    userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
-                    var rows []AdsConfiguration
-                    if err := gormDB.Where("user_id = ?", userID).Order("created_at DESC").Find(&rows).Error; err != nil {
-                        c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return
-                    }
-                    c.JSON(200, gin.H{"configurations": rows, "count": len(rows)})
-                })
+                // GET /api/v1/adscenter/configurations → moved to internal/app
 
-                // POST /api/v1/adscenter/configurations
-                adscenterRG.POST("/configurations", func(c *gin.Context) {
-                    if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
-                    userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
-                    var body struct{ Name string `json:"name"`; Description string `json:"description"`; Payload map[string]any `json:"payload"` }
-                    if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.Name) == "" {
-                        c.JSON(400, gin.H{"code": 400, "message": "invalid request: name required"}); return
-                    }
-                    b, _ := json.Marshal(body.Payload)
-                    row := &AdsConfiguration{ ID: fmt.Sprintf("%d", time.Now().UnixNano()), UserID: userID, Name: body.Name, Description: body.Description, Payload: datatypes.JSON(b), Status: "active", CreatedAt: time.Now(), UpdatedAt: time.Now() }
-                    if err := gormDB.Create(row).Error; err != nil { c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return }
-                    c.JSON(200, gin.H{"configuration": row})
-                })
+                // POST /api/v1/adscenter/configurations → moved to internal/app
 
                 // POST /api/v1/adscenter/executions（分阶段扣费：每处理1项先扣1次，失败立即退款；附带审计分类）
                 adscenterRG.POST("/executions", func(c *gin.Context) {
@@ -2439,28 +2184,9 @@ func setupAPIRoutes(r *gin.Engine) {
                     c.JSON(200, gin.H{"execution": exec})
                 })
 
-                // GET /api/v1/adscenter/executions
-                adscenterRG.GET("/executions", func(c *gin.Context) {
-                    if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
-                    userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
-                    var rows []AdsExecution
-                    if err := gormDB.Where("user_id = ?", userID).Order("created_at DESC").Limit(100).Find(&rows).Error; err != nil {
-                        c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return
-                    }
-                    c.JSON(200, gin.H{"executions": rows, "count": len(rows)})
-                })
+                // GET /api/v1/adscenter/executions → moved to internal/app
 
-                // GET /api/v1/adscenter/executions/:id
-                adscenterRG.GET("/executions/:id", func(c *gin.Context) {
-                    if gormDB == nil { c.JSON(503, gin.H{"code": 5000, "message": "db unavailable"}); return }
-                    userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
-                    id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"code": 400, "message": "missing id"}); return }
-                    var exec AdsExecution
-                    if err := gormDB.Where("id = ? AND user_id = ?", id, userID).First(&exec).Error; err != nil {
-                        c.JSON(404, gin.H{"code": 404, "message": "execution not found"}); return
-                    }
-                    c.JSON(200, gin.H{"execution": exec})
-                })
+                // GET /api/v1/adscenter/executions/:id → moved to internal/app
             }
 		}
 		c.JSON(200, gin.H{

@@ -86,17 +86,32 @@
 - [x] 确认 Token/订阅事实来源（SoT）：Go 为唯一计费/扣费与只读查询服务；Next 仅读取合并。
   - 已完成：新增 `docs/ADR-0001-SoT-Tokens-Subscriptions.md`；生产/预发通过中间件禁用 Next 写入（除白名单），开发/显式变量可开启。
   - 完成标准：Next 不再写 Token/订阅（除开发/显式允许外）；文档标注数据流与表结构来源。
-- [ ] SimilarWeb 接入校验：`SIMILARWEB_API_URL` 指向网关，网关注入 apikey；压测“批量”路径并验证限流/重试。
-  - 完成标准：100 域名/批可在限流不触发 429 的阈值内稳定返回。
+- [~] SimilarWeb 接入校验（按需）：
+  - 现状：使用公开免费端点无需 apikey；已在 `docs/production-env-config.md` 明确两种接入（公开/企业网关）。
+  - 说明：用户明确暂不需要批量压测（siterank-batch），该项暂缓；如后续接入企业网关或遇到配额问题再开启压测与限流调优。
 
 ### P1 — 结构收敛（下周）
-- [ ] 路由归拢：将 main.go 中大段业务路由迁至 internal（`internal/app/routes.go` 或模块 routes.go），main.go 保留装配与启动。
-- [ ] BatchOpen：将 `start?type=basic|autoclick` 从 silent pipeline 拆分为独立流程，计费与失败退款逻辑与 silent 保持一致。
+- [x] 路由归拢（第一批）：
+  - [x] SiteRank 原子端点（`/api/v1/siterank/batch:check|batch:execute`）→ `internal/app/register_siterank.go`
+  - [x] BatchOpen 原子端点与任务进度/SSE（`/api/v1/batchopen/silent:check|silent:execute|tasks/:id|tasks/:id/live`）→ `internal/app/register_batchopen.go`
+  - [x] v2 统一任务快照/SSE（`/api/v2/tasks/:id`、`/api/v2/stream/tasks/:id`）→ `internal/app/register_v2_tasks.go`
+  - [ ] AdsCenter v1 minimal（`/api/v1/adscenter/accounts|configurations|executions`）→ 已实现 `internal/app/register_adscenter_minimal.go`，待切换 main.go 注册为统一调用（低风险）。
+- [ ] BatchOpen：将 `start?type=basic|autoclick` 从 silent pipeline 拆分为独立流程（保契约），计费/失败退款与 silent 对齐。
 - [ ] AdsCenter：最小真实执行闭环替换占位器；统一执行日志/事件与指标采集。
 
 ### P2 — 体验与可观测（两周+）
 - [ ] 管理台观测：对 `/api/go/*` 在 BFF 侧聚合上游 `X-RateLimit-*`、`x-request-id`，前端运维页展示。
 - [ ] 缓存命中率与失败退款监控：为 SiteRank/BatchOpen 增加失败退款计数、缓存命中计数的只读端点。
+
+## 进度与评估
+- 已完成
+  - /ops 管理网关内置，避免外部网关依赖；SoT 决策固化并在生产/预发禁用 Next 写入；路由归拢完成 SiteRank/BatchOpen/v2 快照的迁移。
+- 进行中/可快速完成
+  - AdsCenter v1 minimal 内部注册已就绪（`register_adscenter_minimal.go`），主路由切换预计低风险，可一并完成。
+- 暂缓/按需触发
+  - SimilarWeb 批量压测与网关注入 apikey：公开端点无需 apikey，且用户暂不需要压测，保留文档指引，后续再启。
+- 待规划
+  - BatchOpen `start?type=basic|autoclick` 拆分为独立流程；AdsCenter 执行链路从占位器切至真实执行器并完善指标。
 
 ## 11. 风险与应对
 - SimilarWeb 官方无“批处理端点”，本系统通过并发单域拉取实现“批量效果”，需严格控制并发与配额。

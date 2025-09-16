@@ -1,11 +1,14 @@
 package app
 
 import (
+    "encoding/json"
     "fmt"
+    "net/http"
     "time"
 
     "github.com/gin-gonic/gin"
     "gofly-admin-v3/internal/audit"
+    "gofly-admin-v3/internal/autoclick"
     "gofly-admin-v3/internal/batchgo"
     "gofly-admin-v3/internal/store"
     "gofly-admin-v3/internal/user"
@@ -122,5 +125,74 @@ func RegisterBatchOpenAtomic(
         c.Header("X-Tokens-Balance", fmt.Sprintf("%d", newBalance))
         if iKey != "" && gormDB != nil { _ = gormDB.Exec("UPDATE idempotency_requests SET status='DONE' WHERE user_id=? AND endpoint=? AND idem_key=?", userID, "batchopen.silent.execute", iKey).Error }
         c.JSON(200, gin.H{"code": 0, "taskId": task.ID, "status": string(task.Status), "consumed": required, "balance": newBalance})
+    })
+
+    // GET /api/v1/batchopen/tasks/:id （统一进度聚合：优先 batch_tasks，回退新三表）
+    grp.GET("/tasks/:id", func(c *gin.Context) {
+        userID := c.GetString("user_id")
+        if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
+        if rid := c.GetHeader("X-Request-Id"); rid != "" { c.Header("X-Request-Id", rid) }
+        taskID := c.Param("id"); if taskID == "" { c.JSON(400, gin.H{"code": 400, "message": "missing id"}); return }
+        if batchService != nil {
+            if task, err := batchService.GetTask(userID, taskID); err == nil && task != nil {
+                processed := task.ProcessedCount
+                total := task.URLCount
+                percent := 0
+                if total > 0 { percent = int(float64(processed) / float64(total) * 100.0) }
+                pending := total - processed
+                message := task.ErrorMessage
+                if message == "" {
+                    switch task.Status {
+                    case batchgo.StatusPending:
+                        message = "任务等待中"
+                    case batchgo.StatusRunning:
+                        message = "任务运行中"
+                    case batchgo.StatusCompleted:
+                        message = "任务已完成"
+                    case batchgo.StatusFailed:
+                        message = "任务失败"
+                    case batchgo.StatusCancelled:
+                        message = "任务已取消"
+                    case batchgo.StatusPaused:
+                        message = "任务已暂停"
+                    }
+                }
+                c.JSON(200, gin.H{"success": true, "status": string(task.Status), "progress": percent, "successCount": task.SuccessCount, "failCount": task.FailedCount, "total": total, "pendingCount": pending, "message": message, "timestamp": time.Now().UnixMilli(), "serverTime": time.Now().Format(time.RFC3339)})
+                return
+            }
+        }
+        c.JSON(404, gin.H{"success": false, "message": "TASK_NOT_FOUND"})
+    })
+
+    // SSE: /api/v1/batchopen/tasks/:id/live （最小实现：轮询DB推送）
+    grp.GET("/tasks/:id/live", func(c *gin.Context) {
+        id := c.Param("id"); if id == "" { c.String(400, "missing id"); return }
+        c.Writer.Header().Set("Content-Type", "text/event-stream")
+        c.Writer.Header().Set("Cache-Control", "no-cache")
+        c.Writer.Header().Set("Connection", "keep-alive")
+        f, ok := c.Writer.(http.Flusher)
+        if !ok { c.String(500, "stream unsupported"); return }
+        ticker := time.NewTicker(1 * time.Second)
+        defer ticker.Stop()
+        for i := 0; i < 300; i++ { // 最多5分钟
+            select {
+            case <-c.Request.Context().Done():
+                return
+            case <-ticker.C:
+                var exec autoclick.AutoClickExecution
+                if err := gormDB.Where("id = ?", id).First(&exec).Error; err != nil {
+                    fmt.Fprintf(c.Writer, "data: %s\n\n", `{"type":"not_found"}`)
+                    f.Flush();
+                    return
+                }
+                payload := map[string]any{
+                    "type": "execution_update", "id": exec.ID, "status": exec.Status, "progress": exec.Progress,
+                    "processedItems": exec.Success + exec.Fail, "totalItems": exec.Total,
+                }
+                b, _ := json.Marshal(payload)
+                fmt.Fprintf(c.Writer, "data: %s\n\n", string(b))
+                f.Flush()
+            }
+        }
     })
 }
