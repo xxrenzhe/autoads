@@ -54,10 +54,10 @@ const (
 	MessageTypeSiteRankProgress = "siterank_progress"
 	MessageTypeSiteRankComplete = "siterank_complete"
 
-	// Chengelink相关
-	MessageTypeChengeLinkStart    = "chengelink_start"
-	MessageTypeChengeLinkProgress = "chengelink_progress"
-	MessageTypeChengeLinkComplete = "chengelink_complete"
+    // AdsCenter 相关
+    MessageTypeAdsCenterStart    = "adscenter_start"
+    MessageTypeAdsCenterProgress = "adscenter_progress"
+    MessageTypeAdsCenterComplete = "adscenter_complete"
 
 	// 系统通知
 	MessageTypeSystemNotification = "system_notification"
@@ -424,8 +424,8 @@ func (m *Manager) SendTaskProgress(userID, taskID, taskType, status string, prog
 		messageType = MessageTypeBatchGoProgress
 	case "siterank":
 		messageType = MessageTypeSiteRankProgress
-	case "chengelink":
-		messageType = MessageTypeChengeLinkProgress
+    case "adscenter":
+        messageType = MessageTypeAdsCenterProgress
 	default:
 		messageType = "task_progress"
 	}
@@ -457,8 +457,8 @@ func (m *Manager) SendTaskComplete(userID, taskID, taskType string, success bool
 		messageType = MessageTypeBatchGoComplete
 	case "siterank":
 		messageType = MessageTypeSiteRankComplete
-	case "chengelink":
-		messageType = MessageTypeChengeLinkComplete
+    case "adscenter":
+        messageType = MessageTypeAdsCenterComplete
 	default:
 		messageType = "task_complete"
 	}

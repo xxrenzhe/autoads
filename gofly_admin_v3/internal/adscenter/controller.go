@@ -334,7 +334,7 @@ func (c *AdsCenterController) CreateGoogleAdsConfig(ctx *gin.Context) {
 
 // GetAdsPowerConfigs 获取AdsPower配置列表
 // GET /api/chengelink/adspower-configs
-func (c *ChengeLinkController) GetAdsPowerConfigs(ctx *gin.Context) {
+func (c *AdsCenterController) GetAdsPowerConfigs(ctx *gin.Context) {
 	userID := ctx.GetString("user_id")
 	if userID == "" {
 		ctx.JSON(http.StatusOK, APIResponse{
@@ -362,7 +362,7 @@ func (c *ChengeLinkController) GetAdsPowerConfigs(ctx *gin.Context) {
 
 // GetGoogleAdsConfigs 获取Google Ads配置列表
 // GET /api/chengelink/google-ads-configs
-func (c *ChengeLinkController) GetGoogleAdsConfigs(ctx *gin.Context) {
+func (c *AdsCenterController) GetGoogleAdsConfigs(ctx *gin.Context) {
 	userID := ctx.GetString("user_id")
 	if userID == "" {
 		ctx.JSON(http.StatusOK, APIResponse{

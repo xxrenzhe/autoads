@@ -81,19 +81,19 @@ func (s *UserService) GetUserDetail(userID string) (*UserDetailInfo, error) {
 	detail.TokensConsumed = tokenStats.TotalConsumed
 
 	// 获取任务统计
-	var taskStats struct {
-		BatchTasks      int64
-		SiteRankQueries int64
-		ChengeLinkTasks int64
-	}
+    var taskStats struct {
+        BatchTasks      int64
+        SiteRankQueries int64
+        AdsCenterTasks int64
+    }
 
-	s.db.Model(&BatchTask{}).Where("user_id = ?", userID).Count(&taskStats.BatchTasks)
-	s.db.Model(&SiteRankQuery{}).Where("user_id = ?", userID).Count(&taskStats.SiteRankQueries)
-	s.db.Model(&ChengeLinkTask{}).Where("user_id = ?", userID).Count(&taskStats.ChengeLinkTasks)
+    s.db.Model(&BatchTask{}).Where("user_id = ?", userID).Count(&taskStats.BatchTasks)
+    s.db.Model(&SiteRankQuery{}).Where("user_id = ?", userID).Count(&taskStats.SiteRankQueries)
+    s.db.Model(&AdsCenterTask{}).Where("user_id = ?", userID).Count(&taskStats.AdsCenterTasks)
 
-	detail.BatchTasks = taskStats.BatchTasks
-	detail.SiteRankQueries = taskStats.SiteRankQueries
-	detail.ChengeLinkTasks = taskStats.ChengeLinkTasks
+    detail.BatchTasks = taskStats.BatchTasks
+    detail.SiteRankQueries = taskStats.SiteRankQueries
+    detail.ChengeLinkTasks = taskStats.AdsCenterTasks
 
 	// 获取邀请统计
 	var invitationStats struct {

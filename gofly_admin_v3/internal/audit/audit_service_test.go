@@ -23,14 +23,14 @@ func newTestDB(t *testing.T) *gorm.DB {
     require.NoError(t, db.Exec(`CREATE TABLE token_transactions (
         user_id TEXT, amount INTEGER, type TEXT, created_at DATETIME
     );`).Error)
-    // batch_tasks/siterank_queries/chengelink_tasks(user_id TEXT, status TEXT, created_at DATETIME)
+    // batch_tasks/siterank_queries/adscenter_tasks(user_id TEXT, status TEXT, created_at DATETIME)
     require.NoError(t, db.Exec(`CREATE TABLE batch_tasks (
         user_id TEXT, status TEXT, created_at DATETIME
     );`).Error)
     require.NoError(t, db.Exec(`CREATE TABLE siterank_queries (
         user_id TEXT, status TEXT, created_at DATETIME
     );`).Error)
-    require.NoError(t, db.Exec(`CREATE TABLE chengelink_tasks (
+    require.NoError(t, db.Exec(`CREATE TABLE adscenter_tasks (
         user_id TEXT, status TEXT, created_at DATETIME
     );`).Error)
 
@@ -96,4 +96,3 @@ func TestAutoAds_SystemSecurityReport(t *testing.T) {
     require.Contains(t, report, "api_abuse")
     require.Contains(t, report, "security_score")
 }
-

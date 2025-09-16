@@ -69,9 +69,9 @@ func (s *DashboardService) GetOverviewStats() (*OverviewStats, error) {
 		return nil, err
 	}
 
-	if err := s.db.Model(&ChengeLinkTask{}).Count(&stats.TotalChengeLinkTasks).Error; err != nil {
-		return nil, err
-	}
+    if err := s.db.Model(&AdsCenterTask{}).Count(&stats.TotalChengeLinkTasks).Error; err != nil {
+        return nil, err
+    }
 
 	// 今日任务
 	if err := s.db.Model(&BatchTask{}).Where("DATE(created_at) = ?", today).Count(&stats.TodayBatchTasks).Error; err != nil {

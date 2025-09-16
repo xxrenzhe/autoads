@@ -59,18 +59,18 @@ func getDefaultConsumptionRules() []TokenConsumptionRule {
 			TokenCost:   2,
 			Description: "BatchGo Puppeteer模式（每个URL）",
 		},
-		{
-			Service:     "chengelink",
-			Action:      "extract",
-			TokenCost:   1,
-			Description: "Chengelink链接提取",
-		},
-		{
-			Service:     "chengelink",
-			Action:      "update_ads",
-			TokenCost:   3,
-			Description: "Chengelink广告更新（每个广告）",
-		},
+        {
+            Service:     "adscenter",
+            Action:      "extract",
+            TokenCost:   1,
+            Description: "自动化广告链接提取",
+        },
+        {
+            Service:     "adscenter",
+            Action:      "update_ads",
+            TokenCost:   3,
+            Description: "自动化广告更新（每个广告）",
+        },
 		{
 			Service:     "api",
 			Action:      "call",
@@ -202,11 +202,10 @@ func (s *TokenConfigService) GetTokenCostDescription(service, action string, qua
 
 // ServiceType 服务类型常量
 const (
-	ServiceSiteRank   = "siterank"
-	ServiceBatchGo    = "batchgo"
-	ServiceChengeLink = "chengelink"
-	ServiceAdsCenter  = "adscenter"
-	ServiceAPI        = "api"
+    ServiceSiteRank  = "siterank"
+    ServiceBatchGo   = "batchgo"
+    ServiceAdsCenter = "adscenter"
+    ServiceAPI       = "api"
 )
 
 // ActionType 操作类型常量
@@ -237,21 +236,20 @@ var (
 		Description: "BatchGo Puppeteer模式（每个URL）",
 	}
 
-	// ChengeLink服务
-	CostChengeLinkExtract = TokenConsumptionRule{
-		Service: ServiceChengeLink, Action: ActionExtract, TokenCost: 1,
-		Description: "Chengelink链接提取",
-	}
-	CostChengeLinkUpdateAds = TokenConsumptionRule{
-		Service: ServiceChengeLink, Action: ActionUpdateAds, TokenCost: 3,
-		Description: "Chengelink广告更新（每个广告）",
-	}
-
-	// AdsCenter 服务（专属计费，解耦 chengelink）
-	CostAdsCenterUpdate = TokenConsumptionRule{
-		Service: ServiceAdsCenter, Action: "update", TokenCost: 3,
-		Description: "AdsCenter 更新/执行（每项）",
-	}
+    // AdsCenter 服务
+    CostAdsCenterExtract = TokenConsumptionRule{
+        Service: ServiceAdsCenter, Action: ActionExtract, TokenCost: 1,
+        Description: "自动化广告链接提取",
+    }
+    CostAdsCenterUpdateAds = TokenConsumptionRule{
+        Service: ServiceAdsCenter, Action: ActionUpdateAds, TokenCost: 3,
+        Description: "自动化广告更新（每个广告）",
+    }
+    // 兼容保留：CostAdsCenterUpdate（旧命名）
+    CostAdsCenterUpdate = TokenConsumptionRule{
+        Service: ServiceAdsCenter, Action: "update", TokenCost: 3,
+        Description: "AdsCenter 更新/执行（每项）",
+    }
 
 	// API服务
 	CostAPICall = TokenConsumptionRule{

@@ -83,33 +83,33 @@ func (s *Service) NotifySiteRankComplete(userID, taskID string, total, completed
 	}
 }
 
-// NotifyChengeLinkStart 通知Chengelink任务开始
-func (s *Service) NotifyChengeLinkStart(userID, taskID string, totalLinks int) {
-	if err := s.manager.SendTaskProgress(
-		userID, taskID, "chengelink", "started", 0.0, totalLinks, 0, 0, "开始链接提取和广告更新",
-	); err != nil {
-		log.Printf("Failed to send Chengelink start notification: %v", err)
-	}
+// NotifyAdsCenterStart 通知 AdsCenter 任务开始
+func (s *Service) NotifyAdsCenterStart(userID, taskID string, totalLinks int) {
+    if err := s.manager.SendTaskProgress(
+        userID, taskID, "adscenter", "started", 0.0, totalLinks, 0, 0, "开始链接提取和广告更新",
+    ); err != nil {
+        log.Printf("Failed to send AdsCenter start notification: %v", err)
+    }
 }
 
-// NotifyChengeLinkProgress 通知Chengelink任务进度
-func (s *Service) NotifyChengeLinkProgress(userID, taskID string, total, completed, failed int, message string) {
-	progress := float64(completed+failed) / float64(total) * 100
-	if err := s.manager.SendTaskProgress(
-		userID, taskID, "chengelink", "running", progress, total, completed, failed, message,
-	); err != nil {
-		log.Printf("Failed to send Chengelink progress notification: %v", err)
-	}
+// NotifyAdsCenterProgress 通知 AdsCenter 任务进度
+func (s *Service) NotifyAdsCenterProgress(userID, taskID string, total, completed, failed int, message string) {
+    progress := float64(completed+failed) / float64(total) * 100
+    if err := s.manager.SendTaskProgress(
+        userID, taskID, "adscenter", "running", progress, total, completed, failed, message,
+    ); err != nil {
+        log.Printf("Failed to send AdsCenter progress notification: %v", err)
+    }
 }
 
-// NotifyChengeLinkComplete 通知Chengelink任务完成
-func (s *Service) NotifyChengeLinkComplete(userID, taskID string, total, completed, failed int) {
-	success := failed == 0
-	message := fmt.Sprintf("链接更新完成，成功: %d, 失败: %d", completed, failed)
+// NotifyAdsCenterComplete 通知 AdsCenter 任务完成
+func (s *Service) NotifyAdsCenterComplete(userID, taskID string, total, completed, failed int) {
+    success := failed == 0
+    message := fmt.Sprintf("链接更新完成，成功: %d, 失败: %d", completed, failed)
 
-	if err := s.manager.SendTaskComplete(userID, taskID, "chengelink", success, message); err != nil {
-		log.Printf("Failed to send Chengelink complete notification: %v", err)
-	}
+    if err := s.manager.SendTaskComplete(userID, taskID, "adscenter", success, message); err != nil {
+        log.Printf("Failed to send AdsCenter complete notification: %v", err)
+    }
 }
 
 // NotifyTokenInsufficient 通知Token不足
