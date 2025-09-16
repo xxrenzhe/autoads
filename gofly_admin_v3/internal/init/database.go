@@ -1,12 +1,13 @@
 package init
 
 import (
-	"embed"
-	"fmt"
-	"log"
-	"sort"
-	"strings"
-	"time"
+    "embed"
+    "fmt"
+    "log"
+    "regexp"
+    "sort"
+    "strings"
+    "time"
 
 	"gofly-admin-v3/internal/config"
 	"gorm.io/driver/mysql"
@@ -213,8 +214,21 @@ func (di *DatabaseInitializer) runMigrations() error {
 		return nil
 	}
 
-	// 按文件名排序
-	sort.Strings(migrations)
+    // 按文件名排序，并对关键迁移文件施加优先级（确保 users 表先于依赖它的迁移）
+    sort.Strings(migrations)
+    priorities := map[string]int{
+        "001_create_users_tables.sql":      -100,
+        "001_create_saas_tables.sql":      -50,
+        "003_create_chengelink_tables.sql": -40,
+    }
+    sort.SliceStable(migrations, func(i, j int) bool {
+        wi := priorities[migrations[i]]
+        wj := priorities[migrations[j]]
+        if wi != wj {
+            return wi < wj
+        }
+        return migrations[i] < migrations[j]
+    })
 
 	// 创建迁移记录表
 	if err := di.createMigrationsTable(); err != nil {
@@ -280,23 +294,173 @@ func (di *DatabaseInitializer) runMigration(filename string) error {
 		return nil
 	}
 
-	// 读取迁移文件内容
-	content, err := migrationFS.ReadFile("migrations/" + filename)
-	if err != nil {
-		return err
-	}
+    // 读取迁移文件内容
+    content, err := migrationFS.ReadFile("migrations/" + filename)
+    if err != nil {
+        return err
+    }
 
-	di.logger.Printf("执行迁移: %s", filename)
+    di.logger.Printf("执行迁移: %s", filename)
 
-	// 执行迁移
-	if err := di.db.Exec(string(content)).Error; err != nil {
-		return err
-	}
+    // 为了兼容较低版本 MySQL/MariaDB，不支持 "ADD COLUMN IF NOT EXISTS"、"CREATE INDEX IF NOT EXISTS"
+    // 将迁移 SQL 拆分并进行条件处理
+    statements := splitSQLStatements(string(content))
+    for _, stmt := range statements {
+        s := strings.TrimSpace(stmt)
+        if s == "" {
+            continue
+        }
+
+        handled, err := di.handleCompatibilityStatements(s)
+        if err != nil {
+            return err
+        }
+        if handled {
+            continue
+        }
+
+        if err := di.db.Exec(s).Error; err != nil {
+            return err
+        }
+    }
 
 	// 记录迁移
 	return di.db.Table("schema_migrations").Create(map[string]interface{}{
 		"version": filename,
 	}).Error
+}
+
+// splitSQLStatements 粗略按分号拆分 SQL 语句（忽略简单换行与空白）
+func splitSQLStatements(sql string) []string {
+    // 简化处理：按分号分割
+    parts := strings.Split(sql, ";")
+    var res []string
+    for _, p := range parts {
+        t := strings.TrimSpace(p)
+        if t == "" {
+            continue
+        }
+        res = append(res, t)
+    }
+    return res
+}
+
+// handleCompatibilityStatements 处理不兼容的 IF NOT EXISTS 语法，返回是否已处理
+func (di *DatabaseInitializer) handleCompatibilityStatements(stmt string) (bool, error) {
+    upper := strings.ToUpper(strings.TrimSpace(stmt))
+    // 处理 CREATE INDEX IF NOT EXISTS
+    if strings.HasPrefix(upper, "CREATE INDEX IF NOT EXISTS") {
+        // CREATE INDEX IF NOT EXISTS idx ON table (cols)
+        re := regexp.MustCompile(`(?i)^CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+([`+"`"+`\w]+)\s+ON\s+([`+"`"+`\w\.]+)\s*\((.+)\)$`)
+        m := re.FindStringSubmatch(stmt)
+        if len(m) == 4 {
+            idx := strings.Trim(m[1], "`")
+            tbl := strings.Trim(m[2], "`")
+            cols := m[3]
+            // 检查索引是否存在
+            if di.db.Migrator().HasIndex(tbl, idx) {
+                di.logger.Printf("索引 %s 已存在于表 %s，跳过创建", idx, tbl)
+                return true, nil
+            }
+            q := fmt.Sprintf("CREATE INDEX %s ON %s (%s)", idx, tbl, cols)
+            return true, di.db.Exec(q).Error
+        }
+        // 无法解析则回退让上层执行（可能不会命中这条分支）
+        return false, nil
+    }
+
+    // 处理 ALTER TABLE ... 包含 ADD COLUMN IF NOT EXISTS / ADD INDEX IF NOT EXISTS
+    if strings.HasPrefix(upper, "ALTER TABLE ") && strings.Contains(upper, "IF NOT EXISTS") {
+        // 提取表名
+        reTbl := regexp.MustCompile(`(?i)^ALTER\s+TABLE\s+([`+"`"+`\w\.]+)\s`)
+        mt := reTbl.FindStringSubmatch(stmt)
+        if len(mt) < 2 {
+            return false, nil
+        }
+        tbl := strings.Trim(mt[1], "`")
+
+        // 按行拆分处理 ADD COLUMN IF NOT EXISTS 与 ADD INDEX IF NOT EXISTS
+        lines := strings.Split(stmt, "\n")
+        var leftovers []string
+        // ADD COLUMN IF NOT EXISTS <col> <def>
+        reAddCol := regexp.MustCompile(`(?i)ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+([`+"`"+`\w]+)\s+(.*?)(,)?\s*$`)
+        // ADD INDEX IF NOT EXISTS idx_name (cols)
+        reAddIdx := regexp.MustCompile(`(?i)ADD\s+INDEX\s+IF\s+NOT\s+EXISTS\s+([`+"`"+`\w]+)\s*\((.+)\)\s*,?\s*$`)
+
+        for _, raw := range lines {
+            l := strings.TrimSpace(raw)
+            if l == "" || strings.HasPrefix(l, "--") {
+                continue
+            }
+            if m := reAddCol.FindStringSubmatch(l); len(m) > 0 {
+                col := strings.Trim(m[1], "`")
+                def := strings.TrimSpace(m[2])
+                def = strings.TrimSuffix(def, ",")
+                // 检查列
+                if di.db.Migrator().HasColumn(tbl, col) {
+                    di.logger.Printf("表 %s 列 %s 已存在，跳过添加", tbl, col)
+                    continue
+                }
+                q := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", tbl, col, def)
+                if err := di.db.Exec(q).Error; err != nil {
+                    return true, err
+                }
+                continue
+            }
+            if m := reAddIdx.FindStringSubmatch(l); len(m) > 0 {
+                idx := strings.Trim(m[1], "`")
+                cols := m[2]
+                if di.db.Migrator().HasIndex(tbl, idx) {
+                    di.logger.Printf("索引 %s 已存在于表 %s，跳过添加", idx, tbl)
+                    continue
+                }
+                q := fmt.Sprintf("CREATE INDEX %s ON %s (%s)", idx, tbl, cols)
+                if err := di.db.Exec(q).Error; err != nil {
+                    return true, err
+                }
+                continue
+            }
+            // 保留其他（如 MODIFY COLUMN ...）
+            // 去掉尾部逗号，稍后重新拼装
+            leftovers = append(leftovers, strings.TrimSuffix(l, ","))
+        }
+
+        // 执行剩余修改（如果有）
+        var realOps []string
+        reModify := regexp.MustCompile(`(?i)^MODIFY\s+COLUMN\s+([`+"`"+`\w]+)\b`)
+        for _, op := range leftovers {
+            u := strings.ToUpper(op)
+            if strings.HasPrefix(u, "ALTER TABLE") || u == "" {
+                continue
+            }
+            // 跳过以 ADD COLUMN IF NOT EXISTS / ADD INDEX IF NOT EXISTS 开头的行（已处理）
+            if strings.Contains(u, "ADD COLUMN IF NOT EXISTS") || strings.Contains(u, "ADD INDEX IF NOT EXISTS") {
+                continue
+            }
+            // 对 MODIFY COLUMN 做存在性检查，列不存在则跳过
+            if strings.HasPrefix(u, "MODIFY COLUMN ") {
+                mm := reModify.FindStringSubmatch(op)
+                if len(mm) > 1 {
+                    col := strings.Trim(mm[1], "`")
+                    if !di.db.Migrator().HasColumn(tbl, col) {
+                        di.logger.Printf("表 %s 列 %s 不存在，跳过 MODIFY", tbl, col)
+                        continue
+                    }
+                }
+            }
+            // 只拼接以 MODIFY/CHANGE/ADD COLUMN(不带 IF NOT EXISTS) 等安全操作
+            realOps = append(realOps, op)
+        }
+        if len(realOps) > 0 {
+            q := fmt.Sprintf("ALTER TABLE %s \n%s", tbl, strings.Join(realOps, ",\n"))
+            if err := di.db.Exec(q).Error; err != nil {
+                return true, err
+            }
+        }
+        return true, nil
+    }
+
+    return false, nil
 }
 
 // initializeBasicData 初始化基础数据
