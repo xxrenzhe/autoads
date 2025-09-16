@@ -2,7 +2,6 @@ package main
 
 import (
     "log"
-    "os"
     dbinit "gofly-admin-v3/internal/init"
     "gofly-admin-v3/internal/config"
 )
@@ -19,12 +18,11 @@ func main() {
     if err != nil {
         log.Fatal("初始化器创建失败: ", err)
     }
-    // 确保底层连接关闭，避免极端情况下句柄未释放导致进程不退出
-    defer initializer.Close()
-
     if err := initializer.Initialize(); err != nil {
         log.Fatal("数据库初始化失败: ", err)
     }
-    // 明确以 0 退出，杜绝任何残留阻塞
-    os.Exit(0)
+    if err := initializer.Close(); err != nil {
+        // 连接关闭失败不应导致 CI 失败，记录并继续退出
+        log.Printf("关闭数据库连接警告: %v", err)
+    }
 }
