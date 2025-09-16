@@ -476,10 +476,10 @@ func (di *DatabaseInitializer) handleCompatibilityStatements(stmt string) (bool,
 func (di *DatabaseInitializer) initializeBasicData() error {
 	di.logger.Println("初始化基础数据...")
 
-	// 初始化管理员账户
-	if err := di.initializeAdminAccount(); err != nil {
-		return err
-	}
+    // 初始化管理员账户
+    if err := di.initializeAdminAccount(); err != nil {
+        return err
+    }
 
 	// 初始化速率限制配置
 	if err := di.initializeRateLimitConfigs(); err != nil {
@@ -497,34 +497,44 @@ func (di *DatabaseInitializer) initializeBasicData() error {
 
 // initializeAdminAccount 初始化管理员账户
 func (di *DatabaseInitializer) initializeAdminAccount() error {
-	// 检查是否已存在管理员
-	var count int64
-	if err := di.db.Table("admin_accounts").Count(&count).Error; err != nil {
-		return err
-	}
+    // 兼容当前迁移（admin_users 表），而非历史 admin_accounts 表
+    table := "admin_users"
 
-	if count > 0 {
-		di.logger.Println("管理员账户已存在，跳过初始化")
-		return nil
-	}
+    // 检查表是否存在，不存在则跳过（由迁移负责创建）
+    if !di.db.Migrator().HasTable(table) {
+        di.logger.Printf("表 %s 不存在，跳过管理员初始化", table)
+        return nil
+    }
 
-	// 创建默认管理员
-	admin := map[string]interface{}{
-		"username":   "admin",
-		"password":   "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.", // password
-		"email":      "admin@example.com",
-		"role":       "SUPER_ADMIN",
-		"status":     "ACTIVE",
-		"created_at": time.Now(),
-		"updated_at": time.Now(),
-	}
+    // 检查是否已存在管理员
+    var count int64
+    if err := di.db.Table(table).Count(&count).Error; err != nil {
+        return err
+    }
 
-	if err := di.db.Table("admin_accounts").Create(admin).Error; err != nil {
-		return err
-	}
+    if count > 0 {
+        di.logger.Println("管理员账户已存在，跳过初始化")
+        return nil
+    }
 
-	di.logger.Println("✅ 默认管理员账户创建成功")
-	return nil
+    // 创建默认管理员（与 000_backend_core_mysql.sql 对齐）
+    admin := map[string]interface{}{
+        "username":    "admin",
+        "password":    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // bcrypt: password
+        "email":       "admin@autoads.com",
+        "role":        "super_admin",
+        "is_active":   true,
+        "last_login_at": nil,
+        "created_at":  time.Now(),
+        "updated_at":  time.Now(),
+    }
+
+    if err := di.db.Table(table).Create(admin).Error; err != nil {
+        return err
+    }
+
+    di.logger.Println("✅ 默认管理员账户创建成功")
+    return nil
 }
 
 // initializeRateLimitConfigs 初始化速率限制配置
@@ -656,11 +666,11 @@ func (di *DatabaseInitializer) initializeRateLimitConfigs() error {
 
 // initializeSystemConfigs 初始化系统配置
 func (di *DatabaseInitializer) initializeSystemConfigs() error {
-	// 检查系统配置表是否存在
-	if !di.db.Migrator().HasTable("system_configs") {
-		di.logger.Println("系统配置表不存在，跳过初始化")
-		return nil
-	}
+    // 检查系统配置表是否存在
+    if !di.db.Migrator().HasTable("system_configs") {
+        di.logger.Println("系统配置表不存在，跳过初始化")
+        return nil
+    }
 
 	// 检查是否已有配置
 	var count int64
@@ -673,34 +683,49 @@ func (di *DatabaseInitializer) initializeSystemConfigs() error {
 		return nil
 	}
 
-	// 默认系统配置
-	defaultConfigs := []map[string]interface{}{
-		{
-			"key":         "system_name",
-			"value":       "GoFly Admin V3",
-			"category":    "system",
-			"description": "系统名称",
-			"created_by":  "system",
-			"updated_by":  "system",
-		},
-		{
-			"key":         "maintenance_mode",
-			"value":       "false",
-			"category":    "system",
-			"description": "维护模式",
-			"is_secret":   false,
-			"created_by":  "system",
-			"updated_by":  "system",
-		},
-		{
-			"key":         "max_upload_size",
-			"value":       "10485760",
-			"category":    "upload",
-			"description": "最大上传大小（字节）",
-			"created_by":  "system",
-			"updated_by":  "system",
-		},
-	}
+    // 默认系统配置（与 system_configs 表结构对齐）
+    defaultConfigs := []map[string]interface{}{
+        {
+            "config_key":   "system_name",
+            "config_value": "GoFly Admin V3",
+            "category":     "system",
+            "description":  "系统名称",
+            "is_secret":    false,
+            "is_active":    true,
+            "created_by":   "system",
+            "updated_by":   "system",
+        },
+        {
+            "config_key":   "rate_limit_plans",
+            "config_value": `{"FREE":{"rps":5,"burst":10},"PRO":{"rps":50,"burst":100},"MAX":{"rps":200,"burst":400}}`,
+            "category":     "ratelimit",
+            "description":  "按套餐的默认限流配置(JSON)",
+            "is_secret":    false,
+            "is_active":    true,
+            "created_by":   "system",
+            "updated_by":   "system",
+        },
+        {
+            "config_key":   "maintenance_mode",
+            "config_value": "false",
+            "category":     "system",
+            "description":  "维护模式",
+            "is_secret":    false,
+            "is_active":    true,
+            "created_by":   "system",
+            "updated_by":   "system",
+        },
+        {
+            "config_key":   "max_upload_size",
+            "config_value": "10485760",
+            "category":     "upload",
+            "description":  "最大上传大小（字节）",
+            "is_secret":    false,
+            "is_active":    true,
+            "created_by":   "system",
+            "updated_by":   "system",
+        },
+    }
 
 	// 批量插入
 	for _, config := range defaultConfigs {
@@ -715,16 +740,18 @@ func (di *DatabaseInitializer) initializeSystemConfigs() error {
 
 // verifyInitialization 验证初始化结果
 func (di *DatabaseInitializer) verifyInitialization() error {
-	di.logger.Println("验证初始化结果...")
+    di.logger.Println("验证初始化结果...")
 
-	// 验证表是否存在
-	expectedTables := []string{
-		"users",
-		"admin_accounts",
-		"rate_limit_configs",
-		"system_configs",
-		"schema_migrations",
-	}
+    // 验证表是否存在
+    expectedTables := []string{
+        // 与当前迁移集对齐：核心管理与令牌配置
+        "admin_users",
+        "rate_limit_configs",
+        "token_packages",
+        "token_consumption_rules",
+        "idempotency_requests",
+        "schema_migrations",
+    }
 
 	for _, table := range expectedTables {
 		if !di.db.Migrator().HasTable(table) {
