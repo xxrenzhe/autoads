@@ -1,4 +1,4 @@
-name: Debug GitHub Actions Permissions
+name: "[ARCHIVED] Debug GitHub Actions Permissions"
 
 on:
   workflow_dispatch:

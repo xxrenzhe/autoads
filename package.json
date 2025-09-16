@@ -31,6 +31,7 @@
     "setup": "npm install && npm run setup:frontend && npm run setup:backend",
     "setup:frontend": "cd apps/frontend && npm install",
     "setup:backend": "cd apps/backend/gofly_admin_v3 && go mod download",
+    "migrate:backend": "cd gofly_admin_v3 && go run cmd/server/main.go --config ${CONFIG_PATH:-config.yaml} --migrate",
     "gofly:build": "bash ./scripts/admin-build.sh",
     "gofly:start": "bash ./scripts/admin-start.sh",
     "gofly:docker:build": "docker build -f Dockerfile.gofly-admin -t gofly-admin:latest .",

@@ -1,4 +1,4 @@
-name: Optimized Docker Build (Deprecated)
+name: "[ARCHIVED] Optimized Docker Build"
 
 on:
   # 已由 docker.yml 统一，保留手动触发以便排障时临时使用
@@ -39,7 +39,7 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies (including dev for type checking)
-      run: npm ci --ignore-scripts
+      run: npm ci --workspaces --include-workspace-root --ignore-scripts
       
     - name: Generate Prisma Client
       run: cd apps/frontend && npx prisma generate

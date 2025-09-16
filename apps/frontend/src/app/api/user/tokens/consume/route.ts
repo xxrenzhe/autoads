@@ -15,6 +15,16 @@ const ConsumeTokenSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Enforce dev-only for Next-side business writes
+    const allowNextWrites = process.env.ALLOW_NEXT_WRITES === 'true'
+    const isDev = process.env.NODE_ENV === 'development'
+    if (!isDev && !allowNextWrites) {
+      return NextResponse.json(
+        { error: 'NOT_IMPLEMENTED', message: 'Next API writes are disabled on this deployment' },
+        { status: 501 }
+      )
+    }
+
     const session = await (auth as any)()
     
     if (!session?.user?.id) {

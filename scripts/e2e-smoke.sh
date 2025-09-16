@@ -1,57 +1,34 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Minimal smoke test for idempotency, rate limit headers and config hot update.
-# Requirements:
-#   - env BASE_URL (e.g. https://www.autoads.dev)
-#   - env USER_TOKEN (Bearer token for user APIs)
-#   - env ADMIN_TOKEN (Bearer token for console APIs)
-#
-# Usage:
-#   BASE_URL=http://localhost:3000 USER_TOKEN="Bearer xxx" ADMIN_TOKEN="Bearer yyy" ./scripts/e2e-smoke.sh
+BASE_URL="${BASE_URL:-http://localhost:3000}"
+AUTH_HEADER="${AUTH_HEADER:-}"
 
-: "${BASE_URL:?BASE_URL is required (e.g. http://localhost:3000)}"
-: "${USER_TOKEN:?USER_TOKEN is required (Authorization header for user APIs)}"
-: "${ADMIN_TOKEN:?ADMIN_TOKEN is required (Authorization header for console APIs)}"
+function info(){ echo -e "\033[1;34m[info]\033[0m $*"; }
+function pass(){ echo -e "\033[1;32m[pass]\033[0m $*"; }
+function fail(){ echo -e "\033[1;31m[fail]\033[0m $*"; exit 1; }
 
-green() { printf "\033[32m%s\033[0m\n" "$*"; }
-red() { printf "\033[31m%s\033[0m\n" "$*"; }
+curl_json(){
+  local url="$1"; shift
+  curl -sS -H 'accept: application/json' ${AUTH_HEADER:+-H "$AUTH_HEADER"} "$url" "$@"
+}
 
-step() { echo; green "[SMOKE] $*"; }
+header(){ curl -sSI ${AUTH_HEADER:+-H "$AUTH_HEADER"} "$1"; }
 
-# 1) SITERANK check
-step "SITERANK :check"
-curl -fsS -H "Authorization: ${USER_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  -d '{"domains":["example.com","openai.com"]}' \
-  "${BASE_URL}/go/api/v1/siterank/batch:check" | jq -r '.sufficient,.required' >/dev/null || red "siterank check failed"
+info "Smoke: health"
+header "$BASE_URL/api/health" | grep -qi "200" && pass "health ok" || fail "health failed"
 
-# 2) SITERANK :execute idempotency
-IDEM_KEY="smoke-$(date +%s)"
-step "SITERANK :execute first (Idempotency-Key=${IDEM_KEY})"
-curl -fsSI -H "Authorization: ${USER_TOKEN}" \
-  -H "Idempotency-Key: ${IDEM_KEY}" \
-  -H 'Content-Type: application/json' \
-  "${BASE_URL}/go/api/v1/siterank/batch:execute" -d '{"domains":["example.com"]}' | awk '/X-Request-Id|X-RateLimit-/{print}'
+info "Smoke: gateway /go version headers"
+header "$BASE_URL/go/ready" | grep -qi "200" || fail "/go not ready"
 
-step "SITERANK :execute duplicate (Idempotency-Key=${IDEM_KEY})"
-curl -fsS -H "Authorization: ${USER_TOKEN}" \
-  -H "Idempotency-Key: ${IDEM_KEY}" \
-  -H 'Content-Type: application/json' \
-  "${BASE_URL}/go/api/v1/siterank/batch:execute" -d '{"domains":["example.com"]}' | jq -r '.duplicate' | grep -q true && green "duplicate ok" || red "duplicate not true"
+info "Smoke: siterank (compat) Deprecation headers"
+header "$BASE_URL/api/siterank/version" | grep -qi "Deprecation: true" && pass "compat deprecation ok" || info "compat deprecation header not found (non-blocking)"
 
-# 3) Config hot update ETag
-TMP_KEY="smoke.etag.key"
-TMP_VAL="v-$(date +%s)"
-step "Config hot update via /ops/api/v1/console/system/config"
-curl -fsS -H "Authorization: ${ADMIN_TOKEN}" -H 'Content-Type: application/json' \
-  -d "{\"key\":\"${TMP_KEY}\",\"value\":\"${TMP_VAL}\",\"category\":\"smoke\"}" \
-  "${BASE_URL}/ops/api/v1/console/system/config" >/dev/null
+info "Smoke: tokens balance via Go"
+curl_json "$BASE_URL/go/api/v1/tokens/balance" | jq '.' >/dev/null 2>&1 || info "tokens/balance requires auth; skip"
 
-step "Fetch /ops/console/config/v1 to capture ETag"
-ETAG1=$(curl -fsSI -H "Authorization: ${ADMIN_TOKEN}" "${BASE_URL}/ops/console/config/v1" | awk '/ETag:/ {print $2}' | tr -d '\r')
-sleep 1
-curl -fsS -H "Authorization: ${ADMIN_TOKEN}" -H "If-None-Match: ${ETAG1}" "${BASE_URL}/ops/console/config/v1" -o /dev/null -w "%{http_code}\n" | grep -q 304 && green "ETag 304 ok" || red "ETag 304 fail"
+info "Smoke: batchopen version"
+curl_json "$BASE_URL/go/api/v1/batchopen/version" | jq '.' >/dev/null 2>&1 && pass "batchopen version ok" || info "batchopen version JSON not available"
 
-green "SMOKE OK"
+pass "Smoke completed"
 

@@ -12,23 +12,35 @@ async function proxy(req: Request, ctx: { params: { path: string[] } }) {
 
   // Special mappings to keep old contracts
   if (sub === 'silent-start') {
-    return forwardToGo(req, { targetPath: '/api/v1/batchopen/start?type=silent', appendSearch: false, method: 'POST' })
+    const r = await forwardToGo(req, { targetPath: '/api/v1/batchopen/start?type=silent', appendSearch: false, method: 'POST' })
+    const h = new Headers(r.headers); h.set('Deprecation','true'); h.set('Sunset','Wed, 01 Jan 2026 00:00:00 GMT'); h.set('Link','</go/api/v1/batchopen>; rel="successor-version"')
+    return new Response(r.body, { status: r.status, headers: h })
   }
   if (sub === 'silent-progress') {
-    return forwardToGo(req, { targetPath: '/api/v1/batchopen/progress', appendSearch: true })
+    const r = await forwardToGo(req, { targetPath: '/api/v1/batchopen/progress', appendSearch: true })
+    const h = new Headers(r.headers); h.set('Deprecation','true'); h.set('Sunset','Wed, 01 Jan 2026 00:00:00 GMT'); h.set('Link','</go/api/v1/batchopen>; rel="successor-version"')
+    return new Response(r.body, { status: r.status, headers: h })
   }
   if (sub === 'silent-terminate') {
-    return forwardToGo(req, { targetPath: '/api/v1/batchopen/terminate', appendSearch: false, method: 'POST' })
+    const r = await forwardToGo(req, { targetPath: '/api/v1/batchopen/terminate', appendSearch: false, method: 'POST' })
+    const h = new Headers(r.headers); h.set('Deprecation','true'); h.set('Sunset','Wed, 01 Jan 2026 00:00:00 GMT'); h.set('Link','</go/api/v1/batchopen>; rel="successor-version"')
+    return new Response(r.body, { status: r.status, headers: h })
   }
   if (sub === 'version') {
-    return forwardToGo(req, { targetPath: '/api/v1/batchopen/version', appendSearch: true })
+    const r = await forwardToGo(req, { targetPath: '/api/v1/batchopen/version', appendSearch: true })
+    const h = new Headers(r.headers); h.set('Deprecation','true'); h.set('Sunset','Wed, 01 Jan 2026 00:00:00 GMT'); h.set('Link','</go/api/v1/batchopen>; rel="successor-version"')
+    return new Response(r.body, { status: r.status, headers: h })
   }
   if (sub === 'proxy-url-validate') {
-    return forwardToGo(req, { targetPath: '/api/v1/batchopen/proxy-url-validate', appendSearch: false, method: 'POST' })
+    const r = await forwardToGo(req, { targetPath: '/api/v1/batchopen/proxy-url-validate', appendSearch: false, method: 'POST' })
+    const h = new Headers(r.headers); h.set('Deprecation','true'); h.set('Sunset','Wed, 01 Jan 2026 00:00:00 GMT'); h.set('Link','</go/api/v1/batchopen>; rel="successor-version"')
+    return new Response(r.body, { status: r.status, headers: h })
   }
 
   const base = `/api/v1/batchopen/${sub}`.replace(/\/$/, '')
-  return forwardToGo(req, { targetPath: base, appendSearch: shouldAppendSearch(method) })
+  const r = await forwardToGo(req, { targetPath: base, appendSearch: shouldAppendSearch(method) })
+  const h = new Headers(r.headers); h.set('Deprecation','true'); h.set('Sunset','Wed, 01 Jan 2026 00:00:00 GMT'); h.set('Link','</go/api/v1/batchopen>; rel="successor-version"')
+  return new Response(r.body, { status: r.status, headers: h })
 }
 
 export async function GET(req: Request, ctx: { params: { path: string[] } }) { return proxy(req, ctx) }
@@ -38,4 +50,3 @@ export async function PUT(req: Request, ctx: { params: { path: string[] } }) { r
 export async function PATCH(req: Request, ctx: { params: { path: string[] } }) { return proxy(req, ctx) }
 export async function DELETE(req: Request, ctx: { params: { path: string[] } }) { return proxy(req, ctx) }
 export async function OPTIONS(req: Request, ctx: { params: { path: string[] } }) { return proxy(req, ctx) }
-

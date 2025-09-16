@@ -2,6 +2,13 @@
 
 基于 Go + Next.js 的现代化 SaaS 平台，提供广告链接自动化管理服务。
 
+> 架构优化（AO-06）已生效：
+> - Next 不再内置 Admin；后台统一走 `/ops/console/*`（反代 Go 控制台）。
+> - 生产禁止 Next 写入业务数据（仅认证相关表可写）；业务写入走 Go 原子端点。
+> - API 统一入口 `/go/*`；`/api/go/*` 与 `/api/(siterank|adscenter)/*` 为兼容层，将逐步下线。
+> - 数据迁移集中到 Go：启动前执行 `npm run migrate:backend`。
+> - 支付/充值入口默认隐藏（`NEXT_PUBLIC_PAYMENTS_ENABLED=false`）。
+
 ## 项目结构
 
 ```

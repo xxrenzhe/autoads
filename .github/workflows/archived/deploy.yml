@@ -1,4 +1,4 @@
-name: Build and Push Docker Images (Disabled)
+name: "[ARCHIVED] Build and Push Docker Images"
 
 on:
   # Disabled by default - use docker.yml instead
@@ -33,19 +33,19 @@ jobs:
     runs-on: ubuntu-latest
     
     services:
-      postgres:
-        image: postgres:15
+      mysql:
+        image: mysql:8.0
         env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: admin_system_test
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: autoads_ci
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ppassword"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
         ports:
-          - 5432:5432
-      
+          - 3306:3306
+
       redis:
         image: redis:7
         options: >-
@@ -67,12 +67,27 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --workspaces --include-workspace-root
+
+      - name: Install MySQL client
+        run: sudo apt-get update && sudo apt-get install -y mysql-client
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -ppassword --silent; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL not ready" >&2
+          exit 1
 
       - name: Setup environment
         run: |
           cp .env.example .env.local
-          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/admin_system_test" >> .env.local
+          sed -i "s|NEXT_PUBLIC_PAYMENTS_ENABLED=.*|NEXT_PUBLIC_PAYMENTS_ENABLED=false|" .env.local
+          echo "DATABASE_URL=mysql://root:password@127.0.0.1:3306/autoads_ci" >> .env.local
           echo "REDIS_URL=redis://localhost:6379/0" >> .env.local
           echo "NEXTAUTH_SECRET=test-secret-key" >> .env.local
           echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
@@ -80,8 +95,11 @@ jobs:
       - name: Generate Prisma client
         run: cd apps/frontend && npx prisma generate
 
-      - name: Run database migrations
-        run: cd apps/frontend && npx prisma db push
+      - name: Run Go database migrations (via env URL)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+          REDIS_URL: redis://localhost:6379/0
+        run: npm run migrate:backend
 
       - name: Run tests
         run: |

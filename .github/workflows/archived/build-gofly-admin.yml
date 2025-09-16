@@ -1,4 +1,4 @@
-name: Build & Publish GoFly Admin (Deprecated)
+name: "[ARCHIVED] Build & Publish GoFly Admin"
 
 on:
   # 已由 docker.yml 统一，保留手动触发以便排障时临时使用

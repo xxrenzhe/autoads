@@ -19,6 +19,19 @@ jobs:
     name: Quick Validation
     runs-on: ubuntu-latest
     timeout-minutes: 6
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: autoads_ci
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 3306:3306
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,10 +43,30 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies (root workspaces)
-        run: npm ci --ignore-scripts
+        run: npm ci --workspaces --include-workspace-root --ignore-scripts
 
       - name: Generate Prisma Client
         run: cd apps/frontend && npx prisma generate
+
+      - name: Install MySQL client
+        run: sudo apt-get update && sudo apt-get install -y mysql-client
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -ppassword --silent; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL not ready" >&2
+          exit 1
+
+      - name: Run Go database migrations (CI via env URL)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+          REDIS_URL: redis://127.0.0.1:6379/0
+        run: npm run migrate:backend
 
       - name: TypeScript type check (frontend)
         run: ./scripts/type-check-simple.sh

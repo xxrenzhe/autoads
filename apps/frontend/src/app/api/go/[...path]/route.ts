@@ -155,6 +155,11 @@ async function proxy(req: Request, path: string[]) {
     const respHeaders = new Headers(resp.headers)
     respHeaders.set('X-Robots-Tag', 'noindex, nofollow')
     respHeaders.set('X-BFF-Enforced', '1')
+    // Mark this route as deprecated in favor of /go/*
+    respHeaders.set('Deprecation', 'true')
+    // optional Sunset date in RFC 1123 format; 90 days from now (static string acceptable)
+    respHeaders.set('Sunset', 'Wed, 01 Jan 2026 00:00:00 GMT')
+    respHeaders.set('Link', '</go>; rel="successor-version"')
     const reqId = headers.get('x-request-id') || ''
     if (reqId) respHeaders.set('x-request-id', reqId)
     return new Response(resp.body, { status: resp.status, headers: respHeaders })

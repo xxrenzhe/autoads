@@ -1,9 +1,7 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
-import Credentials from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
-import * as bcrypt from 'bcryptjs'
 import { NextRequest } from 'next/server'
 import { 
   getAuthUrl, 
@@ -189,82 +187,6 @@ const __nextAuth = NextAuth({
         }
       }
     }),
-    Credentials({
-      id: 'credentials',
-      name: 'credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email', placeholder: 'admin@autoads.dev' },
-        password: { label: 'Password', type: 'password' }
-      },
-      async authorize(credentials: Record<"email" | "password", string> | undefined, _req) {
-        if (!credentials?.email || !credentials?.password) {
-          console.log('[auth][debug] Missing email or password')
-          return null
-        }
-
-        const email = credentials.email
-        const password = credentials.password
-
-        console.log('[auth][debug] Attempting admin login for email:', email)
-
-        // Single query to fetch user with only needed fields
-        const user = await prisma.user.findUnique({
-          where: { email },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            password: true,
-            role: true,
-            status: true,
-            emailVerified: true,
-          }
-        })
-
-        if (!user) {
-          console.log('[auth][debug] User not found:', email)
-          return null
-        }
-
-        // Check all conditions in sequence for early return
-        if (!user.password) {
-          console.log('[auth][debug] User has no password set:', email)
-          return null
-        }
-
-        // Only allow ADMIN role to use credentials login
-        if (user.role !== 'ADMIN') {
-          console.log('[auth][debug] Access denied: Non-admin user attempting credentials login:', user.role)
-          return null
-        }
-
-        if (user.status !== 'ACTIVE') {
-          console.log('[auth][debug] User is not active:', email)
-          return null
-        }
-
-        // Verify password
-        console.log('[auth][debug] Verifying password for admin user:', email)
-        const isValidPassword = await bcrypt.compare(password, user.password)
-
-        if (!isValidPassword) {
-          console.log('[auth][debug] Password verification failed for admin user:', email)
-          return null
-        }
-
-        console.log('[auth][debug] Admin login successful for user:', email, 'with role:', user.role)
-
-        // Return user object
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name || undefined,
-          role: user.role,
-          status: user.status,
-          emailVerified: user.emailVerified,
-        }
-      }
-    }),
   ],
   session: {
     strategy: 'jwt',
@@ -297,20 +219,6 @@ const __nextAuth = NextAuth({
       // Ensure session.user exists
       if (!typedSession.user) {
         typedSession.user = {}
-      }
-      
-      // For credentials provider (admin users), use token data directly
-      if (token.role) {
-        typedSession.user = {
-          id: token.userId as string,
-          email: token.email as string,
-          name: token.name as string,
-          image: token.picture as string,
-          role: token.role as string,
-          status: token.status as string,
-          emailVerified: token.emailVerified as boolean,
-        }
-        return typedSession
       }
       
       // For OAuth providers (Google), fetch user from database
@@ -481,12 +389,6 @@ const __nextAuth = NextAuth({
           console.error('Error in signIn callback:', error)
           return false
         }
-      } else if (account?.provider === 'credentials') {
-        // For credentials provider, allow admin users
-        console.log('[auth][debug] Credentials provider sign-in attempt')
-        return true
-      }
-      
       return false // Deny other providers
     }
   },

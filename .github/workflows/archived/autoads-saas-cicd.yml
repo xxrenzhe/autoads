@@ -1,4 +1,4 @@
-name: AutoAds SaaS CI/CD Pipeline (Deprecated)
+name: "[ARCHIVED] AutoAds SaaS CI/CD Pipeline"
 
 on:
   # 已由 docker.yml 统一，保留手动触发以便排障时临时使用
@@ -72,7 +72,7 @@ jobs:
         cache: 'npm'
 
     - name: Install Node.js dependencies
-      run: npm ci --no-audit --no-fund
+      run: npm ci --workspaces --include-workspace-root --no-audit --no-fund
 
     - name: Run TypeScript type check
       run: npm run type-check

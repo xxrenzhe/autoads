@@ -1,4 +1,4 @@
-name: Production Deployment
+name: "[ARCHIVED] Production Deployment"
 
 on:
   push:
@@ -42,7 +42,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --workspaces --include-workspace-root
 
       - name: Run type checking
         run: npm run type-check
@@ -140,7 +140,7 @@ jobs:
 
       - name: Run smoke tests
         run: |
-          npm ci
+          npm ci --workspaces --include-workspace-root
           npm run test:smoke -- --silent
         env:
           STAGING_URL: https://staging.autoads.com
@@ -165,6 +165,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Run Go database migrations (Production via env URL)
+        if: ${{ secrets.PROD_DATABASE_URL != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          REDIS_URL: ${{ secrets.PROD_REDIS_URL }}
+        run: npm run migrate:backend
 
       - name: Setup ClawCloud CLI
         run: |
@@ -195,7 +202,7 @@ jobs:
 
       - name: Run post-deployment tests
         run: |
-          npm ci
+          npm ci --workspaces --include-workspace-root
           npm run test:post-deploy -- --silent
         env:
           PRODUCTION_URL: https://autoads.com
@@ -271,7 +278,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --workspaces --include-workspace-root
 
       - name: Run performance tests
         run: npm run test:performance -- --silent
