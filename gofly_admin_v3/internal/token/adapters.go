@@ -24,24 +24,24 @@ func (a *Adapter) ConsumeTokensByService(userID, service, action string, quantit
     return a.svc.Consume(userID, service, action, quantity, reference, nil)
 }
 
-// GetBalance 供 Chengelink 使用
+// GetBalance 供 AdsCenter 使用
 func (a *Adapter) GetBalance(userID string) (int, error) {
     bal, err := a.svc.GetBalance(userID)
     return int(bal), err
 }
 
-// AdapterChengeLink 适配 Chengelink 的 TokenService
-type AdapterChengeLink struct { svc *Service }
+// AdapterAdsCenter 适配 AdsCenter 的 TokenService
+type AdapterAdsCenter struct { svc *Service }
 
-func NewChengeLinkAdapter(s *Service) *AdapterChengeLink { return &AdapterChengeLink{svc: s} }
+func NewAdsCenterAdapter(s *Service) *AdapterAdsCenter { return &AdapterAdsCenter{svc: s} }
 
-func (a *AdapterChengeLink) ConsumeTokens(userID string, amount int, description string) error {
+func (a *AdapterAdsCenter) ConsumeTokens(userID string, amount int, description string) error {
     if amount <= 0 { return nil }
     // 作为精确消费记录为 type=consume（不基于规则）
-    return a.svc.ConsumeExact(userID, amount, "chengelink", "raw", "", map[string]interface{}{"desc": description})
+    return a.svc.ConsumeExact(userID, amount, "adscenter", "raw", "", map[string]interface{}{"desc": description})
 }
 
-func (a *AdapterChengeLink) GetBalance(userID string) (int, error) {
+func (a *AdapterAdsCenter) GetBalance(userID string) (int, error) {
     bal, err := a.svc.GetBalance(userID)
     return int(bal), err
 }

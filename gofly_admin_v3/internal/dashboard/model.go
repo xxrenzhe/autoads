@@ -67,23 +67,23 @@ type PlanFeature struct {
 
 // DailyStats 每日统计
 type DailyStats struct {
-	Date            string `json:"date"`
-	TokensConsumed  int    `json:"tokens_consumed"`
-	BatchTasks      int    `json:"batch_tasks"`
-	SiteRankQueries int    `json:"siterank_queries"`
-	ChengeLinkTasks int    `json:"chengelink_tasks"`
-	CheckedIn       bool   `json:"checked_in"`
+    Date            string `json:"date"`
+    TokensConsumed  int    `json:"tokens_consumed"`
+    BatchTasks      int    `json:"batch_tasks"`
+    SiteRankQueries int    `json:"siterank_queries"`
+    AdsCenterTasks int    `json:"adscenter_tasks"`
+    CheckedIn       bool   `json:"checked_in"`
 }
 
 // MonthlyStats 月度统计
 type MonthlyStats struct {
-	Year            int `json:"year"`
-	Month           int `json:"month"`
-	TokensConsumed  int `json:"tokens_consumed"`
-	BatchTasks      int `json:"batch_tasks"`
-	SiteRankQueries int `json:"siterank_queries"`
-	ChengeLinkTasks int `json:"chengelink_tasks"`
-	CheckinDays     int `json:"checkin_days"`
+    Year            int `json:"year"`
+    Month           int `json:"month"`
+    TokensConsumed  int `json:"tokens_consumed"`
+    BatchTasks      int `json:"batch_tasks"`
+    SiteRankQueries int `json:"siterank_queries"`
+    AdsCenterTasks int `json:"adscenter_tasks"`
+    CheckinDays     int `json:"checkin_days"`
 }
 
 // UpdateProfileRequest 更新用户资料请求
@@ -130,10 +130,10 @@ type DailyTokenUsage struct {
 
 // DailyTaskUsage 每日任务使用情况
 type DailyTaskUsage struct {
-	Date            string `json:"date"`
-	BatchTasks      int    `json:"batch_tasks"`
-	SiteRankQueries int    `json:"siterank_queries"`
-	ChengeLinkTasks int    `json:"chengelink_tasks"`
+    Date            string `json:"date"`
+    BatchTasks      int    `json:"batch_tasks"`
+    SiteRankQueries int    `json:"siterank_queries"`
+    AdsCenterTasks int    `json:"adscenter_tasks"`
 }
 
 // ActivityRecord 活动记录
@@ -189,15 +189,15 @@ func (SiteRankQuery) TableName() string {
 	return "siterank_queries"
 }
 
-// ChengeLinkTask 链接更新任务（引用）
-type ChengeLinkTask struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	CreatedAt time.Time `json:"created_at"`
+// AdsCenterTask 自动化广告任务（引用）
+type AdsCenterTask struct {
+    ID        string    `json:"id"`
+    UserID    string    `json:"user_id"`
+    CreatedAt time.Time `json:"created_at"`
 }
 
-func (ChengeLinkTask) TableName() string {
-	return "chengelink_tasks"
+func (AdsCenterTask) TableName() string {
+    return "adscenter_tasks"
 }
 
 // CheckinRecord 签到记录（引用）

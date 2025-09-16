@@ -29,7 +29,7 @@ import (
 	"gofly-admin-v3/internal/audit"
 	"gofly-admin-v3/internal/cache"
 	"gofly-admin-v3/internal/checkin"
-	"gofly-admin-v3/internal/chengelink"
+    adscenter "gofly-admin-v3/internal/adscenter"
 	"gofly-admin-v3/internal/config"
 	"gofly-admin-v3/internal/docs"
 	"gofly-admin-v3/internal/health"
@@ -113,7 +113,7 @@ var (
 	batchService      *batchgo.Service
 	tokenSvc          *user.TokenService
 	swebClient        *siterankgo.SimilarWebClient
-	chengelinkService *chengelink.ChengeLinkService
+    adscenterService *adscenter.AdsCenterService
     auditSvc          *audit.AutoAdsAuditService
     rateLimitManager  *ratelimit.RateLimitManager
     adsUpdater        adscentergo.AdsUpdater
@@ -135,7 +135,7 @@ func (s *simpleUserSvc) GetUserByID(userID string) (*ratelimit.UserInfo, error) 
     return &ratelimit.UserInfo{PlanName: plan, Plan: plan}, nil
 }
 
-// 适配器：将 user.TokenService 适配为 chengelink.TokenService
+    // 适配器：将 user.TokenService 适配为 AdsCenter.TokenService
 type tokenServiceAdapter struct{ ts *user.TokenService }
 
 func (a *tokenServiceAdapter) ConsumeTokens(userID string, amount int, description string) error {
@@ -144,7 +144,7 @@ func (a *tokenServiceAdapter) ConsumeTokens(userID string, amount int, descripti
 func (a *tokenServiceAdapter) GetBalance(userID string) (int, error) {
     return a.ts.GetTokenBalance(userID)
 }
-// 满足 chengelink.TokenService 接口
+    // 满足 adscenter.TokenService 接口
 func (a *tokenServiceAdapter) ConsumeTokensByService(userID, service, action string, quantity int, reference string) error {
     return a.ts.ConsumeTokensByService(userID, service, action, quantity, reference)
 }
@@ -304,8 +304,8 @@ func main() {
 			// SiteRank SimilarWeb 客户端
 			swebClient = siterankgo.NewSimilarWebClient()
 
-			// Chengelink 服务（使用适配器桥接Token能力）
-			chengelinkService = chengelink.NewChengeLinkService(gormDB, &tokenServiceAdapter{ts: tokenSvc})
+            // AdsCenter 服务（使用适配器桥接Token能力）
+            adscenterService = adscenter.NewAdsCenterService(gormDB, &tokenServiceAdapter{ts: tokenSvc})
 
             // 审计服务
             auditSvc = audit.NewAutoAdsAuditService(gormDB)
@@ -1005,13 +1005,13 @@ func setupAPIRoutes(r *gin.Engine) {
             })
         }
 
-		// Chengelink路由
-		chengelink := v1.Group("/chengelink")
-		chengelink.Use(authMiddleware())
+		// AdsCenter 路由
+		adscenterGroup := v1.Group("/adscenter")
+		adscenterGroup.Use(authMiddleware())
 		{
-			chengelink.POST("/create", handleChengeLinkCreate)
-			chengelink.GET("/tasks", handleChengeLinkTasks)
-			chengelink.GET("/tasks/:id", handleChengeLinkTask)
+			adscenterGroup.POST("/create", handleAdsCenterCreate)
+			adscenterGroup.GET("/tasks", handleAdsCenterTasks)
+			adscenterGroup.GET("/tasks/:id", handleAdsCenterTask)
 		}
 
 		// 邀请路由
@@ -1238,19 +1238,19 @@ func setupAPIRoutes(r *gin.Engine) {
                         }
                     }
 					// 创建任务
-					creq := &chengelink.CreateTaskRequest{ Name: body.Name, AffiliateLinks: body.AffiliateLinks, AdsPowerProfile: body.AdsPowerProfile, GoogleAdsAccount: body.GoogleAdsAccount }
+                creq := &adscenter.CreateTaskRequest{ Name: body.Name, AffiliateLinks: body.AffiliateLinks, AdsPowerProfile: body.AdsPowerProfile, GoogleAdsAccount: body.GoogleAdsAccount }
 					task, err := chengelinkService.CreateTask(userID, creq)
 					if err != nil {
-						if auditSvc != nil { _ = auditSvc.LogChengeLinkAction(userID, "create", "", map[string]any{"links": len(body.AffiliateLinks), "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
+                        if auditSvc != nil { _ = auditSvc.LogAdsCenterAction(userID, "create", "", map[string]any{"links": len(body.AffiliateLinks), "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
 						c.JSON(500, gin.H{"code": 500, "message": err.Error()})
 						return
 					}
 					// 启动任务
 					go func() {
 						if err := chengelinkService.StartTask(task.ID); err != nil {
-							if auditSvc != nil { _ = auditSvc.LogChengeLinkAction(userID, "start", task.ID, map[string]any{"links": len(body.AffiliateLinks), "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
+                            if auditSvc != nil { _ = auditSvc.LogAdsCenterAction(userID, "start", task.ID, map[string]any{"links": len(body.AffiliateLinks), "error": err.Error()}, c.ClientIP(), c.Request.UserAgent(), false, err.Error(), 0) }
 						} else {
-							if auditSvc != nil { _ = auditSvc.LogChengeLinkAction(userID, "start", task.ID, map[string]any{"links": len(body.AffiliateLinks)}, c.ClientIP(), c.Request.UserAgent(), true, "", 0) }
+                            if auditSvc != nil { _ = auditSvc.LogAdsCenterAction(userID, "start", task.ID, map[string]any{"links": len(body.AffiliateLinks)}, c.ClientIP(), c.Request.UserAgent(), true, "", 0) }
 						}
                     }()
                     if iKey != "" && gormDB != nil { _ = gormDB.Exec("UPDATE idempotency_requests SET status='DONE' WHERE user_id=? AND endpoint=? AND idem_key=?", userID, "adscenter.link.update.execute", iKey).Error }
@@ -1549,15 +1549,15 @@ func randInt() int { return int(time.Now().UnixNano() & 0xffff) }
 func setupLegacyAPIRoutes(r *gin.Engine) {
     // 解析内部 JWT（非强制）以便从 Next 反代获取 user_id（用于计费等）
     r.Use(middleware.InternalJWTAuth(false))
-    // 保持与现有前端100%兼容的API路径
+    // 兼容旧API路径（已迁移至 /api/adscenter/*）
     r.POST("/api/batchopen/silent-start", handleSilentStart)
 	r.GET("/api/batchopen/silent-progress", handleSilentProgress)
 	r.POST("/api/batchopen/silent-terminate", handleSilentTerminate)
 	r.POST("/api/autoclick/tasks", handleAutoClickCreate)
 	r.GET("/api/autoclick/tasks/:id/progress", handleAutoClickProgress)
 	r.GET("/api/siterank/rank", handleSiteRank)
-	r.POST("/api/chengelink/create", handleChengeLinkCreate)
-	r.GET("/api/chengelink/tasks", handleChengeLinkTasks)
+	r.POST("/api/adscenter/create", handleAdsCenterCreate)
+	r.GET("/api/adscenter/tasks", handleAdsCenterTasks)
 }
 
 // setupStaticFiles 设置静态文件服务
@@ -2044,51 +2044,51 @@ func computePriority(globalRank *int, visits float64) string {
 	return "Low"
 }
 
-func handleChengeLinkCreate(c *gin.Context) {
-	if chengelinkService == nil {
-		c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"})
-		return
-	}
-	userID := c.GetString("user_id")
+func handleAdsCenterCreate(c *gin.Context) {
+    if adscenterService == nil {
+        c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"})
+        return
+    }
+    userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(200, gin.H{"code": 3001, "message": "用户未认证"})
 		return
 	}
-	var req chengelink.CreateTaskRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(200, gin.H{"code": 1001, "message": "参数错误: " + err.Error()})
-		return
-	}
-	task, err := chengelinkService.CreateTask(userID, &req)
-	if err != nil {
-		c.JSON(200, gin.H{"code": 2001, "message": err.Error()})
-		return
-	}
-	c.JSON(200, gin.H{"code": 0, "message": "任务创建成功", "data": task})
+    var req adscenter.CreateTaskRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(200, gin.H{"code": 1001, "message": "参数错误: " + err.Error()})
+        return
+    }
+    task, err := adscenterService.CreateTask(userID, &req)
+    if err != nil {
+        c.JSON(200, gin.H{"code": 2001, "message": err.Error()})
+        return
+    }
+    c.JSON(200, gin.H{"code": 0, "message": "任务创建成功", "data": task})
 }
 
-func handleChengeLinkTasks(c *gin.Context) {
-	if chengelinkService == nil {
-		c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"})
-		return
-	}
-	userID := c.GetString("user_id")
+func handleAdsCenterTasks(c *gin.Context) {
+    if adscenterService == nil {
+        c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"})
+        return
+    }
+    userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(200, gin.H{"code": 3001, "message": "用户未认证"})
 		return
 	}
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
-	tasks, total, err := chengelinkService.GetUserTasks(userID, page, size)
-	if err != nil {
-		c.JSON(200, gin.H{"code": 2004, "message": err.Error()})
-		return
-	}
-	c.JSON(200, gin.H{"code": 0, "message": "获取成功", "data": gin.H{"tasks": tasks, "pagination": gin.H{"page": page, "size": size, "total": total, "pages": (total + int64(size) - 1) / int64(size)}}})
+    tasks, total, err := adscenterService.GetUserTasks(userID, page, size)
+    if err != nil {
+        c.JSON(200, gin.H{"code": 2004, "message": err.Error()})
+        return
+    }
+    c.JSON(200, gin.H{"code": 0, "message": "获取成功", "data": gin.H{"tasks": tasks, "pagination": gin.H{"page": page, "size": size, "total": total, "pages": (total + int64(size) - 1) / int64(size)}}})
 }
 
-func handleChengeLinkTask(c *gin.Context) {
-	c.JSON(200, gin.H{"message": "ChengeLink task endpoint"})
+func handleAdsCenterTask(c *gin.Context) {
+    c.JSON(200, gin.H{"message": "AdsCenter task endpoint"})
 }
 
 func handleGetInvitationInfo(c *gin.Context) {

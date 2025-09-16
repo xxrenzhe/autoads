@@ -103,10 +103,10 @@
     "coreFeatures": "Core Features",
     "v1_2": {
       "title": "Batch Open URL Feature Refactor",
-      "description": "Completely refactored batch open URL feature with basic and advanced versions",
+      "description": "Completely refactored batch open URL feature with Basic, Silent and AutoClick versions",
       "batchOpenFeature": {
         "title": "Batch Open URL Feature",
-        "description": "Support for basic version (frontend only) and advanced version (requires Background Open plugin)"
+        "description": "Support for Basic (frontend-only), Silent (backend-executed) and AutoClick (scheduled) versions"
       },
       "basicVersion": {
         "title": "Basic Version",
@@ -172,7 +172,7 @@
   },
   "batchOpen": {
     "title": "Batch Open URLs",
-    "subtitle": "Support basic version (frontend only) and advanced version (requires plugin)",
+    "subtitle": "Support Basic (frontend-only), Silent (backend-executed) and AutoClick (scheduled) versions",
     "basicVersion": {
       "title": "Basic Version",
       "description": "No plugin required, simple batch URL opening",

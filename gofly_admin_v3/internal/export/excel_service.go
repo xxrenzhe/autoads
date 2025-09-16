@@ -102,7 +102,7 @@ func (s *ExcelService) ExportUserData(c *gin.Context) {
 // ExportTaskRecords 导出任务记录
 func (s *ExcelService) ExportTaskRecords(c *gin.Context) {
 	userID := c.GetUint("user_id")
-	taskType := c.Query("type") // batch, siterank, chengelink
+    taskType := c.Query("type") // batch, siterank, adscenter
 
 	var tasks []BatchTask
 	query := s.db.Where("user_id = ?", userID)

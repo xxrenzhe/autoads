@@ -256,10 +256,10 @@ type SiteRankQuery struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type ChengeLinkTask struct {
-	ID        string    `json:"id" gorm:"primaryKey"`
-	UserID    string    `json:"user_id"`
-	CreatedAt time.Time `json:"created_at"`
+type AdsCenterTask struct {
+    ID        string    `json:"id" gorm:"primaryKey"`
+    UserID    string    `json:"user_id"`
+    CreatedAt time.Time `json:"created_at"`
 }
 
 type Invitation struct {

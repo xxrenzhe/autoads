@@ -1,12 +1,12 @@
-package chengelink
+package adscenter
 
 import (
 	"gorm.io/gorm"
 	"time"
 )
 
-// ChengeLinkTask 链接更新任务
-type ChengeLinkTask struct {
+// AdsCenterTask 自动化广告任务
+type AdsCenterTask struct {
 	ID               string              `json:"id" gorm:"primaryKey;type:varchar(36)"`
 	UserID           string              `json:"user_id" gorm:"type:varchar(36);index;not null"`
 	Name             string              `json:"name" gorm:"type:varchar(255);not null"`
@@ -97,8 +97,8 @@ type GoogleAdsConfig struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
-// ChengeLinkStats 统计信息
-type ChengeLinkStats struct {
+// AdsCenterStats 统计信息
+type AdsCenterStats struct {
 	TotalTasks          int     `json:"total_tasks"`
 	CompletedTasks      int     `json:"completed_tasks"`
 	FailedTasks         int     `json:"failed_tasks"`
@@ -109,8 +109,8 @@ type ChengeLinkStats struct {
 }
 
 // TableName 指定表名
-func (ChengeLinkTask) TableName() string {
-	return "chengelink_tasks"
+func (AdsCenterTask) TableName() string {
+    return "adscenter_tasks"
 }
 
 func (AdsPowerConfig) TableName() string {
@@ -122,7 +122,7 @@ func (GoogleAdsConfig) TableName() string {
 }
 
 // AddLog 添加执行日志
-func (t *ChengeLinkTask) AddLog(level, message, details string) {
+func (t *AdsCenterTask) AddLog(level, message, details string) {
 	entry := ExecutionLogEntry{
 		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 		Level:     level,
@@ -133,7 +133,7 @@ func (t *ChengeLinkTask) AddLog(level, message, details string) {
 }
 
 // UpdateProgress 更新任务进度
-func (t *ChengeLinkTask) UpdateProgress(db *gorm.DB) error {
+func (t *AdsCenterTask) UpdateProgress(db *gorm.DB) error {
 	return db.Model(t).Updates(map[string]interface{}{
 		"extracted_count": t.ExtractedCount,
 		"updated_count":   t.UpdatedCount,
@@ -145,7 +145,7 @@ func (t *ChengeLinkTask) UpdateProgress(db *gorm.DB) error {
 }
 
 // CalculateTokenCost 计算Token消费
-func (t *ChengeLinkTask) CalculateTokenCost() int {
+func (t *AdsCenterTask) CalculateTokenCost() int {
 	// 链接提取: 1 Token per link
 	extractCost := len(t.AffiliateLinks)
 
@@ -157,12 +157,12 @@ func (t *ChengeLinkTask) CalculateTokenCost() int {
 }
 
 // IsCompleted 检查任务是否完成
-func (t *ChengeLinkTask) IsCompleted() bool {
+func (t *AdsCenterTask) IsCompleted() bool {
 	return t.Status == TaskStatusCompleted || t.Status == TaskStatusFailed || t.Status == TaskStatusCancelled
 }
 
 // GetSuccessRate 获取成功率
-func (t *ChengeLinkTask) GetSuccessRate() float64 {
+func (t *AdsCenterTask) GetSuccessRate() float64 {
 	if t.TotalLinks == 0 {
 		return 0
 	}

@@ -1,4 +1,4 @@
-package chengelink
+package adscenter
 
 import (
 	"fmt"
@@ -9,12 +9,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// ChengeLinkService Chengelink服务
-type ChengeLinkService struct {
+// AdsCenterService 自动化广告服务
+type AdsCenterService struct {
 	db           *gorm.DB
 	tokenService TokenService
 	mu           sync.RWMutex
-	runningTasks map[string]*ChengeLinkTask
+    runningTasks map[string]*AdsCenterTask
 }
 
 // TokenService Token服务接口
@@ -23,19 +23,19 @@ type TokenService interface {
     GetBalance(userID string) (int, error)
 }
 
-// NewChengeLinkService 创建Chengelink服务
-func NewChengeLinkService(db *gorm.DB, tokenService TokenService) *ChengeLinkService {
-	return &ChengeLinkService{
+// NewAdsCenterService 创建 AdsCenter 服务
+func NewAdsCenterService(db *gorm.DB, tokenService TokenService) *AdsCenterService {
+    return &AdsCenterService{
 		db:           db,
 		tokenService: tokenService,
-		runningTasks: make(map[string]*ChengeLinkTask),
+        runningTasks: make(map[string]*AdsCenterTask),
 	}
 }
 
 // CreateTask 创建链接更新任务
-func (s *ChengeLinkService) CreateTask(userID string, req *CreateTaskRequest) (*ChengeLinkTask, error) {
+func (s *AdsCenterService) CreateTask(userID string, req *CreateTaskRequest) (*AdsCenterTask, error) {
 	// 验证请求参数
-	if err := s.validateCreateRequest(req); err != nil {
+    if err := s.validateCreateRequest(req); err != nil {
 		return nil, fmt.Errorf("参数验证失败: %w", err)
 	}
 
@@ -51,7 +51,7 @@ func (s *ChengeLinkService) CreateTask(userID string, req *CreateTaskRequest) (*
 	}
 
 	// 创建任务
-	task := &ChengeLinkTask{
+    task := &AdsCenterTask{
 		ID:               uuid.New().String(),
 		UserID:           userID,
 		Name:             req.Name,
@@ -85,7 +85,7 @@ type CreateTaskRequest struct {
 }
 
 // validateCreateRequest 验证创建请求
-func (s *ChengeLinkService) validateCreateRequest(req *CreateTaskRequest) error {
+func (s *AdsCenterService) validateCreateRequest(req *CreateTaskRequest) error {
 	if req.Name == "" {
 		return fmt.Errorf("任务名称不能为空")
 	}
@@ -110,7 +110,7 @@ func (s *ChengeLinkService) validateCreateRequest(req *CreateTaskRequest) error 
 }
 
 // calculateTokenCost 计算Token消费
-func (s *ChengeLinkService) calculateTokenCost(req *CreateTaskRequest) int {
+func (s *AdsCenterService) calculateTokenCost(req *CreateTaskRequest) int {
 	// 链接提取: 1 Token per link
 	extractCost := len(req.AffiliateLinks)
 
@@ -122,7 +122,7 @@ func (s *ChengeLinkService) calculateTokenCost(req *CreateTaskRequest) int {
 }
 
 // StartTask 启动任务执行
-func (s *ChengeLinkService) StartTask(taskID string) error {
+func (s *AdsCenterService) StartTask(taskID string) error {
 	// 获取任务
 	task, err := s.GetTask(taskID)
 	if err != nil {
@@ -154,7 +154,7 @@ func (s *ChengeLinkService) StartTask(taskID string) error {
 }
 
 // executeTask 执行任务
-func (s *ChengeLinkService) executeTask(task *ChengeLinkTask) {
+func (s *AdsCenterService) executeTask(task *AdsCenterTask) {
 	defer func() {
 		// 清理运行状态
 		s.mu.Lock()
@@ -178,7 +178,7 @@ func (s *ChengeLinkService) executeTask(task *ChengeLinkTask) {
 
 	// 消费Token（链接提取部分）
     extractTokens := len(task.AffiliateLinks)
-    if err := s.tokenService.ConsumeTokensByService(task.UserID, "chengelink", "extract_link", extractTokens, task.ID); err != nil {
+    if err := s.tokenService.ConsumeTokensByService(task.UserID, "adscenter", "extract_link", extractTokens, task.ID); err != nil {
         task.Status = TaskStatusFailed
         task.AddLog("error", "Token消费失败", err.Error())
         task.CompletedAt = &[]time.Time{time.Now()}[0]
@@ -218,7 +218,7 @@ func (s *ChengeLinkService) executeTask(task *ChengeLinkTask) {
 }
 
 // extractLinks 提取链接
-func (s *ChengeLinkService) extractLinks(task *ChengeLinkTask) error {
+func (s *AdsCenterService) extractLinks(task *AdsCenterTask) error {
 	// 获取AdsPower配置
 	var adsPowerConfig AdsPowerConfig
 	if err := s.db.Where("user_id = ? AND profile_id = ? AND is_active = ?",
@@ -305,7 +305,7 @@ func (s *ChengeLinkService) extractLinks(task *ChengeLinkTask) error {
 }
 
 // updateGoogleAds 更新Google Ads
-func (s *ChengeLinkService) updateGoogleAds(task *ChengeLinkTask) error {
+func (s *AdsCenterService) updateGoogleAds(task *AdsCenterTask) error {
 	// 获取Google Ads配置
 	var googleAdsConfig GoogleAdsConfig
 	if err := s.db.Where("user_id = ? AND customer_id = ? AND is_active = ?",
@@ -372,7 +372,7 @@ func (s *ChengeLinkService) updateGoogleAds(task *ChengeLinkTask) error {
 
 	// 消费Token（广告更新部分）
     updateTokens := len(updateRequests)
-    if err := s.tokenService.ConsumeTokensByService(task.UserID, "chengelink", "update_ad", updateTokens, task.ID); err != nil {
+    if err := s.tokenService.ConsumeTokensByService(task.UserID, "adscenter", "update_ad", updateTokens, task.ID); err != nil {
         return fmt.Errorf("Token消费失败: %w", err)
     }
 
@@ -417,8 +417,8 @@ func (s *ChengeLinkService) updateGoogleAds(task *ChengeLinkTask) error {
 }
 
 // GetTask 获取任务
-func (s *ChengeLinkService) GetTask(taskID string) (*ChengeLinkTask, error) {
-	var task ChengeLinkTask
+func (s *AdsCenterService) GetTask(taskID string) (*AdsCenterTask, error) {
+    var task AdsCenterTask
 	if err := s.db.Where("id = ?", taskID).First(&task).Error; err != nil {
 		return nil, fmt.Errorf("任务不存在: %w", err)
 	}
@@ -426,14 +426,14 @@ func (s *ChengeLinkService) GetTask(taskID string) (*ChengeLinkTask, error) {
 }
 
 // GetUserTasks 获取用户任务列表
-func (s *ChengeLinkService) GetUserTasks(userID string, page, size int) ([]ChengeLinkTask, int64, error) {
-	var tasks []ChengeLinkTask
+func (s *AdsCenterService) GetUserTasks(userID string, page, size int) ([]AdsCenterTask, int64, error) {
+    var tasks []AdsCenterTask
 	var total int64
 
 	query := s.db.Where("user_id = ?", userID)
 
 	// 获取总数
-	if err := query.Model(&ChengeLinkTask{}).Count(&total).Error; err != nil {
+    if err := query.Model(&AdsCenterTask{}).Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("获取任务总数失败: %w", err)
 	}
 
@@ -447,7 +447,7 @@ func (s *ChengeLinkService) GetUserTasks(userID string, page, size int) ([]Cheng
 }
 
 // CancelTask 取消任务
-func (s *ChengeLinkService) CancelTask(taskID string) error {
+func (s *AdsCenterService) CancelTask(taskID string) error {
 	task, err := s.GetTask(taskID)
 	if err != nil {
 		return err
@@ -471,21 +471,21 @@ func (s *ChengeLinkService) CancelTask(taskID string) error {
 }
 
 // GetStats 获取统计信息
-func (s *ChengeLinkService) GetStats(userID string) (*ChengeLinkStats, error) {
-	var stats ChengeLinkStats
+func (s *AdsCenterService) GetStats(userID string) (*AdsCenterStats, error) {
+    var stats AdsCenterStats
 
 	// 获取任务统计
 	var totalTasks, completedTasks, failedTasks int64
 
-	if err := s.db.Model(&ChengeLinkTask{}).Where("user_id = ?", userID).Count(&totalTasks).Error; err != nil {
+    if err := s.db.Model(&AdsCenterTask{}).Where("user_id = ?", userID).Count(&totalTasks).Error; err != nil {
 		return nil, fmt.Errorf("获取任务总数失败: %w", err)
 	}
 
-	if err := s.db.Model(&ChengeLinkTask{}).Where("user_id = ? AND status = ?", userID, TaskStatusCompleted).Count(&completedTasks).Error; err != nil {
+    if err := s.db.Model(&AdsCenterTask{}).Where("user_id = ? AND status = ?", userID, TaskStatusCompleted).Count(&completedTasks).Error; err != nil {
 		return nil, fmt.Errorf("获取完成任务数失败: %w", err)
 	}
 
-	if err := s.db.Model(&ChengeLinkTask{}).Where("user_id = ? AND status = ?", userID, TaskStatusFailed).Count(&failedTasks).Error; err != nil {
+    if err := s.db.Model(&AdsCenterTask{}).Where("user_id = ? AND status = ?", userID, TaskStatusFailed).Count(&failedTasks).Error; err != nil {
 		return nil, fmt.Errorf("获取失败任务数失败: %w", err)
 	}
 
@@ -500,7 +500,7 @@ func (s *ChengeLinkService) GetStats(userID string) (*ChengeLinkStats, error) {
 		TotalTokens    int `json:"total_tokens"`
 	}
 
-	if err := s.db.Model(&ChengeLinkTask{}).
+    if err := s.db.Model(&AdsCenterTask{}).
 		Select("SUM(extracted_count) as total_extracted, SUM(updated_count) as total_updated, SUM(tokens_consumed) as total_tokens").
 		Where("user_id = ?", userID).
 		Scan(&sumResult).Error; err != nil {

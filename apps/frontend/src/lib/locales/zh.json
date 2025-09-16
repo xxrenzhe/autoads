@@ -103,10 +103,10 @@
     "coreFeatures": "核心功能",
     "v1_2": {
       "title": "批量打开URL功能重构",
-      "description": "全新重构的批量打开URL功能，支持初级版本和高级版本",
+      "description": "全新重构的批量打开URL功能，支持基本版、静默版与自动化版",
       "batchOpenFeature": {
         "title": "批量打开URL功能",
-        "description": "支持初级版本（纯前端）和高级版本（需要Background Open插件）"
+        "description": "支持基本版（纯前端）、静默版（后端执行）与自动化版（计划任务）"
       },
       "basicVersion": {
         "title": "初级版本",
@@ -172,7 +172,7 @@
   },
   "batchOpen": {
     "title": "批量打开URL",
-    "subtitle": "支持初级版本（纯前端）和高级版本（需要插件）",
+    "subtitle": "支持基本版（纯前端）、静默版（后端执行）与自动化版（计划任务）",
     "basicVersion": {
       "title": "初级版本",
       "description": "无需安装插件，简单批量打开URL",

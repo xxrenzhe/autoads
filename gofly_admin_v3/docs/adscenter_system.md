@@ -1,8 +1,8 @@
-# AutoAds Chengelink系统文档
+# AutoAds AdsCenter 系统文档
 
 ## 概述
 
-AutoAds Chengelink系统是一个强大的广告链接自动化管理系统，集成AdsPower浏览器和Google Ads API，提供联盟链接提取和广告Final URL批量更新功能。系统支持自动化链接跟踪、智能广告更新和完整的执行监控。
+AutoAds AdsCenter 系统是一个强大的广告链接自动化管理系统，集成AdsPower浏览器和Google Ads API，提供联盟链接提取和广告 Final URL 批量更新功能。系统支持自动化链接跟踪、智能广告更新和完整的执行监控。
 
 ## 核心特性
 

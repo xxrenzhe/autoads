@@ -158,8 +158,8 @@ const (
                 <li>BatchGo HTTP模式：1 Token/URL</li>
                 <li>BatchGo Puppeteer模式：2 Token/URL</li>
                 <li>SiteRank查询：1 Token/域名</li>
-                <li>Chengelink链接提取：1 Token</li>
-                <li>Chengelink广告更新：3 Token/广告</li>
+                <li>自动化广告链接提取：1 Token</li>
+                <li>自动化广告更新：3 Token/广告</li>
             </ul>
             
             <p style="text-align: center; margin: 30px 0;">
@@ -190,8 +190,8 @@ Token余额不足提醒 - {{.AppName}}
 - BatchGo HTTP模式：1 Token/URL
 - BatchGo Puppeteer模式：2 Token/URL  
 - SiteRank查询：1 Token/域名
-- Chengelink链接提取：1 Token
-- Chengelink广告更新：3 Token/广告
+- 自动化广告链接提取：1 Token
+- 自动化广告更新：3 Token/广告
 
 立即充值：{{.TopupURL}}
 
@@ -313,7 +313,7 @@ AutoAds 团队
             <ul>
                 <li>无限制的BatchGo任务执行</li>
                 <li>高级SiteRank查询功能</li>
-                <li>Chengelink自动化服务</li>
+                <li>自动化广告服务</li>
                 <li>优先技术支持</li>
                 <li>更多Token奖励</li>
             </ul>
@@ -345,7 +345,7 @@ AutoAds 团队
 
 - 无限制的BatchGo任务执行
 - 高级SiteRank查询功能
-- Chengelink自动化服务
+- 自动化广告服务
 - 优先技术支持
 - 更多Token奖励
 

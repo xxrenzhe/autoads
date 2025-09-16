@@ -17,8 +17,8 @@ const (
 	ActionExecuteBatchTask   = "execute_batch_task"
 	ActionTerminateBatchTask = "terminate_batch_task"
 	ActionQuerySiteRank      = "query_siterank"
-	ActionCreateChengelink   = "create_chengelink"
-	ActionExecuteChengelink  = "execute_chengelink"
+    ActionCreateAdsCenter   = "create_adscenter"
+    ActionExecuteAdsCenter  = "execute_adscenter"
 
 	// Token操作
 	ActionPurchaseTokens = "purchase_tokens"
@@ -81,9 +81,9 @@ func (aas *AutoAdsAuditService) LogSiteRankQuery(userID, domain string, queryDet
 	return aas.LogUserAction(userID, ActionQuerySiteRank, "siterank_query", domain, details, ipAddress, userAgent, success, errorMsg, duration)
 }
 
-// LogChengeLinkAction 记录Chengelink操作
-func (aas *AutoAdsAuditService) LogChengeLinkAction(userID, action, taskID string, linkDetails map[string]interface{}, ipAddress, userAgent string, success bool, errorMsg string, duration time.Duration) error {
-    return aas.LogUserAction(userID, action, "chengelink_task", taskID, linkDetails, ipAddress, userAgent, success, errorMsg, duration)
+// LogAdsCenterAction 记录 AdsCenter 操作
+func (aas *AutoAdsAuditService) LogAdsCenterAction(userID, action, taskID string, details map[string]interface{}, ipAddress, userAgent string, success bool, errorMsg string, duration time.Duration) error {
+    return aas.LogUserAction(userID, action, "adscenter_task", taskID, details, ipAddress, userAgent, success, errorMsg, duration)
 }
 
 // LogAdsCenterAction 记录 AdsCenter 执行相关操作
@@ -306,7 +306,7 @@ func (aas *AutoAdsAuditService) getTokenUsageStats(userID string, since time.Tim
     aas.db.Model(&AuditEvent{}).
         Select("action, COUNT(*) as count").
         Where("user_id = ? AND created_at >= ?", userID, since).
-        Where("action IN ?", []string{ActionExecuteBatchTask, ActionQuerySiteRank, ActionExecuteChengelink}).
+        Where("action IN ?", []string{ActionExecuteBatchTask, ActionQuerySiteRank, ActionExecuteAdsCenter}).
         Group("action").
         Scan(&rows)
     var topAction string
@@ -323,8 +323,8 @@ func (aas *AutoAdsAuditService) getTokenUsageStats(userID string, since time.Tim
         feature = "BatchGo"
     case ActionQuerySiteRank:
         feature = "SiteRank"
-    case ActionExecuteChengelink:
-        feature = "ChengeLink"
+    case ActionExecuteAdsCenter:
+        feature = "AdsCenter"
     }
 
     return map[string]interface{}{
@@ -347,9 +347,9 @@ func (aas *AutoAdsAuditService) getTaskExecutionStats(userID string, since time.
     aas.db.Table("siterank_queries").Where("user_id = ? AND created_at >= ? AND LOWER(status) = ?", userID, since, "failed").Count(&failSR)
 
     var totalCL, succCL, failCL int64
-    aas.db.Table("chengelink_tasks").Where("user_id = ? AND created_at >= ?", userID, since).Count(&totalCL)
-    aas.db.Table("chengelink_tasks").Where("user_id = ? AND created_at >= ? AND LOWER(status) = ?", userID, since, "completed").Count(&succCL)
-    aas.db.Table("chengelink_tasks").Where("user_id = ? AND created_at >= ? AND LOWER(status) = ?", userID, since, "failed").Count(&failCL)
+    aas.db.Table("adscenter_tasks").Where("user_id = ? AND created_at >= ?", userID, since).Count(&totalCL)
+    aas.db.Table("adscenter_tasks").Where("user_id = ? AND created_at >= ? AND LOWER(status) = ?", userID, since, "completed").Count(&succCL)
+    aas.db.Table("adscenter_tasks").Where("user_id = ? AND created_at >= ? AND LOWER(status) = ?", userID, since, "failed").Count(&failCL)
 
     total := totalBatch + totalSR + totalCL
     success := succBatch + succSR + succCL
@@ -385,7 +385,7 @@ func (aas *AutoAdsAuditService) getSuspiciousUsers(since time.Time) []map[string
     aas.db.Table("siterank_queries").Select("user_id, COUNT(*) as v").
         Where("created_at >= ? AND LOWER(status) = ?", since, "failed").
         Group("user_id").Scan(&failSR)
-    aas.db.Table("chengelink_tasks").Select("user_id, COUNT(*) as v").
+    aas.db.Table("adscenter_tasks").Select("user_id, COUNT(*) as v").
         Where("created_at >= ? AND LOWER(status) = ?", since, "failed").
         Group("user_id").Scan(&failCL)
 
@@ -769,11 +769,11 @@ func (aas *AutoAdsAuditService) detectTaskAnomalies(userID string) []map[string]
     fail7d := getIntEnv("AUDIT_FAIL_7D_THRESHOLD", 10)
     aas.db.Table("batch_tasks").Where("user_id = ? AND created_at >= ? AND LOWER(status) = ?", userID, since, "failed").Count(&fail)
     aas.db.Table("siterank_queries").Where("user_id = ? AND created_at >= ? AND LOWER(status) = ?", userID, since, "failed").Count(&fail)
-    aas.db.Table("chengelink_tasks").Where("user_id = ? AND created_at >= ? AND LOWER(status) = ?", userID, since, "failed").Count(&fail)
+    aas.db.Table("adscenter_tasks").Where("user_id = ? AND created_at >= ? AND LOWER(status) = ?", userID, since, "failed").Count(&fail)
 
     var cancelled int64
     cancel7d := getIntEnv("AUDIT_CANCELLED_7D_THRESHOLD", 5)
-    aas.db.Table("chengelink_tasks").Where("user_id = ? AND created_at >= ? AND LOWER(status) IN ?", userID, since, []string{"cancelled", "terminated"}).Count(&cancelled)
+    aas.db.Table("adscenter_tasks").Where("user_id = ? AND created_at >= ? AND LOWER(status) IN ?", userID, since, []string{"cancelled", "terminated"}).Count(&cancelled)
 
     var out []map[string]interface{}
     if fail >= int64(fail7d) {

@@ -32,9 +32,9 @@ type AutoAdsMetrics struct {
 	siterankCacheHits *prometheus.CounterVec
 	siterankDuration  *prometheus.HistogramVec
 
-	chengelinkTasks    *prometheus.CounterVec
-	chengelinkSuccess  *prometheus.CounterVec
-	chengelinkDuration *prometheus.HistogramVec
+    adscenterTasks    *prometheus.CounterVec
+    adscenterSuccess  *prometheus.CounterVec
+    adscenterDuration *prometheus.HistogramVec
 
 	// 邀请和签到指标
 	invitationsGenerated *prometheus.CounterVec
@@ -168,29 +168,29 @@ func NewAutoAdsMetrics() *AutoAdsMetrics {
 			[]string{"source", "cached"},
 		),
 
-		// Chengelink指标
-		chengelinkTasks: promauto.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "autoads_chengelink_tasks_total",
-				Help: "Total number of Chengelink tasks",
-			},
-			[]string{"user_id", "plan"},
-		),
-		chengelinkSuccess: promauto.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "autoads_chengelink_success_total",
-				Help: "Total number of successful Chengelink operations",
-			},
-			[]string{"operation", "plan"},
-		),
-		chengelinkDuration: promauto.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "autoads_chengelink_duration_seconds",
-				Help:    "Chengelink operation duration in seconds",
-				Buckets: []float64{1, 5, 10, 30, 60, 300, 600},
-			},
-			[]string{"operation", "plan"},
-		),
+        // AdsCenter 指标
+        adscenterTasks: promauto.NewCounterVec(
+            prometheus.CounterOpts{
+                Name: "autoads_adscenter_tasks_total",
+                Help: "Total number of AdsCenter tasks",
+            },
+            []string{"user_id", "plan"},
+        ),
+        adscenterSuccess: promauto.NewCounterVec(
+            prometheus.CounterOpts{
+                Name: "autoads_adscenter_success_total",
+                Help: "Total number of successful AdsCenter operations",
+            },
+            []string{"operation", "plan"},
+        ),
+        adscenterDuration: promauto.NewHistogramVec(
+            prometheus.HistogramOpts{
+                Name:    "autoads_adscenter_duration_seconds",
+                Help:    "AdsCenter operation duration in seconds",
+                Buckets: []float64{1, 5, 10, 30, 60, 300, 600},
+            },
+            []string{"operation", "plan"},
+        ),
 
 		// 邀请和签到指标
 		invitationsGenerated: promauto.NewCounterVec(
@@ -333,17 +333,17 @@ func (aam *AutoAdsMetrics) RecordSiteRankQuery(userID, source, plan string, dura
 	aam.siterankDuration.WithLabelValues(source, cachedStr).Observe(duration.Seconds())
 }
 
-// Chengelink指标记录方法
+// AdsCenter 指标记录方法
 
-// RecordChengeLinkTask 记录Chengelink任务
-func (aam *AutoAdsMetrics) RecordChengeLinkTask(userID, plan string) {
-	aam.chengelinkTasks.WithLabelValues(userID, plan).Inc()
+// RecordAdsCenterTask 记录 AdsCenter 任务
+func (aam *AutoAdsMetrics) RecordAdsCenterTask(userID, plan string) {
+    aam.adscenterTasks.WithLabelValues(userID, plan).Inc()
 }
 
-// RecordChengeLinkSuccess 记录Chengelink成功操作
-func (aam *AutoAdsMetrics) RecordChengeLinkSuccess(operation, plan string, duration time.Duration) {
-	aam.chengelinkSuccess.WithLabelValues(operation, plan).Inc()
-	aam.chengelinkDuration.WithLabelValues(operation, plan).Observe(duration.Seconds())
+// RecordAdsCenterSuccess 记录 AdsCenter 成功操作
+func (aam *AutoAdsMetrics) RecordAdsCenterSuccess(operation, plan string, duration time.Duration) {
+    aam.adscenterSuccess.WithLabelValues(operation, plan).Inc()
+    aam.adscenterDuration.WithLabelValues(operation, plan).Observe(duration.Seconds())
 }
 
 // 邀请和签到指标记录方法

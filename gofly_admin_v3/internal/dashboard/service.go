@@ -102,19 +102,19 @@ func (s *DashboardService) getPlanInfo(user *User) *PlanInfo {
 // getPlanFeatures 获取套餐功能
 func (s *DashboardService) getPlanFeatures(planName string) []PlanFeature {
 	switch planName {
-	case "pro":
-		return []PlanFeature{
-			{Name: "BatchGo批量访问", Enabled: true, Limit: "无限制"},
-			{Name: "SiteRank查询", Enabled: true, Limit: "无限制"},
-			{Name: "Chengelink自动化", Enabled: true, Limit: "无限制"},
-			{Name: "优先客服支持", Enabled: true, Limit: "7x24小时"},
-			{Name: "高级统计报告", Enabled: true, Limit: "详细报告"},
-		}
+    case "pro":
+        return []PlanFeature{
+            {Name: "BatchGo批量访问", Enabled: true, Limit: "无限制"},
+            {Name: "SiteRank查询", Enabled: true, Limit: "无限制"},
+            {Name: "自动化广告(AdsCenter)", Enabled: true, Limit: "无限制"},
+            {Name: "优先客服支持", Enabled: true, Limit: "7x24小时"},
+            {Name: "高级统计报告", Enabled: true, Limit: "详细报告"},
+        }
 	case "max":
 		return []PlanFeature{
 			{Name: "BatchGo批量访问", Enabled: true, Limit: "无限制"},
 			{Name: "SiteRank查询", Enabled: true, Limit: "无限制"},
-			{Name: "Chengelink自动化", Enabled: true, Limit: "无限制"},
+            {Name: "自动化广告(AdsCenter)", Enabled: true, Limit: "无限制"},
 			{Name: "优先客服支持", Enabled: true, Limit: "7x24小时"},
 			{Name: "高级统计报告", Enabled: true, Limit: "详细报告"},
 			{Name: "API访问", Enabled: true, Limit: "无限制"},
@@ -124,7 +124,7 @@ func (s *DashboardService) getPlanFeatures(planName string) []PlanFeature {
 		return []PlanFeature{
 			{Name: "BatchGo批量访问", Enabled: true, Limit: "每日50次"},
 			{Name: "SiteRank查询", Enabled: true, Limit: "每日20次"},
-			{Name: "Chengelink自动化", Enabled: false, Limit: "Pro功能"},
+            {Name: "自动化广告(AdsCenter)", Enabled: false, Limit: "Pro功能"},
 			{Name: "客服支持", Enabled: true, Limit: "工作时间"},
 			{Name: "基础统计", Enabled: true, Limit: "基础报告"},
 		}
@@ -151,15 +151,15 @@ func (s *DashboardService) getTodayStats(userID string) (*DailyStats, error) {
 	stats.TokensConsumed = tokenConsumed
 
 	// 获取今日任务数量
-	var batchTasks, siteRankTasks, chengeLinkTasks int64
+    var batchTasks, siteRankTasks, adsCenterTasks int64
 
-	s.db.Model(&BatchTask{}).Where("user_id = ? AND DATE(created_at) = ?", userID, today).Count(&batchTasks)
-	s.db.Model(&SiteRankQuery{}).Where("user_id = ? AND DATE(created_at) = ?", userID, today).Count(&siteRankTasks)
-	s.db.Model(&ChengeLinkTask{}).Where("user_id = ? AND DATE(created_at) = ?", userID, today).Count(&chengeLinkTasks)
+    s.db.Model(&BatchTask{}).Where("user_id = ? AND DATE(created_at) = ?", userID, today).Count(&batchTasks)
+    s.db.Model(&SiteRankQuery{}).Where("user_id = ? AND DATE(created_at) = ?", userID, today).Count(&siteRankTasks)
+    s.db.Model(&AdsCenterTask{}).Where("user_id = ? AND DATE(created_at) = ?", userID, today).Count(&adsCenterTasks)
 
-	stats.BatchTasks = int(batchTasks)
-	stats.SiteRankQueries = int(siteRankTasks)
-	stats.ChengeLinkTasks = int(chengeLinkTasks)
+    stats.BatchTasks = int(batchTasks)
+    stats.SiteRankQueries = int(siteRankTasks)
+    stats.AdsCenterTasks = int(adsCenterTasks)
 
 	// 检查今日签到
 	var checkinCount int64
@@ -191,15 +191,15 @@ func (s *DashboardService) getMonthlyStats(userID string) (*MonthlyStats, error)
 	stats.TokensConsumed = tokenConsumed
 
 	// 获取本月任务数量
-	var batchTasks, siteRankTasks, chengeLinkTasks int64
+    var batchTasks, siteRankTasks, adsCenterTasks int64
 
-	s.db.Model(&BatchTask{}).Where("user_id = ? AND created_at >= ?", userID, startOfMonth).Count(&batchTasks)
-	s.db.Model(&SiteRankQuery{}).Where("user_id = ? AND created_at >= ?", userID, startOfMonth).Count(&siteRankTasks)
-	s.db.Model(&ChengeLinkTask{}).Where("user_id = ? AND created_at >= ?", userID, startOfMonth).Count(&chengeLinkTasks)
+    s.db.Model(&BatchTask{}).Where("user_id = ? AND created_at >= ?", userID, startOfMonth).Count(&batchTasks)
+    s.db.Model(&SiteRankQuery{}).Where("user_id = ? AND created_at >= ?", userID, startOfMonth).Count(&siteRankTasks)
+    s.db.Model(&AdsCenterTask{}).Where("user_id = ? AND created_at >= ?", userID, startOfMonth).Count(&adsCenterTasks)
 
-	stats.BatchTasks = int(batchTasks)
-	stats.SiteRankQueries = int(siteRankTasks)
-	stats.ChengeLinkTasks = int(chengeLinkTasks)
+    stats.BatchTasks = int(batchTasks)
+    stats.SiteRankQueries = int(siteRankTasks)
+    stats.AdsCenterTasks = int(adsCenterTasks)
 
 	// 获取本月签到天数
 	var checkinDays int64
@@ -321,7 +321,7 @@ func (s *DashboardService) getTaskTrend(userID string, startDate, endDate time.T
 			DATE(created_at) as date,
 			COUNT(*) as batch_tasks,
 			0 as siterank_queries,
-			0 as chengelink_tasks
+            0 as adscenter_tasks
 		FROM batch_tasks 
 		WHERE user_id = ? AND created_at >= ? AND created_at <= ?
 		GROUP BY DATE(created_at)

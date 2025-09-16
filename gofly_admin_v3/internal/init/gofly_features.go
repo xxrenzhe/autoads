@@ -11,7 +11,7 @@ import (
 	// "gofly-admin-v3/internal/admin"  // 暂时禁用
 	"gofly-admin-v3/internal/auth"
 	"gofly-admin-v3/internal/batchgo"
-	"gofly-admin-v3/internal/chengelink"
+    "gofly-admin-v3/internal/adscenter"
 	"gofly-admin-v3/internal/audit"
 	"gofly-admin-v3/internal/siterank"
 	"gofly-admin-v3/internal/store"
@@ -71,8 +71,8 @@ func registerBusinessRoutes(db interface{}) {
 	// 注册BatchGo路由
 	batchgo.RegisterRoutes(gormDB)
 
-	// 注册Chengelink路由
-	chengelink.RegisterRoutes(gormDB)
+    // 注册 AdsCenter 路由
+    adscenter.RegisterRoutes(gormDB)
 
 	// 注册审计统计路由
 	audit.RegisterRoutes(gormDB)
@@ -89,9 +89,9 @@ func registerBusinessRoutes(db interface{}) {
 	// 注册签到路由
 	checkin.RegisterRoutes(gormDB)
 
-	glog.Info(nil, "business_routes_registered", gf.Map{
-		"modules": []string{"auth", "siterank", "batchgo", "chengelink", "dashboard", "websocket", "invitation", "checkin", "audit"},
-	})
+    glog.Info(nil, "business_routes_registered", gf.Map{
+        "modules": []string{"auth", "siterank", "batchgo", "adscenter", "dashboard", "websocket", "invitation", "checkin", "audit"},
+    })
 }
 
 // registerAutoCRUD 注册自动CRUD路由

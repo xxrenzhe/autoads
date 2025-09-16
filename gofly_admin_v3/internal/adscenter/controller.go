@@ -1,4 +1,4 @@
-package chengelink
+package adscenter
 
 import (
 	"net/http"
@@ -7,16 +7,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ChengeLinkController Chengelink控制器
-type ChengeLinkController struct {
-	service *ChengeLinkService
+// AdsCenterController 自动化广告控制器
+type AdsCenterController struct {
+    service *AdsCenterService
 }
 
-// NewChengeLinkController 创建控制器
-func NewChengeLinkController(service *ChengeLinkService) *ChengeLinkController {
-	return &ChengeLinkController{
-		service: service,
-	}
+// NewAdsCenterController 创建控制器
+func NewAdsCenterController(service *AdsCenterService) *AdsCenterController {
+    return &AdsCenterController{
+        service: service,
+    }
 }
 
 // APIResponse 统一API响应格式
@@ -27,8 +27,8 @@ type APIResponse struct {
 }
 
 // CreateTask 创建链接更新任务
-// POST /api/chengelink/create-task
-func (c *ChengeLinkController) CreateTask(ctx *gin.Context) {
+// POST /api/adscenter/create-task
+func (c *AdsCenterController) CreateTask(ctx *gin.Context) {
 	userID := ctx.GetString("user_id")
 	if userID == "" {
 		ctx.JSON(http.StatusOK, APIResponse{
@@ -64,8 +64,8 @@ func (c *ChengeLinkController) CreateTask(ctx *gin.Context) {
 }
 
 // StartTask 启动任务执行
-// POST /api/chengelink/start-task
-func (c *ChengeLinkController) StartTask(ctx *gin.Context) {
+// POST /api/adscenter/start-task
+func (c *AdsCenterController) StartTask(ctx *gin.Context) {
 	var req struct {
 		TaskID string `json:"task_id" binding:"required"`
 	}
@@ -93,8 +93,8 @@ func (c *ChengeLinkController) StartTask(ctx *gin.Context) {
 }
 
 // GetTask 获取任务详情
-// GET /api/chengelink/task/:id
-func (c *ChengeLinkController) GetTask(ctx *gin.Context) {
+// GET /api/adscenter/task/:id
+func (c *AdsCenterController) GetTask(ctx *gin.Context) {
 	taskID := ctx.Param("id")
 	if taskID == "" {
 		ctx.JSON(http.StatusOK, APIResponse{
@@ -121,8 +121,8 @@ func (c *ChengeLinkController) GetTask(ctx *gin.Context) {
 }
 
 // GetTaskList 获取任务列表
-// GET /api/chengelink/tasks
-func (c *ChengeLinkController) GetTaskList(ctx *gin.Context) {
+// GET /api/adscenter/tasks
+func (c *AdsCenterController) GetTaskList(ctx *gin.Context) {
 	userID := ctx.GetString("user_id")
 	if userID == "" {
 		ctx.JSON(http.StatusOK, APIResponse{
@@ -168,8 +168,8 @@ func (c *ChengeLinkController) GetTaskList(ctx *gin.Context) {
 }
 
 // CancelTask 取消任务
-// POST /api/chengelink/cancel-task
-func (c *ChengeLinkController) CancelTask(ctx *gin.Context) {
+// POST /api/adscenter/cancel-task
+func (c *AdsCenterController) CancelTask(ctx *gin.Context) {
 	var req struct {
 		TaskID string `json:"task_id" binding:"required"`
 	}
@@ -197,8 +197,8 @@ func (c *ChengeLinkController) CancelTask(ctx *gin.Context) {
 }
 
 // GetStats 获取统计信息
-// GET /api/chengelink/stats
-func (c *ChengeLinkController) GetStats(ctx *gin.Context) {
+// GET /api/adscenter/stats
+func (c *AdsCenterController) GetStats(ctx *gin.Context) {
 	userID := ctx.GetString("user_id")
 	if userID == "" {
 		ctx.JSON(http.StatusOK, APIResponse{
@@ -227,8 +227,8 @@ func (c *ChengeLinkController) GetStats(ctx *gin.Context) {
 // === 配置管理接口 ===
 
 // CreateAdsPowerConfig 创建AdsPower配置
-// POST /api/chengelink/adspower-config
-func (c *ChengeLinkController) CreateAdsPowerConfig(ctx *gin.Context) {
+// POST /api/adscenter/adspower-config
+func (c *AdsCenterController) CreateAdsPowerConfig(ctx *gin.Context) {
 	userID := ctx.GetString("user_id")
 	if userID == "" {
 		ctx.JSON(http.StatusOK, APIResponse{
@@ -278,8 +278,8 @@ func (c *ChengeLinkController) CreateAdsPowerConfig(ctx *gin.Context) {
 }
 
 // CreateGoogleAdsConfig 创建Google Ads配置
-// POST /api/chengelink/google-ads-config
-func (c *ChengeLinkController) CreateGoogleAdsConfig(ctx *gin.Context) {
+// POST /api/adscenter/google-ads-config
+func (c *AdsCenterController) CreateGoogleAdsConfig(ctx *gin.Context) {
 	userID := ctx.GetString("user_id")
 	if userID == "" {
 		ctx.JSON(http.StatusOK, APIResponse{
@@ -396,8 +396,8 @@ func (c *ChengeLinkController) GetGoogleAdsConfigs(ctx *gin.Context) {
 }
 
 // TestAdsPowerConnection 测试AdsPower连接
-// POST /api/chengelink/test-adspower
-func (c *ChengeLinkController) TestAdsPowerConnection(ctx *gin.Context) {
+// POST /api/adscenter/test-adspower
+func (c *AdsCenterController) TestAdsPowerConnection(ctx *gin.Context) {
 	var req struct {
 		APIEndpoint string `json:"api_endpoint" binding:"required"`
 		APIKey      string `json:"api_key"`
@@ -433,8 +433,8 @@ func (c *ChengeLinkController) TestAdsPowerConnection(ctx *gin.Context) {
 }
 
 // TestGoogleAdsConnection 测试Google Ads连接
-// POST /api/chengelink/test-google-ads
-func (c *ChengeLinkController) TestGoogleAdsConnection(ctx *gin.Context) {
+// POST /api/adscenter/test-google-ads
+func (c *AdsCenterController) TestGoogleAdsConnection(ctx *gin.Context) {
 	var req struct {
 		CustomerID     string `json:"customer_id" binding:"required"`
 		DeveloperToken string `json:"developer_token" binding:"required"`
@@ -481,7 +481,7 @@ func (c *ChengeLinkController) TestGoogleAdsConnection(ctx *gin.Context) {
 }
 
 // RegisterRoutes 注册路由
-func (c *ChengeLinkController) RegisterRoutes(r *gin.RouterGroup) {
+func (c *AdsCenterController) RegisterRoutes(r *gin.RouterGroup) {
 	// 任务管理
 	r.POST("/create-task", c.CreateTask)
 	r.POST("/start-task", c.StartTask)
