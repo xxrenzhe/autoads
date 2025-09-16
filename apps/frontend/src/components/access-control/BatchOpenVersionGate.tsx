@@ -7,7 +7,7 @@ import { Lock, Crown, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface BatchOpenVersionGateProps {
-  version: 'basic' | 'silent' | 'automated' | 'autoclick'
+  version: 'basic' | 'silent' | 'autoclick'
   children: React.ReactNode
   fallback?: React.ReactNode
 }

@@ -81,7 +81,7 @@ type DailyStats struct {
     TokensConsumed   int    // Token消费
     BatchTasks       int    // BatchGo任务数
     SiteRankQueries  int    // SiteRank查询数
-    ChengeLinkTasks  int    // Chengelink任务数
+    AdsCenterTasks  int    // AdsCenter任务数
     CheckedIn        bool   // 是否已签到
 }
 ```
@@ -94,7 +94,7 @@ type MonthlyStats struct {
     TokensConsumed  int // Token消费
     BatchTasks      int // BatchGo任务数
     SiteRankQueries int // SiteRank查询数
-    ChengeLinkTasks int // Chengelink任务数
+    AdsCenterTasks int // AdsCenter任务数
     CheckinDays     int // 签到天数
 }
 ```
@@ -151,7 +151,7 @@ Authorization: Bearer <jwt_token>
       "tokens_consumed": 25,
       "batch_tasks": 3,
       "siterank_queries": 5,
-      "chengelink_tasks": 1,
+      "adscenter_tasks": 1,
       "checked_in": true
     },
     "monthly_stats": {
@@ -160,7 +160,7 @@ Authorization: Bearer <jwt_token>
       "tokens_consumed": 380,
       "batch_tasks": 45,
       "siterank_queries": 120,
-      "chengelink_tasks": 8,
+      "adscenter_tasks": 8,
       "checkin_days": 18
     }
   }
@@ -315,13 +315,13 @@ Authorization: Bearer <jwt_token>
         "date": "2025-09-10",
         "batch_tasks": 12,
         "siterank_queries": 18,
-        "chengelink_tasks": 3
+        "adscenter_tasks": 3
       },
       {
         "date": "2025-09-11",
         "batch_tasks": 6,
         "siterank_queries": 10,
-        "chengelink_tasks": 1
+        "adscenter_tasks": 1
       }
     ]
   }
@@ -369,21 +369,21 @@ Authorization: Bearer <jwt_token>
 ### Free套餐
 - **BatchGo批量访问**: ✅ 每日50次
 - **SiteRank查询**: ✅ 每日20次
-- **Chengelink自动化**: ❌ Pro功能
+- **自动化广告(AdsCenter)**: ❌ Pro功能
 - **客服支持**: ✅ 工作时间
 - **基础统计**: ✅ 基础报告
 
 ### Pro套餐
 - **BatchGo批量访问**: ✅ 无限制
 - **SiteRank查询**: ✅ 无限制
-- **Chengelink自动化**: ✅ 无限制
+- **自动化广告(AdsCenter)**: ✅ 无限制
 - **优先客服支持**: ✅ 7x24小时
 - **高级统计报告**: ✅ 详细报告
 
 ### Max套餐
 - **BatchGo批量访问**: ✅ 无限制
 - **SiteRank查询**: ✅ 无限制
-- **Chengelink自动化**: ✅ 无限制
+- **自动化广告(AdsCenter)**: ✅ 无限制
 - **优先客服支持**: ✅ 7x24小时
 - **高级统计报告**: ✅ 详细报告
 - **API访问**: ✅ 无限制

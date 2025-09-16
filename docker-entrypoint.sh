@@ -56,6 +56,24 @@ if [ -f "$APP_DIR/resource/config.yaml.template" ]; then
   fi
 fi
 
+# 可选：仅在首次启动时执行完整初始化（重建库），避免重复执行破坏数据
+if [ "${DB_REBUILD_ON_STARTUP}" = "true" ] || [ "${DB_REBUILD_ON_STARTUP}" = "1" ]; then
+  MARK_DIR="/app/logs"
+  MARK_FILE="$MARK_DIR/.db_rebuild_done"
+  mkdir -p "$MARK_DIR" || true
+  if [ ! -f "$MARK_FILE" ]; then
+    echo "[entrypoint] 检测到 DB_REBUILD_ON_STARTUP 标记，首次执行一次性数据库初始化"
+    # Initialize database schema + baseline data (idempotent; runs once by marker)
+    if ! "$APP_DIR/server" -init-db -config="$CONFIG_PATH"; then
+      echo "[entrypoint] ⚠️ 一次性数据库初始化失败（继续尝试常规迁移）"
+    else
+      date > "$MARK_FILE" || true
+    fi
+  else
+    echo "[entrypoint] 跳过一次性数据库初始化：标记已存在 $MARK_FILE"
+  fi
+fi
+
 # 执行数据库迁移（Go 后端 + Prisma）
 echo "[entrypoint] 执行数据库迁移 (Go) ..."
 "$APP_DIR/server" -migrate -config="$CONFIG_PATH" || true

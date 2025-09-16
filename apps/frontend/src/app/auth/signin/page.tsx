@@ -72,10 +72,10 @@ export default function SignIn() {
               <div className="flex items-center space-x-2 text-red-700">
                 <AlertCircle className="h-5 w-5" />
                 <p className="text-sm">
-                  {error === 'AccessDenied' 
-                    ? '仅支持 Gmail 账户登录，请使用 @gmail.com 邮箱' 
+              {error === 'AccessDenied' 
+                    ? '登录被拒绝，请更换账号或稍后重试' 
                     : '登录出现错误，请稍后重试'
-                  }
+              }
                 </p>
               </div>
             </CardContent>
@@ -97,7 +97,7 @@ export default function SignIn() {
           <CardHeader>
             <CardTitle className="flex items-center text-xl">
               <Chrome className="mr-2 h-6 w-6" />
-              Gmail 一键登录
+              使用 Google 登录
             </CardTitle>
             <CardDescription className="text-base">
               无需密码，安全便捷
@@ -142,7 +142,7 @@ export default function SignIn() {
               </div>
               
               <div className="text-xs text-gray-400 text-center pt-2 border-t">
-                <p>• 仅支持 @gmail.com 邮箱地址</p>
+                <p>• 为保障安全，登录后将校验账户健康状态</p>
                 <p>• 登录即表示您同意我们的服务条款和隐私政策</p>
               </div>
             </div>

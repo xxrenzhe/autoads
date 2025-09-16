@@ -179,19 +179,19 @@
 
 ## 待办清单（便于新会话接续）
 - 文档与环境：
-  - [ ] `.env.example` 统一为 MySQL DSN；README/docs 与 MustKnow 保持一致。
+  - [x] `.env.example` 统一为 MySQL DSN；README/docs 与 MustKnow 保持一致。
 - 前端：
-  - [ ] 移除 Advanced 版入口与文案。
-  - [ ] 新增 AutoClick 计划任务页面（表格/新增/编辑/删除/启停/查看）。
-  - [ ] 复用 Silent 的 Proxy/Referer 组件到 AutoClick 表单。
-  - [ ] 对接 SSE：`useAutoClickLiveProgress` → BFF 透传 `/api/v1/batchopen/tasks/:id/live`。
+  - [x] 移除 Advanced 版入口与文案（保留兼容字段，不在前端展示）。
+  - [x] 新增/完善 AutoClick 计划任务页面（表格/新增/编辑/删除/启停/查看）。
+  - [x] 在 AutoClick 表单补齐代理/Referer 字段（与 Silent 形态一致）。
+  - [x] 对接 SSE：`useAutoClickLiveProgress` → BFF 透传 `/api/v1/batchopen/tasks/:id/live`（同时兼容 `/api/autoclick/*`）。
 - 后端：
-  - [ ] DB 迁移：五张表（schedules/daily_plans/executions/execution_snapshots/url_failures）。
-  - [ ] 计划任务 CRUD/启停 API；权限校验按 user_id。
-  - [ ] 执行引擎 V1（分配/HTTP 执行/计费/退款/快照/幂等/恢复）。
-  - [ ] Redis Key 与 per-URL 切换实现；prefer_browser TTL=7d。
-  - [ ] SSE 推送（Redis Pub/Sub）；BFF 透传。
-  - [ ] 管理台配置热更新与“问题 URL”面板。
+  - [x] DB 迁移：五张表（schedules/daily_plans/executions/execution_snapshots/url_failures）。
+  - [x] 计划任务 CRUD/启停 API；权限校验按 user_id（`/api/v1/batchopen/autoclick/schedules`）。
+  - [x] 执行引擎 V1（分配/HTTP 执行/计费/退款/快照/幂等/恢复）最小实现（每分钟 tick 推进、Token 扣费/失败退款、小时快照、断点可继续）。
+  - [x] Redis Key 与 per-URL 切换实现；prefer_browser TTL=7d；连续失败归档“问题 URL”。
+  - [x] SSE 推送：Redis Pub/Sub 发布执行事件；同时提供 `/api/v1/batchopen/tasks/:id/live` 轮询型 SSE 通道；BFF 已透传。
+  - [x] 管理台配置热更新与“问题 URL”面板。
 - 稳定性：
   - [ ] 限流/并发/队列参数默认值与热配置接入。
   - [ ] 压测与回归用例（成功率/延迟/退款准确性/边界条件）。
@@ -200,3 +200,32 @@
 
 本文档为本轮功能优化的唯一事实来源（SSOT）。后续如有变更，请在本文件追加“变更记录”并同步相关实现。
 
+## 完成情况与未完项评估
+
+已完成（核心交付）
+- 登录与权限：用户端仅 Google OAuth；管理端独立登录（Admin JWT，经 `/ops/*` 反代），与 NextAuth 解耦。
+- BatchOpen 前端版本治理：Advanced 已隐藏；仅显示 Basic/Silent/AutoClick。
+- AutoClick 前端：任务中心（表格/新增/编辑/删除/启停/查看）；表单包含 Referer/代理；SSE 实时进度已接通（BFF → `/api/v1/batchopen/tasks/:id/live`）。
+- AutoClick 后端：
+  - 五表迁移与 CRUD/启停 API；执行引擎 V1（按日分配→小时推进→计费/失败退款→小时快照→断点恢复）；per-URL 切换（Redis失败计数，prefer_browser=7d）；问题 URL 归档。
+  - SSE：提供轮询型 SSE 通道；同时发布 Redis Pub/Sub 事件用于生态扩展。
+- 管理台：
+  - 系统配置热更新：`AutoClick_Count_Variance_Hour`、`Proxy_URL_{COUNTRY}`（含 US 起步）支持在线更新并热生效（DB→Redis Pub/Sub→缓存刷新→Worker 读取）。
+  - 问题 URL 面板：查询/筛选/备注；单条与批量操作（优先浏览器、重置计数、清除优先、删除）。
+
+未完成/部分完成项（建议后续迭代）
+- 执行引擎 V2（未完成）：
+  - 浏览器执行器（Puppeteer/Chromium）接入与稳定化；当前 `BrowserExecutor` 为占位实现（80% 成功率模拟）。
+  - 代理池健康检查、失败分类细化（captcha_detected、browser_required 等）与审计上报。
+- SSE 通道（部分完成）：
+  - 目前前端使用“轮询型 SSE”获取 DB 聚合进度；未直接消费 Redis Pub/Sub。可新增后端 SSE 直连 Redis 以降低延迟与数据库压力。
+- 历史数据可视化（未完成）：
+  - “最近 30 天”历史汇总页未实现，建议补充图表与列表。
+- 并发/限流/队列（未完成）：
+  - RateLimitManager 对 AutoClick 的 RPM/并发配额与热配置尚未打通；执行器并发/队列参数未暴露热更新。
+- 压测与回归（未完成）：
+  - 成功率/延迟的压测脚本与基线指标；计费与退款一致性回归用例；SSE 稳定性与丢失补偿验证。
+
+影响评估与建议
+- 当前交付已满足“可用”的计划任务与在线运维闭环；不影响主流程使用。
+- 若业务需真实浏览器场景成功率，可优先推进 V2（Puppeteer）与代理池健康检查；同时补齐限流/并发热配置与压测基线。

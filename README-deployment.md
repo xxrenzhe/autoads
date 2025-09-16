@@ -216,11 +216,16 @@ git push origin production  # 触发生产环境构建
 - 需要设置 `DATABASE_URL`（MySQL DSN），例如：`mysql://user:pass@host:3306/dbname`
 - 可选：`PRISMA_DB_PUSH_FALLBACK=true`，当迁移失败时使用 `prisma db push`（仅开发/临时环境，不建议生产）
 
+- 一次性重建库（初始化基础数据，不会重复执行）：
+  - 设置 `DB_REBUILD_ON_STARTUP=true`，容器首次启动时执行一次 `server -init-db`，并在 `/app/logs/.db_rebuild_done` 写入标记；后续重启不再重复执行，避免破坏已有数据。
+  - 仍会执行常规的 `server -migrate` 与 Prisma 迁移（幂等、安全）。
+
 示例运行：
 ```bash
 docker run --rm -p 3000:3000 \
   -e NEXT_PUBLIC_DOMAIN=localhost \
   -e DATABASE_URL="mysql://user:pass@db:3306/autoads" \
+  -e DB_REBUILD_ON_STARTUP=true \
   ghcr.io/xxrenzhe/autoads:latest
 ```
 

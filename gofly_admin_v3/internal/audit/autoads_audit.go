@@ -81,14 +81,15 @@ func (aas *AutoAdsAuditService) LogSiteRankQuery(userID, domain string, queryDet
 	return aas.LogUserAction(userID, ActionQuerySiteRank, "siterank_query", domain, details, ipAddress, userAgent, success, errorMsg, duration)
 }
 
-// LogAdsCenterAction 记录 AdsCenter 操作
-func (aas *AutoAdsAuditService) LogAdsCenterAction(userID, action, taskID string, details map[string]interface{}, ipAddress, userAgent string, success bool, errorMsg string, duration time.Duration) error {
-    return aas.LogUserAction(userID, action, "adscenter_task", taskID, details, ipAddress, userAgent, success, errorMsg, duration)
-}
-
-// LogAdsCenterAction 记录 AdsCenter 执行相关操作
-func (aas *AutoAdsAuditService) LogAdsCenterAction(userID, action, executionID string, details map[string]interface{}, ipAddress, userAgent string, success bool, errorMsg string, duration time.Duration) error {
-    return aas.LogUserAction(userID, action, "adscenter_execution", executionID, details, ipAddress, userAgent, success, errorMsg, duration)
+// LogAdsCenterAction 记录 AdsCenter 操作或执行（根据 action 自动选择资源类型）
+func (aas *AutoAdsAuditService) LogAdsCenterAction(userID, action, id string, details map[string]interface{}, ipAddress, userAgent string, success bool, errorMsg string, duration time.Duration) error {
+    // 兼容两类语义：任务级与执行级。按 action 粗略判断归类。
+    resource := "adscenter_task"
+    a := strings.ToLower(action)
+    if strings.Contains(a, "execute") {
+        resource = "adscenter_execution"
+    }
+    return aas.LogUserAction(userID, action, resource, id, details, ipAddress, userAgent, success, errorMsg, duration)
 }
 
 // LogTokenTransaction 记录Token交易

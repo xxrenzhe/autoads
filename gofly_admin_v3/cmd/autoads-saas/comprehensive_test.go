@@ -156,17 +156,17 @@ func testAPICompatibility(t *testing.T, baseURL string) {
 		assert.Contains(t, response, "message")
 	})
 
-	t.Run("Chengelink API兼容性", func(t *testing.T) {
-		// 测试创建Chengelink任务
+	t.Run("AdsCenter API兼容性", func(t *testing.T) {
+		// 测试创建AdsCenter任务
 		payload := map[string]interface{}{
-			"name":               "测试Chengelink任务",
+			"name":               "测试AdsCenter任务",
 			"affiliate_link":     "https://example.com/affiliate",
 			"adspower_env":       "test_env",
 			"google_ads_account": "test_account",
 		}
 
 		jsonData, _ := json.Marshal(payload)
-		resp, err := http.Post(baseURL+"/api/chengelink/create", "application/json", bytes.NewBuffer(jsonData))
+		resp, err := http.Post(baseURL+"/api/adscenter/create", "application/json", bytes.NewBuffer(jsonData))
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
@@ -178,7 +178,7 @@ func testAPICompatibility(t *testing.T, baseURL string) {
 		assert.Contains(t, response, "message")
 
 		// 测试获取任务列表
-		resp, err = http.Get(baseURL + "/api/chengelink/tasks")
+		resp, err = http.Get(baseURL + "/api/adscenter/tasks")
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
@@ -191,7 +191,7 @@ func testAPICompatibility(t *testing.T, baseURL string) {
 	})
 }
 
-// testFunctionalCompleteness 测试功能完整性 - BatchGo、SiteRankGo、Chengelink功能100%迁移验证
+// testFunctionalCompleteness 测试功能完整性 - BatchGo、SiteRankGo、AdsCenter功能100%迁移验证
 func testFunctionalCompleteness(t *testing.T, baseURL string) {
 	t.Run("BatchGo功能完整性", func(t *testing.T) {
 		// 测试所有三种模式
@@ -379,7 +379,7 @@ func testFunctionalCompleteness(t *testing.T, baseURL string) {
 		})
 	})
 
-	t.Run("Chengelink功能完整性", func(t *testing.T) {
+	t.Run("AdsCenter功能完整性", func(t *testing.T) {
 		// 测试链接提取
 		t.Run("链接提取", func(t *testing.T) {
 			payload := map[string]interface{}{
@@ -388,7 +388,7 @@ func testFunctionalCompleteness(t *testing.T, baseURL string) {
 			}
 
 			jsonData, _ := json.Marshal(payload)
-			resp, err := http.Post(baseURL+"/api/chengelink/extract", "application/json", bytes.NewBuffer(jsonData))
+			resp, err := http.Post(baseURL+"/api/adscenter/extract", "application/json", bytes.NewBuffer(jsonData))
 			require.NoError(t, err)
 			defer resp.Body.Close()
 
@@ -407,7 +407,7 @@ func testFunctionalCompleteness(t *testing.T, baseURL string) {
 			}
 
 			jsonData, _ := json.Marshal(payload)
-			resp, err := http.Post(baseURL+"/api/chengelink/update-ads", "application/json", bytes.NewBuffer(jsonData))
+			resp, err := http.Post(baseURL+"/api/adscenter/update-ads", "application/json", bytes.NewBuffer(jsonData))
 			require.NoError(t, err)
 			defer resp.Body.Close()
 
@@ -420,7 +420,7 @@ func testFunctionalCompleteness(t *testing.T, baseURL string) {
 
 		// 测试执行状态监控
 		t.Run("执行状态监控", func(t *testing.T) {
-			resp, err := http.Get(baseURL + "/api/chengelink/tasks?status=running")
+			resp, err := http.Get(baseURL + "/api/adscenter/tasks?status=running")
 			require.NoError(t, err)
 			defer resp.Body.Close()
 
@@ -909,17 +909,17 @@ func testEndToEnd(t *testing.T, baseURL string) {
 			t.Logf("任务进度查询结果: %v", progressResp["code"])
 		}
 
-		// 7. 创建Chengelink任务
-		t.Log("步骤7: 创建Chengelink任务")
-		chengelinkPayload := map[string]interface{}{
-			"name":               "E2E测试Chengelink任务",
+        // 7. 创建 AdsCenter 任务
+        t.Log("步骤7: 创建 AdsCenter 任务")
+		adscenterPayload := map[string]interface{}{
+			"name":               "E2E测试AdsCenter任务",
 			"affiliate_link":     "https://example.com/affiliate",
 			"adspower_env":       "test_env",
 			"google_ads_account": "test_account",
 		}
 
-		jsonData, _ = json.Marshal(chengelinkPayload)
-		req, _ = http.NewRequest("POST", baseURL+"/api/chengelink/create", bytes.NewBuffer(jsonData))
+        jsonData, _ = json.Marshal(adscenterPayload)
+        req, _ = http.NewRequest("POST", baseURL+"/api/adscenter/create", bytes.NewBuffer(jsonData))
 		req.Header.Set("Authorization", "Bearer "+userToken)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -927,11 +927,10 @@ func testEndToEnd(t *testing.T, baseURL string) {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		var chengelinkResp map[string]interface{}
-		err = json.NewDecoder(resp.Body).Decode(&chengelinkResp)
-		require.NoError(t, err)
-
-		t.Logf("Chengelink任务创建结果: %v", chengelinkResp["code"])
+        var adscenterResp map[string]interface{}
+        err = json.NewDecoder(resp.Body).Decode(&adscenterResp)
+        require.NoError(t, err)
+        t.Logf("AdsCenter 任务创建结果: %v", adscenterResp["code"])
 
 		// 8. 检查最终Token余额
 		t.Log("步骤8: 检查最终Token余额")

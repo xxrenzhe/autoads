@@ -353,22 +353,22 @@ func testTokenConsumptionAccuracy(t *testing.T, baseURL string) {
 		}
 	})
 
-	t.Run("Chengelink Token消费", func(t *testing.T) {
+    t.Run("AdsCenter Token消费", func(t *testing.T) {
 		initialBalance := getBalance()
 		if initialBalance < 0 {
 			t.Skip("无法获取初始Token余额")
 		}
 
-		// 创建Chengelink任务 (链接提取1Token + 广告更新3Token/广告)
+        // 创建 AdsCenter 任务 (链接提取1Token + 广告更新3Token/广告)
 		payload := map[string]interface{}{
-			"name":               "Chengelink Token消费测试",
+            "name":               "AdsCenter Token消费测试",
 			"affiliate_link":     "https://example.com/affiliate",
 			"adspower_env":       "test_env",
 			"google_ads_account": "test_account",
 		}
 
 		jsonData, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", baseURL+"/api/chengelink/create", bytes.NewBuffer(jsonData))
+        req, _ := http.NewRequest("POST", baseURL+"/api/adscenter/create", bytes.NewBuffer(jsonData))
 		req.Header.Set("Authorization", "Bearer "+userToken)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -384,7 +384,7 @@ func testTokenConsumptionAccuracy(t *testing.T, baseURL string) {
 		finalBalance := getBalance()
 		if finalBalance >= 0 && taskResp["code"].(float64) == 0 {
 			// 至少应消费链接提取的1个Token
-			assert.LessOrEqual(t, finalBalance, initialBalance-1, "Chengelink任务应至少消费1个Token")
+        assert.LessOrEqual(t, finalBalance, initialBalance-1, "AdsCenter 任务应至少消费1个Token")
 		}
 	})
 
@@ -424,7 +424,7 @@ func testAuthenticationAuthorization(t *testing.T, baseURL string) {
 			"/api/tokens/balance",
 			"/api/batchopen/tasks",
 			"/api/siterank/history",
-			"/api/chengelink/tasks",
+			"/api/adscenter/tasks",
 		}
 
 		for _, endpoint := range protectedEndpoints {

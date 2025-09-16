@@ -117,6 +117,20 @@ const adminNavigationItems: NavigationItem[] = [
     description: 'System health'
   },
   {
+    title: 'System Config',
+    href: '/admin/system',
+    icon: Settings,
+    description: 'Hot config updates',
+    children: [
+      {
+        title: 'AutoClick 配置',
+        href: '/admin/system/autoclick',
+        icon: Settings,
+        description: 'Proxy/方差热更新'
+      }
+    ]
+  },
+  {
     title: 'Token Management',
     href: '/ops/console/tokens',
     icon: Database,
@@ -133,6 +147,26 @@ const adminNavigationItems: NavigationItem[] = [
         href: '/ops/console/tokens/analytics',
         icon: BarChart3,
         description: 'Token analytics'
+      }
+    ]
+  },
+  {
+    title: 'AutoClick 管理',
+    href: '/admin/autoclick',
+    icon: Globe,
+    description: 'AutoClick 执行管理',
+    children: [
+      {
+        title: '问题 URL',
+        href: '/admin/autoclick/problem-urls',
+        icon: Globe,
+        description: '失败URL与切换标记'
+      },
+      {
+        title: '历史统计',
+        href: '/admin/autoclick/history',
+        icon: TrendingUp,
+        description: '最近N天汇总'
       }
     ]
   },

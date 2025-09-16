@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,20 +25,43 @@ export default function AdminSignIn() {
     setError(null)
 
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
+      // 直连 Go 管理端登录口，经 /ops 反代
+      const resp = await fetch('/ops/admin/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password })
       })
 
-      if (result?.error) {
+      if (!resp.ok) {
         setError('邮箱或密码错误')
-      } else {
-        // Redirect to admin dashboard
-        const callbackUrl = searchParams.get('callbackUrl') || '/ops/console/panel'
-        router.push(callbackUrl)
-        router.refresh()
+        setIsLoading(false)
+        return
       }
+
+      // 兼容多种返回字段：token / access_token / jwt
+      let data: any = null
+      try { data = await resp.json() } catch {}
+      const token: string | undefined = data?.token || data?.access_token || data?.jwt
+      if (!token) {
+        setError('登录响应异常')
+        setIsLoading(false)
+        return
+      }
+
+      // 将管理员 JWT 保存在受限 Cookie 中，仅供 /ops 反代读取
+      // 注意：前端无法设置 httpOnly，这里采用短期 Cookie + SameSite=Lax
+      const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:'
+      const attrs = [
+        'Path=/; SameSite=Lax',
+        `Max-Age=${60 * 60 * 6}`, // 6 小时
+        isSecure ? 'Secure' : ''
+      ].filter(Boolean).join('; ')
+      document.cookie = `OPS_ADMIN_TOKEN=${encodeURIComponent(token)}; ${attrs}`
+
+      // 跳转到管理台
+      const callbackUrl = searchParams.get('callbackUrl') || '/ops/console/panel'
+      router.push(callbackUrl)
+      router.refresh()
     } catch (err) {
       setError('登录失败，请稍后重试')
     } finally {

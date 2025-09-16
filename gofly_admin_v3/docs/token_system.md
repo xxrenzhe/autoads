@@ -332,7 +332,7 @@ type RechargePackage struct {
 const (
     ServiceSiteRank   = "siterank"    // SiteRank服务
     ServiceBatchGo    = "batchgo"     // BatchGo服务
-    ServiceChengeLink = "chengelink"  // ChengeLink服务
+    ServiceAdsCenter  = "adscenter"  // AdsCenter服务
     ServiceAPI        = "api"         // API服务
 )
 ```
@@ -356,8 +356,8 @@ const (
 | siterank | query | 1 | 每次域名查询消费1个Token |
 | batchgo | http | 1 | HTTP模式每个URL消费1个Token |
 | batchgo | puppeteer | 2 | Puppeteer模式每个URL消费2个Token |
-| chengelink | extract | 1 | 每次链接提取消费1个Token |
-| chengelink | update_ads | 3 | 每个广告更新消费3个Token |
+| adscenter | extract | 1 | 自动化广告：每次链接提取消费1个Token |
+| adscenter | update_ads | 3 | 自动化广告：每个广告更新消费3个Token |
 | api | call | 1 | 每次API调用消费1个Token |
 
 ## 安全特性

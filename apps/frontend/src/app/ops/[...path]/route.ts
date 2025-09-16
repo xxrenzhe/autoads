@@ -17,6 +17,8 @@ function isAllowed(subPath: string): boolean {
   const allow = [
     '/console', '/console/',
     '/api/v1/console', '/api/v1/console/',
+    '/admin', '/admin/',
+    '/api/v1/admin', '/api/v1/admin/',
     '/health', '/healthz', '/ready', '/readyz', '/live'
   ]
   return allow.some(p => s === p || s.startsWith(p))
@@ -47,8 +49,18 @@ async function readBodyWithLimit(req: Request, limit: number): Promise<BodyInit 
   return Buffer.concat(chunks)
 }
 
-import { auth } from '@/lib/auth/v5-config'
-import { createInternalJWT, ensureRequestId, ensureIdempotencyKey } from '@/lib/security/internal-jwt'
+import { ensureRequestId, ensureIdempotencyKey } from '@/lib/security/internal-jwt'
+
+function getCookie(name: string, cookieHeader?: string | null): string | null {
+  const cookie = cookieHeader || ''
+  const parts = cookie.split(';').map(s => s.trim())
+  for (const p of parts) {
+    if (!p) continue
+    const [k, ...rest] = p.split('=')
+    if (k === name) return decodeURIComponent(rest.join('='))
+  }
+  return null
+}
 
 async function proxy(req: Request, path: string[]) {
   const url = new URL(req.url)
@@ -66,16 +78,10 @@ async function proxy(req: Request, path: string[]) {
   ensureRequestId(headers)
   ensureIdempotencyKey(req.method, headers)
 
+  // 管理端鉴权与用户端 NextAuth 解耦：仅透传管理员 JWT（来自浏览器 Cookie）
   if (!headers.get('authorization')) {
-    try {
-      const session: any = await auth()
-      const uid = session?.user?.id
-      const role = session?.user?.role
-      if (uid) {
-        const token = createInternalJWT({ sub: uid, role })
-        if (token) headers.set('authorization', `Bearer ${token}`)
-      }
-    } catch {}
+    const adminJwt = getCookie('OPS_ADMIN_TOKEN', req.headers.get('cookie'))
+    if (adminJwt) headers.set('authorization', `Bearer ${adminJwt}`)
   }
 
   let body: BodyInit | undefined | Response = undefined
@@ -109,4 +115,3 @@ export async function PUT(req: Request, ctx: { params: { path: string[] } }) { r
 export async function PATCH(req: Request, ctx: { params: { path: string[] } }) { return proxy(req, ctx.params.path) }
 export async function DELETE(req: Request, ctx: { params: { path: string[] } }) { return proxy(req, ctx.params.path) }
 export async function OPTIONS(req: Request, ctx: { params: { path: string[] } }) { return proxy(req, ctx.params.path) }
-

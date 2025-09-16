@@ -31,9 +31,9 @@ AutoAds AdsCenter 系统是一个强大的广告链接自动化管理系统，�
 
 ## 数据模型
 
-### ChengeLinkTask 任务模型
+### AdsCenterTask 任务模型
 ```go
-type ChengeLinkTask struct {
+type AdsCenterTask struct {
     ID                string                 // 任务ID
     UserID            string                 // 用户ID
     Name              string                 // 任务名称
@@ -103,7 +103,7 @@ type GoogleAdsConfig struct {
 
 #### 创建任务
 ```http
-POST /api/chengelink/create-task
+POST /api/adscenter/create-task
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
 
@@ -135,7 +135,7 @@ Content-Type: application/json
 
 #### 启动任务
 ```http
-POST /api/chengelink/start-task
+POST /api/adscenter/start-task
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
 
@@ -146,7 +146,7 @@ Content-Type: application/json
 
 #### 获取任务详情
 ```http
-GET /api/chengelink/task/{task_id}
+GET /api/adscenter/task/{task_id}
 Authorization: Bearer <jwt_token>
 ```
 
@@ -196,13 +196,13 @@ Authorization: Bearer <jwt_token>
 
 #### 获取任务列表
 ```http
-GET /api/chengelink/tasks?page=1&size=20
+GET /api/adscenter/tasks?page=1&size=20
 Authorization: Bearer <jwt_token>
 ```
 
 #### 取消任务
 ```http
-POST /api/chengelink/cancel-task
+POST /api/adscenter/cancel-task
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
 
@@ -213,7 +213,7 @@ Content-Type: application/json
 
 #### 获取统计信息
 ```http
-GET /api/chengelink/stats
+GET /api/adscenter/stats
 Authorization: Bearer <jwt_token>
 ```
 
@@ -238,7 +238,7 @@ Authorization: Bearer <jwt_token>
 
 #### 创建AdsPower配置
 ```http
-POST /api/chengelink/adspower-config
+POST /api/adscenter/adspower-config
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
 
@@ -252,7 +252,7 @@ Content-Type: application/json
 
 #### 创建Google Ads配置
 ```http
-POST /api/chengelink/google-ads-config
+POST /api/adscenter/google-ads-config
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
 
@@ -268,15 +268,15 @@ Content-Type: application/json
 
 #### 获取配置列表
 ```http
-GET /api/chengelink/adspower-configs
-GET /api/chengelink/google-ads-configs
+GET /api/adscenter/adspower-configs
+GET /api/adscenter/google-ads-configs
 Authorization: Bearer <jwt_token>
 ```
 
 #### 测试连接
 ```http
-POST /api/chengelink/test-adspower
-POST /api/chengelink/test-google-ads
+POST /api/adscenter/test-adspower
+POST /api/adscenter/test-google-ads
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
 

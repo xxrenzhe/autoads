@@ -74,8 +74,9 @@ export function BatchOpenVersionShowcase() {
 
       <div className="grid gap-6 md:grid-cols-3">
         {VERSION_CONFIG.map((config: any) => {
-          const verKey = (config.id === 'autoclick' ? 'automated' : config.id) as keyof typeof permissions.versions
-          const version = permissions.versions[verKey]
+          const verKey = config.id as keyof typeof permissions.versions
+          // 后端可能仍返回 automated 字段，向后兼容：优先使用 autoclick，否则回退 automated
+          const version = (permissions.versions as any)[verKey] || (permissions.versions as any)['automated']
           const Icon = config.icon
           const hasAccess = version.available
 

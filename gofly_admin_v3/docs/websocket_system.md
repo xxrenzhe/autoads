@@ -77,10 +77,10 @@ type Message struct {
 - `siterank_progress`: SiteRank查询进度更新
 - `siterank_complete`: SiteRank查询完成
 
-### Chengelink相关消息
-- `chengelink_start`: Chengelink任务开始
-- `chengelink_progress`: Chengelink任务进度更新
-- `chengelink_complete`: Chengelink任务完成
+### AdsCenter 相关消息
+- `adscenter_start`: AdsCenter 任务开始
+- `adscenter_progress`: AdsCenter 任务进度更新
+- `adscenter_complete`: AdsCenter 任务完成
 
 ### 系统通知消息
 - `system_notification`: 系统通知

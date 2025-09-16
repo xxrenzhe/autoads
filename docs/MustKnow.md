@@ -28,4 +28,4 @@
 - AUTH_GOOGLE_SECRET=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
 - SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
 5）预发/生产环境的容器配置：2C4G
-6）用户通过Google OAuth一键登录或邮箱注册登录进入网站，使用网站的功能；管理员通过单独的管理URL通过账号密码登录，进入后台管理系统；两套登录系统独立，互不影响
+6）用户通过Google OAuth一键登录进入网站（不提供邮箱注册/登录）；管理员通过单独的管理URL通过账号密码登录，进入后台管理系统；两套登录系统独立，互不影响

@@ -39,6 +39,7 @@ import (
     "gofly-admin-v3/internal/middleware"
     "gofly-admin-v3/internal/siterankgo"
     "gofly-admin-v3/internal/adscentergo"
+    "gofly-admin-v3/internal/autoclick"
     "gofly-admin-v3/internal/store"
     "gofly-admin-v3/internal/user"
     "gofly-admin-v3/internal/websocket"
@@ -288,8 +289,10 @@ func main() {
 			wsManager = websocket.NewManager()
 			go wsManager.Run()
 
-			// Token 服务
-			tokenSvc = user.NewTokenService(gormDB)
+            // Token 服务
+            tokenSvc = user.NewTokenService(gormDB)
+            // 注入 Token 服务到 AutoClick 模块（用于扣费/退款）
+            autoclick.SetTokenService(tokenSvc)
 
             // BatchGo 服务（注入 Redis 以共享 BadURL 标记）
             batchService = batchgo.NewService(gormDB, tokenSvc, wsManager, auditSvc, storeRedis)
@@ -331,6 +334,23 @@ func main() {
     sch := scheduler.GetScheduler()
     // 注册优化方案系统任务
     sch.RegisterOptimizationJobs()
+    // 注册 AutoClick 调度任务（每分钟tick）
+    // 注入 RateLimit provider（plan-based），rpm 使用 BatchTasksPerMinute，concurrent 使用 BatchConcurrentTasks
+    if rateLimitManager != nil {
+        autoclick.SetRateLimitProvider(func(userID string) (int, int) {
+            conc := rateLimitManager.GetBatchConcurrentLimit(userID)
+            // 读取计划每分钟任务上限
+            // 通过 plan limits 快速获取（不需要用户级状态）
+            planLimits := rateLimitManager.GetPlanLimits()
+            info, _ := (&simpleUserSvc{}).GetUserByID(userID)
+            plan := info.Plan
+            if plan == "" { plan = info.PlanName }
+            rpm := 0
+            if pl, ok := planLimits[plan]; ok { rpm = pl.BatchTasksPerMinute }
+            return rpm, conc
+        })
+    }
+    autoclick.RegisterAutoClickJob()
     if err := sch.Start(); err != nil {
         log.Printf("警告：调度器启动失败: %v", err)
     } else {
@@ -540,6 +560,24 @@ func setupAPIRoutes(r *gin.Engine) {
                 if err != nil { c.JSON(200, gin.H{"code":5001, "message": err.Error()}); return }
                 c.JSON(200, gin.H{"code":0, "execution_id": id})
             })
+
+            // AutoClick 最近N天统计（默认30天）
+            console.GET("/autoclick/history", func(c *gin.Context) {
+                days := gf.IntDefault(strings.TrimSpace(c.DefaultQuery("days", "30")), 30)
+                if days <= 0 || days > 90 { days = 30 }
+                q := gormDB.Model(&autoclick.AutoClickExecution{})
+                if uid := strings.TrimSpace(c.Query("userId")); uid != "" { q = q.Where("user_id = ?", uid) }
+                if sid := strings.TrimSpace(c.Query("scheduleId")); sid != "" { q = q.Where("schedule_id = ?", sid) }
+                // 按 date 分组聚合
+                type row struct { Date string; Total int64; Success int64; Fail int64 }
+                var out []row
+                if err := q.Select("date, SUM(total) as total, SUM(success) as success, SUM(fail) as fail").
+                    Where("STR_TO_DATE(date, '%Y-%m-%d') >= DATE_SUB(CURDATE(), INTERVAL ? DAY)", days).
+                    Group("date").Order("date ASC").Find(&out).Error; err != nil {
+                    c.JSON(500, gin.H{"code":5000, "message": err.Error()}); return
+                }
+                c.JSON(200, gin.H{"code":0, "data": out})
+            })
             console.PATCH("/scheduler/jobs/:name", func(c *gin.Context) {
                 name := c.Param("name")
                 var body struct{ Enabled *bool `json:"enabled"` }
@@ -571,10 +609,149 @@ func setupAPIRoutes(r *gin.Engine) {
                 apiGroup.GET("/performance", apiMgmt.GetPerformance)
                 apiGroup.GET("/request/:id", apiMgmt.GetRequestById)
             }
+
+            // AutoClick 问题 URL 面板接口
+            console.GET("/autoclick/url-failures", func(c *gin.Context) {
+                // 过滤与分页
+                page := gf.IntDefault(c.DefaultQuery("page", "1"), 1)
+                limit := gf.IntDefault(c.DefaultQuery("limit", "20"), 20)
+                if page <= 0 { page = 1 }
+                if limit <= 0 || limit > 200 { limit = 20 }
+                offset := (page - 1) * limit
+
+                q := gormDB.Model(&autoclick.AutoClickURLFailure{})
+                if uid := strings.TrimSpace(c.Query("userId")); uid != "" { q = q.Where("user_id = ?", uid) }
+                if kw := strings.TrimSpace(c.Query("q")); kw != "" { like := "%" + kw + "%"; q = q.Where("url LIKE ?", like) }
+                var total int64
+                _ = q.Count(&total).Error
+                var rows []autoclick.AutoClickURLFailure
+                if err := q.Order("updated_at DESC").Offset(offset).Limit(limit).Find(&rows).Error; err != nil {
+                    c.JSON(500, gin.H{"code":5000, "message": err.Error()}); return
+                }
+                c.JSON(200, gin.H{"code":0, "data": rows, "pagination": gin.H{"page": page, "limit": limit, "total": total}})
+            })
+
+            console.DELETE("/autoclick/url-failures/:id", func(c *gin.Context) {
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"code":1001, "message":"id required"}); return }
+                if err := gormDB.Where("id = ?", id).Delete(&autoclick.AutoClickURLFailure{}).Error; err != nil { c.JSON(500, gin.H{"code":5000, "message": err.Error()}); return }
+                c.JSON(200, gin.H{"code":0, "message":"deleted"})
+            })
+
+            console.POST("/autoclick/url-failures/:id/prefer_browser", func(c *gin.Context) {
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"code":1001, "message":"id required"}); return }
+                var row autoclick.AutoClickURLFailure
+                if err := gormDB.Where("id = ?", id).First(&row).Error; err != nil { c.JSON(404, gin.H{"code":404, "message": "not found"}); return }
+                // 设置 prefer_browser 标记 7d
+                if storeRedis != nil {
+                    key := fmt.Sprintf("autoads:ac:prefer_browser:%s:%s", row.UserID, row.URLHash)
+                    _ = storeRedis.Set(c.Request.Context(), key, "1", 7*24*time.Hour)
+                }
+                // 更新 DB 字段以便前端展示
+                until := time.Now().Add(7 * 24 * time.Hour)
+                _ = gormDB.Model(&autoclick.AutoClickURLFailure{}).Where("id=?", id).Updates(map[string]interface{}{"prefer_browser_until": until, "updated_at": time.Now()}).Error
+                c.JSON(200, gin.H{"code":0, "message":"ok"})
+            })
+
+            console.POST("/autoclick/url-failures/:id/reset_counters", func(c *gin.Context) {
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"code":1001, "message":"id required"}); return }
+                var row autoclick.AutoClickURLFailure
+                if err := gormDB.Where("id = ?", id).First(&row).Error; err != nil { c.JSON(404, gin.H{"code":404, "message": "not found"}); return }
+                if err := gormDB.Model(&autoclick.AutoClickURLFailure{}).Where("id=?", id).Updates(map[string]interface{}{"http_fail_consecutive": 0, "browser_fail_consecutive": 0, "updated_at": time.Now()}).Error; err != nil {
+                    c.JSON(500, gin.H{"code":5000, "message": err.Error()}); return
+                }
+                // 同步清理 Redis 计数键
+                if storeRedis != nil {
+                    ctx := c.Request.Context()
+                    _ = storeRedis.Del(ctx, fmt.Sprintf("autoads:ac:fail:http:%s:%s", row.UserID, row.URLHash))
+                    _ = storeRedis.Del(ctx, fmt.Sprintf("autoads:ac:fail:browser:%s:%s", row.UserID, row.URLHash))
+                }
+                c.JSON(200, gin.H{"code":0, "message":"reset"})
+            })
+
+            // 批量操作：prefer/reset/delete
+            console.POST("/autoclick/url-failures/batch", func(c *gin.Context) {
+                var body struct {
+                    IDs []string `json:"ids"`
+                    Op  string   `json:"op"`
+                }
+                if err := c.ShouldBindJSON(&body); err != nil || len(body.IDs) == 0 || body.Op == "" {
+                    c.JSON(400, gin.H{"code":1001, "message":"invalid body"}); return
+                }
+                op := strings.ToLower(strings.TrimSpace(body.Op))
+                switch op {
+                case "prefer":
+                    if storeRedis == nil { c.JSON(503, gin.H{"code":5000, "message":"redis unavailable"}); return }
+                    var rows []autoclick.AutoClickURLFailure
+                    _ = gormDB.Where("id IN ?", body.IDs).Find(&rows).Error
+                    for _, r := range rows {
+                        key := fmt.Sprintf("autoads:ac:prefer_browser:%s:%s", r.UserID, r.URLHash)
+                        _ = storeRedis.Set(c.Request.Context(), key, "1", 7*24*time.Hour)
+                    }
+                    _ = gormDB.Model(&autoclick.AutoClickURLFailure{}).Where("id IN ?", body.IDs).Updates(map[string]interface{}{"prefer_browser_until": time.Now().Add(7*24*time.Hour), "updated_at": time.Now()}).Error
+                    c.JSON(200, gin.H{"code":0, "message":"ok", "count": len(rows)})
+                case "reset":
+                    if err := gormDB.Model(&autoclick.AutoClickURLFailure{}).Where("id IN ?", body.IDs).Updates(map[string]interface{}{"http_fail_consecutive": 0, "browser_fail_consecutive": 0, "updated_at": time.Now()}).Error; err != nil {
+                        c.JSON(500, gin.H{"code":5000, "message": err.Error()}); return
+                    }
+                    if storeRedis != nil {
+                        var rows []autoclick.AutoClickURLFailure
+                        _ = gormDB.Where("id IN ?", body.IDs).Find(&rows).Error
+                        ctx := c.Request.Context()
+                        for _, r := range rows {
+                            _ = storeRedis.Del(ctx, fmt.Sprintf("autoads:ac:fail:http:%s:%s", r.UserID, r.URLHash))
+                            _ = storeRedis.Del(ctx, fmt.Sprintf("autoads:ac:fail:browser:%s:%s", r.UserID, r.URLHash))
+                        }
+                    }
+                    c.JSON(200, gin.H{"code":0, "message":"reset", "count": len(body.IDs)})
+                case "delete":
+                    if err := gormDB.Where("id IN ?", body.IDs).Delete(&autoclick.AutoClickURLFailure{}).Error; err != nil {
+                        c.JSON(500, gin.H{"code":5000, "message": err.Error()}); return
+                    }
+                    c.JSON(200, gin.H{"code":0, "message":"deleted", "count": len(body.IDs)})
+                case "clearprefer":
+                    fallthrough
+                case "clear_prefer":
+                    // 清除优先浏览器标记：DB 置空 prefer_browser_until + 删除 Redis 标记
+                    if err := gormDB.Model(&autoclick.AutoClickURLFailure{}).Where("id IN ?", body.IDs).Updates(map[string]interface{}{"prefer_browser_until": nil, "updated_at": time.Now()}).Error; err != nil {
+                        c.JSON(500, gin.H{"code":5000, "message": err.Error()}); return
+                    }
+                    if storeRedis != nil {
+                        var rows []autoclick.AutoClickURLFailure
+                        _ = gormDB.Where("id IN ?", body.IDs).Find(&rows).Error
+                        ctx := c.Request.Context()
+                        for _, r := range rows {
+                            _ = storeRedis.Del(ctx, fmt.Sprintf("autoads:ac:prefer_browser:%s:%s", r.UserID, r.URLHash))
+                        }
+                    }
+                    c.JSON(200, gin.H{"code":0, "message":"cleared", "count": len(body.IDs)})
+                default:
+                    c.JSON(400, gin.H{"code":1002, "message":"unsupported op"})
+                }
+            })
+
+            // 更新备注/可选清理 prefer 标记
+            console.PATCH("/autoclick/url-failures/:id", func(c *gin.Context) {
+                id := c.Param("id")
+                if id == "" { c.JSON(400, gin.H{"code":1001, "message":"id required"}); return }
+                var body struct {
+                    Notes          *string `json:"notes"`
+                    ClearPrefer    *bool   `json:"clearPrefer"`
+                }
+                if err := c.ShouldBindJSON(&body); err != nil { c.JSON(400, gin.H{"code":1001, "message":"invalid body"}); return }
+                updates := map[string]interface{}{"updated_at": time.Now()}
+                if body.Notes != nil { updates["notes"] = *body.Notes }
+                if body.ClearPrefer != nil && *body.ClearPrefer {
+                    updates["prefer_browser_until"] = nil
+                }
+                if err := gormDB.Model(&autoclick.AutoClickURLFailure{}).Where("id=?", id).Updates(updates).Error; err != nil {
+                    c.JSON(500, gin.H{"code":5000, "message": err.Error()}); return
+                }
+                c.JSON(200, gin.H{"code":0, "message":"updated"})
+            })
         }
 
         // ===== SITERANK 原子端点（check/execute） =====
-		siterank := v1.Group("/siterank")
+        siterank := v1.Group("/siterank")
 		{
             // 预检成本与可执行性
             siterank.POST("/batch:check", func(c *gin.Context) {
@@ -912,16 +1089,99 @@ func setupAPIRoutes(r *gin.Engine) {
 				handleSilentTerminate(c)
 			})
 
-			// GET /api/v1/batchopen/version
-			batchopen.GET("/version", func(c *gin.Context) {
-				c.JSON(200, gin.H{
-					"name":     "batchopen-go",
-					"version":  Version,
-					"build":    BuildTime,
-					"commit":   GitCommit,
-					"provider": "go",
-				})
-			})
+            // GET /api/v1/batchopen/version
+            batchopen.GET("/version", func(c *gin.Context) {
+                c.JSON(200, gin.H{
+                    "name":     "batchopen-go",
+                    "version":  Version,
+                    "build":    BuildTime,
+                    "commit":   GitCommit,
+                    "provider": "go",
+                })
+            })
+
+            // AutoClick 计划任务（Schedule）CRUD + 启停
+            // 路由前缀：/api/v1/batchopen/autoclick
+            {
+                ac := v1.Group("/batchopen/autoclick")
+                ac.Use(authMiddleware())
+                ctrl := autoclick.NewController(gormDB)
+                ac.GET("/schedules", ctrl.ListSchedules)
+                ac.POST("/schedules", ctrl.CreateSchedule)
+                ac.GET("/schedules/:id", ctrl.GetSchedule)
+                ac.PUT("/schedules/:id", ctrl.UpdateSchedule)
+                ac.DELETE("/schedules/:id", ctrl.DeleteSchedule)
+                ac.POST("/schedules/:id/enable", ctrl.EnableSchedule)
+                ac.POST("/schedules/:id/disable", ctrl.DisableSchedule)
+            }
+
+            // SSE: /api/v1/batchopen/tasks/:id/live （最小实现：轮询DB推送）
+            v1.GET("/batchopen/tasks/:id/live", func(c *gin.Context) {
+                id := c.Param("id"); if id == "" { c.String(400, "missing id"); return }
+                c.Writer.Header().Set("Content-Type", "text/event-stream")
+                c.Writer.Header().Set("Cache-Control", "no-cache")
+                c.Writer.Header().Set("Connection", "keep-alive")
+                if f, ok := c.Writer.(http.Flusher); ok {
+                    ticker := time.NewTicker(1 * time.Second)
+                    defer ticker.Stop()
+                    for i := 0; i < 300; i++ { // 最多5分钟
+                        select {
+                        case <-c.Request.Context().Done():
+                            return
+                        case <-ticker.C:
+                            var exec autoclick.AutoClickExecution
+                            if err := gormDB.Where("id = ?", id).First(&exec).Error; err != nil {
+                                fmt.Fprintf(c.Writer, "data: %s\n\n", `{"type":"not_found"}`)
+                                f.Flush();
+                                return
+                            }
+                            payload := fmt.Sprintf(`{"type":"execution_update","id":"%s","status":"%s","progress":%d,"processedItems":%d,"totalItems":%d}`, exec.ID, exec.Status, exec.Progress, exec.Success+exec.Fail, exec.Total)
+                            fmt.Fprintf(c.Writer, "data: %s\n\n", payload)
+                            f.Flush()
+                            if strings.EqualFold(exec.Status, "completed") { return }
+                        }
+                    }
+                } else {
+                    c.String(500, "stream unsupported")
+                }
+            })
+
+            // SSE: 订阅 AutoClick 执行事件（Redis Pub/Sub）
+            // GET /api/v1/batchopen/autoclick/executions/live?userId=&scheduleId=&executionId=
+            v1.GET("/batchopen/autoclick/executions/live", func(c *gin.Context) {
+                if storeRedis == nil { c.String(503, "redis unavailable"); return }
+                fUser := strings.TrimSpace(c.Query("userId"))
+                fSchedule := strings.TrimSpace(c.Query("scheduleId"))
+                fExec := strings.TrimSpace(c.Query("executionId"))
+                c.Writer.Header().Set("Content-Type", "text/event-stream")
+                c.Writer.Header().Set("Cache-Control", "no-cache")
+                c.Writer.Header().Set("Connection", "keep-alive")
+                ctx := c.Request.Context()
+                sub := storeRedis.GetClient().Subscribe(ctx, "autoclick:executions:updates")
+                ch := sub.Channel()
+                defer sub.Close()
+                hb := time.NewTicker(15 * time.Second)
+                defer hb.Stop()
+                f, ok := c.Writer.(http.Flusher)
+                if !ok { c.String(500, "stream unsupported"); return }
+                for {
+                    select {
+                    case <-ctx.Done():
+                        return
+                    case <-hb.C:
+                        fmt.Fprintf(c.Writer, ": ping\n\n")
+                        f.Flush()
+                    case msg := <-ch:
+                        if msg == nil { continue }
+                        p := msg.Payload
+                        if fUser != "" && !strings.Contains(p, fUser) { continue }
+                        if fSchedule != "" && !strings.Contains(p, fSchedule) { continue }
+                        if fExec != "" && !strings.Contains(p, fExec) { continue }
+                        fmt.Fprintf(c.Writer, "data: %s\n\n", p)
+                        f.Flush()
+                    }
+                }
+            })
 
 			// POST /api/v1/batchopen/proxy-url-validate { proxyUrl }
 			batchopen.POST("/proxy-url-validate", func(c *gin.Context) {
@@ -956,6 +1216,22 @@ func setupAPIRoutes(r *gin.Engine) {
 				c.JSON(200, gin.H{"valid": true, "normalized": u.String()})
 			})
 		}
+
+			// ===== AutoClick schedules (最小CRUD与启停) =====
+        {
+            autoCtrl := autoclick.NewController(gormDB)
+            autoGroup := v1.Group("/batchopen/autoclick")
+            autoGroup.Use(authMiddleware())
+            {
+                autoGroup.GET("/schedules", autoCtrl.ListSchedules)
+                autoGroup.POST("/schedules", autoCtrl.CreateSchedule)
+                autoGroup.GET("/schedules/:id", autoCtrl.GetSchedule)
+                autoGroup.PUT("/schedules/:id", autoCtrl.UpdateSchedule)
+                autoGroup.DELETE("/schedules/:id", autoCtrl.DeleteSchedule)
+                autoGroup.POST("/schedules/:id/enable", autoCtrl.EnableSchedule)
+                autoGroup.POST("/schedules/:id/disable", autoCtrl.DisableSchedule)
+            }
+        }
 
 			// SiteRank路由（避免重复声明变量名）
         siteRankGroup := v1.Group("/siterank")

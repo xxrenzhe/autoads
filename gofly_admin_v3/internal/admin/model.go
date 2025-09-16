@@ -19,7 +19,7 @@ type OverviewStats struct {
 	// 任务统计
 	TotalBatchTasks      int64 `json:"total_batch_tasks"`
 	TotalSiteRankQueries int64 `json:"total_siterank_queries"`
-	TotalChengeLinkTasks int64 `json:"total_chengelink_tasks"`
+    TotalAdsCenterTasks int64 `json:"total_adscenter_tasks"`
 	TodayBatchTasks      int64 `json:"today_batch_tasks"`
 
 	// 邀请统计
@@ -50,7 +50,7 @@ type DailyTaskStats struct {
 	Date            string `json:"date"`
 	BatchTasks      int64  `json:"batch_tasks"`
 	SiteRankQueries int64  `json:"siterank_queries"`
-	ChengeLinkTasks int64  `json:"chengelink_tasks"`
+    AdsCenterTasks int64  `json:"adscenter_tasks"`
 }
 
 // UserRanking 用户排行

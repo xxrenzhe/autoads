@@ -47,7 +47,8 @@ export default function AutoClickBatch({ locale, t }: AutoClickBatchProps) {
     country: 'US',
     timeWindow: '06:00-24:00',
     dailyClicks: 100,
-    referer: 'https://google.com'
+    referer: 'https://google.com',
+    proxyUrl: ''
   });
 
   // Check if user has access to autoclick version
@@ -100,7 +101,8 @@ export default function AutoClickBatch({ locale, t }: AutoClickBatchProps) {
           country: 'US',
           timeWindow: '06:00-24:00',
           dailyClicks: 100,
-          referer: 'https://google.com'
+          referer: 'https://google.com',
+          proxyUrl: ''
         });
         setShowForm(false);
         fetchTasks();
@@ -288,6 +290,18 @@ export default function AutoClickBatch({ locale, t }: AutoClickBatchProps) {
                 onChange={(e) => setFormData({ ...formData, referer: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="https://google.com"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                代理（可选）
+              </label>
+              <input
+                type="text"
+                value={formData.proxyUrl}
+                onChange={(e) => setFormData({ ...formData, proxyUrl: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="http://user:pass@ip:port"
               />
             </div>
           </div>

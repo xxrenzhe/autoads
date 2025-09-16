@@ -29,8 +29,8 @@ export const BATCHOPEN_VERSIONS: Record<string, BatchOpenVersion> = {
   },
   automated: {
     id: 'automated',
-    name: '自动化版',
-    description: '支持定时任务和脚本控制',
+    name: '（已下线）自动化版',
+    description: '已合并为 AutoClick（autoclick），仅保留兼容字段。',
     maxUrls: -1, // 无限制
     maxConcurrent: 50,
     features: ['定时任务', 'API控制', '脚本自动化', '高级代理管理']
@@ -148,6 +148,7 @@ export class BatchOpenPermissionService {
    * 获取所有版本信息（用于展示）
    */
   static getAllVersions(): BatchOpenVersion[] {
-    return Object.values(BATCHOPEN_VERSIONS)
+    // 向前兼容但不展示 automated
+    return Object.values(BATCHOPEN_VERSIONS).filter(v => v.id !== 'automated')
   }
 }

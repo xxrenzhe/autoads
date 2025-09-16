@@ -28,9 +28,9 @@ func TestAPICompatibility(t *testing.T) {
 		testSiteRankGoAPICompatibility(t, server.URL)
 	})
 
-	t.Run("Chengelink API兼容性", func(t *testing.T) {
-		testChengeLinkAPICompatibility(t, server.URL)
-	})
+    t.Run("AdsCenter API兼容性", func(t *testing.T) {
+        testAdsCenterAPICompatibility(t, server.URL)
+    })
 
 	t.Run("响应格式兼容性", func(t *testing.T) {
 		testResponseFormatCompatibility(t, server.URL)
@@ -263,8 +263,8 @@ func testSiteRankGoAPICompatibility(t *testing.T, baseURL string) {
 	}
 }
 
-// testChengeLinkAPICompatibility 测试Chengelink API兼容性
-func testChengeLinkAPICompatibility(t *testing.T, baseURL string) {
+// testAdsCenterAPICompatibility 测试 AdsCenter API 兼容性
+func testAdsCenterAPICompatibility(t *testing.T, baseURL string) {
 	endpoints := []struct {
 		name     string
 		method   string
@@ -272,59 +272,59 @@ func testChengeLinkAPICompatibility(t *testing.T, baseURL string) {
 		payload  map[string]interface{}
 		expected int
 	}{
-		{
-			name:   "创建Chengelink任务",
-			method: "POST",
-			path:   "/api/chengelink/create",
-			payload: map[string]interface{}{
-				"name":               "测试Chengelink任务",
-				"affiliate_link":     "https://example.com/affiliate",
-				"adspower_env":       "test_env",
-				"google_ads_account": "test_account",
-			},
-			expected: 200,
-		},
-		{
-			name:     "获取任务列表",
-			method:   "GET",
-			path:     "/api/chengelink/tasks",
-			payload:  nil,
-			expected: 200,
-		},
-		{
-			name:     "获取任务详情",
-			method:   "GET",
-			path:     "/api/chengelink/tasks/123",
-			payload:  nil,
-			expected: 200,
-		},
-		{
-			name:   "链接提取",
-			method: "POST",
-			path:   "/api/chengelink/extract",
-			payload: map[string]interface{}{
-				"affiliate_link": "https://example.com/affiliate?ref=123",
-				"adspower_env":   "test_env",
-			},
-			expected: 200,
-		},
-		{
-			name:   "Google Ads更新",
-			method: "POST",
-			path:   "/api/chengelink/update-ads",
-			payload: map[string]interface{}{
-				"google_ads_account": "test_account",
-				"final_url":          "https://example.com/final",
-			},
-			expected: 200,
-		},
-		{
-			name:     "执行日志",
-			method:   "GET",
-			path:     "/api/chengelink/tasks/123/logs",
-			payload:  nil,
-			expected: 200,
-		},
+        {
+            name:   "创建AdsCenter任务",
+            method: "POST",
+            path:   "/api/adscenter/create",
+            payload: map[string]interface{}{
+                "name":               "测试AdsCenter任务",
+                "affiliate_link":     "https://example.com/affiliate",
+                "adspower_env":       "test_env",
+                "google_ads_account": "test_account",
+            },
+            expected: 200,
+        },
+        {
+            name:     "获取任务列表",
+            method:   "GET",
+            path:     "/api/adscenter/tasks",
+            payload:  nil,
+            expected: 200,
+        },
+        {
+            name:     "获取任务详情",
+            method:   "GET",
+            path:     "/api/adscenter/tasks/123",
+            payload:  nil,
+            expected: 200,
+        },
+        {
+            name:   "链接提取",
+            method: "POST",
+            path:   "/api/adscenter/extract",
+            payload: map[string]interface{}{
+                "affiliate_link": "https://example.com/affiliate?ref=123",
+                "adspower_env":   "test_env",
+            },
+            expected: 200,
+        },
+        {
+            name:   "Google Ads更新",
+            method: "POST",
+            path:   "/api/adscenter/update-ads",
+            payload: map[string]interface{}{
+                "google_ads_account": "test_account",
+                "final_url":          "https://example.com/final",
+            },
+            expected: 200,
+        },
+        {
+            name:     "执行日志",
+            method:   "GET",
+            path:     "/api/adscenter/tasks/123/logs",
+            payload:  nil,
+            expected: 200,
+        },
 	}
 
 	for _, endpoint := range endpoints {
@@ -351,7 +351,7 @@ func testChengeLinkAPICompatibility(t *testing.T, baseURL string) {
 			assert.Contains(t, response, "code")
 			assert.Contains(t, response, "message")
 
-			// 验证Chengelink特定的响应格式
+			// 验证AdsCenter特定的响应格式
 			if response["code"].(float64) == 0 {
 				assert.Contains(t, response, "data")
 
@@ -375,7 +375,7 @@ func testResponseFormatCompatibility(t *testing.T, baseURL string) {
 			"/health",
 			"/api/siterank/rank?domain=example.com",
 			"/api/batchopen/tasks",
-			"/api/chengelink/tasks",
+			"/api/adscenter/tasks",
 		}
 
 		for _, endpoint := range endpoints {
@@ -476,7 +476,7 @@ func testResponseFormatCompatibility(t *testing.T, baseURL string) {
 	t.Run("分页格式兼容性", func(t *testing.T) {
 		endpoints := []string{
 			"/api/batchopen/tasks",
-			"/api/chengelink/tasks",
+			"/api/adscenter/tasks",
 			"/api/tokens/transactions",
 		}
 

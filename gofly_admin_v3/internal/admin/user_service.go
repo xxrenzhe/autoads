@@ -93,7 +93,7 @@ func (s *UserService) GetUserDetail(userID string) (*UserDetailInfo, error) {
 
     detail.BatchTasks = taskStats.BatchTasks
     detail.SiteRankQueries = taskStats.SiteRankQueries
-    detail.ChengeLinkTasks = taskStats.AdsCenterTasks
+    detail.AdsCenterTasks = taskStats.AdsCenterTasks
 
 	// 获取邀请统计
 	var invitationStats struct {
@@ -315,7 +315,7 @@ type UserDetailInfo struct {
 	TokensConsumed        int64 `json:"tokens_consumed"`
 	BatchTasks            int64 `json:"batch_tasks"`
 	SiteRankQueries       int64 `json:"siterank_queries"`
-	ChengeLinkTasks       int64 `json:"chengelink_tasks"`
+    AdsCenterTasks       int64 `json:"adscenter_tasks"`
 	TotalInvitations      int64 `json:"total_invitations"`
 	SuccessfulInvitations int64 `json:"successful_invitations"`
 	TotalCheckins         int64 `json:"total_checkins"`

@@ -45,7 +45,7 @@ func TestSimpleValidation(t *testing.T) {
 			{"GET", "/metrics"},
 			{"GET", "/api/siterank/rank?domain=example.com"},
 			{"GET", "/api/batchopen/tasks"},
-			{"GET", "/api/chengelink/tasks"},
+            {"GET", "/api/adscenter/tasks"},
 		}
 
 		for _, endpoint := range endpoints {
@@ -101,9 +101,9 @@ func TestSimpleValidation(t *testing.T) {
 				},
 			},
 			{
-				"/api/chengelink/create",
+				"/api/adscenter/create",
 				map[string]interface{}{
-					"name":           "测试Chengelink",
+					"name":           "测试AdsCenter",
 					"affiliate_link": "https://example.com/affiliate",
 				},
 			},

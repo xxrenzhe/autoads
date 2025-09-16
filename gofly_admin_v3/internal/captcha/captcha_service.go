@@ -85,12 +85,12 @@ func NewCaptchaService(cacheService cache.CacheService) *CaptchaService {
 
 // GetCaptchaService 获取验证码服务
 func GetCaptchaService() *CaptchaService {
-	if !captchaInit {
-		// 这里需要传入实际的缓存服务
-		// defaultCaptchaService = NewCaptchaService(cache.GetCacheService())
-		captchaInit = true
-	}
-	return defaultCaptchaService
+    if !captchaInit {
+        // 使用内存缓存服务（测试与无外部Redis场景足够）
+        defaultCaptchaService = NewCaptchaService(cache.NewMemoryCacheService())
+        captchaInit = true
+    }
+    return defaultCaptchaService
 }
 
 // GenerateImageCaptcha 生成图片验证码

@@ -44,10 +44,15 @@ export function useBatchOpenPermissions() {
 export function useBatchOpenVersion(version: string) {
   const { data: permissions } = useBatchOpenPermissions()
   
-  const key = (version === 'autoclick' ? 'automated' : (version as 'basic' | 'silent' | 'automated'))
+  // 后端可能只返回 automated 或者返回 autoclick，两者择其一
+  const key = (version === 'autoclick' ? ('autoclick' as const) : (version as 'basic' | 'silent'))
   return {
-    hasAccess: permissions?.versions[key]?.available || false,
-    versionInfo: permissions?.versions[key] || null,
+    hasAccess: (permissions?.versions as any)?.[key]?.available
+      || (version === 'autoclick' ? (permissions?.versions as any)?.automated?.available : false)
+      || false,
+    versionInfo: (permissions?.versions as any)?.[key]
+      || (version === 'autoclick' ? (permissions?.versions as any)?.automated : null)
+      || null,
     isLoading: !permissions
   }
 }

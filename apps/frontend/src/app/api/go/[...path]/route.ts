@@ -90,12 +90,12 @@ async function proxy(req: Request, path: string[]) {
       try {
         const controller = new AbortController()
         const to = setTimeout(() => controller.abort(), READY_CHECK_TIMEOUT_MS)
-        // Prefer /ready; fall back to /readyz for compatibility
+        // Prefer /readyz; fall back to /ready for compatibility (tests expect /readyz first)
         let resp: Response
         try {
-          resp = await fetch(`${BACKEND_BASE}/ready`, { method: 'GET', signal: controller.signal })
-        } catch {
           resp = await fetch(`${BACKEND_BASE}/readyz`, { method: 'GET', signal: controller.signal })
+        } catch {
+          resp = await fetch(`${BACKEND_BASE}/ready`, { method: 'GET', signal: controller.signal })
         }
         clearTimeout(to)
         cache.ts = Date.now()

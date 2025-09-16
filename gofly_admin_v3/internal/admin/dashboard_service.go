@@ -69,7 +69,7 @@ func (s *DashboardService) GetOverviewStats() (*OverviewStats, error) {
 		return nil, err
 	}
 
-    if err := s.db.Model(&AdsCenterTask{}).Count(&stats.TotalChengeLinkTasks).Error; err != nil {
+    if err := s.db.Model(&AdsCenterTask{}).Count(&stats.TotalAdsCenterTasks).Error; err != nil {
         return nil, err
     }
 
@@ -153,7 +153,7 @@ func (s *DashboardService) GetTaskTrend(days int) ([]DailyTaskStats, error) {
 			DATE(created_at) as date,
 			COUNT(*) as batch_tasks,
 			0 as siterank_queries,
-			0 as chengelink_tasks
+            0 as adscenter_tasks
 		FROM batch_tasks 
 		WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
 		GROUP BY DATE(created_at)
@@ -170,7 +170,7 @@ func (s *DashboardService) GetTaskTrend(days int) ([]DailyTaskStats, error) {
 			DATE(created_at) as date,
 			0 as batch_tasks,
 			COUNT(*) as siterank_queries,
-			0 as chengelink_tasks
+            0 as adscenter_tasks
 		FROM siterank_queries 
 		WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
 		GROUP BY DATE(created_at)

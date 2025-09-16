@@ -166,7 +166,7 @@ run_api_compatibility_tests() {
 run_functional_completeness_tests() {
     log_header "执行功能完整性测试"
     
-    log_info "测试BatchGo、SiteRankGo、Chengelink功能100%迁移验证..."
+    log_info "测试BatchGo、SiteRankGo、AdsCenter功能100%迁移验证..."
     
     if go test -v -run TestFunctionalCompleteness ./cmd/autoads-saas/ -timeout 15m; then
         record_test_result "功能完整性测试" "PASS" ""
@@ -318,7 +318,7 @@ EOF
 AutoAds SaaS平台已成功完成全面测试和验证，满足所有需求的验收标准：
 
 1. **API兼容性**: 所有现有API路径和响应格式100%兼容 ✅
-2. **功能完整性**: BatchGo、SiteRankGo、Chengelink功能100%迁移成功 ✅
+2. **功能完整性**: BatchGo、SiteRankGo、AdsCenter功能100%迁移成功 ✅
 3. **性能达标**: 支持50并发用户，P95响应时间<200ms ✅
 4. **安全验证**: 用户数据隔离、Token消费准确性、认证授权验证通过 ✅
 5. **端到端测试**: 完整用户流程测试通过 ✅
