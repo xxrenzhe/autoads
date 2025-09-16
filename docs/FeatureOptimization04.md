@@ -95,23 +95,33 @@
   - [x] SiteRank 原子端点（`/api/v1/siterank/batch:check|batch:execute`）→ `internal/app/register_siterank.go`
   - [x] BatchOpen 原子端点与任务进度/SSE（`/api/v1/batchopen/silent:check|silent:execute|tasks/:id|tasks/:id/live`）→ `internal/app/register_batchopen.go`
   - [x] v2 统一任务快照/SSE（`/api/v2/tasks/:id`、`/api/v2/stream/tasks/:id`）→ `internal/app/register_v2_tasks.go`
-  - [ ] AdsCenter v1 minimal（`/api/v1/adscenter/accounts|configurations|executions`）→ 已实现 `internal/app/register_adscenter_minimal.go`，待切换 main.go 注册为统一调用（低风险）。
-- [ ] BatchOpen：将 `start?type=basic|autoclick` 从 silent pipeline 拆分为独立流程（保契约），计费/失败退款与 silent 对齐。
-- [ ] AdsCenter：最小真实执行闭环替换占位器；统一执行日志/事件与指标采集。
+  - [x] AdsCenter v1 minimal（`/api/v1/adscenter/accounts|configurations|executions`）→ `internal/app/register_adscenter_minimal.go` 并已在 main.go 切换为统一调用。
+- [x] BatchOpen：`/api/v1/batchopen/start?type=silent|basic|autoclick` 拆分为独立流程（保契约），原子预检/扣费/创建/启动与 silent 对齐。
+- [~] AdsCenter：执行器统一与指标完善（进行中）
+  - [x] 新增 `POST /api/v1/adscenter/executions` 使用服务创建并启动（阶段性扣费由服务处理）。
+  - [x] 性能/状态端点：`GET /api/v1/adscenter/metrics` 展示分布与耗时分位；管理台 `/admin/system/performance` 展示。
+  - [ ] 将占位/多路径执行彻底替换为统一的真实执行器（Playwright/外部服务），并上报分阶段耗时与错误分类。
 
 ### P2 — 体验与可观测（两周+）
-- [ ] 管理台观测：对 `/api/go/*` 在 BFF 侧聚合上游 `X-RateLimit-*`、`x-request-id`，前端运维页展示。
-- [ ] 缓存命中率与失败退款监控：为 SiteRank/BatchOpen 增加失败退款计数、缓存命中计数的只读端点。
+- [x] 管理台观测：BFF 侧聚合上游 `X-RateLimit-*`、`x-request-id` 并在 `/admin/system/observability` 展示（最近 100 条）。
+- [x] 统计与监控（基础版已完成）：
+  - [x] 基础统计端点：`GET /api/v1/siterank/stats`，`GET /api/v1/batchopen/stats`。
+  - [x] SiteRank 缓存洞察：`GET /api/v1/siterank/cache-insights`（命中率估算与 TTL 建议），页面 `/admin/system/cache-insights` 展示。
+  - [x] 执行性能：`GET /api/v1/batchopen/metrics`、`GET /api/v1/adscenter/metrics`（状态分布与耗时分位），页面 `/admin/system/performance` 展示。
+  - [x] AutoClick 队列：`GET /api/v1/autoclick/queue/metrics`（池状态与近100条执行分布）。
+  - [ ] 深度指标（缓存命中率按时间序列、执行阶段耗时拆解、按用户/任务分布）与可视化，后续增强。
 
 ## 进度与评估
 - 已完成
   - /ops 管理网关内置，避免外部网关依赖；SoT 决策固化并在生产/预发禁用 Next 写入；路由归拢完成 SiteRank/BatchOpen/v2 快照的迁移。
+  - AdsCenter v1 minimal 切换至 internal；新增执行创建端点接入服务层；BatchOpen `start` 入口已拆分三模式并完成原子扣费与创建启动。
+  - 观测与统计：BFF 观测页（限流/请求ID）、SiteRank 缓存洞察与 TTL 建议、BatchOpen/AdsCenter 性能分布、AutoClick 队列/池状态页面均已上线。
 - 进行中/可快速完成
-  - AdsCenter v1 minimal 内部注册已就绪（`register_adscenter_minimal.go`），主路由切换预计低风险，可一并完成。
+  - AdsCenter 执行器统一（Playwright/外部服务）与指标完善（当前已可创建/启动，执行器与指标仍待推进）。
 - 暂缓/按需触发
   - SimilarWeb 批量压测与网关注入 apikey：公开端点无需 apikey，且用户暂不需要压测，保留文档指引，后续再启。
 - 待规划
-  - BatchOpen `start?type=basic|autoclick` 拆分为独立流程；AdsCenter 执行链路从占位器切至真实执行器并完善指标。
+  - 深度指标与可视化增强：缓存命中率按时间序列、执行阶段耗时拆解（提取/解析/更新）、按用户/任务的粒度分布与报表下载。
 
 ## 11. 风险与应对
 - SimilarWeb 官方无“批处理端点”，本系统通过并发单域拉取实现“批量效果”，需严格控制并发与配额。

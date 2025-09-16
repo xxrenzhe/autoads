@@ -162,6 +162,24 @@ async function proxy(req: Request, path: string[]) {
     respHeaders.set('Link', '</go>; rel="successor-version"')
     const reqId = headers.get('x-request-id') || ''
     if (reqId) respHeaders.set('x-request-id', reqId)
+    try {
+      // Lightweight observability: store recent upstream headers for admin page
+      const entry = {
+        ts: Date.now(),
+        path: subPath,
+        status: resp.status,
+        requestId: reqId,
+        rateLimit: {
+          limit: respHeaders.get('X-RateLimit-Limit') || undefined,
+          remaining: respHeaders.get('X-RateLimit-Remaining') || undefined,
+          reset: respHeaders.get('X-RateLimit-Reset') || undefined,
+        }
+      }
+      const g: any = globalThis as any
+      if (!g.__bff_obs) g.__bff_obs = []
+      g.__bff_obs.push(entry)
+      if (g.__bff_obs.length > 200) g.__bff_obs.shift()
+    } catch { /* ignore */ }
     return new Response(resp.body, { status: resp.status, headers: respHeaders })
   } catch (err) {
     const message = (err as Error)?.message || 'Upstream error'

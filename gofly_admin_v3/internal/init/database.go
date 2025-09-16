@@ -1,9 +1,11 @@
 package init
 
 import (
+    "context"
     "embed"
     "fmt"
     "log"
+    "net"
     "regexp"
     "sort"
     "strings"
@@ -29,25 +31,38 @@ type DatabaseInitializer struct {
 // NewDatabaseInitializer 创建数据库初始化器
 func NewDatabaseInitializer(cfg *config.Config, stdLogger *log.Logger) (*DatabaseInitializer, error) {
 	// 连接数据库
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4&parseTime=True&loc=Local",
+	// 等待 MySQL 端口可用（避免在 CI 中长时间挂起）
+	_ = waitForTCP(cfg.DB.Host, cfg.DB.Port, 30*time.Second)
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s&readTimeout=30s&writeTimeout=30s",
 		cfg.DB.Username,
 		cfg.DB.Password,
 		cfg.DB.Host,
 		cfg.DB.Port,
 	)
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("连接数据库失败: %w", err)
-	}
+    db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+        Logger: logger.Default.LogMode(logger.Warn),
+    })
+    if err != nil {
+        return nil, fmt.Errorf("连接数据库失败: %w", err)
+    }
 
-	return &DatabaseInitializer{
-		db:     db,
-		config: cfg,
-		logger: stdLogger,
-	}, nil
+    // 轻量 Ping，避免长等待
+    if sqlDB, e := db.DB(); e == nil {
+        sqlDB.SetMaxIdleConns(10)
+        sqlDB.SetMaxOpenConns(100)
+        sqlDB.SetConnMaxLifetime(30 * time.Minute)
+        ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        defer cancel()
+        _ = sqlDB.PingContext(ctx)
+    }
+
+    return &DatabaseInitializer{
+        db:     db,
+        config: cfg,
+        logger: stdLogger,
+    }, nil
 }
 
 // Initialize 执行完整的数据库初始化
@@ -189,7 +204,10 @@ func (di *DatabaseInitializer) createDatabase() error {
 
 // connectToDatabase 连接到目标数据库
 func (di *DatabaseInitializer) connectToDatabase() error {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	// 再次确认端口可用
+	_ = waitForTCP(di.config.DB.Host, di.config.DB.Port, 30*time.Second)
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s&readTimeout=30s&writeTimeout=30s",
 		di.config.DB.Username,
 		di.config.DB.Password,
 		di.config.DB.Host,
@@ -204,8 +222,39 @@ func (di *DatabaseInitializer) connectToDatabase() error {
 		return err
 	}
 
+	// 基础连接设置与快速 Ping
+	sqlDB, err := db.DB()
+	if err == nil {
+		sqlDB.SetMaxIdleConns(10)
+		sqlDB.SetMaxOpenConns(100)
+		sqlDB.SetConnMaxLifetime(30 * time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_ = sqlDB.PingContext(ctx)
+	}
+
 	di.db = db
 	return nil
+}
+
+// waitForTCP 尝试在给定超时时间内建立 TCP 连接（用于 CI 等环境避免长时间挂起）
+func waitForTCP(host string, port int, total time.Duration) error {
+    if host == "" || port == 0 {
+        return nil
+    }
+    addr := fmt.Sprintf("%s:%d", host, port)
+    deadline := time.Now().Add(total)
+    for {
+        d := net.Dialer{Timeout: 2 * time.Second}
+        if conn, err := d.Dial("tcp", addr); err == nil {
+            _ = conn.Close()
+            return nil
+        }
+        if time.Now().After(deadline) {
+            return fmt.Errorf("等待 %s 可用超时(%v)", addr, total)
+        }
+        time.Sleep(500 * time.Millisecond)
+    }
 }
 
 // runMigrations 执行数据库迁移

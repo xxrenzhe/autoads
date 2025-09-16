@@ -1443,6 +1443,11 @@ func setupAPIRoutes(r *gin.Engine) {
         // v2 任务统一快照与 SSE 迁移至 internal/app
         app.RegisterV2TaskSnapshot(v2, gormDB)
 
+        // 统计只读端点（简化版）
+        app.RegisterStats(v1, gormDB)
+        app.RegisterPerformance(v1, gormDB)
+        app.RegisterCacheInsights(v1, gormDB)
+
         // BatchOpen Silent v2
         batchV2 := v2.Group("/batchopen")
         {
@@ -2029,8 +2034,9 @@ func setupAPIRoutes(r *gin.Engine) {
 			// ===== ADSCENTER 原子端点（链接替换 check/execute） =====
             adscenterRG := v1.Group("/adscenter")
             {
-                // 注册 v1 minimal 端点到 internal/app（accounts/configurations/executions 只读与创建配置）
+                // 注册 v1 minimal 端点与执行创建
                 app.RegisterAdsCenterMinimal(v1, authMiddleware(), gormDB)
+                app.RegisterAdsCenterExecutions(v1, authMiddleware(), gormDB, adscenterService, tokenSvc, auditSvc)
                 // 预检：按 extract_link + update_ads 规则估算总消耗
                 adscenterRG.POST("/link:update:check", func(c *gin.Context) {
 					var body struct {
