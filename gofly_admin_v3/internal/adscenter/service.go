@@ -526,7 +526,8 @@ type AdsPowerClientInterface interface {
 }
 
 type GoogleAdsClientInterface interface {
-	GetAds() ([]AdInfo, error)
-	BatchUpdateAds(updates []UpdateAdRequest) ([]UpdateAdResponse, error)
-	TestConnection() error
+    GetAds() ([]AdInfo, error)
+    BatchUpdateAds(updates []UpdateAdRequest) ([]UpdateAdResponse, error)
+    TestConnection() error
+    GetDailyMetrics(startDate string, endDate string) ([]DailyMetric, error)
 }

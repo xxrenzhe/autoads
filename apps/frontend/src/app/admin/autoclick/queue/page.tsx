@@ -60,6 +60,26 @@ export default function AutoClickQueuePage() {
               </div>
             </div>
 
+            {/* 额外指标：吞吐与平均等待 */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className={`${UI_CONSTANTS.cards.simple} p-4`}>
+                <div className="text-xs text-gray-500">HTTP 吞吐（件/秒）</div>
+                <div className="text-2xl font-semibold">{typeof (data as any)?.httpThroughput === 'number' ? ((data as any).httpThroughput).toFixed(2) : '-'}</div>
+              </div>
+              <div className={`${UI_CONSTANTS.cards.simple} p-4`}>
+                <div className="text-xs text-gray-500">HTTP 平均等待（ms）</div>
+                <div className="text-2xl font-semibold">{typeof (data as any)?.httpAvgWaitMs === 'number' ? Math.round((data as any).httpAvgWaitMs) : '-'}</div>
+              </div>
+              <div className={`${UI_CONSTANTS.cards.simple} p-4`}>
+                <div className="text-xs text-gray-500">Browser 吞吐（件/秒）</div>
+                <div className="text-2xl font-semibold">{typeof (data as any)?.browserThroughput === 'number' ? ((data as any).browserThroughput).toFixed(2) : '-'}</div>
+              </div>
+              <div className={`${UI_CONSTANTS.cards.simple} p-4`}>
+                <div className="text-xs text-gray-500">Browser 平均等待（ms）</div>
+                <div className="text-2xl font-semibold">{typeof (data as any)?.browserAvgWaitMs === 'number' ? Math.round((data as any).browserAvgWaitMs) : '-'}</div>
+              </div>
+            </div>
+
             {/* 轻量趋势（近 5 分钟） */}
             <div className={`${UI_CONSTANTS.cards.simple} p-4`}>
               <div className="text-sm font-medium text-gray-900 mb-2">近 5 分钟队列趋势（HTTP / Browser）</div>
@@ -141,4 +161,3 @@ function MiniSparkline({ points }: { points: { http: number; br: number; }[] }) 
     </div>
   )
 }
-

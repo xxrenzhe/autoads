@@ -883,9 +883,11 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
       await new Promise(resolve => setTimeout(resolve, 200));
 
       // 发送启动请求（统一通过本地薄壳 API 转发到后端）
+      // 生成幂等键，避免重复提交（5分钟窗口）
+      const idemKey = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`
       const response = await fetch('/api/batchopen/silent-start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idemKey },
         body: JSON.stringify(requestData),
       });
 

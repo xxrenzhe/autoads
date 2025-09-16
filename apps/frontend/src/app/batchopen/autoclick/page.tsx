@@ -110,6 +110,15 @@ export default function AutoClickSchedulesPage() {
     } catch { alert('操作失败') }
   }
 
+  async function viewProgress(id: string) {
+    try {
+      const r = await fetch(`/api/v2/autoclick/schedules/${id}/execution/current`)
+      const j = await r.json().catch(()=>({}))
+      if (!r.ok || !j?.id) { alert('当前无进行中任务'); return }
+      window.location.href = `/adscenter/executions/v2/${j.id}`
+    } catch { alert('获取进度失败') }
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-5xl mx-auto">
@@ -195,6 +204,7 @@ export default function AutoClickSchedulesPage() {
                     ) : (
                       <ProtectedButton featureName="autoclick" className={UI_CONSTANTS.buttons.primary} onClick={() => toggle(s.id, true)}>启动</ProtectedButton>
                     )}
+                    <ProtectedButton featureName="autoclick" className={UI_CONSTANTS.buttons.outline} onClick={() => viewProgress(s.id)}>查看进度</ProtectedButton>
                   </div>
                 </div>
               ))}
@@ -205,4 +215,3 @@ export default function AutoClickSchedulesPage() {
     </div>
   )
 }
-

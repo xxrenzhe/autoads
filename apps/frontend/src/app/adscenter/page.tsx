@@ -24,6 +24,7 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 import SimpleDashboard from './components/SimpleDashboard';
+import QuickUpdateCard from './components/QuickUpdateCard';
 
 export default function AdsCenterPage() {
   const features = [
@@ -103,6 +104,11 @@ export default function AdsCenterPage() {
                 <div className="text-sm text-gray-600">{stat.label}</div>
               </div>
             ))}
+          </div>
+
+          {/* Quick Update Card (v2) */}
+          <div className="mb-12">
+            <QuickUpdateCard />
           </div>
 
           {/* Features Grid */}

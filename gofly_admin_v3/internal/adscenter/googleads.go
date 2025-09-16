@@ -59,6 +59,21 @@ type UpdateAdResponse struct {
 	ErrorMessage string `json:"error_message,omitempty"`
 }
 
+// DailyMetric 每日聚合指标
+type DailyMetric struct {
+    Date            string `json:"date"` // yyyy-mm-dd
+    CampaignID      string `json:"campaign_id"`
+    AdGroupID       string `json:"ad_group_id"`
+    Device          string `json:"device"`
+    Network         string `json:"network"`
+    Clicks          int64  `json:"clicks"`
+    Impressions     int64  `json:"impressions"`
+    CostMicros      int64  `json:"cost_micros"`
+    Conversions     int64  `json:"conversions"`
+    ConvValueMicros int64  `json:"conv_value_micros"`
+    VTC             int64  `json:"vtc"`
+}
+
 // TokenResponse OAuth Token响应
 type TokenResponse struct {
 	AccessToken  string `json:"access_token"`
@@ -328,6 +343,104 @@ func (c *GoogleAdsClient) BatchUpdateAds(updates []UpdateAdRequest) ([]UpdateAdR
 	return results, nil
 }
 
+// GetDailyMetrics 获取每日聚合指标（真实实现需调用 Google Ads 报表API）
+func (c *GoogleAdsClient) GetDailyMetrics(startDate string, endDate string) ([]DailyMetric, error) {
+    // 确保访问令牌
+    if c.AccessToken == "" {
+        if err := c.refreshAccessToken(); err != nil {
+            return nil, fmt.Errorf("refresh access token: %w", err)
+        }
+    }
+    // GAQL 查询：每日聚合
+    gaql := `
+        SELECT 
+            segments.date,
+            campaign.id,
+            ad_group.id,
+            segments.device,
+            segments.ad_network_type,
+            metrics.clicks,
+            metrics.impressions,
+            metrics.cost_micros,
+            metrics.conversions,
+            metrics.conversions_value
+        FROM ad_group
+        WHERE segments.date BETWEEN '` + startDate + `' AND '` + endDate + `'
+    `
+    payload := map[string]any{"query": gaql}
+    body, err := c.makeAPIRequest("POST", "googleAds:search", payload)
+    if err != nil {
+        // 令牌过期尝试刷新一次
+        if rerr := c.refreshAccessToken(); rerr == nil {
+            body, err = c.makeAPIRequest("POST", "googleAds:search", payload)
+        }
+        if err != nil {
+            return nil, fmt.Errorf("search metrics: %w", err)
+        }
+    }
+    // 解析响应
+    var resp struct{
+        Results []struct{
+            Segments struct{ Date string `json:"date"`; Device string `json:"device"`; AdNetworkType string `json:"adNetworkType"` } `json:"segments"`
+            Campaign struct{ ID string `json:"id"` } `json:"campaign"`
+            AdGroup  struct{ ID string `json:"id"` } `json:"adGroup"`
+            Metrics  struct{
+                Clicks interface{} `json:"clicks"`
+                Impressions interface{} `json:"impressions"`
+                CostMicros interface{} `json:"costMicros"`
+                Conversions interface{} `json:"conversions"`
+                ConversionsValue interface{} `json:"conversionsValue"`
+            } `json:"metrics"`
+        } `json:"results"`
+    }
+    if err := json.Unmarshal(body, &resp); err != nil {
+        return nil, fmt.Errorf("unmarshal metrics: %w", err)
+    }
+    toInt64 := func(v interface{}) int64 {
+        switch x := v.(type) {
+        case float64: return int64(x)
+        case int64: return x
+        case string:
+            if strings.Contains(x, ".") {
+                // 尝试解析为浮点
+                if f, e := strconv.ParseFloat(x, 64); e == nil { return int64(f) }
+            }
+            if n, e := strconv.ParseInt(x, 10, 64); e == nil { return n }
+            if f, e := strconv.ParseFloat(x, 64); e == nil { return int64(f) }
+            return 0
+        default:
+            return 0
+        }
+    }
+    toMicros := func(v interface{}) int64 {
+        switch x := v.(type) {
+        case float64: return int64(x * 1_000_000)
+        case string:
+            if f, e := strconv.ParseFloat(x, 64); e == nil { return int64(f * 1_000_000) }
+            return 0
+        default:
+            return 0
+        }
+    }
+    out := make([]DailyMetric, 0, len(resp.Results))
+    for _, r := range resp.Results {
+        out = append(out, DailyMetric{
+            Date:            r.Segments.Date,
+            CampaignID:      r.Campaign.ID,
+            AdGroupID:       r.AdGroup.ID,
+            Device:          r.Segments.Device,
+            Network:         r.Segments.AdNetworkType,
+            Clicks:          toInt64(r.Metrics.Clicks),
+            Impressions:     toInt64(r.Metrics.Impressions),
+            CostMicros:      toInt64(r.Metrics.CostMicros),
+            Conversions:     toInt64(r.Metrics.Conversions),
+            ConvValueMicros: toMicros(r.Metrics.ConversionsValue),
+            VTC:             0,
+        })
+    }
+    return out, nil
+}
+
 // processBatch 处理一批更新
 func (c *GoogleAdsClient) processBatch(updates []UpdateAdRequest) ([]UpdateAdResponse, error) {
 	var operations []map[string]interface{}
@@ -493,5 +606,37 @@ func (m *MockGoogleAdsClient) BatchUpdateAds(updates []UpdateAdRequest) ([]Updat
 
 // TestConnection 模拟连接测试
 func (m *MockGoogleAdsClient) TestConnection() error {
-	return nil
+    return nil
+}
+
+// GetDailyMetrics 模拟输出固定范围的每日指标（用于本地/CI 验收）
+func (m *MockGoogleAdsClient) GetDailyMetrics(startDate string, endDate string) ([]DailyMetric, error) {
+    // 生成从 startDate 到 endDate 的每日数据
+    parse := func(s string) time.Time { t, _ := time.Parse("2006-01-02", s); return t }
+    s := parse(startDate)
+    e := parse(endDate)
+    if e.Before(s) { s, e = e, s }
+    out := []DailyMetric{}
+    for d := s; !d.After(e); d = d.AddDate(0,0,1) {
+        // 简单的可重复生成：根据日期散列
+        clicks := int64(50 + d.Day()%20)
+        imps := clicks * 20
+        cost := clicks * 120000 // 0.12 * 1e6
+        conv := clicks / 5
+        val := conv * 5000000 // 5.0 * 1e6
+        out = append(out, DailyMetric{
+            Date: d.Format("2006-01-02"),
+            CampaignID: "cmp_mock",
+            AdGroupID:  "ag_mock",
+            Device:     "DESKTOP",
+            Network:    "SEARCH",
+            Clicks: clicks,
+            Impressions: imps,
+            CostMicros: cost,
+            Conversions: conv,
+            ConvValueMicros: val,
+            VTC: 0,
+        })
+    }
+    return out, nil
 }

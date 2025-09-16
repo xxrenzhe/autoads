@@ -22,6 +22,7 @@ import {
   Database,
   Bell,
   FileText,
+  KeySquare as KeyIcon,
   Zap,
   TrendingUp,
   Globe
@@ -167,6 +168,32 @@ const adminNavigationItems: NavigationItem[] = [
         href: '/admin/autoclick/history',
         icon: TrendingUp,
         description: '最近N天汇总'
+      }
+    ]
+  },
+  {
+    title: 'AdsCenter 管理',
+    href: '/admin/adscenter',
+    icon: FileText,
+    description: 'AdsCenter 凭据与指标',
+    children: [
+      {
+        title: '凭据总览',
+        href: '/admin/adscenter/credentials',
+        icon: KeyIcon,
+        description: 'OAuth 凭据列表与筛选'
+      },
+      {
+        title: 'OAuth 管理',
+        href: '/admin/adscenter/oauth',
+        icon: Shield,
+        description: '授权链接与回调'
+      },
+      {
+        title: '指标回填/导出',
+        href: '/admin/adscenter/metrics',
+        icon: Database,
+        description: '回填触发与CSV导出'
       }
     ]
   },

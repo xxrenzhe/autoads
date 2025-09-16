@@ -28,6 +28,12 @@
   - `GET /api/v2/tasks/:id` 返回与 SSE 一致的对象（断线降级轮询）。
   - `GET /api/v2/stream/tasks/:id` 推送 SSE（首包即发送快照）。
 
+### 事件负载规范与状态枚举
+- status 枚举：`pending | running | completed | failed | cancelled`
+- progress：0–100（整数，取整），按 processedItems/totalItems 计算（无 total 时允许缺省为 -1 或省略）
+- 时序：`ts` 为毫秒时间戳（Unix epoch ms）
+- 可选字段（按功能追加）：如 message、hourly、error 分类等；追加不移除，前端需向前兼容
+
 ---
 
 ## 前端（面向用户）：极简化
@@ -81,6 +87,61 @@
   - Finance（余额）：
     - `GET /api/v2/adscenter/finance/summary?accounts=&range=`（余额/信用/未出账/可用额度汇总，含 currency）
     - `GET /api/v2/adscenter/finance/timeseries?metric=balance|available&accounts=&granularity=day`
+
+### 错误码与错误语义
+- 统一使用 HTTP 状态码 + 业务体 `{ code, message, details? }`
+- 常见错误：
+  - 400 VALIDATION_FAILED（参数非法）
+  - 401 UNAUTHORIZED（未认证）
+  - 403 FORBIDDEN（越权访问）
+  - 404 NOT_FOUND（资源不存在或越权隐藏）
+  - 409 CONFLICT（唯一性冲突，如轮换目标重复）
+  - 422 INSUFFICIENT_TOKENS（余额不足）
+  - 429 RATE_LIMITED（限流命中）
+  - 5xx 服务端错误（含上游错误分类）
+
+### 请求示例（简化）
+- AutoClick 创建：
+```json
+POST /api/v2/autoclick/schedules
+{
+  "name": "daily_us_campaign",
+  "urls": ["https://example.com/a", "https://example.com/b"],
+  "timezone": "US",
+  "timeWindow": "06:00-24:00",
+  "dailyTarget": 200,
+  "presetId": "us_standard",
+  "referer": { "type": "social", "id": "google" }
+}
+```
+- Silent 启动：
+```json
+POST /api/v2/batchopen/silent/start
+{
+  "urls": ["https://example.com/a"],
+  "cycles": 3,
+  "presetId": "us_standard",
+  "referer": { "type": "custom", "value": "https://www.google.com/" }
+}
+```
+- Offer 解析：
+```json
+POST /api/v2/adscenter/offers/resolve
+{ "offerUrl": "https://affiliate.network/track?pid=...", "accountId": "123-456-7890" }
+```
+- Offer 绑定与轮换：
+```json
+POST /api/v2/adscenter/offers
+{
+  "offerUrl": "https://affiliate.network/track?...",
+  "accountIds": ["123-456-7890"],
+  "rotation": { "frequency": "daily", "at": "03:00", "uniqueWindowDays": 90 }
+}
+```
+- Finance 汇总：
+```
+GET /api/v2/adscenter/finance/summary?accounts=123-456-7890,111-222-3333&range=last_30d
+```
 
 ### 用户级隔离（Per-user isolation & RBAC）
 - 用户态端点（/api/v2/adscenter/*、/api/v2/batchopen/*、/api/v2/autoclick/*）按 user_id 严格隔离：
@@ -176,6 +237,13 @@
 - 币种与折算：以账户 currency 展示；多账户汇总按 OPS 配置的汇率表或实时汇率折算为组织默认币种；
 - 报警：余额低于阈值或连续下降异常触发告警（阈值与观察窗口由 OPS 配置）。
 
+### 默认配置键（automation.* 建议集）
+- automation.http_concurrency / automation.browser_concurrency
+- automation.rpm_per_user / automation.max_step_per_tick
+- automation.autoclick.variance_hour / automation.autoclick.weight_profile_default
+- automation.proxy.US（可按国家扩展） / automation.referer.default
+- adscenter.collect.costPerAccountDay（如需计费）
+
 ### 绑定与轮换策略（AdsCenter）
 - 绑定管理：
   - 录入 Offer URL 并关联账户（多选）；
@@ -234,6 +302,14 @@
 - AdsCenter Offer 解析：多数联盟链接可解析到稳定 finalUrl；suffix 拆解正确；一次性追踪参数按策略过滤。
 - AdsCenter 绑定与轮换：Offer 与账户绑定可配置频率与时间点；按唯一性窗口与作用域保证每次换链接不重复；冲突与失败可观测并可退避/熔断。
 - 用户级隔离：用户仅能查询/修改自己的账户与配置；跨用户访问返回 404/403；管理台可按 userId 查看全量并有审计记录。
+
+### 验收用例（建议）
+- AutoClick：创建→启用→进度→禁用→SSE 断线降级→计费/退款一致；Referer（social/custom）头生效；越权 schedule 拒绝。
+- Silent：幂等启动→进度查询→终止→计费/退款一致；越权 task 拒绝。
+- AdsCenter 解析：复杂联盟链接解析成功率>阈值；缓存命中；分类准确；一次性参数过滤正确。
+- AdsCenter 绑定与轮换：按频率触发；轮换前解析→唯一性校验通过；重复则重试→最终保障不重复；手动触发权限有效。
+- 采集与可视化：日聚合与余额采集成功；KPI/时序/TopN/余额展示正确；多账户币种折算正确；低余额告警触发。
+- RBAC：用户仅见本人数据；管理员可按 userId 查询/导出；敏感操作审计存在。
  - BatchOpen 三版本隔离：Basic/Silent/AutoClick 的所有用户态端点或计费行为严格以 user_id 约束；越权访问拒绝并落审计。
 
 ---
@@ -256,50 +332,52 @@
 
 ## 待办清单（可直接用于新会话接续）
 - 统一事件与任务
-  - [ ] /api/v2/tasks/:id 与 /api/v2/stream/tasks/:id（SSE）
-  - [ ] 前端统一 Hook：useLiveExecution(filter)
-  - [ ] 统一进度组件替换 AutoClick/AdsCenter 详情页
+  - [x] /api/v2/tasks/:id 与 /api/v2/stream/tasks/:id（SSE）
+  - [x] 前端统一 Hook：useLiveExecution（SSE 首包 + 轮询降级）
+  - [x] 统一进度组件替换 AutoClick/AdsCenter 详情页
 - AutoClick v2
-  - [ ] /api/v2/autoclick/schedules CRUD/启停
-  - [ ] 表单极简（仅 URL/国家时段/日目标/预设 + Referer）
-  - [ ] OPS 预设读取与策略注入（代理/Referer/并发/RPM/权重）
+  - [x] /api/v2/autoclick/schedules CRUD/启停
+  - [x] 表单极简（仅 URL/国家时段/日目标/预设 + Referer）
+  - [x] OPS 预设读取与策略注入（代理/Referer/并发/RPM/权重）
 - BatchOpen Silent v2
-  - [ ] /api/v2/batchopen/silent/start /silent/tasks/:id /silent/terminate
-  - [ ] /api/v2/batchopen/proxy/validate
-  - [ ] 表单极简 + Referer 控件；Idempotency-Key 支持
-  - [ ] 统一任务事件与快照输出（ExecutionUpdate）
+  - [x] /api/v2/batchopen/silent/start /silent/tasks/:id /silent/terminate
+  - [x] /api/v2/batchopen/proxy/validate
+  - [x] 表单极简 + Referer 控件；Idempotency-Key 支持
+  - [x] 统一任务事件与快照输出（ExecutionUpdate）
 - AdsCenter v2 — 模板更新
-  - [ ] /api/v2/adscenter/templates 列表
-  - [ ] /templates/:id/dry-run 与 /execute
-  - [ ] /executions/:id/retry-failures 与 /rollback
-  - [ ] 前端“快速更新”卡片（账号+模板+干跑+执行）
+  - [x] /api/v2/adscenter/templates 列表
+  - [x] /templates/:id/dry-run 与 /execute
+  - [x] /executions/:id/retry-failures 与 /rollback
+  - [x] 前端“快速更新”卡片（账号+模板+干跑+执行）
 - AdsCenter 数据采集与可视化
-  - [ ] MySQL 表：ads_accounts / ads_oauth_credentials / ads_metrics_daily（与必要维表）
-  - [ ] 调度器：回填 + 小时增量 + 高水位断点
-  - [ ] /analytics/summary /timeseries /breakdown 三接口
-  - [ ] 概览 KPI/时序/TopN 三组件（前端）
+  - [x] MySQL 表：ads_accounts（最小）/ ads_metrics_daily（聚合表）
+  - [x] 调度器：回填 + 每小时增量 + 高水位断点（回填天数可配）
+  - [x] /analytics/summary /timeseries /breakdown 三接口
+  - [x] 概览 KPI/时序/TopN 三组件（前端）
 - AdsCenter 绑定与轮换
-  - [ ] 表：ads_offers / ads_offer_bindings / ads_offer_rotations
-  - [ ] API：POST/GET/PATCH/DELETE /api/v2/adscenter/offers（绑定/查询/修改/解绑）
-  - [ ] API：POST /api/v2/adscenter/offers/:id/rotate（手动触发）与调度器自动轮换
-  - [ ] 唯一性校验：uniqueWindowDays 与 scope（per ad_group/per account），历史哈希对比
-  - [ ] 前端：绑定与频率选择（极简下拉），详情中显示轮换历史
+  - [x] 表：ads_offers / ads_offer_bindings / ads_offer_rotations
+  - [x] API：POST/GET/PATCH/DELETE /api/v2/adscenter/offers（绑定/查询/修改/解绑）
+  - [x] API：POST /api/v2/adscenter/offers/:id/rotate（手动触发）与调度器自动轮换（已实现，5分钟周期扫描到期绑定）
+  - [x] 唯一性校验：uniqueWindowDays 与历史哈希对比（重复最多重试3次，仍重复则跳过并记录）
+  - [x] 前端：绑定与频率选择（极简下拉），详情中显示轮换历史
 - 统一池与配置
-  - [ ] PoolManager 作为通用模块（AutoClick/AdsCenter 复用）
-  - [ ] Config Facade（automation.* 键合并）
+  - [x] PoolManager 作为通用模块（AutoClick/AdsCenter 复用）
+  - [x] Config Facade（automation.* 键合并）
 - 观测与压测
-  - [ ] 队列面板：吞吐/平均等待/预警阈值
+  - [x] 队列面板：吞吐/平均等待/预警阈值
   - [ ] 成功率/延迟/退款一致性压测脚本与基线
 - 新增（解析与 Referer）
-  - [ ] /api/v2/adscenter/offers/resolve（浏览器解析 + 缓存 + 分类 + 熔断）
-  - [ ] 前端 Offer URL 解析按钮与结果回填（Final URL/Suffix）
-  - [ ] AutoClick/Silent 表单统一 Referer 控件（社媒/自定义）与服务端注入
+  - [x] /api/v2/adscenter/offers/resolve（浏览器解析 + 缓存 + 分类 + 熔断）
+  - [x] 前端 Offer URL 解析按钮与结果回填（Final URL/Suffix）
+  - [x] AutoClick/Silent 表单统一 Referer 控件（社媒/自定义）与服务端注入
+  - [x] Admin OAuth 链接与回调（/api/v2/admin/adscenter/google-ads/oauth/link|callback），支持刷新令牌写入 google_ads_configs
 - 安全与隔离
-  - [ ] 用户态端点统一追加 user_id 过滤与用例校验（防跨用户访问）
-  - [ ] Admin 端点（/api/v2/admin/adscenter/*）仅管理员可用，支持按 userId 查询与导出，读写审计
+  - [x] 用户态端点统一追加 user_id 过滤与用例校验（防跨用户访问）
+  - [x] Admin 端点（/api/v2/admin/adscenter/*）仅管理员可用，支持按 userId 查询与导出，读写审计
 
 ---
 
 ## 变更记录
 - 2025-09-16
   - 初稿：定义 /api/v2 合同、前端极简化、OPS 承载策略、AdsCenter 采集与可视化方案、统一任务与事件流、里程碑与待办。
+  - 2025-09-16（实现）：落地 /api/v2 统一任务与事件流、Silent v2、AutoClick schedules v2、AdsCenter 模板干跑与执行、执行重试与回滚、Offer 解析、绑定与轮换（唯一性）、基础 /analytics 三端点、BFF `/api/v2/*` 与前端 Hook（useLiveExecution）。

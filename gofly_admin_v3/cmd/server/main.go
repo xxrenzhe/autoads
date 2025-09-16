@@ -1,7 +1,9 @@
 package main
 
 import (
-	"crypto/sha256"
+    "bytes"
+    "crypto/sha1"
+    "crypto/sha256"
 	"context"
 	"encoding/json"
 	"flag"
@@ -32,7 +34,8 @@ import (
     adscenter "gofly-admin-v3/internal/adscenter"
 	"gofly-admin-v3/internal/config"
 	"gofly-admin-v3/internal/docs"
-	"gofly-admin-v3/internal/health"
+    "gofly-admin-v3/internal/health"
+    "gofly-admin-v3/internal/system"
 	dbinit "gofly-admin-v3/internal/init"
 	"gofly-admin-v3/internal/invitation"
     "gofly-admin-v3/internal/metrics"
@@ -56,9 +59,9 @@ import (
 
 // 版本信息
 var (
-	Version   = "1.0.0"
-	BuildTime = "unknown"
-	GitCommit = "unknown"
+    Version   = "1.0.0"
+    BuildTime = "unknown"
+    GitCommit = "unknown"
 )
 
 // ==== AdsCenter minimal models (map to Prisma tables) ====
@@ -103,6 +106,46 @@ type AdsExecution struct {
 }
 
 func (AdsExecution) TableName() string { return "ads_executions" }
+
+// AdsCenter v2 绑定/轮换最小模型（用于功能闭环）
+type AdsOffer struct {
+    ID        string    `json:"id" gorm:"primaryKey;size:36"`
+    UserID    string    `json:"userId" gorm:"index;size:36"`
+    OfferURL  string    `json:"offerUrl" gorm:"size:1000"`
+    Status    string    `json:"status" gorm:"size:20;default:'active'"`
+    CreatedAt time.Time `json:"createdAt"`
+    UpdatedAt time.Time `json:"updatedAt"`
+}
+func (AdsOffer) TableName() string { return "ads_offers" }
+
+type AdsOfferBinding struct {
+    ID               string     `json:"id" gorm:"primaryKey;size:36"`
+    OfferID          string     `json:"offerId" gorm:"index;size:36"`
+    UserID           string     `json:"userId" gorm:"index;size:36"`
+    AccountID        string     `json:"accountId" gorm:"size:255"`
+    RotationFrequency string    `json:"rotationFrequency" gorm:"size:20"` // hourly/daily/weekly
+    RotationAt       *string    `json:"rotationAt" gorm:"size:5"`        // HH:mm
+    UniqueWindowDays int        `json:"uniqueWindowDays" gorm:"default:90"`
+    Active           bool       `json:"active" gorm:"default:true"`
+    LastRotationAt   *time.Time `json:"lastRotationAt"`
+    NextRotationAt   *time.Time `json:"nextRotationAt"`
+    CreatedAt        time.Time  `json:"createdAt"`
+    UpdatedAt        time.Time  `json:"updatedAt"`
+}
+func (AdsOfferBinding) TableName() string { return "ads_offer_bindings" }
+
+type AdsOfferRotation struct {
+    ID            string    `json:"id" gorm:"primaryKey;size:36"`
+    BindingID     string    `json:"bindingId" gorm:"index;size:36"`
+    AccountID     string    `json:"accountId" gorm:"size:255"`
+    RotatedAt     time.Time `json:"rotatedAt"`
+    FinalURL      string    `json:"finalUrl" gorm:"size:1000"`
+    FinalURLSuffix string   `json:"finalUrlSuffix" gorm:"size:1000"`
+    FinalHash     string    `json:"finalHash" gorm:"size:64;index"`
+    Status        string    `json:"status" gorm:"size:20"`
+    Message       string    `json:"message" gorm:"type:text"`
+}
+func (AdsOfferRotation) TableName() string { return "ads_offer_rotations" }
 
 // 全局服务实例（用于旧API处理器中复用）
 var (
@@ -308,6 +351,43 @@ func main() {
                 log.Println("✅ BatchOpen 统一模型表已就绪（batch_jobs, batch_job_items, batch_job_progress）")
             }
 
+            // Auto-migrate AdsCenter v2 minimal tables (offers/bindings/rotations) + metrics
+            if err := gormDB.AutoMigrate(&AdsOffer{}, &AdsOfferBinding{}, &AdsOfferRotation{}); err != nil {
+                log.Printf("警告：AdsCenter v2 模型迁移失败: %v", err)
+            } else {
+                log.Println("✅ AdsCenter v2 表已就绪（ads_offers, ads_offer_bindings, ads_offer_rotations）")
+            }
+            if err := gormDB.AutoMigrate(&AdsMetricsDaily{}); err != nil {
+                log.Printf("警告：AdsCenter 指标表迁移失败: %v", err)
+            } else {
+                log.Println("✅ AdsCenter 指标表已就绪（ads_metrics_daily）")
+            }
+
+            // 初始化 PoolManager 并发（从 automation.* 读取，fallback 旧键）
+            httpConc := 10
+            brConc := 3
+            if v, ok := system.Get("automation.http_concurrency"); ok { if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 { httpConc = n } }
+            if v, ok := system.Get("automation.browser_concurrency"); ok { if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 { brConc = n } }
+            // 兼容旧键
+            if httpConc == 10 { if v, ok := system.Get("AutoClick_HTTP_Concurrency"); ok { if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 { httpConc = n } } }
+            if brConc == 3 { if v, ok := system.Get("AutoClick_Browser_Concurrency"); ok { if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 { brConc = n } } }
+            autoclick.GetPoolManager().Ensure(httpConc, brConc)
+            // 订阅热更新
+            system.On("automation.http_concurrency", func(key, value string) {
+                if n, err := strconv.Atoi(strings.TrimSpace(value)); err == nil && n > 0 {
+                    st := autoclick.GetPoolManager().State()
+                    autoclick.GetPoolManager().Ensure(n, st.BrowserWorkers)
+                    log.Printf("[automation] http_concurrency -> %d", n)
+                }
+            })
+            system.On("automation.browser_concurrency", func(key, value string) {
+                if n, err := strconv.Atoi(strings.TrimSpace(value)); err == nil && n > 0 {
+                    st := autoclick.GetPoolManager().State()
+                    autoclick.GetPoolManager().Ensure(st.HTTPWorkers, n)
+                    log.Printf("[automation] browser_concurrency -> %d", n)
+                }
+            })
+
 			// SiteRank SimilarWeb 客户端
 			swebClient = siterankgo.NewSimilarWebClient()
 
@@ -338,6 +418,10 @@ func main() {
     sch := scheduler.GetScheduler()
     // 注册优化方案系统任务
     sch.RegisterOptimizationJobs()
+    // 注册 AdsCenter 自动轮换任务（每5分钟）
+    _ = sch.AddJob(&scheduler.CronJob{ Job: &AdsRotateJob{}, Schedule: "0 */5 * * * *", Enabled: true, Description: "AdsCenter auto rotate", Timeout: 20 * time.Second })
+    // 注册 AdsCenter 指标采集（每小时第1分钟）
+    _ = sch.AddJob(&scheduler.CronJob{ Job: &AdsMetricsCollectorJob{}, Schedule: "0 1 * * * *", Enabled: true, Description: "AdsCenter metrics hourly collect", Timeout: 4 * time.Minute })
     // 注册 AutoClick 调度任务（每分钟tick）
     // 注入 RateLimit provider（plan-based），rpm 使用 BatchTasksPerMinute，concurrent 使用 BatchConcurrentTasks
     if rateLimitManager != nil {
@@ -478,7 +562,7 @@ func main() {
 
 // setupAPIRoutes 设置API路由
 func setupAPIRoutes(r *gin.Engine) {
-	// API v1 路由组
+    // API v1 路由组
     v1 := r.Group("/api/v1")
 	// 可选：内部JWT验签（默认不强制，设置 INTERNAL_JWT_ENFORCE=true 强制）
 	if os.Getenv("INTERNAL_JWT_ENFORCE") == "true" {
@@ -1546,6 +1630,627 @@ func setupAPIRoutes(r *gin.Engine) {
         })
     }
 
+    // ===== 新版 API: /api/v2 =====
+    v2 := r.Group("/api/v2")
+    // 内部JWT桥接（不强制） + 用户鉴权（要求 Authorization）
+    v2.Use(middleware.InternalJWTAuth(false))
+    v2.Use(authMiddleware())
+    {
+        // 统一任务快照
+        v2.GET("/tasks/:id", func(c *gin.Context) {
+            id := strings.TrimSpace(c.Param("id"))
+            if id == "" { c.JSON(400, gin.H{"message":"missing id"}); return }
+            snap, ok, err := buildExecutionUpdateSnapshot(c, id)
+            if err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+            if !ok { c.JSON(404, gin.H{"message":"not found"}); return }
+            c.JSON(200, snap)
+        })
+
+        // 统一任务 SSE
+        v2.GET("/stream/tasks/:id", func(c *gin.Context) {
+            id := strings.TrimSpace(c.Param("id"))
+            if id == "" { c.String(400, "missing id"); return }
+            c.Writer.Header().Set("Content-Type", "text/event-stream")
+            c.Writer.Header().Set("Cache-Control", "no-cache")
+            c.Writer.Header().Set("Connection", "keep-alive")
+            f, ok := c.Writer.(http.Flusher)
+            if !ok { c.String(500, "stream unsupported"); return }
+            if snap, ok2, _ := buildExecutionUpdateSnapshot(c, id); ok2 {
+                b, _ := json.Marshal(snap)
+                fmt.Fprintf(c.Writer, "data: %s\n\n", string(b))
+                f.Flush()
+            }
+            ticker := time.NewTicker(1 * time.Second)
+            defer ticker.Stop()
+            lastKey := ""
+            for i := 0; i < 900; i++ {
+                select {
+                case <-c.Request.Context().Done():
+                    return
+                case <-ticker.C:
+                    snap, ok3, _ := buildExecutionUpdateSnapshot(c, id)
+                    if !ok3 {
+                        fmt.Fprintf(c.Writer, "data: %s\n\n", `{"type":"not_found"}`)
+                        f.Flush();
+                        return
+                    }
+                    key := fmt.Sprintf("%v:%v", snap["id"], snap["progress"]) 
+                    if key != lastKey {
+                        lastKey = key
+                        b, _ := json.Marshal(snap)
+                        fmt.Fprintf(c.Writer, "data: %s\n\n", string(b))
+                        f.Flush()
+                    }
+                    st := strings.ToLower(gf.String(snap["status"]))
+                    if st == "completed" || st == "failed" || st == "cancelled" { return }
+                }
+            }
+        })
+
+        // BatchOpen Silent v2
+        batchV2 := v2.Group("/batchopen")
+        {
+            batchV2.POST("/silent/start", func(c *gin.Context) { handleSilentStart(c) })
+            batchV2.GET("/silent/tasks/:id", func(c *gin.Context) {
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"message":"missing id"}); return }
+                snap, ok, err := buildExecutionUpdateSnapshot(c, id)
+                if err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+                if !ok { c.JSON(404, gin.H{"message":"not found"}); return }
+                c.JSON(200, snap)
+            })
+            batchV2.POST("/silent/terminate", func(c *gin.Context) { handleSilentTerminate(c) })
+            batchV2.POST("/proxy/validate", func(c *gin.Context) {
+                type req struct{ ProxyUrl string `json:"proxyUrl"` }
+                var body req
+                if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.ProxyUrl) == "" {
+                    c.JSON(400, gin.H{"valid": false, "message": "invalid request"}); return
+                }
+                u, err := url.Parse(body.ProxyUrl)
+                if err != nil { c.JSON(200, gin.H{"valid": false, "message": err.Error()}); return }
+                scheme := strings.ToLower(u.Scheme)
+                if scheme != "http" && scheme != "https" && scheme != "socks5" { c.JSON(200, gin.H{"valid": false, "message": "unsupported scheme"}); return }
+                if !strings.Contains(u.Host, ":") { c.JSON(200, gin.H{"valid": false, "message": "missing port"}); return }
+                c.JSON(200, gin.H{"valid": true, "normalized": u.String()})
+            })
+        }
+
+        // AutoClick v2
+        acv2 := v2.Group("/autoclick")
+        {
+            autoCtrl := autoclick.NewController(gormDB)
+            acv2.GET("/schedules", autoCtrl.ListSchedules)
+            acv2.POST("/schedules", autoCtrl.CreateSchedule)
+            acv2.GET("/schedules/:id", autoCtrl.GetSchedule)
+            acv2.DELETE("/schedules/:id", autoCtrl.DeleteSchedule)
+            acv2.PATCH("/schedules/:id/enable", autoCtrl.EnableSchedule)
+            acv2.PATCH("/schedules/:id/disable", autoCtrl.DisableSchedule)
+            acv2.PUT("/schedules/:id", autoCtrl.UpdateSchedule)
+            // 获取当前执行ID（running/pending 优先，按更新时间倒序）
+            acv2.GET("/schedules/:id/execution/current", func(c *gin.Context) {
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"message": "unauthorized"}); return }
+                sid := c.Param("id"); if sid == "" { c.JSON(400, gin.H{"message":"missing id"}); return }
+                var ex autoclick.AutoClickExecution
+                if err := gormDB.Where("user_id=? AND schedule_id=? AND status IN ?", userID, sid, []string{"running", "pending"}).Order("updated_at DESC").First(&ex).Error; err != nil {
+                    c.JSON(404, gin.H{"message": "no active execution"}); return
+                }
+                c.JSON(200, gin.H{"id": ex.ID, "status": ex.Status, "progress": ex.Progress, "processed": ex.Success+ex.Fail, "total": ex.Total})
+            })
+        }
+
+        // AdsCenter v2（模板/执行/解析）
+        adv2 := v2.Group("/adscenter")
+        {
+            adv2.GET("/accounts", func(c *gin.Context) {
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"message":"unauthorized"}); return }
+                var rows []adscenter.GoogleAdsConfig
+                if err := gormDB.Where("user_id=? AND is_active=1", userID).Order("updated_at DESC").Find(&rows).Error; err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+                for i := range rows { rows[i].DeveloperToken = "***"; rows[i].ClientSecret = "***"; rows[i].RefreshToken = "***" }
+                c.JSON(200, gin.H{"items": rows})
+            })
+            adv2.GET("/templates", func(c *gin.Context) {
+                row, err := gf.DB().Raw("SELECT config_value FROM system_configs WHERE config_key=? AND is_active=1 LIMIT 1", "adscenter.templates").One()
+                if err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+                var list interface{}
+                if row != nil && strings.TrimSpace(row["config_value"].String()) != "" { _ = json.Unmarshal([]byte(row["config_value"].String()), &list) } else { list = []any{} }
+                c.JSON(200, gin.H{"items": list})
+            })
+            adv2.POST("/templates/:id/dry-run", func(c *gin.Context) {
+                templateID := strings.TrimSpace(c.Param("id"))
+                account := strings.TrimSpace(c.Query("account"))
+                if templateID == "" || account == "" { c.JSON(400, gin.H{"message":"missing template or account"}); return }
+                userID := c.GetString("user_id")
+                client, err := resolveGoogleAdsClient(c, userID, account)
+                if err != nil { c.JSON(400, gin.H{"message": err.Error()}); return }
+                ads, err := client.GetAds(); if err != nil { c.JSON(502, gin.H{"message": err.Error()}); return }
+                affect := 0
+                sample := []adscenter.AdInfo{}
+                for _, a := range ads { if strings.ToUpper(a.Status) != "REMOVED" { affect++; if len(sample) < 5 { sample = append(sample, a) } } }
+                c.JSON(200, gin.H{"ok": true, "affected": affect, "sample": sample})
+            })
+            adv2.POST("/templates/:id/execute", func(c *gin.Context) {
+                templateID := strings.TrimSpace(c.Param("id"))
+                account := strings.TrimSpace(c.Query("account"))
+                if templateID == "" || account == "" { c.JSON(400, gin.H{"message":"missing template or account"}); return }
+                userID := c.GetString("user_id")
+                client, err := resolveGoogleAdsClient(c, userID, account)
+                if err != nil { c.JSON(400, gin.H{"message": err.Error()}); return }
+                ads, err := client.GetAds(); if err != nil { c.JSON(502, gin.H{"message": err.Error()}); return }
+                suffixRow, _ := gf.DB().Raw("SELECT config_value FROM system_configs WHERE config_key=? AND is_active=1 LIMIT 1", "adscenter.template."+templateID+".finalUrlSuffix").One()
+                suffix := ""; if suffixRow != nil { suffix = strings.TrimSpace(suffixRow["config_value"].String()) }
+                if suffix == "" { suffix = "utm_source=autoads" }
+                updates := make([]adscenter.UpdateAdRequest, 0, len(ads))
+                results := make([]adscenter.AdUpdateResult, 0, len(ads))
+                for _, a := range ads {
+                    base := a.FinalURL; if base == "" { continue }
+                    newURL := rebuildURLWithSuffix(base, suffix); if newURL == base { continue }
+                    updates = append(updates, adscenter.UpdateAdRequest{AdID: a.ID, FinalURL: newURL})
+                    results = append(results, adscenter.AdUpdateResult{ AdID: a.ID, AdName: a.Name, OldFinalURL: base, NewFinalURL: newURL, Status: "pending", UpdatedAt: time.Now().Format(time.RFC3339) })
+                }
+                res, err := client.BatchUpdateAds(updates); if err != nil { c.JSON(502, gin.H{"message": err.Error()}); return }
+                // 合并状态
+                idx := map[string]int{}; for i, r := range results { idx[r.AdID] = i }
+                succ := 0
+                for _, r := range res { if i, ok := idx[r.AdID]; ok { if r.Success { results[i].Status = "success"; results[i].ErrorMessage = ""; succ++ } else { results[i].Status = "failed"; results[i].ErrorMessage = r.ErrorMessage } } }
+                task := &adscenter.AdsCenterTask{ UserID: userID, Name: "template:"+templateID, Status: adscenter.TaskStatusCompleted, TotalLinks: len(updates), UpdatedCount: succ, FailedCount: len(updates)-succ, UpdateResults: results }
+                _ = gormDB.Create(task).Error
+                c.JSON(200, gin.H{"ok": true, "results": res, "updated": succ, "failed": len(updates)-succ, "executionId": task.ID })
+            })
+            // 重试失败项（需提供 account）
+            adv2.POST("/executions/:id/retry-failures", func(c *gin.Context) {
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"message":"missing id"}); return }
+                account := strings.TrimSpace(c.Query("account")); if account == "" { c.JSON(400, gin.H{"message":"missing account"}); return }
+                userID := c.GetString("user_id")
+                var task adscenter.AdsCenterTask
+                if err := gormDB.Where("id=? AND user_id=?", id, userID).First(&task).Error; err != nil { c.JSON(404, gin.H{"message":"execution not found"}); return }
+                failed := []adscenter.UpdateAdRequest{}
+                for _, r := range task.UpdateResults { if strings.ToLower(r.Status) == "failed" && r.NewFinalURL != "" { failed = append(failed, adscenter.UpdateAdRequest{ AdID: r.AdID, FinalURL: r.NewFinalURL }) } }
+                if len(failed) == 0 { c.JSON(200, gin.H{"ok": true, "message":"no failed items"}); return }
+                client, err := resolveGoogleAdsClient(c, userID, account)
+                if err != nil { c.JSON(400, gin.H{"message": err.Error()}); return }
+                res, err := client.BatchUpdateAds(failed); if err != nil { c.JSON(502, gin.H{"message": err.Error()}); return }
+                // 写回到 UpdateResults
+                idx := map[string]int{}; for i, r := range task.UpdateResults { idx[r.AdID] = i }
+                succ := 0
+                for _, r := range res { if i, ok := idx[r.AdID]; ok { if r.Success { task.UpdateResults[i].Status = "success"; task.UpdateResults[i].ErrorMessage = ""; succ++ } else { task.UpdateResults[i].ErrorMessage = r.ErrorMessage } } }
+                _ = gormDB.Model(&adscenter.AdsCenterTask{}).Where("id=?", task.ID).Updates(map[string]any{"update_results": task.UpdateResults, "updated_count": task.UpdatedCount + succ, "failed_count": ifZeroInt(task.FailedCount - succ, 0), "updated_at": time.Now()}).Error
+                c.JSON(200, gin.H{"ok": true, "updated": succ, "failed": len(res)-succ})
+            })
+            // 回滚执行（需提供 account）
+            adv2.POST("/executions/:id/rollback", func(c *gin.Context) {
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"message":"missing id"}); return }
+                account := strings.TrimSpace(c.Query("account")); if account == "" { c.JSON(400, gin.H{"message":"missing account"}); return }
+                userID := c.GetString("user_id")
+                var task adscenter.AdsCenterTask
+                if err := gormDB.Where("id=? AND user_id=?", id, userID).First(&task).Error; err != nil { c.JSON(404, gin.H{"message":"execution not found"}); return }
+                reverts := []adscenter.UpdateAdRequest{}
+                for _, r := range task.UpdateResults { if strings.ToLower(r.Status) == "success" && r.OldFinalURL != "" { reverts = append(reverts, adscenter.UpdateAdRequest{ AdID: r.AdID, FinalURL: r.OldFinalURL }) } }
+                if len(reverts) == 0 { c.JSON(200, gin.H{"ok": true, "message":"nothing to rollback"}); return }
+                client, err := resolveGoogleAdsClient(c, userID, account)
+                if err != nil { c.JSON(400, gin.H{"message": err.Error()}); return }
+                res, err := client.BatchUpdateAds(reverts); if err != nil { c.JSON(502, gin.H{"message": err.Error()}); return }
+                c.JSON(200, gin.H{"ok": true, "reverted": countSuccess(res), "failed": len(res)-countSuccess(res) })
+            })
+            adv2.POST("/offers/resolve", func(c *gin.Context) {
+                var body struct { OfferUrl string `json:"offerUrl"`; AccountId string `json:"accountId"` }
+                if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.OfferUrl) == "" { c.JSON(400, gin.H{"ok": false, "message":"invalid request"}); return }
+                if storeRedis != nil { key := "offer:resolve:" + sha1Hex(strings.TrimSpace(body.OfferUrl)); if v, _ := storeRedis.Get(c, key); v != "" { var m map[string]any; _ = json.Unmarshal([]byte(v), &m); if m != nil { c.JSON(200, m); return } } }
+                res := resolveOfferURL(c.Request.Context(), body.OfferUrl)
+                if storeRedis != nil && res["ok"] == true { b,_ := json.Marshal(res); _ = storeRedis.SetEx(c, "offer:resolve:"+sha1Hex(body.OfferUrl), string(b), 24*time.Hour) }
+                c.JSON(200, res)
+            })
+
+            // Analytics：优先从 ads_metrics_daily 读取；无数据时回退轮换/执行统计
+            adv2.GET("/analytics/summary", func(c *gin.Context) {
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"message":"unauthorized"}); return }
+                // metrics
+                type agg struct{ Clicks, Impressions, CostMicros, Conversions, ConvValueMicros int64 }
+                var a agg
+                _ = gormDB.Model(&AdsMetricsDaily{}).Select("SUM(clicks) as clicks, SUM(impressions) as impressions, SUM(cost_micros) as cost_micros, SUM(conversions) as conversions, SUM(conv_value_micros) as conv_value_micros").Where("user_id=? AND date>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)", userID).Scan(&a)
+                // 回退
+                var taskCount int64; _ = gormDB.Model(&adscenter.AdsCenterTask{}).Where("user_id=?", userID).Count(&taskCount).Error
+                var rotCount int64; _ = gormDB.Model(&AdsOfferRotation{}).Joins("JOIN ads_offer_bindings b ON b.id=ads_offer_rotations.binding_id").Where("b.user_id=?", userID).Count(&rotCount).Error
+                out := gin.H{"tasks": taskCount, "rotations": rotCount}
+                if a.Impressions > 0 || a.Clicks > 0 { out["clicks"] = a.Clicks; out["impressions"] = a.Impressions; out["costMicros"] = a.CostMicros; out["conversions"] = a.Conversions; out["convValueMicros"] = a.ConvValueMicros }
+                c.JSON(200, out)
+            })
+            adv2.GET("/analytics/timeseries", func(c *gin.Context) {
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"message":"unauthorized"}); return }
+                // 优先 metrics：按日 clicks
+                rows, err := gf.DB().Query(c, `SELECT date, SUM(clicks) as v FROM ads_metrics_daily WHERE user_id=? AND date>=DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY date ORDER BY date`, userID)
+                if err == nil && len(rows) > 0 {
+                    out := make([]map[string]any, 0, len(rows))
+                    for _, r := range rows { out = append(out, map[string]any{"date": r["date"].String(), "value": r["v"].Int()}) }
+                    c.JSON(200, gin.H{"series": out}); return
+                }
+                // 回退：近30天轮换计数
+                q := `SELECT DATE(rotated_at) as d, COUNT(1) as cnt FROM ads_offer_rotations r JOIN ads_offer_bindings b ON b.id=r.binding_id WHERE b.user_id=? AND rotated_at>=DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY DATE(rotated_at) ORDER BY DATE(rotated_at)`
+                rows2, err2 := gf.DB().Query(c, q, userID)
+                if err2 != nil { c.JSON(500, gin.H{"message": err2.Error()}); return }
+                out := make([]map[string]any, 0, len(rows2))
+                for _, r := range rows2 { out = append(out, map[string]any{"date": r["d"].String(), "value": r["cnt"].Int()}) }
+                c.JSON(200, gin.H{"series": out})
+            })
+            adv2.GET("/analytics/breakdown", func(c *gin.Context) {
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"message":"unauthorized"}); return }
+                // 优先 metrics：TopN Campaign 按 Clicks
+                rows, err := gf.DB().Query(c, `SELECT campaign_id, SUM(clicks) as v FROM ads_metrics_daily WHERE user_id=? AND date>=DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY campaign_id ORDER BY v DESC LIMIT 10`, userID)
+                if err == nil && len(rows) > 0 {
+                    out := make([]map[string]any, 0, len(rows))
+                    for _, r := range rows { out = append(out, map[string]any{"campaignId": r["campaign_id"].String(), "value": r["v"].Int()}) }
+                    c.JSON(200, gin.H{"topCampaigns": out}); return
+                }
+                // 回退：TopN 账户按轮换次数
+                q := `SELECT b.account_id, COUNT(1) as cnt FROM ads_offer_rotations r JOIN ads_offer_bindings b ON b.id=r.binding_id WHERE b.user_id=? GROUP BY b.account_id ORDER BY cnt DESC LIMIT 10`
+                rows2, err2 := gf.DB().Query(c, q, userID)
+                if err2 != nil { c.JSON(500, gin.H{"message": err2.Error()}); return }
+                out := make([]map[string]any, 0, len(rows2))
+                for _, r := range rows2 { out = append(out, map[string]any{"accountId": r["account_id"].String(), "value": r["cnt"].Int()}) }
+                c.JSON(200, gin.H{"topAccounts": out})
+            })
+
+            // Offer 绑定管理（最小实现）
+            adv2.POST("/offers", func(c *gin.Context) {
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"message":"unauthorized"}); return }
+                var body struct{
+                    OfferUrl string `json:"offerUrl"`
+                    AccountId string `json:"accountId"`
+                    RotationFrequency string `json:"rotationFrequency"` // hourly/daily/weekly
+                    RotationAt *string `json:"rotationAt"`
+                    UniqueWindowDays int `json:"uniqueWindowDays"`
+                }
+                if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.OfferUrl)=="" || strings.TrimSpace(body.AccountId)=="" { c.JSON(400, gin.H{"message":"invalid request"}); return }
+                off := &AdsOffer{ ID: gf.UUID(), UserID: userID, OfferURL: strings.TrimSpace(body.OfferUrl), Status: "active", CreatedAt: time.Now(), UpdatedAt: time.Now() }
+                // 复用存在的 offer
+                var exist AdsOffer
+                if err := gormDB.Where("user_id=? AND offer_url=?", userID, off.OfferURL).First(&exist).Error; err == nil && exist.ID != "" { off = &exist }
+                if off.ID == "" || off.CreatedAt.IsZero() { _ = gormDB.Create(off).Error }
+                bind := &AdsOfferBinding{ ID: gf.UUID(), OfferID: off.ID, UserID: userID, AccountID: strings.TrimSpace(body.AccountId), RotationFrequency: strings.ToLower(strings.TrimSpace(body.RotationFrequency)), RotationAt: body.RotationAt, UniqueWindowDays: ifZeroInt(body.UniqueWindowDays, 90), Active: true, CreatedAt: time.Now(), UpdatedAt: time.Now() }
+                if err := gormDB.Create(bind).Error; err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+                c.JSON(200, gin.H{"offer": off, "binding": bind})
+            })
+            adv2.GET("/offers", func(c *gin.Context) {
+                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"message":"unauthorized"}); return }
+                // 左连接 offers + bindings
+                type row struct{ AdsOffer; Binding AdsOfferBinding `gorm:"embeddedPrefix:bind_"` }
+                var rows []map[string]any
+                q := `SELECT o.id as offer_id,o.offer_url,o.status as offer_status,o.created_at as offer_created_at,o.updated_at as offer_updated_at,
+                             b.id as binding_id,b.account_id,b.rotation_frequency,b.rotation_at,b.unique_window_days,b.active,b.last_rotation_at,b.next_rotation_at,b.created_at as bind_created_at,b.updated_at as bind_updated_at
+                      FROM ads_offers o LEFT JOIN ads_offer_bindings b ON b.offer_id=o.id WHERE o.user_id=? ORDER BY o.updated_at DESC`
+                res, err := gf.DB().Query(c, q, userID)
+                if err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+                for _, r := range res { rows = append(rows, r.Map()) }
+                c.JSON(200, gin.H{"items": rows})
+            })
+            adv2.PATCH("/offers/:id", func(c *gin.Context) {
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"message":"missing id"}); return }
+                userID := c.GetString("user_id")
+                var body map[string]any
+                if err := c.ShouldBindJSON(&body); err != nil { c.JSON(400, gin.H{"message":"invalid request"}); return }
+                updates := map[string]any{"updated_at": time.Now()}
+                if v, ok := body["rotationFrequency"].(string); ok { updates["rotation_frequency"] = strings.ToLower(strings.TrimSpace(v)) }
+                if v, ok := body["rotationAt"].(string); ok { updates["rotation_at"] = strings.TrimSpace(v) }
+                if v, ok := body["uniqueWindowDays"].(float64); ok { updates["unique_window_days"] = int(v) }
+                if v, ok := body["active"].(bool); ok { updates["active"] = v }
+                if err := gormDB.Model(&AdsOfferBinding{}).Where("id=? AND user_id=?", id, userID).Updates(updates).Error; err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+                c.JSON(200, gin.H{"ok": true})
+            })
+            adv2.DELETE("/offers/:id", func(c *gin.Context) {
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"message":"missing id"}); return }
+                userID := c.GetString("user_id")
+                if err := gormDB.Where("id=? AND user_id=?", id, userID).Delete(&AdsOfferBinding{}).Error; err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+                c.JSON(200, gin.H{"ok": true})
+            })
+            adv2.POST("/offers/:id/rotate", func(c *gin.Context) {
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"message":"missing id"}); return }
+                userID := c.GetString("user_id")
+                var bind AdsOfferBinding
+                if err := gormDB.Where("id=? AND user_id=?", id, userID).First(&bind).Error; err != nil { c.JSON(404, gin.H{"message":"binding not found"}); return }
+                var offer AdsOffer
+                if err := gormDB.Where("id=?", bind.OfferID).First(&offer).Error; err != nil { c.JSON(404, gin.H{"message":"offer not found"}); return }
+                // 解析 Offer URL
+                var (
+                    finalURL string
+                    finalSuf string
+                    attempt   = 0
+                    st        = "ok"
+                    msg       = ""
+                )
+                for attempt < 3 {
+                    attempt++
+                    res := resolveOfferURL(c.Request.Context(), offer.OfferURL)
+                    if res["ok"] != true { st = "error"; msg = gf.String(res["message"]); break }
+                    finalURL = gf.String(res["finalUrl"])
+                    finalSuf = gf.String(res["finalUrlSuffix"])
+                    if finalURL == "" { st = "error"; msg = "empty final url"; break }
+                    // 唯一性窗口校验
+                    hash := sha1Hex(strings.ToLower(finalURL+"?"+finalSuf))
+                    var cnt int64
+                    win := ifZeroInt(bind.UniqueWindowDays, 90)
+                    _ = gormDB.Model(&AdsOfferRotation{}).
+                        Where("binding_id=? AND final_hash=? AND rotated_at>=?", bind.ID, hash, time.Now().AddDate(0,0,-win)).
+                        Count(&cnt).Error
+                    if cnt == 0 { break }
+                    // 命中唯一性窗口，重试解析
+                    if attempt >= 3 { st = "skip"; msg = "duplicate within unique window" }
+                }
+                rot := &AdsOfferRotation{ ID: gf.UUID(), BindingID: bind.ID, AccountID: bind.AccountID, RotatedAt: time.Now(), FinalURL: finalURL, FinalURLSuffix: finalSuf, FinalHash: sha1Hex(strings.ToLower(finalURL+"?"+finalSuf)), Status: st, Message: msg }
+                _ = gormDB.Create(rot).Error
+                // 更新时间与下次时间
+                now := time.Now()
+                next := now.Add(24 * time.Hour)
+                switch strings.ToLower(bind.RotationFrequency) { case "hourly": next = now.Add(1*time.Hour); case "weekly": next = now.Add(7*24*time.Hour) }
+                _ = gormDB.Model(&AdsOfferBinding{}).Where("id=?", bind.ID).Updates(map[string]any{"last_rotation_at": now, "next_rotation_at": next, "updated_at": now}).Error
+                c.JSON(200, gin.H{"ok": st=="ok", "rotation": rot})
+            })
+
+            // 轮换历史（按绑定ID）
+            adv2.GET("/offers/:id/rotations", func(c *gin.Context) {
+                id := c.Param("id"); if id == "" { c.JSON(400, gin.H{"message":"missing id"}); return }
+                userID := c.GetString("user_id")
+                // 校验绑定归属
+                var b AdsOfferBinding
+                if err := gormDB.Where("id=? AND user_id=?", id, userID).First(&b).Error; err != nil { c.JSON(404, gin.H{"message":"not found"}); return }
+                // 查询历史记录
+                var rows []AdsOfferRotation
+                if err := gormDB.Where("binding_id=?", id).Order("rotated_at DESC").Limit(100).Find(&rows).Error; err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+                c.JSON(200, gin.H{"items": rows})
+            })
+        }
+
+        // Admin（仅管理员）
+        adminV2 := v2.Group("/admin/adscenter")
+        adminV2.Use(admin.AdminJWT())
+        {
+            adminV2.GET("/google-ads/credentials", func(c *gin.Context) {
+                userID := strings.TrimSpace(c.Query("userId"))
+                customerID := strings.TrimSpace(c.Query("customerId"))
+                active := strings.TrimSpace(c.Query("active"))
+                updatedFrom := strings.TrimSpace(c.Query("updatedFrom"))
+                updatedTo := strings.TrimSpace(c.Query("updatedTo"))
+                q := gormDB.Model(&adscenter.GoogleAdsConfig{})
+                if userID != "" { q = q.Where("user_id=?", userID) }
+                if customerID != "" { q = q.Where("customer_id=?", customerID) }
+                if active != "" {
+                    if strings.EqualFold(active, "true") || active == "1" { q = q.Where("is_active=1") }
+                    if strings.EqualFold(active, "false") || active == "0" { q = q.Where("is_active=0") }
+                }
+                if updatedFrom != "" { if t, err := time.Parse(time.RFC3339, updatedFrom); err == nil { q = q.Where("updated_at>=?", t) } }
+                if updatedTo != "" { if t, err := time.Parse(time.RFC3339, updatedTo); err == nil { q = q.Where("updated_at<=?", t) } }
+                var rows []adscenter.GoogleAdsConfig
+                if err := q.Order("updated_at DESC").Find(&rows).Error; err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+                for i := range rows { rows[i].DeveloperToken = "***"; rows[i].ClientSecret = "***"; rows[i].RefreshToken = "***" }
+                c.JSON(200, gin.H{"items": rows})
+            })
+            adminV2.GET("/google-ads/credentials/export", func(c *gin.Context) {
+                userID := strings.TrimSpace(c.Query("userId"))
+                q := gormDB.Model(&adscenter.GoogleAdsConfig{})
+                if userID != "" { q = q.Where("user_id=?", userID) }
+                var rows []adscenter.GoogleAdsConfig
+                if err := q.Order("updated_at DESC").Find(&rows).Error; err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+                // 简单CSV导出（敏感脱敏）
+                var b strings.Builder
+                b.WriteString("user_id,customer_id,name,is_active,updated_at\n")
+                for _, r := range rows { b.WriteString(fmt.Sprintf("%s,%s,%s,%v,%s\n", r.UserID, r.CustomerID, strings.ReplaceAll(r.Name, ",", " "), r.IsActive, r.UpdatedAt.Format(time.RFC3339))) }
+                c.Header("Content-Type", "text/csv; charset=utf-8")
+                c.Header("Content-Disposition", "attachment; filename=google_ads_credentials.csv")
+                c.String(200, b.String())
+                auditLog("admin_export_google_ads_credentials", map[string]interface{}{"admin": c.GetString("admin_username"), "userId": userID})
+            })
+            // 手动触发指标回填
+            adminV2.POST("/metrics/backfill", func(c *gin.Context) {
+                uid := strings.TrimSpace(c.Query("userId"))
+                acc := strings.TrimSpace(c.Query("account"))
+                days, _ := strconv.Atoi(strings.TrimSpace(c.Query("days")))
+                if days <= 0 { days = 7 }
+                if gormDB == nil { c.JSON(503, gin.H{"message": "db unavailable"}); return }
+                var cfgs []adscenter.GoogleAdsConfig
+                q := gormDB.Where("is_active=1")
+                if uid != "" { q = q.Where("user_id=?", uid) }
+                if acc != "" { q = q.Where("customer_id=?", acc) }
+                if err := q.Find(&cfgs).Error; err != nil { c.JSON(500, gin.H{"message": err.Error()}); return }
+                n := 0
+                for _, cfg := range cfgs {
+                    var client adscenter.GoogleAdsClientInterface
+                    if strings.ToLower(cfg.CustomerID) == "mock" { client = adscenter.NewMockGoogleAdsClient() } else { client = adscenter.NewGoogleAdsClient(&cfg) }
+                    end := time.Now().UTC()
+                    start := end.AddDate(0,0,-days)
+                    rows, err := client.GetDailyMetrics(start.Format("2006-01-02"), end.Format("2006-01-02"))
+                    if err != nil { continue }
+                    dates := map[string]bool{}
+                    for _, r := range rows { dates[r.Date] = true }
+                    for d := range dates { _ = gormDB.Where("user_id=? AND account_id=? AND date=?", cfg.UserID, cfg.CustomerID, d).Delete(&AdsMetricsDaily{}).Error }
+                    now := time.Now()
+                    for _, r := range rows {
+                        rec := &AdsMetricsDaily{ UserID: cfg.UserID, AccountID: cfg.CustomerID, Date: r.Date, CampaignID: r.CampaignID, AdGroupID: r.AdGroupID, Device: r.Device, Network: r.Network, Clicks: r.Clicks, Impressions: r.Impressions, CostMicros: r.CostMicros, Conversions: r.Conversions, ConvValueMicros: r.ConvValueMicros, VTC: r.VTC, CreatedAt: now, UpdatedAt: now }
+                        _ = gormDB.Create(rec).Error; n++
+                    }
+                }
+                auditLog("admin_metrics_backfill", map[string]interface{}{"admin": c.GetString("admin_username"), "userId": uid, "account": acc, "rows": n})
+                c.JSON(200, gin.H{"ok": true, "inserted": n})
+            })
+            // 生成 Google OAuth 授权链接（使用 system_configs 的 client_id，或 body.clientId 覆盖）
+            adminV2.POST("/google-ads/oauth/link", func(c *gin.Context) {
+                var body struct{ RedirectURI string `json:"redirectUri"`; Scopes []string `json:"scopes"`; ClientID string `json:"clientId"` }
+                if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.RedirectURI)=="" { c.JSON(400, gin.H{"message":"invalid request"}); return }
+                clientID := strings.TrimSpace(body.ClientID)
+                if clientID == "" {
+                    if row, err := gf.DB().Raw("SELECT config_value FROM system_configs WHERE config_key=? AND is_active=1 LIMIT 1", "adscenter.oauth.client_id").One(); err == nil && row != nil { clientID = row["config_value"].String() }
+                }
+                if clientID == "" { c.JSON(400, gin.H{"message":"missing client_id"}); return }
+                scopes := body.Scopes
+                if len(scopes)==0 { scopes = []string{"https://www.googleapis.com/auth/adwords","openid","email"} }
+                state := fmt.Sprintf("%d-%s", time.Now().Unix(), strings.ReplaceAll(c.GetString("admin_username")," ","_"))
+                q := url.Values{}
+                q.Set("client_id", clientID)
+                q.Set("redirect_uri", body.RedirectURI)
+                q.Set("response_type", "code")
+                q.Set("access_type", "offline")
+                q.Set("prompt", "consent")
+                q.Set("scope", strings.Join(scopes, " "))
+                q.Set("state", state)
+                link := "https://accounts.google.com/o/oauth2/v2/auth?" + q.Encode()
+                c.JSON(200, gin.H{"authUrl": link, "state": state})
+            })
+            // OAuth 回调：交换 refresh_token 并保存到 google_ads_configs
+            adminV2.POST("/google-ads/oauth/callback", func(c *gin.Context) {
+                var body struct{ Code string `json:"code"`; RedirectURI string `json:"redirectUri"`; UserID string `json:"userId"`; CustomerID string `json:"customerId"`; ClientID string `json:"clientId"`; ClientSecret string `json:"clientSecret"` }
+                if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.Code)=="" || strings.TrimSpace(body.RedirectURI)=="" || strings.TrimSpace(body.UserID)=="" || strings.TrimSpace(body.CustomerID)=="" { c.JSON(400, gin.H{"message":"invalid request"}); return }
+                clientID := strings.TrimSpace(body.ClientID)
+                clientSecret := strings.TrimSpace(body.ClientSecret)
+                devToken := ""
+                if clientID == "" { if row, err := gf.DB().Raw("SELECT config_value FROM system_configs WHERE config_key=? AND is_active=1 LIMIT 1", "adscenter.oauth.client_id").One(); err == nil && row != nil { clientID = row["config_value"].String() } }
+                if clientSecret == "" { if row, err := gf.DB().Raw("SELECT config_value FROM system_configs WHERE config_key=? AND is_active=1 LIMIT 1", "adscenter.oauth.client_secret").One(); err == nil && row != nil { clientSecret = row["config_value"].String() } }
+                if row, err := gf.DB().Raw("SELECT config_value FROM system_configs WHERE config_key=? AND is_active=1 LIMIT 1", "adscenter.oauth.developer_token").One(); err == nil && row != nil { devToken = row["config_value"].String() }
+                if clientID == "" || clientSecret == "" { c.JSON(400, gin.H{"message":"missing client credentials"}); return }
+                // token exchange
+                form := url.Values{}
+                form.Set("code", body.Code)
+                form.Set("client_id", clientID)
+                form.Set("client_secret", clientSecret)
+                form.Set("redirect_uri", body.RedirectURI)
+                form.Set("grant_type", "authorization_code")
+                req, _ := http.NewRequest("POST", "https://oauth2.googleapis.com/token", strings.NewReader(form.Encode()))
+                req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+                httpc := &http.Client{ Timeout: 15 * time.Second }
+                resp, err := httpc.Do(req)
+                if err != nil { c.JSON(502, gin.H{"message": "token exchange failed", "error": err.Error()}); return }
+                defer resp.Body.Close()
+                var tok struct{ AccessToken string `json:"access_token"`; RefreshToken string `json:"refresh_token"`; ExpiresIn int `json:"expires_in"`; TokenType string `json:"token_type"` }
+                if err := json.NewDecoder(resp.Body).Decode(&tok); err != nil || tok.RefreshToken == "" { c.JSON(502, gin.H{"message": "invalid token response"}); return }
+                // upsert google_ads_configs
+                var cfg adscenter.GoogleAdsConfig
+                if err := gormDB.Where("user_id=? AND customer_id=?", body.UserID, body.CustomerID).First(&cfg).Error; err != nil {
+                    cfg = adscenter.GoogleAdsConfig{ UserID: body.UserID, CustomerID: body.CustomerID, Name: "Google Ads", DeveloperToken: devToken, ClientID: clientID, ClientSecret: clientSecret, RefreshToken: tok.RefreshToken, IsActive: true, CreatedAt: time.Now(), UpdatedAt: time.Now() }
+                    _ = gormDB.Create(&cfg).Error
+                } else {
+                    _ = gormDB.Model(&adscenter.GoogleAdsConfig{}).Where("id=?", cfg.ID).Updates(map[string]any{"developer_token": devToken, "client_id": clientID, "client_secret": clientSecret, "refresh_token": tok.RefreshToken, "updated_at": time.Now()}).Error
+                }
+                auditLog("admin_google_oauth_callback", map[string]any{"admin": c.GetString("admin_username"), "userId": body.UserID, "account": body.CustomerID})
+                c.JSON(200, gin.H{"ok": true})
+            })
+            // 设置全局凭据（system_configs upsert）
+            adminV2.POST("/google-ads/credentials", func(c *gin.Context) {
+                var body struct{ DeveloperToken string `json:"developerToken"`; ClientID string `json:"clientId"`; ClientSecret string `json:"clientSecret"`; RedirectURI string `json:"redirectUri"`; MCC string `json:"mcc"` }
+                if err := c.ShouldBindJSON(&body); err != nil { c.JSON(400, gin.H{"message":"invalid request"}); return }
+                kv := map[string]string{
+                    "adscenter.oauth.developer_token": strings.TrimSpace(body.DeveloperToken),
+                    "adscenter.oauth.client_id": strings.TrimSpace(body.ClientID),
+                    "adscenter.oauth.client_secret": strings.TrimSpace(body.ClientSecret),
+                    "adscenter.oauth.redirect_uri": strings.TrimSpace(body.RedirectURI),
+                    "adscenter.oauth.mcc": strings.TrimSpace(body.MCC),
+                }
+                for k, v := range kv {
+                    if v == "" { continue }
+                    // upsert system_configs
+                    _ = gormDB.Exec("INSERT INTO system_configs(config_key,config_value,is_active,updated_at) VALUES(?,?,1,?) ON DUPLICATE KEY UPDATE config_value=VALUES(config_value), is_active=1, updated_at=VALUES(updated_at)", k, v, time.Now()).Error
+                }
+                auditLog("admin_upsert_oauth_config", map[string]any{"admin": c.GetString("admin_username")})
+                c.JSON(200, gin.H{"ok": true})
+            })
+            // 旋转某账户 refresh_token
+            adminV2.POST("/google-ads/credentials/rotate", func(c *gin.Context) {
+                var body struct{ UserID string `json:"userId"`; CustomerID string `json:"customerId"`; RefreshToken string `json:"refreshToken"` }
+                if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.UserID)=="" || strings.TrimSpace(body.CustomerID)=="" || strings.TrimSpace(body.RefreshToken)=="" { c.JSON(400, gin.H{"message":"invalid request"}); return }
+                if err := gormDB.Model(&adscenter.GoogleAdsConfig{}).Where("user_id=? AND customer_id=?", body.UserID, body.CustomerID).Updates(map[string]any{"refresh_token": strings.TrimSpace(body.RefreshToken), "updated_at": time.Now()}).Error; err != nil {
+                    c.JSON(500, gin.H{"message": err.Error()}); return
+                }
+                auditLog("admin_rotate_refresh_token", map[string]any{"admin": c.GetString("admin_username"), "userId": body.UserID, "account": body.CustomerID})
+                c.JSON(200, gin.H{"ok": true})
+            })
+
+            // Admin Analytics：summary/timeseries/breakdown（按 userId/account 可选过滤）
+            adminV2.GET("/analytics/summary", func(c *gin.Context) {
+                uid := strings.TrimSpace(c.Query("userId")); if uid == "" { c.JSON(400, gin.H{"message":"userId required"}); return }
+                account := strings.TrimSpace(c.Query("account"))
+                // 优先 metrics（近30天）
+                type agg struct{ Clicks, Impressions, CostMicros, Conversions, ConvValueMicros int64 }
+                q := gormDB.Model(&AdsMetricsDaily{}).Where("user_id=? AND date>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)", uid)
+                if account != "" { q = q.Where("account_id=?", account) }
+                var a agg; _ = q.Select("SUM(clicks) clicks, SUM(impressions) impressions, SUM(cost_micros) cost_micros, SUM(conversions) conversions, SUM(conv_value_micros) conv_value_micros").Scan(&a)
+                // 回退统计
+                var taskCount int64; _ = gormDB.Model(&adscenter.AdsCenterTask{}).Where("user_id=?", uid).Count(&taskCount).Error
+                var rotCount int64
+                rq := gormDB.Model(&AdsOfferRotation{}).Joins("JOIN ads_offer_bindings b ON b.id=ads_offer_rotations.binding_id").Where("b.user_id=?", uid)
+                if account != "" { rq = rq.Where("b.account_id=?", account) }
+                _ = rq.Count(&rotCount).Error
+                out := gin.H{"tasks": taskCount, "rotations": rotCount}
+                if a.Impressions > 0 || a.Clicks > 0 { out["clicks"] = a.Clicks; out["impressions"] = a.Impressions; out["costMicros"] = a.CostMicros; out["conversions"] = a.Conversions; out["convValueMicros"] = a.ConvValueMicros }
+                c.JSON(200, out)
+            })
+            adminV2.GET("/analytics/timeseries", func(c *gin.Context) {
+                uid := strings.TrimSpace(c.Query("userId")); if uid == "" { c.JSON(400, gin.H{"message":"userId required"}); return }
+                account := strings.TrimSpace(c.Query("account"))
+                rows, err := func() ([]map[string]any, error) {
+                    q := `SELECT date, SUM(clicks) as v FROM ads_metrics_daily WHERE user_id=? AND date>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)`
+                    args := []any{uid}
+                    if account != "" { q += " AND account_id=?"; args = append(args, account) }
+                    q += " GROUP BY date ORDER BY date"
+                    return gf.DB().Query(c, q, args...)
+                }()
+                if err == nil && len(rows) > 0 {
+                    out := make([]map[string]any, 0, len(rows)); for _, r := range rows { out = append(out, map[string]any{"date": r["date"].String(), "value": r["v"].Int()}) }
+                    c.JSON(200, gin.H{"series": out}); return
+                }
+                // 回退：按轮换
+                q := `SELECT DATE(rotated_at) as d, COUNT(1) as cnt FROM ads_offer_rotations r JOIN ads_offer_bindings b ON b.id=r.binding_id WHERE b.user_id=? AND rotated_at>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)`
+                args := []any{uid}
+                if account != "" { q += " AND b.account_id=?"; args = append(args, account) }
+                q += " GROUP BY DATE(rotated_at) ORDER BY DATE(rotated_at)"
+                rows2, err2 := gf.DB().Query(c, q, args...)
+                if err2 != nil { c.JSON(500, gin.H{"message": err2.Error()}); return }
+                out := make([]map[string]any, 0, len(rows2)); for _, r := range rows2 { out = append(out, map[string]any{"date": r["d"].String(), "value": r["cnt"].Int()}) }
+                c.JSON(200, gin.H{"series": out})
+            })
+            adminV2.GET("/analytics/breakdown", func(c *gin.Context) {
+                uid := strings.TrimSpace(c.Query("userId")); if uid == "" { c.JSON(400, gin.H{"message":"userId required"}); return }
+                account := strings.TrimSpace(c.Query("account"))
+                rows, err := func() ([]map[string]any, error) {
+                    q := `SELECT campaign_id, SUM(clicks) as v FROM ads_metrics_daily WHERE user_id=? AND date>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)`
+                    args := []any{uid}
+                    if account != "" { q += " AND account_id=?"; args = append(args, account) }
+                    q += " GROUP BY campaign_id ORDER BY v DESC LIMIT 10"
+                    return gf.DB().Query(c, q, args...)
+                }()
+                if err == nil && len(rows) > 0 {
+                    out := make([]map[string]any, 0, len(rows)); for _, r := range rows { out = append(out, map[string]any{"campaignId": r["campaign_id"].String(), "value": r["v"].Int()}) }
+                    c.JSON(200, gin.H{"topCampaigns": out}); return
+                }
+                // 回退：Top 账户按轮换
+                q := `SELECT b.account_id, COUNT(1) as cnt FROM ads_offer_rotations r JOIN ads_offer_bindings b ON b.id=r.binding_id WHERE b.user_id=?`
+                args := []any{uid}
+                if account != "" { q += " AND b.account_id=?"; args = append(args, account) }
+                q += " GROUP BY b.account_id ORDER BY cnt DESC LIMIT 10"
+                rows2, err2 := gf.DB().Query(c, q, args...)
+                if err2 != nil { c.JSON(500, gin.H{"message": err2.Error()}); return }
+                out := make([]map[string]any, 0, len(rows2)); for _, r := range rows2 { out = append(out, map[string]any{"accountId": r["account_id"].String(), "value": r["cnt"].Int()}) }
+                c.JSON(200, gin.H{"topAccounts": out})
+            })
+        }
+
+        // OPS（只读状态）
+        ops := v2.Group("/ops")
+        {
+            ops.GET("/pool/state", func(c *gin.Context) {
+                st := autoclick.GetPoolManager().State()
+                c.JSON(200, gin.H{"httpQueue": st.HTTPQueue, "httpWorkers": st.HTTPWorkers, "browserQueue": st.BrowserQueue, "browserWorkers": st.BrowserWorkers, "httpThroughput": st.HTTPThroughput, "httpAvgWaitMs": st.HTTPAvgWaitMs, "browserThroughput": st.BrowserThroughput, "browserAvgWaitMs": st.BrowserAvgWaitMs })
+            })
+            // 预设：Referer 列表、默认 RPM 等
+            ops.GET("/presets", func(c *gin.Context) {
+                // referers from system_configs -> batchopen.referers(JSON)
+                var referers []map[string]any
+                if row, err := gf.DB().Raw("SELECT config_value FROM system_configs WHERE config_key=? AND is_active=1 LIMIT 1", "batchopen.referers").One(); err == nil && row != nil {
+                    _ = json.Unmarshal([]byte(row["config_value"].String()), &referers)
+                }
+                if len(referers) == 0 {
+                    referers = []map[string]any{{"id":"facebook","name":"Facebook","url":"https://facebook.com"},{"id":"twitter","name":"Twitter","url":"https://twitter.com"},{"id":"instagram","name":"Instagram","url":"https://instagram.com"}}
+                }
+                rpm := 0
+                if v, ok := system.Get("automation.rpm_per_user"); ok { if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 { rpm = n } }
+                c.JSON(200, gin.H{"referers": referers, "rpmPerUser": rpm})
+            })
+        }
+    }
+
 	// API健康检查
 	r.GET("/api/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -2094,14 +2799,39 @@ func handlePurchaseTokens(c *gin.Context) {
 }
 
 func handleSilentStart(c *gin.Context) {
-	if batchService == nil || gormDB == nil {
-		c.JSON(503, gin.H{"success": false, "message": "service unavailable"})
-		return
-	}
-	// 审计
-	auditLog("batch_silent_start", map[string]interface{}{"user_id": c.GetString("user_id")})
-	ctrl := batchgo.NewController(batchService, gormDB)
-	ctrl.SilentStart(c)
+    if batchService == nil || gormDB == nil {
+        c.JSON(503, gin.H{"success": false, "message": "service unavailable"})
+        return
+    }
+    // Idempotency-Key 支持（按用户+Key 5分钟窗口）
+    if storeRedis != nil {
+        key := strings.TrimSpace(c.GetHeader("Idempotency-Key"))
+        uid := c.GetString("user_id")
+        if key != "" && uid != "" {
+            rkey := "idem:batch:silent:" + uid + ":" + sha1Hex(key)
+            if v, _ := storeRedis.Get(c, rkey); v != "" {
+                // 直接返回上次的响应体
+                c.Writer.Header().Set("X-Idempotent", "1")
+                c.Data(200, "application/json", []byte(v))
+                return
+            }
+            // 包裹响应写回缓存
+            rr := &responseRecorder{ResponseWriter: c.Writer, buf: &bytes.Buffer{}}
+            c.Writer = rr
+            // 审计
+            auditLog("batch_silent_start", map[string]interface{}{"user_id": uid, "idempotency": true})
+            ctrl := batchgo.NewController(batchService, gormDB)
+            ctrl.SilentStart(c)
+            if rr.status == 200 && rr.buf.Len() > 0 {
+                _ = storeRedis.SetEx(c, rkey, rr.buf.String(), 5*time.Minute)
+            }
+            return
+        }
+    }
+    // 审计（非幂等）
+    auditLog("batch_silent_start", map[string]interface{}{"user_id": c.GetString("user_id"), "idempotency": false})
+    ctrl := batchgo.NewController(batchService, gormDB)
+    ctrl.SilentStart(c)
 }
 
 func handleSilentProgress(c *gin.Context) {
@@ -2643,6 +3373,227 @@ func handleAdminGetStats(c *gin.Context) {
 }
 
 func handleAdminDashboard(c *gin.Context) {
-	// 暂时复用 stats 输出
-	handleAdminGetStats(c)
+    // 暂时复用 stats 输出
+    handleAdminGetStats(c)
+}
+
+// ===== v2 辅助函数 =====
+
+// buildExecutionUpdateSnapshot 统一生成 ExecutionUpdate 快照
+func buildExecutionUpdateSnapshot(c *gin.Context, id string) (map[string]any, bool, error) {
+    nowMs := time.Now().UnixMilli()
+    // 1) BatchOpen（batch_tasks）
+    var bt batchgo.BatchTask
+    if err := gormDB.Where("id=?", id).First(&bt).Error; err == nil && bt.ID != "" {
+        total := bt.URLCount
+        processed := bt.ProcessedCount
+        prog := 0
+        if total > 0 { prog = int(float64(processed) / float64(total) * 100.0 + 0.5) }
+        return map[string]any{
+            "type": "execution_update", "id": bt.ID, "feature": "batchopen",
+            "status": bt.Status, "progress": prog, "processedItems": processed, "totalItems": total, "ts": nowMs,
+        }, true, nil
+    }
+    // 2) AutoClick（autoclick_executions）
+    var ae autoclick.AutoClickExecution
+    if err := gormDB.Where("id=?", id).First(&ae).Error; err == nil && ae.ID != "" {
+        total := ae.Total
+        processed := ae.Success + ae.Fail
+        prog := 0
+        if total > 0 { prog = int(float64(processed) / float64(total) * 100.0 + 0.5) }
+        return map[string]any{
+            "type": "execution_update", "id": ae.ID, "feature": "autoclick",
+            "status": ae.Status, "progress": prog, "processedItems": processed, "totalItems": total, "ts": nowMs,
+        }, true, nil
+    }
+    // 3) AdsCenter（adscenter_tasks）
+    var at adscenter.AdsCenterTask
+    if err := gormDB.Where("id=?", id).First(&at).Error; err == nil && at.ID != "" {
+        total := at.TotalLinks
+        processed := at.ExtractedCount + at.UpdatedCount + at.FailedCount
+        prog := 0
+        if total > 0 { prog = int(float64(processed) / float64(total) * 100.0 + 0.5) }
+        return map[string]any{
+            "type": "execution_update", "id": at.ID, "feature": "adscenter",
+            "status": at.Status, "progress": prog, "processedItems": processed, "totalItems": total, "ts": nowMs,
+        }, true, nil
+    }
+    return nil, false, nil
+}
+
+// resolveGoogleAdsClient 根据 account 参数返回 Mock 或真实客户端
+func resolveGoogleAdsClient(c *gin.Context, userID string, account string) (adscenter.GoogleAdsClientInterface, error) {
+    if strings.ToLower(account) == "mock" {
+        return adscenter.NewMockGoogleAdsClient(), nil
+    }
+    var cfg adscenter.GoogleAdsConfig
+    if err := gormDB.Where("user_id=? AND (customer_id=? OR name=?) AND is_active=1", userID, account, account).First(&cfg).Error; err != nil {
+        return nil, fmt.Errorf("account not found")
+    }
+    return adscenter.NewGoogleAdsClient(&cfg), nil
+}
+
+// rebuildURLWithSuffix 将给定 URL 的 query 替换为指定 suffix（保留 origin+path）
+func rebuildURLWithSuffix(u string, suffix string) string {
+    parsed, err := url.Parse(u)
+    if err != nil { return u }
+    parsed.RawQuery = strings.TrimPrefix(strings.TrimSpace(suffix), "?")
+    // 去除 fragment
+    parsed.Fragment = ""
+    return parsed.String()
+}
+
+func countSuccess(res []adscenter.UpdateAdResponse) int { n:=0; for _, r := range res { if r.Success { n++ } }; return n }
+
+// sha1Hex 计算字符串 SHA1 hex
+func sha1Hex(s string) string {
+    h := sha1.New()
+    _, _ = h.Write([]byte(s))
+    return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+// resolveOfferURL 简化解析：优先调用浏览器执行器（若配置），否则跟随 HTTP 重定向
+func resolveOfferURL(ctx context.Context, offer string) map[string]any {
+    // 优先浏览器执行器（AutoClick_Browser_Executor_URL 或 ADSCENTER_EXECUTOR_URL）
+    execURL := strings.TrimSpace(os.Getenv("ADSCENTER_BROWSER_EXECUTOR_URL"))
+    if execURL == "" {
+        if v, ok := system.Get("AutoClick_Browser_Executor_URL"); ok && v != "" { execURL = v }
+    }
+    if execURL != "" {
+        // 约定 /resolve?url=
+        req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/resolve?url=%s", strings.TrimRight(execURL, "/"), url.QueryEscape(offer)), nil)
+        resp, err := http.DefaultClient.Do(req)
+        if err == nil && resp.StatusCode == 200 {
+            defer resp.Body.Close()
+            var m map[string]any
+            if err2 := json.NewDecoder(resp.Body).Decode(&m); err2 == nil {
+                // 期望包含 finalUrl/ finalUrlSuffix
+                if m != nil { return m }
+            }
+        }
+    }
+    // 回退：HTTP 客户端跟随 10 次重定向
+    client := &http.Client{ CheckRedirect: func(req *http.Request, via []*http.Request) error { if len(via) >= 10 { return http.ErrUseLastResponse }; return nil } }
+    req, _ := http.NewRequestWithContext(ctx, "GET", offer, nil)
+    resp, err := client.Do(req)
+    if err != nil { return map[string]any{"ok": false, "message": err.Error()} }
+    defer resp.Body.Close()
+    final := resp.Request.URL
+    // 标准化
+    final.Fragment = ""
+    finalURL := fmt.Sprintf("%s://%s%s", final.Scheme, final.Host, final.Path)
+    suffix := strings.TrimPrefix(final.RawQuery, "?")
+    return map[string]any{"ok": true, "finalUrl": finalURL, "finalUrlSuffix": suffix}
+}
+
+func ifZeroInt(v int, def int) int { if v == 0 { return def }; return v }
+
+// responseRecorder 用于捕获响应以支持幂等缓存
+type responseRecorder struct {
+    gin.ResponseWriter
+    buf    *bytes.Buffer
+    status int
+}
+func (r *responseRecorder) WriteHeader(code int) { r.status = code; r.ResponseWriter.WriteHeader(code) }
+func (r *responseRecorder) Write(b []byte) (int, error) {
+    if r.buf != nil { _, _ = r.buf.Write(b) }
+    return r.ResponseWriter.Write(b)
+}
+
+// ===== 调度器：AdsCenter 自动轮换 =====
+type AdsRotateJob struct{}
+func (j *AdsRotateJob) GetName() string        { return "adscenter_auto_rotate" }
+func (j *AdsRotateJob) GetDescription() string { return "Auto rotate offers by bindings when due" }
+func (j *AdsRotateJob) Run(ctx context.Context) error {
+    if gormDB == nil { return nil }
+    now := time.Now()
+    // 查询到期的绑定（每次最多处理50条）
+    type B struct { AdsOfferBinding; OfferURL string }
+    rows := []B{}
+    // 允许 next_rotation_at 为空时按频率默认计算
+    _ = gormDB.Raw(`SELECT b.*, o.offer_url as offer_url FROM ads_offer_bindings b JOIN ads_offers o ON o.id=b.offer_id
+        WHERE b.active=1 AND (b.next_rotation_at IS NULL OR b.next_rotation_at<=?) LIMIT 50`, now).Scan(&rows).Error
+    for _, r := range rows {
+        // 解析 + 唯一性校验
+        var (
+            finalURL string
+            finalSuf string
+            st       = "ok"
+            msg      = ""
+        )
+        for attempt:=0; attempt<3; attempt++ {
+            res := resolveOfferURL(ctx, r.OfferURL)
+            if res["ok"] != true { st = "error"; msg = gf.String(res["message"]); break }
+            finalURL = gf.String(res["finalUrl"])
+            finalSuf = gf.String(res["finalUrlSuffix"])
+            if finalURL == "" { st = "error"; msg = "empty final url"; break }
+            hash := sha1Hex(strings.ToLower(finalURL+"?"+finalSuf))
+            var cnt int64
+            win := ifZeroInt(r.UniqueWindowDays, 90)
+            _ = gormDB.Model(&AdsOfferRotation{}).Where("binding_id=? AND final_hash=? AND rotated_at>=?", r.ID, hash, now.AddDate(0,0,-win)).Count(&cnt).Error
+            if cnt == 0 { break }
+            if attempt == 2 { st = "skip"; msg = "duplicate within unique window" }
+        }
+        rot := &AdsOfferRotation{ ID: gf.UUID(), BindingID: r.ID, AccountID: r.AccountID, RotatedAt: now, FinalURL: finalURL, FinalURLSuffix: finalSuf, FinalHash: sha1Hex(strings.ToLower(finalURL+"?"+finalSuf)), Status: st, Message: msg }
+        _ = gormDB.Create(rot).Error
+        // 计算下次时间
+        next := now.Add(24 * time.Hour)
+        switch strings.ToLower(r.RotationFrequency) { case "hourly": next = now.Add(1*time.Hour); case "weekly": next = now.Add(7*24*time.Hour) }
+        _ = gormDB.Model(&AdsOfferBinding{}).Where("id=?", r.ID).Updates(map[string]any{"last_rotation_at": now, "next_rotation_at": next, "updated_at": now}).Error
+    }
+    return nil
+}
+
+// ===== 调度器：AdsCenter 指标采集 =====
+type AdsMetricsCollectorJob struct{}
+func (j *AdsMetricsCollectorJob) GetName() string        { return "adscenter_metrics_collect" }
+func (j *AdsMetricsCollectorJob) GetDescription() string { return "Collect Google Ads daily metrics (backfill + hourly)" }
+func (j *AdsMetricsCollectorJob) Run(ctx context.Context) error {
+    if gormDB == nil { return nil }
+    backfillDays := 7
+    perDelay := 300 // ms per account delay
+    maxRetry := 3
+    backoffMs := 500
+    if v, ok := system.Get("adscenter.collect.backfillDays"); ok { if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 { backfillDays = n } }
+    if v, ok := system.Get("adscenter.collect.perAccountDelayMs"); ok { if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n >= 0 { perDelay = n } }
+    if v, ok := system.Get("adscenter.collect.retryMax"); ok { if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 { maxRetry = n } }
+    if v, ok := system.Get("adscenter.collect.retryBackoffMs"); ok { if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 { backoffMs = n } }
+    var cfgs []adscenter.GoogleAdsConfig
+    if err := gormDB.Where("is_active=1").Find(&cfgs).Error; err != nil { return nil }
+    for _, cfg := range cfgs {
+        var client adscenter.GoogleAdsClientInterface
+        if strings.ToLower(cfg.CustomerID) == "mock" { client = adscenter.NewMockGoogleAdsClient() } else { client = adscenter.NewGoogleAdsClient(&cfg) }
+        var last string
+        _ = gormDB.Model(&AdsMetricsDaily{}).Select("MAX(date)").Where("user_id=? AND account_id=?", cfg.UserID, cfg.CustomerID).Scan(&last)
+        today := time.Now().UTC()
+        start := today.AddDate(0,0,-backfillDays)
+        if last != "" { if t, err := time.Parse("2006-01-02", last); err == nil { start = t.AddDate(0,0,1) } }
+        if start.After(today) { continue }
+        // 速率限制：逐账号延时
+        if perDelay > 0 { time.Sleep(time.Duration(perDelay) * time.Millisecond) }
+        // 带退避的重试
+        var rows []adscenter.DailyMetric
+        var err error
+        for attempt:=0; attempt<maxRetry; attempt++ {
+            rows, err = client.GetDailyMetrics(start.Format("2006-01-02"), today.Format("2006-01-02"))
+            if err == nil { break }
+            msg := strings.ToLower(err.Error())
+            if strings.Contains(msg, "resource_exhausted") || strings.Contains(msg, "rate") || strings.Contains(msg, "quota") || strings.Contains(msg, "deadline") || strings.Contains(msg, "unavailable") {
+                time.Sleep(time.Duration(backoffMs*(1<<attempt)) * time.Millisecond)
+                continue
+            }
+            break
+        }
+        if err != nil { continue }
+        // 删除重复日期后插入
+        dates := map[string]bool{}
+        for _, r := range rows { dates[r.Date] = true }
+        for d := range dates { _ = gormDB.Where("user_id=? AND account_id=? AND date=?", cfg.UserID, cfg.CustomerID, d).Delete(&AdsMetricsDaily{}).Error }
+        now := time.Now()
+        for _, r := range rows {
+            rec := &AdsMetricsDaily{ UserID: cfg.UserID, AccountID: cfg.CustomerID, Date: r.Date, CampaignID: r.CampaignID, AdGroupID: r.AdGroupID, Device: r.Device, Network: r.Network, Clicks: r.Clicks, Impressions: r.Impressions, CostMicros: r.CostMicros, Conversions: r.Conversions, ConvValueMicros: r.ConvValueMicros, VTC: r.VTC, CreatedAt: now, UpdatedAt: now }
+            _ = gormDB.Create(rec).Error
+        }
+    }
+    return nil
 }

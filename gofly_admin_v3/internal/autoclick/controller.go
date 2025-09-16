@@ -7,6 +7,7 @@ import (
     "github.com/google/uuid"
     "gorm.io/gorm"
     "gorm.io/datatypes"
+    "gofly-admin-v3/internal/system"
 )
 
 type Controller struct { DB *gorm.DB }
@@ -35,6 +36,13 @@ func (c *Controller) CreateSchedule(ctx *gin.Context) {
         ctx.JSON(400, gin.H{"error": "invalid request"}); return
     }
     now := time.Now()
+    // OPS 默认 Referer 注入（如未提供）
+    if req.Referer == nil {
+        if v, ok := system.Get("automation.referer.default"); ok && v != "" {
+            rv := v
+            req.Referer = &refererPayload{ Type: "default", Value: rv }
+        }
+    }
     s := &AutoClickSchedule{
         ID: uuid.New().String(),
         UserID: userID,
