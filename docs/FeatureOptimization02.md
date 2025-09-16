@@ -29,6 +29,7 @@
   - `POST /api/v1/batchopen/proxy-url-validate`（{ proxyUrl }）
   - `GET /api/v1/batchopen/version?feature=batchopen`
 - 参数支持：代理 URL、自定义 Referer（社媒列表或自定义）、并发、循环次数、超时/重试。
+  - 代理轮训（完成）：可通过 `proxyUrl`（代理API或单一代理）与 `proxy_rotation=true` 开启“每个代理IP完成一轮URL的访问”的顺序策略；当提供代理列表/代理API时，服务端按代理逐轮并发执行整批 URL，然后再切换到下一个代理，确保轮次完整性。
 - 计费：每次任务按“URL×循环数”预消费；启动失败或执行失败项即时退款；`X-Tokens-*` 响应头返回消费/余额。
 
 ### 3) AutoClick（自动化版）
@@ -216,9 +217,14 @@
 - 管理台：
   - 系统配置热更新：`AutoClick_Count_Variance_Hour`、`Proxy_URL_{COUNTRY}`（含 US 起步）支持在线更新并热生效（DB→Redis Pub/Sub→缓存刷新→Worker 读取）。
   - 问题 URL 面板：查询/筛选/备注；单条与批量操作（优先浏览器、重置计数、清除优先、删除）；一键“诊断”（真实浏览器执行+截图）。
+  - 队列面板：新增“AutoClick 队列面板”查看 HTTP/Browser 池队列长度与工作数，支持近 5 分钟趋势与积压预警，入口 `/admin/autoclick/queue`（仅管理员）。
 - 并发/节流：HTTP/浏览器并发、每 tick 最大推进、用户 RPM（可配置）；未配置 RPM 时按套餐（RateLimitManager）回退。
 - 历史统计：Admin 侧最近 N 天（默认 30）汇总视图（图表 + 表格）。
  - 计划限流接入：/api/v1/siterank 与 /api/v1/batchopen（含 /autoclick/schedules）按套餐限流（RPS 基于 plan 每分钟额度换算），响应头输出 X-RateLimit-*；AutoClick 调度 RPM/并发由 RateLimitManager 的 plan limits 注入。
+ - Silent 细节：
+   - Referer 社媒/自定义在服务端生效（`refererOption=social|custom` → Header.Referer）。
+   - 代理 URL 验证兼容后端返回结构（`{ valid: true }` 或 `{ success: true }`）。
+ - 配置与环境：`.env.example` 增加 `AUTOCLICK_BROWSER_EXECUTOR_URL` 回退；未配置系统项 `AutoClick_Browser_Executor_URL` 时按环境变量回退执行器地址。
 
 未完成/部分完成项（建议后续迭代）
 - 执行引擎 V2（部分完成）：
@@ -231,7 +237,15 @@
   - 将 per-tick 并发提升为长期 HTTP/Browser 池，并支持用户/计划维度并发隔离与队列可视化。
 - 压测与回归（未完成）：
   - 成功率/延迟/退款一致性回归；SSE 稳定性与丢失补偿；不同并发表的资源消耗与基线指标。
+- Batchopen的Silent版本和AutoClick版本都需要增加 socks5 代理支持
+- Silent 的“循环次数（cycleCount）”在后端目前未持久化建模，如需服务端层面的循环（非前端），可扩展任务结构与
+  执行逻辑
 
 影响评估与建议
 - 当前交付已满足“可用”的计划任务与在线运维闭环；不影响主流程使用。
 - 若业务需真实浏览器场景成功率，可优先推进 V2（Puppeteer）与代理池健康检查；同时补齐限流/并发热配置与压测基线。
+
+## 变更记录
+- 2025-09-16
+  - Silent：Referer（社媒/自定义）注入后端请求头，代理验证前端兼容后端返回结构。
+  - 配置：新增 `AUTOCLICK_BROWSER_EXECUTOR_URL` 环境变量（执行器回退），保持与系统配置项一致性。

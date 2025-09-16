@@ -41,7 +41,7 @@ export default function AutoClickSystemConfigPage() {
         });
         setProxies(merged);
         // load concurrency & throttling
-        const getVal = (k: string) => list.find((it: any) => it.config_key === k)?.config_value || '';
+        // 复用上面的 getVal，避免重复声明导致运行时错误
         setHttpConc(getVal('AutoClick_HTTP_Concurrency') || '10');
         setBrConc(getVal('AutoClick_Browser_Concurrency') || '3');
         setMaxStep(getVal('AutoClick_MaxStepPerTick') || '3');

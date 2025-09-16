@@ -173,13 +173,14 @@ func (j *AutoClickTickJob) Run(ctx context.Context) error {
         _ = json.Unmarshal([]byte(s.URLs), &urlArr)
         httpExec := &HTTPExecutor{}
         brExec := &BrowserExecutor{}
-        // 并发度（热更新）：HTTP / Browser
+        // 并发度（热更新）：HTTP / Browser（通过长期池管理）
         httpConc := 10
         if v, ok := system.Get("AutoClick_HTTP_Concurrency"); ok { if n := gf.Int(v); n > 0 { httpConc = n } }
         brConc := 3
         if v, ok := system.Get("AutoClick_Browser_Concurrency"); ok { if n := gf.Int(v); n > 0 { brConc = n } }
-        httpSlots := make(chan struct{}, httpConc)
-        brSlots := make(chan struct{}, brConc)
+        // 确保池已初始化
+        pm := GetPoolManager()
+        pm.Ensure(httpConc, brConc)
         var mu sync.Mutex
         var wg sync.WaitGroup
 
@@ -203,48 +204,46 @@ func (j *AutoClickTickJob) Run(ctx context.Context) error {
             wg.Add(1)
             go func(u, uh string, useBrowser bool) {
                 defer wg.Done()
-                // Token 预扣（不足则跳过）
-                if tokenSvc != nil {
-                    if err := tokenSvc.ConsumeTokensByService(s.UserID, "batchopen", "autoclick", 1, exec.ID); err != nil {
-                        _ = gdb.Model(&AutoClickExecution{}).Where("id = ?", exec.ID).Updates(map[string]interface{}{"status": "failed", "message": "INSUFFICIENT_TOKENS", "updated_at": time.Now()}).Error
-                        return
-                    }
+                // 构造任务
+                t := Task{
+                    Run: func() bool {
+                        // Token 预扣（不足则跳过并标记失败）
+                        if tokenSvc != nil {
+                            if err := tokenSvc.ConsumeTokensByService(s.UserID, "batchopen", "autoclick", 1, exec.ID); err != nil {
+                                _ = gdb.Model(&AutoClickExecution{}).Where("id = ?", exec.ID).Updates(map[string]interface{}{"status": "failed", "message": "INSUFFICIENT_TOKENS", "updated_at": time.Now()}).Error
+                                return false
+                            }
+                        }
+                        if !useBrowser {
+                            ok, _, _ := httpExec.Do(u, opt)
+                            if !ok { n := incrFail(httpFailKey, 24*time.Hour); if n >= 3 { setFlag(preferKey, 7*24*time.Hour) } }
+                            return ok
+                        } else {
+                            ok, _, _ := brExec.Do(u, opt)
+                            if !ok { n := incrFail(brFailKey, 24*time.Hour); if n >= 3 { t := time.Now(); _ = gdb.Create(&AutoClickURLFailure{ ID: uuid.New().String(), UserID: s.UserID, URLHash: uh, URL: u, BrowserFailConsecutive: n, LastFailAt: &t, CreatedAt: t, UpdatedAt: t }).Error } }
+                            return ok
+                        }
+                    },
+                    Done: func(ok bool) {
+                        mu.Lock()
+                        if ok { success++ } else { fail++; if tokenSvc != nil { _ = tokenSvc.AddTokens(s.UserID, 1, "refund", "autoclick item failed", exec.ID) } }
+                        mu.Unlock()
+                        // RPM 记录
+                        if storeRedis != nil {
+                            off := tzOffset(s.Timezone)
+                            nowLocal := time.Now().UTC().Add(time.Duration(off) * time.Hour)
+                            minuteKey := nowLocal.Format("2006-01-02:15:04")
+                            key := fmt.Sprintf("autoads:ac:usage:minute:%s:%s", s.UserID, minuteKey)
+                            _, _ = storeRedis.Incr(ctx, key)
+                            next := nowLocal.Truncate(time.Minute).Add(time.Minute)
+                            ttl := time.Until(next)
+                            if ttl < 10*time.Second { ttl = 10 * time.Second }
+                            _ = storeRedis.Expire(ctx, key, ttl)
+                        }
+                    },
                 }
-                ok := false
-                var runErr error
-                if !useBrowser {
-                    httpSlots <- struct{}{}
-                    ok, _, runErr = httpExec.Do(u, opt)
-                    <-httpSlots
-                    if !ok {
-                        n := incrFail(httpFailKey, 24*time.Hour)
-                        if n >= 3 { setFlag(preferKey, 7*24*time.Hour) }
-                    }
-                } else {
-                    brSlots <- struct{}{}
-                    ok, _, runErr = brExec.Do(u, opt)
-                    <-brSlots
-                    if !ok {
-                        n := incrFail(brFailKey, 24*time.Hour)
-                        if n >= 3 { t := time.Now(); _ = gdb.Create(&AutoClickURLFailure{ ID: uuid.New().String(), UserID: s.UserID, URLHash: uh, URL: u, BrowserFailConsecutive: n, LastFailAt: &t, CreatedAt: t, UpdatedAt: t }).Error }
-                    }
-                }
-                mu.Lock()
-                if ok { success++ } else { fail++; if tokenSvc != nil { _ = tokenSvc.AddTokens(s.UserID, 1, "refund", "autoclick item failed", exec.ID) } }
-                mu.Unlock()
-                _ = runErr
-                // RPM 记录
-                if storeRedis != nil {
-                    off := tzOffset(s.Timezone)
-                    nowLocal := time.Now().UTC().Add(time.Duration(off) * time.Hour)
-                    minuteKey := nowLocal.Format("2006-01-02:15:04")
-                    key := fmt.Sprintf("autoads:ac:usage:minute:%s:%s", s.UserID, minuteKey)
-                    _, _ = storeRedis.Incr(ctx, key)
-                    next := nowLocal.Truncate(time.Minute).Add(time.Minute)
-                    ttl := time.Until(next)
-                    if ttl < 10*time.Second { ttl = 10 * time.Second }
-                    _ = storeRedis.Expire(ctx, key, ttl)
-                }
+                // 提交到池
+                if !useBrowser { pm.SubmitHTTP(t) } else { pm.SubmitBrowser(t) }
             }(u, uh, useBrowser)
         }
         wg.Wait()

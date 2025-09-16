@@ -244,6 +244,7 @@ $RECYCLE.BIN/
 # Go build artifacts and cache
 gofly_admin_v3/.gomodcache/
 gofly_admin_v3/.gocache/
+/.gocache/
 gofly_admin_v3/server
 gofly_admin_v3/runner.conf
 

@@ -6,11 +6,16 @@ import (
     "fmt"
     "crypto/sha256"
     "encoding/hex"
+    "io"
     "math/rand"
+    "net"
     "net/http"
+    "net/url"
+    "strings"
     "sync"
     "time"
 
+    "golang.org/x/net/proxy"
     "github.com/google/uuid"
     "gorm.io/gorm"
     "gofly-admin-v3/internal/audit"
@@ -100,8 +105,8 @@ func (s *Service) CreateTask(userID string, req *CreateTaskRequest) (*BatchTask,
 		return nil, err
 	}
 
-	// 2. 计算Token消费
-	var action string
+    // 2. 计算Token消费（考虑循环次数）
+    var action string
 	switch req.Mode {
 	case ModeBasic:
 		action = "http" // Basic模式使用HTTP计费
@@ -113,9 +118,11 @@ func (s *Service) CreateTask(userID string, req *CreateTaskRequest) (*BatchTask,
 		return nil, fmt.Errorf("不支持的任务模式: %s", req.Mode)
 	}
 
-	// 3. 检查Token是否足够
-	sufficient, balance, cost, err := s.tokenService.CheckTokenSufficiency(
-		userID, "batchgo", action, len(req.URLs))
+    cycles := req.CycleCount
+    if cycles <= 0 { cycles = 1 }
+    // 3. 检查Token是否足够（URL×循环数）
+    sufficient, balance, cost, err := s.tokenService.CheckTokenSufficiency(
+        userID, "batchgo", action, len(req.URLs)*cycles)
 	if err != nil {
 		return nil, err
 	}
@@ -123,33 +130,32 @@ func (s *Service) CreateTask(userID string, req *CreateTaskRequest) (*BatchTask,
 		return nil, fmt.Errorf("Token余额不足，需要%d，当前%d", cost, balance)
 	}
 
-	// 4. 准备URL数据
-	urls := make([]BatchTaskURL, len(req.URLs))
-	for i, url := range req.URLs {
-		urls[i] = BatchTaskURL{
-			URL:    url,
-			Status: "pending",
-		}
-	}
-	urlsJSON, _ := json.Marshal(urls)
+    // 4. 准备URL数据（持久化轮次 Round，用于服务端循环与恢复）
+    urls := make([]BatchTaskURL, 0, len(req.URLs)*cycles)
+    for r := 1; r <= cycles; r++ {
+        for _, u := range req.URLs {
+            urls = append(urls, BatchTaskURL{ URL: u, Round: r, Status: "pending" })
+        }
+    }
+    urlsJSON, _ := json.Marshal(urls)
 
 	// 5. 准备配置数据
 	configJSON, _ := json.Marshal(req.Config)
 
 	// 6. 创建任务
-	task := &BatchTask{
-		ID:        uuid.New().String(),
-		UserID:    userID,
-		Name:      req.Name,
-		Mode:      req.Mode,
-		Status:    StatusPending,
-		URLs:      urlsJSON,
-		URLCount:  len(req.URLs),
-		Config:    configJSON,
-		TokenCost: cost,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
+    task := &BatchTask{
+        ID:        uuid.New().String(),
+        UserID:    userID,
+        Name:      req.Name,
+        Mode:      req.Mode,
+        Status:    StatusPending,
+        URLs:      urlsJSON,
+        URLCount:  len(urls),
+        Config:    configJSON,
+        TokenCost: cost,
+        CreatedAt: time.Now(),
+        UpdatedAt: time.Now(),
+    }
 
 	// 7. 保存到数据库
 	if err := s.db.Create(task).Error; err != nil {
@@ -278,9 +284,15 @@ func (s *Service) startSilentTask(task *BatchTask) {
 // processSilentTask 处理Silent模式任务（由调用者提供ctx，以支持取消）
 func (s *Service) processSilentTask(ctx context.Context, task *BatchTask, urls []BatchTaskURL, config *SilentConfig) {
 
-	// 创建工作池
-	urlChan := make(chan int, len(urls))
-	resultChan := make(chan BatchTaskURL, len(urls))
+    // 若启用代理轮训并提供了代理来源，则按“每个代理一轮URL”的策略执行
+    if config.UseProxy && (config.ProxyRotation || config.RotatePerRound) && (len(config.ProxyList) > 0 || strings.TrimSpace(config.ProxyAPI) != "") {
+        s.processSilentTaskWithProxyRounds(ctx, task, urls, config)
+        return
+    }
+
+    // 创建工作池
+    urlChan := make(chan int, len(urls))
+    resultChan := make(chan BatchTaskURL, len(urls))
 
 	// 启动工作协程
 	var wg sync.WaitGroup
@@ -340,32 +352,195 @@ func (s *Service) processSilentTask(ctx context.Context, task *BatchTask, urls [
     }
     // 完成任务
     s.completeTask(task.ID, urls, successCount, failedCount)
+    if fallbackTriggered { s.spawnAutoClickFallback(task, config, processedCount, failedCount, urls) }
+}
 
-    // 如果触发了回退：创建 AutoClick 任务处理剩余URL并调度
-    if fallbackTriggered {
-        remaining := make([]string, 0)
-        for _, u := range urls {
-            if u.Status != "success" && u.Status != "failed" {
-                if u.URL != "" { remaining = append(remaining, u.URL) }
-            }
-        }
-        if len(remaining) > 0 {
-            cfg := BatchTaskConfig{ AutoClick: &AutoClickConfig{ StartTime: time.Now().Add(1 * time.Minute).Format("15:04"), EndTime: time.Now().Add(61 * time.Minute).Format("15:04"), Interval: 10, RandomDelay: true, MaxRandomDelay: 5 } }
-            req := &CreateTaskRequest{ Name: task.Name + " (fallback)", Mode: ModeAutoClick, URLs: remaining, Config: cfg }
-            if newTask, err := s.CreateTask(task.UserID, req); err == nil {
-                _ = s.scheduleAutoClickTask(newTask)
-                if s.audit != nil {
-                    _ = s.audit.LogBatchTaskAction(task.UserID, "fallback_to_puppeteer", task.ID, map[string]interface{}{
-                        "threshold": config.FailRateThreshold,
-                        "processed": processedCount,
-                        "failed": failedCount,
-                        "new_task_id": newTask.ID,
-                    }, "", "", true, "", 0)
+// processSilentTaskWithProxyRounds 按“每个代理一轮URL”的方式执行
+func (s *Service) processSilentTaskWithProxyRounds(ctx context.Context, task *BatchTask, urls []BatchTaskURL, config *SilentConfig) {
+    proxies := config.ProxyList
+    if len(proxies) == 0 && strings.TrimSpace(config.ProxyAPI) != "" {
+        proxies = s.fetchProxyList(strings.TrimSpace(config.ProxyAPI))
+    }
+    if len(proxies) == 0 && strings.TrimSpace(config.ProxyAPI) != "" {
+        proxies = []string{ strings.TrimSpace(config.ProxyAPI) }
+    }
+    if len(proxies) == 0 {
+        // 无代理可用，回退默认执行
+        s.processSilentTask(ctx, task, urls, &SilentConfig{Concurrency: config.Concurrency, Timeout: config.Timeout, RetryCount: config.RetryCount, UserAgent: config.UserAgent, Headers: config.Headers})
+        return
+    }
+
+    processedCount, successCount, failedCount := 0,0,0
+    fallbackTriggered := false
+
+    for pi, p := range proxies {
+        client := s.clientForProxy(p, time.Duration(config.Timeout)*time.Second)
+        roundChan := make(chan int, len(urls))
+        resultChan := make(chan BatchTaskURL, len(urls))
+        var wg sync.WaitGroup
+        workers := config.Concurrency
+        if workers <= 0 { workers = 1 }
+        for i := 0; i < workers; i++ {
+            wg.Add(1)
+            go func() {
+                defer wg.Done()
+                for {
+                    select {
+                    case <-ctx.Done():
+                        return
+                    case idx, ok := <-roundChan:
+                        if !ok { return }
+                        u := urls[idx]
+                        r := s.processURLWithClient(client, u, config)
+                        r.Retries = idx
+                        resultChan <- r
+                    }
                 }
-                s.updateTaskError(task.ID, fmt.Sprintf("fallback_to_puppeteer_spawned:%s", newTask.ID))
-            } else {
-                s.updateTaskError(task.ID, fmt.Sprintf("fallback_spawn_failed:%v", err))
+            }()
+        }
+        for i := range urls { roundChan <- i }
+        close(roundChan)
+        go func(){ wg.Wait(); close(resultChan) }()
+
+        for r := range resultChan {
+            urls[r.Retries] = r
+            processedCount++
+            if r.Status == "success" {
+                successCount++
+                _ = s.tokenService.ConsumeTokensByService(task.UserID, "batchgo", "http", 1, task.ID)
+            } else { failedCount++ }
+            s.updateTaskProgress(task.ID, processedCount, successCount, failedCount)
+            if !fallbackTriggered && config.FailRateThreshold > 0 && processedCount > 0 {
+                failRate := float64(failedCount) / float64(processedCount) * 100.0
+                remaining := len(proxies)-pi-1
+                if failRate >= float64(config.FailRateThreshold) && remaining > 0 {
+                    if cancel := s.popCancel(task.ID); cancel != nil { cancel() }
+                    fallbackTriggered = true
+                }
             }
+            s.sendProgressNotification(task.UserID, task.ID, processedCount, len(urls)*len(proxies))
+        }
+        if fallbackTriggered { break }
+    }
+    s.completeTask(task.ID, urls, successCount, failedCount)
+    if fallbackTriggered { s.spawnAutoClickFallback(task, config, processedCount, failedCount, urls) }
+}
+
+// clientForProxy 构建带代理的 HTTP 客户端
+func (s *Service) clientForProxy(proxyStr string, timeout time.Duration) *http.Client {
+    u, err := url.Parse(proxyStr)
+    if err != nil || u.Scheme == "" { return &http.Client{ Timeout: timeout } }
+    scheme := strings.ToLower(u.Scheme)
+    // 支持 http/https/socks5
+    switch scheme {
+    case "http", "https":
+        tr := &http.Transport{ Proxy: http.ProxyURL(u) }
+        return &http.Client{ Timeout: timeout, Transport: tr }
+    case "socks5":
+        // 使用 x/net/proxy 构建 socks5 拨号器
+        // 注：忽略 context 以保持兼容；超时通过底层 Dialer 控制
+        var auth *proxy.Auth
+        if u.User != nil {
+            user := u.User.Username()
+            pass, _ := u.User.Password()
+            auth = &proxy.Auth{ User: user, Password: pass }
+        }
+        d, err := proxy.SOCKS5("tcp", u.Host, auth, &net.Dialer{ Timeout: timeout })
+        if err != nil { return &http.Client{ Timeout: timeout } }
+        tr := &http.Transport{}
+        tr.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+            return d.Dial(network, address)
+        }
+        return &http.Client{ Timeout: timeout, Transport: tr }
+    default:
+        return &http.Client{ Timeout: timeout }
+    }
+}
+
+// processURLWithClient 使用给定客户端处理 URL
+func (s *Service) processURLWithClient(client *http.Client, urlItem BatchTaskURL, config *SilentConfig) BatchTaskURL {
+    startTime := time.Now()
+    urlItem.StartTime = &startTime
+    urlItem.Status = "processing"
+    var lastErr error
+    for retry := 0; retry <= config.RetryCount; retry++ {
+        req, err := http.NewRequest("GET", urlItem.URL, nil)
+        if err != nil { lastErr = err; continue }
+        if config.UserAgent != "" { req.Header.Set("User-Agent", config.UserAgent) }
+        for k, v := range config.Headers { req.Header.Set(k, v) }
+        resp, err := client.Do(req)
+        if err != nil { lastErr = err; time.Sleep(time.Duration(retry+1) * time.Second); continue }
+        resp.Body.Close()
+        end := time.Now(); urlItem.EndTime = &end; urlItem.Status = "success"
+        urlItem.Response = map[string]any{"status_code": resp.StatusCode, "headers": resp.Header, "duration": end.Sub(startTime).Milliseconds()}
+        urlItem.Retries = retry
+        return urlItem
+    }
+    end := time.Now(); urlItem.EndTime = &end; urlItem.Status = "failed"
+    if lastErr != nil { urlItem.Error = lastErr.Error() } else { urlItem.Error = "unknown" }
+    urlItem.Retries = config.RetryCount
+    return urlItem
+}
+
+// fetchProxyList 从 API 获取代理列表（支持文本或JSON格式）
+func (s *Service) fetchProxyList(api string) []string {
+    ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+    defer cancel()
+    req, err := http.NewRequestWithContext(ctx, http.MethodGet, api, nil)
+    if err != nil { return nil }
+    resp, err := s.httpClient.Do(req)
+    if err != nil { return nil }
+    defer resp.Body.Close()
+    b, _ := io.ReadAll(resp.Body)
+    text := strings.TrimSpace(string(b))
+    var out []string
+    // 尝试 JSON 数组
+    var arr []string
+    if json.Unmarshal(b, &arr) == nil && len(arr) > 0 {
+        out = arr
+    } else {
+        // 尝试 {"proxies": []}
+        var obj struct{ Proxies []string `json:"proxies"` }
+        if json.Unmarshal(b, &obj) == nil && len(obj.Proxies) > 0 {
+            out = obj.Proxies
+        } else {
+            // 按换行/逗号分割
+            parts := strings.FieldsFunc(text, func(r rune) bool { return r=='\n' || r=='\r' || r==',' || r==';' || r=='\t' })
+            for _, p := range parts { p = strings.TrimSpace(p); if p != "" { out = append(out, p) } }
+        }
+    }
+    // 去重与裁剪
+    seen := map[string]struct{}{}
+    uniq := make([]string,0,len(out))
+    for _, p := range out { if _, ok := seen[p]; ok { continue }; seen[p]=struct{}{}; uniq = append(uniq, p) }
+    if len(uniq) > 200 { uniq = uniq[:200] }
+    return uniq
+}
+
+// spawnAutoClickFallback 触发回退任务
+func (s *Service) spawnAutoClickFallback(task *BatchTask, config *SilentConfig, processedCount, failedCount int, urls []BatchTaskURL) {
+    remaining := make([]string, 0)
+    for _, u := range urls {
+        if u.Status != "success" && u.Status != "failed" {
+            if u.URL != "" { remaining = append(remaining, u.URL) }
+        }
+    }
+    if len(remaining) > 0 {
+        cfg := BatchTaskConfig{ AutoClick: &AutoClickConfig{ StartTime: time.Now().Add(1 * time.Minute).Format("15:04"), EndTime: time.Now().Add(61 * time.Minute).Format("15:04"), Interval: 10, RandomDelay: true, MaxRandomDelay: 5 } }
+        req := &CreateTaskRequest{ Name: task.Name + " (fallback)", Mode: ModeAutoClick, URLs: remaining, Config: cfg }
+        if newTask, err := s.CreateTask(task.UserID, req); err == nil {
+            _ = s.scheduleAutoClickTask(newTask)
+            if s.audit != nil {
+                _ = s.audit.LogBatchTaskAction(task.UserID, "fallback_to_puppeteer", task.ID, map[string]interface{}{
+                    "threshold": config.FailRateThreshold,
+                    "processed": processedCount,
+                    "failed": failedCount,
+                    "new_task_id": newTask.ID,
+                }, "", "", true, "", 0)
+            }
+            s.updateTaskError(task.ID, fmt.Sprintf("fallback_to_puppeteer_spawned:%s", newTask.ID))
+        } else {
+            s.updateTaskError(task.ID, fmt.Sprintf("fallback_spawn_failed:%v", err))
         }
     }
 }
@@ -847,8 +1022,9 @@ func (s *Service) validateCreateRequest(req *CreateTaskRequest) error {
 
 // CreateTaskRequest 创建任务请求
 type CreateTaskRequest struct {
-	Name   string          `json:"name" binding:"required"`
-	Mode   BatchTaskMode   `json:"mode" binding:"required"`
-	URLs   []string        `json:"urls" binding:"required"`
-	Config BatchTaskConfig `json:"config"`
+    Name        string          `json:"name" binding:"required"`
+    Mode        BatchTaskMode   `json:"mode" binding:"required"`
+    URLs        []string        `json:"urls" binding:"required"`
+    CycleCount  int             `json:"cycleCount,omitempty"` // Silent: 每个URL循环次数，默认1
+    Config      BatchTaskConfig `json:"config"`
 }

@@ -680,16 +680,18 @@ export const SilentBatchOpen: React.FC<SilentBatchOpenProps> = React.memo((props
       clearTimeout(timeoutId);
 
       const result = await response.json();
-      
-      if (result.success) {
-        logger.info('代理URL验证成功:', result.proxy);
+
+      const ok = !!(response.ok && (result?.valid === true || result?.success === true))
+      if (ok) {
+        logger.info('代理URL验证成功:', result?.normalized || result?.proxy);
         dispatch({ type: 'SET_STATUS', payload: "代理URL格式正确，成功获取代理IP！" });
         dispatch({ type: 'SET_PROXY_VALIDATION_SUCCESS', payload: true });
         dispatch({ type: 'SET_LAST_VALIDATED_PROXY_URL', payload: url.trim() });
         setTimeout(() => dispatch({ type: 'SET_STATUS', payload: "" }), 3000);
         return true;
-      } else {
-        const friendlyErrorMessage = `代理URL验证失败：${result.message}`;
+      }
+      {
+        const friendlyErrorMessage = `代理URL验证失败：${result?.message || '无效的代理地址'}`;
         dispatch({ type: 'SET_ERROR', payload: friendlyErrorMessage });
         dispatch({ type: 'SET_PROXY_VALIDATION_SUCCESS', payload: false });
         dispatch({ type: 'SET_LAST_VALIDATED_PROXY_URL', payload: null });

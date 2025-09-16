@@ -1,11 +1,12 @@
 package batchgo
 
 import (
-	"net/http"
-	"strconv"
+    "net/http"
+    "strconv"
+    "strings"
 
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
+    "github.com/gin-gonic/gin"
+    "gorm.io/gorm"
 )
 
 // Controller BatchGo控制器
@@ -292,6 +293,15 @@ func (c *Controller) SilentStart(ctx *gin.Context) {
     }
     // TODO: 社媒 referer 可按 selectedSocialMedia 映射预置值，这里保留透传逻辑
 
+    // 处理 Referer：支持社媒与自定义两类
+    if req.RefererOption == "social" && strings.TrimSpace(req.SelectedSocialMedia) != "" {
+        headers["Referer"] = strings.TrimSpace(req.SelectedSocialMedia)
+    }
+
+    // 推断代理开关：如提供 proxyUrl，则默认启用代理与轮训
+    useProxy := req.UseProxy || (strings.TrimSpace(req.ProxyURL) != "")
+    rotate := req.ProxyRotation || (strings.TrimSpace(req.ProxyURL) != "")
+
     newReq := &CreateTaskRequest{
         Name: "Silent批处理任务",
         Mode: ModeSilent,
@@ -301,15 +311,16 @@ func (c *Controller) SilentStart(ctx *gin.Context) {
                 Concurrency:   req.Concurrency,
                 Timeout:       req.Timeout,
                 RetryCount:    req.RetryCount,
-                UseProxy:      req.UseProxy,
-                ProxyRotation: req.ProxyRotation,
+                UseProxy:      useProxy,
+                ProxyRotation: rotate,
                 UserAgent:     req.UserAgent,
                 Headers:       headers,
                 ProxyAPI:      strings.TrimSpace(req.ProxyURL),
-                RotatePerRound: req.ProxyRotation, // 轮训即按轮处理
+                RotatePerRound: rotate, // 轮训即按轮处理
             },
         },
     }
+    if req.CycleCount > 0 { newReq.CycleCount = req.CycleCount } else { newReq.CycleCount = 1 }
 
 	// 创建并启动任务
 	task, err := c.service.CreateTask(userID.(string), newReq)

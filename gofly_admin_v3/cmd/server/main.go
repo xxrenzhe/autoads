@@ -1217,6 +1217,25 @@ func setupAPIRoutes(r *gin.Engine) {
                 defer hb.Stop()
                 f, ok := c.Writer.(http.Flusher)
                 if !ok { c.String(500, "stream unsupported"); return }
+                // 连接即发一次快照，降低首包等待（若提供过滤条件）
+                if fExec != "" {
+                    var exec autoclick.AutoClickExecution
+                    if err := gormDB.Where("id=?", fExec).First(&exec).Error; err == nil {
+                        payload := map[string]interface{}{"type":"execution_update","id":exec.ID,"scheduleId":exec.ScheduleID,"status":exec.Status,"progress":exec.Progress,"processedItems":exec.Success+exec.Fail,"totalItems":exec.Total,"timestamp": time.Now().UnixMilli()}
+                        b, _ := json.Marshal(payload)
+                        fmt.Fprintf(c.Writer, "data: %s\n\n", string(b)); f.Flush()
+                    }
+                } else if fSchedule != "" || fUser != "" {
+                    q := gormDB.Model(&autoclick.AutoClickExecution{})
+                    if fSchedule != "" { q = q.Where("schedule_id = ?", fSchedule) }
+                    if fUser != "" { q = q.Where("user_id = ?", fUser) }
+                    var exec autoclick.AutoClickExecution
+                    if err := q.Order("updated_at DESC").First(&exec).Error; err == nil {
+                        payload := map[string]interface{}{"type":"execution_update","id":exec.ID,"scheduleId":exec.ScheduleID,"status":exec.Status,"progress":exec.Progress,"processedItems":exec.Success+exec.Fail,"totalItems":exec.Total,"timestamp": time.Now().UnixMilli()}
+                        b, _ := json.Marshal(payload)
+                        fmt.Fprintf(c.Writer, "data: %s\n\n", string(b)); f.Flush()
+                    }
+                }
                 for {
                     select {
                     case <-ctx.Done():
@@ -1316,6 +1335,11 @@ func setupAPIRoutes(r *gin.Engine) {
                 autoGroup.DELETE("/schedules/:id", autoCtrl.DeleteSchedule)
                 autoGroup.POST("/schedules/:id/enable", autoCtrl.EnableSchedule)
                 autoGroup.POST("/schedules/:id/disable", autoCtrl.DisableSchedule)
+                // 池队列状态只读接口
+                autoGroup.GET("/queue/state", func(c *gin.Context) {
+                    st := autoclick.GetPoolManager().State()
+                    c.JSON(200, gin.H{"code":0, "data": st})
+                })
             }
         }
 

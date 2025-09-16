@@ -6,11 +6,13 @@ import (
     "encoding/json"
     "crypto/sha256"
     "encoding/hex"
+    "net"
     "net/http"
     "net/url"
     "time"
     "strings"
 
+    "golang.org/x/net/proxy"
     "gofly-admin-v3/internal/store"
     "gofly-admin-v3/internal/user"
     "gofly-admin-v3/internal/system"
@@ -45,8 +47,23 @@ func (e *HTTPExecutor) Do(raw string, opt *ExecOptions) (bool, string, error) {
     if opt != nil && opt.Timeout > 0 { client.Timeout = opt.Timeout }
     if opt != nil && opt.Proxy != "" {
         if purl, err := url.Parse(opt.Proxy); err == nil {
-            tr := &http.Transport{ Proxy: http.ProxyURL(purl) }
-            client.Transport = tr
+            scheme := strings.ToLower(purl.Scheme)
+            switch scheme {
+            case "http", "https":
+                tr := &http.Transport{ Proxy: http.ProxyURL(purl) }
+                client.Transport = tr
+            case "socks5":
+                var auth *proxy.Auth
+                if purl.User != nil {
+                    user := purl.User.Username(); pass, _ := purl.User.Password(); auth = &proxy.Auth{ User: user, Password: pass }
+                }
+                d, err := proxy.SOCKS5("tcp", purl.Host, auth, &net.Dialer{ Timeout: client.Timeout })
+                if err == nil {
+                    tr := &http.Transport{}
+                    tr.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) { return d.Dial(network, addr) }
+                    client.Transport = tr
+                }
+            }
         }
     }
     req, _ := http.NewRequest("GET", raw, nil)

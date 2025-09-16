@@ -126,13 +126,15 @@ type AutoClickConfig struct {
 
 // BatchTaskURL URL项目
 type BatchTaskURL struct {
-	URL       string                 `json:"url"`
-	Status    string                 `json:"status"`   // pending, processing, success, failed
-	Response  map[string]interface{} `json:"response"` // 响应数据
-	Error     string                 `json:"error"`    // 错误信息
-	StartTime *time.Time             `json:"start_time"`
-	EndTime   *time.Time             `json:"end_time"`
-	Retries   int                    `json:"retries"` // 重试次数
+    URL       string                 `json:"url"`
+    // Round 第几轮（用于持久化循环次数模型：1..cycleCount）
+    Round     int                    `json:"round,omitempty"`
+    Status    string                 `json:"status"`   // pending, processing, success, failed
+    Response  map[string]interface{} `json:"response"` // 响应数据
+    Error     string                 `json:"error"`    // 错误信息
+    StartTime *time.Time             `json:"start_time"`
+    EndTime   *time.Time             `json:"end_time"`
+    Retries   int                    `json:"retries"` // 重试次数
 }
 
 // BatchTaskResult 任务结果
