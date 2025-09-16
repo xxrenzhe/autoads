@@ -330,6 +330,32 @@ GET /api/v2/adscenter/finance/summary?accounts=123-456-7890,111-222-3333&range=l
 
 ---
 
+## 最终方案与导航/访问策略（汇总）
+- 导航与入口
+  - 顶部“自动化广告”跳转至 AdsCenter（v2）主页（/adscenter），提供快速更新卡片（账号+模板→干跑→执行→统一进度）与报表入口。
+  - AutoClick 作为 /batchopen 页面下的一个 Tab 标签，不单独在导航中暴露；列表项提供“查看进度”按钮直达统一进度页。
+  - Admin（仅管理员）菜单放在后台管理系统左侧导航，包含“凭据总览/筛选”（/admin/adscenter/credentials）、“OAuth 管理”（/admin/adscenter/oauth）、“指标回填/导出”（/admin/adscenter/metrics）。
+- 访问与权限
+  - 网站所有页面未登录可浏览（不做模糊化）；点击功能按钮时强制登录，登录后校验套餐：
+    - AdsCenter 功能需有 `limits.adscenter`；
+    - AutoClick 功能需 `limits.batchopen.versions` 包含 `autoclick`（或 `automated`）。
+    - 无权限跳转“价格”（/pricing）。
+  - 后台管理系统仅管理员可登录访问；普通用户不得访问后台任一页面（直链进入将重定向至 /ops/console/login）。
+- 统一任务与进度
+  - 统一 ExecutionUpdate 格式；前端 `useLiveExecution` Hook（SSE 首包 + 断线降级轮询）。
+  - 后端：GET `/api/v2/tasks/:id` 与 GET `/api/v2/stream/tasks/:id`；Silent/AutoClick/AdsCenter 执行均统一输出。
+- 关键能力与实现
+  - BatchOpen Silent v2：幂等启动（Idempotency-Key）、代理校验、统一进度；降级轮询；按钮守卫接入。
+  - AutoClick v2：Schedules CRUD/启停，默认 Referer 注入（automation.referer.default）；在 /batchopen 的 AutoClick Tab 内提供“查看进度”按钮，调用 `/api/v2/autoclick/schedules/:id/execution/current` 取执行 ID 后跳 `/adscenter/executions/v2/{id}`。
+  - AdsCenter v2：模板（干跑/执行/失败重试/回滚）、Offer 解析（浏览器执行器优先 + 缓存 + 熔断）、绑定/轮换（唯一性 + 调度器）、分析（聚合优先，回退轮换/执行统计）。
+  - 采集：`ads_metrics_daily` 日聚合表；调度器每小时采集，高水位推进；对率限与暂态错误指数退避重试；Admin 可手动回填。
+  - OPS：PoolManager 并发热更新（automation.*），/ops/pool/state 返回队列/并发+吞吐/平均等待；/ops/presets 返回 Referer 与 RPM 预设。
+  - Admin：OAuth 链接/回调、凭据总览/筛选/导出、指标回填；Admin analytics（summary/timeseries/breakdown）。
+- 非需求项（明确不做）
+  - /batchopen 页面“统一进度汇总表”不纳入本期（按指示不需要）。
+
+---
+
 ## 待办清单（可直接用于新会话接续）
 - 统一事件与任务
   - [x] /api/v2/tasks/:id 与 /api/v2/stream/tasks/:id（SSE）
@@ -380,4 +406,5 @@ GET /api/v2/adscenter/finance/summary?accounts=123-456-7890,111-222-3333&range=l
 ## 变更记录
 - 2025-09-16
   - 初稿：定义 /api/v2 合同、前端极简化、OPS 承载策略、AdsCenter 采集与可视化方案、统一任务与事件流、里程碑与待办。
+  - 2025-09-16（收敛）：补充最终导航与访问策略（未登录可浏览，功能按钮登录+套餐校验；Admin 仅管理员），AutoClick 入口收敛至 /batchopen Tab，AdsCenter（v2）作为顶部“自动化广告”入口；明确不做 /batchopen 统一进度汇总表；其余 v2 能力（Silent 幂等、AutoClick schedules、AdsCenter 模板/解析/绑定/轮换/分析、采集调度、OPS 并发观测、Admin OAuth/凭据/回填/导出）已全部落地。
   - 2025-09-16（实现）：落地 /api/v2 统一任务与事件流、Silent v2、AutoClick schedules v2、AdsCenter 模板干跑与执行、执行重试与回滚、Offer 解析、绑定与轮换（唯一性）、基础 /analytics 三端点、BFF `/api/v2/*` 与前端 Hook（useLiveExecution）。

@@ -147,6 +147,28 @@ type AdsOfferRotation struct {
 }
 func (AdsOfferRotation) TableName() string { return "ads_offer_rotations" }
 
+// AdsMetricsDaily 每日指标聚合（Google Ads 指标落库）
+type AdsMetricsDaily struct {
+    ID              uint      `json:"id" gorm:"primaryKey;autoIncrement"`
+    UserID          string    `json:"userId" gorm:"index;size:36"`
+    AccountID       string    `json:"accountId" gorm:"index;size:255"`
+    Date            string    `json:"date" gorm:"type:date;index"`
+    CampaignID      string    `json:"campaignId" gorm:"size:64;index"`
+    AdGroupID       string    `json:"adGroupId" gorm:"size:64;index"`
+    Device          string    `json:"device" gorm:"size:32"`
+    Network         string    `json:"network" gorm:"size:32"`
+    Clicks          int64     `json:"clicks"`
+    Impressions     int64     `json:"impressions"`
+    CostMicros      int64     `json:"costMicros"`
+    Conversions     int64     `json:"conversions"`
+    ConvValueMicros int64     `json:"convValueMicros"`
+    VTC             int64     `json:"vtc"`
+    CreatedAt       time.Time `json:"createdAt"`
+    UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+func (AdsMetricsDaily) TableName() string { return "ads_metrics_daily" }
+
 // 全局服务实例（用于旧API处理器中复用）
 var (
     gormDB            *gorm.DB
@@ -1554,16 +1576,16 @@ func setupAPIRoutes(r *gin.Engine) {
 	// WebSocket路由
 	r.GET("/ws", handleWebSocket)
 
-	// 管理员路由
-    admin := r.Group("/admin")
-    admin.Use(adminAuthMiddleware())
+    // 管理员路由
+    adminGroup := r.Group("/admin")
+    adminGroup.Use(adminAuthMiddleware())
     {
-        admin.GET("/users", handleAdminGetUsers)
-        admin.PUT("/users/:id", handleAdminUpdateUser)
-        admin.GET("/stats", handleAdminGetStats)
-        admin.GET("/dashboard", handleAdminDashboard)
+        adminGroup.GET("/users", handleAdminGetUsers)
+        adminGroup.PUT("/users/:id", handleAdminUpdateUser)
+        adminGroup.GET("/stats", handleAdminGetStats)
+        adminGroup.GET("/dashboard", handleAdminDashboard)
         // Bad URL 管理（共享 Redis 标记）
-        admin.GET("/badurls", func(c *gin.Context) {
+        adminGroup.GET("/badurls", func(c *gin.Context) {
             if storeRedis == nil { c.JSON(503, gin.H{"code": 5000, "message": "redis unavailable"}); return }
             q := c.Query("q")
             page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -1598,7 +1620,7 @@ func setupAPIRoutes(r *gin.Engine) {
             }
             c.JSON(200, gin.H{"items": items, "page": page, "size": size})
         })
-        admin.DELETE("/badurls/:hash", func(c *gin.Context) {
+        adminGroup.DELETE("/badurls/:hash", func(c *gin.Context) {
             if storeRedis == nil { c.JSON(503, gin.H{"code": 5000, "message": "redis unavailable"}); return }
             hash := c.Param("hash")
             if hash == "" { c.JSON(400, gin.H{"code": 400, "message": "missing hash"}); return }
@@ -1606,7 +1628,7 @@ func setupAPIRoutes(r *gin.Engine) {
             if err := storeRedis.Delete(context.Background(), key); err != nil { c.JSON(500, gin.H{"code": 5000, "message": err.Error()}); return }
             c.JSON(200, gin.H{"code": 0, "message": "deleted"})
         })
-        admin.DELETE("/badurls", func(c *gin.Context) {
+        adminGroup.DELETE("/badurls", func(c *gin.Context) {
             if storeRedis == nil { c.JSON(503, gin.H{"code": 5000, "message": "redis unavailable"}); return }
             q := c.Query("q")
             ctx := context.Background()
@@ -1835,7 +1857,7 @@ func setupAPIRoutes(r *gin.Engine) {
                 if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.OfferUrl) == "" { c.JSON(400, gin.H{"ok": false, "message":"invalid request"}); return }
                 if storeRedis != nil { key := "offer:resolve:" + sha1Hex(strings.TrimSpace(body.OfferUrl)); if v, _ := storeRedis.Get(c, key); v != "" { var m map[string]any; _ = json.Unmarshal([]byte(v), &m); if m != nil { c.JSON(200, m); return } } }
                 res := resolveOfferURL(c.Request.Context(), body.OfferUrl)
-                if storeRedis != nil && res["ok"] == true { b,_ := json.Marshal(res); _ = storeRedis.SetEx(c, "offer:resolve:"+sha1Hex(body.OfferUrl), string(b), 24*time.Hour) }
+                if storeRedis != nil && res["ok"] == true { b,_ := json.Marshal(res); _ = storeRedis.Set(c, "offer:resolve:"+sha1Hex(body.OfferUrl), string(b), 24*time.Hour) }
                 c.JSON(200, res)
             })
 
@@ -2180,20 +2202,18 @@ func setupAPIRoutes(r *gin.Engine) {
             adminV2.GET("/analytics/timeseries", func(c *gin.Context) {
                 uid := strings.TrimSpace(c.Query("userId")); if uid == "" { c.JSON(400, gin.H{"message":"userId required"}); return }
                 account := strings.TrimSpace(c.Query("account"))
-                rows, err := func() ([]map[string]any, error) {
-                    q := `SELECT date, SUM(clicks) as v FROM ads_metrics_daily WHERE user_id=? AND date>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)`
-                    args := []any{uid}
-                    if account != "" { q += " AND account_id=?"; args = append(args, account) }
-                    q += " GROUP BY date ORDER BY date"
-                    return gf.DB().Query(c, q, args...)
-                }()
+                q := `SELECT date, SUM(clicks) as v FROM ads_metrics_daily WHERE user_id=? AND date>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)`
+                args := []any{uid}
+                if account != "" { q += " AND account_id=?"; args = append(args, account) }
+                q += " GROUP BY date ORDER BY date"
+                rows, err := gf.DB().Query(c, q, args...)
                 if err == nil && len(rows) > 0 {
                     out := make([]map[string]any, 0, len(rows)); for _, r := range rows { out = append(out, map[string]any{"date": r["date"].String(), "value": r["v"].Int()}) }
                     c.JSON(200, gin.H{"series": out}); return
                 }
                 // 回退：按轮换
-                q := `SELECT DATE(rotated_at) as d, COUNT(1) as cnt FROM ads_offer_rotations r JOIN ads_offer_bindings b ON b.id=r.binding_id WHERE b.user_id=? AND rotated_at>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)`
-                args := []any{uid}
+                q = `SELECT DATE(rotated_at) as d, COUNT(1) as cnt FROM ads_offer_rotations r JOIN ads_offer_bindings b ON b.id=r.binding_id WHERE b.user_id=? AND rotated_at>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)`
+                args = []any{uid}
                 if account != "" { q += " AND b.account_id=?"; args = append(args, account) }
                 q += " GROUP BY DATE(rotated_at) ORDER BY DATE(rotated_at)"
                 rows2, err2 := gf.DB().Query(c, q, args...)
@@ -2204,20 +2224,18 @@ func setupAPIRoutes(r *gin.Engine) {
             adminV2.GET("/analytics/breakdown", func(c *gin.Context) {
                 uid := strings.TrimSpace(c.Query("userId")); if uid == "" { c.JSON(400, gin.H{"message":"userId required"}); return }
                 account := strings.TrimSpace(c.Query("account"))
-                rows, err := func() ([]map[string]any, error) {
-                    q := `SELECT campaign_id, SUM(clicks) as v FROM ads_metrics_daily WHERE user_id=? AND date>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)`
-                    args := []any{uid}
-                    if account != "" { q += " AND account_id=?"; args = append(args, account) }
-                    q += " GROUP BY campaign_id ORDER BY v DESC LIMIT 10"
-                    return gf.DB().Query(c, q, args...)
-                }()
+                q := `SELECT campaign_id, SUM(clicks) as v FROM ads_metrics_daily WHERE user_id=? AND date>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)`
+                args := []any{uid}
+                if account != "" { q += " AND account_id=?"; args = append(args, account) }
+                q += " GROUP BY campaign_id ORDER BY v DESC LIMIT 10"
+                rows, err := gf.DB().Query(c, q, args...)
                 if err == nil && len(rows) > 0 {
                     out := make([]map[string]any, 0, len(rows)); for _, r := range rows { out = append(out, map[string]any{"campaignId": r["campaign_id"].String(), "value": r["v"].Int()}) }
                     c.JSON(200, gin.H{"topCampaigns": out}); return
                 }
                 // 回退：Top 账户按轮换
-                q := `SELECT b.account_id, COUNT(1) as cnt FROM ads_offer_rotations r JOIN ads_offer_bindings b ON b.id=r.binding_id WHERE b.user_id=?`
-                args := []any{uid}
+                q = `SELECT b.account_id, COUNT(1) as cnt FROM ads_offer_rotations r JOIN ads_offer_bindings b ON b.id=r.binding_id WHERE b.user_id=?`
+                args = []any{uid}
                 if account != "" { q += " AND b.account_id=?"; args = append(args, account) }
                 q += " GROUP BY b.account_id ORDER BY cnt DESC LIMIT 10"
                 rows2, err2 := gf.DB().Query(c, q, args...)
@@ -2823,7 +2841,7 @@ func handleSilentStart(c *gin.Context) {
             ctrl := batchgo.NewController(batchService, gormDB)
             ctrl.SilentStart(c)
             if rr.status == 200 && rr.buf.Len() > 0 {
-                _ = storeRedis.SetEx(c, rkey, rr.buf.String(), 5*time.Minute)
+                _ = storeRedis.Set(c, rkey, rr.buf.String(), 5*time.Minute)
             }
             return
         }
