@@ -16,7 +16,6 @@ import (
     "gofly-admin-v3/internal/system"
     "gofly-admin-v3/utils/gf"
     "gorm.io/datatypes"
-    "gorm.io/gorm"
     "sync"
 )
 
@@ -240,7 +239,7 @@ func (j *AutoClickTickJob) Run(ctx context.Context) error {
                     nowLocal := time.Now().UTC().Add(time.Duration(off) * time.Hour)
                     minuteKey := nowLocal.Format("2006-01-02:15:04")
                     key := fmt.Sprintf("autoads:ac:usage:minute:%s:%s", s.UserID, minuteKey)
-                    _ = storeRedis.IncrBy(ctx, key, 1)
+                    _, _ = storeRedis.Incr(ctx, key)
                     next := nowLocal.Truncate(time.Minute).Add(time.Minute)
                     ttl := time.Until(next)
                     if ttl < 10*time.Second { ttl = 10 * time.Second }

@@ -197,7 +197,7 @@
   - [x] 管理台配置热更新与“问题 URL”面板。
 - 稳定性：
   - [x] 并发/节流热配置：`AutoClick_HTTP_Concurrency`、`AutoClick_Browser_Concurrency`、`AutoClick_MaxStepPerTick`、`AutoClick_User_RPM` 接入（Worker 热读）。
-  - [ ] RateLimitManager 深度接入（plan-based UI 与策略全面接管）。
+  - [x] RateLimitManager 深度接入（plan-based UI 与策略全面接管）。
   - [ ] 压测与回归用例（成功率/延迟/退款准确性/边界条件）。
 
 ---
@@ -218,13 +218,14 @@
   - 问题 URL 面板：查询/筛选/备注；单条与批量操作（优先浏览器、重置计数、清除优先、删除）；一键“诊断”（真实浏览器执行+截图）。
 - 并发/节流：HTTP/浏览器并发、每 tick 最大推进、用户 RPM（可配置）；未配置 RPM 时按套餐（RateLimitManager）回退。
 - 历史统计：Admin 侧最近 N 天（默认 30）汇总视图（图表 + 表格）。
+ - 计划限流接入：/api/v1/siterank 与 /api/v1/batchopen（含 /autoclick/schedules）按套餐限流（RPS 基于 plan 每分钟额度换算），响应头输出 X-RateLimit-*；AutoClick 调度 RPM/并发由 RateLimitManager 的 plan limits 注入。
 
 未完成/部分完成项（建议后续迭代）
 - 执行引擎 V2（部分完成）：
   - 已接入 Node/浏览器执行器（支持代理/Referer/超时/等待/截图/分类）。
   - 待完善：动作脚本（click/type/evaluate 等）、稳定性与资源管理、截图/指标持久化、代理池健康检查与更细审计分类。
-- RateLimitManager 深度接入（计划）：
-  - 在管理台提供计划级（FREE/PRO/MAX）策略配置 UI；由 plan limits 全面接管 AutoClick 的 RPM/并发策略。
+- SSE 可靠性与降级（未完成）：
+  - 前端在 SSE 断开场景缺少自动“降级轮询 + 周期性全量同步”补偿策略，需在 `useAutoClickLiveChannel` 等处补齐并做断线重连/抖动控制。
 - 并发池与隔离：
   - 将 per-tick 并发提升为长期 HTTP/Browser 池，并支持用户/计划维度并发隔离与队列可视化。
 - 压测与回归（未完成）：

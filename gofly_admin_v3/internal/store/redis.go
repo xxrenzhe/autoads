@@ -55,10 +55,18 @@ func (r *Redis) Set(ctx context.Context, key string, value interface{}, expirati
 
 // Delete 删除缓存
 func (r *Redis) Delete(ctx context.Context, keys ...string) error {
-	if len(keys) == 0 {
-		return nil
-	}
-	return r.client.Del(ctx, keys...).Err()
+    if len(keys) == 0 {
+        return nil
+    }
+    return r.client.Del(ctx, keys...).Err()
+}
+
+// Del 兼容别名（与部分调用方保持一致）
+func (r *Redis) Del(ctx context.Context, keys ...string) error {
+    if len(keys) == 0 {
+        return nil
+    }
+    return r.client.Del(ctx, keys...).Err()
 }
 
 // Exists 检查key是否存在
@@ -94,7 +102,12 @@ func (r *Redis) HDel(ctx context.Context, key string, fields ...string) error {
 
 // Incr 自增
 func (r *Redis) Incr(ctx context.Context, key string) (int64, error) {
-	return r.client.Incr(ctx, key).Result()
+    return r.client.Incr(ctx, key).Result()
+}
+
+// IncrBy 按步长自增
+func (r *Redis) IncrBy(ctx context.Context, key string, value int64) (int64, error) {
+    return r.client.IncrBy(ctx, key, value).Result()
 }
 
 // Decr 自减

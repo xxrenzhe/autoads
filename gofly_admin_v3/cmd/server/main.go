@@ -513,6 +513,49 @@ func setupAPIRoutes(r *gin.Engine) {
             tokens.POST("/purchase", handlePurchaseTokens)
         }
 
+        // ===== 基于套餐的 API 限流（按功能分组） =====
+        // 根据 RateLimitManager 的套餐配置，生成 /siterank 与 /batchopen 的计划速率
+        var planResolver = func(c *gin.Context) string {
+            if rateLimitManager == nil { return "FREE" }
+            uid := c.GetString("user_id")
+            if uid == "" { return "FREE" }
+            if us := rateLimitManager.GetUserService(); us != nil {
+                if info, err := us.GetUserByID(uid); err == nil && info != nil {
+                    if info.PlanName != "" { return info.PlanName }
+                    if info.Plan != "" { return info.Plan }
+                }
+            }
+            return "FREE"
+        }
+        var siteRankPlanLimiter gin.HandlerFunc
+        var batchOpenPlanLimiter gin.HandlerFunc
+        if rateLimitManager != nil {
+            // 构造计划速率映射（RPS）
+            pl := rateLimitManager.GetPlanLimits()
+            sRates := map[string]middleware.PlanRateConfig{}
+            bRates := map[string]middleware.PlanRateConfig{}
+            for name, lim := range pl {
+                sRps := float64(lim.SiteRankRequestsPerMinute) / 60.0
+                if sRps < 0 { sRps = 0 }
+                bRps := float64(lim.BatchTasksPerMinute) / 60.0
+                if bRps < 0 { bRps = 0 }
+                sRates[name] = middleware.PlanRateConfig{ RPS: sRps, Burst: lim.SiteRankRequestsPerMinute }
+                bRates[name] = middleware.PlanRateConfig{ RPS: bRps, Burst: lim.BatchTasksPerMinute }
+            }
+            var redisClient *redisv8.Client
+            if storeRedis != nil { redisClient = storeRedis.GetClient() }
+            rlConf := middleware.DefaultRateLimitConfig
+            rlConf.Window = time.Minute
+            // 为 SiteRank 生成中间件
+            srl := middleware.NewRateLimitMiddleware(rlConf, redisClient)
+            srl.SetPlanRates(sRates, redisClient)
+            siteRankPlanLimiter = srl.PlanAPIRateLimit(planResolver)
+            // 为 BatchOpen 生成中间件
+            brl := middleware.NewRateLimitMiddleware(rlConf, redisClient)
+            brl.SetPlanRates(bRates, redisClient)
+            batchOpenPlanLimiter = brl.PlanAPIRateLimit(planResolver)
+        }
+
         // 管理路由（/api/v1/console）
         // 登录（无需 AdminJWT）
         v1.POST("/console/login", admin.AdminLoginHandler)
@@ -904,6 +947,9 @@ func setupAPIRoutes(r *gin.Engine) {
 
 			// ===== BATCHOPEN 原子端点（silent 模式 check/execute） =====
 			batchopen := v1.Group("/batchopen")
+			if batchOpenPlanLimiter != nil {
+				batchopen.Use(batchOpenPlanLimiter)
+			}
 			{
 			// 预检：根据 urls 与 cycleCount 计算总量并检查余额
 			batchopen.POST("/silent:check", func(c *gin.Context) {
@@ -1108,6 +1154,9 @@ func setupAPIRoutes(r *gin.Engine) {
             // 路由前缀：/api/v1/batchopen/autoclick
             {
                 ac := v1.Group("/batchopen/autoclick")
+                if batchOpenPlanLimiter != nil {
+                    ac.Use(batchOpenPlanLimiter)
+                }
                 ac.Use(authMiddleware())
                 ctrl := autoclick.NewController(gormDB)
                 ac.GET("/schedules", ctrl.ListSchedules)
@@ -1239,6 +1288,9 @@ func setupAPIRoutes(r *gin.Engine) {
 
 			// SiteRank路由（避免重复声明变量名）
         siteRankGroup := v1.Group("/siterank")
+        if siteRankPlanLimiter != nil {
+            siteRankGroup.Use(siteRankPlanLimiter)
+        }
         siteRankGroup.Use(authMiddleware())
         {
             siteRankGroup.GET("/rank", handleSiteRank)
