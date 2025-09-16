@@ -129,9 +129,15 @@ ADMIN_PASSWORD=secure-admin-password
 ### SimilarWeb API 配置
 
 ```bash
-# SimilarWeb API（必需）
+# SimilarWeb API
+# 情况A：使用无需鉴权的公开端点（默认）
 SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
-SIMILARWEB_API_KEY=your-similarweb-api-key
+
+# 情况B：使用需要鉴权的企业端点（可选）
+# 如果你的供应商需要 apikey/Authorization，请将 SIMILARWEB_API_URL 指向内部网关，
+# 由网关统一注入密钥后再转发至 SimilarWeb 官方服务。
+# SIMILARWEB_API_URL=https://gw.example.com/sw/api/v1/data
+# SIMILARWEB_API_KEY=your-similarweb-api-key   # 仅供网关或上游使用，Go 客户端默认不直带 key
 
 # 可选配置
 SIMILARWEB_RATE_LIMIT=100
@@ -204,6 +210,10 @@ BACKEND_PROXY_MAX_BODY=2097152
 BACKEND_PROXY_TIMEOUT_MS=15000
 # 允许通过 /ops 访问的后端子路径前缀
 ADMIN_PROXY_ALLOW_PREFIXES=/console,/console/assets,/console/panel,/console/login,/api/v1/console
+
+> 说明：仓库已内置 Next Route Handler 作为管理网关：`/ops/:path*` → `BACKEND_URL/:path*`。
+> - 仅放行 `/console/*` 与 `/api/v1/console/*`（以及 `/admin/*` 兼容路径），权限由 Go 端 `AdminJWT` 判断。
+> - 生产仍建议在外部网关层做精细化限流/黑白名单；内置代理用于快速落地与本地验证。
 ```
 
 ### Internal JWT（Next → Go 身份贯通）

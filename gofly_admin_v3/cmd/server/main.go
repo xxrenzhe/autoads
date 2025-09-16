@@ -27,6 +27,7 @@ import (
 	_ "gofly-admin-v3/utils/drivers/redis"
 
 	"gofly-admin-v3/internal/auth"
+	app "gofly-admin-v3/internal/app"
 	"gofly-admin-v3/internal/batchgo"
 	"gofly-admin-v3/internal/audit"
 	"gofly-admin-v3/internal/cache"
@@ -1451,54 +1452,14 @@ func setupAPIRoutes(r *gin.Engine) {
 
 			// SiteRank路由（避免重复声明变量名）
         siteRankGroup := v1.Group("/siterank")
-        if siteRankPlanLimiter != nil {
-            siteRankGroup.Use(siteRankPlanLimiter)
-        }
+        if siteRankPlanLimiter != nil { siteRankGroup.Use(siteRankPlanLimiter) }
         siteRankGroup.Use(authMiddleware())
         {
             siteRankGroup.GET("/rank", handleSiteRank)
             siteRankGroup.POST("/batch", handleBatchSiteRank)
-            // 原子端点：预检与执行（供前端 BFF 使用）
-            siteRankGroup.POST("/batch:check", func(c *gin.Context) {
-                if tokenSvc == nil { c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"}); return }
-                var body struct { Domains []string `json:"domains"` }
-                if err := c.ShouldBindJSON(&body); err != nil || len(body.Domains) == 0 {
-                    c.JSON(400, gin.H{"code": 400, "message": "invalid request: domains required"}); return
-                }
-                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
-                qty := len(body.Domains)
-                sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "siterank", "batch", qty)
-                if err != nil { c.JSON(500, gin.H{"code": 500, "message": err.Error()}); return }
-                c.JSON(200, gin.H{"sufficient": sufficient, "balance": balance, "required": required, "quantity": qty})
-            })
-            siteRankGroup.POST("/batch:execute", func(c *gin.Context) {
-                if tokenSvc == nil || swebClient == nil { c.JSON(503, gin.H{"code": 5000, "message": "service unavailable"}); return }
-                var body struct { Domains []string `json:"domains"`; Force bool `json:"force"` }
-                if err := c.ShouldBindJSON(&body); err != nil || len(body.Domains) == 0 {
-                    c.JSON(400, gin.H{"code": 400, "message": "invalid request: domains required"}); return
-                }
-                userID := c.GetString("user_id"); if userID == "" { c.JSON(401, gin.H{"code": 401, "message": "unauthorized"}); return }
-                qty := len(body.Domains)
-                sufficient, balance, required, err := tokenSvc.CheckTokenSufficiency(userID, "siterank", "batch", qty)
-                if err != nil { c.JSON(500, gin.H{"code": 500, "message": err.Error()}); return }
-                if !sufficient { c.JSON(402, gin.H{"code": 402, "message": "INSUFFICIENT_TOKENS", "required": required, "balance": balance}); return }
-                if err := tokenSvc.ConsumeTokensByService(userID, "siterank", "batch", qty, "siterank.batch"); err != nil {
-                    c.JSON(402, gin.H{"code": 402, "message": err.Error(), "required": required, "balance": balance}); return
-                }
-                // 执行批量查询
-                ctx := c.Request.Context()
-                data, execErr := swebClient.BatchGetWebsiteData(ctx, userID, body.Domains)
-                if execErr != nil {
-                    // 失败退款（best-effort）
-                    _ = tokenSvc.AddTokens(userID, required, "refund", "siterank batch failed", "")
-                    c.JSON(502, gin.H{"code": 502, "message": execErr.Error()}); return
-                }
-                newBalance, _ := tokenSvc.GetTokenBalance(userID)
-                c.Header("X-Tokens-Consumed", fmt.Sprintf("%d", required))
-                c.Header("X-Tokens-Balance", fmt.Sprintf("%d", newBalance))
-                c.JSON(200, gin.H{"success": true, "results": data, "consumed": required, "balance": newBalance})
-            })
         }
+        // 将原子端点注册迁移到 internal/app，逐步收敛 main.go 内的路由实现
+        app.RegisterSiteRankAtomic(v1, siteRankPlanLimiter, authMiddleware(), swebClient, tokenSvc, gormDB, storeRedis, auditSvc)
 
 		// AdsCenter 路由
 		adscenterGroup := v1.Group("/adscenter")

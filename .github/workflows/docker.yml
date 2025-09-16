@@ -51,6 +51,9 @@ jobs:
     name: Quick Validation - DB
     runs-on: ubuntu-latest
     timeout-minutes: 12
+    env:
+      GOPROXY: https://proxy.golang.org,direct
+      GOSUMDB: sum.golang.org
     services:
       mysql:
         image: mysql:8.0
@@ -84,35 +87,20 @@ jobs:
           cache: true
           cache-dependency-path: gofly_admin_v3/go.sum
 
-      - name: Download Go dependencies (cache)
+      - name: Build Go migrate binary (minimal)
         run: |
           cd gofly_admin_v3
-          go mod download
+          go build -v -trimpath -buildvcs=false -ldflags "-s -w" -o migrate-ci ./cmd/migrate
 
-      - name: Prebuild Go server (warm cache)
-        run: |
-          cd gofly_admin_v3
-          go build -v ./cmd/server
-
-      - name: Install MySQL client
-        run: sudo apt-get update && sudo apt-get install -y mysql-client
-
-      - name: Wait for MySQL
-        run: |
-          for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -ppassword --silent; then
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "MySQL not ready" >&2
-          exit 1
+      # 依赖 services 健康检查，无需额外等待步骤
 
       - name: Run Go database migrations (CI via env URL)
         env:
           DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
           REDIS_URL: redis://127.0.0.1:6379/0
-        run: npm run migrate:backend
+        run: |
+          cd gofly_admin_v3
+          ./migrate-ci
 
   build-and-push:
     name: Build and Push (linux/amd64)

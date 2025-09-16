@@ -80,10 +80,12 @@
 ## 10. 待办与里程碑（可续接）
 
 ### P0 — 基线稳定（本周）
-- [ ] 明确 `/ops/*` 反代规则（预发/生产），更新 README-deployment 与 ClawCloud 配置参考。
+- [x] 明确 `/ops/*` 反代规则（预发/生产），并提供内置实现。
+  - 已完成：新增 Next Route Handler `apps/frontend/src/app/ops/[...path]/route.ts`，作为内置管理网关；并在 `README-deployment.md` 与 `docs/production-env-config.md` 补充说明。
   - 完成标准：能从前端访问 `/ops/api/v1/console/*` 与 `/ops/console`。
-- [ ] 确认 Token/订阅事实来源（SoT）：Go 为唯一计费/扣费与只读查询服务；Next 仅读取合并。
-  - 完成标准：Next 不再写 Token/订阅；文档标注数据流与表结构来源。
+- [x] 确认 Token/订阅事实来源（SoT）：Go 为唯一计费/扣费与只读查询服务；Next 仅读取合并。
+  - 已完成：新增 `docs/ADR-0001-SoT-Tokens-Subscriptions.md`；生产/预发通过中间件禁用 Next 写入（除白名单），开发/显式变量可开启。
+  - 完成标准：Next 不再写 Token/订阅（除开发/显式允许外）；文档标注数据流与表结构来源。
 - [ ] SimilarWeb 接入校验：`SIMILARWEB_API_URL` 指向网关，网关注入 apikey；压测“批量”路径并验证限流/重试。
   - 完成标准：100 域名/批可在限流不触发 429 的阈值内稳定返回。
 
@@ -112,4 +114,3 @@
 - 入口：`docker-entrypoint.sh`，`Dockerfile.standalone`
 
 —— 以上为可执行优化方案。落地顺序建议按 P0→P1→P2 推进，任何改动遵循 KISS 与“Never break userspace”。
-
