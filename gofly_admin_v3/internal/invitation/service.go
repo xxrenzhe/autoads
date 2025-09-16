@@ -114,7 +114,7 @@ func (s *InvitationService) ProcessInvitation(inviteCode, newUserID string) erro
 		}
 
 		// 2. 创建邀请记录
-		invitation := &Invitation{
+        invitation := &Invitation{
 			ID:                 uuid.New().String(),
 			InviterID:          inviter.ID,
 			InviteeID:          newUserID,
@@ -122,10 +122,10 @@ func (s *InvitationService) ProcessInvitation(inviteCode, newUserID string) erro
 			Status:             InvitationStatusCompleted,
 			InviterRewardGiven: false,
 			InviteeRewardGiven: false,
-			RewardDays:         30,
-			TokenReward:        100, // 固定100个Token奖励
-			CreatedAt:          now,
-		}
+            RewardDays:         30,
+            TokenReward:        0, // 不再发放Token奖励
+            CreatedAt:          now,
+        }
 
 		if err := tx.Create(invitation).Error; err != nil {
 			return fmt.Errorf("创建邀请记录失败: %w", err)
@@ -141,14 +141,7 @@ func (s *InvitationService) ProcessInvitation(inviteCode, newUserID string) erro
 			return fmt.Errorf("给邀请者Pro套餐失败: %w", err)
 		}
 
-		// 5. 给双方Token奖励
-		if err := s.tokenService.AddTokens(newUserID, invitation.TokenReward, "invite", "邀请注册奖励"); err != nil {
-			return fmt.Errorf("给被邀请用户Token奖励失败: %w", err)
-		}
-
-		if err := s.tokenService.AddTokens(inviter.ID, invitation.TokenReward, "invite", "邀请好友奖励"); err != nil {
-			return fmt.Errorf("给邀请者Token奖励失败: %w", err)
-		}
+        // 5. 不再发放Token奖励（仅发放Pro套餐时长）
 
 		// 6. 标记奖励已发放
 		invitation.InviterRewardGiven = true

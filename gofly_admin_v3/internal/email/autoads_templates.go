@@ -97,16 +97,15 @@ func SendPlanExpiredEmail(to, username, planName, expiryDate string) error {
 }
 
 // SendInvitationRewardEmail 发送邀请奖励邮件
-func SendInvitationRewardEmail(to, username, inviteeName string, rewardTokens, rewardDays int) error {
-	es := GetEmailService()
-	data := map[string]interface{}{
-		"Username":     username,
-		"InviteeName":  inviteeName,
-		"RewardTokens": rewardTokens,
-		"RewardDays":   rewardDays,
-		"AppName":      "AutoAds",
-	}
-	return es.SendTemplate([]string{to}, "invitation_reward", data)
+func SendInvitationRewardEmail(to, username, inviteeName string, rewardDays int) error {
+    es := GetEmailService()
+    data := map[string]interface{}{
+        "Username":     username,
+        "InviteeName":  inviteeName,
+        "RewardDays":   rewardDays,
+        "AppName":      "AutoAds",
+    }
+    return es.SendTemplate([]string{to}, "invitation_reward", data)
 }
 
 // SendSecurityAlertEmail 发送安全提醒邮件
@@ -358,7 +357,7 @@ AutoAds 团队
 这是一封自动发送的邮件，请勿回复。
 `
 
-	invitationRewardHTMLTemplate = `
+    invitationRewardHTMLTemplate = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -385,7 +384,6 @@ AutoAds 团队
             <p>恭喜您！您邀请的用户 <strong>{{.InviteeName}}</strong> 已成功注册{{.AppName}}。</p>
             
             <div class="reward">
-                <div class="reward-item">🎁 Token奖励：<strong>{{.RewardTokens}} tokens</strong></div>
                 <div class="reward-item">⏰ Pro套餐时长：<strong>{{.RewardDays}} 天</strong></div>
             </div>
             
@@ -404,7 +402,7 @@ AutoAds 团队
 </html>
 `
 
-	invitationRewardTextTemplate = `
+    invitationRewardTextTemplate = `
 🎉 邀请奖励已到账
 
 亲爱的 {{.Username}}，
@@ -412,7 +410,6 @@ AutoAds 团队
 恭喜您！您邀请的用户 {{.InviteeName}} 已成功注册{{.AppName}}。
 
 您获得的奖励：
-🎁 Token奖励：{{.RewardTokens}} tokens
 ⏰ Pro套餐时长：{{.RewardDays}} 天
 
 奖励已自动添加到您的账户中，您可以立即使用。

@@ -161,5 +161,4 @@ VALUES
 -- 兼容历史服务名（chengelink），与 adscenter 等价
 ('chengelink', 'extract_link', 1, '兼容：chengelink 链接提取消费1个Token'),
 ('chengelink', 'update_ad', 3, '兼容：chengelink 广告更新每个广告消费3个Token'),
-('invitation', 'reward', 50, '邀请成功奖励50个Token'),
 ('checkin', 'daily', 10, '每日签到奖励10个Token');

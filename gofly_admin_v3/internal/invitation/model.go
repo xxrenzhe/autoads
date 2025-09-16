@@ -33,7 +33,7 @@ type Invitation struct {
 	InviterRewardGiven bool             `json:"inviter_reward_given" gorm:"default:false"`
 	InviteeRewardGiven bool             `json:"invitee_reward_given" gorm:"default:false"`
 	RewardDays         int              `json:"reward_days" gorm:"default:30"`
-	TokenReward        int              `json:"token_reward" gorm:"default:100"`
+    TokenReward        int              `json:"token_reward" gorm:"default:0"`
 	CreatedAt          time.Time        `json:"created_at"`
 }
 
