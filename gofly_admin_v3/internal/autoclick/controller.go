@@ -1,6 +1,7 @@
 package autoclick
 
 import (
+    "encoding/json"
     "net/http"
     "time"
     "github.com/gin-gonic/gin"
@@ -111,9 +112,11 @@ func (c *Controller) DisableSchedule(ctx *gin.Context) {
     ctx.JSON(200, gin.H{"success": true})
 }
 
-func mustJSON(v any) datatypes.JSON { b, _ := datatypes.JSONType[v]{}.GormDataType(); _ = b; j, _ := datatypes.JSONMarshal(v); return datatypes.JSON(j) }
+func mustJSON(v any) datatypes.JSON {
+    b, _ := json.Marshal(v)
+    return datatypes.JSON(b)
+}
 
 func ifEmpty(s string, def string) string { if s == "" { return def }; return s }
 func ifZero(i int, def int) int { if i == 0 { return def }; return i }
 func ifNil[T any](p *T, zero func() string, val func() string) string { if p == nil { return zero() }; return val() }
-

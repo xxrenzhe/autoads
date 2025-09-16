@@ -185,26 +185,26 @@ func (s *DashboardService) GetTaskTrend(days int) ([]DailyTaskStats, error) {
 	dateMap := make(map[string]*DailyTaskStats)
 
 	for _, stat := range batchStats {
-		dateMap[stat.Date] = &DailyTaskStats{
-			Date:            stat.Date,
-			BatchTasks:      stat.BatchTasks,
-			SiteRankQueries: 0,
-			ChengeLinkTasks: 0,
-		}
+        dateMap[stat.Date] = &DailyTaskStats{
+            Date:            stat.Date,
+            BatchTasks:      stat.BatchTasks,
+            SiteRankQueries: 0,
+            AdsCenterTasks:  0,
+        }
 	}
 
 	for _, stat := range siteRankStats {
 		if existing, exists := dateMap[stat.Date]; exists {
 			existing.SiteRankQueries = stat.SiteRankQueries
 		} else {
-			dateMap[stat.Date] = &DailyTaskStats{
-				Date:            stat.Date,
-				BatchTasks:      0,
-				SiteRankQueries: stat.SiteRankQueries,
-				ChengeLinkTasks: 0,
-			}
-		}
-	}
+            dateMap[stat.Date] = &DailyTaskStats{
+                Date:            stat.Date,
+                BatchTasks:      0,
+                SiteRankQueries: stat.SiteRankQueries,
+                AdsCenterTasks:  0,
+            }
+        }
+    }
 
 	// 转换为切片
 	for _, stat := range dateMap {

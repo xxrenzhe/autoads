@@ -254,14 +254,18 @@ func main() {
         } else {
             storeDB = sdb
             gormDB = sdb.DB
+            // 设置全局默认 DB 供内部包（如定时任务）使用
+            store.SetDefaultGormDB(gormDB)
             log.Println("✅ 数据库连接成功")
 
 			// Redis
 			if r, err := store.NewRedis(&cfg2.Redis); err != nil {
 				log.Fatalf("Redis 初始化失败（为必选项）: %v", err)
 			} else {
-				storeRedis = r
-				if storeRedis == nil {
+                storeRedis = r
+                // 设置全局默认 Redis 供内部包使用
+                store.SetDefaultRedis(storeRedis)
+                if storeRedis == nil {
 					log.Fatalf("Redis 未启用（为必选项），请在配置中开启 redis.enable 并正确配置连接")
 				}
 				log.Println("✅ Redis 初始化成功")

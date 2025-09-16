@@ -65,9 +65,8 @@ func localDateTime(t time.Time, tz string) (date string, hour int) {
 
 func (j *AutoClickTickJob) Run(ctx context.Context) error {
     // 依赖全局 DB/Redis
-    db := gf.DB()
-    var gdb *gorm.DB
-    if v, ok := db.GetOrm().(*gorm.DB); ok { gdb = v } else { return nil }
+    gdb := store.GetGormDB()
+    if gdb == nil { return nil }
     storeRedis := store.GetRedis()
 
     var schedules []AutoClickSchedule

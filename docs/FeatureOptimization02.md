@@ -185,15 +185,19 @@
   - [x] 新增/完善 AutoClick 计划任务页面（表格/新增/编辑/删除/启停/查看）。
   - [x] 在 AutoClick 表单补齐代理/Referer 字段（与 Silent 形态一致）。
   - [x] 对接 SSE：`useAutoClickLiveProgress` → BFF 透传 `/api/v1/batchopen/tasks/:id/live`（同时兼容 `/api/autoclick/*`）。
+  - [x] 管理台“问题 URL”面板增强（备注/批量操作/清除优先/诊断）。
+  - [x] 历史统计视图（最近 N 天汇总，图表 + 表格）。
 - 后端：
   - [x] DB 迁移：五张表（schedules/daily_plans/executions/execution_snapshots/url_failures）。
   - [x] 计划任务 CRUD/启停 API；权限校验按 user_id（`/api/v1/batchopen/autoclick/schedules`）。
   - [x] 执行引擎 V1（分配/HTTP 执行/计费/退款/快照/幂等/恢复）最小实现（每分钟 tick 推进、Token 扣费/失败退款、小时快照、断点可继续）。
   - [x] Redis Key 与 per-URL 切换实现；prefer_browser TTL=7d；连续失败归档“问题 URL”。
-  - [x] SSE 推送：Redis Pub/Sub 发布执行事件；同时提供 `/api/v1/batchopen/tasks/:id/live` 轮询型 SSE 通道；BFF 已透传。
+  - [x] SSE 推送：Redis Pub/Sub 发布执行事件；提供 `/api/v1/batchopen/tasks/:id/live`（轮询型）与 `/api/v1/batchopen/autoclick/executions/live`（直连 Redis）两种通道；BFF 已透传。
+  - [x] 浏览器执行器接入（最小）：通过 `AutoClick_Browser_Executor_URL` 调用外部 Node 执行器，支持代理/Referer/超时/等待与错误分类；未配置时保持占位逻辑。
   - [x] 管理台配置热更新与“问题 URL”面板。
 - 稳定性：
-  - [ ] 限流/并发/队列参数默认值与热配置接入。
+  - [x] 并发/节流热配置：`AutoClick_HTTP_Concurrency`、`AutoClick_Browser_Concurrency`、`AutoClick_MaxStepPerTick`、`AutoClick_User_RPM` 接入（Worker 热读）。
+  - [ ] RateLimitManager 深度接入（plan-based UI 与策略全面接管）。
   - [ ] 压测与回归用例（成功率/延迟/退款准确性/边界条件）。
 
 ---
@@ -208,23 +212,23 @@
 - AutoClick 前端：任务中心（表格/新增/编辑/删除/启停/查看）；表单包含 Referer/代理；SSE 实时进度已接通（BFF → `/api/v1/batchopen/tasks/:id/live`）。
 - AutoClick 后端：
   - 五表迁移与 CRUD/启停 API；执行引擎 V1（按日分配→小时推进→计费/失败退款→小时快照→断点恢复）；per-URL 切换（Redis失败计数，prefer_browser=7d）；问题 URL 归档。
-  - SSE：提供轮询型 SSE 通道；同时发布 Redis Pub/Sub 事件用于生态扩展。
+- SSE：提供轮询型 SSE 与直连 Redis 的订阅；新增 execution/schedule 粒度频道，降低广播开销。
 - 管理台：
   - 系统配置热更新：`AutoClick_Count_Variance_Hour`、`Proxy_URL_{COUNTRY}`（含 US 起步）支持在线更新并热生效（DB→Redis Pub/Sub→缓存刷新→Worker 读取）。
-  - 问题 URL 面板：查询/筛选/备注；单条与批量操作（优先浏览器、重置计数、清除优先、删除）。
+  - 问题 URL 面板：查询/筛选/备注；单条与批量操作（优先浏览器、重置计数、清除优先、删除）；一键“诊断”（真实浏览器执行+截图）。
+- 并发/节流：HTTP/浏览器并发、每 tick 最大推进、用户 RPM（可配置）；未配置 RPM 时按套餐（RateLimitManager）回退。
+- 历史统计：Admin 侧最近 N 天（默认 30）汇总视图（图表 + 表格）。
 
 未完成/部分完成项（建议后续迭代）
-- 执行引擎 V2（未完成）：
-  - 浏览器执行器（Puppeteer/Chromium）接入与稳定化；当前 `BrowserExecutor` 为占位实现（80% 成功率模拟）。
-  - 代理池健康检查、失败分类细化（captcha_detected、browser_required 等）与审计上报。
-- SSE 通道（部分完成）：
-  - 目前前端使用“轮询型 SSE”获取 DB 聚合进度；未直接消费 Redis Pub/Sub。可新增后端 SSE 直连 Redis 以降低延迟与数据库压力。
-- 历史数据可视化（未完成）：
-  - “最近 30 天”历史汇总页未实现，建议补充图表与列表。
-- 并发/限流/队列（未完成）：
-  - RateLimitManager 对 AutoClick 的 RPM/并发配额与热配置尚未打通；执行器并发/队列参数未暴露热更新。
+- 执行引擎 V2（部分完成）：
+  - 已接入 Node/浏览器执行器（支持代理/Referer/超时/等待/截图/分类）。
+  - 待完善：动作脚本（click/type/evaluate 等）、稳定性与资源管理、截图/指标持久化、代理池健康检查与更细审计分类。
+- RateLimitManager 深度接入（计划）：
+  - 在管理台提供计划级（FREE/PRO/MAX）策略配置 UI；由 plan limits 全面接管 AutoClick 的 RPM/并发策略。
+- 并发池与隔离：
+  - 将 per-tick 并发提升为长期 HTTP/Browser 池，并支持用户/计划维度并发隔离与队列可视化。
 - 压测与回归（未完成）：
-  - 成功率/延迟的压测脚本与基线指标；计费与退款一致性回归用例；SSE 稳定性与丢失补偿验证。
+  - 成功率/延迟/退款一致性回归；SSE 稳定性与丢失补偿；不同并发表的资源消耗与基线指标。
 
 影响评估与建议
 - 当前交付已满足“可用”的计划任务与在线运维闭环；不影响主流程使用。

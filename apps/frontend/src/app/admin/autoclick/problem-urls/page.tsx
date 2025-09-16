@@ -15,6 +15,21 @@ export default function ProblemUrlsPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [editingNotesValue, setEditingNotesValue] = useState('');
+  const [diagOpen, setDiagOpen] = useState(false);
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagResult, setDiagResult] = useState<any>(null);
+  const [diagUrl, setDiagUrl] = useState<string>('');
+  const runDiagnosis = async (url: string) => {
+    setDiagOpen(true); setDiagLoading(true); setDiagResult(null); setDiagUrl(url);
+    try {
+      const res = await fetch('/api/executor/puppeteer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, waitUntil: 'domcontentloaded', timeoutMs: 20000, screenshot: true, fullPage: false }) });
+      const data = await res.json();
+      setDiagResult(data);
+    } catch (e) {
+      setDiagResult({ ok: false, error: 'diagnosis failed' })
+    }
+    setDiagLoading(false);
+  }
 
   const toggle = (id: string) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   const toggleAll = () => {
@@ -83,6 +98,7 @@ export default function ProblemUrlsPage() {
                         {r.preferBrowserUntil && (
                           <button className={UI_CONSTANTS.buttons.outline} onClick={async () => { try { await fetch(`/ops/api/v1/console/autoclick/url-failures/${r.id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ clearPrefer: true }) }); location.reload() } catch {} }}>清除优先</button>
                         )}
+                        <button className={UI_CONSTANTS.buttons.outline} onClick={() => runDiagnosis(r.url)}>诊断</button>
                         <button className={UI_CONSTANTS.buttons.outline} onClick={() => { setEditingNotesId(r.id); setEditingNotesValue(r.notes || '') }}>备注</button>
                         <button className={UI_CONSTANTS.buttons.danger} onClick={() => { if (confirm('确认删除记录？')) remove.mutate(r.id) }} disabled={remove.isPending}>删除</button>
                       </div>
@@ -106,6 +122,37 @@ export default function ProblemUrlsPage() {
               } catch {}
             }}>保存</button>
             <button className={UI_CONSTANTS.buttons.outline} onClick={() => setEditingNotesId(null)}>取消</button>
+          </div>
+        )}
+
+        {diagOpen && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl w-[720px] max-w-[95vw] p-4 shadow-xl">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold">诊断：{diagUrl}</h3>
+                <button className={UI_CONSTANTS.buttons.outline} onClick={() => setDiagOpen(false)}>关闭</button>
+              </div>
+              {diagLoading ? (
+                <div className="text-gray-500 p-6">诊断中...</div>
+              ) : diagResult ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-700">
+                    <div>结果：{diagResult.ok ? '成功' : '失败'}</div>
+                    <div>分类：{diagResult.classification || '-'}</div>
+                    <div>HTTP：{diagResult.httpStatus ?? '-'}</div>
+                    <div>最终URL：{diagResult.finalUrl || '-'}</div>
+                    <div>耗时：{diagResult.durationMs} ms</div>
+                  </div>
+                  {diagResult.screenshotBase64 && (
+                    <div className="border rounded overflow-hidden">
+                      <img src={`data:image/jpeg;base64,${diagResult.screenshotBase64}`} alt="screenshot" />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-gray-500 p-6">无结果</div>
+              )}
+            </div>
           </div>
         )}
 
