@@ -20,13 +20,15 @@ type AdsCenterTask struct {
 	ExtractedCount   int                 `json:"extracted_count" gorm:"default:0"`
 	UpdatedCount     int                 `json:"updated_count" gorm:"default:0"`
 	FailedCount      int                 `json:"failed_count" gorm:"default:0"`
-	TokensConsumed   int                 `json:"tokens_consumed" gorm:"default:0"`
-	ExecutionLog     []ExecutionLogEntry `json:"execution_log" gorm:"serializer:json"`
-	ErrorMessage     string              `json:"error_message" gorm:"type:text"`
-	StartedAt        *time.Time          `json:"started_at"`
-	CompletedAt      *time.Time          `json:"completed_at"`
-	CreatedAt        time.Time           `json:"created_at"`
-	UpdatedAt        time.Time           `json:"updated_at"`
+    TokensConsumed   int                 `json:"tokens_consumed" gorm:"default:0"`
+    ExecutionLog     []ExecutionLogEntry `json:"execution_log" gorm:"serializer:json"`
+    ErrorMessage     string              `json:"error_message" gorm:"type:text"`
+    DefaultCountry   string              `json:"default_country" gorm:"type:varchar(8)"`
+    LinkCountries    map[string]string   `json:"link_countries" gorm:"serializer:json"`
+    StartedAt        *time.Time          `json:"started_at"`
+    CompletedAt      *time.Time          `json:"completed_at"`
+    CreatedAt        time.Time           `json:"created_at"`
+    UpdatedAt        time.Time           `json:"updated_at"`
 }
 
 // TaskStatus 任务状态
@@ -43,22 +45,27 @@ const (
 
 // ExtractedLink 提取的链接信息
 type ExtractedLink struct {
-	AffiliateURL string `json:"affiliate_url"`
-	FinalURL     string `json:"final_url"`
-	Status       string `json:"status"` // success, failed
-	ErrorMessage string `json:"error_message,omitempty"`
-	ExtractedAt  string `json:"extracted_at"`
+    AffiliateURL string `json:"affiliate_url"`
+    FinalURL     string `json:"final_url"`
+    Status       string `json:"status"` // success, failed
+    ErrorMessage string `json:"error_message,omitempty"`
+    Classification string `json:"classification,omitempty"`
+    DurationMs     int    `json:"duration_ms,omitempty"`
+    Country        string `json:"country,omitempty"`
+    ExtractedAt  string `json:"extracted_at"`
 }
 
 // AdUpdateResult 广告更新结果
 type AdUpdateResult struct {
-	AdID         string `json:"ad_id"`
-	AdName       string `json:"ad_name"`
-	OldFinalURL  string `json:"old_final_url"`
-	NewFinalURL  string `json:"new_final_url"`
-	Status       string `json:"status"` // success, failed, skipped
-	ErrorMessage string `json:"error_message,omitempty"`
-	UpdatedAt    string `json:"updated_at"`
+    AdID         string `json:"ad_id"`
+    AdName       string `json:"ad_name"`
+    OldFinalURL  string `json:"old_final_url"`
+    NewFinalURL  string `json:"new_final_url"`
+    Status       string `json:"status"` // success, failed, skipped
+    ErrorMessage string `json:"error_message,omitempty"`
+    Classification string `json:"classification,omitempty"`
+    DurationMs     int    `json:"duration_ms,omitempty"`
+    UpdatedAt    string `json:"updated_at"`
 }
 
 // ExecutionLogEntry 执行日志条目

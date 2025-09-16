@@ -58,10 +58,11 @@
 ## 7. AdsCenter 现状与优化
 - 现状
   - v1 能力打通：`/api/v1/adscenter/create|tasks|tasks/:id` 与 minimal 的 `/accounts|/configurations|/executions`。
-  - 执行依赖外部执行器（`ADSCENTER_EXECUTOR_URL`）或本地 Node 占位器（入口脚本可起）。
+  - 解析最终 URL 已统一走本地 Playwright 执行器（同容器内），支持“每条链接指定国家 → 选择对应代理 IP”，并强制移除 Referer；后端记录 `classification/durationMs`，指标端点 `/api/v1/adscenter/metrics` 增加“分阶段耗时与错误分类”聚合。
+  - 可选：广告更新阶段仍可接入外部执行器（`ADSCENTER_EXECUTOR_URL`）以满足特定出口管控与弹性扩缩容（默认不需要）。
 - 优化方向
-  - 替换占位执行为真实外部服务（或统一 Playwright 执行器），标准化“模板→执行→追踪→报表”事件流。
-  - 指标采集与报表：用 Job 固化日/周统计，Next 侧仅消费只读端点。
+  - 指标与报表：用 Job 固化按日/周统计，Next 仅消费只读端点；进一步补充 per-item 耗时（更新阶段）。
+  - 前端表单增强：支持 `links[{affiliate_url,country}]` 的批量录入（后端已支持）。
 
 ## 8. 认证与后台
 - 用户：NextAuth v5（Google），本地邮箱注册禁用；登录后 Next → Internal JWT → Go 鉴权。
@@ -76,6 +77,7 @@
 - 反向代理（关键）：
   - `/api/go/*` → Go `BACKEND_URL`；
   - `/ops/*` → Go 根（从而 `/ops/api/v1/console/*` 命中后台 API，`/ops/console` 命中静态管理前端）。
+  - 浏览器执行器：单镜像内置并仅监听 127.0.0.1；按国家映射代理（`PUPPETEER_PROXY_BY_COUNTRY`/`PUPPETEER_PROXY_DEFAULT`），详见 `docs/production-env-config.md` “浏览器执行器与国家代理映射（生产）”。
 
 ## 10. 待办与里程碑（可续接）
 
@@ -100,7 +102,8 @@
 - [~] AdsCenter：执行器统一与指标完善（进行中）
   - [x] 新增 `POST /api/v1/adscenter/executions` 使用服务创建并启动（阶段性扣费由服务处理）。
   - [x] 性能/状态端点：`GET /api/v1/adscenter/metrics` 展示分布与耗时分位；管理台 `/admin/system/performance` 展示。
-  - [ ] 将占位/多路径执行彻底替换为统一的真实执行器（Playwright/外部服务），并上报分阶段耗时与错误分类。
+  - [x] 将占位/多路径执行彻底替换为统一的真实执行器（Playwright/外部服务），并上报分阶段耗时与错误分类。
+    - 已实现：新增外部执行器 HTTP 客户端，服务层统一使用 `PUPPETEER_EXECUTOR_URL` 调用浏览器执行器（新增 `/resolve` 端点）；执行结果记录 `classification/durationMs`；`/api/v1/adscenter/metrics` 增加“任务分布 + 分阶段耗时 + 错误分类”聚合。
 
 ### P2 — 体验与可观测（两周+）
 - [x] 管理台观测：BFF 侧聚合上游 `X-RateLimit-*`、`x-request-id` 并在 `/admin/system/observability` 展示（最近 100 条）。
@@ -109,19 +112,24 @@
   - [x] SiteRank 缓存洞察：`GET /api/v1/siterank/cache-insights`（命中率估算与 TTL 建议），页面 `/admin/system/cache-insights` 展示。
   - [x] 执行性能：`GET /api/v1/batchopen/metrics`、`GET /api/v1/adscenter/metrics`（状态分布与耗时分位），页面 `/admin/system/performance` 展示。
   - [x] AutoClick 队列：`GET /api/v1/autoclick/queue/metrics`（池状态与近100条执行分布）。
-  - [ ] 深度指标（缓存命中率按时间序列、执行阶段耗时拆解、按用户/任务分布）与可视化，后续增强。
+  - [x] 深度指标（缓存命中率时间序列、执行阶段耗时细分、按用户/任务分布、per-item 更新耗时）：
+    - 新增 `GET /api/v1/siterank/cache-timeseries?window=24h&bucket=1h[&group_by=user]`，提供缓存命中率时间序列与 Top 用户分布。
+    - 扩展 `GET /api/v1/adscenter/metrics`：输出 `tasks.phase_duration_ms`（提取/更新分阶段 p50/p90/p99）与 `tasks.byUser`（最近200条任务的按用户分布与平均耗时）。
+    - 新增 per-item 更新耗时采集（可选）：设置 `ADSCENTER_MEASURE_PER_ITEM=true` 时逐项更新并记录 `updateResults[].duration_ms`（默认保持批量更新）。
 
 ## 进度与评估
 - 已完成
   - /ops 管理网关内置，避免外部网关依赖；SoT 决策固化并在生产/预发禁用 Next 写入；路由归拢完成 SiteRank/BatchOpen/v2 快照的迁移。
   - AdsCenter v1 minimal 切换至 internal；新增执行创建端点接入服务层；BatchOpen `start` 入口已拆分三模式并完成原子扣费与创建启动。
-  - 观测与统计：BFF 观测页（限流/请求ID）、SiteRank 缓存洞察与 TTL 建议、BatchOpen/AdsCenter 性能分布、AutoClick 队列/池状态页面均已上线。
+  - AdsCenter 执行器统一：本地 Playwright 执行器解析最终 URL（每链接按国家选代理、Referer 置空），后端记录分类/耗时；`/api/v1/adscenter/metrics` 新增“任务分布 + 分阶段耗时 + 错误分类”聚合。
+  - 观测与统计：BFF 观测页（限流/请求ID）、SiteRank 缓存洞察与 TTL 建议、BatchOpen/AdsCenter 性能分布、AutoClick 队列/池状态页面已上线。
 - 进行中/可快速完成
-  - AdsCenter 执行器统一（Playwright/外部服务）与指标完善（当前已可创建/启动，执行器与指标仍待推进）。
+  - AdsCenter 前端表单支持 `links[{affiliate_url,country}]` 的批量录入与校验（后端已支持）。
+  - Go 侧观测补全：pprof、Prometheus 指标导出、结构化日志（含 request-id）。
 - 暂缓/按需触发
   - SimilarWeb 批量压测与网关注入 apikey：公开端点无需 apikey，且用户暂不需要压测，保留文档指引，后续再启。
 - 待规划
-  - 深度指标与可视化增强：缓存命中率按时间序列、执行阶段耗时拆解（提取/解析/更新）、按用户/任务的粒度分布与报表下载。
+  - 深度指标与可视化增强：缓存命中率按时间序列、执行阶段耗时拆解（提取/解析/更新）、按用户/任务粒度分布与报表下载；AdsCenter 更新阶段 per-item 耗时采集。
 
 ## 11. 风险与应对
 - SimilarWeb 官方无“批处理端点”，本系统通过并发单域拉取实现“批量效果”，需严格控制并发与配额。

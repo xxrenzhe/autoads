@@ -197,7 +197,7 @@ func TestAdsPowerClient(t *testing.T) {
 	t.Run("模拟客户端 - 链接提取", func(t *testing.T) {
 		client := NewMockAdsPowerClient()
 
-		result, err := client.ExtractFinalURL("profile-001", "https://affiliate.com/redirect?url=target")
+        result, err := client.ExtractFinalURL("profile-001", "https://affiliate.com/redirect?url=target", nil)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
@@ -410,7 +410,7 @@ func BenchmarkLinkExtraction(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := client.ExtractFinalURL("profile-001", "https://affiliate.com/test")
+        _, err := client.ExtractFinalURL("profile-001", "https://affiliate.com/test", nil)
 		if err != nil {
 			b.Fatal(err)
 		}

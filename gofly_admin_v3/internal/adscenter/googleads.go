@@ -55,9 +55,10 @@ type UpdateAdRequest struct {
 
 // UpdateAdResponse 更新广告响应
 type UpdateAdResponse struct {
-	Success      bool   `json:"success"`
-	AdID         string `json:"ad_id"`
-	ErrorMessage string `json:"error_message,omitempty"`
+    Success      bool   `json:"success"`
+    AdID         string `json:"ad_id"`
+    ErrorMessage string `json:"error_message,omitempty"`
+    Classification string `json:"classification,omitempty"`
 }
 
 // DailyMetric 每日聚合指标
@@ -265,14 +266,15 @@ func (c *GoogleAdsClient) UpdateAdFinalURL(adID, newFinalURL string) (*UpdateAdR
 		"operations": operations,
 	}
 
-	body, err := c.makeAPIRequest("POST", "ads:mutate", requestData)
-	if err != nil {
-		return &UpdateAdResponse{
-			Success:      false,
-			AdID:         adID,
-			ErrorMessage: fmt.Sprintf("API请求失败: %v", err),
-		}, nil
-	}
+    body, err := c.makeAPIRequest("POST", "ads:mutate", requestData)
+    if err != nil {
+        return &UpdateAdResponse{
+            Success:      false,
+            AdID:         adID,
+            ErrorMessage: fmt.Sprintf("API请求失败: %v", err),
+            Classification: "upstream_error",
+        }, nil
+    }
 
 	// 解析响应
 	var mutateResp struct {
@@ -284,31 +286,34 @@ func (c *GoogleAdsClient) UpdateAdFinalURL(adID, newFinalURL string) (*UpdateAdR
 		} `json:"partialFailureError"`
 	}
 
-	if err := json.Unmarshal(body, &mutateResp); err != nil {
-		return &UpdateAdResponse{
-			Success:      false,
-			AdID:         adID,
-			ErrorMessage: fmt.Sprintf("解析响应失败: %v", err),
-		}, nil
-	}
+    if err := json.Unmarshal(body, &mutateResp); err != nil {
+        return &UpdateAdResponse{
+            Success:      false,
+            AdID:         adID,
+            ErrorMessage: fmt.Sprintf("解析响应失败: %v", err),
+            Classification: "upstream_error",
+        }, nil
+    }
 
 	// 检查是否有错误
-	if mutateResp.PartialFailureError.Message != "" {
-		return &UpdateAdResponse{
-			Success:      false,
-			AdID:         adID,
-			ErrorMessage: mutateResp.PartialFailureError.Message,
-		}, nil
-	}
+    if mutateResp.PartialFailureError.Message != "" {
+        return &UpdateAdResponse{
+            Success:      false,
+            AdID:         adID,
+            ErrorMessage: mutateResp.PartialFailureError.Message,
+            Classification: "validation_error",
+        }, nil
+    }
 
 	// 检查是否有结果
-	if len(mutateResp.Results) == 0 {
-		return &UpdateAdResponse{
-			Success:      false,
-			AdID:         adID,
-			ErrorMessage: "没有更新任何广告",
-		}, nil
-	}
+    if len(mutateResp.Results) == 0 {
+        return &UpdateAdResponse{
+            Success:      false,
+            AdID:         adID,
+            ErrorMessage: "没有更新任何广告",
+            Classification: "upstream_error",
+        }, nil
+    }
 
 	return &UpdateAdResponse{
 		Success: true,

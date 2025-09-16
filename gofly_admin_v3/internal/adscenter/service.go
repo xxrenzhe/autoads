@@ -1,12 +1,14 @@
 package adscenter
 
 import (
-	"fmt"
-	"sync"
-	"time"
+    "fmt"
+    "os"
+    "strings"
+    "sync"
+    "time"
 
-	"github.com/google/uuid"
-	"gorm.io/gorm"
+    "github.com/google/uuid"
+    "gorm.io/gorm"
 )
 
 // AdsCenterService 自动化广告服务
@@ -51,22 +53,37 @@ func (s *AdsCenterService) CreateTask(userID string, req *CreateTaskRequest) (*A
 	}
 
 	// 创建任务
+    // 汇总链接与国家映射
+    links := make([]string, 0)
+    linkCountries := map[string]string{}
+    if len(req.Links) > 0 {
+        for _, li := range req.Links {
+            if strings.TrimSpace(li.AffiliateURL) == "" { continue }
+            links = append(links, li.AffiliateURL)
+            if li.Country != "" { linkCountries[li.AffiliateURL] = strings.ToUpper(li.Country) }
+        }
+    } else {
+        links = append(links, req.AffiliateLinks...)
+    }
+    // 任务
     task := &AdsCenterTask{
-		ID:               uuid.New().String(),
-		UserID:           userID,
-		Name:             req.Name,
-		Status:           TaskStatusPending,
-		AffiliateLinks:   req.AffiliateLinks,
-		AdsPowerProfile:  req.AdsPowerProfile,
-		GoogleAdsAccount: req.GoogleAdsAccount,
-		TotalLinks:       len(req.AffiliateLinks),
-		ExecutionLog:     []ExecutionLogEntry{},
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
-	}
+        ID:               uuid.New().String(),
+        UserID:           userID,
+        Name:             req.Name,
+        Status:           TaskStatusPending,
+        AffiliateLinks:   links,
+        AdsPowerProfile:  req.AdsPowerProfile,
+        GoogleAdsAccount: req.GoogleAdsAccount,
+        TotalLinks:       len(links),
+        ExecutionLog:     []ExecutionLogEntry{},
+        CreatedAt:        time.Now(),
+        UpdatedAt:        time.Now(),
+    }
+    if v := strings.ToUpper(strings.TrimSpace(req.Country)); v != "" { task.DefaultCountry = v }
+    if len(linkCountries) > 0 { task.LinkCountries = linkCountries }
 
 	// 添加初始日志
-	task.AddLog("info", "任务创建成功", fmt.Sprintf("包含%d个联盟链接", len(req.AffiliateLinks)))
+    task.AddLog("info", "任务创建成功", fmt.Sprintf("包含%d个联盟链接", len(links)))
 
 	// 保存到数据库
 	if err := s.db.Create(task).Error; err != nil {
@@ -78,47 +95,53 @@ func (s *AdsCenterService) CreateTask(userID string, req *CreateTaskRequest) (*A
 
 // CreateTaskRequest 创建任务请求
 type CreateTaskRequest struct {
-	Name             string   `json:"name" binding:"required"`
-	AffiliateLinks   []string `json:"affiliate_links" binding:"required,min=1"`
-	AdsPowerProfile  string   `json:"adspower_profile" binding:"required"`
-	GoogleAdsAccount string   `json:"google_ads_account" binding:"required"`
+    Name             string            `json:"name"`
+    AffiliateLinks   []string          `json:"affiliate_links,omitempty"`
+    Links            []struct{
+        AffiliateURL string `json:"affiliate_url"`
+        Country      string `json:"country,omitempty"`
+    } `json:"links,omitempty"`
+    Country         string            `json:"country,omitempty"` // 默认国家（可被单条覆盖）
+    AdsPowerProfile  string           `json:"adspower_profile,omitempty"`
+    GoogleAdsAccount string           `json:"google_ads_account"`
 }
 
 // validateCreateRequest 验证创建请求
 func (s *AdsCenterService) validateCreateRequest(req *CreateTaskRequest) error {
-	if req.Name == "" {
-		return fmt.Errorf("任务名称不能为空")
-	}
+    if req.Name == "" {
+        return fmt.Errorf("任务名称不能为空")
+    }
 
-	if len(req.AffiliateLinks) == 0 {
-		return fmt.Errorf("联盟链接不能为空")
-	}
+    totalLinks := len(req.AffiliateLinks)
+    if totalLinks == 0 { totalLinks = len(req.Links) }
+    if totalLinks == 0 { return fmt.Errorf("联盟链接不能为空") }
 
-	if len(req.AffiliateLinks) > 100 {
-		return fmt.Errorf("联盟链接数量不能超过100个")
-	}
+    if totalLinks > 100 {
+        return fmt.Errorf("联盟链接数量不能超过100个")
+    }
 
-	if req.AdsPowerProfile == "" {
-		return fmt.Errorf("AdsPower配置不能为空")
-	}
+    // 当未配置浏览器执行器时，需要 AdsPower Profile
+    if os.Getenv("PUPPETEER_EXECUTOR_URL") == "" {
+        if req.AdsPowerProfile == "" { return fmt.Errorf("AdsPower配置不能为空") }
+    }
 
-	if req.GoogleAdsAccount == "" {
-		return fmt.Errorf("Google Ads账号不能为空")
-	}
+    // GoogleAdsAccount 可选；若为空，执行到更新阶段会失败并记录
 
 	return nil
 }
 
 // calculateTokenCost 计算Token消费
 func (s *AdsCenterService) calculateTokenCost(req *CreateTaskRequest) int {
-	// 链接提取: 1 Token per link
-	extractCost := len(req.AffiliateLinks)
+    // 链接提取: 1 Token per link
+    nl := len(req.AffiliateLinks)
+    if nl == 0 { nl = len(req.Links) }
+    extractCost := nl
 
-	// 广告更新: 3 Token per ad (估算)
-	// 实际会根据真实广告数量计算
-	updateCost := len(req.AffiliateLinks) * 3
+    // 广告更新: 3 Token per ad (估算)
+    // 实际会根据真实广告数量计算
+    updateCost := nl * 3
 
-	return extractCost + updateCost
+    return extractCost + updateCost
 }
 
 // StartTask 启动任务执行
@@ -219,27 +242,37 @@ func (s *AdsCenterService) executeTask(task *AdsCenterTask) {
 
 // extractLinks 提取链接
 func (s *AdsCenterService) extractLinks(task *AdsCenterTask) error {
-	// 获取AdsPower配置
-	var adsPowerConfig AdsPowerConfig
-	if err := s.db.Where("user_id = ? AND profile_id = ? AND is_active = ?",
-		task.UserID, task.AdsPowerProfile, true).First(&adsPowerConfig).Error; err != nil {
-		return fmt.Errorf("获取AdsPower配置失败: %w", err)
-	}
-
-	// 创建AdsPower客户端
-	var client AdsPowerClientInterface
-	if adsPowerConfig.APIEndpoint == "mock" {
-		client = NewMockAdsPowerClient()
-	} else {
-		client = NewAdsPowerClient(adsPowerConfig.APIEndpoint, adsPowerConfig.APIKey)
-	}
-
-	// 测试连接
-	if err := client.TestConnection(); err != nil {
-		return fmt.Errorf("AdsPower连接测试失败: %w", err)
-	}
-
-	task.AddLog("info", "AdsPower连接成功", "")
+    // 优先使用浏览器外部执行器（统一 PUPPETEER_EXECUTOR_URL）
+    base := os.Getenv("PUPPETEER_EXECUTOR_URL")
+    useExternal := base != ""
+    var (
+        client AdsPowerClientInterface
+        adsPowerConfig AdsPowerConfig
+    )
+    if useExternal {
+        client = NewHTTPExecutorClient(base)
+        if err := client.TestConnection(); err != nil {
+            return fmt.Errorf("外部执行器连接失败: %w", err)
+        }
+        task.AddLog("info", "外部执行器连接成功", base)
+    } else {
+        // 获取AdsPower配置
+        if err := s.db.Where("user_id = ? AND profile_id = ? AND is_active = ?",
+            task.UserID, task.AdsPowerProfile, true).First(&adsPowerConfig).Error; err != nil {
+            return fmt.Errorf("获取AdsPower配置失败: %w", err)
+        }
+        // 创建AdsPower客户端
+        if adsPowerConfig.APIEndpoint == "mock" {
+            client = NewMockAdsPowerClient()
+        } else {
+            client = NewAdsPowerClient(adsPowerConfig.APIEndpoint, adsPowerConfig.APIKey)
+        }
+        // 测试连接
+        if err := client.TestConnection(); err != nil {
+            return fmt.Errorf("AdsPower连接测试失败: %w", err)
+        }
+        task.AddLog("info", "AdsPower连接成功", "")
+    }
 
 	// 并发提取链接
 	extractedLinks := make([]ExtractedLink, 0, len(task.AffiliateLinks))
@@ -248,34 +281,45 @@ func (s *AdsCenterService) extractLinks(task *AdsCenterTask) error {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
-	for _, affiliateURL := range task.AffiliateLinks {
-		wg.Add(1)
-		go func(url string) {
-			defer wg.Done()
+    for _, affiliateURL := range task.AffiliateLinks {
+        wg.Add(1)
+        go func(url string) {
+            defer wg.Done()
 
-			semaphore <- struct{}{}        // 获取信号量
-			defer func() { <-semaphore }() // 释放信号量
+            semaphore <- struct{}{}        // 获取信号量
+            defer func() { <-semaphore }() // 释放信号量
 
-			result, err := client.ExtractFinalURL(adsPowerConfig.ProfileID, url)
-			if err != nil {
-				task.AddLog("warning", "链接提取异常", fmt.Sprintf("URL: %s, Error: %v", url, err))
-				return
-			}
+            start := time.Now()
+            profileID := adsPowerConfig.ProfileID
+            // 决定国家：单条映射 > 任务默认
+            country := ""
+            if task.LinkCountries != nil {
+                if v, ok := task.LinkCountries[url]; ok { country = v }
+            }
+            if country == "" && task.DefaultCountry != "" { country = task.DefaultCountry }
+            result, err := client.ExtractFinalURL(profileID, url, &ExtractionOptions{ Country: country })
+            if err != nil {
+                task.AddLog("warning", "链接提取异常", fmt.Sprintf("URL: %s, Error: %v", url, err))
+                return
+            }
 
-			extractedLink := ExtractedLink{
-				AffiliateURL: result.AffiliateURL,
-				FinalURL:     result.FinalURL,
-				Status:       "success",
-				ExtractedAt:  time.Now().Format("2006-01-02 15:04:05"),
-			}
+            extractedLink := ExtractedLink{
+                AffiliateURL: result.AffiliateURL,
+                FinalURL:     result.FinalURL,
+                Status:       "success",
+                Classification: result.Classification,
+                DurationMs:   int(time.Since(start).Milliseconds()),
+                Country:      country,
+                ExtractedAt:  time.Now().Format("2006-01-02 15:04:05"),
+            }
 
-			if !result.Success {
-				extractedLink.Status = "failed"
-				extractedLink.ErrorMessage = result.Error
-				task.AddLog("warning", "链接提取失败", fmt.Sprintf("URL: %s, Error: %s", url, result.Error))
-			} else {
-				task.AddLog("info", "链接提取成功", fmt.Sprintf("URL: %s -> %s", url, result.FinalURL))
-			}
+            if !result.Success {
+                extractedLink.Status = "failed"
+                extractedLink.ErrorMessage = result.Error
+                task.AddLog("warning", "链接提取失败", fmt.Sprintf("URL: %s, Error: %s", url, result.Error))
+            } else {
+                task.AddLog("info", "链接提取成功", fmt.Sprintf("URL: %s -> %s", url, result.FinalURL))
+            }
 
 			mu.Lock()
 			extractedLinks = append(extractedLinks, extractedLink)
@@ -370,48 +414,84 @@ func (s *AdsCenterService) updateGoogleAds(task *AdsCenterTask) error {
 		return fmt.Errorf("没有需要更新的广告")
 	}
 
-	// 消费Token（广告更新部分）
+    // 消费Token（广告更新部分）
     updateTokens := len(updateRequests)
     if err := s.tokenService.ConsumeTokensByService(task.UserID, "adscenter", "update_ad", updateTokens, task.ID); err != nil {
         return fmt.Errorf("Token消费失败: %w", err)
     }
 
-	task.TokensConsumed += updateTokens
+    task.TokensConsumed += updateTokens
 
-	// 批量更新广告
-	results, err := client.BatchUpdateAds(updateRequests)
-	if err != nil {
-		return fmt.Errorf("批量更新广告失败: %w", err)
-	}
+    perItemMeasure := os.Getenv("ADSCENTER_MEASURE_PER_ITEM") == "true"
+    updateResults := make([]AdUpdateResult, 0, len(updateRequests))
 
-	// 处理更新结果
-	updateResults := make([]AdUpdateResult, 0, len(results))
-	for i, result := range results {
-		adInfo := ads[i] // 假设顺序一致
-		updateResult := AdUpdateResult{
-			AdID:        result.AdID,
-			AdName:      adInfo.Name,
-			OldFinalURL: adInfo.FinalURL,
-			NewFinalURL: updateRequests[i].FinalURL,
-			Status:      "success",
-			UpdatedAt:   time.Now().Format("2006-01-02 15:04:05"),
-		}
+    if perItemMeasure {
+        // 逐项更新以采集每条耗时
+        for i, req := range updateRequests {
+            t0 := time.Now()
+            result, _ := client.UpdateAdFinalURL(req.AdID, req.FinalURL)
+            dur := int(time.Since(t0).Milliseconds())
 
-		if !result.Success {
-			updateResult.Status = "failed"
-			updateResult.ErrorMessage = result.ErrorMessage
-			task.FailedCount++
-			task.AddLog("warning", "广告更新失败", fmt.Sprintf("AdID: %s, Error: %s", result.AdID, result.ErrorMessage))
-		} else {
-			task.UpdatedCount++
-			task.AddLog("info", "广告更新成功", fmt.Sprintf("AdID: %s, URL: %s", result.AdID, updateRequests[i].FinalURL))
-		}
+            adInfo := ads[i]
+            updateResult := AdUpdateResult{
+                AdID:        req.AdID,
+                AdName:      adInfo.Name,
+                OldFinalURL: adInfo.FinalURL,
+                NewFinalURL: req.FinalURL,
+                Status:      "success",
+                Classification: "",
+                DurationMs:  dur,
+                UpdatedAt:   time.Now().Format("2006-01-02 15:04:05"),
+            }
+            if result != nil {
+                if !result.Success {
+                    updateResult.Status = "failed"
+                    updateResult.ErrorMessage = result.ErrorMessage
+                    updateResult.Classification = result.Classification
+                    task.FailedCount++
+                    task.AddLog("warning", "广告更新失败", fmt.Sprintf("AdID: %s, Error: %s", req.AdID, result.ErrorMessage))
+                } else {
+                    updateResult.Classification = result.Classification
+                    task.UpdatedCount++
+                    task.AddLog("info", "广告更新成功", fmt.Sprintf("AdID: %s, URL: %s", req.AdID, req.FinalURL))
+                }
+            }
+            updateResults = append(updateResults, updateResult)
+            // 实时进度
+            _ = task.UpdateProgress(s.db)
+        }
+    } else {
+        // 批量更新（无 per-item 时延）
+        results, err := client.BatchUpdateAds(updateRequests)
+        if err != nil {
+            return fmt.Errorf("批量更新广告失败: %w", err)
+        }
+        for i, result := range results {
+            adInfo := ads[i] // 假设顺序一致
+            updateResult := AdUpdateResult{
+                AdID:        result.AdID,
+                AdName:      adInfo.Name,
+                OldFinalURL: adInfo.FinalURL,
+                NewFinalURL: updateRequests[i].FinalURL,
+                Status:      "success",
+                Classification: result.Classification,
+                UpdatedAt:   time.Now().Format("2006-01-02 15:04:05"),
+            }
+            if !result.Success {
+                updateResult.Status = "failed"
+                updateResult.ErrorMessage = result.ErrorMessage
+                task.FailedCount++
+                task.AddLog("warning", "广告更新失败", fmt.Sprintf("AdID: %s, Error: %s", result.AdID, result.ErrorMessage))
+            } else {
+                task.UpdatedCount++
+                task.AddLog("info", "广告更新成功", fmt.Sprintf("AdID: %s, URL: %s", result.AdID, updateRequests[i].FinalURL))
+            }
+            updateResults = append(updateResults, updateResult)
+        }
+    }
 
-		updateResults = append(updateResults, updateResult)
-	}
-
-	task.UpdateResults = updateResults
-	task.AddLog("info", "广告更新完成", fmt.Sprintf("成功: %d, 失败: %d", task.UpdatedCount, len(results)-task.UpdatedCount))
+    task.UpdateResults = updateResults
+    task.AddLog("info", "广告更新完成", fmt.Sprintf("成功: %d, 失败: %d", task.UpdatedCount, len(updateResults)-task.UpdatedCount))
 
 	return nil
 }
@@ -521,8 +601,8 @@ func (s *AdsCenterService) GetStats(userID string) (*AdsCenterStats, error) {
 
 // 接口定义
 type AdsPowerClientInterface interface {
-	ExtractFinalURL(profileID, affiliateURL string) (*LinkExtractionResult, error)
-	TestConnection() error
+    ExtractFinalURL(profileID, affiliateURL string, opts *ExtractionOptions) (*LinkExtractionResult, error)
+    TestConnection() error
 }
 
 type GoogleAdsClientInterface interface {

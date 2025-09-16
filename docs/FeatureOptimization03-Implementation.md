@@ -65,4 +65,4 @@
 
 ---
 
-注：Google Ads 真实执行取决于 `google_ads_configs` 与网络可达，mock 账户用于本地/CI 验收。Offer 浏览器解析支持通过 `ADSCENTER_BROWSER_EXECUTOR_URL` 或 `AutoClick_Browser_Executor_URL` 指定外部执行器；未配置则回退 HTTP 跟随。
+注：Google Ads 真实执行取决于 `google_ads_configs` 与网络可达，mock 账户用于本地/CI 验收。Offer 浏览器解析统一使用 `PUPPETEER_EXECUTOR_URL`（容器内置执行器，未配置时使用默认 127.0.0.1:8081）；亦可通过 `AutoClick_Browser_Executor_URL` 的系统配置覆盖。

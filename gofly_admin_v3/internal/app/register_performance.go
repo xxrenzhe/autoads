@@ -6,6 +6,7 @@ import (
     "github.com/gin-gonic/gin"
     "gorm.io/gorm"
     "gofly-admin-v3/internal/autoclick"
+    ads "gofly-admin-v3/internal/adscenter"
 )
 
 // percentile from sorted slice
@@ -93,6 +94,86 @@ func RegisterPerformance(v1 *gin.RouterGroup, gormDB *gorm.DB) {
             for _, d := range durations { sum += d }
             avg = sum / int64(len(durations))
         }
+        // 同时聚合 adscenter_tasks 的分布、阶段耗时与分类
+        var tasks []ads.AdsCenterTask
+        _ = gormDB.Order("created_at DESC").Limit(200).Find(&tasks).Error
+        tcounts := map[string]int{"pending":0,"extracting":0,"updating":0,"completed":0,"failed":0,"cancelled":0}
+        var tdur []int64
+        var tdurExtract []int64
+        var tdurUpdate []int64
+        classifications := map[string]int{}
+        // 按用户分布
+        byUserCounts := map[string]map[string]int{}
+        byUserDur := map[string][]int64{}
+        // helper to parse time from log timestamp (format: 2006-01-02 15:04:05)
+        parseTS := func(s string) (time.Time, bool) {
+            t, err := time.Parse("2006-01-02 15:04:05", s)
+            if err != nil { return time.Time{}, false }
+            return t, true
+        }
+        for _, t := range tasks {
+            if _, ok := tcounts[string(t.Status)]; ok { tcounts[string(t.Status)]++ } else { tcounts[string(t.Status)] = 1 }
+            if t.CompletedAt != nil {
+                d := t.CompletedAt.Sub(t.CreatedAt).Milliseconds()
+                if d > 0 { tdur = append(tdur, d) }
+                if t.UserID != "" { byUserDur[t.UserID] = append(byUserDur[t.UserID], d) }
+            }
+            if t.UserID != "" {
+                if _, ok := byUserCounts[t.UserID]; !ok { byUserCounts[t.UserID] = map[string]int{} }
+                byUserCounts[t.UserID][string(t.Status)]++
+            }
+            // 阶段耗时：根据日志时间点估算
+            var tsStart, tsExtractDone, tsUpdateStart, tsUpdateDone time.Time
+            for _, le := range t.ExecutionLog {
+                switch {
+                case le.Message == "开始执行任务":
+                    if v, ok := parseTS(le.Timestamp); ok { tsStart = v }
+                case le.Message == "链接提取完成":
+                    if v, ok := parseTS(le.Timestamp); ok { tsExtractDone = v }
+                case le.Message == "开始更新Google Ads":
+                    if v, ok := parseTS(le.Timestamp); ok { tsUpdateStart = v }
+                case le.Message == "广告更新完成":
+                    if v, ok := parseTS(le.Timestamp); ok { tsUpdateDone = v }
+                }
+            }
+            if !tsStart.IsZero() && !tsExtractDone.IsZero() {
+                d := tsExtractDone.Sub(tsStart).Milliseconds()
+                if d > 0 { tdurExtract = append(tdurExtract, d) }
+            }
+            if !tsUpdateStart.IsZero() && !tsUpdateDone.IsZero() {
+                d := tsUpdateDone.Sub(tsUpdateStart).Milliseconds()
+                if d > 0 { tdurUpdate = append(tdurUpdate, d) }
+            }
+            // 分类统计（提取/更新）
+            for _, el := range t.ExtractedLinks {
+                cls := el.Classification
+                if cls == "" {
+                    if el.Status == "success" { cls = "success" } else { cls = "upstream_error" }
+                }
+                classifications["extraction."+cls]++
+            }
+            for _, ur := range t.UpdateResults {
+                cls := ur.Classification
+                if cls == "" {
+                    if ur.Status == "success" { cls = "success" } else { cls = "upstream_error" }
+                }
+                classifications["update."+cls]++
+            }
+        }
+        // sort helpers already present
+        sortInts := func(a []int64) []int64 {
+            for i := 1; i < len(a); i++ { key := a[i]; j := i-1; for j >= 0 && a[j] > key { a[j+1] = a[j]; j-- }; a[j+1] = key }
+            return a
+        }
+        sortInts(tdur); sortInts(tdurExtract); sortInts(tdurUpdate)
+        // 汇总按用户平均耗时
+        byUser := []gin.H{}
+        for uid, arr := range byUserDur {
+            avgU := int64(0)
+            if len(arr) > 0 { var s int64; for _, d := range arr { s += d }; avgU = s / int64(len(arr)) }
+            byUser = append(byUser, gin.H{"userId": uid, "avgDurationMs": avgU, "counts": byUserCounts[uid]})
+        }
+
         c.JSON(200, gin.H{
             "counts": counts,
             "duration_ms": gin.H{
@@ -100,6 +181,21 @@ func RegisterPerformance(v1 *gin.RouterGroup, gormDB *gorm.DB) {
                 "p50": percentile(durations, 0.50),
                 "p90": percentile(durations, 0.90),
                 "p99": percentile(durations, 0.99),
+            },
+            "tasks": gin.H{
+                "counts": tcounts,
+                "duration_ms": gin.H{
+                    "avg": func() int64 { if len(tdur)==0 {return 0}; var s int64; for _,d:= range tdur { s+=d }; return s/int64(len(tdur)) }(),
+                    "p50": percentile(tdur, 0.50),
+                    "p90": percentile(tdur, 0.90),
+                    "p99": percentile(tdur, 0.99),
+                },
+                "phase_duration_ms": gin.H{
+                    "extract": gin.H{"p50": percentile(tdurExtract, 0.50), "p90": percentile(tdurExtract, 0.90), "p99": percentile(tdurExtract, 0.99)},
+                    "update":  gin.H{"p50": percentile(tdurUpdate, 0.50), "p90": percentile(tdurUpdate, 0.90), "p99": percentile(tdurUpdate, 0.99)},
+                },
+                "classifications": classifications,
+                "byUser": byUser,
             },
         })
     })

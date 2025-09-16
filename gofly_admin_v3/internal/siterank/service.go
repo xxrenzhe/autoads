@@ -52,12 +52,15 @@ func NewService(db *gorm.DB, tokenService TokenService, config *SimilarWebConfig
 		client = NewSimilarWebClient(config)
 	}
 
-	return &Service{
-		db:               db,
-		similarWebClient: client,
-		tokenService:     tokenService,
-		config:           config,
-	}
+    // 确保事件表存在（幂等）
+    _ = db.AutoMigrate(&SiteRankCacheEvent{})
+
+    return &Service{
+        db:               db,
+        similarWebClient: client,
+        tokenService:     tokenService,
+        config:           config,
+    }
 }
 
 // NewServiceWithMockToken 创建带有模拟Token服务的SiteRank服务（用于测试）
@@ -75,13 +78,15 @@ func (s *Service) QueryDomain(userID string, req *QueryRequest) (*SiteRankQuery,
 	normalizedDomain := s.similarWebClient.NormalizeDomain(req.Domain)
 
 	// 2. 检查缓存
-	if !req.Force {
-		if cached, err := s.getCachedQuery(userID, normalizedDomain); err == nil && !cached.IsExpired() {
-			cached.Source = SourceCache
-			cached.Status = StatusCached
-			return cached, nil
-		}
-	}
+    if !req.Force {
+        if cached, err := s.getCachedQuery(userID, normalizedDomain); err == nil && !cached.IsExpired() {
+            // 记录缓存命中事件
+            _ = s.db.Create(&SiteRankCacheEvent{ UserID: userID, Domain: normalizedDomain, Hit: true, CreatedAt: time.Now() }).Error
+            cached.Source = SourceCache
+            cached.Status = StatusCached
+            return cached, nil
+        }
+    }
 
 	// 3. 检查Token余额
 	sufficient, balance, cost, err := s.tokenService.CheckTokenSufficiency(userID, "siterank", "query", 1)
@@ -92,12 +97,13 @@ func (s *Service) QueryDomain(userID string, req *QueryRequest) (*SiteRankQuery,
 		return nil, fmt.Errorf("Token余额不足，需要%d，当前%d", cost, balance)
 	}
 
-	// 4. 创建查询记录
-	query := &SiteRankQuery{
-		ID:        uuid.New().String(),
-		UserID:    userID,
-		Domain:    normalizedDomain,
-		Status:    StatusPending,
+    // 4. 创建查询记录（记录缓存未命中事件）
+    _ = s.db.Create(&SiteRankCacheEvent{ UserID: userID, Domain: normalizedDomain, Hit: false, CreatedAt: time.Now() }).Error
+    query := &SiteRankQuery{
+        ID:        uuid.New().String(),
+        UserID:    userID,
+        Domain:    normalizedDomain,
+        Status:    StatusPending,
 		Source:    SourceSimilarWeb,
 		Country:   req.Country,
 		CreatedAt: time.Now(),
@@ -217,21 +223,25 @@ func (s *Service) executeBatchQuery(userID string, batchQuery *BatchQuery, force
 			// 检查缓存
 			var query *SiteRankQuery
 
-			if !force {
-				if cached, cacheErr := s.getCachedQuery(userID, domain); cacheErr == nil && !cached.IsExpired() {
-					query = cached
-					query.Source = SourceCache
-					query.Status = StatusCached
-				}
-			}
+            if !force {
+                if cached, cacheErr := s.getCachedQuery(userID, domain); cacheErr == nil && !cached.IsExpired() {
+                    // 命中缓存
+                    _ = s.db.Create(&SiteRankCacheEvent{ UserID: userID, Domain: domain, Hit: true, CreatedAt: time.Now() }).Error
+                    query = cached
+                    query.Source = SourceCache
+                    query.Status = StatusCached
+                }
+            }
 
 			// 如果没有缓存，执行查询
-			if query == nil {
-				query = &SiteRankQuery{
-					ID:        uuid.New().String(),
-					UserID:    userID,
-					Domain:    domain,
-					Status:    StatusPending,
+            if query == nil {
+                // 未命中缓存
+                _ = s.db.Create(&SiteRankCacheEvent{ UserID: userID, Domain: domain, Hit: false, CreatedAt: time.Now() }).Error
+                query = &SiteRankQuery{
+                    ID:        uuid.New().String(),
+                    UserID:    userID,
+                    Domain:    domain,
+                    Status:    StatusPending,
 					Source:    SourceSimilarWeb,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),

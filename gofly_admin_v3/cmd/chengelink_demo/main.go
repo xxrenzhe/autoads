@@ -47,7 +47,7 @@ func main() {
 	for i, link := range testLinks {
 		fmt.Printf("\n%d. 提取链接: %s\n", i+1, link)
 
-		result, err := adsPowerClient.ExtractFinalURL("profile_001", link)
+        result, err := adsPowerClient.ExtractFinalURL("profile_001", link, nil)
 		if err != nil {
 			fmt.Printf("   ❌ 提取失败: %v\n", err)
 			continue
@@ -165,7 +165,7 @@ func main() {
 	for i, link := range task.AffiliateLinks {
 		time.Sleep(200 * time.Millisecond) // 模拟处理时间
 
-		result, _ := adsPowerClient.ExtractFinalURL("profile_001", link)
+        result, _ := adsPowerClient.ExtractFinalURL("profile_001", link, nil)
 		if result.Success {
 			task.ExtractedCount++
 			task.ExtractedLinks = append(task.ExtractedLinks, chengelink.ExtractedLink{

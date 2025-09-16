@@ -65,8 +65,19 @@ type SiteRankQuery struct {
 
 // TableName 指定表名
 func (SiteRankQuery) TableName() string {
-	return "siterank_queries"
+    return "siterank_queries"
 }
+
+// SiteRankCacheEvent 缓存命中事件（用于时间序列统计）
+type SiteRankCacheEvent struct {
+    ID        uint      `json:"id" gorm:"primaryKey"`
+    UserID    string    `json:"user_id" gorm:"index;size:36;not null"`
+    Domain    string    `json:"domain" gorm:"index;size:255;not null"`
+    Hit       bool      `json:"hit" gorm:"not null"`
+    CreatedAt time.Time `json:"created_at"`
+}
+
+func (SiteRankCacheEvent) TableName() string { return "siterank_cache_events" }
 
 // SiteRankData SimilarWeb响应数据
 type SiteRankData struct {

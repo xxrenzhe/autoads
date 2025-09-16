@@ -179,6 +179,8 @@
   - [x] 管理端点：`GET/DELETE /admin/badurls`、`DELETE /admin/badurls/:hash`（分页/查询/清理）
   - [x] 落库（自动迁移）：新增 `batch_jobs / batch_job_items / batch_job_progress` 三表
   - [x] AdsCenter：专属计费规则（`adscenter.update`），执行采用“分阶段扣费（逐项）”策略
+  - [x] AdsCenter 执行器统一：解析最终 URL 统一走本地 Playwright 执行器（`/resolve`），支持 per-link 国家代理与 Referer 移除；后端记录 `classification/durationMs`，并扩展 `/api/v1/adscenter/metrics` 输出分阶段耗时与错误分类聚合
+  - [x] AdsCenter 任务入参增强：支持 `links[{ affiliate_url, country }]` 与任务级 `country`（兼容原 `affiliate_links`），由服务端按“单条 > 任务默认”决定生效国家并透传给执行器
   - [x] GoFly Admin：六模块（用户/订阅/Token/系统配置/API 管理/邀请+签到）页面与操作闭环
   - [ ] 观测：pprof、基础 metrics、结构化日志（含 request-id）
 - 测试与压测（上线门槛）
@@ -189,6 +191,7 @@
   - [x] 标注“表所有者矩阵”（Prisma 仅认证域；Go 业务域）
   - [x] 更新 `.env.preview.template` / `.env.production.template`（新增 BFF/OPS/内部JWT 相关变量）
   - [x] 更新 `README-deployment.md` 与 `docs/production-env-config.md`（BFF/健康/限流头/内部JWT）
+  - [x] 生产部署文档补充“浏览器执行器与国家代理映射（生产）”、代理鉴权与出口合规建议（最小暴露、egress 白名单、TLS 合规、速率控制）
   - [x] 迁移集成：部署阶段执行 Go 模型迁移（server -migrate）+ Prisma 迁移，均为幂等；支持禁用启动迁移时的显式 Job 触发
 - Next（必做）
   - [x] 新建/合并 `apps/frontend/src/middleware.ts`，移除 `middleware.edge.ts / middleware-csrf.ts / middleware.admin.ts` 重复逻辑
@@ -205,6 +208,7 @@
   - [x] 实现 API：`/api/v1/batchopen/start|progress|terminate`（包含 type=basic|silent|autoclick）
   - [x] SiteRank：`/api/v1/siterank/rank|batch`，统一缓存/错误 TTL/扣费/限流（新增 batch:check|batch:execute 原子端点）
   - [x] AdsCenter：`/api/v1/adscenter/accounts|configurations|executions`，最小可用（创建/查询/执行），执行计费复用 chengelink.update_ads；后续对接完整调度与回退路径
+  - [x] AdsCenter 执行器统一：本地 Playwright 执行器（同容器）+ `/resolve`，支持 per-link 国家代理与 Referer 移除；记录分类/耗时并扩展指标
   - [x] BatchGo：Silent `fail_rate_threshold` 支持；超过失败率阈值自动生成 AutoClick 回退任务并调度（最小实现）
   - [x] GoFly Admin：六模块（用户/订阅/Token/系统配置/API 管理/邀请+签到）页面与操作闭环
   - [ ] 观测：pprof、基础 metrics、结构化日志（含 request-id）
@@ -214,6 +218,7 @@
 - 文档与运维
   - [x] 更新 `.env.preview.template` / `.env.production.template`（BFF/OPS/内部JWT 变量）
   - [x] 更新 `README-deployment.md` 与 `docs/production-env-config.md`（BFF/健康/限流头/内部JWT）
+  - [x] 生产部署文档补充“浏览器执行器与国家代理映射（生产）”、代理鉴权与出口合规建议
   - [x] 标注“表所有者矩阵”（Prisma 仅认证域；Go 业务域）
 
 ---
@@ -231,6 +236,28 @@
   - 可观测保障：统一 requestId、Server-Timing、liveness/readyz 探针、告警阈值（第 24 节）。
   - 数据一致性：单写边界（第 16 节）、事务与幂等（第 18 节），确保扣费与任务状态的强一致。
   - 回滚与时间盒：预发灰度、生产滚动、临时开关仅限短期且有删除计划（第 25、34 节）。
+
+## 44. 未完成任务评估（风险与建议）
+- 观测与诊断（Go 侧）
+  - [ ] pprof 暴露与基础进程级 metrics（建议：/debug/pprof + Prometheus 指标导出，纳入 `/ops` 观测页）
+  - [ ] 结构化日志统一（包含 `request-id/user-id/feature` 等字段），与 BFF `x-request-id` 贯通
+  - 价值：缩短 MTTR，支持性能基线与容量评估
+
+- 测试与压测
+  - [ ] E2E 功能清单覆盖（建议：以“登录→创建任务→进度/扣费→报表”打通闭环用例；AdsCenter/SiteRank/BatchOpen 三条主线）
+  - [ ] 压测基线与 SLO 校验（建议：k6/Vegeta 针对 `/api/v1/siterank/*`、`/api/v1/batchopen/*`、`/api/v1/adscenter/*` 场景脚本）
+
+- AdsCenter 深化事项
+  - [ ] 广告更新阶段 per-item 耗时采集（当前记录 classification，批量更新模式下缺 per-item duration，可改为分批小粒度更新以记时）
+  - [ ] 更细致的错误映射（Google Ads 错误分类表与 UI 显示建议）
+  - [ ] 前端表单支持 `links[{affiliate_url,country}]` 批量录入（当前服务端已支持；UI 待增强）
+  - [ ] 可选外部“广告更新执行器”接入策略（保留 `ADSCENTER_EXECUTOR_URL` 以便在特定网络出口统一执行）
+
+- 安全与合规
+  - [ ] NetworkPolicy / egress 白名单样例（K8s）与代理凭据 Secret 管理示例
+  - [ ] 审计报表导出（按用户/任务/时间维度）
+
+优先级建议：先做 pprof/metrics/结构化日志（低成本高价值），并补齐 E2E 基线；随后推进 AdsCenter per-item 指标与前端表单增强；最后执行压测基线闭环。
 
 ## 14. 统一错误与限流头规范（合同化）
 - 错误响应结构（BFF 与 Go 统一）：

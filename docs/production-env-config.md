@@ -216,6 +216,64 @@ ADMIN_PROXY_ALLOW_PREFIXES=/console,/console/assets,/console/panel,/console/logi
 > - 生产仍建议在外部网关层做精细化限流/黑白名单；内置代理用于快速落地与本地验证。
 ```
 
+## 浏览器执行器与国家代理映射（生产）
+
+单镜像部署：容器内会同时运行 Go 后端、Next.js BFF，以及本地浏览器执行器（Playwright）。默认绑定 127.0.0.1，不对外暴露。
+
+- 执行器路由（容器内）：
+  - `GET /resolve?url=...&country=US[&proxy=...]` 返回最终 URL（移除 Referer，跟随多重重定向）
+  - `GET /health` 健康检查；`GET /metrics` 简要指标
+
+- 环境变量（按国家选择代理）：
+  ```bash
+  # 浏览器执行器 URL（容器内自动设置为本地）
+  PUPPETEER_EXECUTOR_URL=http://127.0.0.1:8081
+
+  # 按国家映射代理（JSON）和默认代理（可选）
+  PUPPETEER_PROXY_BY_COUNTRY='{"US":"http://user:pass@us-proxy:8080","DE":"socks5://de-proxy:1080"}'
+  PUPPETEER_PROXY_DEFAULT='http://user:pass@default-proxy:8080'
+
+  # 建议在任务中为每个链接指定 country；不再推荐使用全局国家/代理环境变量
+  ```
+
+- 任务侧传参（后端会优先使用任务内传参）：
+  - 全局默认国家：`country`（字符串）
+  - 每条链接国家：`links[{ affiliate_url, country }]`（优先级高于 `country`）
+
+- Referer 策略：执行器对所有请求移除 `Referer` 头，确保为空。
+
+安全建议（代理鉴权与出口合规）
+- 代理鉴权
+  - 使用专用的代理账号，不与其他系统复用；按国家划分独立凭据便于吊销与审计
+  - 避免在日志中输出带鉴权的代理 URL；如需记录有效代理，仅记录主机与端口（已在执行器返回中仅回显 `effectiveProxy`，不包含凭据）
+  - 建议通过平台 Secret 管理（K8s Secret、CI/CD Secret Store）注入代理凭据
+
+- 出口合规
+  - 仅允许容器对外访问“代理网关”和业务目标域名；优先通过安全组/防火墙/Service Mesh 限制 egress
+  - 代理出口 IP 建立白名单；必要时在代理侧做目的域细粒度限制
+  - TLS 合规：避免 MITM；如企业代理需要 TLS 终止/再加密，确保证书链合规并做好内部 CA 管理
+  - 控制并发与速率：通过环境变量调整执行器的并发、队列和节流，避免触发对端风控
+
+- 隔离与最小暴露
+  - 执行器仅监听 `127.0.0.1`；不要把执行器端口直接对外暴露
+  - 运行时加固：Chromium 使用 `--no-sandbox` 仅限容器隔离完善的环境；生产建议开启 seccomp/AppArmor，并限定容器能力
+
+可观测性与运维
+- 通过 `GET /metrics` 获取执行器近期 p95 延迟、队列长度和分类统计；可被 Prometheus 抓取（建议通过 sidecar/agent 拉取并聚合）
+- 通过 `/api/v1/adscenter/metrics` 查看后端的“任务分布、分阶段耗时、错误分类”聚合数据
+
+常见配置示例（Docker/K8s）
+```bash
+# docker-compose 片段
+environment:
+  - PUPPETEER_EXECUTOR_URL=http://127.0.0.1:8081
+  - PUPPETEER_PROXY_BY_COUNTRY={"US":"http://user:pass@us-proxy:8080","GB":"http://user:pass@gb-proxy:8080"}
+  - PUPPETEER_PROXY_DEFAULT=http://user:pass@default-proxy:8080
+  #（已不推荐）ADSCENTER_COUNTRY：请在任务的每条链接上明确 country，而非使用全局环境变量
+  - NODE_TLS_REJECT_UNAUTHORIZED=1
+``` 
+
+
 ### Internal JWT（Next → Go 身份贯通）
 
 ```bash

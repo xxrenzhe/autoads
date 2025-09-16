@@ -1447,6 +1447,7 @@ func setupAPIRoutes(r *gin.Engine) {
         app.RegisterStats(v1, gormDB)
         app.RegisterPerformance(v1, gormDB)
         app.RegisterCacheInsights(v1, gormDB)
+        app.RegisterSiteRankTimeSeries(v1, gormDB)
 
         // BatchOpen Silent v2
         batchV2 := v2.Group("/batchopen")
@@ -3166,7 +3167,7 @@ func sha1Hex(s string) string {
 // resolveOfferURL 简化解析：优先调用浏览器执行器（若配置），否则跟随 HTTP 重定向
 func resolveOfferURL(ctx context.Context, offer string) map[string]any {
     // 优先浏览器执行器（AutoClick_Browser_Executor_URL 或 ADSCENTER_EXECUTOR_URL）
-    execURL := strings.TrimSpace(os.Getenv("ADSCENTER_BROWSER_EXECUTOR_URL"))
+    execURL := strings.TrimSpace(os.Getenv("PUPPETEER_EXECUTOR_URL"))
     if execURL == "" {
         if v, ok := system.Get("AutoClick_Browser_Executor_URL"); ok && v != "" { execURL = v }
     }

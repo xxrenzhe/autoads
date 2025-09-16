@@ -122,6 +122,7 @@ if [ -z "$PUPPETEER_EXECUTOR_URL" ]; then
   echo "[entrypoint] 启动本地 Playwright 执行器: $PUPPETEER_EXECUTOR_URL"
   ( node /app/executors/puppeteer-server.js >/dev/null 2>&1 & ) || echo "[entrypoint] ⚠️ 启动 Playwright 执行器失败"
 fi
+# 兼容别名：为空则同步浏览器执行器URL
 if [ -z "$ADSCENTER_EXECUTOR_URL" ]; then
   export ADSCENTER_EXECUTOR_URL="http://127.0.0.1:${ADSCENTER_EXECUTOR_PORT}"
   echo "[entrypoint] 启动本地 AdsCenter 执行器: $ADSCENTER_EXECUTOR_URL"

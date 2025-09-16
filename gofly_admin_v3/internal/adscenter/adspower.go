@@ -59,11 +59,18 @@ type StartProfileResponse struct {
 
 // LinkExtractionResult 链接提取结果
 type LinkExtractionResult struct {
-	AffiliateURL  string   `json:"affiliate_url"`
-	FinalURL      string   `json:"final_url"`
-	Success       bool     `json:"success"`
-	Error         string   `json:"error,omitempty"`
-	RedirectChain []string `json:"redirect_chain,omitempty"`
+    AffiliateURL  string   `json:"affiliate_url"`
+    FinalURL      string   `json:"final_url"`
+    Success       bool     `json:"success"`
+    Error         string   `json:"error,omitempty"`
+    Classification string   `json:"classification,omitempty"`
+    RedirectChain []string `json:"redirect_chain,omitempty"`
+}
+// ExtractionOptions 解析可选项（国家、代理、Referer 控制等）
+type ExtractionOptions struct {
+    Country string
+    Proxy   string
+    Referer *string
 }
 
 // StartProfile 启动浏览器配置
@@ -170,16 +177,17 @@ func (c *AdsPowerClient) StopProfile(profileID string) error {
 }
 
 // ExtractFinalURL 提取联盟链接的最终URL
-func (c *AdsPowerClient) ExtractFinalURL(profileID, affiliateURL string) (*LinkExtractionResult, error) {
+func (c *AdsPowerClient) ExtractFinalURL(profileID, affiliateURL string, _ *ExtractionOptions) (*LinkExtractionResult, error) {
 	// 启动浏览器
 	startResp, err := c.StartProfile(profileID)
-	if err != nil {
-		return &LinkExtractionResult{
-			AffiliateURL: affiliateURL,
-			Success:      false,
-			Error:        fmt.Sprintf("启动浏览器失败: %v", err),
-		}, nil
-	}
+    if err != nil {
+        return &LinkExtractionResult{
+            AffiliateURL: affiliateURL,
+            Success:      false,
+            Error:        fmt.Sprintf("启动浏览器失败: %v", err),
+            Classification: "upstream_error",
+        }, nil
+    }
 
 	// 确保浏览器关闭
 	defer func() {
@@ -189,21 +197,23 @@ func (c *AdsPowerClient) ExtractFinalURL(profileID, affiliateURL string) (*LinkE
 	}()
 
 	// 使用Chrome DevTools Protocol访问链接并提取最终URL
-	finalURL, redirectChain, err := c.navigateAndExtractURL(startResp.DebugUrl, affiliateURL)
-	if err != nil {
-		return &LinkExtractionResult{
-			AffiliateURL: affiliateURL,
-			Success:      false,
-			Error:        fmt.Sprintf("提取链接失败: %v", err),
-		}, nil
-	}
+    finalURL, redirectChain, err := c.navigateAndExtractURL(startResp.DebugUrl, affiliateURL)
+    if err != nil {
+        return &LinkExtractionResult{
+            AffiliateURL: affiliateURL,
+            Success:      false,
+            Error:        fmt.Sprintf("提取链接失败: %v", err),
+            Classification: "upstream_error",
+        }, nil
+    }
 
-	return &LinkExtractionResult{
-		AffiliateURL:  affiliateURL,
-		FinalURL:      finalURL,
-		Success:       true,
-		RedirectChain: redirectChain,
-	}, nil
+    return &LinkExtractionResult{
+        AffiliateURL:  affiliateURL,
+        FinalURL:      finalURL,
+        Success:       true,
+        Classification: "success",
+        RedirectChain: redirectChain,
+    }, nil
 }
 
 // navigateAndExtractURL 导航到URL并提取最终URL
@@ -305,29 +315,31 @@ func NewMockAdsPowerClient() *MockAdsPowerClient {
 }
 
 // ExtractFinalURL 模拟链接提取
-func (m *MockAdsPowerClient) ExtractFinalURL(profileID, affiliateURL string) (*LinkExtractionResult, error) {
+func (m *MockAdsPowerClient) ExtractFinalURL(profileID, affiliateURL string, _ *ExtractionOptions) (*LinkExtractionResult, error) {
 	// 模拟处理时间
 	time.Sleep(1 * time.Second)
 
 	// 解析URL
 	parsedURL, err := url.Parse(affiliateURL)
-	if err != nil {
-		return &LinkExtractionResult{
-			AffiliateURL: affiliateURL,
-			Success:      false,
-			Error:        "无效的URL格式",
-		}, nil
-	}
+    if err != nil {
+        return &LinkExtractionResult{
+            AffiliateURL: affiliateURL,
+            Success:      false,
+            Error:        "无效的URL格式",
+            Classification: "validation_error",
+        }, nil
+    }
 
 	// 模拟成功提取
 	finalURL := fmt.Sprintf("https://target-site.com/product?source=%s", parsedURL.Host)
 
-	return &LinkExtractionResult{
-		AffiliateURL:  affiliateURL,
-		FinalURL:      finalURL,
-		Success:       true,
-		RedirectChain: []string{affiliateURL, finalURL},
-	}, nil
+    return &LinkExtractionResult{
+        AffiliateURL:  affiliateURL,
+        FinalURL:      finalURL,
+        Success:       true,
+        Classification: "success",
+        RedirectChain: []string{affiliateURL, finalURL},
+    }, nil
 }
 
 // TestConnection 模拟连接测试

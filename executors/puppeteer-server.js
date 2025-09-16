@@ -180,6 +180,65 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(body));
     return;
   }
+  // Resolve final URL for redirects
+  if (method === 'GET' && url.startsWith('/resolve?')) {
+    try {
+      const u = new URL('http://x'+url); // dummy base
+      const target = u.searchParams.get('url');
+      const country = (u.searchParams.get('country') || '').toUpperCase();
+      const proxyParam = u.searchParams.get('proxy') || '';
+      if (!target) {
+        res.writeHead(400, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ classification: 'validation_error', message: 'url required' }));
+        return;
+      }
+      await ensurePlaywright();
+      const t0 = Date.now();
+      let browser, context, page;
+      try {
+        // resolve proxy by country
+        const proxyByCountry = (() => {
+          try { return JSON.parse(process.env.PUPPETEER_PROXY_BY_COUNTRY || '{}') } catch { return {} }
+        })();
+        const defaultProxy = process.env.PUPPETEER_PROXY_DEFAULT || '';
+        let proxyServer = proxyParam || (country && proxyByCountry[country]) || defaultProxy;
+        const launchOpts = { headless: true };
+        if (proxyServer) launchOpts.proxy = { server: proxyServer };
+        browser = await playwright.chromium.launch(launchOpts);
+        context = await browser.newContext();
+        // strip referer for all requests
+        await context.route('**/*', (route) => {
+          const headers = { ...route.request().headers() };
+          if ('referer' in headers) delete headers['referer'];
+          route.continue({ headers }).catch(()=>{});
+        });
+        page = await context.newPage();
+        await page.goto(target, { timeout: 15000, waitUntil: 'domcontentloaded' });
+        const finalUrl = page.url();
+        const dur = Date.now() - t0;
+        recordMetrics(true, 'success', dur);
+        const parsed = new URL(finalUrl);
+        const suffix = parsed.search ? parsed.search.substring(1) : '';
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ classification: 'success', finalUrl, finalUrlSuffix: suffix, durationMs: dur, effectiveProxy: proxyServer || null }));
+      } catch (e) {
+        const msg = String(e && e.message || 'error');
+        const classification = /timeout/i.test(msg) ? 'timeout' : 'upstream_error';
+        recordMetrics(false, classification, Date.now()-t0);
+        onFailureForCircuit();
+        res.writeHead(502, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ classification, message: msg }));
+      } finally {
+        try { if (page) await page.close(); } catch {}
+        try { if (context) await context.close(); } catch {}
+        try { if (browser) await browser.close(); } catch {}
+      }
+    } catch (e) {
+      res.writeHead(500, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ classification: 'network_error', message: String(e && e.message || 'internal') }));
+    }
+    return;
+  }
   if (method === 'POST' && url === '/visit') {
     try {
       const body = await parseJSON(req);
