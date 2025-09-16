@@ -156,23 +156,23 @@ func (di *DatabaseInitializer) Initialize() error {
 func (di *DatabaseInitializer) createDatabase() error {
 	dbName := di.config.DB.Database
 
-	// 检查数据库是否存在
-	var exists bool
-	err := di.db.Raw("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?", dbName).Scan(&exists).Error
-	if err != nil {
-		return err
-	}
+    // 检查数据库是否存在（使用计数更稳妥避免类型转换问题）
+    var count int64
+    err := di.db.Raw("SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?", dbName).Scan(&count).Error
+    if err != nil {
+        return err
+    }
 
-	if !exists {
-		di.logger.Printf("创建数据库: %s", dbName)
-		sql := fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", dbName)
-		if err := di.db.Exec(sql).Error; err != nil {
-			return err
-		}
-		di.logger.Printf("✅ 数据库 %s 创建成功", dbName)
-	} else {
-		di.logger.Printf("数据库 %s 已存在", dbName)
-	}
+    if count == 0 {
+        di.logger.Printf("创建数据库: %s", dbName)
+        sql := fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", dbName)
+        if err := di.db.Exec(sql).Error; err != nil {
+            return err
+        }
+        di.logger.Printf("✅ 数据库 %s 创建成功", dbName)
+    } else {
+        di.logger.Printf("数据库 %s 已存在", dbName)
+    }
 
 	return nil
 }
