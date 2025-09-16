@@ -85,19 +85,29 @@ func (di *DatabaseInitializer) Initialize() error {
 		initLogger.Log("INFO", "database", "开始数据库初始化")
 	}
 
-	// 1. 创建数据库（如果不存在）
-	progressTracker.UpdateProgress("创建数据库")
-	start := time.Now()
-	if err := di.createDatabase(); err != nil {
-		if initLogger != nil {
-			initLogger.LogError("database", "创建数据库失败", err)
-		}
-		progressTracker.Fail(err)
-		return fmt.Errorf("创建数据库失败: %w", err)
-	}
-	if initLogger != nil {
-		initLogger.LogWithDuration("INFO", "database", "数据库创建成功", time.Since(start), true)
-	}
+    // 读取跳过标志
+    skipCreate := isEnvTrue("SKIP_CREATE_DB") || isEnvTrue("INIT_SKIP_CREATE_DB")
+    skipMigrate := isEnvTrue("SKIP_MIGRATIONS") || isEnvTrue("INIT_SKIP_MIGRATIONS")
+    skipSeed := isEnvTrue("SKIP_SEED") || isEnvTrue("SKIP_BASIC_DATA")
+    skipVerify := isEnvTrue("SKIP_VERIFY") || isEnvTrue("INIT_SKIP_VERIFY")
+
+    // 1. 创建数据库（如果不存在）
+    progressTracker.UpdateProgress("创建数据库")
+    start := time.Now()
+    if !skipCreate {
+        if err := di.createDatabase(); err != nil {
+            if initLogger != nil {
+                initLogger.LogError("database", "创建数据库失败", err)
+            }
+            progressTracker.Fail(err)
+            return fmt.Errorf("创建数据库失败: %w", err)
+        }
+        if initLogger != nil {
+            initLogger.LogWithDuration("INFO", "database", "数据库创建成功", time.Since(start), true)
+        }
+    } else if initLogger != nil {
+        initLogger.Log("INFO", "database", "跳过创建数据库（按环境变量）")
+    }
 
 	// 2. 连接到目标数据库
 	progressTracker.UpdateProgress("连接数据库")
@@ -113,47 +123,59 @@ func (di *DatabaseInitializer) Initialize() error {
 		initLogger.LogWithDuration("INFO", "database", "数据库连接成功", time.Since(start), true)
 	}
 
-	// 3. 执行迁移
-	progressTracker.UpdateProgress("执行数据库迁移")
-	start = time.Now()
-	if err := di.runMigrations(); err != nil {
-		if initLogger != nil {
-			initLogger.LogError("migration", "执行迁移失败", err)
-		}
-		progressTracker.Fail(err)
-		return fmt.Errorf("执行迁移失败: %w", err)
-	}
-	if initLogger != nil {
-		initLogger.LogWithDuration("INFO", "migration", "数据库迁移完成", time.Since(start), true)
-	}
+    // 3. 执行迁移
+    progressTracker.UpdateProgress("执行数据库迁移")
+    start = time.Now()
+    if !skipMigrate {
+        if err := di.runMigrations(); err != nil {
+            if initLogger != nil {
+                initLogger.LogError("migration", "执行迁移失败", err)
+            }
+            progressTracker.Fail(err)
+            return fmt.Errorf("执行迁移失败: %w", err)
+        }
+        if initLogger != nil {
+            initLogger.LogWithDuration("INFO", "migration", "数据库迁移完成", time.Since(start), true)
+        }
+    } else if initLogger != nil {
+        initLogger.Log("INFO", "migration", "跳过数据库迁移（按环境变量）")
+    }
 
-	// 4. 初始化基础数据
-	progressTracker.UpdateProgress("初始化基础数据")
-	start = time.Now()
-	if err := di.initializeBasicData(); err != nil {
-		if initLogger != nil {
-			initLogger.LogError("data", "初始化基础数据失败", err)
-		}
-		progressTracker.Fail(err)
-		return fmt.Errorf("初始化基础数据失败: %w", err)
-	}
-	if initLogger != nil {
-		initLogger.LogWithDuration("INFO", "data", "基础数据初始化完成", time.Since(start), true)
-	}
+    // 4. 初始化基础数据
+    progressTracker.UpdateProgress("初始化基础数据")
+    start = time.Now()
+    if !skipSeed {
+        if err := di.initializeBasicData(); err != nil {
+            if initLogger != nil {
+                initLogger.LogError("data", "初始化基础数据失败", err)
+            }
+            progressTracker.Fail(err)
+            return fmt.Errorf("初始化基础数据失败: %w", err)
+        }
+        if initLogger != nil {
+            initLogger.LogWithDuration("INFO", "data", "基础数据初始化完成", time.Since(start), true)
+        }
+    } else if initLogger != nil {
+        initLogger.Log("INFO", "data", "跳过基础数据初始化（按环境变量）")
+    }
 
-	// 5. 验证初始化结果
-	progressTracker.UpdateProgress("验证初始化结果")
-	start = time.Now()
-	if err := di.verifyInitialization(); err != nil {
-		if initLogger != nil {
-			initLogger.LogError("verification", "验证初始化失败", err)
-		}
-		progressTracker.Fail(err)
-		return fmt.Errorf("验证初始化失败: %w", err)
-	}
-	if initLogger != nil {
-		initLogger.LogWithDuration("INFO", "verification", "初始化验证通过", time.Since(start), true)
-	}
+    // 5. 验证初始化结果
+    progressTracker.UpdateProgress("验证初始化结果")
+    start = time.Now()
+    if !skipVerify {
+        if err := di.verifyInitialization(); err != nil {
+            if initLogger != nil {
+                initLogger.LogError("verification", "验证初始化失败", err)
+            }
+            progressTracker.Fail(err)
+            return fmt.Errorf("验证初始化失败: %w", err)
+        }
+        if initLogger != nil {
+            initLogger.LogWithDuration("INFO", "verification", "初始化验证通过", time.Since(start), true)
+        }
+    } else if initLogger != nil {
+        initLogger.Log("INFO", "verification", "跳过初始化结果验证（按环境变量）")
+    }
 
 	di.logger.Println("✅ 数据库初始化完成")
 	progressTracker.Complete()
@@ -254,6 +276,17 @@ func waitForTCP(host string, port int, total time.Duration) error {
             return fmt.Errorf("等待 %s 可用超时(%v)", addr, total)
         }
         time.Sleep(500 * time.Millisecond)
+    }
+}
+
+// isEnvTrue 判断环境变量是否为真值（1/true/yes/on）
+func isEnvTrue(name string) bool {
+    v := strings.TrimSpace(strings.ToLower(os.Getenv(name)))
+    switch v {
+    case "1", "true", "yes", "on":
+        return true
+    default:
+        return false
     }
 }
 
