@@ -181,13 +181,23 @@ echo "[entrypoint] 启动服务..."
 if [ -z "$PUPPETEER_EXECUTOR_URL" ]; then
   export PUPPETEER_EXECUTOR_URL="http://127.0.0.1:${PUPPETEER_EXECUTOR_PORT}"
   echo "[entrypoint] 启动本地 Playwright 执行器: $PUPPETEER_EXECUTOR_URL"
-  ( node /app/executors/puppeteer-server.js >/dev/null 2>&1 & ) || echo "[entrypoint] ⚠️ 启动 Playwright 执行器失败"
+  mkdir -p /app/logs || true
+  if [ "$EXEC_LOG_TO_STDOUT" = "true" ]; then
+    ( node /app/executors/puppeteer-server.js 2>&1 | tee -a /app/logs/exec-puppeteer.log & ) || echo "[entrypoint] ⚠️ 启动 Playwright 执行器失败"
+  else
+    ( node /app/executors/puppeteer-server.js >> /app/logs/exec-puppeteer.log 2>&1 & ) || echo "[entrypoint] ⚠️ 启动 Playwright 执行器失败"
+  fi
 fi
 # 兼容别名：为空则同步浏览器执行器URL
 if [ -z "$ADSCENTER_EXECUTOR_URL" ]; then
   export ADSCENTER_EXECUTOR_URL="http://127.0.0.1:${ADSCENTER_EXECUTOR_PORT}"
   echo "[entrypoint] 启动本地 AdsCenter 执行器: $ADSCENTER_EXECUTOR_URL"
-  ( node /app/executors/adscenter-update-server.js >/dev/null 2>&1 & ) || echo "[entrypoint] ⚠️ 启动 AdsCenter 执行器失败"
+  mkdir -p /app/logs || true
+  if [ "$EXEC_LOG_TO_STDOUT" = "true" ]; then
+    ( node /app/executors/adscenter-update-server.js 2>&1 | tee -a /app/logs/exec-adscenter.log & ) || echo "[entrypoint] ⚠️ 启动 AdsCenter 执行器失败"
+  else
+    ( node /app/executors/adscenter-update-server.js >> /app/logs/exec-adscenter.log 2>&1 & ) || echo "[entrypoint] ⚠️ 启动 AdsCenter 执行器失败"
+  fi
 fi
 
 exec "$APP_DIR/server" -config="$CONFIG_PATH" -port="$PORT"
