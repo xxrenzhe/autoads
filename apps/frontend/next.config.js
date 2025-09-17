@@ -190,8 +190,14 @@ const nextConfig = {
       config.externals.push('playwright', 'playwright-core');
     }
 
-    // 为缺失三方依赖提供本地构建桩（仅在开发或显式开启时生效）
-    if (dev || process.env.ALLOW_STUBS === 'true') {
+    // 为缺失三方依赖提供本地构建桩
+    // 规则：
+    // - 开发环境总是启用
+    // - 显式设置 ALLOW_STUBS=true 也启用
+    // - 但在 preview 环境强制关闭，确保预览镜像使用真实依赖
+    const deployEnv = (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV || 'development').toLowerCase()
+    const enableStubs = (dev || process.env.ALLOW_STUBS === 'true') && deployEnv !== 'preview'
+    if (enableStubs) {
       config.resolve = config.resolve || {}
       config.resolve.alias = {
         ...(config.resolve.alias || {}),

@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { signIn, useSession } from 'next-auth/react'
-import { Dialog, DialogClose, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { Dialog, DialogClose, DialogHeader, DialogTitle, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { X, Shield, Zap, BarChart3, Globe, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -15,30 +14,22 @@ interface LoginModalProps {
   redirectUrl?: string
 }
 
-// Custom DialogContent with styled close button
-const CustomDialogContent = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPrimitive.Portal>
-    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
-        className
-      )}
-      {...props}
-    >
-      {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-full p-1 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-white/80 backdrop-blur-sm">
-        <X className="h-5 w-5" />
-        <span className="sr-only">关闭登录对话框</span>
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
-  </DialogPrimitive.Portal>
-))
-CustomDialogContent.displayName = DialogPrimitive.Content.displayName
+// 使用通用 DialogContent（不依赖 radix）
+const CustomDialogContent = ({ className, children, ...props }: React.ComponentPropsWithoutRef<typeof DialogContent>) => (
+  <DialogContent
+    className={cn(
+      "sm:max-w-md w-full mx-4 rounded-2xl shadow-2xl bg-white p-0 overflow-hidden",
+      className,
+    )}
+    {...props}
+  >
+    {children}
+    <DialogClose className="absolute right-4 top-4 z-10 rounded-full p-1 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-white/80 backdrop-blur-sm">
+      <X className="h-5 w-5" />
+      <span className="sr-only">关闭登录对话框</span>
+    </DialogClose>
+  </DialogContent>
+)
 
 export function LoginModal({ 
   isOpen, 

@@ -1,11 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { 
-  CreditCardIcon,
-  LockClosedIcon,
-  ExclamationCircleIcon
-} from '@heroicons/react/24/outline'
+import { CreditCard, Lock, AlertCircle } from 'lucide-react'
 
 interface Plan {
   id: string
@@ -356,7 +352,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
         
         {cardError && (
           <div className="mt-2 flex items-center text-sm text-red-600">
-            <ExclamationCircleIcon className="h-4 w-4 mr-1" />
+            <AlertCircle className="h-4 w-4 mr-1" />
             {cardError}
           </div>
         )}
@@ -365,7 +361,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
       {/* Security Notice */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex">
-          <LockClosedIcon className="h-5 w-5 text-blue-400 mr-3 mt-0.5" />
+          <Lock className="h-5 w-5 text-blue-400 mr-3 mt-0.5" />
           <div className="text-sm text-blue-700">
             <p className="font-medium">Secure Payment</p>
             <p>预发环境不进行真实扣款；生产环境将通过合规支付渠道加密处理，我们不会存储您的卡片信息。</p>
@@ -386,7 +382,7 @@ function PaymentFormContent({ plan, onSubmit, loading }: PaymentFormProps) {
           </>
         ) : (
           <>
-            <CreditCardIcon className="h-5 w-5 mr-2" />
+            <CreditCard className="h-5 w-5 mr-2" />
             Subscribe for ${plan.price}/{plan.interval}
           </>
         )}

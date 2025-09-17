@@ -6,10 +6,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-
-// 动态导入Swagger UI以避免SSR问题
-const SwaggerUI: any = dynamic(() => import('swagger-ui-react'), { ssr: false });
 
 interface ApiVersion {
   version: string;
@@ -58,28 +54,15 @@ export default function ApiDocsPage() {
     localStorage.setItem('api-docs-token', token);
   };
 
-  const swaggerConfig = {
-    url: selectedVersion.specUrl,
-    dom_id: '#swagger-ui',
-    deepLinking: true,
-    presets: [
-      // SwaggerUIBundle.presets.apis,
-      // SwaggerUIStandalonePreset
-    ],
-    plugins: [
-      // SwaggerUIBundle.plugins.DownloadUrl
-    ],
-    layout: 'StandaloneLayout',
-    requestInterceptor: (request: any) => {
-      if (authToken) {
-        request.headers.Authorization = `Bearer ${authToken}`;
-      }
-      return request;
-    },
-    onComplete: () => {
-      console.log('Swagger UI loaded');
-    }
-  };
+  const [specText, setSpecText] = useState<string>('');
+  useEffect(() => {
+    let aborted = false
+    fetch(selectedVersion.specUrl)
+      .then(r => r.text())
+      .then(t => { if (!aborted) setSpecText(t) })
+      .catch(() => setSpecText('无法加载 OpenAPI 文档，请稍后重试。'))
+    return () => { aborted = true }
+  }, [selectedVersion])
 
   if (!isClient) {
     return (
@@ -229,10 +212,20 @@ export default function ApiDocsPage() {
         </div>
       </div>
 
-      {/* Swagger UI */}
+      {/* 文档（预览构建：显示原始 OpenAPI 文本） */}
       <div className="bg-white">
-        <div className="max-w-7xl mx-auto">
-          <SwaggerUI {...(swaggerConfig as any)} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between mb-3">
+            <a href={selectedVersion.specUrl} className="text-blue-600 hover:underline" download>
+              下载 {selectedVersion.version} OpenAPI 规范
+            </a>
+            {authToken && (
+              <span className="text-xs text-gray-500">已设置 Authorization Bearer Token</span>
+            )}
+          </div>
+          <pre className="overflow-auto text-sm bg-gray-50 border rounded p-4 whitespace-pre-wrap">
+{specText}
+          </pre>
         </div>
       </div>
 
