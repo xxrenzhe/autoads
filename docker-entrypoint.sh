@@ -18,13 +18,14 @@ start_next() {
   (
     cd "$dir" && PORT="$NEXTJS_PORT" HOSTNAME="0.0.0.0" node server.js > /app/logs/next.log 2>&1 &
   ) || return 1
-  # 就绪探测，最多 10 秒
+  # 就绪探测，最多 10 秒（仅 2xx/3xx 视为成功；修复 000000 误判）
   for i in $(seq 1 20); do
-    code=$(curl -sS -o /dev/null -m 0.5 -w "%{http_code}" "http://127.0.0.1:${NEXTJS_PORT}/" || echo 000)
-    if [ "$code" != "000" ]; then
-      echo "[entrypoint] Next.js 已就绪: http://127.0.0.1:${NEXTJS_PORT} (code=$code)"
-      return 0
-    fi
+    resp=$(curl -sS -o /dev/null -m 1 -w "%{http_code}" "http://127.0.0.1:${NEXTJS_PORT}/" || true)
+    case "$resp" in
+      2??|3??)
+        echo "[entrypoint] Next.js 已就绪: http://127.0.0.1:${NEXTJS_PORT} (code=$resp)"
+        return 0 ;;
+    esac
     sleep 0.5
   done
   echo "[entrypoint] ⚠️ Next.js 未在端口 ${NEXTJS_PORT} 就绪，最近日志："
