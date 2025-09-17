@@ -389,6 +389,7 @@ const __nextAuth = NextAuth({
           console.error('Error in signIn callback:', error)
           return false
         }
+      }
       return false // Deny other providers
     }
   },

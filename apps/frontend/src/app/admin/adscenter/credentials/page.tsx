@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 type Cred = { userId: string; customerId: string; name: string; isActive: boolean; updatedAt: string }
 
 import { useSession } from 'next-auth/react'
-import { useEffect } from 'react'
 
 export default function AdminCredentialsPage() {
   const { data: session } = useSession()
