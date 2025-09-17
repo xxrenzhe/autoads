@@ -1,0 +1,24 @@
+FROM node:20-bookworm-slim
+WORKDIR /app
+
+# Tools needed for readiness checks
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# Copy the entrypoint under test
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Minimal Next standalone stub: a tiny HTTP server on $PORT
+RUN mkdir -p /app/frontend /app/gofly_admin_v3 \
+ && printf "const http=require('http');const port=process.env.PORT||3000;http.createServer((req,res)=>{if(req.url==='/'||req.url.startsWith('/api/health')){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({status:'ok'}));}else{res.writeHead(200);res.end('ok');}}).listen(port,'0.0.0.0',()=>console.log('server listening',port));" > /app/frontend/server.js
+
+# Go server stub: return success for -migrate/-init-db, run forever for normal start
+RUN printf '#!/bin/sh\ncase "$1" in\n  -migrate|-init-db) echo "stub $1 ok"; exit 0 ;;\nesac\necho "Go server stub running on $@"\nsleep infinity\n' > /app/gofly_admin_v3/server \
+ && chmod +x /app/gofly_admin_v3/server
+
+ENV NEXTJS_PORT=3000 \
+    ADMIN_CONFIG=/app/gofly_admin_v3/config.yaml
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
