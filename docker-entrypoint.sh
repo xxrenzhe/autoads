@@ -144,7 +144,8 @@ fi
 
 # 执行数据库迁移（Go 后端 + Prisma）
 echo "[entrypoint] 执行数据库迁移 (Go) ..."
-"$APP_DIR/server" -migrate -config="$CONFIG_PATH" || true
+# 传入 -port 与最终运行端口保持一致，避免旧版本在 -migrate 后继续监听到默认 8888 端口
+"$APP_DIR/server" -migrate -config="$CONFIG_PATH" -port="$PORT" || true
 
 # Prisma 迁移（仅当检测到 schema 与 DATABASE_URL 存在时执行）
 if [ -f "$PRISMA_SCHEMA" ]; then
