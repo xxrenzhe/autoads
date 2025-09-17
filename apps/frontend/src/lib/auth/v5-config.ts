@@ -1,6 +1,8 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
 import { PrismaAdapter } from '@auth/prisma-adapter'
+// 延迟使用 prisma：import 保留，但仅在确有 DATABASE_URL 时附加到 NextAuth 适配器，
+// 避免无数据库环境下模块初始化失败或无意义的引擎加载。
 import { prisma } from '@/lib/prisma'
 import { NextRequest } from 'next/server'
 import { 
@@ -31,7 +33,7 @@ function generateSimpleDeviceFingerprint(request: NextRequest): string {
   return Math.abs(hash).toString(36)
 }
 
-// 在启动时打印配置信息
+// 在启动时打印配置信息（仅开发/调试环境）
 logAuthConfig()
 
 // 处理新用户的订阅创建（支持邀请码）
@@ -71,52 +73,45 @@ export async function handleNewUserSubscription(userId: string, userEmail: strin
   }
 }
 
-// Custom adapter to handle field mapping between NextAuth and Prisma
-const customAdapter = {
-  ...PrismaAdapter(prisma),
-  async createUser(data: any) {
-    // Convert NextAuth fields to Prisma schema
-    const { emailVerified, image, ...userData } = data
-    
-    // Create user in Prisma format
-    const user = await prisma.user.create({
-      data: {
-        ...userData,
-        // Convert Date to boolean for Prisma
-        emailVerified: emailVerified ? true : false,
-        // Map image to avatar
-        avatar: image || null,
+// 按需构建 Prisma 适配器：缺少数据库环境时不附加适配器（JWT session 仍可工作）
+function buildPrismaAdapterIfAvailable() {
+  if (!process.env.DATABASE_URL) {
+    console.warn('[auth] Prisma adapter disabled: missing DATABASE_URL')
+    return undefined
+  }
+  const base = PrismaAdapter(prisma)
+  return {
+    ...base,
+    async createUser(data: any) {
+      const { emailVerified, image, ...userData } = data
+      const user = await prisma.user.create({
+        data: {
+          ...userData,
+          emailVerified: emailVerified ? true : false,
+          avatar: image || null,
+        }
+      })
+      try {
+        const { InvitationService } = await import('@/lib/services/invitation-service')
+        const invitationResult = await InvitationService.createInvitation(user.id)
+        if (invitationResult.success) {
+          console.log(`Auto-generated invitation code for new user: ${user.email} - ${invitationResult.invitationCode}`)
+        } else {
+          console.error('Failed to auto-generate invitation code:', invitationResult.error)
+        }
+      } catch (error) {
+        console.error('Error auto-generating invitation code:', error)
       }
-    })
-    
-    // Note: Subscription creation is now handled in the session callback
-    // to properly handle invitation codes for OAuth users
-    
-    // Auto-generate invitation code for new users
-    try {
-      const { InvitationService } = await import('@/lib/services/invitation-service')
-      const invitationResult = await InvitationService.createInvitation(user.id)
-      
-      if (invitationResult.success) {
-        console.log(`Auto-generated invitation code for new user: ${user.email} - ${invitationResult.invitationCode}`)
-      } else {
-        console.error('Failed to auto-generate invitation code:', invitationResult.error)
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name || undefined,
+        emailVerified: user.emailVerified ? new Date() : null,
+        image: user.avatar || undefined,
+        role: user.role,
+        status: user.status,
+        isNewUser: true
       }
-    } catch (error) {
-      console.error('Error auto-generating invitation code:', error)
-    }
-    
-    // Return in NextAuth format with proper type conversions
-    // Add a flag to indicate this is a new user
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name || undefined,
-      emailVerified: user.emailVerified ? new Date() : null,
-      image: user.avatar || undefined,
-      role: user.role,
-      status: user.status,
-      isNewUser: true  // Flag to identify new users
     }
   }
 }
@@ -125,9 +120,40 @@ const customAdapter = {
 let __nextAuth: any
 function getNextAuth() {
   if (!__nextAuth) {
+    const providers: any[] = []
+    if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
+      providers.push(Google({
+        clientId: process.env.AUTH_GOOGLE_ID,
+        clientSecret: process.env.AUTH_GOOGLE_SECRET,
+        authorization: {
+          params: {
+            prompt: 'select_account',
+            access_type: 'offline',
+            response_type: 'code',
+            scope: 'openid email profile'
+          }
+        },
+        profile(profile) {
+          return {
+            id: profile.sub,
+            name: profile.name,
+            email: profile.email,
+            emailVerified: profile.email_verified ? true : false,
+            role: 'USER',
+            status: 'ACTIVE'
+          }
+        }
+      }))
+    } else {
+      console.warn('[auth] Google provider disabled: missing AUTH_GOOGLE_ID/SECRET')
+    }
+
+    const adapter = buildPrismaAdapterIfAvailable()
+    const secret = process.env.AUTH_SECRET || (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV !== 'production' ? 'dev-secret-autoads' : undefined)
+
     __nextAuth = NextAuth({
-      adapter: customAdapter,
-      secret: process.env.AUTH_SECRET,
+      ...(adapter ? { adapter } : {}),
+      secret,
       debug: process.env.NODE_ENV === 'development' || process.env.AUTH_DEBUG === 'true',
   // Enhanced logging for debugging
   logger: {
@@ -163,35 +189,7 @@ function getNextAuth() {
       }
     },
   },
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
-      authorization: {
-        params: {
-          // Only prompt for consent on first login or when scopes change
-          prompt: "select_account",
-          access_type: "offline",
-          response_type: "code",
-          // Removed hd restriction to allow all Google accounts
-          // We'll validate email domain in the signIn callback instead
-          // Request basic profile and email
-          scope: "openid email profile"
-        }
-      },
-      // Optional: Add profile customization
-      profile(profile) {
-        return {
-          id: profile.sub,
-          name: profile.name,
-          email: profile.email,
-          emailVerified: profile.email_verified ? true : false,
-          role: 'USER', // Default role
-          status: 'ACTIVE' // Default status
-        }
-      }
-    }),
-  ],
+  providers,
   session: {
     strategy: 'jwt',
     maxAge: 7 * 24 * 60 * 60, // 7 days (optimized)
