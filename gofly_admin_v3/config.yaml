@@ -20,6 +20,17 @@ database:
     max_open: 100
     max_lifetime: 3600
 
+  # 兼容 gofly-admin gform 的数据库配置（默认分组：default）
+  default:
+    type: "mysql"
+    hostname: "dbprovider.sg-members-1.clawcloudrun.com"
+    hostport: "30354"
+    username: "root"
+    password: "jtl85fn8"
+    dbname: "autoads"
+    charset: "utf8mb4"
+    timezone: "Local"
+
 # Redis配置
 redis:
   enable: true

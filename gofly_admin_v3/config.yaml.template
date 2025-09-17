@@ -20,6 +20,18 @@ database:
     max_open: 100
     max_lifetime: 3600
 
+  # 兼容 gofly-admin gform 的数据库配置（默认分组：default）
+  # 注意：字段名与上面不同，必须使用 hostname/hostport/dbname
+  default:
+    type: "mysql"
+    hostname: "${DB_HOST}"
+    hostport: "${DB_PORT}"
+    username: "${DB_USER}"
+    password: "${DB_PASSWORD}"
+    dbname: "${DB_NAME}"
+    charset: "utf8mb4"
+    timezone: "Local"
+
 # Redis配置
 redis:
   enable: true
