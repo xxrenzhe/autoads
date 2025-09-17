@@ -110,19 +110,9 @@ if [ -f "$APP_DIR/resource/config.yaml.template" ]; then
   fi
 fi
 
-# 提前尝试启动 Next（若产物存在）；失败不终止，稍后重试一次
-if [ -z "$DISABLE_NEXT" ]; then
-  if [ -f "$NEXT_DIR/server.js" ]; then
-    start_next "$NEXT_DIR" && touch /tmp/.next_started || echo "[entrypoint] ⚠️ Next 早期启动失败（稍后重试）"
-  else
-    candidate=$(find /app -maxdepth 4 -type f -name server.js 2>/dev/null | head -n1)
-    if [ -n "$candidate" ]; then
-      start_next "$(dirname "$candidate")" && touch /tmp/.next_started || echo "[entrypoint] ⚠️ Next 早期自动探测启动失败（稍后重试）"
-    else
-      echo "[entrypoint] 提前启动 Next: 未找到 server.js"
-    fi
-  fi
-fi
+# 无条件尝试启动 Next（最简逻辑）；失败不阻塞后续
+echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
+start_next "$NEXT_DIR" && touch /tmp/.next_started || echo "[entrypoint] ⚠️ Next 早期启动失败（查看 /app/logs/next.log）"
 
 # 可选：仅在首次启动时执行完整初始化（重建库），避免重复执行破坏数据
 if [ "${DB_REBUILD_ON_STARTUP}" = "true" ] || [ "${DB_REBUILD_ON_STARTUP}" = "1" ]; then
@@ -171,25 +161,7 @@ else
   echo "[entrypoint] 跳过 Prisma 迁移：未找到 $PRISMA_SCHEMA"
 fi
 
-# 启动 Next.js 前端（若尚未成功且存在构建产物）
-if [ ! -f /tmp/.next_started ] && [ -f "$NEXT_DIR/server.js" ]; then
-  echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
-  start_next "$NEXT_DIR" && touch /tmp/.next_started || echo "[entrypoint] ⚠️ Next 未能就绪（初次尝试）"
-else
-  if [ ! -f /tmp/.next_started ]; then
-    echo "[entrypoint] 未检测到 Next.js standalone 产物，列出目录以便排查: $NEXT_DIR"
-    ls -la "$NEXT_DIR" || true
-    # 自动探测 server.js（防止路径变更导致的漏检）
-    candidate=$(find /app -maxdepth 4 -type f -name server.js 2>/dev/null | head -n1)
-    if [ -n "$candidate" ]; then
-      NEXT_DIR=$(dirname "$candidate")
-      echo "[entrypoint] 自动探测到 Next 产物: $candidate，尝试启动"
-      start_next "$NEXT_DIR" && touch /tmp/.next_started || echo "[entrypoint] ⚠️ Next 未能就绪（自动探测路径）"
-    else
-      echo "[entrypoint] 未找到任何 server.js（/app 下），跳过前端启动"
-    fi
-  fi
-fi
+# 仅保留一次尝试，避免多重分支与重复日志
 
 echo "[entrypoint] 启动服务..."
 
