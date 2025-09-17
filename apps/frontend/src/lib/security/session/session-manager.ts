@@ -287,8 +287,12 @@ export class SessionManager {
       userId: session.userId,
       sessionToken: session.sessionToken,
       expires: session.expires,
-      lastActivity: new Date(), // Would need to track this separately
-      status: 'ACTIVE'
+      // 目前未持久化存储这些字段，按可选处理
+      ipAddress: undefined,
+      userAgent: undefined,
+      lastActivity: new Date(),
+      isActive: session.expires > new Date(),
+      metadata: undefined,
     }))
   }
 

@@ -27,7 +27,9 @@ COPY --from=web /app/dist ./web/dist
 # Runtime image
 FROM alpine:3.20
 WORKDIR /app/gofly_admin_v3
-RUN apk add --no-cache ca-certificates tzdata && adduser -D -h /home/app app && chown -R app:app /app
+RUN apk add --no-cache ca-certificates tzdata curl iproute2 procps ripgrep \
+    && adduser -D -h /home/app app \
+    && chown -R app:app /app
 USER app
 COPY --from=build /app/server /app/gofly_admin_v3/server
 COPY --from=build /app/gofly_admin_v3/web/dist ./web/dist

@@ -200,4 +200,24 @@ if [ -z "$ADSCENTER_EXECUTOR_URL" ]; then
   fi
 fi
 
+# 在启动 Go 服务前，输出一次后端启动摘要，便于在容器启动日志中直观看到关键信息
+echo "[entrypoint] Go 后端启动摘要："
+echo "[entrypoint]  - 二进制: $APP_DIR/server"
+echo "[entrypoint]  - 配置:   $CONFIG_PATH"
+echo "[entrypoint]  - 端口:   $PORT"
+echo "[entrypoint]  - 健康检查: http://127.0.0.1:$PORT/health | /readyz"
+
+# 如设置了 BACKEND_URL，检查与端口是否一致，给出提示（用于 Next.js /go 代理对齐）
+if [ -n "$BACKEND_URL" ]; then
+  # 仅尝试简单解析端口；未显式端口时不强行判定
+  BACKEND_URL_PORT=$(printf "%s" "$BACKEND_URL" | sed -n 's#.*://[^:/]*:\([0-9][0-9]*\).*#\1#p')
+  echo "[entrypoint]  - BACKEND_URL: $BACKEND_URL"
+  if [ -n "$BACKEND_URL_PORT" ] && [ "$BACKEND_URL_PORT" != "$PORT" ]; then
+    echo "[entrypoint]  ⚠️ 警告：BACKEND_URL 指向端口 $BACKEND_URL_PORT，与 Go 实际启动端口 $PORT 不一致，/go 代理可能返回 502。"
+  fi
+else
+  echo "[entrypoint]  - BACKEND_URL: (未设置)"
+fi
+
+echo "[entrypoint] 正在启动 Go 后端服务..."
 exec "$APP_DIR/server" -config="$CONFIG_PATH" -port="$PORT"

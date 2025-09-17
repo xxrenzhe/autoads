@@ -94,6 +94,8 @@ export const UI_CONSTANTS = {
     secondary: 'bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-300 hover:shadow-lg',
     success: 'bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 hover:shadow-lg',
     outline: 'border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-50 transition-all duration-300',
+    // 供管理后台等危险操作使用（删除/清空等）
+    danger: 'bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 hover:shadow-lg',
   },
   
   // 卡片样式

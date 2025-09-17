@@ -109,6 +109,10 @@ curl -f http://127.0.0.1:3000/api/health || true
 - BFF 每次转发前会对 `BACKEND_URL/readyz` 做快速探测（带缓存 TTL），未就绪返回 503 并附加 `Retry-After`。
 - 所有 BFF 响应统一添加：`X-BFF-Enforced: 1`、`X-Robots-Tag: noindex`、贯通 `x-request-id`。
 
+注意（避免 502）：
+- 确保 Go 服务监听端口（`PORT`）与 `BACKEND_URL` 的端口保持一致，推荐统一为 `8080`。
+- 例如：`PORT=8080` 且 `BACKEND_URL=http://127.0.0.1:8080`。若不一致，`/go/*` 反代会直连失败并返回 502。
+
 相关环境变量（已在 `.env.*.template` 提供）
 - `BACKEND_URL`、`BFF_MAX_BODY`、`BFF_UPSTREAM_TIMEOUT_MS`、`BFF_READY_TIMEOUT_MS`、`BFF_READY_TTL_MS`
 - `/ops/*` 管理端反代：`BACKEND_PROXY_MAX_BODY`、`BACKEND_PROXY_TIMEOUT_MS`、`ADMIN_PROXY_ALLOW_PREFIXES`

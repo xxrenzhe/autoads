@@ -37,7 +37,7 @@ RUN npm run build
 FROM alpine:latest
 
 # 安装必要的运行时依赖
-RUN apk --no-cache add ca-certificates tzdata curl
+RUN apk --no-cache add ca-certificates tzdata curl iproute2 procps ripgrep
 
 # 创建非root用户
 RUN addgroup -g 1001 -S autoads && \

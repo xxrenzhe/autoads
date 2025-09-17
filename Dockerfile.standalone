@@ -71,6 +71,7 @@ USER root
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ca-certificates tzdata gettext-base tini curl \
+    iproute2 procps ripgrep \
  && rm -rf /var/lib/apt/lists/* \
  && update-ca-certificates
 
