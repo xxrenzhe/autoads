@@ -8,7 +8,7 @@ const PageFooter = () => {
   const { t, isLoading } = useLanguage();
 
   return (
-    <footer className="text-center py-8 text-slate-500 border-t border-slate-200">
+    <footer className="text-center py-8 text-slate-500 border-t border-slate-200 bg-white">
       <div className="space-y-4">
         <div className="space-y-2">
           <p className="text-sm">
