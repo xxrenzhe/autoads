@@ -1671,7 +1671,6 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
-      - SIMILARWEB_API_KEY=${SIMILARWEB_API_KEY}
       - GOOGLE_ADS_CLIENT_ID=${GOOGLE_ADS_CLIENT_ID}
       - ADSPOWER_API_KEY=${ADSPOWER_API_KEY}
     depends_on:
@@ -5228,4 +5227,3 @@ GoFly后端 → WebSocket → 前端组件
 - AutoAds 现有系统架构文档
 - 模块化架构设计模式
 - 多用户 SaaS 架构最佳实践
-

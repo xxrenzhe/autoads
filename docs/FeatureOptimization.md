@@ -80,7 +80,7 @@
   - [x] 新增 `lib/config/feature-flags.ts`，统一 `payments/debug/analytics/maintenance` 等开关读取（远端 → ENV 兜底）
   - [x] 替换 Admin、订阅管理等入口的 `NEXT_PUBLIC_*` 读取
 - 外部集成：
-  - [x] SimilarWeb：通过 `APP_CONFIG` 优先远端（`APIs.SimilarWeb.BaseURL`/`HTTP.Timeout`）
+  - [x] SimilarWeb：通过 `APP_CONFIG` 优先远端（`SimilarWeb.APIURL`/`HTTP.Timeout`）
   - [x] AdsPower：`AdsPowerApiClient` 与 `domain-config` 优先远端（`integrations.adsPower.apiUrl`）
   - [x] Gmail：`gmail-service` 从远端 `integrations.gmail.*` 读取 OAuth 配置，tokens 仍走 DB
 - `config-service.ts`：

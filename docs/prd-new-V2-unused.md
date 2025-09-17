@@ -1670,7 +1670,6 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
-      - SIMILARWEB_API_KEY=${SIMILARWEB_API_KEY}
       - GOOGLE_ADS_CLIENT_ID=${GOOGLE_ADS_CLIENT_ID}
       - ADSPOWER_API_KEY=${ADSPOWER_API_KEY}
     depends_on:
@@ -5288,7 +5287,7 @@ GoFly后端 → WebSocket → 前端组件
 
 #### 3.8.9 配置与环境
 - 配置源：`config.yaml` + ENV 覆盖；开发态支持热更新。
-- 关键 ENV：`DATABASE_URL`、`REDIS_URL`、`JWT_SECRET`、`OAUTH_GOOGLE_CLIENT_ID/SECRET`、`SIMILARWEB_API_KEY`、`PROXY_POOL_URLS`、`RATE_LIMIT_*`、`FEATURE_FLAGS_*`。
+- 关键 ENV：`DATABASE_URL`、`REDIS_URL`、`JWT_SECRET`、`OAUTH_GOOGLE_CLIENT_ID/SECRET`、`PROXY_POOL_URLS`、`RATE_LIMIT_*`、`FEATURE_FLAGS_*`。
 - 多环境：dev/staging/prod 三套；敏感信息仅用 ENV/密钥管理（不入仓）。
 
 #### 3.8.10 部署与发布
@@ -5327,4 +5326,3 @@ GoFly后端 → WebSocket → 前端组件
 - M3（3 周）：BatchGo Puppeteer 模式（Docker Chromium、回放、代理池）；运营台仪表盘。
 - M4（3 周）：AdsCenterGo 分阶段上线；支付咨询全链路；安全与稳定性回归；全量切换。
 - 交付物：API 契约文档、配置清单、部署与发布手册、回归用例与压测报告。
-

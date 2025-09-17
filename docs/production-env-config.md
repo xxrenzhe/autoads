@@ -135,9 +135,8 @@ SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
 
 # 情况B：使用需要鉴权的企业端点（可选）
 # 如果你的供应商需要 apikey/Authorization，请将 SIMILARWEB_API_URL 指向内部网关，
-# 由网关统一注入密钥后再转发至 SimilarWeb 官方服务。
+# 由网关统一注入密钥后再转发至 SimilarWeb 官方服务（Go 不读取任何 key）。
 # SIMILARWEB_API_URL=https://gw.example.com/sw/api/v1/data
-# SIMILARWEB_API_KEY=your-similarweb-api-key   # 仅供网关或上游使用，Go 客户端默认不直带 key
 
 # 可选配置
 SIMILARWEB_RATE_LIMIT=100
@@ -390,8 +389,7 @@ AUTH_GOOGLE_ID=your-google-client-id
 AUTH_GOOGLE_SECRET=your-google-client-secret
 JWT_SECRET=your-jwt-secret-here
 
-# 第三方服务
-SIMILARWEB_API_KEY=your-similarweb-key
+# 第三方服务（SimilarWeb 使用公开端点或网关，无需在应用侧配置密钥）
 ```
 
 ## 环境检查清单

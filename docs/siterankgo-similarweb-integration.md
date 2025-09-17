@@ -9,11 +9,8 @@ SiteRankGo 是一个网站排名查询服务，通过集成 SimilarWeb API 提�
 在部署环境中设置以下环境变量：
 
 ```bash
-# SimilarWeb API URL（可选，默认值已设置）
+# SimilarWeb API URL（默认即可，无需密钥）
 export SIMILARWEB_API_URL="https://data.similarweb.com/api/v1/data"
-
-# SimilarWeb API Key（必需）
-export SIMILARWEB_API_KEY="your-api-key-here"
 ```
 
 ### 1.2 配置文件更新
@@ -21,10 +18,9 @@ export SIMILARWEB_API_KEY="your-api-key-here"
 在 `resource/config.yaml` 中添加：
 
 ```yaml
-# SimilarWeb API配置
+# SimilarWeb 配置（无需 api_key）
 similarweb:
   api_url: "https://data.similarweb.com/api/v1/data"
-  api_key: "${SIMILARWEB_API_KEY}"
   timeout: 30  # 请求超时时间（秒）
   rate_limit: 10  # 每秒请求数限制
 ```
@@ -230,11 +226,10 @@ grep "siterank_api_error" runtime/log/siterank.log
 
 ## 9. 安全考虑
 
-### 9.1 API Key 保护
+### 9.1 端点与网关
 
-- 不要在代码中硬编码 API Key
-- 使用环境变量或密钥管理服务
-- 定期轮换 API Key
+- 默认使用公开端点，无需密钥
+- 若供应商要求密钥，请通过内网网关注入，不在应用侧保存密钥
 
 ### 9.2 访问控制
 
@@ -249,7 +244,7 @@ grep "siterank_api_error" runtime/log/siterank.log
 
 ## 10. 部署检查清单
 
-- [ ] 设置环境变量 `SIMILARWEB_API_KEY`
+- [ ] 设置 `SIMILARWEB_API_URL`
 - [ ] 更新配置文件
 - [ ] 验证数据库连接
 - [ ] 测试 API 调用

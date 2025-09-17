@@ -117,7 +117,6 @@ GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
 # 外部服务
-SIMILARWEB_API_KEY=your-similarweb-api-key
 
 # 安全
 ENCRYPTION_KEY=your-32-char-encryption-key

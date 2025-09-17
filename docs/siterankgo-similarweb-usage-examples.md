@@ -324,7 +324,6 @@ if __name__ == "__main__":
 ```bash
 # SimilarWeb API 配置
 export SIMILARWEB_API_URL="https://data.similarweb.com/api/v1/data"
-export SIMILARWEB_API_KEY="your-similarweb-api-key"
 
 # 数据库和Redis配置
 export DATABASE_URL="mysql://user:password@localhost:3306/autoads_gofly"

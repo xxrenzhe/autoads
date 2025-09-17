@@ -692,7 +692,6 @@ autoads:
     
   # SiteRankGo 配置
   siterankgo:
-    similarweb_api_key: "${SIMILARWEB_API_KEY}"
     cache_expire: 86400       # 缓存过期时间（秒）
     
   # Token 配置

@@ -609,9 +609,8 @@ GOFLY_JWT_SECRET=${AUTH_SECRET}
 ### 9.2 配置方式
 
 ```env
-# SimilarWeb API Configuration (需要验证)
-SIMILARWEB_API_URL="https://data.similarweb.com/api/v1/data"  # 需确认实际URL
-SIMILARWEB_API_KEY="your-api-key-here"  # 如果需要API密钥
+# SimilarWeb API Configuration（无需密钥；如需鉴权请通过网关）
+SIMILARWEB_API_URL="https://data.similarweb.com/api/v1/data"
 ```
 
 ### 9.3 实现特性
