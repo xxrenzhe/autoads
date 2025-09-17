@@ -10,6 +10,42 @@ NEXTJS_PORT="${NEXTJS_PORT:-3000}"
 PUPPETEER_EXECUTOR_PORT="${PUPPETEER_EXECUTOR_PORT:-8081}"
 ADSCENTER_EXECUTOR_PORT="${ADSCENTER_EXECUTOR_PORT:-8082}"
 
+# Next.js 启动函数（确保日志与就绪探测）
+start_next() {
+  local dir="$1"
+  echo "[entrypoint] 准备启动 Next（dir=$dir, port=$NEXTJS_PORT）"
+  mkdir -p /app/logs || true
+  (
+    cd "$dir" && PORT="$NEXTJS_PORT" HOSTNAME="0.0.0.0" node server.js > /app/logs/next.log 2>&1 &
+  ) || return 1
+  # 就绪探测，最多 10 秒
+  for i in $(seq 1 20); do
+    code=$(curl -sS -o /dev/null -m 0.5 -w "%{http_code}" "http://127.0.0.1:${NEXTJS_PORT}/" || echo 000)
+    if [ "$code" != "000" ]; then
+      echo "[entrypoint] Next.js 已就绪: http://127.0.0.1:${NEXTJS_PORT} (code=$code)"
+      return 0
+    fi
+    sleep 0.5
+  done
+  echo "[entrypoint] ⚠️ Next.js 未在端口 ${NEXTJS_PORT} 就绪，最近日志："
+  tail -n 120 /app/logs/next.log || true
+  # 常见问题：Prisma 引擎不匹配，尝试按运行时生成
+  if grep -q "Prisma Client could not locate the Query Engine" /app/logs/next.log 2>/dev/null; then
+    if [ -f "$PRISMA_SCHEMA" ] && command -v prisma >/dev/null 2>&1; then
+      echo "[entrypoint] 发现 Prisma 引擎错误，尝试 prisma generate（运行时平台）"
+      prisma generate --schema "$PRISMA_SCHEMA" || echo "[entrypoint] Prisma generate 失败"
+      (
+        cd "$dir" && PORT="$NEXTJS_PORT" HOSTNAME="0.0.0.0" node server.js > /app/logs/next.log 2>&1 &
+      ) || true
+      sleep 1
+      code=$(curl -sS -o /dev/null -m 1 -w "%{http_code}" "http://127.0.0.1:${NEXTJS_PORT}/" || echo 000)
+      echo "[entrypoint] Prisma 修复后 Next.js 端口检查: code=$code"
+      [ "$code" != "000" ] && return 0
+    fi
+  fi
+  return 1
+}
+
 # 生产环境默认强制启用内部 JWT 验签（可通过显式设置覆盖）
 if [ -z "${INTERNAL_JWT_ENFORCE}" ]; then
   if [ "${NEXT_PUBLIC_DEPLOYMENT_ENV}" = "production" ] || [ "${NODE_ENV}" = "production" ]; then
@@ -74,6 +110,20 @@ if [ -f "$APP_DIR/resource/config.yaml.template" ]; then
   fi
 fi
 
+# 提前尝试启动 Next（若产物存在）；失败不终止，稍后重试一次
+if [ -z "$DISABLE_NEXT" ]; then
+  if [ -f "$NEXT_DIR/server.js" ]; then
+    start_next "$NEXT_DIR" && touch /tmp/.next_started || echo "[entrypoint] ⚠️ Next 早期启动失败（稍后重试）"
+  else
+    candidate=$(find /app -maxdepth 4 -type f -name server.js 2>/dev/null | head -n1)
+    if [ -n "$candidate" ]; then
+      start_next "$(dirname "$candidate")" && touch /tmp/.next_started || echo "[entrypoint] ⚠️ Next 早期自动探测启动失败（稍后重试）"
+    else
+      echo "[entrypoint] 提前启动 Next: 未找到 server.js"
+    fi
+  fi
+fi
+
 # 可选：仅在首次启动时执行完整初始化（重建库），避免重复执行破坏数据
 if [ "${DB_REBUILD_ON_STARTUP}" = "true" ] || [ "${DB_REBUILD_ON_STARTUP}" = "1" ]; then
   MARK_DIR="/app/logs"
@@ -121,57 +171,23 @@ else
   echo "[entrypoint] 跳过 Prisma 迁移：未找到 $PRISMA_SCHEMA"
 fi
 
-# 启动 Next.js 前端（若存在构建产物）
-start_next() {
-  local dir="$1"
-  echo "[entrypoint] 准备启动 Next（dir=$dir, port=$NEXTJS_PORT）"
-  mkdir -p /app/logs || true
-  (
-    cd "$dir" && PORT="$NEXTJS_PORT" HOSTNAME="0.0.0.0" node server.js > /app/logs/next.log 2>&1 &
-  ) || return 1
-  # 就绪探测，最多 10 秒
-  for i in $(seq 1 20); do
-    code=$(curl -sS -o /dev/null -m 0.5 -w "%{http_code}" "http://127.0.0.1:${NEXTJS_PORT}/" || echo 000)
-    if [ "$code" != "000" ]; then
-      echo "[entrypoint] Next.js 已就绪: http://127.0.0.1:${NEXTJS_PORT} (code=$code)"
-      return 0
-    fi
-    sleep 0.5
-  done
-  echo "[entrypoint] ⚠️ Next.js 未在端口 ${NEXTJS_PORT} 就绪，最近日志："
-  tail -n 120 /app/logs/next.log || true
-  # 常见问题：Prisma 引擎不匹配，尝试按运行时生成
-  if grep -q "Prisma Client could not locate the Query Engine" /app/logs/next.log 2>/dev/null; then
-    if [ -f "$PRISMA_SCHEMA" ] && command -v prisma >/dev/null 2>&1; then
-      echo "[entrypoint] 发现 Prisma 引擎错误，尝试 prisma generate（运行时平台）"
-      prisma generate --schema "$PRISMA_SCHEMA" || echo "[entrypoint] Prisma generate 失败"
-      # 再试一次启动
-      (
-        cd "$dir" && PORT="$NEXTJS_PORT" HOSTNAME="0.0.0.0" node server.js > /app/logs/next.log 2>&1 &
-      ) || true
-      sleep 1
-      code=$(curl -sS -o /dev/null -m 1 -w "%{http_code}" "http://127.0.0.1:${NEXTJS_PORT}/" || echo 000)
-      echo "[entrypoint] Prisma 修复后 Next.js 端口检查: code=$code"
-      [ "$code" != "000" ] && return 0
-    fi
-  fi
-  return 1
-}
-
-if [ -f "$NEXT_DIR/server.js" ]; then
+# 启动 Next.js 前端（若尚未成功且存在构建产物）
+if [ ! -f /tmp/.next_started ] && [ -f "$NEXT_DIR/server.js" ]; then
   echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
-  start_next "$NEXT_DIR" || echo "[entrypoint] ⚠️ Next 未能就绪（初次尝试）"
+  start_next "$NEXT_DIR" && touch /tmp/.next_started || echo "[entrypoint] ⚠️ Next 未能就绪（初次尝试）"
 else
-  echo "[entrypoint] 未检测到 Next.js standalone 产物，列出目录以便排查: $NEXT_DIR"
-  ls -la "$NEXT_DIR" || true
-  # 自动探测 server.js（防止路径变更导致的漏检）
-  candidate=$(find /app -maxdepth 4 -type f -name server.js 2>/dev/null | head -n1)
-  if [ -n "$candidate" ]; then
-    NEXT_DIR=$(dirname "$candidate")
-    echo "[entrypoint] 自动探测到 Next 产物: $candidate，尝试启动"
-    start_next "$NEXT_DIR" || echo "[entrypoint] ⚠️ Next 未能就绪（自动探测路径）"
-  else
-    echo "[entrypoint] 未找到任何 server.js（/app 下），跳过前端启动"
+  if [ ! -f /tmp/.next_started ]; then
+    echo "[entrypoint] 未检测到 Next.js standalone 产物，列出目录以便排查: $NEXT_DIR"
+    ls -la "$NEXT_DIR" || true
+    # 自动探测 server.js（防止路径变更导致的漏检）
+    candidate=$(find /app -maxdepth 4 -type f -name server.js 2>/dev/null | head -n1)
+    if [ -n "$candidate" ]; then
+      NEXT_DIR=$(dirname "$candidate")
+      echo "[entrypoint] 自动探测到 Next 产物: $candidate，尝试启动"
+      start_next "$NEXT_DIR" && touch /tmp/.next_started || echo "[entrypoint] ⚠️ Next 未能就绪（自动探测路径）"
+    else
+      echo "[entrypoint] 未找到任何 server.js（/app 下），跳过前端启动"
+    fi
   fi
 fi
 
