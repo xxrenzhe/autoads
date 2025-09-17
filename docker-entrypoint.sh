@@ -20,14 +20,30 @@ fi
 
 echo "[entrypoint] 使用配置: $CONFIG_PATH"
 
-if [ ! -f "$CONFIG_PATH" ]; then
-  if [ -f "$APP_DIR/config.yaml.template" ]; then
-    echo "[entrypoint] 未找到配置，使用模板生成: $APP_DIR/config.yaml"
-    # 直接复制主配置模板（不替换，避免清空其他占位变量）
-    cp "$APP_DIR/config.yaml.template" "$APP_DIR/config.yaml"
-    CONFIG_PATH="$APP_DIR/config.yaml"
-  else
-    echo "[entrypoint] 未找到配置文件也未找到模板，尝试仅用环境变量运行"
+# 若 CONFIG_MODE=env，则跳过主配置文件生成，完全依赖环境变量
+if [ "$CONFIG_MODE" = "env" ]; then
+  echo "[entrypoint] CONFIG_MODE=env，跳过 config.yaml 生成，使用环境变量配置"
+else
+  if [ ! -f "$CONFIG_PATH" ]; then
+    if [ -f "$APP_DIR/config.yaml.template" ]; then
+      echo "[entrypoint] 未找到配置，使用模板生成: $CONFIG_PATH"
+      # 确保目标目录存在
+      mkdir -p "$(dirname "$CONFIG_PATH")" || true
+      # 直接复制主配置模板（不替换，避免清空其他占位变量）
+      if ! cp "$APP_DIR/config.yaml.template" "$CONFIG_PATH" 2>/dev/null; then
+        echo "[entrypoint] 警告: 无法写入 $CONFIG_PATH（可能是挂载为只读或无权限）"
+        # 回退到 /tmp，保证容器仍可启动；建议通过 ADMIN_CONFIG 指向可写挂载路径
+        FALLBACK_PATH="/tmp/config.yaml"
+        if cp "$APP_DIR/config.yaml.template" "$FALLBACK_PATH" 2>/dev/null; then
+          CONFIG_PATH="$FALLBACK_PATH"
+          echo "[entrypoint] 已回退到临时配置: $CONFIG_PATH"
+        else
+          echo "[entrypoint] 错误: 无法创建配置文件（包括回退路径）。请检查卷挂载与写入权限。"
+        fi
+      fi
+    else
+      echo "[entrypoint] 未找到配置文件也未找到模板，尝试仅用环境变量运行"
+    fi
   fi
 fi
 
@@ -46,6 +62,8 @@ if [ -f "$APP_DIR/resource/config.yaml.template" ]; then
     GOOGLE_REDIRECT_URI="https://www.$NEXT_PUBLIC_DOMAIN/auth/google/callback"
   fi
   # envsubst 仅替换与域名相关的变量，避免清空其他占位符
+  # 确保 resource 目录存在
+  mkdir -p "$APP_DIR/resource" || true
   if command -v envsubst >/dev/null 2>&1; then
     echo "[entrypoint] 渲染 resource/config.yaml (ALLOW_ORIGINS, GOOGLE_REDIRECT_URI)"
     VARS='${ALLOW_ORIGINS} ${GOOGLE_REDIRECT_URI}'

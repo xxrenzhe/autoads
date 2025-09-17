@@ -32,7 +32,7 @@ USER app
 COPY --from=build /app/server /app/gofly_admin_v3/server
 COPY --from=build /app/gofly_admin_v3/web/dist ./web/dist
 COPY gofly_admin_v3/config.yaml.template /app/gofly_admin_v3/config.yaml.template
+COPY --chown=app:app gofly_admin_v3/config.yaml /app/gofly_admin_v3/config.yaml
 EXPOSE 8080
 ENV PORT=8080
 CMD ["/app/gofly_admin_v3/server","-config","/app/gofly_admin_v3/config.yaml","-port","8080"]
-

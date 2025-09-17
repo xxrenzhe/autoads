@@ -99,9 +99,13 @@ RUN npm init -y \
 
 # 复制配置模板与入口脚本
 COPY --chown=node:node gofly_admin_v3/config.yaml.template /app/gofly_admin_v3/config.yaml.template
+COPY --chown=node:node gofly_admin_v3/config.yaml /app/gofly_admin_v3/config.yaml
 COPY --chown=node:node gofly_admin_v3/resource/config.yaml.template /app/gofly_admin_v3/resource/config.yaml.template
 COPY --chown=node:node docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
+
+# 确保运行用户对 /app 具有写入权限（目录可能由之前的 WORKDIR 创建为 root 属主）
+RUN chown -R node:node /app
 
 # OCI 元信息标签
 ARG VERSION=dev
