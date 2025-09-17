@@ -97,7 +97,7 @@ RUN npm init -y \
  && npx playwright install --with-deps chromium \
  && rm -rf /var/lib/apt/lists/*
 
-# 复制配置模板与入口脚本
+# 复制配置模板、实际配置与入口脚本
 COPY --chown=node:node gofly_admin_v3/config.yaml.template /app/gofly_admin_v3/config.yaml.template
 COPY --chown=node:node gofly_admin_v3/config.yaml /app/gofly_admin_v3/config.yaml
 COPY --chown=node:node gofly_admin_v3/resource/config.yaml.template /app/gofly_admin_v3/resource/config.yaml.template
@@ -129,6 +129,8 @@ ENV NEXT_PUBLIC_DEPLOYMENT_ENV=${NEXT_PUBLIC_DEPLOYMENT_ENV} \
     NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN} \
     ALLOW_ORIGINS=${ALLOW_ORIGINS} \
     GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+
+ # 直接随镜像携带 config.yaml（私有仓库场景）
 
 # 暴露端口：平台仅允许一个端口，对外仅暴露 Next(3000)
 EXPOSE 3000

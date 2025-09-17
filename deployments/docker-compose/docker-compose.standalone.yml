@@ -2,38 +2,10 @@ version: '3.8'
 
 services:
   autoads:
-    # 若设置 IMAGE 则使用远端镜像；否则本地构建
-    image: ${IMAGE:-autoads-standalone:local}
     build:
       context: ../..
       dockerfile: Dockerfile.standalone
-    container_name: autoads-standalone
-    restart: unless-stopped
-    environment:
-      # 按 MustKnow 约定：生产/预发均为 production
-      - NODE_ENV=production
-      - NEXT_PUBLIC_DEPLOYMENT_ENV=${NEXT_PUBLIC_DEPLOYMENT_ENV:-preview}
-      # 主配置文件路径（与 docker-entrypoint.sh 对齐）
-      - ADMIN_CONFIG=/app/gofly_admin_v3/config.yaml
-      # 可选：域名元信息（entrypoint 会渲染 resource/config.yaml）
-      - NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN:-localhost}
-      - ALLOW_ORIGINS=${ALLOW_ORIGINS:-http://localhost:3000,http://localhost:8080}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-}
-      # Prisma/Next 侧数据库与 Redis（用于迁移与前端 BFF）
-      - DATABASE_URL=${DATABASE_URL:-}
-      - REDIS_URL=${REDIS_URL:-}
-      # Go 侧内部 JWT 在生产默认强制，可显式覆盖
-      - INTERNAL_JWT_ENFORCE=${INTERNAL_JWT_ENFORCE:-true}
+    image: autoads-standalone:embedded
     ports:
-      - '3000:3000'
-      - '8080:8080'
-    volumes:
-      # 仅挂载配置文件（遵循 12-factor：镜像含代码，配置外置）
-      - ../../gofly_admin_v3/config.yaml:/app/gofly_admin_v3/config.yaml:ro
-      # 持久化日志与上传目录（可选）
-      - ../../logs:/app/logs
-      - ../../uploads:/app/uploads
-      # 提升浏览器相关稳定性
-      - /dev/shm:/dev/shm
-    shm_size: 1gb
-
+      - "3000:3000"
+      - "8080:8080"

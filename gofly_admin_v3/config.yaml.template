@@ -48,10 +48,9 @@ log:
     max_age: 30  # days
     compress: true
 
-# SimilarWeb API配置
+# SimilarWeb 配置（无需 api_key）
 similarweb:
-  api_key: "${SIMILARWEB_API_KEY}"
-  base_url: "https://data.similarweb.com/api/v1/data"
+  api_url: "https://data.similarweb.com/api/v1/data"
 
 # Google Ads配置
 google_ads:

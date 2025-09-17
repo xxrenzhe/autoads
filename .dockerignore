@@ -4,6 +4,7 @@
 README.md
 Dockerfile*
 .dockerignore
+!gofly_admin_v3/config.yaml
 
 # 依赖和缓存
 node_modules

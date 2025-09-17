@@ -24,7 +24,6 @@ services:
       - ENCRYPTION_KEY=encryption_key_2024_autoads_saas_32chars
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - SIMILARWEB_API_KEY=${SIMILARWEB_API_KEY}
     depends_on:
       - mysql
       - redis

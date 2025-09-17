@@ -52,7 +52,6 @@ domain:
 external_services:
   similarweb:
     api_url: "https://data.similarweb.com/api/v1/data"
-    api_key: "${SIMILARWEB_API_KEY}"
     timeout: 30s
     rate_limit: 1000 # requests per minute
 
