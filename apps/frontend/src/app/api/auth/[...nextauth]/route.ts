@@ -1,9 +1,12 @@
-import { handlers } from '@/lib/auth/v5-config'
 export const runtime = 'nodejs'
-import { NextRequest, NextResponse } from 'next/server'
 
-// Export the handlers directly for GET requests
-export const GET = handlers.GET
+// 惰性导入，避免在模块初始化阶段因依赖错误导致整个路由加载失败
+export async function GET(...args: any[]) {
+  const mod = await import('@/lib/auth/v5-config')
+  return (mod as any).handlers.GET(...args as any)
+}
 
-// Export the handlers directly for POST requests without custom handling
-export const POST = handlers.POST
+export async function POST(...args: any[]) {
+  const mod = await import('@/lib/auth/v5-config')
+  return (mod as any).handlers.POST(...args as any)
+}

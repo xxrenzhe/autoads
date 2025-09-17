@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UI_CONSTANTS } from "@/components/ui/ui-constants";
 import GenericStepsSection from "@/components/common/GenericStepsSection";
