@@ -114,12 +114,13 @@ const nextConfig = {
   
   // TypeScript/ESLint 配置（预发先启用严格校验）
   typescript: {
-    // 开启 preview 与 production 的严格校验
-    ignoreBuildErrors: !['preview', 'production'].includes((process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || '').toLowerCase()),
+    // 预览与开发环境忽略类型检查（降低构建内存占用）；生产开启严格校验
+    ignoreBuildErrors: (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV || 'development').toLowerCase() !== 'production',
   },
 
   eslint: {
-    ignoreDuringBuilds: !['preview', 'production'].includes((process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || '').toLowerCase()),
+    // 预览与开发环境忽略 ESLint（降低构建内存占用）；生产开启
+    ignoreDuringBuilds: (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV || 'development').toLowerCase() !== 'production',
   },
 
   // 服务器端外部模块
