@@ -3,7 +3,7 @@ WORKDIR /app
 
 # Tools needed for readiness checks
 RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl iproute2 procps \
  && rm -rf /var/lib/apt/lists/*
 
 # Copy the entrypoint under test
@@ -14,8 +14,8 @@ RUN chmod +x /app/docker-entrypoint.sh
 RUN mkdir -p /app/frontend /app/gofly_admin_v3 \
  && printf "const http=require('http');const port=process.env.PORT||3000;http.createServer((req,res)=>{if(req.url==='/'||req.url.startsWith('/api/health')){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({status:'ok'}));}else{res.writeHead(200);res.end('ok');}}).listen(port,'0.0.0.0',()=>console.log('server listening',port));" > /app/frontend/server.js
 
-# Go server stub: return success for -migrate/-init-db, run forever for normal start
-RUN printf '#!/bin/sh\ncase "$1" in\n  -migrate|-init-db) echo "stub $1 ok"; exit 0 ;;\nesac\necho "Go server stub running on $@"\nsleep infinity\n' > /app/gofly_admin_v3/server \
+# Go server stub: -migrate / -init-db 返回 0；正常启动时按 -port 监听并提供 /health
+RUN printf '#!/bin/sh\n\n# 处理迁移/初始化指令\nfor arg in "$@"; do\n  case "$arg" in\n    -migrate|-init-db) echo "stub $arg ok"; exit 0 ;;\n  esac\ndone\n\n# 解析端口参数，默认 8888（与真实服务一致），支持 -port= 或 -port 值\nPORT=8888\nprev=""\nfor arg in "$@"; do\n  case "$arg" in\n    -port=*) PORT="${arg#*=}" ;;\n    -port) prev="-port" ;;\n    *) if [ "$prev" = "-port" ]; then PORT="$arg"; prev=""; fi ;;\n  esac\ndone\n\n# 使用 Node 启动极简 HTTP 服务监听指定端口，包含 /health 与 /readyz\nnode -e "const http=require('http');const port=process.env.PORT||${PORT};const srv=http.createServer((req,res)=>{if(req.url==='/'||req.url==='/health'||req.url==='/readyz'){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({status:'ok'}));}else{res.writeHead(404);res.end('not found');}});srv.listen(port,'0.0.0.0',()=>console.log('go-stub listening',port));setInterval(()=>{},1000);" &\nwait\n' > /app/gofly_admin_v3/server \
  && chmod +x /app/gofly_admin_v3/server
 
 ENV NEXTJS_PORT=3000 \

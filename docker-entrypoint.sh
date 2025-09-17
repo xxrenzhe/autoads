@@ -142,10 +142,35 @@ if [ "${DB_REBUILD_ON_STARTUP}" = "true" ] || [ "${DB_REBUILD_ON_STARTUP}" = "1"
   fi
 fi
 
-# 执行数据库迁移（Go 后端 + Prisma）
-echo "[entrypoint] 执行数据库迁移 (Go) ..."
-# 传入 -port 与最终运行端口保持一致，避免旧版本在 -migrate 后继续监听到默认 8888 端口
-"$APP_DIR/server" -migrate -config="$CONFIG_PATH" -port="$PORT" || true
+if [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ]; then
+  # 执行数据库迁移（Go 后端 + Prisma）
+  echo "[entrypoint] 执行数据库迁移 (Go) ..."
+  # 传入 -port 与最终运行端口保持一致，避免旧版本在 -migrate 后继续监听到默认 8888 端口
+  # 为避免极端情况下 -migrate 阶段阻塞启动，这里加超时与日志文件
+  MIGRATE_TIMEOUT="${MIGRATE_TIMEOUT:-90}"
+  mkdir -p /app/logs >/dev/null 2>&1 || true
+  MIGRATE_LOG="/app/logs/go-migrate.log"
+  rm -f "$MIGRATE_LOG" 2>/dev/null || true
+  "$APP_DIR/server" -migrate -config="$CONFIG_PATH" -port="$PORT" >"$MIGRATE_LOG" 2>&1 &
+  MIG_PID=$!
+  end_ts=$(( $(date +%s) + MIGRATE_TIMEOUT ))
+  while kill -0 "$MIG_PID" 2>/dev/null; do
+    if [ $(date +%s) -ge $end_ts ]; then
+      echo "[entrypoint] ⚠️ Go 迁移执行超过 ${MIGRATE_TIMEOUT}s，尝试终止并继续启动（请检查 $MIGRATE_LOG）"
+      kill "$MIG_PID" 2>/dev/null || true
+      sleep 1
+      kill -9 "$MIG_PID" 2>/dev/null || true
+      break
+    fi
+    sleep 1
+  done
+  # 收集退出码（若已被 kill -9，wait 也会返回非零，继续启动即可）
+  wait "$MIG_PID" 2>/dev/null || true
+  echo "[entrypoint] 迁移日志（最近120行）："
+  tail -n 120 "$MIGRATE_LOG" 2>/dev/null || true
+else
+  echo "[entrypoint] 跳过 Go 迁移（RUN_MIGRATIONS_ON_START=false）"
+fi
 
 # Prisma 迁移（仅当检测到 schema 与 DATABASE_URL 存在时执行）
 if [ -f "$PRISMA_SCHEMA" ]; then
