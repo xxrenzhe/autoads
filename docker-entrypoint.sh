@@ -110,9 +110,6 @@ if [ -f "$APP_DIR/resource/config.yaml.template" ]; then
   fi
 fi
 
-# 无条件尝试启动 Next（最简逻辑）；失败不阻塞后续
-echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
-start_next "$NEXT_DIR" && touch /tmp/.next_started || echo "[entrypoint] ⚠️ Next 早期启动失败（查看 /app/logs/next.log）"
 
 # 可选：仅在首次启动时执行完整初始化（重建库），避免重复执行破坏数据
 if [ "${DB_REBUILD_ON_STARTUP}" = "true" ] || [ "${DB_REBUILD_ON_STARTUP}" = "1" ]; then
@@ -161,7 +158,9 @@ else
   echo "[entrypoint] 跳过 Prisma 迁移：未找到 $PRISMA_SCHEMA"
 fi
 
-# 仅保留一次尝试，避免多重分支与重复日志
+# 严格启动 Next（失败即退出）
+echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
+start_next "$NEXT_DIR" || { echo "[entrypoint] ❌ Next 启动失败，退出"; exit 1; }
 
 echo "[entrypoint] 启动服务..."
 
