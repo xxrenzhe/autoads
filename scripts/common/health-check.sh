@@ -44,7 +44,8 @@ get_base_url() {
             echo "https://www.urlchecker.dev"
             ;;
         local)
-            echo "http://localhost:8888"
+            # 优先使用 LOCAL_PORT，其次 PORT，最后默认 8080（与 Go 服务统一）
+            echo "http://localhost:${LOCAL_PORT:-${PORT:-8080}}"
             ;;
         *)
             log_error "未知环境: $ENVIRONMENT"
@@ -291,7 +292,7 @@ AutoAds SaaS 健康检查脚本
 环境:
     preview     预发环境 (urlchecker.dev)
     production  生产环境 (autoads.dev)
-    local       本地环境 (localhost:8888)
+    local       本地环境 (localhost:${LOCAL_PORT:-${PORT:-8080}})
 
 选项:
     --monitor   监控模式（持续检查）
