@@ -13,11 +13,12 @@ import (
 
 // InitLogger 初始化日志记录器
 type InitLogger struct {
-	logger      *log.Logger
-	filePath    string
-	logEntries  []InitLogEntry
-	mu          sync.Mutex
-	initialized bool
+    logger      *log.Logger
+    filePath    string
+    file        *os.File
+    logEntries  []InitLogEntry
+    mu          sync.Mutex
+    initialized bool
 }
 
 // InitLogEntry 初始化日志条目
@@ -56,19 +57,20 @@ func NewInitLogger(logDir string) (*InitLogger, error) {
 	logFile := filepath.Join(logDir, fmt.Sprintf("init_%s.log", timestamp))
 
 	// 打开日志文件
-	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return nil, fmt.Errorf("打开日志文件失败: %w", err)
-	}
+    file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+    if err != nil {
+        return nil, fmt.Errorf("打开日志文件失败: %w", err)
+    }
 
 	logger := log.New(file, "", log.LstdFlags|log.Lmicroseconds)
 
-	return &InitLogger{
-		logger:      logger,
-		filePath:    logFile,
-		logEntries:  make([]InitLogEntry, 0),
-		initialized: true,
-	}, nil
+    return &InitLogger{
+        logger:      logger,
+        filePath:    logFile,
+        file:        file,
+        logEntries:  make([]InitLogEntry, 0),
+        initialized: true,
+    }, nil
 }
 
 // Log 记录初始化日志
@@ -197,14 +199,22 @@ func (il *InitLogger) ExportLog(outputPath string) error {
 
 // Close 关闭日志记录器
 func (il *InitLogger) Close() error {
-	il.mu.Lock()
-	defer il.mu.Unlock()
+    il.mu.Lock()
+    defer il.mu.Unlock()
 
-	if il.initialized {
-		il.Log("INFO", "system", "初始化日志记录器关闭")
-		il.initialized = false
-	}
-	return nil
+    if il.initialized {
+        il.Log("INFO", "system", "初始化日志记录器关闭")
+        il.initialized = false
+    }
+    // 关闭文件句柄
+    if il.file != nil {
+        _ = il.file.Sync()
+        if err := il.file.Close(); err != nil {
+            return err
+        }
+        il.file = nil
+    }
+    return nil
 }
 
 // InitProgressTracker 初始化进度跟踪器

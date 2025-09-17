@@ -23,9 +23,12 @@ var migrationFS embed.FS
 
 // DatabaseInitializer 数据库初始化器
 type DatabaseInitializer struct {
-	db     *gorm.DB
-	config *config.Config
-	logger *log.Logger
+    // db 连接到目标数据库（选定 schema）
+    db       *gorm.DB
+    // serverDB 连接到服务器级（无指定 schema），仅用于 createDatabase
+    serverDB *gorm.DB
+    config *config.Config
+    logger *log.Logger
 }
 
 // NewDatabaseInitializer 创建数据库初始化器
@@ -34,14 +37,14 @@ func NewDatabaseInitializer(cfg *config.Config, stdLogger *log.Logger) (*Databas
 	// 等待 MySQL 端口可用（避免在 CI 中长时间挂起）
 	_ = waitForTCP(cfg.DB.Host, cfg.DB.Port, 30*time.Second)
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s&readTimeout=30s&writeTimeout=30s",
-		cfg.DB.Username,
-		cfg.DB.Password,
-		cfg.DB.Host,
-		cfg.DB.Port,
-	)
+    dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s&readTimeout=30s&writeTimeout=30s",
+        cfg.DB.Username,
+        cfg.DB.Password,
+        cfg.DB.Host,
+        cfg.DB.Port,
+    )
 
-    db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+    serverDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
         Logger: logger.Default.LogMode(logger.Warn),
     })
     if err != nil {
@@ -49,7 +52,7 @@ func NewDatabaseInitializer(cfg *config.Config, stdLogger *log.Logger) (*Databas
     }
 
     // 轻量 Ping，避免长等待
-    if sqlDB, e := db.DB(); e == nil {
+    if sqlDB, e := serverDB.DB(); e == nil {
         sqlDB.SetMaxIdleConns(10)
         sqlDB.SetMaxOpenConns(100)
         sqlDB.SetConnMaxLifetime(30 * time.Minute)
@@ -59,7 +62,8 @@ func NewDatabaseInitializer(cfg *config.Config, stdLogger *log.Logger) (*Databas
     }
 
     return &DatabaseInitializer{
-        db:     db,
+        db:       nil,
+        serverDB: serverDB,
         config: cfg,
         logger: stdLogger,
     }, nil
@@ -198,14 +202,14 @@ func (di *DatabaseInitializer) createDatabase() error {
     // 可选：强制重建数据库（仅在显式设置 DB_RECREATE=true/1 时生效）
     if v := strings.ToLower(strings.TrimSpace(os.Getenv("DB_RECREATE"))); v == "true" || v == "1" {
         di.logger.Printf("检测到 DB_RECREATE 标志，准备删除并重建数据库: %s", dbName)
-        if err := di.db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", dbName)).Error; err != nil {
+        if err := di.serverDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", dbName)).Error; err != nil {
             return fmt.Errorf("删除数据库失败: %w", err)
         }
     }
 
     // 检查数据库是否存在（使用计数更稳妥避免类型转换问题）
     var count int64
-    err := di.db.Raw("SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?", dbName).Scan(&count).Error
+    err := di.serverDB.Raw("SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?", dbName).Scan(&count).Error
     if err != nil {
         return err
     }
@@ -213,7 +217,7 @@ func (di *DatabaseInitializer) createDatabase() error {
     if count == 0 {
         di.logger.Printf("创建数据库: %s", dbName)
         sql := fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", dbName)
-        if err := di.db.Exec(sql).Error; err != nil {
+        if err := di.serverDB.Exec(sql).Error; err != nil {
             return err
         }
         di.logger.Printf("✅ 数据库 %s 创建成功", dbName)
@@ -891,11 +895,19 @@ func (di *DatabaseInitializer) verifyInitialization() error {
 
 // Close 关闭数据库连接
 func (di *DatabaseInitializer) Close() error {
-	sqlDB, err := di.db.DB()
-	if err != nil {
-		return err
-	}
-	return sqlDB.Close()
+    // 依次关闭 db 与 serverDB
+    var firstErr error
+    if di.db != nil {
+        if sqlDB, err := di.db.DB(); err == nil {
+            if err := sqlDB.Close(); err != nil && firstErr == nil { firstErr = err }
+        } else if firstErr == nil { firstErr = err }
+    }
+    if di.serverDB != nil {
+        if sqlDB, err := di.serverDB.DB(); err == nil {
+            if err := sqlDB.Close(); err != nil && firstErr == nil { firstErr = err }
+        } else if firstErr == nil { firstErr = err }
+    }
+    return firstErr
 }
 
 // AutoInitialize 自动初始化数据库

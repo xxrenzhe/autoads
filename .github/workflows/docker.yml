@@ -106,8 +106,36 @@ jobs:
           for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/6379) >/dev/null 2>&1 && break; sleep 1; done
           echo "Ports ready. Running migrations..."
           cd gofly_admin_v3
-          ./migrate-ci
-          echo "Migrations finished and process exited cleanly."
+          # 以文件收集输出，并设置成功哨兵字符串
+          SUCCESS_SENTINEL="数据库初始化完成"
+          set +e
+          ./migrate-ci > migrate.out 2>&1 &
+          pid=$!
+          # 轮询输出，最多等待 300s（5 分钟）
+          for i in {1..300}; do
+            if grep -q "$SUCCESS_SENTINEL" migrate.out; then
+              echo "Detected success sentinel: $SUCCESS_SENTINEL"
+              # 进程可能尚未退出，确保结束它（忽略失败）
+              kill "$pid" >/dev/null 2>&1 || true
+              wait "$pid" >/dev/null 2>&1 || true
+              cat migrate.out
+              exit 0
+            fi
+            if ! kill -0 "$pid" >/dev/null 2>&1; then
+              echo "Process exited. Printing output:"
+              cat migrate.out
+              # 进程自行退出（成功或失败），以其退出码为准
+              wait "$pid"; exit $?
+            fi
+            sleep 1
+          done
+          echo "Timeout waiting for success sentinel within 300s; killing process..."
+          kill "$pid" >/dev/null 2>&1 || true
+          sleep 2
+          kill -KILL "$pid" >/dev/null 2>&1 || true
+          echo "--- migrate.out (truncated) ---"
+          tail -n 500 migrate.out || true
+          exit 1
 
   build-and-push:
     name: Build and Push (linux/amd64)
