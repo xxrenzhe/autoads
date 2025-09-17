@@ -193,6 +193,7 @@ jobs:
           file: ./Dockerfile.standalone
           platforms: linux/amd64
           push: true
+          no-cache: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
@@ -213,6 +214,7 @@ jobs:
           echo "- Platform: linux/amd64" >> $GITHUB_STEP_SUMMARY
           echo "- Env: ${{ steps.build-args.outputs.NEXT_PUBLIC_DEPLOYMENT_ENV }}" >> $GITHUB_STEP_SUMMARY
           echo "- Domain: ${{ steps.build-args.outputs.NEXT_PUBLIC_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "- No cache: true" >> $GITHUB_STEP_SUMMARY
 
   security-scan:
     name: Trivy Security Scan
