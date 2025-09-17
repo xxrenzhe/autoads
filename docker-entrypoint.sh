@@ -111,6 +111,10 @@ if [ -f "$APP_DIR/resource/config.yaml.template" ]; then
   fi
 fi
 
+# 严格启动 Next（提前且必须成功）
+echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
+start_next "$NEXT_DIR" || { echo "[entrypoint] ❌ Next 启动失败，退出"; exit 1; }
+
 
 # 可选：仅在首次启动时执行完整初始化（重建库），避免重复执行破坏数据
 if [ "${DB_REBUILD_ON_STARTUP}" = "true" ] || [ "${DB_REBUILD_ON_STARTUP}" = "1" ]; then
