@@ -1,25 +1,30 @@
 package app
 
 import (
-	"fmt"
-	"log"
-	"net"
-	"strconv"
+    "fmt"
+    "log"
+    "net"
+    "strconv"
 
-	// "gofly-admin-v3/internal/admin"
-	"gofly-admin-v3/internal/auth"
-	// "gofly-admin-v3/internal/adscenter"
-	"gofly-admin-v3/internal/batchgo"
-	// "gofly-admin-v3/internal/chengelink"
-	"gofly-admin-v3/internal/config"
-	// "gofly-admin-v3/internal/invitation"
-	"gofly-admin-v3/internal/oauth"
-	"gofly-admin-v3/internal/ratelimit"
-	// "gofly-admin-v3/internal/siterankgo"
-	"gofly-admin-v3/internal/store"
-	"gofly-admin-v3/internal/subscription"
-	// "gofly-admin-v3/internal/token"
-	"gofly-admin-v3/service/user"
+    // "gofly-admin-v3/internal/admin"
+    "gofly-admin-v3/internal/auth"
+    // "gofly-admin-v3/internal/adscenter"
+    "gofly-admin-v3/internal/batchgo"
+    // "gofly-admin-v3/internal/chengelink"
+    "gofly-admin-v3/internal/config"
+    // "gofly-admin-v3/internal/invitation"
+    "gofly-admin-v3/internal/oauth"
+    "gofly-admin-v3/internal/ratelimit"
+    // "gofly-admin-v3/internal/siterankgo"
+    "gofly-admin-v3/internal/store"
+    "gofly-admin-v3/internal/subscription"
+    // 审计与 WebSocket 管理器
+    "gofly-admin-v3/internal/audit"
+    "gofly-admin-v3/internal/websocket"
+    // token 服务（internal 与 service/user 同名，需起别名）
+    internaluser "gofly-admin-v3/internal/user"
+    // "gofly-admin-v3/internal/token"
+    "gofly-admin-v3/service/user"
 )
 
 // Context 应用上下文
@@ -87,7 +92,7 @@ func NewContext(cfg *Config) (*Context, error) {
 		// TODO: Map other config fields as needed
 	}
 
-	rateLimitManager := ratelimit.NewRateLimitManager(configCfg, db, nil) // userService still needed
+    rateLimitManager := ratelimit.NewRateLimitManager(configCfg, db, nil) // userService still needed
 
 	ctx := &Context{
 		Config: cfg,
@@ -100,7 +105,15 @@ func NewContext(cfg *Config) (*Context, error) {
 		SubService:       subscription.NewService(db),
 		RateLimitManager: rateLimitManager,
 
-		BatchGoService: batchgo.NewService(db.DB, nil, nil, nil),
+        // 初始化依赖：TokenService、WebSocket 管理器、审计服务，并注入 Redis
+        // 注意：internal/user 的 TokenService 满足 batchgo.TokenService 接口
+        BatchGoService: func() *batchgo.Service {
+            tokenSvc := internaluser.NewTokenService(db.DB)
+            wsManager := websocket.NewManager()
+            go wsManager.Run()
+            auditSvc := audit.NewAutoAdsAuditService(db.DB)
+            return batchgo.NewService(db.DB, tokenSvc, wsManager, auditSvc, redis)
+        }(),
 		// AdminService:         nil, // TODO: Initialize admin service
 		// TokenService:         nil, // TODO: Initialize token service
 		// SiteRankGoService:    nil, // TODO: Initialize siterankgo service
