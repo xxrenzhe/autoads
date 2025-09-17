@@ -1,10 +1,8 @@
-FROM node:20-bookworm-slim
+FROM node:22-alpine
 WORKDIR /app
 
-# Tools needed for readiness checks
-RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl iproute2 procps \
- && rm -rf /var/lib/apt/lists/*
+# Tools needed for readiness checks (Alpine)
+RUN apk add --no-cache curl iproute2 procps
 
 # Copy the entrypoint under test
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
@@ -15,8 +13,51 @@ RUN mkdir -p /app/frontend /app/gofly_admin_v3 \
  && printf "const http=require('http');const port=process.env.PORT||3000;http.createServer((req,res)=>{if(req.url==='/'||req.url.startsWith('/api/health')){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({status:'ok'}));}else{res.writeHead(200);res.end('ok');}}).listen(port,'0.0.0.0',()=>console.log('server listening',port));" > /app/frontend/server.js
 
 # Go server stub: -migrate / -init-db 返回 0；正常启动时按 -port 监听并提供 /health
-RUN printf '#!/bin/sh\n\n# 处理迁移/初始化指令\nfor arg in "$@"; do\n  case "$arg" in\n    -migrate|-init-db) echo "stub $arg ok"; exit 0 ;;\n  esac\ndone\n\n# 解析端口参数，默认 8888（与真实服务一致），支持 -port= 或 -port 值\nPORT=8888\nprev=""\nfor arg in "$@"; do\n  case "$arg" in\n    -port=*) PORT="${arg#*=}" ;;\n    -port) prev="-port" ;;\n    *) if [ "$prev" = "-port" ]; then PORT="$arg"; prev=""; fi ;;\n  esac\ndone\n\n# 使用 Node 启动极简 HTTP 服务监听指定端口，包含 /health 与 /readyz\nnode -e "const http=require('http');const port=process.env.PORT||${PORT};const srv=http.createServer((req,res)=>{if(req.url==='/'||req.url==='/health'||req.url==='/readyz'){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({status:'ok'}));}else{res.writeHead(404);res.end('not found');}});srv.listen(port,'0.0.0.0',()=>console.log('go-stub listening',port));setInterval(()=>{},1000);" &\nwait\n' > /app/gofly_admin_v3/server \
+RUN printf '#!/bin/sh\n\n# 处理迁移/初始化指令\nfor arg in "$@"; do\n  case "$arg" in\n    -migrate|-init-db) echo "stub $arg ok"; exit 0 ;;\n  esac\ndone\n\n# 解析端口参数，默认 8888（与真实服务一致），支持 -port= 或 -port 值\nPORT=8888\nprev=""\nfor arg in "$@"; do\n  case "$arg" in\n    -port=*) PORT="${arg#*=}" ;;\n    -port) prev="-port" ;;\n    *) if [ "$prev" = "-port" ]; then PORT="$arg"; prev=""; fi ;;\n  esac\ndone\n\n# 准备 Node stub 脚本并启动监听\ncat > /app/gofly_admin_v3/go-stub.js <<'JS'\nconst http=require('http');\nconst port=parseInt(process.env.PORT||process.argv[2]||'8888',10);\nconst srv=http.createServer((req,res)=>{\n  if(req.url==='/'||req.url==='/health'||req.url==='/readyz'){\n    res.writeHead(200,{"content-type":"application/json"});\n    res.end(JSON.stringify({status:'ok'}));\n  } else {\n    res.writeHead(404);\n    res.end('not found');\n  }\n});\nsrv.listen(port,'0.0.0.0',()=>console.log('go-stub listening',port));\nsetInterval(()=>{},1000);\nJS\n\nexport PORT="$PORT"\nexec node /app/gofly_admin_v3/go-stub.js "$PORT"\n' > /app/gofly_admin_v3/server \
  && chmod +x /app/gofly_admin_v3/server
+
+# 覆盖 server 脚本为前台阻塞版本，确保容器保持运行并输出调试信息
+RUN cat > /app/gofly_admin_v3/server <<'SH' \
+ && chmod +x /app/gofly_admin_v3/server
+#!/bin/sh
+# 处理迁移/初始化
+for arg in "$@"; do
+  case "$arg" in
+    -migrate|-init-db) echo "stub $arg ok"; exit 0 ;;
+  esac
+done
+# 解析端口
+PORT=8888
+prev=""
+for arg in "$@"; do
+  case "$arg" in
+    -port=*) PORT="${arg#*=}" ;;
+    -port) prev="-port" ;;
+    *) if [ "$prev" = "-port" ]; then PORT="$arg"; prev=""; fi ;;
+  esac
+done
+cat > /app/gofly_admin_v3/go-stub.js <<'JS'
+const http=require('http');
+const port=parseInt(process.env.PORT||process.argv[2]||'8888',10);
+const srv=http.createServer((req,res)=>{
+  if(req.url==='/'||req.url==='/health'||req.url==='/readyz'){
+    res.writeHead(200,{"content-type":"application/json"});
+    res.end(JSON.stringify({status:'ok'}));
+  } else {
+    res.writeHead(404);
+    res.end('not found');
+  }
+});
+srv.listen(port,'0.0.0.0',()=>console.log('go-stub listening',port));
+setInterval(()=>{},1000);
+JS
+export PORT="$PORT"
+echo "go-stub starting on PORT=$PORT"
+node /app/gofly_admin_v3/go-stub.js "$PORT" &
+child=$!
+echo "go-stub pid=$child"
+wait "$child"
+SH
 
 ENV NEXTJS_PORT=3000 \
     ADMIN_CONFIG=/app/gofly_admin_v3/config.yaml
