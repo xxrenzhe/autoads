@@ -16,7 +16,12 @@ start_next() {
   echo "[entrypoint] 准备启动 Next（dir=$dir, port=$NEXTJS_PORT）"
   mkdir -p /app/logs || true
   (
-    cd "$dir" && PORT="$NEXTJS_PORT" HOSTNAME="0.0.0.0" node server.js > /app/logs/next.log 2>&1 &
+    cd "$dir" && \
+    if [ "$NEXT_LOG_TO_STDOUT" = "true" ]; then \
+      PORT="$NEXTJS_PORT" HOSTNAME="0.0.0.0" node server.js 2>&1 | tee -a /app/logs/next.log & \
+    else \
+      PORT="$NEXTJS_PORT" HOSTNAME="0.0.0.0" node server.js >> /app/logs/next.log 2>&1 & \
+    fi
   ) || return 1
   # 就绪探测，最多 10 秒（仅 2xx/3xx 视为成功；修复 000000 误判）
   for i in $(seq 1 20); do
