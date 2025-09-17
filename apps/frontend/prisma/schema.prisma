@@ -1,5 +1,8 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // 运行时镜像基于 Debian(glibc)，构建阶段使用 Alpine(musl)。
+  // 为避免运行时查询引擎不匹配，显式生成两种二进制目标。
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
