@@ -118,7 +118,9 @@ LABEL org.opencontainers.image.title="autoads" \
 ENV PORT=8080 \
     ADMIN_CONFIG=/app/gofly_admin_v3/config.yaml \
     NEXTJS_PORT=3000 \
-    HOSTNAME=0.0.0.0
+    HOSTNAME=0.0.0.0 \
+    NEXT_LOG_TO_STDOUT=true \
+    EXEC_LOG_TO_STDOUT=true
 
 # 运行时的域名元信息（可由运行环境覆盖）
 ARG NEXT_PUBLIC_DEPLOYMENT_ENV="preview"
