@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: 'Manage your token balance and top-up account',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function TokenBalancePage() {
   const session = await auth()
   

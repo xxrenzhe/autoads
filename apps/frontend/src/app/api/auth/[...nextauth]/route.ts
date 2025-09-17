@@ -1,4 +1,5 @@
 import { handlers } from '@/lib/auth/v5-config'
+export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Export the handlers directly for GET requests

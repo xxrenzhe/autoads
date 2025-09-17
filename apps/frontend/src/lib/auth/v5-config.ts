@@ -121,10 +121,14 @@ const customAdapter = {
   }
 }
 
-const __nextAuth = NextAuth({
-  adapter: customAdapter,
-  secret: process.env.AUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development' || process.env.AUTH_DEBUG === 'true',
+// 惰性初始化以避免构建阶段评估 NextAuth（缺少 OAuth 环境变量会报错）
+let __nextAuth: any
+function getNextAuth() {
+  if (!__nextAuth) {
+    __nextAuth = NextAuth({
+      adapter: customAdapter,
+      secret: process.env.AUTH_SECRET,
+      debug: process.env.NODE_ENV === 'development' || process.env.AUTH_DEBUG === 'true',
   // Enhanced logging for debugging
   logger: {
     error(code: string, metadata?: any) {
@@ -427,11 +431,16 @@ const __nextAuth = NextAuth({
       },
     },
   },
-})
+    })
+  }
+  return __nextAuth
+}
 
-// Re-export with relaxed types to avoid strict signature mismatches across call sites
-export const handlers = __nextAuth.handlers
-export const signIn = __nextAuth.signIn
-export const signOut = __nextAuth.signOut
-// Cast auth to any to accept 0/1/2 arguments depending on usage context
-export const auth: any = __nextAuth.auth
+// Re-export（惰性获取）
+export const handlers = {
+  GET: (...args: any[]) => getNextAuth().handlers.GET(...args),
+  POST: (...args: any[]) => getNextAuth().handlers.POST(...args),
+}
+export const signIn = (...args: any[]) => getNextAuth().signIn(...args)
+export const signOut = (...args: any[]) => getNextAuth().signOut(...args)
+export const auth: any = (...args: any[]) => (getNextAuth() as any).auth(...args)

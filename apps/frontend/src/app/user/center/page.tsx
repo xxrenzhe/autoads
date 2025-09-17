@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth/v5-config';
 import { prisma } from '@/lib/db';
+export const dynamic = 'force-dynamic';
 import UserCenter from '@/components/user/UserCenter';
 
 /**

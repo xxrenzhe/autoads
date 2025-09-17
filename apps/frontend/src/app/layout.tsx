@@ -8,7 +8,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { APP_CONFIG } from "@/lib/config";
 import { sanitizeHtml } from "@/lib/utils/security/sanitize";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { SessionProvider } from "next-auth/react";
+import { Providers } from "@/components/providers";
 // 内存优化模块已移除
 // 已迁移所有调度到 Go 服务端，移除 Next 内部调度初始化
 import QueryProvider from "@/components/providers/QueryProvider";
@@ -148,7 +148,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans">
-        <SessionProvider>
+        <Providers>
           <AuthProvider>
             <LanguageProvider>
               <QueryProvider>
@@ -158,7 +158,7 @@ export default function RootLayout({
               </QueryProvider>
             </LanguageProvider>
           </AuthProvider>
-        </SessionProvider>
+        </Providers>
       </body>
     </html>
   );

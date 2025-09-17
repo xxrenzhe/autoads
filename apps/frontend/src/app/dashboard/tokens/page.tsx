@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: 'View your token usage analytics and consumption patterns',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function TokenUsagePage() {
   const session = await auth()
   
