@@ -197,9 +197,15 @@ else
   echo "[entrypoint] 跳过 Prisma 迁移：未找到 $PRISMA_SCHEMA"
 fi
 
-# 严格启动 Next（失败即退出）
-echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
-start_next "$NEXT_DIR" || { echo "[entrypoint] ❌ Next 启动失败，退出"; exit 1; }
+# 第二次启动前先检测是否已就绪，已就绪则跳过，避免端口占用告警
+READY_CODE=$(curl -s -o /dev/null -m 1 -w "%{http_code}" "http://127.0.0.1:${NEXTJS_PORT}/" 2>/dev/null || true)
+case "$READY_CODE" in
+  2??|3??)
+    echo "[entrypoint] Next.js 已在端口 ${NEXTJS_PORT} 运行，跳过重复启动 (code=$READY_CODE)" ;;
+  *)
+    echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
+    start_next "$NEXT_DIR" || { echo "[entrypoint] ❌ Next 启动失败，退出"; exit 1; } ;;
+esac
 
 echo "[entrypoint] 启动服务..."
 
