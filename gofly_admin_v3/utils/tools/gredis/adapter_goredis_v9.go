@@ -4,6 +4,7 @@ import (
     "context"
     "crypto/tls"
     "errors"
+    "fmt"
     "strings"
     "time"
 
@@ -46,18 +47,11 @@ func init() {
         if cfg.MasterName != "" {
             opts.MasterName = cfg.MasterName
         }
-        if cfg.MaxActive > 0 {
-            opts.PoolSize = cfg.MaxActive
-        }
-        if cfg.MinIdle > 0 {
-            opts.MinIdleConns = cfg.MinIdle
-        }
-        if cfg.IdleTimeout > 0 {
-            opts.IdleTimeout = cfg.IdleTimeout
-        }
-        if cfg.MaxConnLifetime > 0 {
-            opts.MaxConnAge = cfg.MaxConnLifetime
-        }
+        if cfg.MaxActive > 0 { opts.PoolSize = cfg.MaxActive }
+        if cfg.MinIdle > 0 { opts.MinIdleConns = cfg.MinIdle }
+        // go-redis v9 uses ConnMaxIdleTime / ConnMaxLifetime
+        if cfg.IdleTimeout > 0 { opts.ConnMaxIdleTime = cfg.IdleTimeout }
+        if cfg.MaxConnLifetime > 0 { opts.ConnMaxLifetime = cfg.MaxConnLifetime }
         if cfg.DialTimeout > 0 {
             opts.DialTimeout = cfg.DialTimeout
         }
@@ -202,12 +196,12 @@ func (g *grpGeneric) Keys(ctx context.Context, pattern string) ([]string, error)
 func (g *grpGeneric) Scan(ctx context.Context, cursor uint64, option ...ScanOption) (uint64, []string, error) { keys, cur, err := g.client.Scan(ctx, cursor, "*", 10).Result(); return cur, keys, err }
 func (g *grpGeneric) FlushDB(ctx context.Context, option ...FlushOp) error { return g.client.FlushDB(ctx).Err() }
 func (g *grpGeneric) FlushAll(ctx context.Context, option ...FlushOp) error { return g.client.FlushAll(ctx).Err() }
-func (g *grpGeneric) Expire(ctx context.Context, key string, seconds int64, option ...ExpireOption) (int64, error) { b, err := g.client.Expire(ctx, key, seconds*1_000_000_000).Result(); if err!=nil {return 0, err}; if b {return 1, nil}; return 0, nil }
+func (g *grpGeneric) Expire(ctx context.Context, key string, seconds int64, option ...ExpireOption) (int64, error) { b, err := g.client.Expire(ctx, key, time.Duration(seconds)*time.Second).Result(); if err!=nil {return 0, err}; if b {return 1, nil}; return 0, nil }
 func (g *grpGeneric) ExpireAt(ctx context.Context, key string, t time.Time, option ...ExpireOption) (int64, error) { b, err := g.client.ExpireAt(ctx, key, t).Result(); if err!=nil {return 0, err}; if b {return 1, nil}; return 0, nil }
 func (g *grpGeneric) ExpireTime(ctx context.Context, key string) (*gvar.Var, error) { v, err := g.client.Do(ctx, "EXPIRETIME", key).Result(); if err!=nil {return nil, err}; return gvar.New(v), nil }
 func (g *grpGeneric) TTL(ctx context.Context, key string) (int64, error) { d, err := g.client.TTL(ctx, key).Result(); if err!=nil {return 0, err}; return int64(d.Seconds()), nil }
 func (g *grpGeneric) Persist(ctx context.Context, key string) (int64, error) { b, err := g.client.Persist(ctx, key).Result(); if err!=nil {return 0, err}; if b {return 1, nil}; return 0, nil }
-func (g *grpGeneric) PExpire(ctx context.Context, key string, ms int64, option ...ExpireOption) (int64, error) { b, err := g.client.PExpire(ctx, key, ms*1_000_000).Result(); if err!=nil {return 0, err}; if b {return 1, nil}; return 0, nil }
+func (g *grpGeneric) PExpire(ctx context.Context, key string, ms int64, option ...ExpireOption) (int64, error) { b, err := g.client.PExpire(ctx, key, time.Duration(ms)*time.Millisecond).Result(); if err!=nil {return 0, err}; if b {return 1, nil}; return 0, nil }
 func (g *grpGeneric) PExpireAt(ctx context.Context, key string, t time.Time, option ...ExpireOption) (int64, error) { b, err := g.client.PExpireAt(ctx, key, t).Result(); if err!=nil {return 0, err}; if b {return 1, nil}; return 0, nil }
 func (g *grpGeneric) PExpireTime(ctx context.Context, key string) (*gvar.Var, error) { v, err := g.client.Do(ctx, "PEXPIRETIME", key).Result(); if err!=nil {return nil, err}; return gvar.New(v), nil }
 func (g *grpGeneric) PTTL(ctx context.Context, key string) (int64, error) { d, err := g.client.PTTL(ctx, key).Result(); if err!=nil {return 0, err}; return int64(d.Milliseconds()), nil }
@@ -232,7 +226,19 @@ func (g *grpString) Decr(ctx context.Context, key string) (int64, error) { retur
 func (g *grpString) DecrBy(ctx context.Context, key string, decrement int64) (int64, error) { return g.client.DecrBy(ctx, key, decrement).Result() }
 func (g *grpString) MSet(ctx context.Context, keyValueMap map[string]interface{}) error { return g.client.MSet(ctx, keyValueMap).Err() }
 func (g *grpString) MSetNX(ctx context.Context, keyValueMap map[string]interface{}) (bool, error) { return g.client.MSetNX(ctx, keyValueMap).Result() }
-func (g *grpString) MGet(ctx context.Context, keys ...string) (gvar.Vars, error) { vals, err := g.client.MGet(ctx, keys...).Result(); if err!=nil {return nil, err}; out := make(gvar.Vars, 0, len(vals)); for _, v := range vals { out = append(out, gvar.New(v)) }; return out, nil }
+func (g *grpString) MGet(ctx context.Context, keys ...string) (map[string]*gvar.Var, error) {
+    vals, err := g.client.MGet(ctx, keys...).Result()
+    if err != nil { return nil, err }
+    out := make(map[string]*gvar.Var, len(keys))
+    for i, k := range keys {
+        var val interface{}
+        if i < len(vals) {
+            val = vals[i]
+        }
+        out[k] = gvar.New(val)
+    }
+    return out, nil
+}
 
 // Hash group (stubs via direct redis mappings)
 type grpHash struct{ client redis.UniversalClient }
@@ -262,7 +268,7 @@ func (g *grpList) RPop(ctx context.Context, key string, count ...int) (*gvar.Var
 func (g *grpList) LRem(ctx context.Context, key string, count int64, value interface{}) (int64, error) { return g.client.LRem(ctx, key, count, value).Result() }
 func (g *grpList) LLen(ctx context.Context, key string) (int64, error) { return g.client.LLen(ctx, key).Result() }
 func (g *grpList) LIndex(ctx context.Context, key string, index int64) (*gvar.Var, error) { v, err := g.client.LIndex(ctx, key, index).Result(); if err!=nil {return nil, err}; return gvar.New(v), nil }
-func (g *grpList) LInsert(ctx context.Context, key string, op LInsertOp, pivot, value interface{}) (int64, error) { return g.client.LInsert(ctx, key, strings.ToLower(string(op)), pivot, value).Result() }
+func (g *grpList) LInsert(ctx context.Context, key string, op LInsertOp, pivot, value interface{}) (int64, error) { return g.client.LInsert(ctx, key, strings.ToUpper(string(op)), pivot, value).Result() }
 func (g *grpList) LSet(ctx context.Context, key string, index int64, value interface{}) (*gvar.Var, error) { err := g.client.LSet(ctx, key, index, value).Err(); if err!=nil {return nil, err}; return gvar.New("OK"), nil }
 func (g *grpList) LRange(ctx context.Context, key string, start, stop int64) (gvar.Vars, error) { vals, err := g.client.LRange(ctx, key, start, stop).Result(); if err!=nil {return nil, err}; out := make(gvar.Vars, 0, len(vals)); for _, v := range vals { out = append(out, gvar.New(v)) }; return out, nil }
 func (g *grpList) LTrim(ctx context.Context, key string, start, stop int64) error { return g.client.LTrim(ctx, key, start, stop).Err() }
@@ -292,14 +298,14 @@ func (g *grpSet) SDiffStore(ctx context.Context, destination string, key string,
 // Sorted set group (minimal)
 type grpZSet struct{ client redis.UniversalClient }
 func (g *grpZSet) ZAdd(ctx context.Context, key string, option *ZAddOption, member ZAddMember, members ...ZAddMember) (*gvar.Var, error) { zm := make([]redis.Z, 0, 1+len(members)); zm = append(zm, redis.Z{Score: member.Score, Member: member.Member}); for _, m := range members { zm = append(zm, redis.Z{Score: m.Score, Member: m.Member}) }; n, err := g.client.ZAdd(ctx, key, zm...).Result(); if err!=nil {return nil, err}; return gvar.New(n), nil }
-func (g *grpZSet) ZScore(ctx context.Context, key string, member interface{}) (float64, error) { return g.client.ZScore(ctx, key, member).Result() }
-func (g *grpZSet) ZIncrBy(ctx context.Context, key string, increment float64, member interface{}) (float64, error) { return g.client.ZIncrBy(ctx, key, increment, member).Result() }
+func (g *grpZSet) ZScore(ctx context.Context, key string, member interface{}) (float64, error) { return g.client.ZScore(ctx, key, fmt.Sprint(member)).Result() }
+func (g *grpZSet) ZIncrBy(ctx context.Context, key string, increment float64, member interface{}) (float64, error) { return g.client.ZIncrBy(ctx, key, increment, fmt.Sprint(member)).Result() }
 func (g *grpZSet) ZCard(ctx context.Context, key string) (int64, error) { return g.client.ZCard(ctx, key).Result() }
 func (g *grpZSet) ZCount(ctx context.Context, key string, min, max string) (int64, error) { return g.client.ZCount(ctx, key, min, max).Result() }
 func (g *grpZSet) ZRange(ctx context.Context, key string, start, stop int64, option ...ZRangeOption) (gvar.Vars, error) { vals, err := g.client.ZRange(ctx, key, start, stop).Result(); if err!=nil {return nil, err}; out := make(gvar.Vars, 0, len(vals)); for _, v := range vals { out = append(out, gvar.New(v)) }; return out, nil }
 func (g *grpZSet) ZRevRange(ctx context.Context, key string, start, stop int64, option ...ZRevRangeOption) (*gvar.Var, error) { vals, err := g.client.ZRevRange(ctx, key, start, stop).Result(); if err!=nil {return nil, err}; return gvar.New(vals), nil }
-func (g *grpZSet) ZRank(ctx context.Context, key string, member interface{}) (int64, error) { return g.client.ZRank(ctx, key, member).Result() }
-func (g *grpZSet) ZRevRank(ctx context.Context, key string, member interface{}) (int64, error) { return g.client.ZRevRank(ctx, key, member).Result() }
+func (g *grpZSet) ZRank(ctx context.Context, key string, member interface{}) (int64, error) { return g.client.ZRank(ctx, key, fmt.Sprint(member)).Result() }
+func (g *grpZSet) ZRevRank(ctx context.Context, key string, member interface{}) (int64, error) { return g.client.ZRevRank(ctx, key, fmt.Sprint(member)).Result() }
 func (g *grpZSet) ZRem(ctx context.Context, key string, member interface{}, members ...interface{}) (int64, error) { return g.client.ZRem(ctx, key, append([]interface{}{member}, members...)...).Result() }
 func (g *grpZSet) ZRemRangeByRank(ctx context.Context, key string, start, stop int64) (int64, error) { return g.client.ZRemRangeByRank(ctx, key, start, stop).Result() }
 func (g *grpZSet) ZRemRangeByScore(ctx context.Context, key string, min, max string) (int64, error) { return g.client.ZRemRangeByScore(ctx, key, min, max).Result() }
