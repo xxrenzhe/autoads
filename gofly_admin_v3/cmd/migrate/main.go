@@ -21,7 +21,8 @@ func runPrismaMigrate(schemaPath string) error {
 
     // Prefer npx prisma ... from repo
     // Run in apps/frontend so npx can pick local devDependency 'prisma'
-    cmd := exec.CommandContext(ctx, "npx", "prisma", "migrate", "deploy", "--schema", "schema.prisma")
+    // Note: prisma schema resides under prisma/schema.prisma within apps/frontend
+    cmd := exec.CommandContext(ctx, "npx", "prisma", "migrate", "deploy", "--schema", "prisma/schema.prisma")
     cmd.Dir = filepath.Clean(filepath.Join("..", "apps", "frontend"))
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
