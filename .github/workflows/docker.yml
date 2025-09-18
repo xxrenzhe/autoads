@@ -314,6 +314,17 @@ jobs:
       - name: Start Redis (required by Go backend)
         run: docker run -d --name redis --network ci-net redis:7-alpine
 
+      - name: Start MySQL (for backend DB connection)
+        run: |
+          docker run -d --name mysql --network ci-net \
+            -e MYSQL_ROOT_PASSWORD=password \
+            -e MYSQL_DATABASE=autoads \
+            mysql:8.0
+          # wait for mysql to be ready
+          for i in $(seq 1 60); do
+            if docker exec mysql sh -lc 'mysqladmin ping -h 127.0.0.1 -ppassword' >/dev/null 2>&1; then
+              echo "MySQL is ready"; break; fi; sleep 1; done
+
       - name: Pull built image by digest
         env:
           DIGEST: ${{ needs.build-and-push.outputs.digest }}
@@ -329,13 +340,22 @@ jobs:
             debug: true
           database:
             type: mysql
-            host: 127.0.0.1
+            host: mysql
             port: 3306
             username: root
-            password: ""
+            password: "password"
             database: autoads
             charset: utf8mb4
             pool: { max_idle: 5, max_open: 10, max_lifetime: 600 }
+            default:
+              type: mysql
+              hostname: mysql
+              hostport: "3306"
+              username: root
+              password: "password"
+              dbname: autoads
+              charset: utf8mb4
+              timezone: Local
           redis:
             enable: true
             host: redis
@@ -391,3 +411,4 @@ jobs:
         run: |
           docker rm -f autoads || true
           docker rm -f redis || true
+          docker rm -f mysql || true
