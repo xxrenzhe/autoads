@@ -10,6 +10,12 @@ NEXTJS_PORT="${NEXTJS_PORT:-3000}"
 PUPPETEER_EXECUTOR_PORT="${PUPPETEER_EXECUTOR_PORT:-8081}"
 ADSCENTER_EXECUTOR_PORT="${ADSCENTER_EXECUTOR_PORT:-8082}"
 
+# 打印 Go 二进制版本信息，便于部署时核对镜像是否最新
+if [ -x "/app/gofly_admin_v3/server" ]; then
+  echo "[entrypoint] Go server version info:"
+  /app/gofly_admin_v3/server -version 2>/dev/null || true
+fi
+
 # 自动修正 Prisma 的 DATABASE_URL：当缺少库名或指向系统库时，拼接业务库名
 auto_fix_prisma_url() {
   [ "${PRISMA_AUTO_FIX_DB:-true}" = "true" ] || return 0

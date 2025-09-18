@@ -92,13 +92,12 @@ function buildPrismaAdapterIfAvailable() {
   return {
     ...base,
     async createUser(data: any) {
-      // 为兼容当前部分环境缺少 users.name 列的情况，这里显式丢弃 name，避免 INSERT 失败。
+      // 为兼容当前部分环境缺少 users.name/avatar 列的情况，这里显式丢弃 name/avatar，避免 INSERT 失败。
       const { emailVerified, image, name: _discardName, ...userData } = data
       const user = await prisma.user.create({
         data: {
           ...userData,
           emailVerified: emailVerified ? true : false,
-          avatar: image || null,
         }
       })
       try {
@@ -118,7 +117,7 @@ function buildPrismaAdapterIfAvailable() {
         // 兼容缺少 name 列的环境：此处不强依赖 name
         name: (user as any).name || undefined,
         emailVerified: user.emailVerified ? new Date() : null,
-        image: user.avatar || undefined,
+        image: image || undefined,
         role: user.role,
         status: user.status,
         isNewUser: true
@@ -246,7 +245,6 @@ function getNextAuth() {
           select: {
             id: true,
             email: true,
-            avatar: true,
             role: true,
             status: true,
             tokenBalance: true,
@@ -260,11 +258,7 @@ function getNextAuth() {
           const updateData: any = { lastLoginAt: new Date() }
           let needsUpdate = false
           
-          // Only update if data actually changed
-          if (token.picture && token.picture !== user.avatar) {
-            updateData.avatar = token.picture
-            needsUpdate = true
-          }
+          // 头像列可能不存在，忽略 avatar 同步
           
           // 仅当数据库存在 name 列时才尝试更新（通过 try/catch 容错）
           if (token.name) {
@@ -297,7 +291,7 @@ function getNextAuth() {
             // 优先使用 DB 中的 name；若缺失则回退到 token.name 或邮箱前缀
             name: (user as any).name || (token as any).name || (user.email ? user.email.split('@')[0] : undefined),
             email: user.email,
-            image: user.avatar,
+            image: (token as any).picture || undefined,
             role: user.role,
             status: user.status,
             isActive: user.status === 'ACTIVE',
@@ -351,7 +345,7 @@ function getNextAuth() {
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email! },
             // 显式选择必要字段，避免选择缺失的列（如 name）导致 P2022
-            select: { id: true, email: true, avatar: true, role: true, status: true, accounts: true }
+            select: { id: true, email: true, role: true, status: true, accounts: true }
           })
           
           if (existingUser) {
@@ -361,13 +355,7 @@ function getNextAuth() {
               return false
             }
             
-            // Update avatar if it's different
-            if ((profile as any)?.picture && (profile as any).picture !== existingUser.avatar) {
-              await prisma.user.update({
-                where: { id: existingUser.id },
-                data: { avatar: (profile as any).picture }
-              })
-            }
+            // 忽略头像更新，避免列不存在
             
             // 更新 name 仅在列存在时尝试（容错）
             if ((profile as any)?.name) {

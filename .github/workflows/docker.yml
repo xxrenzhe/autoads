@@ -184,6 +184,9 @@ jobs:
           WWW_DOMAIN="www.${BASE_DOMAIN}"
           echo "ALLOW_ORIGINS=https://${BASE_DOMAIN},https://${WWW_DOMAIN}" >> $GITHUB_OUTPUT
           echo "GOOGLE_REDIRECT_URI=https://${WWW_DOMAIN}/auth/google/callback" >> $GITHUB_OUTPUT
+          # Extra build args for reproducible versioning / cache-bust
+          echo "BUILD_TS=$(date -u +%FT%TZ)" >> $GITHUB_OUTPUT
+          echo "CACHE_BUST=${GITHUB_SHA}" >> $GITHUB_OUTPUT
 
       - name: Build and push image (linux/amd64)
         id: build
@@ -203,6 +206,8 @@ jobs:
             GOOGLE_REDIRECT_URI=${{ steps.build-args.outputs.GOOGLE_REDIRECT_URI }}
             VERSION=${{ github.ref_name }}
             COMMIT=${{ github.sha }}
+            BUILD_TS=${{ steps.build-args.outputs.BUILD_TS }}
+            CACHE_BUST=${{ steps.build-args.outputs.CACHE_BUST }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
