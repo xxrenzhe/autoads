@@ -92,7 +92,8 @@ function buildPrismaAdapterIfAvailable() {
   return {
     ...base,
     async createUser(data: any) {
-      const { emailVerified, image, ...userData } = data
+      // 为兼容当前部分环境缺少 users.name 列的情况，这里显式丢弃 name，避免 INSERT 失败。
+      const { emailVerified, image, name: _discardName, ...userData } = data
       const user = await prisma.user.create({
         data: {
           ...userData,
@@ -114,7 +115,8 @@ function buildPrismaAdapterIfAvailable() {
       return {
         id: user.id,
         email: user.email,
-        name: user.name || undefined,
+        // 兼容缺少 name 列的环境：此处不强依赖 name
+        name: (user as any).name || undefined,
         emailVerified: user.emailVerified ? new Date() : null,
         image: user.avatar || undefined,
         role: user.role,
@@ -244,7 +246,6 @@ function getNextAuth() {
           select: {
             id: true,
             email: true,
-            name: true,
             avatar: true,
             role: true,
             status: true,
@@ -265,9 +266,14 @@ function getNextAuth() {
             needsUpdate = true
           }
           
-          if (token.name && token.name !== user.name) {
-            updateData.name = token.name
-            needsUpdate = true
+          // 仅当数据库存在 name 列时才尝试更新（通过 try/catch 容错）
+          if (token.name) {
+            try {
+              await prisma.user.update({ where: { id: user.id }, data: { name: token.name } })
+            } catch (e: any) {
+              // Prisma P2022: 列不存在，忽略即可，避免影响登录流程
+              if (process.env.AUTH_DEBUG === 'true') console.warn('[auth] skip updating name:', e?.code || e)
+            }
           }
           
           // Perform update if needed
@@ -288,7 +294,8 @@ function getNextAuth() {
           typedSession.user = {
             ...session.user,
             id: user.id,
-            name: user.name,
+            // 优先使用 DB 中的 name；若缺失则回退到 token.name 或邮箱前缀
+            name: (user as any).name || (token as any).name || (user.email ? user.email.split('@')[0] : undefined),
             email: user.email,
             image: user.avatar,
             role: user.role,
@@ -343,7 +350,8 @@ function getNextAuth() {
           // Check if user already exists with this email
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email! },
-            include: { accounts: true }
+            // 显式选择必要字段，避免选择缺失的列（如 name）导致 P2022
+            select: { id: true, email: true, avatar: true, role: true, status: true, accounts: true }
           })
           
           if (existingUser) {
@@ -361,12 +369,16 @@ function getNextAuth() {
               })
             }
             
-            // Update name if it's different
-            if ((profile as any)?.name && (profile as any).name !== existingUser.name) {
-              await prisma.user.update({
-                where: { id: existingUser.id },
-                data: { name: (profile as any).name }
-              })
+            // 更新 name 仅在列存在时尝试（容错）
+            if ((profile as any)?.name) {
+              try {
+                await prisma.user.update({
+                  where: { id: existingUser.id },
+                  data: { name: (profile as any).name }
+                })
+              } catch (e: any) {
+                if (process.env.AUTH_DEBUG === 'true') console.warn('[auth] skip updating name on sign-in:', e?.code || e)
+              }
             }
             
             // Check if user already has a Google account linked
