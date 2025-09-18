@@ -4,6 +4,7 @@ on:
   push:
     branches: [ main, production ]
     tags: [ 'v*' ]
+  pull_request:
   workflow_dispatch:
 
 env:
@@ -80,6 +81,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js (for Prisma CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend deps (prisma)
+        run: npm ci --workspace apps/frontend
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -98,6 +107,7 @@ jobs:
         env:
           DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
           REDIS_URL: redis://127.0.0.1:6379/0
+          DB_RECREATE: "1"
         shell: bash
         run: |
           set -euo pipefail
@@ -138,6 +148,7 @@ jobs:
           exit 1
 
   build-and-push:
+    if: github.event_name != 'pull_request'
     name: Build and Push (linux/amd64)
     runs-on: ubuntu-latest
     needs: [validate-db, validate-ts]
@@ -241,6 +252,7 @@ jobs:
           echo "\nThen select this digest in ClawCloud or ensure Always Pull is enabled." >> $GITHUB_STEP_SUMMARY
 
   security-scan:
+    if: github.event_name != 'pull_request'
     name: Trivy Security Scan
     runs-on: ubuntu-latest
     needs: build-and-push
@@ -296,6 +308,7 @@ jobs:
           retention-days: 14
 
   smoke-run:
+    if: github.event_name != 'pull_request'
     name: Smoke Test (run container and verify 8080)
     runs-on: ubuntu-latest
     needs: build-and-push
@@ -377,35 +390,6 @@ jobs:
               protocol: 3
           YAML
 
-      - name: Run Go DB migrate (one-off)
-        run: |
-          echo "[time] migrate start: $(date -u +%FT%T)"
-          # Run migrate once to create required tables before starting main app
-          docker rm -f autoads-migrate >/dev/null 2>&1 || true
-          docker run -d --name autoads-migrate --network ci-net \
-            -e DB_HOST=mysql -e DB_PORT=3306 \
-            -e DB_USERNAME=root -e DB_PASSWORD=password \
-            -e DB_DATABASE=autoads \
-            -e REDIS_HOST=redis -e REDIS_PORT=6379 -e REDIS_DB=1 \
-            -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
-            autoads:smoke \
-              -migrate -config=/app/gofly_admin_v3/config.yaml
-          echo "Waiting for DB migrate to finish..."
-          ok=""
-          for i in $(seq 1 90); do
-            if docker logs autoads-migrate 2>&1 | grep -q "数据库初始化完成"; then ok="yes"; break; fi
-            sleep 1
-          done
-          if [ "$ok" != "yes" ]; then
-            echo "Migration sentinel not detected in 90s" >&2
-            docker logs autoads-migrate || true
-            exit 1
-          fi
-          docker stop -t 1 autoads-migrate >/dev/null 2>&1 || true
-          docker rm -f autoads-migrate >/dev/null 2>&1 || true
-          echo "Go DB migration completed"
-          echo "[time] migrate end:   $(date -u +%FT%T)"
-
       - name: Run container (map 3000,8080)
         run: |
           echo "[time] run-container start: $(date -u +%FT%T)"
@@ -415,7 +399,7 @@ jobs:
             -e NEXTJS_PORT=3000 \
             -e PORT=8080 \
             -e BACKEND_URL=http://127.0.0.1:8080 \
-            -e RUN_MIGRATIONS_ON_START=false \
+            -e RUN_MIGRATIONS_ON_START=true \
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
             autoads:smoke
           echo "[time] run-container end:   $(date -u +%FT%T)"
