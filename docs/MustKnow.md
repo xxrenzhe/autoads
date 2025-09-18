@@ -22,7 +22,7 @@
 - NEXT_PUBLIC_DEPLOYMENT_ENV=preview/production
 - DATABASE_URL=mysql://root:jtl85fn8@dbprovider.sg-members-1.clawcloudrun.com:30354
 - REDIS_URL=redis://default:9xdjb8nf@dbprovider.sg-members-1.clawcloudrun.com:32284
-- AUTH_SECRET=85674018a64071a1f65a376d45a522dec78495cae7f5f1516febf8a4d51ff834
+- AUTH_SECRET=pkfn9dOfmIv3uougZhF3ba9SZ5ExUJ3FEfoh4eAk0ZLxLPT6TwK+D5YIJ7Si01sBK01nIxzpoVU0IB/xGZvBFw==
 - AUTH_URL=https://www.urlchecker.dev
 - AUTH_GOOGLE_ID=1007142410985-4945m48srrp056kp0q5n0e5he8omrdol.apps.googleusercontent.com
 - AUTH_GOOGLE_SECRET=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

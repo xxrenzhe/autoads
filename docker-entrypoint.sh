@@ -62,6 +62,41 @@ auto_fix_prisma_url() {
   fi
 }
 
+# 基于部署环境自动推导 NextAuth 基准 URL（避免 redirect_uri_mismatch）
+auto_set_auth_urls() {
+  # 若已显式设置则不覆盖
+  if [ -n "$NEXTAUTH_URL" ] && [ -n "$AUTH_URL" ]; then
+    return 0
+  fi
+  # 推导域名
+  : "${NEXT_PUBLIC_DOMAIN:=${DOMAIN}}"
+  local env="${NEXT_PUBLIC_DEPLOYMENT_ENV:-${NODE_ENV}}"
+  local scheme host url
+  case "$env" in
+    production|preview)
+      # 外部有 301 到 www.<domain>，这里直接使用 www 子域
+      if [ -n "$NEXT_PUBLIC_DOMAIN" ]; then
+        scheme="https"; host="www.${NEXT_PUBLIC_DOMAIN}"
+        url="${scheme}://${host}"
+      fi
+      ;;
+    *)
+      url="http://127.0.0.1:${NEXTJS_PORT}"
+      ;;
+  esac
+  # 注入（仅当未显式设置时）
+  if [ -n "$url" ]; then
+    if [ -z "$NEXTAUTH_URL" ]; then
+      export NEXTAUTH_URL="$url"
+      echo "[entrypoint] NEXTAUTH_URL 未设置，已自动设为: $NEXTAUTH_URL"
+    fi
+    if [ -z "$AUTH_URL" ]; then
+      export AUTH_URL="$url"
+      echo "[entrypoint] AUTH_URL 未设置，已自动设为: $AUTH_URL"
+    fi
+  fi
+}
+
 # Next.js 启动函数（确保日志与就绪探测）
 start_next() {
   local dir="$1"
@@ -173,6 +208,9 @@ fi
 
 # 在启动 Next 之前，尝试自动修正 Prisma 的 DATABASE_URL，避免迁移与运行时连接到系统库
 auto_fix_prisma_url || true
+
+# 自动设置 NextAuth URL，避免回落到 localhost 导致 Google OAuth 回调不匹配
+auto_set_auth_urls || true
 
 # 打印已解析的 Prisma 连接（脱敏），便于排查是否误连到 system DB
 if [ -n "$DATABASE_URL" ]; then

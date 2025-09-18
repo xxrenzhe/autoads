@@ -21,7 +21,6 @@ export function validateCriticalEnvironmentVariables(): ValidationResult {
     'NODE_ENV',
     'NEXT_PUBLIC_DEPLOYMENT_ENV',
     'DATABASE_URL',
-    'AUTH_SECRET',
     'AUTH_GOOGLE_ID',
     'AUTH_GOOGLE_SECRET'
   ];
@@ -34,9 +33,13 @@ export function validateCriticalEnvironmentVariables(): ValidationResult {
     }
   }
 
-  // Validate AUTH_SECRET format (should be at least 32 characters)
-  if (process.env.AUTH_SECRET && process.env.AUTH_SECRET.length < 32) {
-    result.errors.push('AUTH_SECRET must be at least 32 characters long');
+  // Validate secret presence: accept either AUTH_SECRET or NEXTAUTH_SECRET
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    result.errors.push('Missing authentication secret: set AUTH_SECRET or NEXTAUTH_SECRET');
+    result.valid = false;
+  } else if (secret.length < 32) {
+    result.errors.push('Authentication secret must be at least 32 characters (recommend 64 bytes)');
     result.valid = false;
   }
 
@@ -68,6 +71,12 @@ export function validateCriticalEnvironmentVariables(): ValidationResult {
   const nodeOptions = process.env.NODE_OPTIONS || '';
   if (!nodeOptions.includes('--max-old-space-size')) {
     result.warnings.push('NODE_OPTIONS should include --max-old-space-size to prevent memory issues');
+  }
+
+  // Production: require a canonical base URL for NextAuth to avoid redirect_uri mismatch
+  if ((process.env.NEXT_PUBLIC_DEPLOYMENT_ENV === 'production' || process.env.NEXT_PUBLIC_DEPLOYMENT_ENV === 'preview') && !process.env.NEXTAUTH_URL && !process.env.AUTH_URL) {
+    result.errors.push('Missing NEXTAUTH_URL or AUTH_URL in production/preview environment');
+    result.valid = false;
   }
 
   return result;

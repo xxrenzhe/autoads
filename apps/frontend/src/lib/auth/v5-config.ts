@@ -15,6 +15,15 @@ import {
 } from './auth-config'
 import { createInternalJWT, ensureRequestId } from '@/lib/security/internal-jwt'
 
+// 环境变量桥接：避免重复配置 NEXTAUTH_* 与 AUTH_*
+// - 若仅设置了 AUTH_URL/AUTH_SECRET，则在运行时补齐 NEXTAUTH_URL/NEXTAUTH_SECRET
+if (!process.env.NEXTAUTH_URL && process.env.AUTH_URL) {
+  process.env.NEXTAUTH_URL = process.env.AUTH_URL
+}
+if (!process.env.NEXTAUTH_SECRET && process.env.AUTH_SECRET) {
+  process.env.NEXTAUTH_SECRET = process.env.AUTH_SECRET
+}
+
 // 简单设备指纹生成
 function generateSimpleDeviceFingerprint(request: NextRequest): string {
   const userAgent = request.headers.get('user-agent') || ''
@@ -149,7 +158,11 @@ function getNextAuth() {
     }
 
     const adapter = buildPrismaAdapterIfAvailable()
-    const secret = process.env.AUTH_SECRET || (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV !== 'production' ? 'dev-secret-autoads' : undefined)
+    // 兼容 NEXTAUTH_SECRET 与 AUTH_SECRET，两者任一均可；生产环境必须提供
+    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV !== 'production' ? 'dev-secret-autoads' : undefined)
+    if (!secret && process.env.NODE_ENV === 'production') {
+      console.error('[auth] Missing AUTH_SECRET/NEXTAUTH_SECRET in production. JWT sessions will fail.')
+    }
 
     const na: any = NextAuth({
       ...(adapter ? { adapter } : {}),
