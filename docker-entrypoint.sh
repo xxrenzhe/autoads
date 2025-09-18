@@ -10,6 +10,50 @@ NEXTJS_PORT="${NEXTJS_PORT:-3000}"
 PUPPETEER_EXECUTOR_PORT="${PUPPETEER_EXECUTOR_PORT:-8081}"
 ADSCENTER_EXECUTOR_PORT="${ADSCENTER_EXECUTOR_PORT:-8082}"
 
+# 自动修正 Prisma 的 DATABASE_URL：当缺少库名或指向系统库时，拼接业务库名
+auto_fix_prisma_url() {
+  [ "${PRISMA_AUTO_FIX_DB:-true}" = "true" ] || return 0
+  # 若未设置 DATABASE_URL，则尝试通过环境变量构造
+  # 若设置了但缺少路径或指向 mysql/information_schema，则改写为业务数据库
+  local url="$DATABASE_URL"
+  local dbname="${DB_DATABASE:-}"
+  # 若未提供 DB_DATABASE，则尝试从配置文件读取 database.database 字段
+  if [ -z "$dbname" ] && [ -f "$CONFIG_PATH" ]; then
+    dbname=$(awk '
+      $1=="database:" { in_db=1; next }
+      in_db && $1=="database:" { gsub(/"/,"",$2); print $2; exit }
+      /^[^[:space:]]/ { in_db=0 }
+    ' "$CONFIG_PATH" 2>/dev/null | head -n1)
+  fi
+  if [ -z "$dbname" ]; then
+    return 0
+  fi
+  # 尝试从 DATABASE_URL 提取路径
+  if [ -n "$url" ]; then
+    case "$url" in
+      mysql://*)
+        local path
+        path=$(printf "%s" "$url" | sed -n 's#^mysql://[^/]\+/?\([^?]*\).*#\1#p')
+        # 当无路径或指向系统库时，替换为业务库
+        if [ -z "$path" ] || [ "$path" = "mysql" ] || [ "$path" = "information_schema" ]; then
+          local base qs
+          base=$(printf "%s" "$url" | sed -E 's#(mysql://[^/]+).*#\1#')
+          qs=$(printf "%s" "$url" | sed -n 's#^[^?]*\(\?[^#]*\)$#\1#p')
+          export DATABASE_URL="${base}/${dbname}${qs}"
+          echo "[entrypoint] Prisma DATABASE_URL 已自动指向业务库（内部覆盖），确保迁移与运行时一致"
+        fi
+        ;;
+      *) ;;
+    esac
+  else
+    # 未设置 DATABASE_URL，尝试基于环境变量拼接
+    if [ -n "$DB_USERNAME" ] && [ -n "$DB_PASSWORD" ] && [ -n "$DB_HOST" ] && [ -n "$DB_PORT" ]; then
+      export DATABASE_URL="mysql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${dbname}"
+      echo "[entrypoint] Prisma DATABASE_URL 已根据环境变量自动生成（内部覆盖）"
+    fi
+  fi
+}
+
 # Next.js 启动函数（确保日志与就绪探测）
 start_next() {
   local dir="$1"
@@ -118,6 +162,9 @@ if [ -f "$APP_DIR/resource/config.yaml.template" ]; then
     cp "$APP_DIR/resource/config.yaml.template" "$APP_DIR/resource/config.yaml"
   fi
 fi
+
+# 在启动 Next 之前，尝试自动修正 Prisma 的 DATABASE_URL，避免迁移与运行时连接到系统库
+auto_fix_prisma_url || true
 
 # 严格启动 Next（提前且必须成功）
 echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
