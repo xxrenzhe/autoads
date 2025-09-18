@@ -1,10 +1,34 @@
 package main
 
 import (
+    "context"
     "log"
-    dbinit "gofly-admin-v3/internal/init"
+    "os"
+    "os/exec"
+    "path/filepath"
+    "time"
+
     "gofly-admin-v3/internal/config"
+    dbinit "gofly-admin-v3/internal/init"
 )
+
+func runPrismaMigrate(schemaPath string) error {
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+    defer cancel()
+
+    // Prefer npx prisma ... from repo
+    cmd := exec.CommandContext(ctx, "npx", "prisma", "migrate", "deploy", "--schema", schemaPath)
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    if err := cmd.Run(); err == nil {
+        return nil
+    }
+    // Fallback: prisma in PATH
+    cmd = exec.CommandContext(ctx, "prisma", "migrate", "deploy", "--schema", schemaPath)
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    return cmd.Run()
+}
 
 func main() {
     // 仅基于环境变量加载配置，避免文件监控与额外开销
@@ -13,7 +37,16 @@ func main() {
         log.Fatal("加载环境配置失败: ", err)
     }
 
-    // 执行嵌入式 SQL 迁移与基础数据初始化（幂等）
+    // 先执行 Prisma 迁移（DDL 统一由 Prisma 管理）
+    // 该命令从 gofly_admin_v3 目录相对定位到 monorepo 下的 Prisma schema。
+    // 支持使用环境变量 DATABASE_URL/SHADOW_DATABASE_URL。
+    schemaPath := filepath.Clean(filepath.Join("..", "apps", "frontend", "prisma", "schema.prisma"))
+    log.Printf("执行 Prisma 迁移: %s", schemaPath)
+    if err := runPrismaMigrate(schemaPath); err != nil {
+        log.Fatalf("Prisma 迁移失败: %v", err)
+    }
+
+    // 执行基础数据初始化（幂等）
     initializer, err := dbinit.NewDatabaseInitializer(cfg, log.Default())
     if err != nil {
         log.Fatal("初始化器创建失败: ", err)
