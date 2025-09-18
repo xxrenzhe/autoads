@@ -380,6 +380,10 @@ jobs:
         run: |
           # Run migrate once to create required tables before starting main app
           docker run --rm --name autoads-migrate --network ci-net \
+            -e DB_HOST=mysql -e DB_PORT=3306 \
+            -e DB_USERNAME=root -e DB_PASSWORD=password \
+            -e DB_DATABASE=autoads \
+            -e REDIS_HOST=redis -e REDIS_PORT=6379 -e REDIS_DB=1 \
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
             --entrypoint /app/gofly_admin_v3/server \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST} \
