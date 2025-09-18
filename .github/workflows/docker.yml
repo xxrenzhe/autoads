@@ -374,6 +374,18 @@ jobs:
               protocol: 3
           YAML
 
+      - name: Run Go DB migrate (one-off)
+        env:
+          DIGEST: ${{ needs.build-and-push.outputs.digest }}
+        run: |
+          # Run migrate once to create required tables before starting main app
+          docker run --rm --name autoads-migrate --network ci-net \
+            -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
+            --entrypoint /app/gofly_admin_v3/server \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST} \
+              -migrate -config=/app/gofly_admin_v3/config.yaml
+          echo "Go DB migration completed"
+
       - name: Run container (map 3000,8080)
         env:
           DIGEST: ${{ needs.build-and-push.outputs.digest }}
@@ -384,6 +396,7 @@ jobs:
             -e NEXTJS_PORT=3000 \
             -e PORT=8080 \
             -e BACKEND_URL=http://127.0.0.1:8080 \
+            -e RUN_MIGRATIONS_ON_START=false \
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}
 
