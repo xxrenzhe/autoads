@@ -1,0 +1,77 @@
+name: DB Migrations (Prisma + Go Seed)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  db-migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: autoads_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s --health-timeout=2s --health-retries=30
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping || exit 1"
+          --health-interval=5s --health-timeout=2s --health-retries=30
+
+    env:
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/autoads_ci
+      REDIS_URL: redis://127.0.0.1:6379/0
+      DB_RECREATE: "1"  # CI 中清库重建，避免首次迁移遗留
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Install frontend deps (prisma)
+        run: npm ci --workspace apps/frontend
+
+      - name: Build migrate-ci (Prisma migrate + Go seed)
+        run: go build -o gofly_admin_v3/migrate-ci gofly_admin_v3/cmd/migrate/main.go
+
+      - name: Wait for MySQL & Redis
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Waiting for MySQL(127.0.0.1:3306) and Redis(127.0.0.1:6379) ..."
+          for i in {1..90}; do (echo > /dev/tcp/127.0.0.1/3306) >/dev/null 2>&1 && break; sleep 1; done
+          for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/6379) >/dev/null 2>&1 && break; sleep 1; done
+          echo "Ports ready."
+
+      - name: Run migrations (Prisma) and seed (Go)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gofly_admin_v3/migrate-ci
+
+      - name: Show migration status (optional)
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash deployments/scripts/db-ops.sh status || true
+
