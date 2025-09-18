@@ -141,6 +141,8 @@ jobs:
     name: Build and Push (linux/amd64)
     runs-on: ubuntu-latest
     needs: [validate-db, validate-ts]
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -291,4 +293,100 @@ jobs:
         with:
           name: docker-trivy-scan-results
           path: trivy-results.sarif
-          retention-days: 14
+      retention-days: 14
+
+  smoke-run:
+    name: Smoke Test (run container and verify 8080)
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    timeout-minutes: 12
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare docker network
+        run: docker network create ci-net || true
+
+      - name: Start Redis (required by Go backend)
+        run: docker run -d --name redis --network ci-net redis:7-alpine
+
+      - name: Pull built image by digest
+        env:
+          DIGEST: ${{ needs.build-and-push.outputs.digest }}
+        run: |
+          echo "Digest: $DIGEST"
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}
+
+      - name: Write minimal config.yaml
+        run: |
+          cat > config.yaml << 'YAML'
+          app:
+            name: autoads-ci
+            debug: true
+          database:
+            type: mysql
+            host: 127.0.0.1
+            port: 3306
+            username: root
+            password: ""
+            database: autoads
+            charset: utf8mb4
+            pool: { max_idle: 5, max_open: 10, max_lifetime: 600 }
+          redis:
+            enable: true
+            host: redis
+            port: 6379
+            password: ""
+            db: 1
+            prefix: autoads:
+            default:
+              address: redis:6379
+              db: 1
+              pass: ""
+              maxIdle: 10
+              maxActive: 100
+              idleTimeout: 10
+              waitTimeout: 5
+              protocol: 3
+          YAML
+
+      - name: Run container (map 3000,8080)
+        env:
+          DIGEST: ${{ needs.build-and-push.outputs.digest }}
+        run: |
+          docker run -d --name autoads --network ci-net \
+            -p 3000:3000 -p 8080:8080 \
+            -e NODE_ENV=production \
+            -e NEXTJS_PORT=3000 \
+            -e PORT=8080 \
+            -e BACKEND_URL=http://127.0.0.1:8080 \
+            -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}
+
+      - name: Wait for backend ready (http://127.0.0.1:8080/readyz)
+        run: |
+          set -e
+          for i in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:8080/readyz >/dev/null 2>&1; then
+              echo "Backend ready on :8080"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Backend not ready in 120s" >&2
+          docker logs autoads || true
+          exit 1
+
+      - name: Show listening ports (debug)
+        if: always()
+        run: docker exec autoads sh -lc 'ss -ltnp | sed -n "1,200p" || true'
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f autoads || true
+          docker rm -f redis || true
