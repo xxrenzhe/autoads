@@ -41,6 +41,17 @@ redis:
   pool_size: 100
   prefix: "autoads:"
 
+  # 兼容 gofly-admin gredis 的配置分组（默认分组：default）
+  default:
+    address: "dbprovider.sg-members-1.clawcloudrun.com:32284"
+    db: 1
+    pass: "9xdjb8nf"
+    maxIdle: 10
+    maxActive: 100
+    idleTimeout: 10
+    waitTimeout: 5
+    protocol: 3
+
 # JWT配置
 jwt:
   secret: "your-jwt-secret-key-xxx-here"

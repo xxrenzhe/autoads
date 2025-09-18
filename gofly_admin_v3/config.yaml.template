@@ -38,9 +38,21 @@ redis:
   host: "${REDIS_HOST}"
   port: "${REDIS_PORT}"
   password: "${REDIS_PASSWORD}"
-  db: 1
+  db: ${REDIS_DATABASE}
   pool_size: 100
   prefix: "autoads:"
+
+  # 兼容 gofly-admin gredis 的配置分组（默认分组：default）
+  # 注意：字段名与上面不同，必须使用 address/pass/db 等
+  default:
+    address: "${REDIS_HOST}:${REDIS_PORT}"
+    db: ${REDIS_DATABASE}
+    pass: "${REDIS_PASSWORD}"
+    maxIdle: 10
+    maxActive: 100
+    idleTimeout: 10
+    waitTimeout: 5
+    protocol: 3
 
 # JWT配置
 jwt:
