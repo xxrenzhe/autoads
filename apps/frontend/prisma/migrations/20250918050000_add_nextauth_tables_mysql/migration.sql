@@ -41,12 +41,5 @@ CREATE TABLE IF NOT EXISTS `verification_tokens` (
     UNIQUE INDEX `verification_tokens_identifier_token_key`(`identifier`, `token`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- AddForeignKey constraints (created only if not already present)
-ALTER TABLE `accounts`
-  ADD CONSTRAINT `accounts_userId_fkey`
-  FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE `sessions`
-  ADD CONSTRAINT `sessions_userId_fkey`
-  FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
+-- Foreign keys to `users` are already created in the base init migration.
+-- To keep this migration idempotent across environments, we skip re-adding them here.
