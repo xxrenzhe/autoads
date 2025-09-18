@@ -66,6 +66,14 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 COPY --from=web /web/dist /out/web/dist
 
 ############################
+# Backend-only smoke image (for CI smoke-run)
+FROM alpine:3.19 AS smoke
+WORKDIR /app/gofly_admin_v3
+RUN apk add --no-cache ca-certificates tzdata
+COPY --from=build /out/server /app/gofly_admin_v3/server
+ENTRYPOINT ["/app/gofly_admin_v3/server"]
+
+############################
 # Runtime image (Node + Go + Chromium minimal)
 FROM node:20-bookworm-slim
 WORKDIR /app/gofly_admin_v3

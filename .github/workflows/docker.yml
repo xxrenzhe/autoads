@@ -301,13 +301,6 @@ jobs:
     needs: build-and-push
     timeout-minutes: 25
     steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Prepare docker network
         run: docker network create ci-net || true
 
@@ -325,12 +318,9 @@ jobs:
             if docker exec mysql sh -lc 'mysqladmin ping -h 127.0.0.1 -ppassword' >/dev/null 2>&1; then
               echo "MySQL is ready"; break; fi; sleep 1; done
 
-      - name: Pull built image by digest
-        env:
-          DIGEST: ${{ needs.build-and-push.outputs.digest }}
+      - name: Build backend-only smoke image (no push)
         run: |
-          echo "Digest: $DIGEST"
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}
+          docker build -f Dockerfile.standalone --target smoke -t autoads:smoke .
 
       - name: Write minimal config.yaml
         run: |
@@ -375,8 +365,6 @@ jobs:
           YAML
 
       - name: Run Go DB migrate (one-off)
-        env:
-          DIGEST: ${{ needs.build-and-push.outputs.digest }}
         run: |
           # Run migrate once to create required tables before starting main app
           docker run --rm --name autoads-migrate --network ci-net \
@@ -385,14 +373,11 @@ jobs:
             -e DB_DATABASE=autoads \
             -e REDIS_HOST=redis -e REDIS_PORT=6379 -e REDIS_DB=1 \
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
-            --entrypoint /app/gofly_admin_v3/server \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST} \
+            autoads:smoke \
               -migrate -config=/app/gofly_admin_v3/config.yaml
           echo "Go DB migration completed"
 
       - name: Run container (map 3000,8080)
-        env:
-          DIGEST: ${{ needs.build-and-push.outputs.digest }}
         run: |
           docker run -d --name autoads --network ci-net \
             -p 3000:3000 -p 8080:8080 \
@@ -402,7 +387,7 @@ jobs:
             -e BACKEND_URL=http://127.0.0.1:8080 \
             -e RUN_MIGRATIONS_ON_START=false \
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}
+            autoads:smoke
 
       - name: Wait for backend ready (http://127.0.0.1:8080/readyz)
         run: |
