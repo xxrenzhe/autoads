@@ -70,6 +70,10 @@ func main() {
     }
 
     // 执行基础数据初始化（幂等）
+    // 注意：为避免再次触发内部的 DB 重建逻辑，这里显式禁用 DB_RECREATE/创建步骤。
+    _ = os.Unsetenv("DB_RECREATE")
+    _ = os.Setenv("SKIP_CREATE_DB", "true")
+    _ = os.Setenv("INIT_SKIP_CREATE_DB", "true")
     initializer, err := dbinit.NewDatabaseInitializer(cfg, log.Default())
     if err != nil {
         log.Fatal("初始化器创建失败: ", err)
