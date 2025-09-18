@@ -370,15 +370,28 @@ jobs:
       - name: Run Go DB migrate (one-off)
         run: |
           # Run migrate once to create required tables before starting main app
-          docker run --rm --name autoads-migrate --network ci-net \
+          docker rm -f autoads-migrate >/dev/null 2>&1 || true
+          docker run -d --name autoads-migrate --network ci-net \
             -e DB_HOST=mysql -e DB_PORT=3306 \
             -e DB_USERNAME=root -e DB_PASSWORD=password \
             -e DB_DATABASE=autoads \
             -e REDIS_HOST=redis -e REDIS_PORT=6379 -e REDIS_DB=1 \
-            -e EXIT_AFTER_DB_INIT=true \
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
             autoads:smoke \
               -migrate -config=/app/gofly_admin_v3/config.yaml
+          echo "Waiting for DB migrate to finish..."
+          ok=""
+          for i in $(seq 1 90); do
+            if docker logs autoads-migrate 2>&1 | grep -q "数据库初始化完成"; then ok="yes"; break; fi
+            sleep 1
+          done
+          if [ "$ok" != "yes" ]; then
+            echo "Migration sentinel not detected in 90s" >&2
+            docker logs autoads-migrate || true
+            exit 1
+          fi
+          docker stop -t 1 autoads-migrate >/dev/null 2>&1 || true
+          docker rm -f autoads-migrate >/dev/null 2>&1 || true
           echo "Go DB migration completed"
 
       - name: Run container (map 3000,8080)

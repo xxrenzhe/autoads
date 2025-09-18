@@ -228,9 +228,8 @@ if [ -n "$DATABASE_URL" ]; then
   esac
 fi
 
-# 严格启动 Next（提前且必须成功）
-echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
-start_next "$NEXT_DIR" || { echo "[entrypoint] ❌ Next 启动失败，退出"; exit 1; }
+# 说明：为避免迁移期间 Next 持有查询/事务导致 MySQL 元数据锁等待，这里改为：
+# 先执行 Go/Prisma 迁移，再启动 Next。生产环境可显著降低 DDL 等待与超时风险。
 
 
 # 可选：仅在首次启动时执行完整初始化（重建库），避免重复执行破坏数据
