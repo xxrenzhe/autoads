@@ -163,8 +163,12 @@ jobs:
           tags: |
             # main -> preview-latest
             type=raw,value=preview-latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # main -> preview-sha-{short}
+            type=sha,format=short,prefix=preview-sha-,enable=${{ github.ref == 'refs/heads/main' }}
             # production -> prod-latest
             type=raw,value=prod-latest,enable=${{ github.ref == 'refs/heads/production' }}
+            # production -> prod-sha-{short}
+            type=sha,format=short,prefix=prod-sha-,enable=${{ github.ref == 'refs/heads/production' }}
             # tag v* -> prod-{tag-without-v}
             type=match,pattern=v(.*),group=1,prefix=prod-,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
 
