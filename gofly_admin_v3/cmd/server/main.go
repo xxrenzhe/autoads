@@ -304,14 +304,23 @@ func main() {
 	}
 
 	// 4.1 初始化数据库与业务服务
-    if cfg2, err := config.Load(); err != nil {
-		log.Printf("⚠️  加载配置失败，无法初始化数据库: %v", err)
-	} else {
-		// 数据库
-		dbConf := store.DatabaseConfig{
-			Host:        cfg2.DB.Host,
-			Port:        cfg2.DB.Port,
-			Username:    cfg2.DB.Username,
+    var cfg2 *config.Config
+    if c, err := config.LoadFromPath(*configPath); err != nil {
+        log.Printf("⚠️  加载配置失败（路径=%s），尝试使用环境变量: %v", *configPath, err)
+        if ce, err2 := config.LoadFromEnv(); err2 != nil {
+            log.Printf("⚠️  基于环境变量构建配置失败，无法初始化数据库: %v", err2)
+        } else {
+            cfg2 = ce
+        }
+    } else {
+        cfg2 = c
+    }
+    if cfg2 != nil {
+        // 数据库
+        dbConf := store.DatabaseConfig{
+            Host:        cfg2.DB.Host,
+            Port:        cfg2.DB.Port,
+            Username:    cfg2.DB.Username,
 			Password:    cfg2.DB.Password,
 			Database:    cfg2.DB.Database,
 			Charset:     cfg2.DB.Charset,
