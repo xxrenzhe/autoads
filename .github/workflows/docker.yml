@@ -299,7 +299,7 @@ jobs:
     name: Smoke Test (run container and verify 8080)
     runs-on: ubuntu-latest
     needs: build-and-push
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -407,15 +407,17 @@ jobs:
       - name: Wait for backend ready (http://127.0.0.1:8080/readyz)
         run: |
           set -e
-          for i in $(seq 1 180); do
+          for i in $(seq 1 120); do
             if curl -fsS http://127.0.0.1:8080/readyz >/dev/null 2>&1; then
               echo "Backend ready on :8080"
               exit 0
             fi
             sleep 1
           done
-          echo "Backend not ready in 180s" >&2
+          echo "Backend not ready in 120s" >&2
           docker logs autoads || true
+          echo "--- MySQL last logs ---" >&2
+          docker logs mysql --since=2m || true
           exit 1
 
       - name: Show listening ports (debug)
