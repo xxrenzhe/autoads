@@ -555,7 +555,7 @@ CREATE TABLE `token_usage` (
 
 -- CreateTable
 CREATE TABLE `configuration_history` (
-    `id` VARCHAR(191) NOT NULL DEFAULT gen_random_uuid(),
+    `id` VARCHAR(191) NOT NULL,
     `configKey` VARCHAR(191) NOT NULL,
     `oldValue` VARCHAR(191) NULL,
     `newValue` VARCHAR(191) NULL,
@@ -840,4 +840,3 @@ ALTER TABLE `ads_executions` ADD CONSTRAINT `ads_executions_userId_fkey` FOREIGN
 
 -- AddForeignKey
 ALTER TABLE `ads_executions` ADD CONSTRAINT `ads_executions_configurationId_fkey` FOREIGN KEY (`configurationId`) REFERENCES `ads_configurations`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-

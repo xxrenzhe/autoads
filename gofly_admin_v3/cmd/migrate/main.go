@@ -2,6 +2,7 @@ package main
 
 import (
     "context"
+    "fmt"
     "log"
     "os"
     "os/exec"
@@ -10,6 +11,8 @@ import (
 
     "gofly-admin-v3/internal/config"
     dbinit "gofly-admin-v3/internal/init"
+    "database/sql"
+    _ "github.com/go-sql-driver/mysql"
 )
 
 func runPrismaMigrate(schemaPath string) error {
@@ -17,7 +20,9 @@ func runPrismaMigrate(schemaPath string) error {
     defer cancel()
 
     // Prefer npx prisma ... from repo
-    cmd := exec.CommandContext(ctx, "npx", "prisma", "migrate", "deploy", "--schema", schemaPath)
+    // Run in apps/frontend so npx can pick local devDependency 'prisma'
+    cmd := exec.CommandContext(ctx, "npx", "prisma", "migrate", "deploy", "--schema", "schema.prisma")
+    cmd.Dir = filepath.Clean(filepath.Join("..", "apps", "frontend"))
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
     if err := cmd.Run(); err == nil {
@@ -35,6 +40,23 @@ func main() {
     cfg, err := config.LoadFromEnv()
     if err != nil {
         log.Fatal("加载环境配置失败: ", err)
+    }
+
+    // 可选：CI 重建数据库（危险操作，需 DB_RECREATE=true）
+    if v := os.Getenv("DB_RECREATE"); v == "true" || v == "1" {
+        dsn := cfg.DB.Username + ":" + cfg.DB.Password + "@tcp(" + cfg.DB.Host + ":" +  fmt.Sprint(cfg.DB.Port) + ")/"
+        sqldb, e := sql.Open("mysql", dsn+"?charset=utf8mb4&parseTime=true&loc=Local")
+        if e != nil {
+            log.Fatalf("连接 MySQL 失败(重建DB): %v", e)
+        }
+        defer sqldb.Close()
+        if _, e := sqldb.Exec("DROP DATABASE IF EXISTS `" + cfg.DB.Database + "`"); e != nil {
+            log.Fatalf("删除数据库失败: %v", e)
+        }
+        if _, e := sqldb.Exec("CREATE DATABASE `" + cfg.DB.Database + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"); e != nil {
+            log.Fatalf("创建数据库失败: %v", e)
+        }
+        log.Printf("已重建数据库: %s", cfg.DB.Database)
     }
 
     // 先执行 Prisma 迁移（DDL 统一由 Prisma 管理）
