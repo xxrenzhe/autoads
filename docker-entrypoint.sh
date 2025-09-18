@@ -19,13 +19,12 @@ fi
 # 自动修正 Prisma 的 DATABASE_URL：当缺少库名或指向系统库时，拼接业务库名
 auto_fix_prisma_url() {
   [ "${PRISMA_AUTO_FIX_DB:-true}" = "true" ] || return 0
-  # 若未设置 DATABASE_URL，则尝试通过环境变量构造
+  # 若未设置 DATABASE_URL，则尝试通过配置/环境变量构造
   # 若设置了但缺少路径或指向 mysql/information_schema，则改写为业务数据库
   local url="$DATABASE_URL"
   local dbname="${DB_DATABASE:-}"
-  # 若未提供 DB_DATABASE，则尝试从配置文件读取 database.database 字段
+  # 1) 从 config.yaml 读取 database.database 作为库名
   if [ -z "$dbname" ] && [ -f "$CONFIG_PATH" ]; then
-    # 解析 YAML：进入顶层 database: 块后，读取其中的字段 database: 的值
     dbname=$(awk '
       /^[[:space:]]*database:[[:space:]]*$/ { in_db=1; next }
       in_db==1 && /^[[:space:]]*database:[[:space:]]*/ {
@@ -39,16 +38,34 @@ auto_fix_prisma_url() {
       in_db==1 && /^[^[:space:]]/ { in_db=0 }
     ' "$CONFIG_PATH" 2>/dev/null | head -n1)
   fi
+  # 2) 从 config.yaml 读取 host/port/username/password（仅在对应 env 为空时）
+  local db_host="$DB_HOST" db_port="$DB_PORT" db_user="$DB_USERNAME" db_pass="$DB_PASSWORD"
+  if [ -f "$CONFIG_PATH" ]; then
+    eval $(awk '
+      /^[[:space:]]*database:[[:space:]]*$/ { in_db=1; next }
+      in_db==1 && /^[^[:space:]]/ { in_db=0 }
+      in_db==1 {
+        if ($1 ~ /^[[:space:]]*host:/)     { sub(/^[[:space:]]*host:[[:space:]]*/, ""); gsub(/"/, ""); print "__Y_HOST=" $0 }
+        if ($1 ~ /^[[:space:]]*port:/)     { sub(/^[[:space:]]*port:[[:space:]]*/, ""); gsub(/"/, ""); print "__Y_PORT=" $0 }
+        if ($1 ~ /^[[:space:]]*username:/) { sub(/^[[:space:]]*username:[[:space:]]*/, ""); gsub(/"/, ""); print "__Y_USER=" $0 }
+        if ($1 ~ /^[[:space:]]*password:/) { sub(/^[[:space:]]*password:[[:space:]]*/, ""); gsub(/"/, ""); print "__Y_PASS=" $0 }
+      }
+    ' "$CONFIG_PATH" 2>/dev/null)
+    [ -z "$db_host" ] && db_host="$__Y_HOST"
+    [ -z "$db_port" ] && db_port="$__Y_PORT"
+    [ -z "$db_user" ] && db_user="$__Y_USER"
+    [ -z "$db_pass" ] && db_pass="$__Y_PASS"
+  fi
+  # 没有库名直接返回
   if [ -z "$dbname" ]; then
     return 0
   fi
-  # 尝试从 DATABASE_URL 提取路径
+  # 3) 若已有 DATABASE_URL 且缺少库名/指向系统库，则纠正库名
   if [ -n "$url" ]; then
     case "$url" in
       mysql://*)
         local path
         path=$(printf "%s" "$url" | sed -n 's#^mysql://[^/]\+/?\([^?]*\).*#\1#p')
-        # 当无路径或指向系统库时，替换为业务库
         if [ -z "$path" ] || [ "$path" = "mysql" ] || [ "$path" = "information_schema" ]; then
           local base qs
           base=$(printf "%s" "$url" | sed -E 's#(mysql://[^/]+).*#\1#')
@@ -60,13 +77,47 @@ auto_fix_prisma_url() {
       *) ;;
     esac
   else
-    # 未设置 DATABASE_URL，尝试基于环境变量拼接
-    if [ -n "$DB_USERNAME" ] && [ -n "$DB_PASSWORD" ] && [ -n "$DB_HOST" ] && [ -n "$DB_PORT" ]; then
+    # 4) 未设置 DATABASE_URL，基于配置/环境变量拼接
+    if [ -n "$db_user" ] && [ -n "$db_pass" ] && [ -n "$db_host" ] && [ -n "$db_port" ]; then
+      export DATABASE_URL="mysql://${db_user}:${db_pass}@${db_host}:${db_port}/${dbname}"
+      echo "[entrypoint] Prisma DATABASE_URL 已根据配置自动生成（内部覆盖）"
+    elif [ -n "$DB_USERNAME" ] && [ -n "$DB_PASSWORD" ] && [ -n "$DB_HOST" ] && [ -n "$DB_PORT" ]; then
       export DATABASE_URL="mysql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${dbname}"
       echo "[entrypoint] Prisma DATABASE_URL 已根据环境变量自动生成（内部覆盖）"
     fi
   fi
 }
+
+# 只执行 Prisma 迁移并退出（用于部署 Job）
+if [ "$1" = "prisma-migrate-only" ]; then
+  auto_fix_prisma_url || true
+  if [ ! -f "$PRISMA_SCHEMA" ]; then
+    echo "[entrypoint] 未找到 Prisma schema: $PRISMA_SCHEMA"
+    exit 1
+  fi
+  if [ -z "$DATABASE_URL" ]; then
+    echo "[entrypoint] 未能解析 DATABASE_URL（请检查 $CONFIG_PATH 或相关环境变量）"
+    exit 2
+  fi
+  echo "[entrypoint] 以独立模式执行 Prisma 迁移 ..."
+  prisma migrate deploy --schema "$PRISMA_SCHEMA"
+  exit $?
+fi
+
+if [ "$1" = "prisma-migrate-status" ]; then
+  auto_fix_prisma_url || true
+  if [ ! -f "$PRISMA_SCHEMA" ]; then
+    echo "[entrypoint] 未找到 Prisma schema: $PRISMA_SCHEMA"
+    exit 1
+  fi
+  if [ -z "$DATABASE_URL" ]; then
+    echo "[entrypoint] 未能解析 DATABASE_URL（请检查 $CONFIG_PATH 或相关环境变量）"
+    exit 2
+  fi
+  echo "[entrypoint] 检查 Prisma 迁移状态 ..."
+  prisma migrate status --schema "$PRISMA_SCHEMA" || true
+  exit 0
+fi
 
 # 基于部署环境自动推导 NextAuth 基准 URL（避免 redirect_uri_mismatch）
 auto_set_auth_urls() {
@@ -231,6 +282,19 @@ fi
 # 说明：为避免迁移期间 Next 持有查询/事务导致 MySQL 元数据锁等待，这里改为：
 # 先执行 Go/Prisma 迁移，再启动 Next。生产环境可显著降低 DDL 等待与超时风险。
 
+# 一次性数据库基线初始化（幂等）。确保后台基础表存在（admin_users/system_configs 等）。
+BASE_MARK_DIR="/app/logs"
+BASE_INIT_MARK="$BASE_MARK_DIR/.db_init_done"
+mkdir -p "$BASE_MARK_DIR" || true
+if [ ! -f "$BASE_INIT_MARK" ]; then
+  echo "[entrypoint] 执行一次性数据库基线初始化（server -init-db）..."
+  if "$APP_DIR/server" -init-db -config="$CONFIG_PATH"; then
+    date > "$BASE_INIT_MARK" || true
+    echo "[entrypoint] ✅ 基线初始化完成"
+  else
+    echo "[entrypoint] ⚠️ 基线初始化失败，但将继续尝试 Prisma 迁移"
+  fi
+fi
 
 # 可选：仅在首次启动时执行完整初始化（重建库），避免重复执行破坏数据
 if [ "${DB_REBUILD_ON_STARTUP}" = "true" ] || [ "${DB_REBUILD_ON_STARTUP}" = "1" ]; then
@@ -251,38 +315,14 @@ if [ "${DB_REBUILD_ON_STARTUP}" = "true" ] || [ "${DB_REBUILD_ON_STARTUP}" = "1"
 fi
 
 if [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ]; then
-  # 执行数据库迁移（Go 后端 + Prisma）
-  echo "[entrypoint] 执行数据库迁移 (Go) ..."
-  # 传入 -port 与最终运行端口保持一致，避免旧版本在 -migrate 后继续监听到默认 8888 端口
-  # 为避免极端情况下 -migrate 阶段阻塞启动，这里加超时与日志文件
-  MIGRATE_TIMEOUT="${MIGRATE_TIMEOUT:-150}"
-  mkdir -p /app/logs >/dev/null 2>&1 || true
-  MIGRATE_LOG="/app/logs/go-migrate.log"
-  rm -f "$MIGRATE_LOG" 2>/dev/null || true
-  "$APP_DIR/server" -migrate -config="$CONFIG_PATH" -port="$PORT" >"$MIGRATE_LOG" 2>&1 &
-  MIG_PID=$!
-  end_ts=$(( $(date +%s) + MIGRATE_TIMEOUT ))
-  while kill -0 "$MIG_PID" 2>/dev/null; do
-    if [ $(date +%s) -ge $end_ts ]; then
-      echo "[entrypoint] ⚠️ Go 迁移执行超过 ${MIGRATE_TIMEOUT}s，尝试终止并继续启动（请检查 $MIGRATE_LOG）"
-      kill "$MIG_PID" 2>/dev/null || true
-      sleep 1
-      kill -9 "$MIG_PID" 2>/dev/null || true
-      break
-    fi
-    sleep 1
-  done
-  # 收集退出码（若已被 kill -9，wait 也会返回非零，继续启动即可）
-  wait "$MIG_PID" 2>/dev/null || true
-  echo "[entrypoint] 迁移日志（最近120行）："
-  tail -n 120 "$MIGRATE_LOG" 2>/dev/null || true
+  echo "[entrypoint] 启动期迁移：仅执行 Prisma（Go 迁移已统一到 Prisma）"
 else
-  echo "[entrypoint] 跳过 Go 迁移（RUN_MIGRATIONS_ON_START=false）"
+  echo "[entrypoint] 跳过启动期迁移（RUN_MIGRATIONS_ON_START=false）"
 fi
 
 # Prisma 迁移（仅当检测到 schema 与 DATABASE_URL 存在时执行）
-if [ -f "$PRISMA_SCHEMA" ]; then
-  if [ -n "$DATABASE_URL" ]; then
+if [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ] && [ -f "$PRISMA_SCHEMA" ]; then
+  if auto_fix_prisma_url && [ -n "$DATABASE_URL" ]; then
     echo "[entrypoint] 执行 Prisma 迁移: prisma migrate deploy"
     # 使用全局 prisma CLI，schema 指定到 Next 应用内
     PRISMA_OUTPUT=$(prisma migrate deploy --schema "$PRISMA_SCHEMA" 2>&1) || DEPLOY_RC=$?
@@ -344,9 +384,9 @@ if [ -f "$PRISMA_SCHEMA" ]; then
       prisma db seed --schema "$PRISMA_SCHEMA" || echo "[entrypoint] ⚠️ Prisma seed 失败，继续启动"
     fi
   else
-    echo "[entrypoint] 跳过 Prisma 迁移：未设置 DATABASE_URL"
+    echo "[entrypoint] 跳过 Prisma 迁移：未设置/无法解析 DATABASE_URL"
   fi
-else
+elif [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ] && [ ! -f "$PRISMA_SCHEMA" ]; then
   echo "[entrypoint] 跳过 Prisma 迁移：未找到 $PRISMA_SCHEMA"
 fi
 

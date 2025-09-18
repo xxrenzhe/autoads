@@ -204,7 +204,7 @@
   - [x] 启动前 ENV 校验脚本（keys/DB/Redis/域名/镜像 tag）
   - [x] 健康检查/回滚脚本更新（保持单镜像、外部仅 3000）
   - [x] 端到端 E2E 验证脚本（预检→执行→幂等→审计头）
-  - [x] 部署阶段迁移（幂等）：容器启动执行 `server -migrate`（Go 模型）+ `prisma migrate deploy`；支持禁用启动迁移时通过显式 Job 触发
+  - [x] 部署阶段迁移（幂等）：采用 Prisma 统一迁移；默认关闭启动期迁移，使用显式 Job 触发（`/app/docker-entrypoint.sh prisma-migrate-only`）
 
 ## 未完成项与后续计划（评估）
 - UI 限流提示扩展（已覆盖主流程）

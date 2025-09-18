@@ -70,7 +70,7 @@
   - 前端运维面板经 `/ops/api/v1/console/*` 直达 Go（需网关映射）。
 
 ## 9. 运维与部署要点
-- 镜像：使用 `Dockerfile.standalone`；entrypoint 负责：可选一次性建库→Go 迁移→Prisma 迁移→Next standalone 启动→可选执行器。
+- 镜像：使用 `Dockerfile.standalone`；entrypoint 负责：可选一次性建库→Prisma 迁移（可关闭启动期）→Next standalone 启动→可选执行器（Go 迁移已移除）。
 - 环境：
   - 强制内部 JWT（生产默认）：`INTERNAL_JWT_ENFORCE=true`，并设置 `INTERNAL_JWT_PUBLIC_KEY`（Go 验签）/`INTERNAL_JWT_PRIVATE_KEY`（Next 签名）。
   - SimilarWeb：`SIMILARWEB_API_URL` 指向企业代理/带 key 的服务。

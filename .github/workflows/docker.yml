@@ -406,7 +406,28 @@ jobs:
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
             autoads:smoke
 
+      - name: In-container readiness (wget /readyz)
+        id: in_container_ready
+        run: |
+          set +e
+          ready=false
+          for i in $(seq 1 60); do
+            if docker exec autoads sh -lc 'wget -qO- http://127.0.0.1:8080/readyz >/dev/null 2>&1'; then
+              echo "Backend ready (in-container) on :8080"
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          echo "ready=${ready}" >> $GITHUB_OUTPUT
+
+      - name: Show container netstat (debug)
+        if: steps.in_container_ready.outputs.ready != 'true'
+        run: |
+          docker exec autoads sh -lc 'busybox netstat -lnt || true'
+
       - name: Wait for backend ready (http://127.0.0.1:8080/readyz)
+        if: steps.in_container_ready.outputs.ready != 'true'
         run: |
           set -e
           for i in $(seq 1 120); do

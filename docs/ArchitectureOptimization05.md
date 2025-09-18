@@ -192,7 +192,7 @@
   - [x] 更新 `.env.preview.template` / `.env.production.template`（新增 BFF/OPS/内部JWT 相关变量）
   - [x] 更新 `README-deployment.md` 与 `docs/production-env-config.md`（BFF/健康/限流头/内部JWT）
   - [x] 生产部署文档补充“浏览器执行器与国家代理映射（生产）”、代理鉴权与出口合规建议（最小暴露、egress 白名单、TLS 合规、速率控制）
-  - [x] 迁移集成：部署阶段执行 Go 模型迁移（server -migrate）+ Prisma 迁移，均为幂等；支持禁用启动迁移时的显式 Job 触发
+  - [x] 迁移集成：部署阶段执行 Prisma 迁移（统一管理 DDL，幂等）；默认关闭启动期迁移，支持通过显式 Job 触发（/app/docker-entrypoint.sh prisma-migrate-only）
 - Next（必做）
   - [x] 新建/合并 `apps/frontend/src/middleware.ts`，移除 `middleware.edge.ts / middleware-csrf.ts / middleware.admin.ts` 重复逻辑
   - [x] 为以下路由增加 BFF 转发器（鉴权/校验/轻限流/错误体/请求 ID）：

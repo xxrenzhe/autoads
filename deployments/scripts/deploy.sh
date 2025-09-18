@@ -112,37 +112,15 @@ build_and_push_image() {
 run_migrations() {
     log_info "Running database migrations..."
 
-    # Ensure DATABASE_URL is present in cluster env (secret or configmap)
-    local db_url_secret
-    local db_url_config
-    db_url_secret=$(kubectl get secret app-secrets -n "$NAMESPACE" -o jsonpath='{.data.DATABASE_URL}' 2>/dev/null || true)
-    db_url_config=$(kubectl get configmap app-config -n "$NAMESPACE" -o jsonpath='{.data.DATABASE_URL}' 2>/dev/null || true)
-    if [ -z "$db_url_secret$db_url_config" ]; then
-        log_error "DATABASE_URL is not configured in namespace $NAMESPACE (secret/app-secrets or configmap/app-config)"
-        log_error "Please add DATABASE_URL so that container startup migration can run."
-        exit 1
-    fi
-
     # By default, migrations run on container startup via docker-entrypoint.sh
     local STARTUP_MIGRATIONS=${STARTUP_MIGRATIONS:-true}
     local MIGRATION_PRECHECK=${MIGRATION_PRECHECK:-false}
 
     if [ "$STARTUP_MIGRATIONS" = "true" ]; then
-        log_info "Skipping explicit migration job: startup will run 'server -migrate' and 'prisma migrate deploy'."
+        log_info "Skipping explicit migration job: startup will run Prisma migrations."
     else
-        log_warning "STARTUP_MIGRATIONS is disabled; running explicit migration jobs (Go + Prisma)."
-        # 1) Go backend model migration (idempotent)
-        kubectl run go-migrate-$(date +%s) \
-            --image="$IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
-            --namespace="$NAMESPACE" \
-            --restart=Never \
-            --rm -i --tty \
-            --env-from=secret/app-secrets \
-            --env-from=configmap/app-config \
-            --command -- sh -lc \
-            "/app/gofly_admin_v3/server -migrate -config=/app/gofly_admin_v3/config.yaml"
-        log_success "Go model migration completed"
-        # 2) Prisma migration (idempotent)
+        log_warning "STARTUP_MIGRATIONS is disabled; running explicit Prisma migration job."
+        # Prisma migration (idempotent) — resolves DATABASE_URL from config.yaml inside the container
         kubectl run prisma-migrate-$(date +%s) \
             --image="$IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
             --namespace="$NAMESPACE" \
@@ -150,7 +128,7 @@ run_migrations() {
             --rm -i --tty \
             --env-from=secret/app-secrets \
             --env-from=configmap/app-config \
-            --command -- sh -lc "prisma migrate deploy --schema /app/frontend/prisma/schema.prisma"
+            --command -- sh -lc "/app/docker-entrypoint.sh prisma-migrate-only"
         log_success "Explicit Prisma migration completed"
     fi
 
@@ -163,7 +141,7 @@ run_migrations() {
             --rm -i --tty \
             --env-from=secret/app-secrets \
             --env-from=configmap/app-config \
-            --command -- sh -lc "prisma migrate status --schema /app/frontend/prisma/schema.prisma || true"
+            --command -- sh -lc "/app/docker-entrypoint.sh prisma-migrate-status || true"
         log_success "Migration precheck finished"
     fi
 }
