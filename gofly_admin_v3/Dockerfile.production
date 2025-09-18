@@ -64,12 +64,8 @@ COPY --from=go-builder --chown=autoads:autoads /app/autoads-server .
 # 复制配置文件模板（如果存在）
 COPY --chown=autoads:autoads config*.yaml* ./
 
-# 复制数据库迁移文件
-COPY --chown=autoads:autoads internal/init/migrations/ ./migrations/
-
 # 设置正确的权限
-RUN chmod +x ./autoads-server && \
-    chmod -R 755 ./migrations/
+RUN chmod +x ./autoads-server
 
 # 切换到非特权用户
 USER autoads

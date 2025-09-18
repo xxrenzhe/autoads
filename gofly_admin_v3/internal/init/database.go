@@ -2,12 +2,9 @@ package init
 
 import (
     "context"
-    "embed"
     "fmt"
     "log"
     "net"
-    "regexp"
-    "sort"
     "strings"
     "time"
     "os"
@@ -17,9 +14,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
-
-//go:embed migrations/*.sql
-var migrationFS embed.FS
 
 // DatabaseInitializer 数据库初始化器
 type DatabaseInitializer struct {
@@ -91,7 +85,6 @@ func (di *DatabaseInitializer) Initialize() error {
 
     // 读取跳过标志
     skipCreate := isEnvTrue("SKIP_CREATE_DB") || isEnvTrue("INIT_SKIP_CREATE_DB")
-    skipMigrate := isEnvTrue("SKIP_MIGRATIONS") || isEnvTrue("INIT_SKIP_MIGRATIONS")
     skipSeed := isEnvTrue("SKIP_SEED") || isEnvTrue("SKIP_BASIC_DATA")
     skipVerify := isEnvTrue("SKIP_VERIFY") || isEnvTrue("INIT_SKIP_VERIFY")
 
@@ -127,22 +120,11 @@ func (di *DatabaseInitializer) Initialize() error {
 		initLogger.LogWithDuration("INFO", "database", "数据库连接成功", time.Since(start), true)
 	}
 
-    // 3. 执行迁移
-    progressTracker.UpdateProgress("执行数据库迁移")
+    // 3. 执行迁移（已移除：DDL 统一交由 Prisma 迁移管理）
+    progressTracker.UpdateProgress("执行数据库迁移(交由 Prisma)")
     start = time.Now()
-    if !skipMigrate {
-        if err := di.runMigrations(); err != nil {
-            if initLogger != nil {
-                initLogger.LogError("migration", "执行迁移失败", err)
-            }
-            progressTracker.Fail(err)
-            return fmt.Errorf("执行迁移失败: %w", err)
-        }
-        if initLogger != nil {
-            initLogger.LogWithDuration("INFO", "migration", "数据库迁移完成", time.Since(start), true)
-        }
-    } else if initLogger != nil {
-        initLogger.Log("INFO", "migration", "跳过数据库迁移（按环境变量）")
+    if initLogger != nil {
+        initLogger.LogWithDuration("INFO", "migration", "跳过 Go 侧迁移：由 Prisma 管理", time.Since(start), true)
     }
 
     // 4. 初始化基础数据
@@ -295,302 +277,7 @@ func isEnvTrue(name string) bool {
 }
 
 // runMigrations 执行数据库迁移
-func (di *DatabaseInitializer) runMigrations() error {
-	di.logger.Println("执行数据库迁移...")
-
-	// 获取迁移文件
-	migrations, err := di.getMigrationFiles()
-	if err != nil {
-		return err
-	}
-
-	if len(migrations) == 0 {
-		di.logger.Println("没有找到迁移文件")
-		return nil
-	}
-
-    // 按文件名排序，并对关键迁移文件施加优先级（确保 users 表先于依赖它的迁移）
-    sort.Strings(migrations)
-    priorities := map[string]int{
-        "001_create_users_tables.sql":      -100,
-        "001_create_saas_tables.sql":      -50,
-        "003_create_chengelink_tables.sql": -40,
-    }
-    sort.SliceStable(migrations, func(i, j int) bool {
-        wi := priorities[migrations[i]]
-        wj := priorities[migrations[j]]
-        if wi != wj {
-            return wi < wj
-        }
-        return migrations[i] < migrations[j]
-    })
-
-	// 创建迁移记录表
-	if err := di.createMigrationsTable(); err != nil {
-		return err
-	}
-
-	// 执行每个迁移文件
-	for _, migration := range migrations {
-		if err := di.runMigration(migration); err != nil {
-			return fmt.Errorf("执行迁移 %s 失败: %w", migration, err)
-		}
-	}
-
-	di.logger.Println("✅ 数据库迁移完成")
-	return nil
-}
-
-// getMigrationFiles 获取迁移文件列表
-func (di *DatabaseInitializer) getMigrationFiles() ([]string, error) {
-	var migrations []string
-
-	entries, err := migrationFS.ReadDir("migrations")
-	if err != nil {
-		return nil, err
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".sql") {
-			migrations = append(migrations, entry.Name())
-		}
-	}
-
-	return migrations, nil
-}
-
-// createMigrationsTable 创建迁移记录表
-func (di *DatabaseInitializer) createMigrationsTable() error {
-	sql := `
-		CREATE TABLE IF NOT EXISTS schema_migrations (
-			version VARCHAR(255) PRIMARY KEY,
-			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-		)
-	`
-	return di.db.Exec(sql).Error
-}
-
-// runMigration 执行单个迁移文件
-func (di *DatabaseInitializer) runMigration(filename string) error {
-	// 检查是否已执行
-	var applied bool
-	err := di.db.Model(&struct{}{}).
-		Table("schema_migrations").
-		Select("COUNT(*) > 0").
-		Where("version = ?", filename).
-		Scan(&applied).Error
-
-	if err != nil {
-		return err
-	}
-
-	if applied {
-		di.logger.Printf("迁移 %s 已执行，跳过", filename)
-		return nil
-	}
-
-    // 读取迁移文件内容
-    content, err := migrationFS.ReadFile("migrations/" + filename)
-    if err != nil {
-        return err
-    }
-
-    di.logger.Printf("执行迁移: %s", filename)
-
-    // 为了兼容较低版本 MySQL/MariaDB，不支持 "ADD COLUMN IF NOT EXISTS"、"CREATE INDEX IF NOT EXISTS"
-    // 将迁移 SQL 拆分并进行条件处理
-    statements := splitSQLStatements(string(content))
-    for _, stmt := range statements {
-        s := strings.TrimSpace(stmt)
-        if s == "" {
-            continue
-        }
-
-        handled, err := di.handleCompatibilityStatements(s)
-        if err != nil {
-            return err
-        }
-        if handled {
-            continue
-        }
-
-        if err := di.db.Exec(s).Error; err != nil {
-            return err
-        }
-    }
-
-	// 记录迁移
-	return di.db.Table("schema_migrations").Create(map[string]interface{}{
-		"version": filename,
-	}).Error
-}
-
-// splitSQLStatements 粗略按分号拆分 SQL 语句（忽略简单换行与空白）
-func splitSQLStatements(sql string) []string {
-    // 简化处理：按分号分割
-    parts := strings.Split(sql, ";")
-    var res []string
-    for _, p := range parts {
-        t := strings.TrimSpace(p)
-        if t == "" {
-            continue
-        }
-        res = append(res, t)
-    }
-    return res
-}
-
-// stripLeadingSQLComments removes leading SQL comments ("-- ..." and /* ... */)
-// and whitespace so prefix detection works regardless of comment headers.
-func stripLeadingSQLComments(s string) string {
-    t := strings.TrimSpace(s)
-    for {
-        t = strings.TrimLeft(t, " \t\r\n")
-        if t == "" {
-            return t
-        }
-        // Line comment: -- ...\n
-        if strings.HasPrefix(t, "--") {
-            if idx := strings.IndexByte(t, '\n'); idx >= 0 {
-                t = t[idx+1:]
-                continue
-            }
-            // Only comments remaining
-            return ""
-        }
-        // Block comment: /* ... */
-        if strings.HasPrefix(t, "/*") {
-            if idx := strings.Index(t, "*/"); idx >= 0 {
-                t = t[idx+2:]
-                continue
-            }
-            // Unclosed comment; treat as empty
-            return ""
-        }
-        break
-    }
-    return strings.TrimLeft(t, " \t\r\n")
-}
-
-// handleCompatibilityStatements 处理不兼容的 IF NOT EXISTS 语法，返回是否已处理
-func (di *DatabaseInitializer) handleCompatibilityStatements(stmt string) (bool, error) {
-    // Strip leading comments so detection works with commented headers
-    cleaned := stripLeadingSQLComments(stmt)
-    upper := strings.ToUpper(strings.TrimSpace(cleaned))
-    // 处理 CREATE INDEX IF NOT EXISTS
-    if strings.HasPrefix(upper, "CREATE INDEX IF NOT EXISTS") {
-        // CREATE INDEX IF NOT EXISTS idx ON table (cols)
-        re := regexp.MustCompile(`(?is)^CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+([`+"`"+`\w]+)\s+ON\s+([`+"`"+`\w\.]+)\s*\((.+)\)$`)
-        m := re.FindStringSubmatch(cleaned)
-        if len(m) == 4 {
-            idx := strings.Trim(m[1], "`")
-            tbl := strings.Trim(m[2], "`")
-            cols := m[3]
-            // 检查索引是否存在
-            if di.db.Migrator().HasIndex(tbl, idx) {
-                di.logger.Printf("索引 %s 已存在于表 %s，跳过创建", idx, tbl)
-                return true, nil
-            }
-            q := fmt.Sprintf("CREATE INDEX %s ON %s (%s)", idx, tbl, cols)
-            return true, di.db.Exec(q).Error
-        }
-        // 无法解析则回退让上层执行（可能不会命中这条分支）
-        return false, nil
-    }
-
-    // 处理 ALTER TABLE ... 包含 ADD COLUMN IF NOT EXISTS / ADD INDEX IF NOT EXISTS
-    if strings.HasPrefix(upper, "ALTER TABLE ") && strings.Contains(upper, "IF NOT EXISTS") {
-        // 提取表名
-        reTbl := regexp.MustCompile(`(?i)^ALTER\s+TABLE\s+([`+"`"+`\w\.]+)\s`)
-        mt := reTbl.FindStringSubmatch(cleaned)
-        if len(mt) < 2 {
-            return false, nil
-        }
-        tbl := strings.Trim(mt[1], "`")
-
-        // 按行拆分处理 ADD COLUMN IF NOT EXISTS 与 ADD INDEX IF NOT EXISTS
-        lines := strings.Split(cleaned, "\n")
-        var leftovers []string
-        // ADD COLUMN IF NOT EXISTS <col> <def>
-        reAddCol := regexp.MustCompile(`(?i)ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+([`+"`"+`\w]+)\s+(.*?)(,)?\s*$`)
-        // ADD INDEX IF NOT EXISTS idx_name (cols)
-        reAddIdx := regexp.MustCompile(`(?i)ADD\s+INDEX\s+IF\s+NOT\s+EXISTS\s+([`+"`"+`\w]+)\s*\((.+)\)\s*,?\s*$`)
-
-        for _, raw := range lines {
-            l := strings.TrimSpace(raw)
-            if l == "" || strings.HasPrefix(l, "--") {
-                continue
-            }
-            if m := reAddCol.FindStringSubmatch(l); len(m) > 0 {
-                col := strings.Trim(m[1], "`")
-                def := strings.TrimSpace(m[2])
-                def = strings.TrimSuffix(def, ",")
-                // 检查列
-                if di.db.Migrator().HasColumn(tbl, col) {
-                    di.logger.Printf("表 %s 列 %s 已存在，跳过添加", tbl, col)
-                    continue
-                }
-                q := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", tbl, col, def)
-                if err := di.db.Exec(q).Error; err != nil {
-                    return true, err
-                }
-                continue
-            }
-            if m := reAddIdx.FindStringSubmatch(l); len(m) > 0 {
-                idx := strings.Trim(m[1], "`")
-                cols := m[2]
-                if di.db.Migrator().HasIndex(tbl, idx) {
-                    di.logger.Printf("索引 %s 已存在于表 %s，跳过添加", idx, tbl)
-                    continue
-                }
-                q := fmt.Sprintf("CREATE INDEX %s ON %s (%s)", idx, tbl, cols)
-                if err := di.db.Exec(q).Error; err != nil {
-                    return true, err
-                }
-                continue
-            }
-            // 保留其他（如 MODIFY COLUMN ...）
-            // 去掉尾部逗号，稍后重新拼装
-            leftovers = append(leftovers, strings.TrimSuffix(l, ","))
-        }
-
-        // 执行剩余修改（如果有）
-        var realOps []string
-        reModify := regexp.MustCompile(`(?i)^MODIFY\s+COLUMN\s+([`+"`"+`\w]+)\b`)
-        for _, op := range leftovers {
-            u := strings.ToUpper(op)
-            if strings.HasPrefix(u, "ALTER TABLE") || u == "" {
-                continue
-            }
-            // 跳过以 ADD COLUMN IF NOT EXISTS / ADD INDEX IF NOT EXISTS 开头的行（已处理）
-            if strings.Contains(u, "ADD COLUMN IF NOT EXISTS") || strings.Contains(u, "ADD INDEX IF NOT EXISTS") {
-                continue
-            }
-            // 对 MODIFY COLUMN 做存在性检查，列不存在则跳过
-            if strings.HasPrefix(u, "MODIFY COLUMN ") {
-                mm := reModify.FindStringSubmatch(op)
-                if len(mm) > 1 {
-                    col := strings.Trim(mm[1], "`")
-                    if !di.db.Migrator().HasColumn(tbl, col) {
-                        di.logger.Printf("表 %s 列 %s 不存在，跳过 MODIFY", tbl, col)
-                        continue
-                    }
-                }
-            }
-            // 只拼接以 MODIFY/CHANGE/ADD COLUMN(不带 IF NOT EXISTS) 等安全操作
-            realOps = append(realOps, op)
-        }
-        if len(realOps) > 0 {
-            q := fmt.Sprintf("ALTER TABLE %s \n%s", tbl, strings.Join(realOps, ",\n"))
-            if err := di.db.Exec(q).Error; err != nil {
-                return true, err
-            }
-        }
-        return true, nil
-    }
-
-    return false, nil
-}
+// (Go-side DDL removed; Prisma owns DDL now)
 
 // initializeBasicData 初始化基础数据
 func (di *DatabaseInitializer) initializeBasicData() error {
@@ -870,7 +557,7 @@ func (di *DatabaseInitializer) verifyInitialization() error {
         "token_packages",
         "token_consumption_rules",
         "idempotency_requests",
-        "schema_migrations",
+        "_prisma_migrations", // 由 Prisma 维护
     }
 
 	for _, table := range expectedTables {

@@ -1,4 +1,5 @@
--- AutoClick schedules & executions
+-- Migrated from gofly_admin_v3/internal/init/migrations/070_autoclick_tables.sql
+
 CREATE TABLE IF NOT EXISTS autoclick_schedules (
   id VARCHAR(36) PRIMARY KEY,
   user_id VARCHAR(36) NOT NULL,
@@ -79,4 +80,3 @@ CREATE TABLE IF NOT EXISTS autoclick_url_failures (
   INDEX idx_autoclick_fail_user (user_id),
   INDEX idx_autoclick_fail_hash (url_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-

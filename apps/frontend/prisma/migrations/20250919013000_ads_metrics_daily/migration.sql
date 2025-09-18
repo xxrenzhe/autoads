@@ -1,4 +1,4 @@
--- Ads metrics daily aggregate table
+-- Migrated from gofly_admin_v3/internal/init/migrations/091_ads_metrics_daily.sql
 
 CREATE TABLE IF NOT EXISTS ads_metrics_daily (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -24,4 +24,3 @@ CREATE TABLE IF NOT EXISTS ads_metrics_daily (
   INDEX idx_ads_metrics_campaign (campaign_id),
   INDEX idx_ads_metrics_adgroup (ad_group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

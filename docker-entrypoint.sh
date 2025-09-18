@@ -282,19 +282,7 @@ fi
 # 说明：为避免迁移期间 Next 持有查询/事务导致 MySQL 元数据锁等待，这里改为：
 # 先执行 Go/Prisma 迁移，再启动 Next。生产环境可显著降低 DDL 等待与超时风险。
 
-# 一次性数据库基线初始化（幂等）。确保后台基础表存在（admin_users/system_configs 等）。
-BASE_MARK_DIR="/app/logs"
-BASE_INIT_MARK="$BASE_MARK_DIR/.db_init_done"
-mkdir -p "$BASE_MARK_DIR" || true
-if [ ! -f "$BASE_INIT_MARK" ]; then
-  echo "[entrypoint] 执行一次性数据库基线初始化（server -init-db）..."
-  if "$APP_DIR/server" -init-db -config="$CONFIG_PATH"; then
-    date > "$BASE_INIT_MARK" || true
-    echo "[entrypoint] ✅ 基线初始化完成"
-  else
-    echo "[entrypoint] ⚠️ 基线初始化失败，但将继续尝试 Prisma 迁移"
-  fi
-fi
+## 一次性数据库基线初始化（幂等）改为迁移后执行，保证表已创建再灌入基础数据。
 
 # 可选：仅在首次启动时执行完整初始化（重建库），避免重复执行破坏数据
 if [ "${DB_REBUILD_ON_STARTUP}" = "true" ] || [ "${DB_REBUILD_ON_STARTUP}" = "1" ]; then
@@ -388,6 +376,20 @@ if [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ] && [ -f "$PRISMA_SCHEMA" ]; t
   fi
 elif [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ] && [ ! -f "$PRISMA_SCHEMA" ]; then
   echo "[entrypoint] 跳过 Prisma 迁移：未找到 $PRISMA_SCHEMA"
+fi
+
+# 迁移完成后执行一次性基线初始化（仅首次，幂等）：为后台表灌入缺省数据
+BASE_MARK_DIR="/app/logs"
+BASE_INIT_MARK="$BASE_MARK_DIR/.db_init_done"
+mkdir -p "$BASE_MARK_DIR" || true
+if [ ! -f "$BASE_INIT_MARK" ]; then
+  echo "[entrypoint] 迁移完成，执行一次性数据库基线初始化（server -init-db）..."
+  if "$APP_DIR/server" -init-db -config="$CONFIG_PATH"; then
+    date > "$BASE_INIT_MARK" || true
+    echo "[entrypoint] ✅ 基线初始化完成"
+  else
+    echo "[entrypoint] ⚠️ 基线初始化失败（略过），请检查日志"
+  fi
 fi
 
 # 第二次启动前先检测是否已就绪，已就绪则跳过，避免端口占用告警

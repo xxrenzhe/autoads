@@ -1,4 +1,4 @@
--- Batch processing minimal tables
+-- Migrated from gofly_admin_v3/internal/init/migrations/080_batch_tables.sql
 
 CREATE TABLE IF NOT EXISTS batch_jobs (
   id VARCHAR(36) PRIMARY KEY,
@@ -37,4 +37,3 @@ CREATE TABLE IF NOT EXISTS batch_job_progress (
   finished_at DATETIME NULL,
   updated_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

@@ -223,8 +223,12 @@ git push origin production  # 触发生产环境构建
 - 启动期迁移默认开启（`RUN_MIGRATIONS_ON_START=true`），容器在启动时自动执行 Prisma 迁移。
 - 容器会在首次启动自动执行一次“数据库基线初始化”（`server -init-db`，幂等），确保后台基础表（如 admin_users、system_configs）存在；无需额外环境变量。
 - 若希望在部署阶段显式触发（非必需）：
-  - 运行迁移：`/app/docker-entrypoint.sh prisma-migrate-only`
-  - 预检状态：`/app/docker-entrypoint.sh prisma-migrate-status`
+  - 容器内：`/app/docker-entrypoint.sh prisma-migrate-only`、`/app/docker-entrypoint.sh prisma-migrate-status`
+  - 仓库脚本（本地/CI）：`deployments/scripts/db-ops.sh`（自动从 `gofly_admin_v3/config.yaml` 推导 DATABASE_URL）：
+    - 预检：`deployments/scripts/db-ops.sh status`
+    - 部署：`deployments/scripts/db-ops.sh deploy`
+    - 差异 SQL：`deployments/scripts/db-ops.sh diff`
+    - 基线（标记已应用）：`deployments/scripts/db-ops.sh resolve <migration_name>`
 - 可选：`PRISMA_DB_PUSH_FALLBACK=true`，当迁移失败时使用 `prisma db push`（仅开发/临时环境，不建议生产）。
 
 - 一次性重建库（初始化基础数据，不会重复执行）：

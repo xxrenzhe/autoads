@@ -55,8 +55,6 @@ COPY --from=frontend-builder /frontend/dist ./static/
 # 复制配置文件
 COPY configs/ ./configs/
 
-# 复制数据库迁移文件
-COPY internal/init/migrations/ ./migrations/
 
 # 设置权限
 RUN chown -R autoads:autoads /app

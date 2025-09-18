@@ -274,12 +274,12 @@ func (hc *HealthChecker) checkDatabaseTables(ctx context.Context) CheckResult {
 	}
 
 	// 需要检查的表
-	requiredTables := []string{
-		"users",
-		"admin_accounts",
-		"rate_limit_configs",
-		"schema_migrations",
-	}
+    requiredTables := []string{
+        "users",
+        "admin_users",
+        "rate_limit_configs",
+        "_prisma_migrations",
+    }
 
 	var missingTables []string
 	var tableDetails []map[string]interface{}

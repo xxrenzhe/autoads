@@ -1,4 +1,4 @@
--- AdsCenter v2 minimal tables: offers/bindings/rotations
+-- Migrated from gofly_admin_v3/internal/init/migrations/090_adscenter_tables.sql
 
 CREATE TABLE IF NOT EXISTS ads_offers (
   id VARCHAR(36) PRIMARY KEY,
@@ -40,4 +40,3 @@ CREATE TABLE IF NOT EXISTS ads_offer_rotations (
   INDEX idx_ads_rotations_account (account_id),
   INDEX idx_ads_rotations_hash (final_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

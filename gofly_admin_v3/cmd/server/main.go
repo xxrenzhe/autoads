@@ -234,7 +234,7 @@ func main() {
         configPath = flag.String("config", "config.yaml", "配置文件路径")
         initDB     = flag.Bool("init-db", false, "是否初始化数据库")
         forceInit  = flag.Bool("force-init", false, "强制初始化数据库（会清空现有数据）")
-        migrate    = flag.Bool("migrate", false, "执行数据库迁移")
+        migrate    = flag.Bool("migrate", false, "(已废弃) 执行数据库迁移 - 由 Prisma 接管")
         version    = flag.Bool("version", false, "显示版本信息")
         port       = flag.String("port", defPort, "服务端口")
         host       = flag.String("host", "0.0.0.0", "服务主机")
@@ -257,7 +257,7 @@ func main() {
 	}
 
 	// 2. 数据库初始化（如果需要）
-    if *initDB || *forceInit || *migrate {
+    if *initDB || *forceInit {
         log.Println("开始数据库操作...")
 
 		if *forceInit {
@@ -276,12 +276,7 @@ func main() {
         }
 
         log.Println("✅ 数据库初始化流程完成（基础表检查/创建）")
-        // 在某些场景（如 CI smoke-run）希望仅完成基础初始化后立即退出，避免继续启动主流程。
-        if *migrate && strings.EqualFold(os.Getenv("EXIT_AFTER_DB_INIT"), "true") {
-            log.Println("🔚 仅执行数据库初始化（按 EXIT_AFTER_DB_INIT=true），进程退出")
-            os.Exit(0)
-        }
-        // 默认：继续后续流程，在建立 DB 连接后若 *migrate 为 true 再执行模型迁移并退出。
+        // 默认：继续后续流程。
     }
 
 	// 3. 初始化配置管理器
@@ -354,16 +349,7 @@ func main() {
 				log.Println("✅ Redis 初始化成功")
 			}
 
-            // 执行模型迁移（在提供 -migrate 时执行，保证幂等）
-            if *migrate {
-                // 仅迁移模型相关表（幂等）
-                if err := gormDB.AutoMigrate(&batchgo.BatchJob{}, &batchgo.BatchJobItem{}, &batchgo.BatchJobProgress{}); err != nil {
-                    log.Fatalf("模型迁移失败: %v", err)
-                }
-                log.Println("✅ 模型迁移完成：batch_jobs / batch_job_items / batch_job_progress")
-                // 迁移完成即退出（部署阶段幂等执行）
-                os.Exit(0)
-            }
+            // -migrate 已废弃：迁移由 Prisma 统一管理
 
             // JWT 服务（优先使用环境变量 AUTH_SECRET）
 			secret := os.Getenv("AUTH_SECRET")
@@ -384,24 +370,7 @@ func main() {
             // BatchGo 服务（注入 Redis 以共享 BadURL 标记）
             batchService = batchgo.NewService(gormDB, tokenSvc, wsManager, auditSvc, storeRedis)
 
-            // Auto-migrate BatchOpen unified tables (minimal)
-            if err := gormDB.AutoMigrate(&batchgo.BatchJob{}, &batchgo.BatchJobItem{}, &batchgo.BatchJobProgress{}); err != nil {
-                log.Printf("警告：BatchOpen 统一模型迁移失败: %v", err)
-            } else {
-                log.Println("✅ BatchOpen 统一模型表已就绪（batch_jobs, batch_job_items, batch_job_progress）")
-            }
-
-            // Auto-migrate AdsCenter v2 minimal tables (offers/bindings/rotations) + metrics
-            if err := gormDB.AutoMigrate(&AdsOffer{}, &AdsOfferBinding{}, &AdsOfferRotation{}); err != nil {
-                log.Printf("警告：AdsCenter v2 模型迁移失败: %v", err)
-            } else {
-                log.Println("✅ AdsCenter v2 表已就绪（ads_offers, ads_offer_bindings, ads_offer_rotations）")
-            }
-            if err := gormDB.AutoMigrate(&AdsMetricsDaily{}); err != nil {
-                log.Printf("警告：AdsCenter 指标表迁移失败: %v", err)
-            } else {
-                log.Println("✅ AdsCenter 指标表已就绪（ads_metrics_daily）")
-            }
+            // 移除启动期 AutoMigrate：DDL 统一由 Prisma 迁移管理
 
             // 初始化 PoolManager 并发（从 automation.* 读取，fallback 旧键）
             httpConc := 10
