@@ -386,4 +386,5 @@ else
 fi
 
 echo "[entrypoint] 正在启动 Go 后端服务..."
-exec "$APP_DIR/server" -config="$CONFIG_PATH" -port="$PORT"
+echo "[entrypoint] Go 将绑定: host=0.0.0.0 port=$PORT"
+exec "$APP_DIR/server" -config="$CONFIG_PATH" -port="$PORT" -host="0.0.0.0"
