@@ -4,16 +4,17 @@ import (
     "bytes"
     "crypto/sha1"
     "crypto/sha256"
-	"context"
-	"encoding/json"
-	"flag"
-	"fmt"
-	"log"
-	"net/http"
-	"net/url"
-	"os"
-	"os/signal"
-	"strconv"
+    "context"
+    "encoding/json"
+    "flag"
+    "fmt"
+    "log"
+    "net"
+    "net/http"
+    "net/url"
+    "os"
+    "os/signal"
+    "strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -547,23 +548,29 @@ func main() {
 	// 12. 设置静态文件服务
 	setupStaticFiles(r)
 
-	// 13. 启动服务器
-	addr := fmt.Sprintf("%s:%s", *host, *port)
-	srv := &http.Server{
-		Addr:         addr,
-		Handler:      r,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
+    // 13. 启动服务器（显式绑定端口，便于排查监听问题）
+    addr := fmt.Sprintf("%s:%s", *host, *port)
+    srv := &http.Server{
+        Addr:         addr,
+        Handler:      r,
+        ReadTimeout:  30 * time.Second,
+        WriteTimeout: 30 * time.Second,
+        IdleTimeout:  60 * time.Second,
+    }
 
-	// 在goroutine中启动服务器
-	go func() {
-		log.Printf("🌐 服务器启动在 http://%s", addr)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("服务器启动失败: %v", err)
-		}
-	}()
+    // 显式监听，若绑定失败立即退出并打印原因
+    ln, err := net.Listen("tcp", addr)
+    if err != nil {
+        log.Fatalf("服务器端口绑定失败 (%s): %v", addr, err)
+    }
+    log.Printf("🌐 正在监听 http://%s", ln.Addr().String())
+
+    // 在 goroutine 中开始服务
+    go func() {
+        if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
+            log.Fatalf("服务器启动失败: %v", err)
+        }
+    }()
 
 	// 14. 等待中断信号
 	quit := make(chan os.Signal, 1)
