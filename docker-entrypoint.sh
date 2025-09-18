@@ -242,12 +242,43 @@ if [ -f "$PRISMA_SCHEMA" ]; then
   if [ -n "$DATABASE_URL" ]; then
     echo "[entrypoint] 执行 Prisma 迁移: prisma migrate deploy"
     # 使用全局 prisma CLI，schema 指定到 Next 应用内
-    if ! prisma migrate deploy --schema "$PRISMA_SCHEMA"; then
+    PRISMA_OUTPUT=$(prisma migrate deploy --schema "$PRISMA_SCHEMA" 2>&1) || DEPLOY_RC=$?
+    if [ -n "$DEPLOY_RC" ] && [ "$DEPLOY_RC" -ne 0 ]; then
+      echo "$PRISMA_OUTPUT"
       echo "[entrypoint] ⚠️ Prisma 迁移失败"
+      # 自动基线：当数据库非空（P3005）且仅有一个迁移时，标记该迁移为已应用
+      if printf "%s" "$PRISMA_OUTPUT" | grep -q "P3005"; then
+        : "${PRISMA_AUTO_BASELINE:=true}"
+        if [ "$PRISMA_AUTO_BASELINE" = "true" ]; then
+          MIG_DIR="$(dirname "$PRISMA_SCHEMA")/migrations"
+          if [ -d "$MIG_DIR" ]; then
+            MIG_COUNT=$(find "$MIG_DIR" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+            if [ "$MIG_COUNT" -eq 1 ]; then
+              FIRST_MIG=$(basename "$(find "$MIG_DIR" -mindepth 1 -maxdepth 1 -type d | head -n1)")
+              echo "[entrypoint] 检测到 P3005 且仅有 1 个迁移，执行基线标记: $FIRST_MIG"
+              if prisma migrate resolve --schema "$PRISMA_SCHEMA" --applied "$FIRST_MIG"; then
+                echo "[entrypoint] 重试 Prisma 迁移: prisma migrate deploy"
+                prisma migrate deploy --schema "$PRISMA_SCHEMA" || echo "[entrypoint] ⚠️ 重试 prisma migrate deploy 仍失败"
+              else
+                echo "[entrypoint] ⚠️ Prisma 基线标记失败，请手动处理"
+              fi
+            else
+              echo "[entrypoint] ⚠️ 检测到 P3005，但迁移数=$MIG_COUNT，出于安全不自动基线。请手动执行 prisma migrate resolve。"
+            fi
+          else
+            echo "[entrypoint] ⚠️ 检测到 P3005，但未找到迁移目录：$MIG_DIR"
+          fi
+        else
+          echo "[entrypoint] 已禁用自动基线（PRISMA_AUTO_BASELINE=false）"
+        fi
+      fi
       if [ "$PRISMA_DB_PUSH_FALLBACK" = "true" ]; then
         echo "[entrypoint] 尝试回退到 prisma db push（仅用于开发/临时环境）"
         prisma db push --accept-data-loss --schema "$PRISMA_SCHEMA" || true
       fi
+    else
+      # 打印成功输出（若有）
+      [ -n "$PRISMA_OUTPUT" ] && printf "%s\n" "$PRISMA_OUTPUT" | tail -n +1
     fi
 
     # 可选：执行 Prisma Seed（仅在显式设置 PRISMA_DB_SEED=true 时执行）
