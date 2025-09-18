@@ -271,13 +271,17 @@ func main() {
 			}
 		}
 
-		if err := dbinit.AutoInitialize(); err != nil {
-			log.Fatalf("数据库操作失败: %v", err)
-		}
+        if err := dbinit.AutoInitialize(); err != nil {
+            log.Fatalf("数据库操作失败: %v", err)
+        }
 
         log.Println("✅ 数据库初始化流程完成（基础表检查/创建）")
-        // 不在此处退出，允许后续基于 GORM 的模型迁移在同一进程内执行；
-        // 若仅需迁移，稍后将根据 *migrate 标记在建立 DB 连接后退出。
+        // 在某些场景（如 CI smoke-run）希望仅完成基础初始化后立即退出，避免继续启动主流程。
+        if *migrate && strings.EqualFold(os.Getenv("EXIT_AFTER_DB_INIT"), "true") {
+            log.Println("🔚 仅执行数据库初始化（按 EXIT_AFTER_DB_INIT=true），进程退出")
+            os.Exit(0)
+        }
+        // 默认：继续后续流程，在建立 DB 连接后若 *migrate 为 true 再执行模型迁移并退出。
     }
 
 	// 3. 初始化配置管理器

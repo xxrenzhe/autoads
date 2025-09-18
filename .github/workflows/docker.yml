@@ -375,6 +375,7 @@ jobs:
             -e DB_USERNAME=root -e DB_PASSWORD=password \
             -e DB_DATABASE=autoads \
             -e REDIS_HOST=redis -e REDIS_PORT=6379 -e REDIS_DB=1 \
+            -e EXIT_AFTER_DB_INIT=true \
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
             autoads:smoke \
               -migrate -config=/app/gofly_admin_v3/config.yaml
