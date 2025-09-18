@@ -43,6 +43,8 @@ RUN npm run build
 FROM golang:1.23-alpine AS build
 ARG VERSION=dev
 ARG COMMIT=unknown
+ARG BUILD_TS="unknown"
+ARG CACHE_BUST="1"
 WORKDIR /src
 RUN apk add --no-cache git
 # 先复制依赖声明以利用 go mod 缓存
@@ -54,11 +56,13 @@ RUN --mount=type=cache,target=/go/pkg/mod go mod download
 # 再复制完整源码
 WORKDIR /src
 COPY gofly_admin_v3/ ./gofly_admin_v3/
+# Cache-bust knob to force rebuild of Go binary when desired
+RUN echo "cache-bust=${CACHE_BUST}"
 WORKDIR /src/gofly_admin_v3
 ENV CGO_ENABLED=0
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    go build -trimpath -ldflags "-s -w -X main.Version=${VERSION} -X main.GitCommit=${COMMIT}" -o /out/server cmd/server/main.go
+    go build -trimpath -ldflags "-s -w -X main.Version=${VERSION} -X main.GitCommit=${COMMIT} -X main.BuildTime=${BUILD_TS}" -o /out/server cmd/server/main.go
 COPY --from=web /web/dist /out/web/dist
 
 ############################
@@ -72,6 +76,7 @@ RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ca-certificates tzdata gettext-base tini curl \
     iproute2 procps ripgrep \
+    netcat-openbsd binutils \
  && rm -rf /var/lib/apt/lists/* \
  && update-ca-certificates
 
