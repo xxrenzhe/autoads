@@ -384,21 +384,20 @@ jobs:
             -e NEXTJS_PORT=3000 \
             -e PORT=8080 \
             -e BACKEND_URL=http://127.0.0.1:8080 \
-            -e RUN_MIGRATIONS_ON_START=false \
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}
 
       - name: Wait for backend ready (http://127.0.0.1:8080/readyz)
         run: |
           set -e
-          for i in $(seq 1 120); do
+          for i in $(seq 1 180); do
             if curl -fsS http://127.0.0.1:8080/readyz >/dev/null 2>&1; then
               echo "Backend ready on :8080"
               exit 0
             fi
             sleep 1
           done
-          echo "Backend not ready in 120s" >&2
+          echo "Backend not ready in 180s" >&2
           docker logs autoads || true
           exit 1
 
