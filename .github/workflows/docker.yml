@@ -342,7 +342,7 @@ jobs:
             port: 6379
             password: ""
             db: 1
-            prefix: autoads:
+            prefix: "autoads:"
             default:
               address: redis:6379
               db: 1
@@ -364,6 +364,7 @@ jobs:
             -e NEXTJS_PORT=3000 \
             -e PORT=8080 \
             -e BACKEND_URL=http://127.0.0.1:8080 \
+            -e RUN_MIGRATIONS_ON_START=false \
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}
 
