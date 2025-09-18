@@ -293,7 +293,7 @@ jobs:
         with:
           name: docker-trivy-scan-results
           path: trivy-results.sarif
-      retention-days: 14
+          retention-days: 14
 
   smoke-run:
     name: Smoke Test (run container and verify 8080)
