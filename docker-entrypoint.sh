@@ -256,7 +256,7 @@ if [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ]; then
   echo "[entrypoint] 执行数据库迁移 (Go) ..."
   # 传入 -port 与最终运行端口保持一致，避免旧版本在 -migrate 后继续监听到默认 8888 端口
   # 为避免极端情况下 -migrate 阶段阻塞启动，这里加超时与日志文件
-  MIGRATE_TIMEOUT="${MIGRATE_TIMEOUT:-90}"
+  MIGRATE_TIMEOUT="${MIGRATE_TIMEOUT:-150}"
   mkdir -p /app/logs >/dev/null 2>&1 || true
   MIGRATE_LOG="/app/logs/go-migrate.log"
   rm -f "$MIGRATE_LOG" 2>/dev/null || true
@@ -290,6 +290,20 @@ if [ -f "$PRISMA_SCHEMA" ]; then
     if [ -n "$DEPLOY_RC" ] && [ "$DEPLOY_RC" -ne 0 ]; then
       echo "$PRISMA_OUTPUT"
       echo "[entrypoint] ⚠️ Prisma 迁移失败"
+      # 自动 resolve 失败的迁移（仅当显式开启）
+      if [ "${PRISMA_AUTO_RESOLVE_FAILED}" = "true" ]; then
+        FAILED_LIST=$(prisma migrate status --schema "$PRISMA_SCHEMA" 2>/dev/null | awk '/Following migration have failed:/{flag=1; next} flag && NF {print $0}')
+        if [ -n "$FAILED_LIST" ]; then
+          echo "[entrypoint] 检测到失败迁移，执行 resolve --rolled-back:"
+          echo "$FAILED_LIST" | while read -r mig; do
+            case "$mig" in *[!0-9A-Za-z_-]*) continue;; esac
+            echo "  - $mig"
+            prisma migrate resolve --schema "$PRISMA_SCHEMA" --rolled-back "$mig" || true
+          done
+          echo "[entrypoint] 重试 Prisma 迁移: prisma migrate deploy"
+          prisma migrate deploy --schema "$PRISMA_SCHEMA" || echo "[entrypoint] ⚠️ 重试 prisma migrate deploy 仍失败"
+        fi
+      fi
       # 自动基线：当数据库非空（P3005）且仅有一个迁移时，标记该迁移为已应用
       if printf "%s" "$PRISMA_OUTPUT" | grep -q "P3005"; then
         : "${PRISMA_AUTO_BASELINE:=true}"

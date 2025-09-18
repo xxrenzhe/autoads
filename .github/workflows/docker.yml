@@ -221,6 +221,19 @@ jobs:
           echo "- Domain: ${{ steps.build-args.outputs.NEXT_PUBLIC_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
           echo "- No cache: true" >> $GITHUB_STEP_SUMMARY
 
+      - name: Deploy summary (ClawCloud copy-paste)
+        run: |
+          echo "## 🚀 Deploy on ClawCloud" >> $GITHUB_STEP_SUMMARY
+          echo "Use the following image tag+digest to avoid cache ambiguity:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for TAG in $(echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n'); do
+            echo "- ghcr.io/xxrenzhe/autoads:${TAG#*/} @ ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Pull explicitly:" >> $GITHUB_STEP_SUMMARY
+          echo "\n\`docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "\nThen select this digest in ClawCloud or ensure Always Pull is enabled." >> $GITHUB_STEP_SUMMARY
+
   security-scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
