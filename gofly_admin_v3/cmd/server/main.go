@@ -531,6 +531,7 @@ func main() {
 	if healthChecker != nil {
 		r.GET("/health", gin.WrapH(healthChecker.Handler()))
 		r.GET("/ready", gin.WrapH(healthChecker.ReadyHandler()))
+		r.GET("/readyz", gin.WrapH(healthChecker.ReadyHandler())) // 兼容 K8s 常用探针路径
 		r.GET("/live", gin.WrapH(healthChecker.LiveHandler()))
 	}
 
