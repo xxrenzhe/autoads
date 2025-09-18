@@ -156,8 +156,7 @@ export class InvitationService {
       // Get Pro plan details
       const proPlan = await prisma.plan.findFirst({
         where: {
-          name: { contains: 'PRO', mode: 'insensitive' },
-          status: 'ACTIVE'
+          name: { contains: 'PRO' }
         }
       });
 
@@ -375,7 +374,7 @@ export class InvitationService {
 
       return {
         code: invitation.code,
-        expiresAt: invitation.expiresAt,
+        expiresAt: invitation.expiresAt || undefined,
         status: 'ACTIVE'
       };
     } catch (error) {
@@ -443,7 +442,11 @@ export class InvitationService {
 
       return {
         valid: true,
-        inviter: invitation.inviter
+        inviter: {
+          id: invitation.inviter.id,
+          email: invitation.inviter.email,
+          name: invitation.inviter.name || undefined,
+        }
       };
     } catch (error) {
       console.error('Failed to validate invitation code:', error);

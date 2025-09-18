@@ -29,6 +29,7 @@ export interface SuspiciousEvent {
  */
 export class SimpleSuspiciousDetector {
   private static instance: SimpleSuspiciousDetector;
+  private riskStore = new Map<string, UserRiskInfo>();
   
   // 配置阈值
   private config = {
@@ -80,9 +81,11 @@ export class SimpleSuspiciousDetector {
           userId,
           action: activity.action,
           resource: activity.resource,
-          ip: activity.ip,
-          userAgent: activity.userAgent,
-          metadata: activity.metadata || {},
+          metadata: {
+            ...(activity.metadata || {}),
+            ...(activity.ip ? { ip: activity.ip } : {}),
+            ...(activity.userAgent ? { userAgent: activity.userAgent } : {}),
+          },
           timestamp: now
         }
       });
@@ -160,7 +163,7 @@ export class SimpleSuspiciousDetector {
           timestamp: { gte: oneDayAgo }
         }
       });
-      const uniqueIPs = new Set(dayActivities.map((a: any) => a.ip).filter(Boolean));
+      const uniqueIPs = new Set(dayActivities.map((a: any) => a?.metadata?.ip).filter(Boolean));
       if (uniqueIPs.size > this.config.maxIPs) {
         riskFactors.push(`IP地址频繁变更: ${uniqueIPs.size}个`);
         riskScore += 35;
@@ -181,40 +184,13 @@ export class SimpleSuspiciousDetector {
       const riskLevel: RiskLevel = 
         riskScore >= 80 ? 'dangerous' :
         riskScore >= 30 ? 'suspicious' : 'normal';
-
-      await prisma.userRisk.upsert({
-        where: { userId },
-        update: {
-          riskLevel,
-          riskScore,
-          factors,
-          updatedAt: new Date()
-        },
-        create: {
-          userId,
-          riskLevel,
-          riskScore,
-          factors
-        }
-      });
-
-      // 如果风险等级高，记录到可疑事件表
-      if (riskLevel !== 'normal') {
-        await prisma.suspiciousEvent.create({
-          data: {
-            userId,
-            eventType: 'risk_level_change',
-            severity: riskLevel === 'dangerous' ? 'high' : 'medium',
-            message: `用户风险等级变为${riskLevel}，得分: ${riskScore}`,
-            metadata: {
-              riskScore,
-              factors,
-              previousLevel: 'normal' // 可以从历史记录获取
-            },
-            timestamp: new Date()
-          }
-        });
-      }
+      this.riskStore.set(userId, {
+        userId,
+        riskLevel,
+        riskScore,
+        reasons: factors,
+        lastUpdated: new Date(),
+      })
     } catch (error) {
       logger.error('更新用户风险失败:', error as Error);
     }
@@ -225,19 +201,7 @@ export class SimpleSuspiciousDetector {
    */
   async getUserRisk(userId: string): Promise<UserRiskInfo | null> {
     try {
-      const risk = await prisma.userRisk.findUnique({
-        where: { userId }
-      });
-
-      if (!risk) return null as any;
-
-      return {
-        userId: risk.userId,
-        riskLevel: risk.riskLevel,
-        riskScore: risk.riskScore,
-        reasons: risk.factors,
-        lastUpdated: risk.updatedAt
-      };
+      return this.riskStore.get(userId) || null
     } catch (error) {
       logger.error('获取用户风险失败:', error as Error);
       return null as any;
@@ -249,24 +213,11 @@ export class SimpleSuspiciousDetector {
    */
   async getHighRiskUsers(limit: number = 50): Promise<UserRiskInfo[]> {
     try {
-      const risks = await prisma.userRisk.findMany({
-        where: {
-          riskLevel: { in: ['suspicious', 'dangerous'] }
-        },
-        orderBy: [
-          { riskLevel: 'desc' },
-          { riskScore: 'desc' }
-        ],
-        take: limit
-      });
-
-      return risks.map((risk: any) => ({
-        userId: risk.userId,
-        riskLevel: risk.riskLevel,
-        riskScore: risk.riskScore,
-        reasons: risk.factors,
-        lastUpdated: risk.updatedAt
-      }));
+      const risks = Array.from(this.riskStore.values())
+        .filter(r => r.riskLevel !== 'normal')
+        .sort((a, b) => (b.riskScore - a.riskScore))
+        .slice(0, limit)
+      return risks
     } catch (error) {
       logger.error('获取高风险用户失败:', error as Error);
       return [];
@@ -278,14 +229,10 @@ export class SimpleSuspiciousDetector {
    */
   async recordSuspiciousEvent(event: Omit<SuspiciousEvent, 'timestamp'>): Promise<void> {
     try {
-      await prisma.suspiciousEvent.create({
-        data: {
-          ...event,
-          timestamp: new Date()
-        }
-      });
+      // 记录到日志（简化：不入库）
+      logger.warn('记录可疑事件', event as any)
 
-      // 如果是高危事件，更新用户风险
+      // 如果是高危事件，更新用户风险（内存）
       if (event.severity === 'high') {
         const currentRisk = await this.getUserRisk(event.userId);
         const additionalScore = event.severity === 'high' ? 40 : 20;
@@ -304,33 +251,13 @@ export class SimpleSuspiciousDetector {
    */
   async resetUserRisk(userId: string, reason?: string): Promise<void> {
     try {
-      await prisma.userRisk.upsert({
-        where: { userId },
-        update: {
-          riskLevel: 'normal',
-          riskScore: 0,
-          factors: [],
-          updatedAt: new Date()
-        },
-        create: {
-          userId,
-          riskLevel: 'normal',
-          riskScore: 0,
-          factors: []
-        }
-      });
-
-      // 记录重置事件
-      await prisma.suspiciousEvent.create({
-        data: {
-          userId,
-          eventType: 'risk_reset',
-          severity: 'low',
-          message: `用户风险已重置: ${reason || '管理员操作'}`,
-          metadata: { reason },
-          timestamp: new Date()
-        }
-      });
+      this.riskStore.set(userId, {
+        userId,
+        riskLevel: 'normal',
+        riskScore: 0,
+        reasons: [],
+        lastUpdated: new Date(),
+      })
     } catch (error) {
       logger.error('重置用户风险失败:', error as Error);
     }
@@ -345,14 +272,9 @@ export class SimpleSuspiciousDetector {
       try {
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
         
-        await Promise.all([
-          prisma.userActivity.deleteMany({
-            where: { timestamp: { lt: thirtyDaysAgo } }
-          }),
-          prisma.suspiciousEvent.deleteMany({
-            where: { timestamp: { lt: thirtyDaysAgo } }
-          })
-        ]);
+        await prisma.userActivity.deleteMany({
+          where: { timestamp: { lt: thirtyDaysAgo } }
+        });
 
         logger.info('清理旧数据完成');
       } catch (error) {

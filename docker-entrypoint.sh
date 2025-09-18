@@ -19,10 +19,18 @@ auto_fix_prisma_url() {
   local dbname="${DB_DATABASE:-}"
   # 若未提供 DB_DATABASE，则尝试从配置文件读取 database.database 字段
   if [ -z "$dbname" ] && [ -f "$CONFIG_PATH" ]; then
+    # 解析 YAML：进入顶层 database: 块后，读取其中的字段 database: 的值
     dbname=$(awk '
-      $1=="database:" { in_db=1; next }
-      in_db && $1=="database:" { gsub(/"/,"",$2); print $2; exit }
-      /^[^[:space:]]/ { in_db=0 }
+      /^[[:space:]]*database:[[:space:]]*$/ { in_db=1; next }
+      in_db==1 && /^[[:space:]]*database:[[:space:]]*/ {
+        line=$0
+        sub(/^[[:space:]]*database:[[:space:]]*/, "", line)
+        gsub(/"/, "", line)
+        gsub(/[[:space:]]+$/, "", line)
+        print line
+        exit
+      }
+      in_db==1 && /^[^[:space:]]/ { in_db=0 }
     ' "$CONFIG_PATH" 2>/dev/null | head -n1)
   fi
   if [ -z "$dbname" ]; then
@@ -165,6 +173,16 @@ fi
 
 # 在启动 Next 之前，尝试自动修正 Prisma 的 DATABASE_URL，避免迁移与运行时连接到系统库
 auto_fix_prisma_url || true
+
+# 打印已解析的 Prisma 连接（脱敏），便于排查是否误连到 system DB
+if [ -n "$DATABASE_URL" ]; then
+  case "$DATABASE_URL" in
+    mysql://*)
+      base=$(printf "%s" "$DATABASE_URL" | sed -E 's#^mysql://([^/@]+)@([^/:]+)(:[0-9]+)?/([^?]+).*#\2\3/\4#')
+      echo "[entrypoint] Prisma 目标: mysql://${base}"
+      ;;
+  esac
+fi
 
 # 严格启动 Next（提前且必须成功）
 echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"

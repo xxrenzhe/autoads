@@ -151,7 +151,7 @@ function getNextAuth() {
     const adapter = buildPrismaAdapterIfAvailable()
     const secret = process.env.AUTH_SECRET || (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV !== 'production' ? 'dev-secret-autoads' : undefined)
 
-    __nextAuth = NextAuth({
+    const na: any = NextAuth({
       ...(adapter ? { adapter } : {}),
       secret,
       debug: process.env.NODE_ENV === 'development' || process.env.AUTH_DEBUG === 'true',
@@ -430,6 +430,31 @@ function getNextAuth() {
     },
   },
     })
+
+    // 兼容层：NextAuth v5 返回 { handlers, signIn, signOut, auth }
+    // 若为 v4，NextAuth(...) 返回单个 handler 函数，需要包装成 v5 风格以供路由惰性调用
+    if (na && typeof na === 'object' && 'handlers' in na) {
+      __nextAuth = na
+    } else {
+      const handler = na
+      __nextAuth = {
+        handlers: {
+          GET: handler,
+          POST: handler,
+        },
+        signIn: (..._args: any[]) => {
+          // v4 服务器端无直接 signIn，这里留空占位以避免引用错误
+          return undefined as any
+        },
+        signOut: (..._args: any[]) => {
+          return undefined as any
+        },
+        auth: (..._args: any[]) => {
+          // v4 无 auth()，保持兼容返回 undefined
+          return undefined as any
+        }
+      }
+    }
   }
   return __nextAuth
 }
