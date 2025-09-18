@@ -225,17 +225,20 @@ func (a *invTokenAdapter) AddTokens(userID string, amount int, tokenType, descri
 func (a *invTokenAdapter) GetBalance(userID string) (int, error) { return a.ts.GetTokenBalance(userID) }
 
 func main() {
-	// 解析命令行参数
-	var (
-		configPath = flag.String("config", "config.yaml", "配置文件路径")
-		initDB     = flag.Bool("init-db", false, "是否初始化数据库")
-		forceInit  = flag.Bool("force-init", false, "强制初始化数据库（会清空现有数据）")
-		migrate    = flag.Bool("migrate", false, "执行数据库迁移")
-		version    = flag.Bool("version", false, "显示版本信息")
-		port       = flag.String("port", "8888", "服务端口")
-		host       = flag.String("host", "0.0.0.0", "服务主机")
-	)
-	flag.Parse()
+    // 解析命令行参数
+    // 优先从环境变量 PORT 推导默认端口（与部署/前端 BFF 保持一致，推荐 8080）
+    defPort := "8080"
+    if v := os.Getenv("PORT"); strings.TrimSpace(v) != "" { defPort = strings.TrimSpace(v) }
+    var (
+        configPath = flag.String("config", "config.yaml", "配置文件路径")
+        initDB     = flag.Bool("init-db", false, "是否初始化数据库")
+        forceInit  = flag.Bool("force-init", false, "强制初始化数据库（会清空现有数据）")
+        migrate    = flag.Bool("migrate", false, "执行数据库迁移")
+        version    = flag.Bool("version", false, "显示版本信息")
+        port       = flag.String("port", defPort, "服务端口")
+        host       = flag.String("host", "0.0.0.0", "服务主机")
+    )
+    flag.Parse()
 
 	if *version {
 		fmt.Printf("AutoAds SaaS Server\n")

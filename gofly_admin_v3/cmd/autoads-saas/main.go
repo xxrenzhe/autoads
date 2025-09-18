@@ -891,10 +891,10 @@ func (app *AutoAdsSaaSApp) setupAdminUXRoutes(admin *gin.RouterGroup) {
 
 // Start 启动应用
 func (app *AutoAdsSaaSApp) Start() error {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8888"
-	}
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "8080"
+    }
 
 	app.server = &http.Server{
 		Addr:         ":" + port,
