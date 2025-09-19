@@ -419,13 +419,20 @@ case "$READY_CODE" in
   2??|3??)
     echo "[entrypoint] Next.js 已在端口 ${NEXTJS_PORT} 运行，跳过重复启动 (code=$READY_CODE)" ;;
   *)
-    echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
-    start_next "$NEXT_DIR" || { echo "[entrypoint] ❌ Next 启动失败，退出"; exit 1; } ;;
+    if [ "$SKIP_NEXT" = "true" ]; then
+      echo "[entrypoint] 跳过 Next.js 启动（SKIP_NEXT=true）"
+    else
+      echo "[entrypoint] 启动 Next.js 前端: 端口=$NEXTJS_PORT"
+      start_next "$NEXT_DIR" || { echo "[entrypoint] ❌ Next 启动失败，退出"; exit 1; }
+    fi ;;
 esac
 
 echo "[entrypoint] 启动服务..."
 
 # 启动本地执行器（Puppeteer / AdsCenter），仅当未显式设置外部 URL 时启动本地版本
+if [ "$SKIP_EXECUTORS" = "true" ]; then
+  echo "[entrypoint] 跳过本地执行器启动（SKIP_EXECUTORS=true）"
+else
 if [ -z "$PUPPETEER_EXECUTOR_URL" ]; then
   export PUPPETEER_EXECUTOR_URL="http://127.0.0.1:${PUPPETEER_EXECUTOR_PORT}"
   echo "[entrypoint] 启动本地 Playwright 执行器: $PUPPETEER_EXECUTOR_URL"
@@ -446,6 +453,7 @@ if [ -z "$ADSCENTER_EXECUTOR_URL" ]; then
   else
     ( node /app/executors/adscenter-update-server.js >> /app/logs/exec-adscenter.log 2>&1 & ) || echo "[entrypoint] ⚠️ 启动 AdsCenter 执行器失败"
   fi
+fi
 fi
 
 # 在启动 Go 服务前，输出一次后端启动摘要，便于在容器启动日志中直观看到关键信息

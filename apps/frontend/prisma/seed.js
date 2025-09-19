@@ -1,5 +1,6 @@
 // ESM seed script for Prisma (Node 20)
-import { PrismaClient } from '@prisma/client'
+import pkg from '@prisma/client'
+const { PrismaClient } = pkg
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
