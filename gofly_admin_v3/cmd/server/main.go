@@ -240,6 +240,8 @@ func main() {
         host       = flag.String("host", "0.0.0.0", "服务主机")
     )
     flag.Parse()
+    // keep deprecated flag referenced to avoid unused var during build
+    _ = migrate
 
 	if *version {
 		fmt.Printf("AutoAds SaaS Server\n")
