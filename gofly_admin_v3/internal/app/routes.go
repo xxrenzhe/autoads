@@ -1,6 +1,7 @@
 package app
 
 import (
+    "context"
     // "fmt"
     // "net/http"
     "time"
@@ -156,10 +157,11 @@ system.On("allowed_file_types", func(key, value string) {
     loadPlanRates()
     go func() {
         r := gf.Redis(); if r == nil { return }
-        conn, _, err := r.GroupPubSub().Subscribe(nil, "ratelimit:plans:update")
+        ctx := context.Background()
+        conn, _, err := r.GroupPubSub().Subscribe(ctx, "ratelimit:plans:update")
         if err != nil { return }
         for {
-            _, err := conn.ReceiveMessage(nil)
+            _, err := conn.ReceiveMessage(ctx)
             if err == nil { loadPlanRates() }
             time.Sleep(50 * time.Millisecond)
         }
@@ -168,10 +170,11 @@ system.On("allowed_file_types", func(key, value string) {
     // 订阅变更 -> 计划缓存失效
     go func() {
         r := gf.Redis(); if r == nil { return }
-        conn, _, err := r.GroupPubSub().Subscribe(nil, "user:plan:invalidate")
+        ctx := context.Background()
+        conn, _, err := r.GroupPubSub().Subscribe(ctx, "user:plan:invalidate")
         if err != nil { return }
         for {
-            msg, err := conn.ReceiveMessage(nil)
+            msg, err := conn.ReceiveMessage(ctx)
             if err != nil || msg == nil { time.Sleep(100 * time.Millisecond); continue }
             uid := strings.TrimSpace(msg.Payload)
             if uid == "" { continue }

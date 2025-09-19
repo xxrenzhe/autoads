@@ -1,6 +1,7 @@
 package user
 
 import (
+    "context"
     "errors"
     "fmt"
     "strings"
@@ -100,10 +101,11 @@ func (s *TokenConfigService) reloadFromDB() error {
 
 func (s *TokenConfigService) subscribeReload() {
     r := gf.Redis(); if r == nil { return }
-    conn, _, err := r.GroupPubSub().Subscribe(nil, "token:rules:update")
+    ctx := context.Background()
+    conn, _, err := r.GroupPubSub().Subscribe(ctx, "token:rules:update")
     if err != nil { return }
     for {
-        _, err := conn.ReceiveMessage(nil)
+        _, err := conn.ReceiveMessage(ctx)
         if err == nil {
             _ = s.reloadFromDB()
         } else {
