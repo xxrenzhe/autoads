@@ -269,22 +269,21 @@ CREATE TABLE `service_configs` (
 
 -- CreateTable
 CREATE TABLE `system_configs` (
-    `id` VARCHAR(191) NOT NULL,
-    `key` VARCHAR(191) NOT NULL,
-    `value` VARCHAR(191) NOT NULL,
-    `category` VARCHAR(191) NOT NULL,
-    `description` VARCHAR(191) NULL,
-    `isSecret` BOOLEAN NOT NULL DEFAULT false,
-    `validation` VARCHAR(191) NULL,
-    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `updatedAt` DATETIME(3) NOT NULL,
-    `createdBy` VARCHAR(191) NOT NULL,
-    `updatedBy` VARCHAR(191) NULL,
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `config_key` VARCHAR(100) NOT NULL,
+    `config_value` TEXT NULL,
+    `category` VARCHAR(50) NOT NULL DEFAULT 'system',
+    `description` VARCHAR(255) NULL,
+    `is_secret` BOOLEAN NOT NULL DEFAULT FALSE,
+    `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
+    `created_by` VARCHAR(50) NOT NULL DEFAULT 'system',
+    `updated_by` VARCHAR(50) NOT NULL DEFAULT 'system',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    UNIQUE INDEX `system_configs_key_key`(`key`),
-    INDEX `system_configs_category_idx`(`category`),
-    INDEX `system_configs_created_at_idx`(`createdAt`),
-    INDEX `system_configs_is_secret_idx`(`isSecret`),
+    UNIQUE INDEX `uk_system_configs_key`(`config_key`),
+    INDEX `idx_system_configs_category`(`category`),
+    INDEX `idx_system_configs_active`(`is_active`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
