@@ -214,13 +214,36 @@ jobs:
           sed -n 's/^ - /- /p' db-check.out >> $GITHUB_STEP_SUMMARY || true
           sed -n 's/^\(✅[^\n]*\)$/- \1/p' db-check.out >> $GITHUB_STEP_SUMMARY || true
 
+      - name: Prisma migrate status (against CI DB)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "## Prisma migrate status" >> $GITHUB_STEP_SUMMARY
+          cd apps/frontend
+          npx prisma migrate status --schema prisma/schema.prisma 2>&1 | tee status.out | sed -n '1,200p' | tee -a $GITHUB_STEP_SUMMARY || true
+          echo "--- gating ---"
+          if grep -Eiq "drift detected|not yet applied|pending" status.out; then
+            echo "Migration status indicates drift/pending; failing the job." | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
       - name: Show Prisma migration diff (DB vs. migrations)
         if: always()
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
         shell: bash
         run: |
           set -euo pipefail
           echo "## Prisma migration diff" >> $GITHUB_STEP_SUMMARY
-          deployments/scripts/db-ops.sh diff | sed -n '1,200p' | tee -a $GITHUB_STEP_SUMMARY || true
+          deployments/scripts/db-ops.sh diff | tee diff.sql | sed -n '1,200p' | tee -a $GITHUB_STEP_SUMMARY || true
+          echo "--- gating ---"
+          # If diff contains DDL statements, fail. Allow empty or comments-only.
+          if grep -Eiq "\\b(CREATE|ALTER|DROP)\\b" diff.sql; then
+            echo "DDL diff detected; failing the job." | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
   build-and-push:
     if: github.event_name != 'pull_request'

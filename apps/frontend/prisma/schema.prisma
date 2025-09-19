@@ -178,8 +178,8 @@ model Subscription {
   userId                 String
   planId                 String
   status                 SubscriptionStatus    @default(ACTIVE)
-  currentPeriodStart     DateTime
-  currentPeriodEnd       DateTime
+  currentPeriodStart     DateTime?             @map("started_at")
+  currentPeriodEnd       DateTime?             @map("ended_at")
   cancelAtPeriodEnd      Boolean               @default(false)
   canceledAt             DateTime?
   createdAt              DateTime              @default(now())
@@ -194,6 +194,7 @@ model Subscription {
   subscriptionHistory    SubscriptionHistory[]
 
   @@map("subscriptions")
+  @@index([userId, status, currentPeriodEnd])
 }
 
 model Payment {
@@ -536,6 +537,7 @@ model TokenTransaction {
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([userId, source, createdAt])
   @@map("token_transactions")
 }
 
@@ -1174,8 +1176,11 @@ model IdempotencyRequest {
   endpoint  String
   idemKey   String   @map("idem_key")
   status    String   @default("PENDING")
+  responseStatus Int?    @map("response_status")
+  responseBody   Json?   @map("response_body")
   createdAt DateTime @map("created_at")
   updatedAt DateTime? @map("updated_at")
+  expiresAt DateTime? @map("expires_at")
 
   @@unique([userId, endpoint, idemKey], map: "uniq_user_endpoint_key")
   @@index([createdAt], map: "idx_created_at")
