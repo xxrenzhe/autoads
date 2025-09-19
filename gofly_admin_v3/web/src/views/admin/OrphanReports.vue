@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, h } from 'vue'
 import { message } from 'ant-design-vue'
 import { consistencyApi } from '@/api/admin/consistency'
 
@@ -59,10 +59,13 @@ export default { name: 'OrphanReports', setup() {
   const expandedRow = (record) => {
     const by = record.by_check || {}
     const keys = Object.keys(by).sort()
-    return (
-      <div style="font-family:monospace">
-        { keys.length===0 ? '无明细' : keys.map(k => <div>{k}: {by[k]}</div>) }
-      </div>
+    if (keys.length === 0) {
+      return h('div', { style: 'font-family:monospace' }, '无明细')
+    }
+    return h(
+      'div',
+      { style: 'font-family:monospace' },
+      keys.map(k => h('div', null, `${k}: ${by[k]}`))
     )
   }
   const barHeight = (v) => {
@@ -95,4 +98,3 @@ export default { name: 'OrphanReports', setup() {
 .bar { width: 18px; background: #1677ff; border-radius: 3px 3px 0 0 }
 .label { font-size: 12px; margin-top: 6px; color: #888 }
 </style>
-
