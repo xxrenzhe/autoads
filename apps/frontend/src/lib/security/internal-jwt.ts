@@ -1,4 +1,6 @@
 import crypto from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
 
 // Base64 URL safe encoding (without padding)
 function b64url(input: Buffer | string): string {
@@ -16,7 +18,25 @@ export interface InternalJwtClaims {
 }
 
 export function createInternalJWT(claims: InternalJwtClaims): string | null {
-  const privateKey = process.env.INTERNAL_JWT_PRIVATE_KEY
+  let privateKey = process.env.INTERNAL_JWT_PRIVATE_KEY
+  // 开发/容器兜底：支持从文件读取密钥（避免手工复制多行 PEM）
+  if (!privateKey) {
+    const fileFromEnv = process.env.INTERNAL_JWT_PRIVATE_KEY_FILE
+    const candidates: string[] = []
+    if (fileFromEnv) candidates.push(fileFromEnv)
+    // 容器默认位置
+    candidates.push('/app/.keys/internal-jwt-private.pem')
+    // 本地开发默认位置（在 apps/frontend 目录运行时）
+    candidates.push(path.join(process.cwd(), '.keys', 'internal-jwt-private.pem'))
+    for (const f of candidates) {
+      try {
+        if (fs.existsSync(f)) {
+          privateKey = fs.readFileSync(f, 'utf8')
+          break
+        }
+      } catch {}
+    }
+  }
   if (!privateKey) return null
 
   const iss = process.env.INTERNAL_JWT_ISS || 'autoads-next'
@@ -72,4 +92,3 @@ export function ensureRequestId(headers: Headers): string {
   headers.set('x-request-id', id)
   return id
 }
-

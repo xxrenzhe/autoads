@@ -19,6 +19,65 @@ NEXTJS_PORT="${NEXTJS_PORT:-3000}"
 PUPPETEER_EXECUTOR_PORT="${PUPPETEER_EXECUTOR_PORT:-8081}"
 ADSCENTER_EXECUTOR_PORT="${ADSCENTER_EXECUTOR_PORT:-8082}"
 
+# 生成内部JWT密钥对（若未设置），供 Next 签发、Go 验签
+ensure_internal_jwt_keys() {
+  # 若两端都已经设置，则跳过
+  if [ -n "$INTERNAL_JWT_PRIVATE_KEY" ] && [ -n "$INTERNAL_JWT_PUBLIC_KEY" ]; then
+    return 0
+  fi
+
+  KEYS_DIR="/app/.keys"
+  PRIV_FILE="$KEYS_DIR/internal-jwt-private.pem"
+  PUB_FILE="$KEYS_DIR/internal-jwt-public.pem"
+  mkdir -p "$KEYS_DIR" || true
+
+  # 优先尝试 openssl 生成
+  if command -v openssl >/dev/null 2>&1; then
+    if [ ! -f "$PRIV_FILE" ] || [ ! -f "$PUB_FILE" ]; then
+      echo "[entrypoint] 未检测到 INTERNAL_JWT_*，使用 openssl 自动生成 RSA 密钥对 (2048)"
+      openssl genrsa -out "$PRIV_FILE" 2048 >/dev/null 2>&1 || true
+      # 兼容 Go 端验签（SPKI 公钥）
+      [ -f "$PRIV_FILE" ] && openssl rsa -in "$PRIV_FILE" -pubout -out "$PUB_FILE" >/dev/null 2>&1 || true
+    fi
+  fi
+
+  # 若仍未生成成功，使用 node:crypto 生成
+  if [ ! -f "$PRIV_FILE" ] || [ ! -f "$PUB_FILE" ]; then
+    if command -v node >/dev/null 2>&1; then
+      echo "[entrypoint] 使用 node:crypto 自动生成内部JWT密钥对"
+      node -e '
+        const { generateKeyPairSync } = require("crypto");
+        const { privateKey, publicKey } = generateKeyPairSync("rsa", {
+          modulusLength: 2048,
+          publicKeyEncoding: { type: "spki", format: "pem" },
+          privateKeyEncoding: { type: "pkcs1", format: "pem" },
+        });
+        const fs = require("fs");
+        fs.mkdirSync("/app/.keys", { recursive: true });
+        fs.writeFileSync("/app/.keys/internal-jwt-private.pem", privateKey);
+        fs.writeFileSync("/app/.keys/internal-jwt-public.pem", publicKey);
+      ' || true
+    fi
+  fi
+
+  # 注入到环境变量（仅当未显式设置时）
+  if [ -z "$INTERNAL_JWT_PRIVATE_KEY" ] && [ -f "$PRIV_FILE" ]; then
+    export INTERNAL_JWT_PRIVATE_KEY="$(cat "$PRIV_FILE")"
+    echo "[entrypoint] INTERNAL_JWT_PRIVATE_KEY 已自动注入（临时，容器内存储于 $PRIV_FILE）"
+  fi
+  if [ -z "$INTERNAL_JWT_PUBLIC_KEY" ] && [ -f "$PUB_FILE" ]; then
+    export INTERNAL_JWT_PUBLIC_KEY="$(cat "$PUB_FILE")"
+    echo "[entrypoint] INTERNAL_JWT_PUBLIC_KEY 已自动注入（临时，容器内存储于 $PUB_FILE）"
+  fi
+
+  # 生产环境提示：建议显式配置并持久化
+  if [ -n "$NEXT_PUBLIC_DEPLOYMENT_ENV" ] || [ "$NODE_ENV" = "production" ]; then
+    if [ -n "$INTERNAL_JWT_PRIVATE_KEY" ] && [ -n "$INTERNAL_JWT_PUBLIC_KEY" ]; then
+      echo "[entrypoint] ⚠️ 提醒：生产环境建议通过平台密钥/配置中心显式下发 INTERNAL_JWT_PRIVATE_KEY / INTERNAL_JWT_PUBLIC_KEY，以保证稳定性和可轮转性"
+    fi
+  fi
+}
+
 # 打印 Go 二进制版本信息，便于部署时核对镜像是否最新
 if [ -x "/app/gofly_admin_v3/server" ]; then
   echo "[entrypoint] Go server version info:"
@@ -273,6 +332,23 @@ if [ -f "$APP_DIR/resource/config.yaml.template" ]; then
 fi
 
 # 在启动 Next 之前，尝试自动修正 Prisma 的 DATABASE_URL，避免迁移与运行时连接到系统库
+ensure_internal_jwt_keys || true
+# 自动生成管理端 JWT 对称密钥（若未设置）
+ensure_admin_jwt_secret() {
+  if [ -n "$JWT_SECRET" ] || [ -n "$AUTH_SECRET" ]; then
+    return 0
+  fi
+  # 生成 48 字节随机 key（base64），用于 HS256 签名
+  if command -v openssl >/dev/null 2>&1; then
+    export JWT_SECRET="$(openssl rand -base64 48 2>/dev/null | tr -d '\n' || echo autoads-$(date +%s)-$RANDOM)"
+  elif command -v node >/dev/null 2>&1; then
+    export JWT_SECRET="$(node -e "console.log(require('crypto').randomBytes(48).toString('base64'))" 2>/dev/null)"
+  else
+    export JWT_SECRET="autoads-$(date +%s)-$RANDOM-$RANDOM-$RANDOM"
+  fi
+  echo "[entrypoint] JWT_SECRET 未设置，已自动生成随机密钥（仅当前实例有效）。生产建议显式配置并支持轮转。"
+}
+ensure_admin_jwt_secret || true
 auto_fix_prisma_url || true
 
 # 自动设置 NextAuth URL，避免回落到 localhost 导致 Google OAuth 回调不匹配
