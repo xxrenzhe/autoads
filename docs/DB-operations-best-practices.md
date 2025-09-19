@@ -11,7 +11,7 @@ DB Operations Best Practices (MySQL)
 - Migrations & Seed
   - All schema changes via Prisma migrations; no ad-hoc SQL in code.
   - Default data via Prisma seed (idempotent upsert). Any change to defaults → update seed + add unique constraints.
-  - Use `prisma.config.ts` to centralize schema/seed paths; avoid deprecated `package.json#prisma`.
+  - Use `prisma.config.js` to centralize schema/seed paths; avoid deprecated `package.json#prisma`.
   - Use `prisma validate` + CI `db-check.js` to fail fast on PR.
 
 - Partitioning & Large Tables

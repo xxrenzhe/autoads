@@ -224,8 +224,8 @@ git push origin production  # 触发生产环境构建
 - 生产默认跳过 Go 基线初始化（由 Prisma seed 完成）：`GO_SEED_ON_START=false`（开发默认 true）。
   - 严格只读默认开启：`GO_SEED_STRICT_READONLY=true`（所有环境默认，仅当 `GO_SEED_ALLOW_WRITE=true` 或 `DEV_SEED_WRITE=true` 时才允许 Go 写入种子）。
 
-### Prisma 配置（prisma.config.ts）
-- 我们使用 `apps/frontend/prisma.config.ts` 管理 Prisma 配置（替代已弃用的 `package.json#prisma`）。
+### Prisma 配置（prisma.config.js）
+- 我们使用 `apps/frontend/prisma.config.js` 管理 Prisma 配置（替代已弃用的 `package.json#prisma`）。
 - 主要内容：
   - `schema: 'prisma/schema.prisma'`
   - `seed: 'node prisma/seed.js'`
