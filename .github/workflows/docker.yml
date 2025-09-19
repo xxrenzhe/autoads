@@ -117,8 +117,8 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install frontend deps (prisma)
-        run: npm ci --workspace apps/frontend
+      - name: Install dependencies (root workspaces)
+        run: npm ci --workspaces --include-workspace-root --ignore-scripts
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -126,6 +126,11 @@ jobs:
           go-version: '1.23.x'
           cache: true
           cache-dependency-path: gofly_admin_v3/go.sum
+
+      - name: Generate Prisma Client (root)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+        run: npx prisma generate --schema apps/frontend/prisma/schema.prisma
 
       - name: Build Go migrate binary (minimal)
         run: |
