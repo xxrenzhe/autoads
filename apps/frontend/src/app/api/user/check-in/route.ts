@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireIdempotencyKey } from '@/lib/utils/idempotency';
+import { ensureNextWriteAllowed } from '@/lib/utils/writes-guard'
+import { forwardToGo } from '@/lib/bff/forward'
 import { auth } from '@/lib/auth/v5-config';
 import { prisma } from '@/lib/db';
 import { Logger } from '@/lib/core/Logger';
@@ -184,6 +187,16 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    requireIdempotencyKey(request as any)
+
+    // Try Go first via BFF; if available, prefer server-side authoritative implementation
+    try {
+      const resp = await forwardToGo(request as any, { targetPath: '/api/checkin/perform', method: 'POST', appendSearch: false })
+      if (resp.ok) return resp
+    } catch {}
+
+    // Fallback to Next-side implementation (guarded in prod unless explicitly enabled)
+    ensureNextWriteAllowed()
     const session = await auth();
     if (!session?.userId) {
       return NextResponse.json(
@@ -324,14 +337,15 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    const status = (error as any)?.status || 500
     logger.error('Failed to perform check-in:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to perform check-in',
+        error: status === 400 ? 'Missing Idempotency-Key header' : 'Failed to perform check-in',
         message: error instanceof Error ? error.message : "Unknown error" as any,
       },
-      { status: 500 }
+      { status }
     );
   }
 }

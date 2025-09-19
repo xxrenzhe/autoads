@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { $Enums } from '@prisma/client';
+import { $Enums, Prisma } from '@prisma/client';
 
 type TokenType = $Enums.TokenType;
 
@@ -46,18 +46,22 @@ export class TokenTransactionService {
   /**
    * Record a token transaction
    */
-  static async recordTransaction(params: {
-    userId: string
-    type: TokenType
-    amount: number
-    balanceBefore: number
-    balanceAfter: number
-    source: string
-    description?: string
-    metadata?: any
-  }): Promise<TokenTransactionRecord> {
+  static async recordTransaction(
+    params: {
+      userId: string
+      type: TokenType
+      amount: number
+      balanceBefore: number
+      balanceAfter: number
+      source: string
+      description?: string
+      metadata?: any
+    },
+    tx?: Prisma.TransactionClient
+  ): Promise<TokenTransactionRecord> {
     try {
-      const transaction = await prisma.tokenTransaction.create({
+      const client = (tx ?? prisma) as Prisma.TransactionClient | typeof prisma
+      const transaction = await client.tokenTransaction.create({
         data: {
           userId: params.userId,
           type: params.type,

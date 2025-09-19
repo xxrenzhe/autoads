@@ -13,6 +13,7 @@ import TokenAdjust from '../views/admin/TokenAdjust.vue'
 import TokenTransactions from '../views/admin/TokenTransactions.vue'
 import AdminAccounts from '../views/admin/AdminAccounts.vue'
 import Monitoring from '../views/admin/Monitoring.vue'
+import OrphanReports from '../views/admin/OrphanReports.vue'
 
 // 占位页面
 const Placeholder = (name) => ({
@@ -39,6 +40,7 @@ const routes = [
   { path: '/console/tokens/transactions', component: TokenTransactions },
 
   { path: '/console/monitoring', component: Monitoring },
+  { path: '/console/consistency/orphans', component: OrphanReports },
   { path: '/console/admins', component: AdminAccounts },
   { path: '/console/roles', component: Placeholder('角色权限') },
 ]

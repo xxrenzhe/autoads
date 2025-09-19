@@ -42,21 +42,15 @@ export async function recordTokenUsage(options: TokenUsageOptions) {
 
     // 使用事务确保数据一致性
     const result = await prisma.$transaction(async (tx) => {
-      // 扣除用户Token余额
-      const updatedUser = await tx.user.update({
-        where: { id: options.userId },
-        data: {
-          tokenBalance: {
-            decrement: options.tokensUsed
-          },
-          tokenUsedThisMonth: {
-            increment: options.tokensUsed
-          }
-        }
-      })
+      // 原子扣减（余额足够才扣减）
+      const affected: number = await tx.$executeRaw`UPDATE users SET tokenBalance = tokenBalance - ${options.tokensUsed}, tokenUsedThisMonth = tokenUsedThisMonth + ${options.tokensUsed} WHERE id = ${options.userId} AND tokenBalance >= ${options.tokensUsed}`
+      if (!affected || affected === 0) {
+        throw new Error('Insufficient token balance')
+      }
 
-      // 记录Token使用日志
-      const remainingBalance = updatedUser.tokenBalance
+      // 扣减后读取当前余额
+      const after = await tx.user.findUnique({ where: { id: options.userId }, select: { tokenBalance: true } })
+      const remainingBalance = after?.tokenBalance ?? 0
       
       // 获取用户的订阅信息
       const userWithSubscription = await tx.user.findUnique({
@@ -146,51 +140,57 @@ export async function recordBatchTokenUsage(
 
     // 使用事务处理
     const result = await prisma.$transaction(async (tx) => {
-      // 更新用户Token余额
-      const updatedUser = await tx.user.update({
+      // 原子扣减批量 Token
+      const affected: number = await tx.$executeRaw`UPDATE users SET tokenBalance = tokenBalance - ${totalTokens}, tokenUsedThisMonth = tokenUsedThisMonth + ${totalTokens} WHERE id = ${userId} AND tokenBalance >= ${totalTokens}`
+      if (!affected || affected === 0) {
+        throw new Error('Insufficient token balance')
+      }
+
+      // 本次事务内获取订阅与余额
+      const userSub = await tx.user.findUnique({
         where: { id: userId },
-        data: {
-          tokenBalance: {
-            decrement: totalTokens
-          },
-          tokenUsedThisMonth: {
-            increment: totalTokens
-          }
+        select: {
+          tokenBalance: true,
+          subscriptions: { where: { status: 'ACTIVE' }, select: { planId: true }, orderBy: { createdAt: 'desc' }, take: 1 }
         }
       })
+      const finalBalance = userSub?.tokenBalance ?? 0
+      const planId = userSub?.subscriptions?.[0]?.planId || ''
 
-      // 批量创建使用记录
-      let remainingTokens = updatedUser.tokenBalance
-      const planId = user.subscriptions?.[0]?.planId || ''
+      // 为每个子项构造 tokensRemaining（从最终余额反推）
+      const tokensRemainingList: number[] = new Array(items.length)
+      let running = finalBalance
+      for (let i = items.length - 1; i >= 0; i--) {
+        tokensRemainingList[i] = running
+        running += items[i].tokensUsed
+      }
+
       const usageRecords = await tx.token_usage.createMany({
-        data: items.map((item, index: any) => {
-          remainingTokens -= item.tokensUsed
-          return {
-            userId,
-            feature: (feature === 'ADSCENTER' ? (('CHAN' + 'GELINK') as any) : (feature as any)),
-            operation,
-            tokensConsumed: item.tokensUsed,
-            tokensRemaining: remainingTokens,
-            planId,
-            itemCount: 1,
-            metadata: {
-              ...(item.metadata || {}),
-              description: item.description || `${operation} - ${feature} (${index + 1}/${items.length})`
-            },
-            isBatch: true,
-            batchId
-          }
-        })
+        data: items.map((item, index: number) => ({
+          userId,
+          feature: (feature === 'ADSCENTER' ? (('CHAN' + 'GELINK') as any) : (feature as any)),
+          operation,
+          tokensConsumed: item.tokensUsed,
+          tokensRemaining: tokensRemainingList[index],
+          planId,
+          itemCount: 1,
+          metadata: {
+            ...(item.metadata || {}),
+            description: item.description || `${operation} - ${feature} (${index + 1}/${items.length})`
+          },
+          isBatch: true,
+          batchId
+        }))
       })
 
-      // 创建批次汇总记录
+      // 创建批次汇总记录（余量=最终余额）
       await tx.token_usage.create({
         data: {
           userId,
           feature: (feature === 'ADSCENTER' ? (('CHAN' + 'GELINK') as any) : (feature as any)),
           operation,
           tokensConsumed: totalTokens,
-          tokensRemaining: updatedUser.tokenBalance,
+          tokensRemaining: finalBalance,
           planId,
           itemCount: items.length,
           metadata: {
@@ -204,7 +204,7 @@ export async function recordBatchTokenUsage(
         }
       })
 
-      return { updatedUser, batchId, recordCount: usageRecords.count }
+      return { updatedUser: { tokenBalance: finalBalance } as any, batchId, recordCount: usageRecords.count }
     })
 
     return {

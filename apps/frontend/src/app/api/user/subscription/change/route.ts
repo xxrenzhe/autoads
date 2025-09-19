@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/v5-config'
 import { SubscriptionService } from '@/lib/services/subscription-service'
+import { requireIdempotencyKey } from '@/lib/utils/idempotency'
+import { ensureNextWriteAllowed } from '@/lib/utils/writes-guard'
+import { forwardToGo } from '@/lib/bff/forward'
 import { errorResponse, successResponse, ResponseCode } from '@/lib/api/response'
 
 /**
@@ -36,6 +39,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    requireIdempotencyKey(request as any)
     const session = await auth()
     
     if (!session?.user?.id) {
@@ -49,12 +53,13 @@ export async function POST(request: NextRequest) {
       return errorResponse('New plan ID is required', 'BAD_REQUEST')
     }
 
-    const result = await SubscriptionService.createSubscriptionChange(
-      session.user.id,
-      newPlanId,
-      billingCycle
-    )
+    try {
+      const resp = await forwardToGo(new Request(request.url, { method: 'POST', headers: request.headers, body: JSON.stringify({ new_plan_id: newPlanId, billing_cycle: billingCycle }) }), { targetPath: '/api/v1/user/subscription/change', method: 'POST', appendSearch: false })
+      if (resp.ok) return resp
+    } catch {}
 
+    ensureNextWriteAllowed()
+    const result = await SubscriptionService.createSubscriptionChange(session.user.id, newPlanId, billingCycle)
     return successResponse(result, 'Subscription change created')
   } catch (error) {
     console.error('Error creating subscription change:', error)

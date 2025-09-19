@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/v5-config';
 import { prisma } from '@/lib/db';
+import { requireIdempotencyKey } from '@/lib/utils/idempotency';
 import { Logger } from '@/lib/core/Logger';
 
 const logger = new Logger('USER-PROFILE-ROUTE');
@@ -141,6 +142,9 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
+    requireIdempotencyKey(request as any)
+    const { ensureNextWriteAllowed } = await import('@/lib/utils/writes-guard')
+    ensureNextWriteAllowed()
     const session = await auth();
     if (!session?.userId) {
       return NextResponse.json(

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/v5-config';
 import { prisma } from '@/lib/db';
+import { requireIdempotencyKey } from '@/lib/utils/idempotency';
+import { ensureNextWriteAllowed } from '@/lib/utils/writes-guard'
 
 /**
  * POST /api/payment/create-checkout-session
@@ -8,6 +10,8 @@ import { prisma } from '@/lib/db';
  */
 export async function POST(request: NextRequest) {
   try {
+    ensureNextWriteAllowed()
+    requireIdempotencyKey(request as any)
     const session = await auth();
     
     if (!session?.userId) {

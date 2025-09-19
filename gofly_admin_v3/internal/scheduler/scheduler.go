@@ -494,6 +494,8 @@ func (s *Scheduler) RegisterOptimizationJobs() {
     _ = s.AddJob(&CronJob{ Job: &CleanupIdempotencyAndTasksJob{}, Schedule: "0 0 * * * *", Enabled: true, Description: "Cleanup idempotency requests", Timeout: 2 * time.Minute })
     // 日报（每日 01:00）
     _ = s.AddJob(&CronJob{ Job: &DailyUsageReportJob{}, Schedule: "0 0 1 * * *", Enabled: true, Description: "Generate daily usage report", Timeout: 5 * time.Minute })
+    // 孤儿巡检（每日 02:30）：仅扫描与告警，不做删除
+    _ = s.AddJob(&CronJob{ Job: &OrphanInspectionJob{}, Schedule: "0 30 2 * * *", Enabled: true, Description: "Inspect orphaned rows and report", Timeout: 2 * time.Minute })
 }
 
 // JobContext 任务上下文

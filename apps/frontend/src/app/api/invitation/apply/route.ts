@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { InvitationService } from '@/lib/services/invitation-service';
+import { requireIdempotencyKey } from '@/lib/utils/idempotency';
+import { forwardToGo } from '@/lib/bff/forward';
 import { auth } from '@/lib/auth';
 
 /**
@@ -8,6 +10,7 @@ import { auth } from '@/lib/auth';
  */
 export async function POST(request: NextRequest) {
   try {
+    requireIdempotencyKey(request as any)
     // Check if user is authenticated
     const session = await auth();
     
@@ -28,11 +31,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Apply the invitation
-    const result = await InvitationService.acceptInvitation(
-      invitationCode,
-      session.user.id
-    );
+    // Prefer Go authoritative path if present
+    try {
+      const resp = await forwardToGo(request as any, { targetPath: '/api/invitation/process', method: 'POST', appendSearch: false })
+      if (resp.ok) return resp
+    } catch {}
+
+    // Fallback to Next-side service
+    const result = await InvitationService.acceptInvitation(invitationCode, session.user.id);
 
     if (result.success) {
       return NextResponse.json({

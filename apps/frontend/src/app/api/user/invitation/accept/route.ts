@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireIdempotencyKey } from '@/lib/utils/idempotency';
+import { ensureNextWriteAllowed } from '@/lib/utils/writes-guard'
 import { auth } from '@/lib/auth/v5-config';
 import { prisma } from '@/lib/db';
 import { Logger } from '@/lib/core/Logger';
@@ -10,6 +12,8 @@ const logger = new Logger('USER-INVITATION-ACCEPT-ROUTE');
  */
 export async function POST(request: NextRequest) {
   try {
+    ensureNextWriteAllowed()
+    requireIdempotencyKey(request as any)
     const session = await auth();
     if (!session?.userId || !session.user?.email) {
       return NextResponse.json(

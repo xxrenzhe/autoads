@@ -1,5 +1,7 @@
 import { tokenConfigService } from '@/lib/services/token-config'
 import { prisma } from '@/lib/prisma'
+import { TokenTransactionService } from '@/lib/services/token-transaction-service'
+import { Prisma } from '@prisma/client'
 
 /**
  * Utility functions to integrate token consumption into existing features
@@ -243,29 +245,28 @@ export async function refundTokens(
   tokensToRefund: number,
   reason: string
 ): Promise<void> {
-  // Update user balance
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      tokenBalance: {
-        increment: tokensToRefund
-      }
-    }
-  })
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const before = await tx.user.findUnique({ where: { id: userId }, select: { tokenBalance: true } })
+    const beforeBal = before?.tokenBalance ?? 0
 
-  // Record the refund transaction
-  await prisma.tokenTransaction.create({
-    data: {
+    await tx.user.update({
+      where: { id: userId },
+      data: { tokenBalance: { increment: tokensToRefund } }
+    })
+
+    await TokenTransactionService.recordTransaction({
       userId,
-      type: 'REFUND',
+      type: 'REFUND' as any,
       amount: tokensToRefund,
+      balanceBefore: beforeBal,
+      balanceAfter: beforeBal + tokensToRefund,
+      source: 'token_refund',
       description: `Token refund: ${reason}`,
-      status: 'COMPLETED',
       metadata: {
         feature,
         reason,
         refundedAt: new Date().toISOString()
       }
-    }
+    }, tx)
   })
 }

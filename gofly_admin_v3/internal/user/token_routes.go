@@ -28,6 +28,7 @@ func SetupTokenRoutes(router *gin.Engine, db *gorm.DB, authMiddleware interface{
 
 		// Token消费
 		tokenGroup.POST("/consume", tokenController.ConsumeTokens)
+		tokenGroup.POST("/consume-exact", tokenController.ConsumeExact)
 		tokenGroup.GET("/check", tokenController.CheckSufficiency)
 
 		// Token购买

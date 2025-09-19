@@ -1,8 +1,13 @@
 package user
 
 import (
-	"errors"
-	"fmt"
+    "errors"
+    "fmt"
+    "strings"
+    "sync"
+    "time"
+
+    "gofly-admin-v3/utils/gf"
 )
 
 // TokenConsumptionRule Token消费规则
@@ -26,16 +31,85 @@ type RechargePackage struct {
 
 // TokenConfigService Token配置服务
 type TokenConfigService struct {
-	consumptionRules []TokenConsumptionRule
-	rechargePackages []RechargePackage
+    consumptionRules []TokenConsumptionRule
+    rechargePackages []RechargePackage
+    // fast lookup index: key = service|action
+    mu    sync.RWMutex
+    rules map[string]TokenConsumptionRule
+    // optional TTL reload (defensive)
+    lastLoaded time.Time
+    ttl        time.Duration
 }
 
 // NewTokenConfigService 创建Token配置服务
 func NewTokenConfigService() *TokenConfigService {
-	return &TokenConfigService{
-		consumptionRules: getDefaultConsumptionRules(),
-		rechargePackages: getDefaultRechargePackages(),
-	}
+    s := &TokenConfigService{
+        consumptionRules: getDefaultConsumptionRules(),
+        rechargePackages: getDefaultRechargePackages(),
+        rules:            map[string]TokenConsumptionRule{},
+        ttl:              5 * time.Minute,
+    }
+    s.rebuildRuleIndex(s.consumptionRules)
+    // overlay with DB rules (is_active=1)
+    _ = s.reloadFromDB()
+    // subscribe hot reload via Redis
+    go s.subscribeReload()
+    return s
+}
+
+func ruleKey(svc, act string) string { return strings.ToLower(strings.TrimSpace(svc)) + "|" + strings.ToLower(strings.TrimSpace(act)) }
+
+func (s *TokenConfigService) rebuildRuleIndex(rules []TokenConsumptionRule) {
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    idx := make(map[string]TokenConsumptionRule, len(rules))
+    for _, r := range rules {
+        idx[ruleKey(r.Service, r.Action)] = r
+    }
+    s.rules = idx
+    s.lastLoaded = time.Now()
+}
+
+func (s *TokenConfigService) reloadFromDB() error {
+    db := gf.DB()
+    if db == nil { return nil }
+    rows, err := db.Model("token_consumption_rules").Where("is_active = 1").Order("service, action").All()
+    if err != nil { return err }
+    // start from defaults, overlay DB
+    base := getDefaultConsumptionRules()
+    // overlay map
+    m := make(map[string]TokenConsumptionRule, len(base)+len(rows))
+    for _, r := range base { m[ruleKey(r.Service, r.Action)] = r }
+    for _, row := range rows {
+        svc := strings.ToLower(strings.TrimSpace(row["service"].String()))
+        act := strings.ToLower(strings.TrimSpace(row["action"].String()))
+        m[ruleKey(svc, act)] = TokenConsumptionRule{
+            Service:     svc,
+            Action:      act,
+            TokenCost:   row["token_cost"].Int(),
+            Description: row["description"].String(),
+        }
+    }
+    // flatten back to slice (optional)
+    list := make([]TokenConsumptionRule, 0, len(m))
+    for _, v := range m { list = append(list, v) }
+    s.consumptionRules = list
+    s.rebuildRuleIndex(list)
+    return nil
+}
+
+func (s *TokenConfigService) subscribeReload() {
+    r := gf.Redis(); if r == nil { return }
+    conn, _, err := r.GroupPubSub().Subscribe(nil, "token:rules:update")
+    if err != nil { return }
+    for {
+        _, err := conn.ReceiveMessage(nil)
+        if err == nil {
+            _ = s.reloadFromDB()
+        } else {
+            time.Sleep(100 * time.Millisecond)
+        }
+    }
 }
 
 // getDefaultConsumptionRules 获取默认消费规则
@@ -130,17 +204,23 @@ func getDefaultRechargePackages() []RechargePackage {
 
 // GetConsumptionRule 获取消费规则
 func (s *TokenConfigService) GetConsumptionRule(service, action string) (*TokenConsumptionRule, error) {
-	for _, rule := range s.consumptionRules {
-		if rule.Service == service && rule.Action == action {
-			return &rule, nil
-		}
-	}
-	return nil, fmt.Errorf("未找到服务 %s 操作 %s 的消费规则", service, action)
+    // defensive TTL reload
+    if time.Since(s.lastLoaded) > s.ttl { _ = s.reloadFromDB() }
+    s.mu.RLock(); defer s.mu.RUnlock()
+    if r, ok := s.rules[ruleKey(service, action)]; ok {
+        return &r, nil
+    }
+    return nil, fmt.Errorf("未找到服务 %s 操作 %s 的消费规则", service, action)
 }
 
 // GetAllConsumptionRules 获取所有消费规则
 func (s *TokenConfigService) GetAllConsumptionRules() []TokenConsumptionRule {
-	return s.consumptionRules
+    if time.Since(s.lastLoaded) > s.ttl { _ = s.reloadFromDB() }
+    s.mu.RLock(); defer s.mu.RUnlock()
+    // return stable snapshot
+    out := make([]TokenConsumptionRule, 0, len(s.rules))
+    for _, v := range s.rules { out = append(out, v) }
+    return out
 }
 
 // GetRechargePackage 获取充值包

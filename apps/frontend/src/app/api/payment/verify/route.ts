@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth/v5-config';
 import { prisma } from '@/lib/db';
 import { TokenService } from '@/lib/services/token-service';
 import { TokenTransactionService } from '@/lib/services/token-transaction-service';
+import { requireIdempotencyKey } from '@/lib/utils/idempotency';
+import { ensureNextWriteAllowed } from '@/lib/utils/writes-guard'
+import { forwardToGo } from '@/lib/bff/forward'
 
 /**
  * POST /api/payment/verify
@@ -10,6 +13,8 @@ import { TokenTransactionService } from '@/lib/services/token-transaction-servic
  */
 export async function POST(request: NextRequest) {
   try {
+    // enforce idempotency header for write endpoint
+    requireIdempotencyKey(request as any)
     const session = await auth();
     
     if (!session?.userId) {
@@ -54,11 +59,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // In a real implementation, you would verify the payment with the payment provider
-    // For demo purposes, we'll simulate successful payment
-    
+    // Prefer Go authoritative verify (token purchase)
+    try {
+      const resp = await forwardToGo(new Request(request.url, { method: 'POST', headers: request.headers, body: JSON.stringify({ purchase_id: purchaseId, payment_method: paymentMethod }) }), { targetPath: '/api/v1/payments/token-purchase/verify', method: 'POST', appendSearch: false })
+      if (resp.ok) return resp
+    } catch {}
+
+    // Fallback to Next-side implementation (dev only)
+    ensureNextWriteAllowed()
     // Start transaction
     const result = await prisma.$transaction(async (tx) => {
+      // Snapshot user's balance inside the transaction for consistency
+      const userBefore = await tx.user.findUnique({
+        where: { id: purchase.userId },
+        select: { tokenBalance: true }
+      })
+
       // Update purchase status
       await tx.tokenPurchase.update({
         where: { id: purchaseId },
@@ -81,13 +97,17 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        // Record token transaction
+        // Compute balances using the snapshot to ensure atomicity in records
+        const balanceBefore = userBefore?.tokenBalance ?? 0
+        const balanceAfter = balanceBefore + purchase.tokens
+
+        // Record token transaction within the same transaction
         await TokenTransactionService.recordTransaction({
           userId: purchase.userId,
           type: 'PURCHASED',
           amount: purchase.tokens,
-          balanceBefore: purchase.user.tokenBalance,
-          balanceAfter: purchase.user.tokenBalance + purchase.tokens,
+          balanceBefore,
+          balanceAfter,
           source: 'token_purchase',
           description: `Token purchase: ${purchase.provider}`,
           metadata: {
@@ -95,7 +115,7 @@ export async function POST(request: NextRequest) {
             paymentMethod,
             amount: purchase.amount
           }
-        });
+        }, tx);
       }
 
       // Credit bonus tokens if any (from request metadata)
@@ -114,19 +134,21 @@ export async function POST(request: NextRequest) {
         });
 
         // Record bonus transaction
+        const bonusBefore = (userBefore?.tokenBalance ?? 0) + (purchase.tokens || 0)
+        const bonusAfter = bonusBefore + bonusTokens
         await TokenTransactionService.recordTransaction({
           userId: purchase.userId,
           type: 'BONUS',
           amount: bonusTokens,
-          balanceBefore: purchase.user.tokenBalance + purchase.tokens,
-          balanceAfter: purchase.user.tokenBalance + purchase.tokens + bonusTokens,
+          balanceBefore: bonusBefore,
+          balanceAfter: bonusAfter,
           source: 'purchase_bonus',
           description: `Purchase bonus: ${purchase.provider}`,
           metadata: {
             purchaseId: purchase.id,
             originalPurchase: purchase.tokens
           }
-        });
+        }, tx);
       }
 
       return {
@@ -138,10 +160,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
+    const status = (error as any)?.status || 500
     console.error('Payment verification error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: (status === 400 ? 'Missing Idempotency-Key header' : 'Internal server error') },
+      { status }
     );
   }
 }

@@ -75,13 +75,39 @@ func adminListTransactions(c *gin.Context) {
 // Rules management
 func listRulesHandler(c *gin.Context) {
     if !adminOnly(c) { return }
-    service := c.Query("service"); action := c.Query("action")
-    q := gf.DB().Model("token_consumption_rules").Where("is_active=1")
-    if service != "" { q = q.Where("service=?", strings.ToLower(service)) }
-    if action != "" { q = q.Where("action=?", strings.ToLower(action)) }
-    list, err := q.Order("service, action").All()
+    // Filters: status=active|inactive|all (default active), service, action; pagination
+    status := strings.ToLower(strings.TrimSpace(c.Query("status")))
+    service := strings.ToLower(strings.TrimSpace(c.Query("service")))
+    action := strings.ToLower(strings.TrimSpace(c.Query("action")))
+    page, _ := strconv.Atoi(c.Query("page")); if page <= 0 { page = 1 }
+    size, _ := strconv.Atoi(c.Query("pageSize")); if size <= 0 || size > 200 { size = 20 }
+
+    q := gf.DB().Model("token_consumption_rules")
+    switch status {
+    case "inactive":
+        q = q.Where("is_active = 0")
+    case "all":
+        // no filter
+    default:
+        q = q.Where("is_active = 1")
+        status = "active"
+    }
+    if service != "" { q = q.Where("service = ?", service) }
+    if action != "" { q = q.Where("action = ?", action) }
+
+    total, err := q.Count()
     if err != nil { gf.Failed().SetMsg(err.Error()).Regin(c); return }
-    gf.Success().SetData(list).Regin(c)
+    list, err := q.Offset((page-1)*size).Limit(size).Order("service, action").All()
+    if err != nil { gf.Failed().SetMsg(err.Error()).Regin(c); return }
+
+    gf.Success().SetData(gf.Map{
+        "list": list,
+        "total": total,
+        "page": page,
+        "pageSize": size,
+        "status": status,
+        "filters": gf.Map{"service": service, "action": action},
+    }).Regin(c)
 }
 
 func upsertRuleHandler(c *gin.Context) {
@@ -95,6 +121,7 @@ func upsertRuleHandler(c *gin.Context) {
     _, err := gf.DB().Exec(gf.Ctx(nil), "INSERT INTO token_consumption_rules(service,action,token_cost,is_active) VALUES(?,?,?,1) ON DUPLICATE KEY UPDATE token_cost=VALUES(token_cost), is_active=1", req.Service, req.Action, req.TokenCost)
     if err != nil { gf.Failed().SetMsg(err.Error()).Regin(c); return }
     _ = cache.GetCache().Delete("token:rule:" + req.Service + ":" + req.Action)
+    if gf.Redis() != nil { _, _ = gf.Redis().GroupPubSub().Publish(c, "token:rules:update", req.Service+":"+req.Action) }
     gf.Success().SetMsg("规则已更新").Regin(c)
 }
 
@@ -115,6 +142,7 @@ func deleteRuleHandler(c *gin.Context) {
     if !adminOnly(c) { return }
     id := c.Param("id")
     if _, err := gf.DB().Model("token_consumption_rules").Where("id", id).Update(gf.Map{"is_active": false}); err != nil { gf.Failed().SetMsg(err.Error()).Regin(c); return }
+    if gf.Redis() != nil { _, _ = gf.Redis().GroupPubSub().Publish(c, "token:rules:update", id) }
     gf.Success().SetMsg("规则已禁用").Regin(c)
 }
 

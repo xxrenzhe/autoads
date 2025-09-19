@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { $Enums } from '@prisma/client';
+import { $Enums, Prisma } from '@prisma/client';
 import { TokenTransactionService } from './token-transaction-service';
 
 type TokenType = $Enums.TokenType;
@@ -51,47 +51,34 @@ export class TokenExpirationService {
       }
     }
 
-    // Update user's token balance
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    });
+    // Atomic add + transaction record
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // read balance before within tx
+      const beforeRow = await tx.user.findUnique({ where: { id: userId }, select: { tokenBalance: true } })
+      if (!beforeRow) throw new Error('User not found');
+      const balanceBefore = beforeRow.tokenBalance || 0
 
-    if (!user) {
-      throw new Error('User not found');
-    }
+      await tx.user.update({
+        where: { id: userId },
+        data: { tokenBalance: { increment: amount } }
+      })
 
-    // Use unified token balance field
-    const updateData = {
-      tokenBalance: {
-        increment: amount
-      }
-    };
-
-    // Get balance before update
-    const balanceBefore = user.tokenBalance || 0;
-
-    // Update user balance
-    await prisma.user.update({
-      where: { id: userId },
-      data: updateData
-    });
-
-    // Record token acquisition transaction with expiration info
-    await TokenTransactionService.recordTransaction({
-      userId,
-      type,
-      amount,
-      balanceBefore,
-      balanceAfter: balanceBefore + amount,
-      source: metadata?.source || 'token_addition',
-      description: metadata?.description || `Added ${type} tokens`,
-      metadata: {
-        ...metadata,
-        expiresAt: finalExpiresAt,
-        tokenSource: type,
-        hasExpiration: !!finalExpiresAt
-      }
-    });
+      await TokenTransactionService.recordTransaction({
+        userId,
+        type,
+        amount,
+        balanceBefore,
+        balanceAfter: balanceBefore + amount,
+        source: metadata?.source || 'token_addition',
+        description: metadata?.description || `Added ${type} tokens`,
+        metadata: {
+          ...metadata,
+          expiresAt: finalExpiresAt,
+          tokenSource: type,
+          hasExpiration: !!finalExpiresAt
+        }
+      }, tx)
+    })
 
     // Note: Token expiration tracking is handled through metadata in token transactions
     // No separate TokenExpiration model needed for now
@@ -133,32 +120,31 @@ export class TokenExpirationService {
     
     for (const tokenRecord of expiredSubscriptionTokens) {
       try {
-        // Deduct expired subscription tokens from user balance
-        await prisma.user.update({
-          where: { id: tokenRecord.userId },
-          data: {
-            tokenBalance: {
-              decrement: tokenRecord.amount
-            }
-          }
-        });
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+          // read balance before in tx
+          const beforeRow = await tx.user.findUnique({ where: { id: tokenRecord.userId }, select: { tokenBalance: true } })
+          if (!beforeRow) throw new Error('User not found')
+          const balanceBefore = beforeRow.tokenBalance
 
-        // Record the expiration transaction
-        await prisma.tokenTransaction.create({
-          data: {
+          await tx.user.update({
+            where: { id: tokenRecord.userId },
+            data: { tokenBalance: { decrement: tokenRecord.amount } }
+          })
+
+          await TokenTransactionService.recordTransaction({
             userId: tokenRecord.userId,
             type: $Enums.TokenType.SUBSCRIPTION,
             amount: -tokenRecord.amount,
-            balanceBefore: tokenRecord.user.tokenBalance,
-            balanceAfter: tokenRecord.user.tokenBalance - tokenRecord.amount,
+            balanceBefore,
+            balanceAfter: balanceBefore - tokenRecord.amount,
             source: 'subscription_expired',
             description: `Expired subscription tokens removed`,
             metadata: {
               originalTransactionId: tokenRecord.id,
               expiredAt: now.toISOString()
             }
-          }
-        });
+          }, tx)
+        })
 
         processed.push({
           userId: tokenRecord.userId,
@@ -267,24 +253,22 @@ export class TokenExpirationService {
       throw new Error('User not found');
     }
 
-    // Remove subscription tokens from user balance
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        tokenBalance: {
-          decrement: totalToRemove
-        }
-      }
-    });
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const beforeRow = await tx.user.findUnique({ where: { id: userId }, select: { tokenBalance: true } })
+      if (!beforeRow) throw new Error('User not found')
+      const balanceBefore = beforeRow.tokenBalance
 
-    // Record the token removal transaction
-    await prisma.tokenTransaction.create({
-      data: {
+      await tx.user.update({
+        where: { id: userId },
+        data: { tokenBalance: { decrement: totalToRemove } }
+      })
+
+      await TokenTransactionService.recordTransaction({
         userId,
         type: $Enums.TokenType.SUBSCRIPTION,
         amount: -totalToRemove,
-        balanceBefore: user.tokenBalance,
-        balanceAfter: user.tokenBalance - totalToRemove,
+        balanceBefore,
+        balanceAfter: balanceBefore - totalToRemove,
         source: 'subscription_ended',
         description: `Removed ${totalToRemove} subscription tokens (subscription ended)`,
         metadata: {
@@ -292,8 +276,8 @@ export class TokenExpirationService {
           endedAt: new Date().toISOString(),
           removedTokens: totalToRemove
         }
-      }
-    });
+      }, tx)
+    })
 
     console.log(`Removed ${totalToRemove} subscription tokens for user ${userId} (subscription ${subscriptionId} ended)`);
   }

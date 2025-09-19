@@ -23,5 +23,6 @@ func RegisterRoutes(db *gorm.DB) {
     gf.RegisterRoute("GET", base+"/events/data-exports", gin.HandlerFunc(ctrl.GetDataExportEventsHandler), false, []string{})
     // 管理员操作（需要管理员）
     gf.RegisterRoute("GET", base+"/events/admin-actions", gin.HandlerFunc(ctrl.GetAdminActionsHandler), false, []string{"admin"})
+    // 数据一致性 - 孤儿巡检报告（需要管理员）
+    gf.RegisterRoute("GET", base+"/consistency/orphans", gin.HandlerFunc(ctrl.GetOrphanReportsHandler), false, []string{"admin"})
 }
-

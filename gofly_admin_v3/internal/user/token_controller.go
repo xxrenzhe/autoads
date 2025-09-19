@@ -1,11 +1,12 @@
 package user
 
 import (
-	"net/http"
-	"strconv"
+    "net/http"
+    "strconv"
 
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
+    "github.com/gin-gonic/gin"
+    "gorm.io/gorm"
+    appctx "gofly-admin-v3/internal/common/idempotency"
 )
 
 // TokenController Token控制器
@@ -114,6 +115,13 @@ type ConsumeRequest struct {
 	Reference string `json:"reference"`                  // 关联引用
 }
 
+// ConsumeExactRequest 精确消费请求
+type ConsumeExactRequest struct {
+    Amount      int    `json:"amount" binding:"min=1"`
+    Description string `json:"description"`
+    Reference   string `json:"reference"`
+}
+
 // ConsumeTokens 消费Token
 // @Summary 消费Token
 // @Description 根据服务规则消费Token
@@ -125,8 +133,8 @@ type ConsumeRequest struct {
 // @Success 200 {object} gin.H
 // @Router /api/v1/tokens/consume [post]
 func (c *TokenController) ConsumeTokens(ctx *gin.Context) {
-	userID, exists := ctx.Get("user_id")
-	if !exists {
+    userID, exists := ctx.Get("user_id")
+    if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "unauthorized",
 			"message": "用户未认证",
@@ -134,14 +142,15 @@ func (c *TokenController) ConsumeTokens(ctx *gin.Context) {
 		return
 	}
 
-	var req ConsumeRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid_request",
-			"message": err.Error(),
-		})
-		return
-	}
+    var req ConsumeRequest
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, gin.H{
+            "error":   "invalid_request",
+            "message": err.Error(),
+        })
+        return
+    }
+    if !appctx.WithIdempotency(ctx, "tokens.consume") { return }
 
 	// 检查Token是否足够
 	sufficient, balance, cost, err := c.tokenService.CheckTokenSufficiency(
@@ -175,14 +184,43 @@ func (c *TokenController) ConsumeTokens(ctx *gin.Context) {
 		return
 	}
 
-	// 获取消费后的余额
-	newBalance, _ := c.tokenService.GetTokenBalance(userID.(string))
+    // 获取消费后的余额
+    newBalance, _ := c.tokenService.GetTokenBalance(userID.(string))
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"message":         "Token消费成功",
-		"consumed_tokens": cost,
-		"new_balance":     newBalance,
-	})
+    resp := gin.H{"message": "Token消费成功", "consumed_tokens": cost, "new_balance": newBalance}
+    appctx.MarkIdempotentDoneWithResponse(ctx, "tokens.consume", http.StatusOK, resp)
+    ctx.JSON(http.StatusOK, resp)
+}
+
+// ConsumeExact 精确消费指定数量 Token（不走规则）
+// @Summary 精确消费Token
+// @Description 直接按数量消费，不按规则，适用于内部精确扣费
+// @Tags Token管理
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param request body ConsumeExactRequest true "精确消费请求"
+// @Success 200 {object} gin.H
+// @Router /api/v1/tokens/consume-exact [post]
+func (c *TokenController) ConsumeExact(ctx *gin.Context) {
+    userID, exists := ctx.Get("user_id")
+    if !exists {
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "用户未认证"}); return
+    }
+    var req ConsumeExactRequest
+    if err := ctx.ShouldBindJSON(&req); err != nil || req.Amount <= 0 {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "message": "amount 必须为正整数"}); return
+    }
+    if !appctx.WithIdempotency(ctx, "tokens.consume_exact") { return }
+    // 执行精确消费
+    if err := c.tokenService.ConsumeExact(userID.(string), req.Amount, "api", "exact", req.Reference, map[string]interface{}{"desc": req.Description}); err != nil {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": "consume_failed", "message": err.Error()}); return
+    }
+    // 返回新余额
+    newBalance, _ := c.tokenService.GetTokenBalance(userID.(string))
+    resp := gin.H{"message": "Token消费成功", "consumed_tokens": req.Amount, "new_balance": newBalance}
+    appctx.MarkIdempotentDoneWithResponse(ctx, "tokens.consume_exact", http.StatusOK, resp)
+    ctx.JSON(http.StatusOK, resp)
 }
 
 // CheckSufficiency 检查Token是否足够

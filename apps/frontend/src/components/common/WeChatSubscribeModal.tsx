@@ -57,6 +57,7 @@ function getTexts(props: WeChatSubscribeModalProps) {
 export default function WeChatSubscribeModal(props: WeChatSubscribeModalProps) {
   const { open, onOpenChange } = props
   const texts = getTexts(props)
+  const qrSrc = process.env.NEXT_PUBLIC_CUSTOMER_SERVICE_QR || '/logo-autoads.png'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -73,10 +74,11 @@ export default function WeChatSubscribeModal(props: WeChatSubscribeModalProps) {
         <div className="flex flex-col items-center space-y-4 py-6">
           <div className="relative w-48 h-48 bg-gray-100 rounded-lg overflow-hidden">
             <Image
-              src="/Customer-service-QR-code.jpg"
+              src={qrSrc}
               alt="客服二维码"
               fill
               className="object-cover"
+              unoptimized
               onError={(e) => {
                 const target = e.target as HTMLImageElement
                 target.style.display = 'none'
@@ -111,4 +113,3 @@ export default function WeChatSubscribeModal(props: WeChatSubscribeModalProps) {
     </Dialog>
   )
 }
-

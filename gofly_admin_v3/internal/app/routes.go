@@ -14,6 +14,9 @@ import (
     "path/filepath"
     "gofly-admin-v3/internal/middleware"
     "gofly-admin-v3/internal/subscription"
+    "gofly-admin-v3/internal/invitation"
+    "gofly-admin-v3/internal/checkin"
+    internaluser "gofly-admin-v3/internal/user"
     "encoding/json"
     "sync"
 	// "gofly-admin-v3/internal/adscentergo"
@@ -1127,8 +1130,49 @@ system.On("allowed_file_types", func(key, value string) {
 					})
 				}
 			}
-		*/
+    */
 	}
+
+    // ========= 用户态写接口（统一由 Go 提供） =========
+    // 强认证：用户登录态写操作
+    authRequired := middleware.InternalJWTAuth(true)
+
+    // 1) Tokens（余额、消费、交易、购买等）
+    internaluser.SetupTokenRoutes(router, ctx.DB.DB, authRequired)
+
+    // 2) 邀请系统 /api/invitation/*
+    {
+        tokenSvc := internaluser.NewTokenService(ctx.DB.DB)
+        invSvc := invitation.NewInvitationService(ctx.DB.DB, tokenSvc)
+        invCtrl := invitation.NewInvitationController(invSvc)
+        g := router.Group("/api/invitation")
+        g.Use(authRequired)
+        invCtrl.RegisterRoutes(g)
+    }
+
+    // 3) 签到系统 /api/checkin/*
+    {
+        adapter := tokenAdapter{ svc: internaluser.NewTokenService(ctx.DB.DB) }
+        chkSvc := checkin.NewCheckinService(ctx.DB.DB, adapter)
+        chkCtrl := checkin.NewCheckinController(chkSvc)
+        g := router.Group("/api/checkin")
+        g.Use(authRequired)
+        chkCtrl.RegisterRoutes(g)
+    }
+
+    // 4) 支付写接口 /api/v1/payments/*
+    {
+        g := router.Group("/api/v1/payments")
+        g.Use(authRequired)
+        payment.RegisterPaymentRoutes(g)
+    }
+
+    // 5) 订阅写接口 /api/v1/user/subscription/*
+    {
+        g := router.Group("/api/v1/user/subscription")
+        g.Use(authRequired)
+        subscription.RegisterUserWriteRoutes(g)
+    }
 
 	// AdminLogin 管理员登录 - TODO: Fix admin service initialization
 	/*

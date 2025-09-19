@@ -42,17 +42,18 @@ export class TokenPriorityService {
       throw new Error('User not found');
     }
 
-    const newBalance = user.tokenBalance - requiredAmount;
-
     // Update user balance and create transaction record
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Update unified token balance
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          tokenBalance: newBalance
-        }
-      });
+      // 原子扣减，确保余额不会为负
+      const affected: number = await tx.$executeRaw`UPDATE users SET tokenBalance = tokenBalance - ${requiredAmount} WHERE id = ${userId} AND tokenBalance >= ${requiredAmount}`
+      if (!affected || affected === 0) {
+        throw new Error(`Insufficient token balance. Required: ${requiredAmount}`)
+      }
+
+      // 扣减后查询当前余额，并推导扣减前余额（after + requiredAmount）
+      const afterRow = await tx.user.findUnique({ where: { id: userId }, select: { tokenBalance: true } })
+      const afterBalance = afterRow?.tokenBalance ?? 0
+      const beforeBalance = afterBalance + requiredAmount
 
       // Record consumption transaction
       await tx.tokenTransaction.create({
@@ -60,8 +61,8 @@ export class TokenPriorityService {
           userId,
           type: 'DEBIT' as TokenType,
           amount: -requiredAmount,
-          balanceBefore: user.tokenBalance,
-          balanceAfter: newBalance,
+          balanceBefore: beforeBalance,
+          balanceAfter: afterBalance,
           source,
           description: description || `${source} operation`,
           metadata: {
@@ -79,7 +80,7 @@ export class TokenPriorityService {
           feature: source.toUpperCase() as TokenUsageFeature,
           operation: description || 'consume',
           tokensConsumed: requiredAmount,
-          tokensRemaining: newBalance,
+          tokensRemaining: afterBalance,
           planId: metadata?.planId || 'default-plan'
         }
       });
@@ -198,7 +199,7 @@ export class TokenPriorityService {
     }
 
     // In unified system, we just show the current breakdown and what would remain
-    const remainingBalance = availability.total - requiredAmount;
+      const remainingBalance = availability.total - requiredAmount;
 
     return {
       success: true,

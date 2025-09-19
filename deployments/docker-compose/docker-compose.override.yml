@@ -16,6 +16,7 @@ services:
       - NEXT_PUBLIC_DEBUG_MODE=true
       - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
       - PUPPETEER_EXECUTABLE_PATH=
+      - DATABASE_URL=mysql://autoads:devpassword@mysql:3306/google_ads_automation_dev
     volumes:
       # Mount source code for hot reload
       - .:/app
@@ -45,37 +46,24 @@ services:
     networks:
       - google-ads-network
 
-  # PostgreSQL for development
-  postgres:
-    image: postgres:15-alpine
-    container_name: google-ads-postgres-dev
+  # MySQL for development (aligns with Prisma MySQL schema)
+  mysql:
+    image: mysql:8.0
+    container_name: google-ads-mysql-dev
     environment:
-      - POSTGRES_DB=google_ads_automation_dev
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=devpassword
+      - MYSQL_DATABASE=google_ads_automation_dev
+      - MYSQL_USER=autoads
+      - MYSQL_PASSWORD=devpassword
+      - MYSQL_ROOT_PASSWORD=rootpassword
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - mysql_dev_data:/var/lib/mysql
     ports:
-      - "5432:5432"
+      - "3306:3306"
     networks:
       - google-ads-network
 
-  # Development tools - pgAdmin
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: google-ads-pgadmin-dev
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@example.com
-      - PGADMIN_DEFAULT_PASSWORD=admin
-    ports:
-      - "8080:80"
-    depends_on:
-      - postgres
-    networks:
-      - google-ads-network
-    profiles:
-      - tools
+  # (Removed pgAdmin for Postgres; MySQL tools can be used externally when needed)
 
   # Development tools - Redis Commander
   redis-commander:
@@ -103,7 +91,7 @@ services:
       - google-ads-network
 
 volumes:
-  postgres_dev_data:
+  mysql_dev_data:
     driver: local
   redis_dev_data:
     driver: local

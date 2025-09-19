@@ -1,12 +1,12 @@
 package user
 
 import (
-	"errors"
-	"fmt"
-	"time"
+    "errors"
+    "fmt"
+    "time"
 
-	"github.com/google/uuid"
-	"gorm.io/gorm"
+    "github.com/google/uuid"
+    "gorm.io/gorm"
 )
 
 // generateUUID 生成UUID
@@ -30,77 +30,62 @@ func NewTokenService(db *gorm.DB) *TokenService {
 
 // ConsumeTokens 消费Token
 func (s *TokenService) ConsumeTokens(userID string, amount int, description, reference string) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
-		// 1. 获取用户当前余额
-		var user User
-		if err := tx.Where("id = ?", userID).First(&user).Error; err != nil {
-			return fmt.Errorf("用户不存在: %w", err)
-		}
+    return s.db.Transaction(func(tx *gorm.DB) error {
+        // 1) 条件扣减，防并发穿透
+        res := tx.Exec("UPDATE users SET token_balance = token_balance - ? WHERE id = ? AND token_balance >= ?", amount, userID, amount)
+        if res.Error != nil { return fmt.Errorf("更新余额失败: %w", res.Error) }
+        if rows := res.RowsAffected; rows == 0 { return errors.New("Token余额不足") }
 
-		// 2. 检查余额
-		if user.TokenBalance < amount {
-			return errors.New("Token余额不足")
-		}
-
-		// 3. 扣减余额
-		newBalance := user.TokenBalance - amount
-		if err := tx.Model(&user).Update("token_balance", newBalance).Error; err != nil {
-			return fmt.Errorf("更新余额失败: %w", err)
-		}
-
-		// 4. 记录交易
-		transaction := TokenTransaction{
-			ID:          generateUUID(),
-			UserID:      userID,
-			Amount:      -amount,
-			Balance:     newBalance,
-			Type:        "consume",
-			Description: description,
-			Reference:   reference,
-			CreatedAt:   time.Now(),
-		}
-
-		if err := tx.Create(&transaction).Error; err != nil {
-			return fmt.Errorf("记录交易失败: %w", err)
-		}
-
-		return nil
-	})
+        // 2) 查询最新余额，写入交易流水
+        var after User
+        if err := tx.Where("id = ?", userID).Select("token_balance").First(&after).Error; err != nil {
+            return fmt.Errorf("查询余额失败: %w", err)
+        }
+        transaction := TokenTransaction{
+            ID:          generateUUID(),
+            UserID:      userID,
+            Amount:      -amount,
+            Balance:     after.TokenBalance,
+            Type:        "consume",
+            Description: description,
+            Reference:   reference,
+            CreatedAt:   time.Now(),
+        }
+        if err := tx.Create(&transaction).Error; err != nil {
+            return fmt.Errorf("记录交易失败: %w", err)
+        }
+        return nil
+    })
 }
 
 // AddTokens 增加Token
 func (s *TokenService) AddTokens(userID string, amount int, tokenType, description, reference string) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
-		// 1. 获取用户当前余额
-		var user User
-		if err := tx.Where("id = ?", userID).First(&user).Error; err != nil {
-			return fmt.Errorf("用户不存在: %w", err)
-		}
-
-		// 2. 增加余额
-		newBalance := user.TokenBalance + amount
-		if err := tx.Model(&user).Update("token_balance", newBalance).Error; err != nil {
-			return fmt.Errorf("更新余额失败: %w", err)
-		}
-
-		// 3. 记录交易
-		transaction := TokenTransaction{
-			ID:          generateUUID(),
-			UserID:      userID,
-			Amount:      amount,
-			Balance:     newBalance,
-			Type:        tokenType,
-			Description: description,
-			Reference:   reference,
-			CreatedAt:   time.Now(),
-		}
-
-		if err := tx.Create(&transaction).Error; err != nil {
-			return fmt.Errorf("记录交易失败: %w", err)
-		}
-
-		return nil
-	})
+    return s.db.Transaction(func(tx *gorm.DB) error {
+        // 1) 原子自增
+        if err := tx.Exec("UPDATE users SET token_balance = token_balance + ? WHERE id = ?", amount, userID).Error; err != nil {
+            return fmt.Errorf("更新余额失败: %w", err)
+        }
+        // 2) 查询最新余额
+        var after User
+        if err := tx.Where("id = ?", userID).Select("token_balance").First(&after).Error; err != nil {
+            return fmt.Errorf("查询余额失败: %w", err)
+        }
+        // 3) 记录交易
+        transaction := TokenTransaction{
+            ID:          generateUUID(),
+            UserID:      userID,
+            Amount:      amount,
+            Balance:     after.TokenBalance,
+            Type:        tokenType,
+            Description: description,
+            Reference:   reference,
+            CreatedAt:   time.Now(),
+        }
+        if err := tx.Create(&transaction).Error; err != nil {
+            return fmt.Errorf("记录交易失败: %w", err)
+        }
+        return nil
+    })
 }
 
 // GetTokenTransactions 获取Token交易记录
@@ -191,7 +176,35 @@ func (s *TokenService) GetConsumptionRules() []TokenConsumptionRule {
 
 // GetRechargePackages 获取所有充值包
 func (s *TokenService) GetRechargePackages() []RechargePackage {
-	return s.config.GetAllRechargePackages()
+    return s.config.GetAllRechargePackages()
+}
+
+// ConsumeExact 精确消费指定数量 Token（不走规则）
+// 并发安全：使用条件更新防止余额被并发扣成负数
+func (s *TokenService) ConsumeExact(userID string, amount int, service, action, refID string, details interface{}) error {
+    if amount <= 0 { return nil }
+    return s.db.Transaction(func(tx *gorm.DB) error {
+        // 条件扣减
+        res := tx.Exec("UPDATE users SET token_balance = token_balance - ? WHERE id = ? AND token_balance >= ?", amount, userID, amount)
+        if res.Error != nil { return res.Error }
+        if n := res.RowsAffected; n == 0 { return errors.New("Token余额不足") }
+
+        // 查询最新余额并写流水
+        var after User
+        if err := tx.Where("id = ?", userID).Select("token_balance").First(&after).Error; err != nil { return err }
+        desc := fmt.Sprintf("consume_exact:%s/%s", service, action)
+        if err := tx.Create(&TokenTransaction{
+            ID:        generateUUID(),
+            UserID:    userID,
+            Amount:    -amount,
+            Balance:   after.TokenBalance,
+            Type:      "consume",
+            Description: desc,
+            Reference: refID,
+            CreatedAt: time.Now(),
+        }).Error; err != nil { return err }
+        return nil
+    })
 }
 
 // PurchaseTokens 购买Token

@@ -421,33 +421,42 @@ export async function requireFeatureAccess(
 
     // Consume tokens if requested
     if (consumeTokens && tokenCost > 0) {
-      await prisma.user.update({
-        where: { id: context.userId },
-        data: {
-          tokenBalance: {
-            decrement: tokenCost
+      const txResult = await prisma.$transaction(async (tx) => {
+        // atomic decrement with lower bound
+        const affected: number = await tx.$executeRaw`UPDATE users SET tokenBalance = tokenBalance - ${tokenCost} WHERE id = ${context.userId} AND tokenBalance >= ${tokenCost}`
+        if (!affected || affected === 0) return null
+        const after = await tx.user.findUnique({ where: { id: context.userId }, select: { tokenBalance: true } })
+        const afterBal = after?.tokenBalance ?? (context.user.tokenBalance - tokenCost)
+
+        await tx.token_usage.create({
+          data: {
+            userId: context.userId,
+            feature: feature as any,
+            operation: 'consume',
+            tokensConsumed: tokenCost,
+            tokensRemaining: afterBal,
+            planId: 'default',
+            itemCount: 1,
+            metadata: { balance: afterBal }
           }
-        }
+        })
+        return afterBal
       })
 
-      // Log token usage
-      await prisma.token_usage.create({
-        data: {
-          userId: context.userId,
-          feature: feature as any,
-          operation: 'consume',
-          tokensConsumed: tokenCost,
-          tokensRemaining: context.user.tokenBalance - tokenCost,
-          planId: 'default', // No planId in user context, use default
-          itemCount: 1,
-          metadata: {
-            balance: context.user.tokenBalance - tokenCost,
-          }
+      if (txResult === null) {
+        return {
+          success: false,
+          response: NextResponse.json({
+            error: 'Insufficient tokens',
+            required: tokenCost,
+            current: context.user.tokenBalance,
+            feature,
+            code: 'INSUFFICIENT_TOKENS'
+          }, { status: 402 })
         }
-      })
+      }
 
-      // Update context with new balance
-      context.user.tokenBalance -= tokenCost
+      context.user.tokenBalance = txResult
     }
 
     return { success: true, context }

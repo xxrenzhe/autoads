@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireIdempotencyKey } from '@/lib/utils/idempotency';
+import { ensureNextWriteAllowed } from '@/lib/utils/writes-guard'
+import { forwardToGo } from '@/lib/bff/forward'
 import { auth } from '@/lib/auth/v5-config';
 import { prisma } from '@/lib/db';
 import { Logger } from '@/lib/core/Logger';
@@ -100,6 +103,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    requireIdempotencyKey(request as any)
+    // Prefer Go authoritative path if present
+    try {
+      const resp = await forwardToGo(request as any, { targetPath: '/api/invitation/generate-link', method: 'POST', appendSearch: false })
+      if (resp.ok) return resp
+    } catch {}
+    // Fallback to Next-side implementation (guarded)
+    ensureNextWriteAllowed()
     const session = await auth();
     if (!session?.userId || !session.user?.email) {
       return NextResponse.json(

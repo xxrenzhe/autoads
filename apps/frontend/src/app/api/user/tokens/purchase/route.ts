@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/v5-config';
 import { prisma } from '@/lib/db';
+import { requireIdempotencyKey } from '@/lib/utils/idempotency';
 import { TokenService } from '@/lib/services/token-service';
+import { ensureNextWriteAllowed } from '@/lib/utils/writes-guard'
+import { forwardToGo } from '@/lib/bff/forward'
 
 /**
  * POST /api/user/tokens/purchase
@@ -9,6 +12,8 @@ import { TokenService } from '@/lib/services/token-service';
  */
 export async function POST(request: NextRequest) {
   try {
+    ensureNextWriteAllowed()
+    requireIdempotencyKey(request as any)
     const session = await auth();
     
     if (!session?.user?.id) {
@@ -16,7 +21,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tokens, amount, currency = 'USD', provider = 'stripe' } = body;
+    const { tokens, amount, currency = 'USD', provider = 'stripe', packageId, orderId } = body;
+
+    // Prefer Go authoritative purchase when packageId/orderId provided
+    try {
+      if (packageId && orderId) {
+        const resp = await forwardToGo(new Request(request.url, { method: 'POST', headers: request.headers, body: JSON.stringify({ package_id: packageId, order_id: orderId }) }), { targetPath: '/api/v1/tokens/purchase', method: 'POST', appendSearch: false })
+        if (resp.ok) return resp
+      }
+    } catch {}
 
     if (!tokens || !amount || tokens <= 0 || amount <= 0) {
       return NextResponse.json(

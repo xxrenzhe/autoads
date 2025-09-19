@@ -57,6 +57,7 @@
           <template #icon><alert-outlined /></template>
           <template #title>监控与告警</template>
           <a-menu-item key="/console/monitoring" @click="go('/console/monitoring')">指标与健康</a-menu-item>
+          <a-menu-item key="/console/consistency/orphans" @click="go('/console/consistency/orphans')">数据一致性</a-menu-item>
         </a-sub-menu>
 
         <a-sub-menu key="admins">

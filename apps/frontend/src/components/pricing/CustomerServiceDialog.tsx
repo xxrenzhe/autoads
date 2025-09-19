@@ -22,6 +22,7 @@ export default function CustomerServiceDialog({
   onOpenChange, 
   planName 
 }: CustomerServiceDialogProps) {
+  const qrSrc = process.env.NEXT_PUBLIC_CUSTOMER_SERVICE_QR || '/logo-autoads.png'
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -37,10 +38,11 @@ export default function CustomerServiceDialog({
         <div className="flex flex-col items-center space-y-4 py-6">
           <div className="relative w-48 h-48 bg-gray-100 rounded-lg overflow-hidden">
             <Image
-              src="/Customer-service-QR-code.jpg"
+              src={qrSrc}
               alt="客服二维码"
               fill
               className="object-cover"
+              unoptimized
               onError={(e) => {
                 // 如果图片加载失败，显示占位符
                 const target = e.target as HTMLImageElement

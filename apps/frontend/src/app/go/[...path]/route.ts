@@ -68,6 +68,12 @@ function getAllowedPrefixes(): string[] {
     '/api/v1/adscenter/',
     '/api/adscenter',
     '/api/adscenter/',
+    '/api/checkin',
+    '/api/checkin/',
+    '/api/invitation',
+    '/api/invitation/',
+    '/api/v1/tokens',
+    '/api/v1/tokens/',
     '/api/user',
     '/api/tokens',
     '/api/siterank'

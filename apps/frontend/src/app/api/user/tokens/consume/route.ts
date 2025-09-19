@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth/v5-config'
 import { prisma } from '@/lib/db'
 import { recordTokenUsage } from '@/lib/services/token-usage'
 import { z } from 'zod'
+import { requireIdempotencyKey } from '@/lib/utils/idempotency'
+import { ensureNextWriteAllowed } from '@/lib/utils/writes-guard'
+import { forwardToGo } from '@/lib/bff/forward'
 
 const ConsumeTokenSchema = z.object({
   feature: z.enum(['BATCHOPEN', 'SITERANK', 'ADSCENTER']),
@@ -15,6 +18,7 @@ const ConsumeTokenSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    requireIdempotencyKey(request as any)
     // Enforce dev-only for Next-side business writes
     const allowNextWrites = process.env.ALLOW_NEXT_WRITES === 'true'
     const isDev = process.env.NODE_ENV === 'development'
@@ -40,6 +44,25 @@ export async function POST(request: NextRequest) {
       feature: validatedData.feature,
       tokens: validatedData.tokens
     })
+
+    // Prefer Go authoritative path if possible (map feature->service/action)
+    try {
+      const serviceMap: Record<string,string> = { BATCHOPEN: 'batchgo', SITERANK: 'siterank', ADSCENTER: 'adscenter' }
+      const svc = serviceMap[validatedData.feature]
+      if (svc) {
+        const payload = {
+          service: svc,
+          action: (validatedData.operation || 'api').toLowerCase(),
+          quantity: validatedData.itemCount && validatedData.itemCount > 0 ? validatedData.itemCount : 1,
+          reference: validatedData.metadata?.reference || ''
+        }
+        const resp = await forwardToGo(new Request(request.url, { method: 'POST', headers: request.headers, body: JSON.stringify(payload) }), { targetPath: '/api/v1/tokens/consume', method: 'POST', appendSearch: false })
+        if (resp.ok) return resp
+      }
+    } catch {}
+
+    // Fallback to Next-side implementation (guarded in prod unless explicitly allowed)
+    ensureNextWriteAllowed()
 
     // Ensure user exists in database
     let user = await prisma.user.findUnique({

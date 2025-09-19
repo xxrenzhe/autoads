@@ -12,6 +12,7 @@ import (
     "github.com/gin-gonic/gin"
     cfg "gofly-admin-v3/internal/config"
     "gofly-admin-v3/internal/store"
+    "sort"
 )
 
 // APIResponse 统一响应
@@ -27,6 +28,69 @@ type Controller struct {
 }
 
 func NewController(s *AutoAdsAuditService) *Controller { return &Controller{service: s} }
+
+// GetOrphanReportsHandler GET /api/v1/audit/consistency/orphans
+// Query recent orphan inspection reports and trend
+func (c *Controller) GetOrphanReportsHandler(ctx *gin.Context) {
+    // AuthZ: middleware ensures admin for this route via RegisterRoutes
+    // Params
+    days, _ := strconv.Atoi(ctx.DefaultQuery("days", "30"))
+    if days <= 0 { days = 30 }
+    limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "30"))
+    if limit <= 0 || limit > 200 { limit = 30 }
+
+    since := time.Now().AddDate(0, 0, -days)
+
+    // Latest reports
+    var events []AuditEvent
+    if err := c.service.db.Model(&AuditEvent{}).
+        Where("resource = ? AND created_at >= ?", "db_orphans_report", since).
+        Order("created_at DESC").
+        Limit(limit).
+        Find(&events).Error; err != nil {
+        ctx.JSON(http.StatusOK, APIResponse{Code: 2001, Message: err.Error()})
+        return
+    }
+    latest := make([]map[string]interface{}, 0, len(events))
+    trendMap := map[string]int{}
+    for _, ev := range events {
+        var details map[string]interface{}
+        _ = json.Unmarshal([]byte(ev.Details), &details)
+        total := 0
+        if v, ok := details["total_orphans"]; ok {
+            switch t := v.(type) {
+            case float64:
+                total = int(t)
+            case int:
+                total = t
+            }
+        }
+        // Collect trend per date
+        d := ev.CreatedAt.Format("2006-01-02")
+        trendMap[d] += total
+        latest = append(latest, map[string]interface{}{
+            "id":            ev.ID,
+            "created_at":    ev.CreatedAt,
+            "total_orphans": total,
+            "by_check":      details["by_check"],
+        })
+    }
+    // Build trend arrays sorted by date asc
+    labels := make([]string, 0, len(trendMap))
+    for k := range trendMap { labels = append(labels, k) }
+    sort.Strings(labels)
+    totals := make([]int, 0, len(labels))
+    for _, d := range labels { totals = append(totals, trendMap[d]) }
+
+    payload := gin.H{
+        "latest": latest,
+        "trend": gin.H{
+            "labels": labels,
+            "totals": totals,
+        },
+    }
+    ctx.JSON(http.StatusOK, APIResponse{Code: 0, Message: "ok", Data: payload})
+}
 
 // GetUserActivitySummaryHandler GET /api/v1/audit/user/activity-summary
 func (c *Controller) GetUserActivitySummaryHandler(ctx *gin.Context) {
