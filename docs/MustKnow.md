@@ -9,14 +9,15 @@
 - 代码推送带production分支，触发production环境docker镜像构建：标注 docker image tag 为 ghcr.io/xxrenzhe/autoads:prod-latest
 - 当production分支打了tag（如v3.0.0），则触发production环境docker镜像构建：标注 docker image tag 为 ghcr.io/xxrenzhe/autoads:prod-[tag]
 - 当前镜像构建使用的是：Dockerfile.standalone
-2）不同环境的域名
+2）基本架构：前端Next，后端Go，单镜像单容器部署，实现多用户高并发SaaS应用
+3）不同环境的域名
 - 测试环境域名：localhost
 - 预发环境域名：urlchecker.dev，容器内部域名是 autoads-preview-xxx-xxx:3000
 - 生成环境域名：autoads.dev，容器内部域名是 autoads-prod-xxx-xxx:3000
-3）301强制跳转（已在DNS解析层面实现，业务内部无需实现）
+4）301强制跳转（已在DNS解析层面实现，业务内部无需实现）
 - 预发环境，用户访问 https://urlchecker.dev 会301跳转到 https://www.urlchecker.dev
 - 生产环境，用户访问 https://autoads.dev 会301跳转到 https://www.autoads.dev
-4）预发/生产环境核心环境变量
+5）预发/生产环境核心环境变量
 - NODE_ENV=production
 - NEXT_PUBLIC_DOMAIN=urlchecker.dev
 - NEXT_PUBLIC_DEPLOYMENT_ENV=preview/production
@@ -27,5 +28,5 @@
 - AUTH_GOOGLE_ID=1007142410985-4945m48srrp056kp0q5n0e5he8omrdol.apps.googleusercontent.com
 - AUTH_GOOGLE_SECRET=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
 - SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
-5）预发/生产环境的容器配置：2C4G
-6）用户通过Google OAuth一键登录进入网站（不提供邮箱注册/登录）；管理员通过单独的管理URL通过账号密码登录，进入后台管理系统；两套登录系统独立，互不影响
+6）预发/生产环境的容器配置：2C4G
+7）用户通过Google OAuth一键登录进入网站（不提供邮箱注册/登录）；管理员通过单独的管理URL通过账号密码登录，进入后台管理系统；两套登录系统独立，互不影响

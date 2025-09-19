@@ -6,6 +6,15 @@ CONFIG_PATH="${ADMIN_CONFIG:-$APP_DIR/config.yaml}"
 PORT="${PORT:-8080}"
 NEXT_DIR="/app/frontend"
 PRISMA_SCHEMA="/app/frontend/prisma/schema.prisma"
+ 
+# 统一 Prisma CLI 调用（优先全局 prisma，否则回退 npx prisma）
+run_prisma() {
+  if command -v prisma >/dev/null 2>&1; then
+    prisma "$@"
+  else
+    npx prisma "$@"
+  fi
+}
 NEXTJS_PORT="${NEXTJS_PORT:-3000}"
 PUPPETEER_EXECUTOR_PORT="${PUPPETEER_EXECUTOR_PORT:-8081}"
 ADSCENTER_EXECUTOR_PORT="${ADSCENTER_EXECUTOR_PORT:-8082}"
@@ -100,7 +109,7 @@ if [ "$1" = "prisma-migrate-only" ]; then
     exit 2
   fi
   echo "[entrypoint] 以独立模式执行 Prisma 迁移 ..."
-  prisma migrate deploy --schema "$PRISMA_SCHEMA"
+  run_prisma migrate deploy --schema "$PRISMA_SCHEMA"
   exit $?
 fi
 
@@ -115,7 +124,7 @@ if [ "$1" = "prisma-migrate-status" ]; then
     exit 2
   fi
   echo "[entrypoint] 检查 Prisma 迁移状态 ..."
-  prisma migrate status --schema "$PRISMA_SCHEMA" || true
+  run_prisma migrate status --schema "$PRISMA_SCHEMA" || true
   exit 0
 fi
 
@@ -181,9 +190,9 @@ start_next() {
   tail -n 120 /app/logs/next.log || true
   # 常见问题：Prisma 引擎不匹配，尝试按运行时生成
   if grep -q "Prisma Client could not locate the Query Engine" /app/logs/next.log 2>/dev/null; then
-    if [ -f "$PRISMA_SCHEMA" ] && command -v prisma >/dev/null 2>&1; then
+    if [ -f "$PRISMA_SCHEMA" ] && ( command -v prisma >/dev/null 2>&1 || command -v npx >/dev/null 2>&1 ); then
       echo "[entrypoint] 发现 Prisma 引擎错误，尝试 prisma generate（运行时平台）"
-      prisma generate --schema "$PRISMA_SCHEMA" || echo "[entrypoint] Prisma generate 失败"
+      run_prisma generate --schema "$PRISMA_SCHEMA" || echo "[entrypoint] Prisma generate 失败"
       (
         cd "$dir" && PORT="$NEXTJS_PORT" HOSTNAME="0.0.0.0" node server.js > /app/logs/next.log 2>&1 &
       ) || true
@@ -330,22 +339,22 @@ if [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ] && [ -f "$PRISMA_SCHEMA" ]; t
   if auto_fix_prisma_url && [ -n "$DATABASE_URL" ]; then
     echo "[entrypoint] 执行 Prisma 迁移: prisma migrate deploy"
     # 使用全局 prisma CLI，schema 指定到 Next 应用内
-    PRISMA_OUTPUT=$(prisma migrate deploy --schema "$PRISMA_SCHEMA" 2>&1) || DEPLOY_RC=$?
+    PRISMA_OUTPUT=$(run_prisma migrate deploy --schema "$PRISMA_SCHEMA" 2>&1) || DEPLOY_RC=$?
     if [ -n "$DEPLOY_RC" ] && [ "$DEPLOY_RC" -ne 0 ]; then
       echo "$PRISMA_OUTPUT"
       echo "[entrypoint] ⚠️ Prisma 迁移失败"
       # 自动 resolve 失败的迁移（仅当显式开启）
       if [ "${PRISMA_AUTO_RESOLVE_FAILED}" = "true" ]; then
-        FAILED_LIST=$(prisma migrate status --schema "$PRISMA_SCHEMA" 2>/dev/null | awk '/Following migration have failed:/{flag=1; next} flag && NF {print $0}')
+        FAILED_LIST=$(run_prisma migrate status --schema "$PRISMA_SCHEMA" 2>/dev/null | awk '/Following migration have failed:/{flag=1; next} flag && NF {print $0}')
         if [ -n "$FAILED_LIST" ]; then
           echo "[entrypoint] 检测到失败迁移，执行 resolve --rolled-back:"
           echo "$FAILED_LIST" | while read -r mig; do
             case "$mig" in *[!0-9A-Za-z_-]*) continue;; esac
             echo "  - $mig"
-            prisma migrate resolve --schema "$PRISMA_SCHEMA" --rolled-back "$mig" || true
+            run_prisma migrate resolve --schema "$PRISMA_SCHEMA" --rolled-back "$mig" || true
           done
           echo "[entrypoint] 重试 Prisma 迁移: prisma migrate deploy"
-          prisma migrate deploy --schema "$PRISMA_SCHEMA" || echo "[entrypoint] ⚠️ 重试 prisma migrate deploy 仍失败"
+          run_prisma migrate deploy --schema "$PRISMA_SCHEMA" || echo "[entrypoint] ⚠️ 重试 prisma migrate deploy 仍失败"
         fi
       fi
       # 自动基线：当数据库非空（P3005）且仅有一个迁移时，标记该迁移为已应用
@@ -358,9 +367,9 @@ if [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ] && [ -f "$PRISMA_SCHEMA" ]; t
             if [ "$MIG_COUNT" -eq 1 ]; then
               FIRST_MIG=$(basename "$(find "$MIG_DIR" -mindepth 1 -maxdepth 1 -type d | head -n1)")
               echo "[entrypoint] 检测到 P3005 且仅有 1 个迁移，执行基线标记: $FIRST_MIG"
-              if prisma migrate resolve --schema "$PRISMA_SCHEMA" --applied "$FIRST_MIG"; then
+              if run_prisma migrate resolve --schema "$PRISMA_SCHEMA" --applied "$FIRST_MIG"; then
                 echo "[entrypoint] 重试 Prisma 迁移: prisma migrate deploy"
-                prisma migrate deploy --schema "$PRISMA_SCHEMA" || echo "[entrypoint] ⚠️ 重试 prisma migrate deploy 仍失败"
+                run_prisma migrate deploy --schema "$PRISMA_SCHEMA" || echo "[entrypoint] ⚠️ 重试 prisma migrate deploy 仍失败"
               else
                 echo "[entrypoint] ⚠️ Prisma 基线标记失败，请手动处理"
               fi
@@ -376,7 +385,7 @@ if [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ] && [ -f "$PRISMA_SCHEMA" ]; t
       fi
       if [ "$PRISMA_DB_PUSH_FALLBACK" = "true" ]; then
         echo "[entrypoint] 尝试回退到 prisma db push（仅用于开发/临时环境）"
-        prisma db push --accept-data-loss --schema "$PRISMA_SCHEMA" || true
+        run_prisma db push --accept-data-loss --schema "$PRISMA_SCHEMA" || true
       fi
     else
       # 打印成功输出（若有）
@@ -386,7 +395,7 @@ if [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ] && [ -f "$PRISMA_SCHEMA" ]; t
     # 可选：执行 Prisma Seed（仅在显式设置 PRISMA_DB_SEED=true 时执行）
     if [ "$PRISMA_DB_SEED" = "true" ]; then
       echo "[entrypoint] 执行 Prisma 数据种子: prisma db seed"
-      prisma db seed --schema "$PRISMA_SCHEMA" || echo "[entrypoint] ⚠️ Prisma seed 失败，继续启动"
+      run_prisma db seed --schema "$PRISMA_SCHEMA" || echo "[entrypoint] ⚠️ Prisma seed 失败，继续启动"
     fi
   else
     echo "[entrypoint] 跳过 Prisma 迁移：未设置/无法解析 DATABASE_URL"
