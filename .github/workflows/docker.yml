@@ -195,6 +195,13 @@ jobs:
             echo "- (no migrate.out found)" >> $GITHUB_STEP_SUMMARY
           fi
 
+      - name: Force seed fallback (Node)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+        run: |
+          set -euo pipefail
+          node apps/frontend/prisma/seed.js
+
       - name: SSR DB read checks (Prisma)
         env:
           DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
