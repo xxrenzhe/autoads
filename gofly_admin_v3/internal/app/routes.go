@@ -17,6 +17,7 @@ import (
     "gofly-admin-v3/internal/invitation"
     "gofly-admin-v3/internal/checkin"
     internaluser "gofly-admin-v3/internal/user"
+    "gofly-admin-v3/internal/payment"
     "encoding/json"
     "sync"
 	// "gofly-admin-v3/internal/adscentergo"
@@ -1142,8 +1143,9 @@ system.On("allowed_file_types", func(key, value string) {
 
     // 2) 邀请系统 /api/invitation/*
     {
-        tokenSvc := internaluser.NewTokenService(ctx.DB.DB)
-        invSvc := invitation.NewInvitationService(ctx.DB.DB, tokenSvc)
+        // 适配 token 服务到邀请模块所需接口（去掉 reference 参数）
+        adapter := tokenAdapter{ svc: internaluser.NewTokenService(ctx.DB.DB) }
+        invSvc := invitation.NewInvitationService(ctx.DB.DB, adapter)
         invCtrl := invitation.NewInvitationController(invSvc)
         g := router.Group("/api/invitation")
         g.Use(authRequired)
