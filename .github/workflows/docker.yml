@@ -417,6 +417,19 @@ jobs:
               echo "MySQL is ready"; break; fi; sleep 1; done
           echo "[time] start-mysql end:   $(date -u +%FT%T)"
 
+      - name: Prepare DB schema (prisma migrate + seed in ci-net)
+        run: |
+          echo "[time] prepare-db start: $(date -u +%FT%T)"
+          docker run --rm --network ci-net -v "$PWD:/repo" -w /repo node:20 bash -lc '
+            set -euo pipefail
+            npm ci --workspaces --include-workspace-root --ignore-scripts --no-audit --no-fund
+            npm i -g prisma@6.16.0
+            export DATABASE_URL=mysql://root:password@mysql:3306/autoads
+            npx prisma migrate deploy --schema apps/frontend/prisma/schema.prisma
+            node apps/frontend/prisma/seed.js
+          '
+          echo "[time] prepare-db end:   $(date -u +%FT%T)"
+
       - name: Build backend-only smoke image (no push)
         run: |
           echo "[time] build-smoke start: $(date -u +%FT%T)"
