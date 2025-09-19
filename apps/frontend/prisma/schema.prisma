@@ -594,7 +594,7 @@ model token_usage {
 }
 
 model configuration_history {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  id        String   @id @default(cuid())
   configKey String
   oldValue  String?
   newValue  String?
@@ -1158,4 +1158,110 @@ model AdsMetricsDaily {
   @@index([campaignId], map: "idx_ads_metrics_campaign")
   @@index([adGroupId], map: "idx_ads_metrics_adgroup")
   @@map("ads_metrics_daily")
+}
+
+// =====================
+// Core admin/supporting tables migrated from Go
+// =====================
+
+model IdempotencyRequest {
+  id        BigInt   @id @default(autoincrement())
+  userId    String   @map("user_id")
+  endpoint  String
+  idemKey   String   @map("idem_key")
+  status    String   @default("PENDING")
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime? @map("updated_at")
+
+  @@unique([userId, endpoint, idemKey], map: "uniq_user_endpoint_key")
+  @@index([createdAt], map: "idx_created_at")
+  @@map("idempotency_requests")
+}
+
+model ConfigChangeHistory {
+  id         String   @id @default(cuid())
+  configKey  String   @map("configKey")
+  oldValue   String?  @map("oldValue")
+  newValue   String   @map("newValue")
+  changedBy  String   @map("changedBy")
+  reason     String?  @map("reason")
+  createdAt  DateTime @default(now()) @map("createdAt")
+  user       User     @relation(fields: [changedBy], references: [id])
+
+  @@index([configKey, createdAt], map: "config_change_history_configKey_createdAt_idx")
+  @@map("config_change_history")
+}
+
+model NotificationLog {
+  id           String             @id @default(cuid())
+  userId       String             @map("userId")
+  templateId   String             @map("templateId")
+  type         NotificationType   @map("type")
+  recipient    String             @map("recipient")
+  status       NotificationStatus @default(PENDING) @map("status")
+  errorMessage String?            @map("errorMessage")
+  sentAt       DateTime?          @map("sentAt")
+  deliveredAt  DateTime?          @map("deliveredAt")
+  createdAt    DateTime           @default(now()) @map("createdAt")
+
+  @@index([status, createdAt], map: "notification_logs_status_createdAt_idx")
+  @@index([userId, createdAt], map: "notification_logs_userId_createdAt_idx")
+  @@map("notification_logs")
+}
+
+model PerformanceAlert {
+  id         String   @id @default(cuid())
+  type       String
+  severity   String
+  message    String
+  endpoint   String?
+  requestId  String?
+  metadata   Json?
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+
+  @@index([resolved, severity, createdAt], map: "performance_alerts_resolved_severity_createdAt_idx")
+  @@index([type, createdAt], map: "performance_alerts_type_createdAt_idx")
+  @@map("performance_alerts")
+}
+
+model PlanConfig {
+  id                   BigInt   @id @default(autoincrement())
+  name                 String   @unique
+  displayName          String   @map("display_name")
+  description          String?
+  price                Float    @default(0)
+  duration             Int      @default(30) // days
+  batchgoEnabled       Boolean  @default(true)  @map("batchgo_enabled")
+  siterankEnabled      Boolean  @default(true)  @map("siterank_enabled")
+  adscenterEnabled     Boolean  @default(false) @map("adscenter_enabled")
+  maxBatchSize         Int      @default(10)    @map("max_batch_size")
+  maxConcurrency       Int      @default(3)     @map("max_concurrency")
+  maxSiterankQueries   Int      @default(100)   @map("max_siterank_queries")
+  maxAdscenterAccounts Int      @default(0)     @map("max_adscenter_accounts")
+  initialTokens        Int      @default(100)   @map("initial_tokens")
+  dailyTokens          Int      @default(10)    @map("daily_tokens")
+  isActive             Boolean  @default(true)  @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt      @map("updated_at")
+
+  @@index([isActive])
+  @@map("plan_configs")
+}
+
+model UserOperationLog {
+  id           BigInt   @id @default(autoincrement())
+  adminId      BigInt   @map("admin_id")
+  targetUserId String   @map("target_user_id")
+  operation    String
+  details      String?
+  ipAddress    String?  @map("ip_address")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([adminId], map: "idx_admin_id")
+  @@index([targetUserId], map: "idx_target_user_id")
+  @@index([operation], map: "idx_operation")
+  @@index([createdAt], map: "idx_created_at")
+  @@map("user_operation_logs")
 }

@@ -16,6 +16,23 @@ permissions:
   packages: write
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      db: ${{ steps.filter.outputs.db }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            db:
+              - 'apps/frontend/prisma/**'
+              - 'gofly_admin_v3/internal/init/**'
+              - 'gofly_admin_v3/cmd/migrate/**'
+              - 'docker-entrypoint.sh'
+              - '.github/workflows/docker.yml'
   validate-ts:
     name: Quick Validation - TS
     runs-on: ubuntu-latest
@@ -55,6 +72,8 @@ jobs:
     name: Quick Validation - DB
     runs-on: ubuntu-latest
     timeout-minutes: 12
+    needs: [changes]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.db == 'true'
     env:
       GOPROXY: https://proxy.golang.org,direct
       GOSUMDB: sum.golang.org
@@ -149,6 +168,28 @@ jobs:
           echo "--- migrate.out (truncated) ---"
           tail -n 500 migrate.out || true
           exit 1
+
+      - name: Seed summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "## Seed Summary" >> $GITHUB_STEP_SUMMARY
+          if [[ -f gofly_admin_v3/migrate.out ]]; then
+            sed -n 's/^\(✅[^\n]*\)$/- \1/p' gofly_admin_v3/migrate.out >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "- (no migrate.out found)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: SSR DB read checks (Prisma)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node apps/frontend/scripts/db-check.js | tee db-check.out
+          echo "## DB Read Checks" >> $GITHUB_STEP_SUMMARY
+          # Append key results to job summary
+          sed -n 's/^ - /- /p' db-check.out >> $GITHUB_STEP_SUMMARY || true
+          sed -n 's/^\(✅[^\n]*\)$/- \1/p' db-check.out >> $GITHUB_STEP_SUMMARY || true
 
       - name: Show Prisma migration diff (DB vs. migrations)
         if: always()

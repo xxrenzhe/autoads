@@ -221,7 +221,8 @@ git push origin production  # 触发生产环境构建
 
 - 采用 Prisma 作为唯一迁移工具（Go DDL 已移除）：`prisma migrate deploy --schema /app/frontend/prisma/schema.prisma`
 - 启动期迁移默认开启（`RUN_MIGRATIONS_ON_START=true`），容器在启动时自动执行 Prisma 迁移。
-- 容器会在首次启动自动执行一次“数据库基线初始化”（`server -init-db`，幂等），确保后台基础表（如 admin_users、system_configs）存在；无需额外环境变量。
+- 生产默认跳过 Go 基线初始化（由 Prisma seed 完成）：`GO_SEED_ON_START=false`（开发默认 true）。
+  - 严格只读默认开启：`GO_SEED_STRICT_READONLY=true`（所有环境默认，仅当 `GO_SEED_ALLOW_WRITE=true` 或 `DEV_SEED_WRITE=true` 时才允许 Go 写入种子）。
 - 若希望在部署阶段显式触发（非必需）：
   - 容器内：`/app/docker-entrypoint.sh prisma-migrate-only`、`/app/docker-entrypoint.sh prisma-migrate-status`
   - 仓库脚本（本地/CI）：`deployments/scripts/db-ops.sh`（自动从 `gofly_admin_v3/config.yaml` 推导 DATABASE_URL）：
@@ -233,7 +234,7 @@ git push origin production  # 触发生产环境构建
 
 - 一次性重建库（初始化基础数据，不会重复执行）：
   - 如需强制重建（危险操作），设置 `DB_REBUILD_ON_STARTUP=true`，容器首次启动时执行一次 `server -init-db` 并重置数据库（受 `DB_RECREATE` 控制），在 `/app/logs/.db_rebuild_done` 写入标记。
-  - 常规情况下无需设置；默认的“自动基线初始化”已足够。
+  - 常规情况下无需设置；生产默认使用 Prisma seed，Go 基线初始化已关闭（`GO_SEED_ON_START=false`）。
 
 示例运行：
 ```bash

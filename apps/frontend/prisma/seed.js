@@ -70,6 +70,52 @@ async function seedTokenConsumptionRules() {
   console.log(`✅ Token消费规则：${rules.length} 项`)
 }
 
+async function seedSystemConfigs() {
+  const defaults = [
+    {
+      key: 'system_name',
+      value: 'GoFly Admin V3',
+      category: 'system',
+      description: '系统名称',
+      isSecret: false,
+      isActive: true,
+    },
+    {
+      key: 'rate_limit_plans',
+      // 与后端读取兼容(JSON 字符串)
+      value: JSON.stringify({ FREE: { rps: 5, burst: 10 }, PRO: { rps: 50, burst: 100 }, MAX: { rps: 200, burst: 400 } }),
+      category: 'ratelimit',
+      description: '按套餐的默认限流配置(JSON)',
+      isSecret: false,
+      isActive: true,
+    },
+    {
+      key: 'maintenance_mode',
+      value: 'false',
+      category: 'system',
+      description: '维护模式',
+      isSecret: false,
+      isActive: true,
+    },
+    {
+      key: 'max_upload_size',
+      value: '10485760',
+      category: 'upload',
+      description: '最大上传大小（字节）',
+      isSecret: false,
+      isActive: true,
+    },
+  ]
+  for (const cfg of defaults) {
+    await prisma.systemConfig.upsert({
+      where: { key: cfg.key },
+      update: {},
+      create: { ...cfg, createdBy: 'system', updatedBy: 'system' },
+    })
+  }
+  console.log(`✅ 系统配置：${defaults.length} 项`)
+}
+
 async function seedTokenPackages() {
   const now = new Date()
   const packages = [
@@ -88,11 +134,77 @@ async function seedTokenPackages() {
   console.log(`✅ Token套餐：${packages.length} 项`)
 }
 
+async function seedPlanConfigs() {
+  const plans = [
+    {
+      name: 'free',
+      displayName: '免费套餐（Free）',
+      description: '“真实点击”功能（初级/静默）；“网站排名”批量查询上限100个/次；包含1,000 tokens',
+      price: 0.0,
+      duration: 30,
+      batchgoEnabled: true,
+      siterankEnabled: true,
+      adscenterEnabled: false,
+      maxBatchSize: 10,
+      maxConcurrency: 1,
+      maxSiterankQueries: 100,
+      maxAdscenterAccounts: 0,
+      initialTokens: 1000,
+      dailyTokens: 0,
+      isActive: true,
+    },
+    {
+      name: 'pro',
+      displayName: '高级套餐（Pro）',
+      description: '支持免费套餐全部功能；“真实点击”新增自动化版本；“网站排名”上限500个/次；“自动化广告”支持管理至多10个ads账号；包含10,000 tokens',
+      price: 298.0,
+      duration: 30,
+      batchgoEnabled: true,
+      siterankEnabled: true,
+      adscenterEnabled: true,
+      maxBatchSize: 50,
+      maxConcurrency: 3,
+      maxSiterankQueries: 500,
+      maxAdscenterAccounts: 10,
+      initialTokens: 10000,
+      dailyTokens: 0,
+      isActive: true,
+    },
+    {
+      name: 'max',
+      displayName: '白金套餐（Max）',
+      description: '支持高级套餐全部功能；“网站排名”上限5000个/次；“自动化广告”支持管理至多100个ads账号；包含100,000 tokens',
+      price: 998.0,
+      duration: 30,
+      batchgoEnabled: true,
+      siterankEnabled: true,
+      adscenterEnabled: true,
+      maxBatchSize: 200,
+      maxConcurrency: 10,
+      maxSiterankQueries: 5000,
+      maxAdscenterAccounts: 100,
+      initialTokens: 100000,
+      dailyTokens: 0,
+      isActive: true,
+    },
+  ]
+  for (const p of plans) {
+    await prisma.planConfig.upsert({
+      where: { name: p.name },
+      update: {},
+      create: p,
+    })
+  }
+  console.log(`✅ 套餐配置(plan_configs)：${plans.length} 项`)
+}
+
 async function main() {
   await seedAdminUser()
   await seedRateLimitConfigs()
   await seedTokenConsumptionRules()
+  await seedSystemConfigs()
   await seedTokenPackages()
+  await seedPlanConfigs()
 }
 
 main()

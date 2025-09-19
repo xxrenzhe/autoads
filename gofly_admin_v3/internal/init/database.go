@@ -86,6 +86,11 @@ func (di *DatabaseInitializer) Initialize() error {
     // 读取跳过标志
     skipCreate := isEnvTrue("SKIP_CREATE_DB") || isEnvTrue("INIT_SKIP_CREATE_DB")
     skipSeed := isEnvTrue("SKIP_SEED") || isEnvTrue("SKIP_BASIC_DATA")
+    // 严格只读：即便未显式 SKIP_SEED，也强制跳过数据写入（生产默认）
+    if isEnvTrue("GO_SEED_STRICT_READONLY") {
+        di.logger.Println("[seed] 严格只读模式（GO_SEED_STRICT_READONLY=true），跳过基础数据写入")
+        skipSeed = true
+    }
     skipVerify := isEnvTrue("SKIP_VERIFY") || isEnvTrue("INIT_SKIP_VERIFY")
 
     // 1. 创建数据库（如果不存在）
