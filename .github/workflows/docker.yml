@@ -45,6 +45,9 @@ jobs:
       - name: Generate Prisma Client
         run: cd apps/frontend && npx prisma generate
 
+      - name: Prisma validate
+        run: cd apps/frontend && npx prisma validate
+
       - name: TypeScript type check (frontend)
         run: ./scripts/type-check-simple.sh
 
@@ -146,6 +149,14 @@ jobs:
           echo "--- migrate.out (truncated) ---"
           tail -n 500 migrate.out || true
           exit 1
+
+      - name: Show Prisma migration diff (DB vs. migrations)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "## Prisma migration diff" >> $GITHUB_STEP_SUMMARY
+          deployments/scripts/db-ops.sh diff | sed -n '1,200p' | tee -a $GITHUB_STEP_SUMMARY || true
 
   build-and-push:
     if: github.event_name != 'pull_request'

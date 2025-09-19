@@ -751,10 +751,7 @@ ALTER TABLE `user_activities` ADD CONSTRAINT `user_activities_userId_fkey` FOREI
 ALTER TABLE `api_usages` ADD CONSTRAINT `api_usages_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `system_configs` ADD CONSTRAINT `system_configs_createdBy_fkey` FOREIGN KEY (`createdBy`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `system_configs` ADD CONSTRAINT `system_configs_updatedBy_fkey` FOREIGN KEY (`updatedBy`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+-- (Removed FK constraints for system_configs to allow decoupled admin management; relations are handled at application level.)
 
 -- AddForeignKey
 ALTER TABLE `audit_logs` ADD CONSTRAINT `audit_logs_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

@@ -36,6 +36,22 @@ func runPrismaMigrate(schemaPath string) error {
     return cmd.Run()
 }
 
+func runPrismaSeed(schemaPath string) error {
+    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+    defer cancel()
+    // apps/frontend has prisma/seed.js and devDependency prisma
+    cmd := exec.CommandContext(ctx, "npx", "prisma", "db", "seed", "--schema", "prisma/schema.prisma")
+    cmd.Dir = filepath.Clean(filepath.Join("..", "apps", "frontend"))
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    if err := cmd.Run(); err == nil { return nil }
+    // Fallback: PATH prisma
+    cmd = exec.CommandContext(ctx, "prisma", "db", "seed", "--schema", schemaPath)
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    return cmd.Run()
+}
+
 func main() {
     // 仅基于环境变量加载配置，避免文件监控与额外开销
     cfg, err := config.LoadFromEnv()
@@ -67,6 +83,10 @@ func main() {
     log.Printf("执行 Prisma 迁移: %s", schemaPath)
     if err := runPrismaMigrate(schemaPath); err != nil {
         log.Fatalf("Prisma 迁移失败: %v", err)
+    }
+    // 执行 Prisma seed（幂等）
+    if err := runPrismaSeed(schemaPath); err != nil {
+        log.Printf("警告：Prisma seed 失败(可忽略): %v", err)
     }
 
     // 执行基础数据初始化（幂等）

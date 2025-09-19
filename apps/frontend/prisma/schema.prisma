@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider               = "mysql"
+  url                    = env("DATABASE_URL")
+  referentialIntegrity   = "prisma"
 }
 
 model User {
@@ -316,23 +317,22 @@ model ServiceConfig {
 }
 
 model SystemConfig {
-  id                                    String   @id @default(cuid())
-  key                                   String   @unique
-  value                                 String
-  category                              String
-  description                           String?
-  isSecret                              Boolean  @default(false)
-  validation                            String?
-  createdAt                             DateTime @default(now())
-  updatedAt                             DateTime @updatedAt
-  createdBy                             String
-  updatedBy                             String?
-  users_system_configs_createdByTousers User     @relation("system_configs_createdByTousers", fields: [createdBy], references: [id])
-  user                                  User?    @relation("SystemConfigs", fields: [updatedBy], references: [id])
+  id          BigInt   @id @default(autoincrement()) @map("id")
+  key         String   @unique @map("config_key")
+  value       String?  @map("config_value")
+  category    String   @default("system")
+  description String?
+  isSecret    Boolean  @default(false) @map("is_secret")
+  isActive    Boolean  @default(true)  @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt      @map("updated_at")
+  createdBy   String   @default("system") @map("created_by")
+  updatedBy   String   @default("system") @map("updated_by")
+  // Optional relation for convenience; no DB FK required (referentialIntegrity = "prisma")
+  user        User?    @relation("SystemConfigs", fields: [updatedBy], references: [id])
 
   @@index([category])
-  @@index([createdAt], map: "system_configs_created_at_idx")
-  @@index([isSecret], map: "system_configs_is_secret_idx")
+  @@index([isSecret], map: "idx_system_configs_is_secret")
   @@map("system_configs")
 }
 
@@ -855,4 +855,307 @@ model AdsExecution {
   @@index([userId, createdAt])
   @@index([configurationId, createdAt])
   @@map("ads_executions")
+}
+
+// =====================
+// Admin/RateLimit models
+// =====================
+
+model AdminUser {
+  id         BigInt   @id @default(autoincrement()) @map("id")
+  username   String
+  email      String   @unique
+  password   String
+  role       String   @default("admin")
+  isActive   Boolean  @default(true) @map("is_active")
+  lastLogin  DateTime? @map("last_login_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_users")
+}
+
+model RateLimitConfig {
+  id         String   @id @map("id")
+  plan       String
+  feature    String
+  perMinute  Int      @default(60)  @map("per_minute")
+  perHour    Int      @default(1000) @map("per_hour")
+  concurrent Int      @default(0)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt      @map("updated_at")
+
+  @@index([plan])
+  @@index([feature])
+  @@index([isActive])
+  @@map("rate_limit_configs")
+}
+
+model TokenPackage {
+  id          BigInt   @id @default(autoincrement()) @map("id")
+  name        String   @unique
+  tokenAmount Int       @map("token_amount")
+  price       Float
+  bonusTokens Int       @default(0) @map("bonus_tokens")
+  description String?
+  isActive    Boolean   @default(true) @map("is_active")
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt      @map("updated_at")
+
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("token_packages")
+}
+
+model TokenConsumptionRule {
+  id         BigInt   @id @default(autoincrement()) @map("id")
+  service    String
+  action     String
+  tokenCost  Int      @map("token_cost")
+  description String?
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt      @map("updated_at")
+
+  @@unique([service, action])
+  @@index([service])
+  @@index([isActive])
+  @@map("token_consumption_rules")
+}
+
+// =====================
+// Batch processing models
+// =====================
+
+model BatchJob {
+  id        String   @id @map("id")
+  userId    String   @map("user_id")
+  type      String
+  status    String
+  options   Json?
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+  items     BatchJobItem[]
+  progress  BatchJobProgress?
+
+  @@index([userId], map: "idx_batch_jobs_user")
+  @@index([status], map: "idx_batch_jobs_status")
+  @@index([type], map: "idx_batch_jobs_type")
+  @@map("batch_jobs")
+}
+
+model BatchJobItem {
+  id        String   @id @map("id")
+  jobId     String   @map("job_id")
+  url       String
+  status    String
+  result    Json?
+  retries   Int      @default(0)
+  lastError String?  @map("last_error")
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+  job       BatchJob @relation(fields: [jobId], references: [id])
+
+  @@index([jobId], map: "idx_batch_job_items_job")
+  @@index([status], map: "idx_batch_job_items_status")
+  @@map("batch_job_items")
+}
+
+model BatchJobProgress {
+  jobId      String   @id @map("job_id")
+  total      Int      @default(0)
+  success    Int      @default(0)
+  fail       Int      @default(0)
+  running    Int      @default(0)
+  startedAt  DateTime? @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  updatedAt  DateTime  @map("updated_at")
+  job        BatchJob  @relation(fields: [jobId], references: [id])
+
+  @@map("batch_job_progress")
+}
+
+// =====================
+// AdsCenter v2 (offers/bindings/rotations)
+// =====================
+
+model AdsOffer {
+  id        String   @id
+  userId    String   @map("user_id")
+  offerUrl  String   @map("offer_url")
+  status    String   @default("active")
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+  bindings  AdsOfferBinding[]
+
+  @@index([userId], map: "idx_ads_offers_user")
+  @@index([status], map: "idx_ads_offers_status")
+  @@map("ads_offers")
+}
+
+model AdsOfferBinding {
+  id               String   @id
+  offerId          String   @map("offer_id")
+  userId           String   @map("user_id")
+  accountId        String   @map("account_id")
+  rotationFrequency String  @map("rotation_frequency")
+  rotationAt       String?  @map("rotation_at")
+  uniqueWindowDays Int      @default(90) @map("unique_window_days")
+  createdAt        DateTime @map("created_at")
+  updatedAt        DateTime @map("updated_at")
+  offer            AdsOffer @relation(fields: [offerId], references: [id])
+  rotations        AdsOfferRotation[]
+
+  @@index([offerId], map: "idx_ads_bindings_offer")
+  @@index([userId], map: "idx_ads_bindings_user")
+  @@index([accountId], map: "idx_ads_bindings_account")
+  @@map("ads_offer_bindings")
+}
+
+model AdsOfferRotation {
+  id           String   @id
+  bindingId    String   @map("binding_id")
+  accountId    String   @map("account_id")
+  rotatedAt    DateTime @map("rotated_at")
+  finalUrl     String   @map("final_url")
+  finalUrlSuffix String @map("final_url_suffix")
+  finalHash    String   @map("final_hash")
+  status       String
+  message      String?
+  binding      AdsOfferBinding @relation(fields: [bindingId], references: [id])
+
+  @@index([bindingId], map: "idx_ads_rotations_binding")
+  @@index([accountId], map: "idx_ads_rotations_account")
+  @@index([finalHash], map: "idx_ads_rotations_hash")
+  @@map("ads_offer_rotations")
+}
+
+// =====================
+// Autoclick v2 tables
+// =====================
+
+model AutoclickSchedule {
+  id           String   @id
+  userId       String   @map("user_id")
+  name         String
+  urls         Json
+  timezone     String
+  timeWindow   String   @map("time_window")
+  dailyTarget  Int      @map("daily_target")
+  refererType  String   @default("") @map("referer_type")
+  refererValue String   @default("") @map("referer_value")
+  proxyUrl     String?  @map("proxy_url")
+  status       String   @default("DISABLED")
+  lastRunAt    DateTime? @map("last_run_at")
+  nextRunAt    DateTime? @map("next_run_at")
+  createdAt    DateTime  @map("created_at")
+  updatedAt    DateTime  @map("updated_at")
+
+  @@index([userId], map: "idx_autoclick_schedules_user")
+  @@index([status], map: "idx_autoclick_schedules_status")
+  @@map("autoclick_schedules")
+}
+
+model AutoclickDailyPlan {
+  id          String   @id
+  scheduleId  String   @map("schedule_id")
+  userId      String   @map("user_id")
+  date        String
+  distribution Json
+  variance     Float    @default(0.3)
+  weightProfile String  @default("default") @map("weight_profile")
+  createdAt    DateTime @map("created_at")
+  schedule     AutoclickSchedule @relation(fields: [scheduleId], references: [id])
+
+  @@unique([scheduleId, date], map: "uniq_schedule_date")
+  @@index([userId], map: "idx_autoclick_plans_user")
+  @@map("autoclick_daily_plans")
+}
+
+model AutoclickExecution {
+  id          String   @id
+  scheduleId  String   @map("schedule_id")
+  userId      String   @map("user_id")
+  date        String
+  status      String
+  message     String?
+  progress    Int      @default(0)
+  success     Int      @default(0)
+  fail        Int      @default(0)
+  total       Int      @default(0)
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @map("created_at")
+  updatedAt   DateTime  @map("updated_at")
+  schedule    AutoclickSchedule @relation(fields: [scheduleId], references: [id])
+
+  @@index([userId], map: "idx_autoclick_exec_user")
+  @@index([scheduleId], map: "idx_autoclick_exec_schedule")
+  @@index([date], map: "idx_autoclick_exec_date")
+  @@map("autoclick_executions")
+}
+
+model AutoclickExecutionSnapshot {
+  id           String   @id
+  executionId  String   @map("execution_id")
+  hour         Int
+  success      Int      @default(0)
+  fail         Int      @default(0)
+  total        Int      @default(0)
+  failedUrls   Json?    @map("failed_urls")
+  createdAt    DateTime @map("created_at")
+  execution    AutoclickExecution @relation(fields: [executionId], references: [id])
+
+  @@index([executionId], map: "idx_autoclick_snapshot_exec")
+  @@map("autoclick_execution_snapshots")
+}
+
+model AutoclickURLFailure {
+  id                    String   @id
+  userId                String   @map("user_id")
+  urlHash               String   @map("url_hash")
+  url                   String
+  httpFailConsecutive   Int      @default(0) @map("http_fail_consecutive")
+  browserFailConsecutive Int     @default(0) @map("browser_fail_consecutive")
+  lastFailAt            DateTime? @map("last_fail_at")
+  preferBrowserUntil    DateTime? @map("prefer_browser_until")
+  notes                 String?
+  createdAt             DateTime @map("created_at")
+  updatedAt             DateTime @map("updated_at")
+
+  @@index([userId], map: "idx_autoclick_fail_user")
+  @@index([urlHash], map: "idx_autoclick_fail_hash")
+  @@map("autoclick_url_failures")
+}
+
+// =====================
+// Ads metrics daily
+// =====================
+
+model AdsMetricsDaily {
+  id              BigInt   @id @default(autoincrement())
+  userId          String   @map("user_id")
+  accountId       String   @map("account_id")
+  date            DateTime
+  campaignId      String   @map("campaign_id")
+  adGroupId       String   @map("ad_group_id")
+  device          String
+  network         String
+  clicks          BigInt
+  impressions     BigInt
+  costMicros      BigInt   @map("cost_micros")
+  conversions     BigInt
+  convValueMicros BigInt   @map("conv_value_micros")
+  vtc             BigInt
+  createdAt       DateTime @map("created_at")
+  updatedAt       DateTime @map("updated_at")
+
+  @@index([userId], map: "idx_ads_metrics_user")
+  @@index([accountId], map: "idx_ads_metrics_account")
+  @@index([date], map: "idx_ads_metrics_date")
+  @@index([campaignId], map: "idx_ads_metrics_campaign")
+  @@index([adGroupId], map: "idx_ads_metrics_adgroup")
+  @@map("ads_metrics_daily")
 }
