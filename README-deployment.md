@@ -224,16 +224,15 @@ git push origin production  # 触发生产环境构建
 - 生产默认跳过 Go 基线初始化（由 Prisma seed 完成）：`GO_SEED_ON_START=false`（开发默认 true）。
   - 严格只读默认开启：`GO_SEED_STRICT_READONLY=true`（所有环境默认，仅当 `GO_SEED_ALLOW_WRITE=true` 或 `DEV_SEED_WRITE=true` 时才允许 Go 写入种子）。
 
-### Prisma 配置（prisma.config.js）
-- 我们使用 `apps/frontend/prisma.config.js` 管理 Prisma 配置（替代已弃用的 `package.json#prisma`）。
-- 主要内容：
-  - `schema: 'prisma/schema.prisma'`
-  - `seed: 'node prisma/seed.js'`
+### Prisma 使用说明
+- 我们遵循 Prisma 默认约定：
+  - schema 路径：`apps/frontend/prisma/schema.prisma`（命令中通过 `--schema` 指定）
+  - 种子脚本：`apps/frontend/prisma/seed.js`（默认会被 Prisma 识别）
 - 本地/CI 常用命令：
-  - `cd apps/frontend && npx prisma format`（格式化 schema）
-  - `cd apps/frontend && npx prisma validate`（校验 schema）
-  - `cd apps/frontend && npx prisma migrate deploy`（部署迁移）
-  - `cd apps/frontend && npx prisma db seed`（执行种子，生产建议在部署/CI 阶段执行）
+  - `cd apps/frontend && npx prisma format --schema prisma/schema.prisma`（格式化）
+  - `cd apps/frontend && npx prisma validate --schema prisma/schema.prisma`（校验）
+  - `cd apps/frontend && npx prisma migrate deploy --schema prisma/schema.prisma`（部署迁移）
+  - `cd apps/frontend && npx prisma db seed --schema prisma/schema.prisma`（执行种子，生产建议在部署/CI 阶段执行）
 - 若希望在部署阶段显式触发（非必需）：
   - 容器内：`/app/docker-entrypoint.sh prisma-migrate-only`、`/app/docker-entrypoint.sh prisma-migrate-status`
   - 仓库脚本（本地/CI）：`deployments/scripts/db-ops.sh`（自动从 `gofly_admin_v3/config.yaml` 推导 DATABASE_URL）：
