@@ -348,7 +348,62 @@ ensure_admin_jwt_secret() {
   fi
   echo "[entrypoint] JWT_SECRET 未设置，已自动生成随机密钥（仅当前实例有效）。生产建议显式配置并支持轮转。"
 }
+
+# 通用机密与默认配置（前端/Next）
+gen_b64() {
+  local n=${1:-48}
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -base64 "$n" 2>/dev/null | tr -d '\n' || echo "autogen-$RANDOM-$(date +%s)"
+  elif command -v node >/dev/null 2>&1; then
+    node -e "console.log(require('crypto').randomBytes($n).toString('base64'))" 2>/dev/null || echo "autogen-$RANDOM-$(date +%s)"
+  else
+    echo "autogen-$RANDOM-$(date +%s)"
+  fi
+}
+
+ensure_auth_secret() {
+  if [ -z "$AUTH_SECRET" ]; then
+    export AUTH_SECRET="$(gen_b64 64)"
+    echo "[entrypoint] AUTH_SECRET 未设置，已自动生成（NextAuth/前端）"
+  fi
+  if [ -z "$NEXTAUTH_SECRET" ]; then
+    export NEXTAUTH_SECRET="$AUTH_SECRET"
+  fi
+}
+
+ensure_encryption_key() {
+  if [ -z "$ENCRYPTION_KEY" ]; then
+    export ENCRYPTION_KEY="$(gen_b64 48)"
+    echo "[entrypoint] ENCRYPTION_KEY 未设置，已自动生成（前端加密用途）"
+  fi
+}
+
+ensure_session_secret() {
+  if [ -z "$SESSION_SECRET" ]; then
+    export SESSION_SECRET="$(gen_b64 48)"
+    echo "[entrypoint] SESSION_SECRET 未设置，已自动生成（会话用途）"
+  fi
+}
+
+ensure_api_secret() {
+  if [ -z "$API_SECRET" ]; then
+    export API_SECRET="$(gen_b64 32)"
+    echo "[entrypoint] API_SECRET 未设置，已自动生成（app.apisecret）"
+  fi
+}
+
+ensure_default_domain() {
+  if [ -z "$NEXT_PUBLIC_DOMAIN" ] && [ "${NEXT_PUBLIC_DEPLOYMENT_ENV}" != "production" ] && [ "${NEXT_PUBLIC_DEPLOYMENT_ENV}" != "preview" ]; then
+    export NEXT_PUBLIC_DOMAIN="localhost:${NEXTJS_PORT}"
+    echo "[entrypoint] NEXT_PUBLIC_DOMAIN 未设置，已默认: $NEXT_PUBLIC_DOMAIN"
+  fi
+}
 ensure_admin_jwt_secret || true
+ensure_auth_secret || true
+ensure_encryption_key || true
+ensure_session_secret || true
+ensure_api_secret || true
+ensure_default_domain || true
 auto_fix_prisma_url || true
 
 # 自动设置 NextAuth URL，避免回落到 localhost 导致 Google OAuth 回调不匹配
@@ -417,8 +472,36 @@ if [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ] && [ -f "$PRISMA_SCHEMA" ]; t
     # 使用全局 prisma CLI，schema 指定到 Next 应用内
     PRISMA_OUTPUT=$(run_prisma migrate deploy --schema "$PRISMA_SCHEMA" 2>&1) || DEPLOY_RC=$?
     if [ -n "$DEPLOY_RC" ] && [ "$DEPLOY_RC" -ne 0 ]; then
-      echo "$PRISMA_OUTPUT"
-      echo "[entrypoint] ⚠️ Prisma 迁移失败"
+      # 针对全新库初始化时的历史修复迁移做自动跳过（避免重复外键/字符序冲突）
+      : "${PRISMA_AUTO_SKIP_HISTORICAL_FIXES:=true}"
+      if [ "$PRISMA_AUTO_SKIP_HISTORICAL_FIXES" = "true" ]; then
+        # 处理 20250919072000_add_critical_foreign_keys：全新库上与基线外键重复
+        if printf "%s" "$PRISMA_OUTPUT" | grep -Eq "20250919072000_add_critical_foreign_keys|Duplicate foreign key constraint name"; then
+          echo "[entrypoint] 检测到外键重复，自动标记已应用：20250919072000_add_critical_foreign_keys"
+          run_prisma migrate resolve --schema "$PRISMA_SCHEMA" --applied 20250919072000_add_critical_foreign_keys || true
+          PRISMA_OUTPUT=$(run_prisma migrate deploy --schema "$PRISMA_SCHEMA" 2>&1) || DEPLOY_RC=$?
+        fi
+        # 处理 20250919073000_add_more_foreign_keys：清理性 JOIN 在无数据/字符序差异下可能 1267
+        if [ -n "$DEPLOY_RC" ] && [ "$DEPLOY_RC" -ne 0 ]; then
+          if printf "%s" "$PRISMA_OUTPUT" | grep -Eq "20250919073000_add_more_foreign_keys|Illegal mix of collations|code: 1267"; then
+            echo "[entrypoint] 检测到字符序冲突/清理性迁移，自动标记已应用：20250919073000_add_more_foreign_keys"
+            run_prisma migrate resolve --schema "$PRISMA_SCHEMA" --applied 20250919073000_add_more_foreign_keys || true
+            PRISMA_OUTPUT=$(run_prisma migrate deploy --schema "$PRISMA_SCHEMA" 2>&1) || DEPLOY_RC=$?
+          fi
+        fi
+        # 若修复后已成功，打印输出并跳过后续通用分支
+        if [ -z "$DEPLOY_RC" ] || [ "$DEPLOY_RC" -eq 0 ]; then
+          [ -n "$PRISMA_OUTPUT" ] && printf "%s\n" "$PRISMA_OUTPUT" | tail -n +1
+          DEPLOY_RC=0
+          unset PRISMA_OUTPUT
+          goto_after_migrate_success=true
+        fi
+      fi
+      # 若仍失败，打印失败详情并进入通用恢复分支
+      if [ -n "$DEPLOY_RC" ] && [ "$DEPLOY_RC" -ne 0 ]; then
+        [ -n "$PRISMA_OUTPUT" ] && printf "%s\n" "$PRISMA_OUTPUT" | tail -n +1
+        echo "[entrypoint] ⚠️ Prisma 迁移失败"
+      fi
       # 自动 resolve 失败的迁移（仅当显式开启）
       if [ "${PRISMA_AUTO_RESOLVE_FAILED}" = "true" ]; then
         FAILED_LIST=$(run_prisma migrate status --schema "$PRISMA_SCHEMA" 2>/dev/null | awk '/Following migration have failed:/{flag=1; next} flag && NF {print $0}')
