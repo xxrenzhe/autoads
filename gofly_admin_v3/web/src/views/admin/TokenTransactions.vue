@@ -36,7 +36,7 @@ export default { name: 'TokenTransactions', setup() {
     { title:'RefID', dataIndex:'ref_id', key:'ref_id', width:180 },
     { title:'详情', dataIndex:'details', key:'details' }
   ]
-  const load = async () => { loading.value=true; try { const r = await tokenApi.listTx({ userId: userId.value, service: service.value, action: action.value, type: type.value, page: pagination.current, size: pagination.pageSize }); if (r.code===0) { items.value = r.data.items; pagination.total = r.data.total } } catch { message.error('加载失败') } finally { loading.value=false } }
+  const load = async () => { loading.value=true; try { const r = await tokenApi.listTx({ userId: userId.value, service: service.value, action: action.value, type: type.value, page: pagination.current, size: pagination.pageSize }); if (r.code===0) { items.value = r.data.items; pagination.total = r.data.total } } catch (e) { message.error('加载失败') } finally { loading.value=false } }
   const onChange = (pag) => { pagination.current = pag.current; pagination.pageSize = pag.pageSize; load() }
   onMounted(load)
   return { userId, service, action, type, loading, items, columns, pagination, load, onChange }
@@ -47,4 +47,3 @@ export default { name: 'TokenTransactions', setup() {
 .token-tx { padding: 16px }
 .toolbar { margin-bottom: 10px; display:flex; gap:8px }
 </style>
-

@@ -25,7 +25,7 @@ export default { name: 'TokenAdjust', setup() {
   const action = ref('')
   const refId = ref('')
   const loading = ref(false)
-  const submit = async () => { if (!userId.value || !amount.value || !reason.value) { message.warning('请填写用户ID、金额与原因'); return } ; loading.value=true; try { await tokenApi.adjust(userId.value, { amount: amount.value, reason: reason.value, service: service.value, action: action.value, ref_id: refId.value }); message.success('已调整'); amount.value=0; reason.value=''; } catch { message.error('调整失败') } finally { loading.value=false } }
+  const submit = async () => { if (!userId.value || !amount.value || !reason.value) { message.warning('请填写用户ID、金额与原因'); return } ; loading.value=true; try { await tokenApi.adjust(userId.value, { amount: amount.value, reason: reason.value, service: service.value, action: action.value, ref_id: refId.value }); message.success('已调整'); amount.value=0; reason.value=''; } catch (e) { message.error('调整失败') } finally { loading.value=false } }
   return { userId, amount, reason, service, action, refId, loading, submit }
 } }
 </script>
@@ -34,4 +34,3 @@ export default { name: 'TokenAdjust', setup() {
 .token-adjust { padding: 16px; }
 .form { display:grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap:8px; max-width: 880px }
 </style>
-

@@ -101,8 +101,8 @@ export default {
         await loadEndpoints(); resetEndpoint(); message.success('已保存')
       } catch (e) { message.error('保存失败') } finally { saving.value = false }
     }
-    const toggleEndpoint = async (r) => { toggling[r.id] = true; try { await apiMgmt.toggleEndpoint(r.id); await loadEndpoints() } catch { message.error('切换失败') } finally { toggling[r.id] = false } }
-    const deleteEndpoint = async (r) => { try { await apiMgmt.deleteEndpoint(r.id); await loadEndpoints(); message.success('已删除') } catch { message.error('删除失败') } }
+    const toggleEndpoint = async (r) => { toggling[r.id] = true; try { await apiMgmt.toggleEndpoint(r.id); await loadEndpoints() } catch (e) { message.error('切换失败') } finally { toggling[r.id] = false } }
+    const deleteEndpoint = async (r) => { try { await apiMgmt.deleteEndpoint(r.id); await loadEndpoints(); message.success('已删除') } catch (e) { message.error('删除失败') } }
 
     // Keys
     const loadingKeys = ref(false)
@@ -118,10 +118,10 @@ export default {
       { title: '状态', key: 'status', width: 90 },
       { title: '操作', key: 'action', width: 160 }
     ]
-    const loadKeys = async () => { loadingKeys.value = true; try { const res = await apiMgmt.listKeys(); if (res.code===0) keys.value = res.data||[] } catch { message.error('加载Keys失败') } finally { loadingKeys.value = false } }
-    const createKey = async () => { creatingKey.value = true; try { const res = await apiMgmt.createKey(keyForm); if (res.code===0) { fullKey.value = res.data.fullKey; await loadKeys(); message.success('已创建'); keyForm.name=''; keyForm.userId=''; keyForm.isActive=true } } catch { message.error('创建失败') } finally { creatingKey.value = false } }
-    const deleteKey = async (r) => { try { await apiMgmt.deleteKey(r.id); await loadKeys(); message.success('已删除') } catch { message.error('删除失败') } }
-    const revokeKey = async (r) => { try { await apiMgmt.revokeKey(r.id); await loadKeys(); message.success('已撤销') } catch { message.error('撤销失败') } }
+    const loadKeys = async () => { loadingKeys.value = true; try { const res = await apiMgmt.listKeys(); if (res.code===0) keys.value = res.data||[] } catch (e) { message.error('加载Keys失败') } finally { loadingKeys.value = false } }
+    const createKey = async () => { creatingKey.value = true; try { const res = await apiMgmt.createKey(keyForm); if (res.code===0) { fullKey.value = res.data.fullKey; await loadKeys(); message.success('已创建'); keyForm.name=''; keyForm.userId=''; keyForm.isActive=true } } catch (e) { message.error('创建失败') } finally { creatingKey.value = false } }
+    const deleteKey = async (r) => { try { await apiMgmt.deleteKey(r.id); await loadKeys(); message.success('已删除') } catch (e) { message.error('删除失败') } }
+    const revokeKey = async (r) => { try { await apiMgmt.revokeKey(r.id); await loadKeys(); message.success('已撤销') } catch (e) { message.error('撤销失败') } }
 
     onMounted(() => { loadEndpoints(); loadKeys() })
     return { endpoints, epColumns, epForm, loadingEndpoints, saving, toggling, editEndpoint, saveEndpoint, resetEndpoint, toggleEndpoint, deleteEndpoint,
@@ -135,4 +135,3 @@ export default {
 .card { margin-bottom: 16px; }
 .toolbar { margin-bottom: 10px; display:flex; gap:8px; align-items:center }
 </style>
-

@@ -43,11 +43,11 @@ export default { name: 'PlanManager', setup() {
     { title:'状态', dataIndex:'status', key:'status', width:120 },
     { title:'操作', key:'action', width:160 }
   ]
-  const load = async () => { loading.value = true; try { const r = await subsApi.listPlans(); if (r.code===0) items.value = r.data||[] } catch { message.error('加载失败') } finally { loading.value=false } }
+  const load = async () => { loading.value = true; try { const r = await subsApi.listPlans(); if (r.code===0) items.value = r.data||[] } catch (e) { message.error('加载失败') } finally { loading.value=false } }
   const reset = () => Object.assign(form, { id:'', name:'', description:'', price:0, duration:30, status:'ACTIVE' })
-  const save = async () => { saving.value = true; try { if (!form.name) { message.warning('名称必填'); return } if (form.id) { await subsApi.updatePlan(form.id, form) } else { await subsApi.createPlan(form) } await load(); reset(); message.success('已保存') } catch { message.error('保存失败') } finally { saving.value = false } }
+  const save = async () => { saving.value = true; try { if (!form.name) { message.warning('名称必填'); return } if (form.id) { await subsApi.updatePlan(form.id, form) } else { await subsApi.createPlan(form) } await load(); reset(); message.success('已保存') } catch (e) { message.error('保存失败') } finally { saving.value = false } }
   const edit = (r) => Object.assign(form, { id:r.id, name:r.name, description:r.description, price:r.price, duration:r.duration, status:r.status })
-  const del = async (r) => { try { await subsApi.deletePlan(r.id); await load(); message.success('已删除') } catch { message.error('删除失败') } }
+  const del = async (r) => { try { await subsApi.deletePlan(r.id); await load(); message.success('已删除') } catch (e) { message.error('删除失败') } }
   onMounted(load)
   return { loading, items, columns, form, saving, save, reset, edit, del }
 } }
@@ -57,4 +57,3 @@ export default { name: 'PlanManager', setup() {
 .plans { padding: 16px; }
 .toolbar { margin-bottom: 10px; display:flex; gap:8px; align-items:center }
 </style>
-

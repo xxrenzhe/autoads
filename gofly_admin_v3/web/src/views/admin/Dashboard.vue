@@ -15,7 +15,7 @@ import { rateLimitApi } from '@/api/admin'
 export default { name: 'Dashboard', setup() {
   const stats = ref({})
   const load = async () => {
-    try { const res = await rateLimitApi.getSystemStats(); if (res.code===0) stats.value = res.data || {} } catch {}
+    try { const res = await rateLimitApi.getSystemStats(); if (res.code===0) stats.value = res.data || {} } catch (e) {}
   }
   onMounted(load)
   return { stats }
@@ -25,4 +25,3 @@ export default { name: 'Dashboard', setup() {
 <style scoped>
 .dashboard { padding: 16px; }
 </style>
-

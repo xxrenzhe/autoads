@@ -4,7 +4,7 @@
       <span class="toggle" @click="toggle">{{ expanded ? '▼' : '▶' }}</span>
       <span class="node-type">{{ isArray ? 'Array' : 'Object' }}</span>
       <div v-show="expanded">
-        <div v-for="(item, idx) in entries" :key="(item.k ?? idx) + '-' + idx">
+        <div v-for="(item, idx) in entries" :key="((item.k !== undefined && item.k !== null) ? item.k : idx) + '-' + idx">
           <TreeNode
             :data="item.v"
             :level="level + 1"
@@ -53,14 +53,14 @@ export default {
       try {
         const txt = JSON.stringify(this.data)
         return txt && txt.toLowerCase().includes(this.filter.toLowerCase())
-      } catch {
+      } catch (e) {
         return true
       }
     },
     expanded() { return this.expandedKeys && this.expandedKeys.has && this.expandedKeys.has(this.currentPath) },
     displayValue() {
       if (typeof this.data === 'string') return this.data
-      try { return JSON.stringify(this.data) } catch { return String(this.data) }
+      try { return JSON.stringify(this.data) } catch (e) { return String(this.data) }
     }
   },
   methods: {
@@ -75,4 +75,3 @@ export default {
 .tree-node .node-type { color: #888; margin-right: 6px; }
 .tree-node .leaf { color: #222; }
 </style>
-

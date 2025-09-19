@@ -25,8 +25,8 @@ export default { name: 'Monitoring', setup() {
   const health = ref({})
   const alerts = ref('[]')
   const saving = ref(false)
-  const load = async () => { try { const h = await request({ url:'/ops/api/v1/console/monitoring/health', method:'get' }); if (h.code===0) health.value = h.data; const a = await request({ url:'/ops/api/v1/console/monitoring/alerts', method:'get' }); if (a.code===0) alerts.value = typeof a.data==='string'?a.data:JSON.stringify(a.data,null,2) } catch { message.error('加载失败') } }
-  const saveAlerts = async () => { saving.value=true; try { let data; try { data = JSON.parse(alerts.value) } catch { message.warning('请输入合法JSON'); saving.value=false; return } const r = await request({ url:'/ops/api/v1/console/monitoring/alerts', method:'post', data }); if (r.code===0) message.success('已保存') } catch { message.error('保存失败') } finally { saving.value=false } }
+  const load = async () => { try { const h = await request({ url:'/ops/api/v1/console/monitoring/health', method:'get' }); if (h.code===0) health.value = h.data; const a = await request({ url:'/ops/api/v1/console/monitoring/alerts', method:'get' }); if (a.code===0) alerts.value = typeof a.data==='string'?a.data:JSON.stringify(a.data,null,2) } catch (e) { message.error('加载失败') } }
+  const saveAlerts = async () => { saving.value=true; try { let data; try { data = JSON.parse(alerts.value) } catch (e) { message.warning('请输入合法JSON'); saving.value=false; return } const r = await request({ url:'/ops/api/v1/console/monitoring/alerts', method:'post', data }); if (r.code===0) message.success('已保存') } catch (e) { message.error('保存失败') } finally { saving.value=false } }
   load()
   return { health, alerts, saving, load, saveAlerts }
 } }

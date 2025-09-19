@@ -42,9 +42,9 @@ export default { name: 'UserSubscription', setup() {
     { title:'操作', key:'action', width:120 }
   ]
   const loadPlans = async () => { const r = await subsApi.listPlans(); if (r.code===0) plans.value = r.data||[] }
-  const load = async () => { if (!userId.value) { message.warning('请输入用户ID'); return }; loading.value = true; try { const r = await subsApi.listUserSubs(userId.value); if (r.code===0) subs.value = r.data||[] } catch { message.error('加载失败') } finally { loading.value = false } }
-  const assign = async () => { assigning.value = true; try { if (!userId.value || !assignForm.value.plan_id) { message.warning('请选择计划'); return } const r = await subsApi.assign(userId.value, assignForm.value); if (r.code===0) { message.success('已分配'); assignForm.value={ plan_id:'', days:null }; load() } } catch { message.error('分配失败') } finally { assigning.value=false } }
-  const cancel = async (rec) => { try { await subsApi.cancel(userId.value, rec.id); message.success('已取消'); load() } catch { message.error('取消失败') } }
+  const load = async () => { if (!userId.value) { message.warning('请输入用户ID'); return }; loading.value = true; try { const r = await subsApi.listUserSubs(userId.value); if (r.code===0) subs.value = r.data||[] } catch (e) { message.error('加载失败') } finally { loading.value = false } }
+  const assign = async () => { assigning.value = true; try { if (!userId.value || !assignForm.value.plan_id) { message.warning('请选择计划'); return } const r = await subsApi.assign(userId.value, assignForm.value); if (r.code===0) { message.success('已分配'); assignForm.value={ plan_id:'', days:null }; load() } } catch (e) { message.error('分配失败') } finally { assigning.value=false } }
+  const cancel = async (rec) => { try { await subsApi.cancel(userId.value, rec.id); message.success('已取消'); load() } catch (e) { message.error('取消失败') } }
   onMounted(loadPlans)
   return { userId, subs, plans, loading, columns, assignForm, assigning, load, assign, cancel }
 } }
@@ -55,4 +55,3 @@ export default { name: 'UserSubscription', setup() {
 .toolbar { margin-bottom: 10px; display:flex; gap:8px }
 .assign { display:flex; gap:8px; align-items:center }
 </style>
-

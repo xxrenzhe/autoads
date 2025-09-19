@@ -89,7 +89,7 @@ export default { name: 'UserList', setup() {
       if (assignForm.days && assignForm.days > 0) body.days = assignForm.days
       const res = await subsApi.assign(currentUser.value.id, body)
       if (res.code === 0) { message.success('已调整订阅'); assignVisible.value = false; load() } else { message.error(res.message || '操作失败') }
-    } catch { message.error('操作失败') } finally { assignLoading.value = false }
+    } catch (e) { message.error('操作失败') } finally { assignLoading.value = false }
   }
   const doTokenAdjust = async () => {
     if (!currentUser.value || !tokenForm.delta) { message.warning('请输入变动数量'); return }
@@ -97,9 +97,9 @@ export default { name: 'UserList', setup() {
     try {
       const res = await tokensApi.adjust(currentUser.value.id, { delta: tokenForm.delta, reason: tokenForm.reason || 'manual' })
       if (res.code === 0) { message.success('已变更Token'); tokenVisible.value = false; load() } else { message.error(res.message || '操作失败') }
-    } catch { message.error('操作失败') } finally { tokenLoading.value = false }
+    } catch (e) { message.error('操作失败') } finally { tokenLoading.value = false }
   }
-  const toggle = async (r) => { try { const newStatus = r.status==='ACTIVE'?'SUSPENDED':'ACTIVE'; await usersApi.updateStatus(r.id, newStatus); message.success('已更新'); load() } catch { message.error('更新失败') } }
+  const toggle = async (r) => { try { const newStatus = r.status==='ACTIVE'?'SUSPENDED':'ACTIVE'; await usersApi.updateStatus(r.id, newStatus); message.success('已更新'); load() } catch (e) { message.error('更新失败') } }
   onMounted(load)
   return { loading, keyword, status, items, columns, pagination, load, onChange, toggle, currentUser, assignVisible, assignLoading, assignForm, tokenVisible, tokenLoading, tokenForm, openAssign, openToken, doAssign, doTokenAdjust }
 } }

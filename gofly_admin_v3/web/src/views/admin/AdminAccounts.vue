@@ -39,9 +39,9 @@ export default { name:'AdminAccounts', setup() {
     { title:'上次登录', dataIndex:'last_login_at', key:'last_login_at', width:180 },
     { title:'操作', key:'action', width:140 }
   ]
-  const load = async () => { loading.value=true; try { const r = await adminsApi.list(); if (r.code===0) items.value = r.data||[] ; const ro = await adminsApi.roles(); if (ro.code===0) roles.value = ro.data||[] } catch { message.error('加载失败') } finally { loading.value=false } }
-  const create = async () => { loading.value=true; try { if (!form.value.username || !form.value.email || !form.value.password) { message.warning('填写完整'); return } await adminsApi.create(form.value); message.success('已创建'); form.value={ username:'', email:'', password:'', role:'admin'}; load() } catch { message.error('创建失败') } finally { loading.value=false } }
-  const remove = async (r) => { loading.value=true; try { await adminsApi.remove(r.id); message.success('已删除'); load() } catch { message.error('删除失败') } finally { loading.value=false } }
+  const load = async () => { loading.value=true; try { const r = await adminsApi.list(); if (r.code===0) items.value = r.data||[] ; const ro = await adminsApi.roles(); if (ro.code===0) roles.value = ro.data||[] } catch (e) { message.error('加载失败') } finally { loading.value=false } }
+  const create = async () => { loading.value=true; try { if (!form.value.username || !form.value.email || !form.value.password) { message.warning('填写完整'); return } await adminsApi.create(form.value); message.success('已创建'); form.value={ username:'', email:'', password:'', role:'admin'}; load() } catch (e) { message.error('创建失败') } finally { loading.value=false } }
+  const remove = async (r) => { loading.value=true; try { await adminsApi.remove(r.id); message.success('已删除'); load() } catch (e) { message.error('删除失败') } finally { loading.value=false } }
   onMounted(load)
   return { items, roles, loading, form, columns, create, remove }
 } }
@@ -51,4 +51,3 @@ export default { name:'AdminAccounts', setup() {
 .admins { padding: 16px }
 .form { display:grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap:8px; max-width: 960px; margin-bottom: 12px }
 </style>
-
