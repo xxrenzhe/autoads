@@ -60,12 +60,18 @@ jobs:
         run: npm ci --workspaces --include-workspace-root --ignore-scripts
 
       - name: Prisma format (non-blocking)
+        env:
+          DATABASE_URL: mysql://user:pass@127.0.0.1:3306/dummy
         run: cd apps/frontend && npx prisma format --schema prisma/schema.prisma
 
       - name: Generate Prisma Client
+        env:
+          DATABASE_URL: mysql://user:pass@127.0.0.1:3306/dummy
         run: cd apps/frontend && npx prisma generate
 
       - name: Prisma validate
+        env:
+          DATABASE_URL: mysql://user:pass@127.0.0.1:3306/dummy
         run: cd apps/frontend && npx prisma validate
 
       - name: TypeScript type check (frontend)

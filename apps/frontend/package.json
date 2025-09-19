@@ -12,9 +12,6 @@
     "lint": "next lint",
     "type-check": "tsc -p tsconfig.typecheck.json --noEmit"
   },
-  "prisma": {
-    "seed": "node prisma/seed.js"
-  },
   "dependencies": {
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
