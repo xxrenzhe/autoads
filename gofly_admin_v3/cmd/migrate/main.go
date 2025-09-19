@@ -49,7 +49,16 @@ func runPrismaSeed(schemaPath string) error {
     cmd = exec.CommandContext(ctx, "prisma", "db", "seed", "--schema", schemaPath)
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
-    return cmd.Run()
+    if err := cmd.Run(); err == nil { return nil }
+    // Final fallback: directly run the seed script via node
+    seedPath := filepath.Clean(filepath.Join("..", "apps", "frontend", "prisma", "seed.js"))
+    if _, statErr := os.Stat(seedPath); statErr == nil {
+        node := exec.CommandContext(ctx, "node", seedPath)
+        node.Stdout = os.Stdout
+        node.Stderr = os.Stderr
+        return node.Run()
+    }
+    return fmt.Errorf("no usable prisma seed configuration and seed.js not found")
 }
 
 func main() {
