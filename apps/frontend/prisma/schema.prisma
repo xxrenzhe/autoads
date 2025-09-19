@@ -6,9 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider               = "mysql"
-  url                    = env("DATABASE_URL")
-  referentialIntegrity   = "prisma"
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 model User {
@@ -60,7 +60,7 @@ model User {
   behaviorAnalytics                              UserBehaviorAnalytics[]
   devices                                        UserDevice[]
   userRestrictions                               UserRestriction[]
-  users                                          User?                    @relation("usersTousers", fields: [invitedById], references: [id])
+  users                                          User?                    @relation("usersTousers", fields: [invitedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   other_users                                    User[]                   @relation("usersTousers")
   changedSubscriptions                           SubscriptionHistory[]    @relation("ChangedSubscriptions")
   queuedInvitationRewards                        QueuedInvitationReward[]
@@ -328,8 +328,9 @@ model SystemConfig {
   updatedAt   DateTime @updatedAt      @map("updated_at")
   createdBy   String   @default("system") @map("created_by")
   updatedBy   String   @default("system") @map("updated_by")
-  // Optional relation for convenience; no DB FK required (referentialIntegrity = "prisma")
-  user        User?    @relation("SystemConfigs", fields: [updatedBy], references: [id])
+  // Optional relations for convenience (relationMode = prisma)
+  updatedByUser User?  @relation("SystemConfigs", fields: [updatedBy], references: [id])
+  createdByUser User?  @relation("system_configs_createdByTousers", fields: [createdBy], references: [id])
 
   @@index([category])
   @@index([isSecret], map: "idx_system_configs_is_secret")
@@ -601,7 +602,7 @@ model configuration_history {
   changedBy String
   reason    String?
   createdAt DateTime @default(now()) @db.Timestamp(6)
-  users     User     @relation(fields: [changedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users     User     @relation(fields: [changedBy], references: [id])
 
   @@index([changedBy], map: "configuration_history_changed_by_idx")
   @@index([configKey], map: "configuration_history_config_key_idx")
@@ -1052,6 +1053,8 @@ model AutoclickSchedule {
   nextRunAt    DateTime? @map("next_run_at")
   createdAt    DateTime  @map("created_at")
   updatedAt    DateTime  @map("updated_at")
+  dailyPlans   AutoclickDailyPlan[]
+  executions   AutoclickExecution[]
 
   @@index([userId], map: "idx_autoclick_schedules_user")
   @@index([status], map: "idx_autoclick_schedules_status")
@@ -1090,6 +1093,7 @@ model AutoclickExecution {
   createdAt   DateTime  @map("created_at")
   updatedAt   DateTime  @map("updated_at")
   schedule    AutoclickSchedule @relation(fields: [scheduleId], references: [id])
+  snapshots   AutoclickExecutionSnapshot[]
 
   @@index([userId], map: "idx_autoclick_exec_user")
   @@index([scheduleId], map: "idx_autoclick_exec_schedule")
@@ -1176,54 +1180,6 @@ model IdempotencyRequest {
   @@unique([userId, endpoint, idemKey], map: "uniq_user_endpoint_key")
   @@index([createdAt], map: "idx_created_at")
   @@map("idempotency_requests")
-}
-
-model ConfigChangeHistory {
-  id         String   @id @default(cuid())
-  configKey  String   @map("configKey")
-  oldValue   String?  @map("oldValue")
-  newValue   String   @map("newValue")
-  changedBy  String   @map("changedBy")
-  reason     String?  @map("reason")
-  createdAt  DateTime @default(now()) @map("createdAt")
-  user       User     @relation(fields: [changedBy], references: [id])
-
-  @@index([configKey, createdAt], map: "config_change_history_configKey_createdAt_idx")
-  @@map("config_change_history")
-}
-
-model NotificationLog {
-  id           String             @id @default(cuid())
-  userId       String             @map("userId")
-  templateId   String             @map("templateId")
-  type         NotificationType   @map("type")
-  recipient    String             @map("recipient")
-  status       NotificationStatus @default(PENDING) @map("status")
-  errorMessage String?            @map("errorMessage")
-  sentAt       DateTime?          @map("sentAt")
-  deliveredAt  DateTime?          @map("deliveredAt")
-  createdAt    DateTime           @default(now()) @map("createdAt")
-
-  @@index([status, createdAt], map: "notification_logs_status_createdAt_idx")
-  @@index([userId, createdAt], map: "notification_logs_userId_createdAt_idx")
-  @@map("notification_logs")
-}
-
-model PerformanceAlert {
-  id         String   @id @default(cuid())
-  type       String
-  severity   String
-  message    String
-  endpoint   String?
-  requestId  String?
-  metadata   Json?
-  resolved   Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  resolvedAt DateTime?
-
-  @@index([resolved, severity, createdAt], map: "performance_alerts_resolved_severity_createdAt_idx")
-  @@index([type, createdAt], map: "performance_alerts_type_createdAt_idx")
-  @@map("performance_alerts")
 }
 
 model PlanConfig {

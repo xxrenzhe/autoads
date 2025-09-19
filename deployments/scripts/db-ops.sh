@@ -15,6 +15,8 @@ Commands:
   diff                  Show SQL diff between migrations and target DB
   resolve <name>        Mark a migration as applied (baseline) by name
   resolve-rolled <name> Mark a migration as rolled back (failed) by name
+  format                Run prisma format on schema
+  validate              Validate prisma schema
 
 Options:
   --config <path>       Config YAML path (default: $CONFIG_PATH_DEFAULT)
@@ -39,7 +41,7 @@ parse_args() {
   ARG1=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      status|deploy|diff|resolve|resolve-rolled) CMD="$1"; shift; if [[ "$CMD" == "resolve" || "$CMD" == "resolve-rolled" ]]; then ARG1="${1:-}"; [[ -z "$ARG1" ]] && { echo "$CMD requires a migration name"; exit 1; }; shift; fi ;;
+      status|deploy|diff|resolve|resolve-rolled|format|validate) CMD="$1"; shift; if [[ "$CMD" == "resolve" || "$CMD" == "resolve-rolled" ]]; then ARG1="${1:-}"; [[ -z "$ARG1" ]] && { echo "$CMD requires a migration name"; exit 1; }; shift; fi ;;
       --config) CONFIG_PATH="$2"; shift 2 ;;
       --schema) SCHEMA="$2"; shift 2 ;;
       -h|--help) help; exit 0 ;;
@@ -105,6 +107,12 @@ main() {
     resolve-rolled)
       ensure_database_url
       run_prisma migrate resolve --schema "$SCHEMA" --rolled-back "$ARG1"
+      ;;
+    format)
+      ( cd "$ROOT_DIR/apps/frontend" && npx prisma format --schema "$SCHEMA" )
+      ;;
+    validate)
+      ( cd "$ROOT_DIR/apps/frontend" && npx prisma validate --schema "$SCHEMA" )
       ;;
   esac
 }
