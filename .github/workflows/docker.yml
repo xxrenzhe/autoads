@@ -475,6 +475,8 @@ jobs:
             -e PORT=8080 \
             -e BACKEND_URL=http://127.0.0.1:8080 \
             -e RUN_MIGRATIONS_ON_START=true \
+            -e GO_SEED_ON_START=true \
+            -e GO_SEED_ALLOW_WRITE=true \
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
             autoads:smoke
           echo "[time] run-container end:   $(date -u +%FT%T)"
