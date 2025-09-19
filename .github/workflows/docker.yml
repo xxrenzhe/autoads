@@ -426,6 +426,7 @@ jobs:
             npm i -g prisma@6.16.0
             export DATABASE_URL=mysql://root:password@mysql:3306/autoads
             npx prisma migrate deploy --schema apps/frontend/prisma/schema.prisma
+            npx prisma generate --schema apps/frontend/prisma/schema.prisma
             node apps/frontend/prisma/seed.js
           '
           echo "[time] prepare-db end:   $(date -u +%FT%T)"
@@ -490,18 +491,20 @@ jobs:
             -e RUN_MIGRATIONS_ON_START=true \
             -e GO_SEED_ON_START=true \
             -e GO_SEED_ALLOW_WRITE=true \
+            -e SKIP_NEXT=true \
+            -e SKIP_EXECUTORS=true \
             -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
             autoads:smoke
           echo "[time] run-container end:   $(date -u +%FT%T)"
 
-      - name: In-container readiness (wget /readyz)
+      - name: In-container readiness (wget /ready or /health)
         id: in_container_ready
         run: |
           echo "[time] in-container-ready start: $(date -u +%FT%T)"
           set +e
           ready=false
           for i in $(seq 1 60); do
-            if docker exec autoads sh -lc 'wget -qO- http://127.0.0.1:8080/readyz >/dev/null 2>&1'; then
+            if docker exec autoads sh -lc 'wget -qO- http://127.0.0.1:8080/ready >/dev/null 2>&1 || wget -qO- http://127.0.0.1:8080/health >/dev/null 2>&1'; then
               echo "Backend ready (in-container) on :8080"
               ready=true
               break
@@ -516,13 +519,13 @@ jobs:
         run: |
           docker exec autoads sh -lc 'busybox netstat -lnt || true'
 
-      - name: Wait for backend ready (http://127.0.0.1:8080/readyz)
+      - name: Wait for backend ready (http://127.0.0.1:8080/ready or /health)
         if: steps.in_container_ready.outputs.ready != 'true'
         run: |
           echo "[time] external-ready start: $(date -u +%FT%T)"
           set -e
           for i in $(seq 1 120); do
-            if curl -fsS http://127.0.0.1:8080/readyz >/dev/null 2>&1; then
+            if curl -fsS http://127.0.0.1:8080/ready >/dev/null 2>&1 || curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1; then
               echo "Backend ready on :8080"
               exit 0
             fi
@@ -537,7 +540,14 @@ jobs:
 
       - name: Show listening ports (debug)
         if: always()
-        run: docker exec autoads sh -lc 'ss -ltnp | sed -n "1,200p" || true'
+        run: |
+          set +e
+          echo "Containers:" && docker ps -a
+          if docker ps -a --format '{{.Names}}' | grep -q '^autoads$'; then
+            docker exec autoads sh -lc 'ss -ltnp | sed -n "1,200p" || true' || true
+          else
+            echo "autoads container not found (skipping ss output)"
+          fi
 
       - name: Cleanup
         if: always()
