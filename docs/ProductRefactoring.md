@@ -449,3 +449,134 @@ Blog是吸引自然流量、建立行业权威、教育潜在用户的核心阵�
     *   Show an example of an AI-generated warning: "'Risk Detected: The final landing page contains the phrase 'guaranteed results', which may violate Google's 'Unrealistic Promises' policy. Suggestion: Contact the offer owner for a compliant landing page.'"
 *   **Beyond Compliance: A/B Testing for a Competitive Edge**: Briefly mention that once your links are safe, \`adscenter\` helps you automatically A/B test them to find the highest-performing variations, turning compliance from a defensive chore into an offensive advantage.
 *   **Conclusion & CTA**: Don't leave the fate of your business to chance. Proactively protect your Google Ads accounts with automated compliance checks. **Try AutoAds Max for 14 days and let our AI be your first line of defense.**
+
+
+## 附录B：重构前置检查项 (Pre-Refactoring Checklist)
+
+为确保本文档中描述的重构方案能够高效、无中断地执行，以下为启动开发前的最终决策与准备清单。
+
+### 一、最终技术决策与规范
+
+1.  **API 契约 (Contracts)**
+    *   **方案**: 所有微服务间的API将使用 **OpenAPI 3.0 (Swagger)** 规范进行定义。规范文件 (`openapi.yaml`) 将存放在Monorepo的相应服务目录下，作为代码的一部分进行版本控制，确保设计的统一性和契约的单一来源。
+
+2.  **领域事件模式 (Event Schemas)**
+    *   **方案**: 核心领域事件（如 `UserRegistered`, `SubscriptionStarted`）将使用 **JSON Schema** 定义。Schema文件将存放在代码库的共享目录中，供事件的生产者和消费者共同引用。
+
+3.  **数据状态确认 (Data State Confirmation)**
+    *   **方案**: **确认项目为全新构建，不存在历史用户数据**。因此，无需制定和执行数据迁移方案，这将极大简化上线流程。
+
+4.  **配置和密钥管理 (Config & Secrets Management)**
+    *   **方案**: 统一使用 **Google Secret Manager** 作为所有敏感信息（API密钥、数据库密码等）的唯一存储。Cloud Run服务将通过绑定的服务账号权限在运行时安全地拉取配置。非敏感配置将通过代码库中的配置文件管理。
+
+### 二、产品与开发流程
+
+1.  **UI/UX 设计流程**
+    *   **方案**:
+        1.  **现有UI转化**: 使用工具（如 `html-to-figma` 插件）将现有前端UI的关键页面转化为Figma设计稿，作为新设计的基础。
+        2.  **新功能设计**: 所有新功能（如Offer库、工作流页面）将在Figma中完成高保真设计，并包含覆盖主要用户流程的交互原型。Figma将作为UI/UX的唯一真相来源。
+
+2.  **开发工作流 (Solo Developer)**
+    *   **方案**:
+        *   **任务管理**: 所有开发任务、Bug和功能点将通过代码库的 **GitHub Issues** 进行跟踪，利用标签和项目板进行自我管理。
+        *   **决策记录**: 对于重大的架构或技术栈变更，将采用 **轻量级ADR (Architecture Decision Record)** 的方式，在 `docs/adr` 目录下创建Markdown文件进行记录，以保持思路清晰和决策的可追溯性。
+
+3.  **代码库结构**
+    *   **方案**: 采用 **Monorepo** 策略，使用 **Turborepo** 进行构建和任务编排，以简化依赖管理和跨服务代码共享。
+
+### 三、资源与环境准备
+
+1.  **基础设施与账户**
+    *   **方案**: 所有云资源和第三方服务的申请与配置，遵循 **附录C：基础设施设置指南** 中的步骤执行。该指南提供了从零开始的完整操作流程。
+
+2.  **本地开发环境**
+    *   **方案**: 项目根目录将提供一个 `docker-compose.yml` 文件，用于一键启动所有本地开发所需的服务（Go微服务、Next.js、PostgreSQL、Redis等），确保开发环境的一致性和便捷性。
+
+3.  **初始管理员凭证**
+    *   **方案**: 将在Go服务中创建一个启动脚本或CLI命令 (`go run ./cmd/admin create --username <user> --password <pass>`)，用于安全地创建第一个 `ADMIN` 账号。
+
+---
+
+## 附录C：基础设施设置指南 (Infrastructure Setup Guide)
+
+本指南旨在引导你完成项目所需的所有基础设施和第三方服务的配置。请在重构过程中逐步完成。
+
+### 1. Google Cloud Platform (GCP) 项目设置
+
+1.  **创建项目**:
+    *   登录 [Google Cloud Console](https://console.cloud.google.com/)。
+    *   创建一个新的GCP项目（例如 `autoads-saas-prod`）。
+    *   确保项目已关联到一个有效的结算账户。
+
+2.  **启用 APIs**:
+    *   在 "APIs & Services" > "Library" 中，搜索并启用以下API：
+        *   `Cloud Run Admin API`
+        *   `Artifact Registry API`
+        *   `Cloud Pub/Sub API`
+        *   `Secret Manager API`
+        *   `Cloud SQL Admin API`
+        *   `Identity and Access Management (IAM) API`
+
+### 2. 数据库设置 (Cloud SQL for PostgreSQL)
+
+1.  **创建实例**:
+    *   导航至 "Databases" > "SQL"。
+    *   创建一个新的PostgreSQL实例。
+    *   **配置**:
+        *   选择合适的版本（如 PostgreSQL 15）。
+        *   在 "Connectivity" 选项卡中，**启用 "Private IP"** 并选择默认的VPC网络。**禁用 "Public IP"** 以增强安全性。
+        *   记下创建时设置的 `postgres` 用户密码，后续将存入Secret Manager。
+
+2.  **创建数据库**:
+    *   实例创建后，在实例的 "Databases" 选项卡中，创建一个新的数据库（例如 `autoads_db`）。
+
+### 3. 服务部署与CI/CD准备
+
+1.  **创建服务账号 (Service Account)**:
+    *   导航至 "IAM & Admin" > "Service Accounts"。
+    *   创建一个服务账号（例如 `github-actions-deployer`）。
+    *   授予以下角色：
+        *   `Cloud Run Admin` (部署Cloud Run服务)
+        *   `Storage Admin` (推送Docker镜像到Artifact Registry)
+        *   `Secret Manager Secret Accessor` (拉取密钥)
+        *   `Cloud SQL Client` (连接数据库)
+        *   `Service Account User` (模拟服务账号)
+    *   创建此服务账号的密钥（JSON格式），并下载保存。
+
+2.  **配置 GitHub Actions**:
+    *   在你的GitHub仓库 "Settings" > "Secrets and variables" > "Actions" 中：
+    *   创建一个名为 `GCP_SA_KEY` 的新仓库密钥，将上一步下载的JSON密钥文件的**内容**粘贴进去。
+    *   创建一个名为 `GCP_PROJECT_ID` 的新仓库变量，值为你的GCP项目ID。
+
+3.  **创建镜像仓库 (Artifact Registry)**:
+    *   导航至 "Artifact Registry"。
+    *   创建一个新的Docker仓库（例如 `autoads-images`）。
+
+### 4. 密钥与配置管理 (Secret Manager)
+
+1.  **创建密钥**:
+    *   导航至 "Security" > "Secret Manager"。
+    *   为以下敏感信息创建密钥，并将对应的值存入：
+        *   `POSTGRES_PASSWORD`: Cloud SQL实例的`postgres`用户密码。
+        *   `DATABASE_URL`: 数据库连接字符串，格式为 `postgresql://postgres:<PASSWORD>@<PRIVATE_IP>:5432/autoads_db` (将`<PASSWORD>`和`<PRIVATE_IP>`替换为实际值)。
+        *   `STRIPE_SECRET_KEY`: 你的Stripe Secret Key。
+        *   `SIMILARWEB_API_KEY`: 你的SimilarWeb API Key。
+        *   `NEXTAUTH_SECRET`: 一个安全的随机字符串，用于NextAuth。
+        *   `INTERNAL_JWT_SECRET`: 一个安全的随机字符串，用于内部服务间认证。
+
+### 5. 第三方服务账户
+
+1.  **Firebase**:
+    *   使用你的Google账号登录 [Firebase Console](https://console.firebase.google.com/)。
+    *   创建一个新的Firebase项目，并关联到你的GCP项目。
+    *   启用 **Firebase Authentication**，并配置你希望支持的登录方式（如Google、Email/Password）。
+    *   启用 **Firestore** 数据库。
+    *   在项目设置中，获取你的Firebase Web App配置对象，用于前端集成。
+
+2.  **Stripe**:
+    *   注册并登录 [Stripe Dashboard](https://dashboard.stripe.com/)。
+    *   获取你的**测试模式** (Test mode) 的`Publishable key`和`Secret key`。
+
+3.  **SimilarWeb**:
+    *   申请并获取你的SimilarWeb API密钥。
+    *   SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data，这是一个免费的API，无需任何key
