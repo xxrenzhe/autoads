@@ -46,6 +46,8 @@ model User {
   batchopenTasks    BatchopenTask[]
   siterankAnalyses  SiterankAnalysis[]
   adscenterCampaigns AdscenterCampaign[]
+  checkIns          CheckIn[]
+  tokenTransactions TokenTransaction[]
 }
 
 model Subscription {
@@ -67,7 +69,42 @@ model UserToken {
   updatedAt DateTime
 
   user User @relation(fields: [userId], references: [id])
+  transactions TokenTransaction[]
 }
+
+// --- New Models for CheckIn and Token Transactions ---
+model CheckIn {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  tokens    Int
+  streak    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model TokenTransaction {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String   // "ACTIVITY", "PURCHASE", "USAGE"
+  amount        Int
+  balanceBefore BigInt
+  balanceAfter  BigInt
+  source        String   // e.g., "daily_check_in", "siterank_query"
+  description   String
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id])
+  userToken UserToken @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
 
 // --- Global Offer Library ---
 model Offer {
@@ -188,6 +225,6 @@ model AdscenterCampaign {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
-  
+
   @@index([userId, offerId])
 }
