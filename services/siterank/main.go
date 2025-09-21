@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"github.com/xxrenzhe/autoads/pkg/httpclient"
 	"github.com/xxrenzhe/autoads/services/siterank/internal/pkg/database"
 	"github.com/xxrenzhe/autoads/services/siterank/internal/pkg/secrets"
 )
@@ -34,8 +35,17 @@ type AnalysisRequest struct {
 	OfferID string `json:"offerId"`
 }
 
+// SimilarWeb API response structure (simplified)
+type SimilarWebResponse struct {
+	GlobalRank int `json:"global_rank"`
+	CountryRank int `json:"country_rank"`
+	CategoryRank int `json:"category_rank"`
+	TotalVisits float64 `json:"total_visits"`
+}
+
 type Server struct {
-	db *sql.DB
+	db          *sql.DB
+	httpClient  *httpclient.Client
 }
 
 // --- HTTP Handlers ---
@@ -80,7 +90,6 @@ func (s *Server) createAnalysisHandler(w http.ResponseWriter, r *http.Request) {
 	query := `INSERT INTO "SiterankAnalysis" (id, user_id, offer_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)`
 	_, err := s.db.Exec(query, analysis.ID, analysis.UserID, analysis.OfferID, analysis.Status, analysis.CreatedAt, analysis.UpdatedAt)
 	if err != nil {
-		// Check for unique constraint violation on offer_id
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code.Name() == "unique_violation" {
 			http.Error(w, "An analysis for this offer already exists.", http.StatusConflict)
 			return
@@ -91,7 +100,7 @@ func (s *Server) createAnalysisHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Launch the analysis in the background
-	go s.performAnalysis(analysis.ID)
+	go s.performAnalysis(context.Background(), analysis.ID)
 
 	log.Printf("Accepted siterank analysis request %s for offer %s", analysis.ID, analysis.OfferID)
 	w.Header().Set("Content-Type", "application/json")
@@ -106,7 +115,6 @@ func (s *Server) getAnalysisHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Expecting URL like /analyses/{analysisId}
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) < 3 || parts[2] == "" {
 		http.Error(w, "Analysis ID is missing in URL path", http.StatusBadRequest)
@@ -115,7 +123,7 @@ func (s *Server) getAnalysisHandler(w http.ResponseWriter, r *http.Request) {
 	analysisID := parts[2]
 
 	var analysis SiterankAnalysis
-	var result sql.NullString // Handle nullable result column
+	var result sql.NullString
 	query := `SELECT id, user_id, offer_id, status, result, created_at, updated_at FROM "SiterankAnalysis" WHERE id = $1 AND user_id = $2`
 	err := s.db.QueryRow(query, analysisID, userID).Scan(
 		&analysis.ID, &analysis.UserID, &analysis.OfferID, &analysis.Status, &result, &analysis.CreatedAt, &analysis.UpdatedAt,
@@ -139,33 +147,60 @@ func (s *Server) getAnalysisHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(analysis)
 }
 
-// performAnalysis simulates a long-running AI analysis task.
-func (s *Server) performAnalysis(analysisID string) {
+func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
 	log.Printf("Starting analysis for %s...", analysisID)
 
 	// 1. Set status to "running"
-	_, err := s.db.Exec(`UPDATE "SiterankAnalysis" SET status = 'running', updated_at = $1 WHERE id = $2`, time.Now(), analysisID)
+	_, err := s.db.ExecContext(ctx, `UPDATE "SiterankAnalysis" SET status = 'running', updated_at = $1 WHERE id = $2`, time.Now(), analysisID)
 	if err != nil {
 		log.Printf("Failed to update analysis %s to running: %v", analysisID, err)
 		return
 	}
 
-	// 2. Simulate long-running task
-	time.Sleep(time.Duration(5+rand.Intn(10)) * time.Second)
-
-	// 3. Generate mock result and update DB
-	score := float64(rand.Intn(100)) / 10.0 // Random score between 0.0 and 9.9
-	resultJSON := fmt.Sprintf(`{"siterankScore": %.1f, "assessment": "This is a mock AI assessment."}`, score)
-	
-	_, err = s.db.Exec(`UPDATE "SiterankAnalysis" SET status = 'completed', result = $1, updated_at = $2 WHERE id = $3`, resultJSON, time.Now(), analysisID)
+	// 2. Get the offer URL from the database
+	var originalUrl string
+	err = s.db.QueryRowContext(ctx, `SELECT o.originalUrl FROM "Offer" o JOIN "SiterankAnalysis" sa ON o.id = sa.offerId WHERE sa.id = $1`, analysisID).Scan(&originalUrl)
 	if err != nil {
-		log.Printf("Failed to update analysis %s to completed: %v", analysisID, err)
-		// Optionally, update status to "failed"
-		s.db.Exec(`UPDATE "SiterankAnalysis" SET status = 'failed', updated_at = $1 WHERE id = $2`, time.Now(), analysisID)
+		log.Printf("Failed to get offer URL for analysis %s: %v", analysisID, err)
+		s.updateAnalysisStatus(ctx, analysisID, "failed", fmt.Sprintf(`{"error": "offer URL not found: %v"}`, err))
 		return
 	}
 
+	domain, err := url.Parse(originalUrl)
+	if err != nil {
+		log.Printf("Failed to parse offer URL for analysis %s: %v", analysisID, err)
+		s.updateAnalysisStatus(ctx, analysisID, "failed", fmt.Sprintf(`{"error": "invalid offer URL: %v"}`, err))
+		return
+	}
+
+	// 3. Call SimilarWeb API
+	apiURL := fmt.Sprintf("https://data.similarweb.com/api/v1/data?domain=%s", domain.Hostname())
+	var apiResponse SimilarWebResponse
+	
+	err = s.httpClient.GetJSON(ctx, apiURL, &apiResponse)
+	if err != nil {
+		log.Printf("Failed to get data from SimilarWeb for analysis %s: %v", analysisID, err)
+		s.updateAnalysisStatus(ctx, analysisID, "failed", fmt.Sprintf(`{"error": "SimilarWeb API failed: %v"}`, err))
+		return
+	}
+	
+	// 4. Marshal result and update DB
+	resultBytes, err := json.Marshal(apiResponse)
+	if err != nil {
+		log.Printf("Failed to marshal SimilarWeb response for analysis %s: %v", analysisID, err)
+		s.updateAnalysisStatus(ctx, analysisID, "failed", fmt.Sprintf(`{"error": "failed to process API response: %v"}`, err))
+		return
+	}
+	
+	s.updateAnalysisStatus(ctx, analysisID, "completed", string(resultBytes))
 	log.Printf("Successfully completed analysis for %s", analysisID)
+}
+
+func (s *Server) updateAnalysisStatus(ctx context.Context, analysisID, status, result string) {
+	_, err := s.db.ExecContext(ctx, `UPDATE "SiterankAnalysis" SET status = $1, result = $2, updated_at = $3 WHERE id = $4`, status, result, time.Now(), analysisID)
+	if err != nil {
+		log.Printf("Failed to update analysis %s to %s: %v", analysisID, status, err)
+	}
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +211,6 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 // --- Main Function ---
 
 func main() {
-	rand.Seed(time.Now().UnixNano()) // Seed the random number generator
 	log.Println("Starting Siterank service...")
 
 	dbSecretName := os.Getenv("DB_SECRET_NAME")
@@ -195,11 +229,11 @@ func main() {
 	defer db.Close()
 	log.Println("Database connection successful.")
 
-	server := &Server{db: db}
+	httpClient := httpclient.New(15 * time.Second)
+	server := &Server{db: db, httpClient: httpClient}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", healthHandler)
-	// This single registration handles both POST /analyses and GET /analyses/{id}
 	mux.HandleFunc("/analyses/", server.analysesHandler) 
 	
 	port := os.Getenv("PORT")

@@ -1,8 +1,9 @@
 { pkgs, ... }: {
   channel = "stable-24.05";
   packages = [
-    pkgs.go_1_22
+    pkgs.go_1_25
     pkgs.nodejs_20
+    pkgs.pnpm
     pkgs.air
     pkgs.gcc
     pkgs.docker

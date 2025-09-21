@@ -34,7 +34,8 @@ import {
   Menu,
   X,
   Search,
-  Bell
+  Bell,
+  BookOpen
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import TokenBalanceInline from '@/token/components/TokenBalanceInline'
@@ -62,20 +63,21 @@ const navigationItems: NavigationItem[] = [
     title: 'Offer库',
     href: '/offers',
     description: '管理您的所有Offers',
-    icon: Search, // 建议用一个更贴切的图标，暂时用Search
+    icon: Search,
     requiresAuth: true
   },
   {
     title: '工作流',
     href: '/workflows',
     description: '自动化您的增长流程',
-    icon: Settings, // 建议更换图标
+    icon: Settings,
     requiresAuth: true
   },
   {
     title: '博客',
     href: '/blog',
     description: '获取最新的行业洞察和技巧',
+    icon: BookOpen,
   },
   {
     title: '计费中心',

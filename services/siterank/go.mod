@@ -8,7 +8,10 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/xxrenzhe/autoads/pkg/config v0.0.0-20250921095352-ef8078c06b83
 	github.com/xxrenzhe/autoads/pkg/logger v0.0.0-20250921095352-ef8078c06b83
+	github.com/xxrenzhe/autoads/pkg/httpclient v0.0.0-20250921160000-local
 )
+
+replace github.com/xxrenzhe/autoads/pkg/httpclient => ../../pkg/httpclient
 
 require (
 	cloud.google.com/go v0.121.6 // indirect
