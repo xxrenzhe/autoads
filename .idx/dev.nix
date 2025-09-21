@@ -8,15 +8,23 @@
     pkgs.docker
     pkgs.docker-compose
     pkgs.git-filter-repo
+    pkgs.gopls
+    pkgs.gotools
+    pkgs.delve
   ];
   env = {
     GOPATH = "$PWD/go";
+    GOCACHE = "/tmp/go-cache";
+    NPM_CONFIG_CACHE = "/tmp/npm-cache";
+    PNPM_STORE_DIR = "/tmp/pnpm-store";
   };
   idx = {
     extensions = [
       "golang.go"
       "prisma.prisma"
       "esbenp.prettier-vscode"
+      "github.vscode-github-actions"
+      "ms-azuretools.vscode-docker"
     ];
     previews = {
       enable = true;
@@ -37,8 +45,21 @@
         };
       };
     };
+    workspace = {
+      onCreate = {
+        # Reduce disk usage by cleaning docker images
+        clean-docker = "docker image prune -a -f";
+        # Reduce disk usage by cleaning pnpm store
+        clean-pnpm = "pnpm store prune";
+        # Reduce disk usage by cleaning go modules
+        clean-go = "go mod tidy && go clean -modcache";
+      };
+      onStart = {
+        # Check and install dependencies
+        install-deps = "pnpm install --shamefully-hoist=true";
+      };
+    };
   };
-  # Correctly placed services block at the top level
   services = {
     docker = {
       enable = true;
