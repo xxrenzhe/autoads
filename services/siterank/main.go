@@ -4,15 +4,23 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Siterank Service Ready")
+	log.Println("Starting Siterank service...")
+
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Siterank service is healthy!")
 	})
 
-	fmt.Println("Starting Siterank service on port 8084")
-	if err := http.ListenAndServe(":8084", nil); err != nil {
-		log.Fatal(err)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8084"
+	}
+
+	log.Printf("Listening on port %s", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }

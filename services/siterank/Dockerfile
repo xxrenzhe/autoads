@@ -1,5 +1,5 @@
-# services/siterank/Dockerfile
-FROM golang:1.21-alpine
+# Dockerfile for siterank service
+FROM golang:1.25-alpine
 
 WORKDIR /app
 
@@ -8,7 +8,9 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /siterank-service ./cmd/server
+RUN go build -o /siterank-service ./cmd/server && \
+    go clean -cache
 
 EXPOSE 8080
-CMD ["/siterank-service"]
+
+CMD [ "/siterank-service" ]

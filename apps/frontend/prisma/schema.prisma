@@ -1,3 +1,4 @@
+
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
@@ -26,26 +27,16 @@ model Event {
 // --- Read Models (Projections) ---
 
 // --- Core Entities ---
-model Plan {
-  id          String   @id
-  name        String   @unique // "Free", "Pro", "Max"
-  description String
-  price       Float
-  tokenCredit Int      @default(0)
-  
-  subscriptions Subscription[]
-}
-
 model User {
   id                      String    @id
   email                   String    @unique
   name                    String?
-  passwordHash            String?
-  role                    String    @default("USER")
+  role                    String    @default("USER") // "USER" or "ADMIN"
   createdAt               DateTime
   lastLoginAt             DateTime?
   notificationPreferences Json?
 
+  // Relation Projections
   subscription      Subscription?
   tokens            UserToken?
   workflows         UserWorkflowProgress[]
@@ -54,20 +45,20 @@ model User {
   offers            Offer[]
   batchopenTasks    BatchopenTask[]
   siterankAnalyses  SiterankAnalysis[]
+  adscenterCampaigns AdscenterCampaign[]
 }
 
 model Subscription {
-  id               String    @id
-  userId           String    @unique
-  planId           String
-  planName         String
-  status           String
-  trialEndsAt      DateTime?
-  currentPeriodEnd DateTime
-  stripeCustomerId String?
+  id                 String    @id
+  userId             String    @unique
+  planId             String
+  planName           String    // e.g., "Pro", "Max"
+  status             String    // "trialing", "active", "canceled"
+  trialEndsAt        DateTime?
+  currentPeriodEnd   DateTime
+  stripeCustomerId   String?
 
   user User @relation(fields: [userId], references: [id])
-  plan Plan @relation(fields: [planId], references: [id])
 }
 
 model UserToken {
@@ -84,14 +75,14 @@ model Offer {
   userId        String
   name          String
   originalUrl   String
-  status        String
+  status        String   // "evaluating", "optimizing", "scaling", "archived"
   siterankScore Float?
   createdAt     DateTime
 
   user             User               @relation(fields: [userId], references: [id])
   batchopenTasks   BatchopenTask[]
   siterankAnalysis SiterankAnalysis?
-  
+
   @@index([userId])
 }
 
@@ -110,8 +101,8 @@ model UserWorkflowProgress {
   userId      String
   templateId  String
   currentStep Int
-  status      String
-  context     Json   @default("{}")
+  status      String // "in_progress", "completed"
+  context     Json?
 
   user     User             @relation(fields: [userId], references: [id])
   template WorkflowTemplate @relation(fields: [templateId], references: [id])
@@ -163,7 +154,7 @@ model BatchopenTask {
   userId           String
   offerId          String
   simulationConfig Json
-  status           String
+  status           String   // "queued", "running", "completed", "failed"
   progress         Float    @default(0)
   createdAt        DateTime
 
@@ -177,7 +168,7 @@ model SiterankAnalysis {
   id        String   @id
   userId    String
   offerId   String   @unique
-  status    String // "pending", "completed", "failed"
+  status    String   // "pending", "completed", "failed"
   result    Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -186,4 +177,17 @@ model SiterankAnalysis {
   offer Offer @relation(fields: [offerId], references: [id])
 
   @@index([userId])
+}
+
+model AdscenterCampaign {
+  id        String   @id
+  userId    String
+  offerId   String
+  status    String   // "running", "paused", "completed"
+  config    Json
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  
+  @@index([userId, offerId])
 }

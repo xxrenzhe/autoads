@@ -4,15 +4,23 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Offer Service Ready")
+	log.Println("Starting Offer service...")
+
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Offer service is healthy!")
 	})
 
-	fmt.Println("Starting Offer service on port 8083")
-	if err := http.ListenAndServe(":8083", nil); err != nil {
-		log.Fatal(err)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8082"
+	}
+
+	log.Printf("Listening on port %s", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }

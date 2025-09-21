@@ -1,26 +1,27 @@
-**/.git
-**/.gitignore
-**/.dockerignore
-**/.aiexclude
-**/dev.nix
-**/*.md
-**/*.log
-**/npm-debug.log
-**/yarn-error.log
-**/pnpm-debug.log
-**/node_modules
-**/.env
-**/.env*.local
-**/.DS_Store
-# Build artifacts and caches
-**/go/pkg/mod/
-**/build/
-**/dist/
-**/bin/
-**/target/
-**/apps/frontend/node_modules
-**/apps/frontend/.next
-**/go.sum
-**/go.work.sum
-**/result
-**/.direnv
+# Exclude version control and environment configuration
+.git
+.gitignore
+.dockerignore
+.aiexclude
+.idx/
+.direnv/
+dev.nix
+flake.nix
+
+# Exclude logs and local environment variables
+*.log
+.env
+.env.*.local
+
+# Exclude all microservices during initial setup
+services/*
+
+# Exclude build artifacts and dependencies
+node_modules/
+build/
+dist/
+bin/
+.next/
+out/
+go.sum
+go.work.sum

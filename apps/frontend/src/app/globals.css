@@ -69,7 +69,6 @@
     font-size: 1rem;
     font-weight: 400;
     color: rgb(30, 41, 59);
-    /* 使用 hsl(var(--background)) 以正确解析 HSL 变量 */
     background-color: hsl(var(--background));
   }
   h1 {

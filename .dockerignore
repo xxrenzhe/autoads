@@ -1,21 +1,17 @@
-**/.git
-**/.gitignore
-**/.dockerignore
-**/.aiexclude
-**/dev.nix
-**/*.md
-**/*.log
-**/npm-debug.log
-**/yarn-error.log
-**/pnpm-debug.log
-**/node_modules
-**/.env
-**/.env*.local
-**/.DS_Store
-**/apps/frontend/node_modules
-**/apps/frontend/.next
-**/go/pkg/mod
-**/go.sum
-**/go.work.sum
-**/result
-**/.direnv
+# Ignore everything by default
+**
+
+# Allow specific files required for Go builds
+!go.mod
+!go.sum
+!go.work
+
+# Allow the source code of all services
+!services/
+
+# Allow the frontend app, as it has its own Dockerfile and .dockerignore
+!apps/frontend/
+
+# Allow specific Dockerfiles if they exist at the root
+!Dockerfile
+!Dockerfile.*

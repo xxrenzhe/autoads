@@ -1,6 +1,6 @@
-module autoads.dev/siterank
+module services/siterank
 
-go 1.21
+go 1.24.7
 
 require github.com/go-redis/redis/v8 v8.11.5
 

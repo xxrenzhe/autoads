@@ -1,15 +1,15 @@
-module autoads/billing
+module services/billing
 
-go 1.24.7
+go 1.25.0
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
-	github.com/xxrenzhe/autoads/pkg/config v0.0.0-00010101000000-000000000000
-	github.com/xxrenzhe/autoads/pkg/eventbus v0.0.0-00010101000000-000000000000
-	github.com/xxrenzhe/autoads/pkg/logger v0.0.0-00010101000000-000000000000
-	github.com/xxrenzhe/autoads/pkg/middleware v0.0.0-00010101000000-000000000000
+	github.com/xxrenzhe/autoads/pkg/config v0.0.0-20250921095352-ef8078c06b83
+	github.com/xxrenzhe/autoads/pkg/eventbus v0.0.0-20250921095352-ef8078c06b83
+	github.com/xxrenzhe/autoads/pkg/logger v0.0.0-20250921095352-ef8078c06b83
+	github.com/xxrenzhe/autoads/pkg/middleware v0.0.0-20250921095352-ef8078c06b83
 )
 
 require (
@@ -23,11 +23,3 @@ require (
 	golang.org/x/sys v0.36.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/xxrenzhe/autoads/pkg/middleware => ../../pkg/middleware
-
-replace github.com/xxrenzhe/autoads/pkg/config => ../../pkg/config
-
-replace github.com/xxrenzhe/autoads/pkg/logger => ../../pkg/logger
-
-replace github.com/xxrenzhe/autoads/pkg/eventbus => ../../pkg/eventbus

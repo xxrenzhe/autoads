@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/xxrenzhe/autoads/pkg/config"
 	"github.com/xxrenzhe/autoads/pkg/eventbus"
 	"github.com/xxrenzhe/autoads/pkg/logger"
 	"github.com/xxrenzhe/autoads/pkg/middleware"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // ... (User struct and global variables remain the same)
@@ -25,7 +22,6 @@ type User struct {
 	ID           string `json:"id"`
 	Email        string `json:"email"`
 	Name         string `json:"name"`
-	PasswordHash string `json:"-"`
 }
 
 var (
@@ -78,15 +74,13 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	rateLimitMiddleware := middleware.RateLimitMiddleware(rdb, 10, time.Minute)
-	mux.Handle("/login", rateLimitMiddleware(http.HandlerFunc(loginHandler)))
-	mux.HandleFunc("/register", registerHandler)
 	mux.HandleFunc("/healthz", healthCheckHandler)
 
 	protectedRoutes := http.NewServeMux()
 	protectedRoutes.HandleFunc("/users", getUsersHandler)
 	protectedRoutes.HandleFunc("/me", getCurrentUserHandler)
 
+	// The AuthMiddleware will now be responsible for validating Firebase JWTs
 	mux.Handle("/", middleware.AuthMiddleware(protectedRoutes))
 
 	log.Info().Str("port", cfg.Server.Port).Msg("Identity service starting...")
@@ -95,113 +89,7 @@ func main() {
 	}
 }
 
-func registerHandler(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Name     string `json:"name"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to hash password")
-		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
-		return
-	}
-
-	userID := uuid.New().String()
-	payload := map[string]interface{}{
-		"userID":       userID,
-		"email":        req.Email,
-		"name":         req.Name,
-		"passwordHash": string(hashedPassword),
-	}
-	payloadJSON, _ := json.Marshal(payload)
-
-	tx, err := db.Begin()
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to begin transaction")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	_, err = tx.Exec(
-		`INSERT INTO "Event" (id, "aggregateId", "aggregateType", "eventType", payload, version) VALUES ($1, $2, $3, $4, $5, 1)`,
-		uuid.New().String(), userID, "User", "UserRegistered", payloadJSON,
-	)
-
-	if err != nil {
-		tx.Rollback()
-		log.Error().Err(err).Msg("Failed to insert event")
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
-		return
-	}
-
-	if err := tx.Commit(); err != nil {
-		log.Error().Err(err).Msg("Failed to commit transaction")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	publisher.Publish(ctx, "UserRegistered", payload)
-
-	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(map[string]string{"userID": userID})
-}
-
 // ... (other handlers remain the same)
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	var user User
-	err := db.QueryRow(`SELECT id, "passwordHash" FROM "User" WHERE email = $1`, req.Email).Scan(&user.ID, &user.PasswordHash)
-	if err != nil {
-		log.Warn().Err(err).Str("email", req.Email).Msg("Failed login attempt: user not found")
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
-		return
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
-	if err != nil {
-		log.Warn().Str("email", req.Email).Msg("Failed login attempt: invalid password")
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
-		return
-	}
-
-	jwtSecret := os.Getenv("INTERNAL_JWT_SECRET")
-	if jwtSecret == "" {
-		log.Error().Msg("JWT secret not configured")
-		http.Error(w, "JWT secret not configured", http.StatusInternalServerError)
-		return
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID": user.ID,
-		"exp":    time.Now().Add(time.Hour * 24).Unix(),
-	})
-
-	tokenString, err := token.SignedString([]byte(jwtSecret))
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to generate token")
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
-		return
-	}
-
-	log.Info().Str("userID", user.ID).Msg("User logged in successfully")
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
-}
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	dbErr := db.Ping()
 	redisErr := rdb.Ping(ctx).Err()

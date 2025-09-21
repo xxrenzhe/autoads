@@ -11,6 +11,10 @@
     pkgs.gopls
     pkgs.gotools
     pkgs.delve
+    pkgs.gh
+    (pkgs.google-cloud-sdk.withExtraComponents [
+      pkgs.google-cloud-sdk.components.cloud-datastore-emulator
+    ])
   ];
   env = {
     GOPATH = "$PWD/go";
@@ -47,6 +51,8 @@
     };
     workspace = {
       onCreate = {
+        # Force garbage collection for Nix to free up space
+        clean-nix-store = "nix-collect-garbage -d";
         # Reduce disk usage by cleaning docker images
         clean-docker = "docker image prune -a -f";
         # Reduce disk usage by cleaning pnpm store

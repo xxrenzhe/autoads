@@ -1,5 +1,5 @@
 # Dockerfile for adscenter service
-FROM golang:1.21-alpine
+FROM golang:1.25-alpine
 
 WORKDIR /app
 
@@ -9,7 +9,8 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /adscenter-service ./cmd/server
+RUN go build -o /adscenter-service ./cmd/server && \
+    go clean -cache
 
 EXPOSE 8080
 
