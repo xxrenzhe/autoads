@@ -1,0 +1,12 @@
+{
+  "name": "batchopen",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.go",
+  "scripts": {
+    "build": "cd /home/user/autoads/services/batchopen && go mod init autoads/batchopen && go build ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

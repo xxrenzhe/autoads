@@ -8,11 +8,11 @@ import (
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Identity Service Ready")
+		fmt.Fprintf(w, "Offer Service Ready")
 	})
 
-	fmt.Println("Starting Identity service on port 8081")
-	if err := http.ListenAndServe(":8081", nil); err != nil {
+	fmt.Println("Starting Offer service on port 8083")
+	if err := http.ListenAndServe(":8083", nil); err != nil {
 		log.Fatal(err)
 	}
 }

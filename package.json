@@ -5,22 +5,16 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "services/*"
   ],
   "scripts": {
-    "dev": "npm run dev:frontend",
-    "dev:frontend": "cd apps/frontend && npm run dev",
-    "dev:backend": "cd apps/backend/gofly_admin_v3 && go run cmd/server/main.go",
-    "build": "npm run build:frontend",
-    "build:frontend": "cd apps/frontend && npm run build",
-    "build:backend": "cd apps/backend/gofly_admin_v3 && go build -o bin/server cmd/server/main.go",
-    "start": "cd apps/frontend && npm start",
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
     "test": "npm run test:frontend",
     "test:frontend": "cd apps/frontend && npm test",
     "test:backend": "cd apps/backend/gofly_admin_v3 && go test ./...",
-    "lint": "npm run lint:frontend",
-    "lint:frontend": "cd apps/frontend && npm run lint",
-    "type-check": "cd apps/frontend && npm run type-check",
     "docker:build": "docker build -f configs/docker/Dockerfile.monorepo -t autoads:latest .",
     "docker:dev": "docker-compose -f deployments/docker-compose/docker-compose.dev.yml up -d",
     "docker:prod": "docker-compose -f deployments/docker-compose/docker-compose.prod.yml up -d",
@@ -38,7 +32,8 @@
     "gofly:docker:run": "docker run --rm -p 8080:8080 -v $(pwd)/gofly_admin_v3/config.yaml:/app/gofly_admin_v3/config.yaml gofly-admin:latest"
   },
   "devDependencies": {
-    "concurrently": "8.2.2"
+    "concurrently": "8.2.2",
+    "turbo": "^2.0.9"
   },
   "engines": {
     "node": ">=20.0.0",
@@ -63,5 +58,6 @@
     "@types/react-dom": "18.3.5",
     "firebase": "12.3.0",
     "go": "3.0.1"
-  }
+  },
+  "packageManager": "npm@10.8.2"
 }
