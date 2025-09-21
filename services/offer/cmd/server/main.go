@@ -59,6 +59,15 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to create event publisher")
 	}
 	defer publisher.Close()
+	
+	// Initialize the Pub/Sub subscriber.
+	subscriber, err := events.NewSubscriber(ctx, db)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create event subscriber")
+	}
+	
+	// Start listening for events in a background goroutine.
+	go subscriber.StartListening(ctx)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", healthCheckHandler)
