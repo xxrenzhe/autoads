@@ -3,7 +3,6 @@ package middleware
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"net/http"
 	"time"
 

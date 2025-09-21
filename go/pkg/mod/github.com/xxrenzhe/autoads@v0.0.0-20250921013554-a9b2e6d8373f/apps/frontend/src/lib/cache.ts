@@ -1,1 +1,0 @@
-export { getCacheService as default, CacheService } from '@/lib/services/cache-service'

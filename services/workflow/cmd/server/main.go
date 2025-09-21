@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 )
 
 var siterankServiceURL = os.Getenv("SITERANK_SERVICE_URL")

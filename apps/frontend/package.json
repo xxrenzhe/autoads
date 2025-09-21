@@ -11,7 +11,8 @@
     "start": "next start",
     "test": "jest --config=jest.config.cjs",
     "lint": "next lint",
-    "type-check": "tsc -p tsconfig.typecheck.json --noEmit"
+    "type-check": "tsc -p tsconfig.typecheck.json --noEmit",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.3",
@@ -82,6 +83,7 @@
     "zustand": "^5.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.45.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/bcryptjs": "2.4.6",
