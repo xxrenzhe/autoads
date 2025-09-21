@@ -1,0 +1,43 @@
+# Git
+.git/
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Go
+go/pkg/
+go/bin/
+
+# Logs
+*.log
+logs/
+firebase-debug.log
+
+# Cache
+.cache/
+.next/
+.nuxt/
+.eslintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Build output
+build/
+dist/
+
+# IDE
+.idea/
+.vscode/
+.idx/
+
+# Other
+.claude/
+.clawcloud.env
+flake.lock
+.serverless/
+.dynamodb/

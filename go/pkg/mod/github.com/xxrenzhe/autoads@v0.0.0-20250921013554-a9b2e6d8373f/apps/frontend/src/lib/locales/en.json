@@ -1,0 +1,399 @@
+{
+  "title": "One-Stop Automated Marketing Platform",
+  "subtitle": "",
+  "logo": {
+    "brandName": "AutoAds",
+    "tagline": "One-Stop Automated Marketing Platform"
+  },
+  "inputPlaceholder": "Enter URLs (one per line)\nExample:\nhttps://example.com\nhttps://bit.ly/abc123\nhttps://t.co/xyz789",
+  "batchDetectButton": "Auto Detect",
+  "showManualInput": "Manual Input",
+  "hideManualInput": "Hide Manual Input",
+  "manualInputTitle": "Manual Input Final URLs",
+  "manualInputSubtitle": "If automatic detection fails, you can manually input the final URLs (one per line, in order)",
+  "manualInputPlaceholder": "Enter final URLs (one per line)\nExample:\nhttps://example.com/final\nhttps://target-site.com\nhttps://destination.com",
+  "applyManualUrls": "Apply Manual URLs",
+  "mergeWithAutoDetection": "Merge with Auto Detection",
+  "results": "Results",
+  "url": "URL",
+  "status": "Status",
+  "finalUrl": "Final URL",
+  "actions": "Actions",
+  "editFinalUrl": "Edit final URL",
+  "success": "Success",
+  "failed": "Failed",
+  "opened": "Opened in new tab",
+  "blocked": "Blocked by popup blocker",
+  "invalidUrl": "Invalid URL format",
+  "waitingDetection": "Waiting for processing...",
+  "detectingRedirect": "Processing URLs...",
+  "redirectDetected": "URLs processed",
+  "noRedirect": "Processing complete",
+  "detectionFailed": "Processing failed, please check manually",
+  "totalUrls": "Total URLs",
+  "successfulUrls": "Successful",
+  "redirectedUrls": "Processed",
+  "exportText": "Export as TXT",
+  "exportCsv": "Export as CSV",
+  "copyFinalUrls": "Copy Final URLs",
+  "copySuccess": "Copied to clipboard!",
+  "copyFailed": "Copy failed",
+  "features": {
+    "title": "Key Features",
+    "batchProcessing": {
+      "title": "Real Click",
+      "description": "Cloud-based real clicks without plugins, supporting proxy IP rotation to simulate real user requests"
+    },
+    "siteRanking": {
+      "title": "Site Ranking Analysis",
+      "description": "Analyze website rankings and calculate priorities"
+    },
+    "multipleApis": {
+      "title": "Multiple API Integration",
+      "description": "Use multiple professional API services to ensure detection accuracy"
+    },
+    "dataExport": {
+      "title": "Data Export",
+      "description": "Support TXT, CSV format export for subsequent analysis"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "homeDescription": "URL analysis and real click",
+    "batchProcessing": "Real Click",
+    "batchProcessingDescription": "Real click and analysis",
+    "siterank": "SiteRank",
+    "siterankDescription": "Website ranking analysis and priority calculation",
+    "autoAds": "Auto Ads",
+    "autoAdsDescription": "Intelligent advertising management",
+    "adReports": "Ad Reports",
+    "adReportsDescription": "Advertising data analysis and reports",
+    "settings": "Settings",
+    "settingsDescription": "System configuration and management",
+    "changelog": "Changelog",
+    "changelogDescription": "Latest updates and feature releases",
+    "monitoring": "Monitoring",
+    "monitoringDescription": "System performance monitoring and analysis",
+    "manual": "Manual",
+    "manualDescription": "Complete user guide and instructions"
+  },
+  "language": "Language",
+  "switchToEnglish": "English",
+  "switchToChinese": "中文",
+  "footer": {
+    "about": "About",
+    "contact": "Contact",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "pasteFromClipboard": "Paste from Clipboard",
+  "clear": "Clear",
+  "userManual": "User Manual",
+  "promotional": {
+    "flikiDescription": "Create AI videos with Fliki - Turn text into engaging videos"
+  },
+  "changelog": {
+    "title": "Changelog",
+    "subtitle": "Track the evolution of AutoAds - from initial release to latest features",
+    "latest": "Latest",
+    "previous": "Previous",
+    "released": "Released",
+    "january2025": "January 2025",
+    "newFeatures": "New Features",
+    "coreFeatures": "Core Features",
+    "v1_2": {
+      "title": "Batch Open URL Feature Refactor",
+      "description": "Completely refactored batch open URL feature with Basic, Silent and AutoClick versions",
+      "batchOpenFeature": {
+        "title": "Batch Open URL Feature",
+        "description": "Support for Basic (frontend-only), Silent (backend-executed) and AutoClick (scheduled) versions"
+      },
+      "basicVersion": {
+        "title": "Basic Version",
+        "description": "No plugin required, simple batch URL opening with manual tab clearing"
+      },
+      "advancedVersion": {
+        "title": "Advanced Version",
+        "description": "Requires Background Open plugin, supports multi-URL mode, single-URL mode, cycle count, interval parameters"
+      },
+      "pluginEnhancement": {
+        "title": "Background Open Plugin Enhancement",
+        "description": "Updated plugin to support new batchOpen functionality with maximum 10 tabs limit"
+      }
+    },
+    "v1_1": {
+      "title": "Enhanced Batch Processing & Background Open Extension",
+      "description": "Major update with dual batch modes, Background Open extension support, and unified navigation",
+      "siteRankIntegration": {
+        "title": "SiteRank Integration",
+        "description": "Website ranking analysis with Open PageRank API and priority calculation"
+      },
+      "enhancedUI": {
+        "title": "Enhanced UI/UX",
+        "description": "Unified navigation, improved responsive design, and better accessibility"
+      }
+    },
+    "v1_0": {
+      "title": "Initial Release",
+      "description": "The first public release of AutoAds with core URL processing capabilities",
+      "simpleWorkflow": {
+        "title": "Simple 3-Step Workflow",
+        "description": "Input URLs → Auto Analysis → View Results"
+      },
+      "dataExport": {
+        "title": "Data Export",
+        "description": "Export results in TXT and CSV formats for further analysis"
+      },
+      "privacyFirst": {
+        "title": "Privacy-First Design",
+        "description": "Pure frontend implementation with no data storage"
+      }
+    }
+  },
+  "siterank": {
+    "title": "SiteRank Analysis",
+    "subtitle": "Analyze website rankings and calculate test priorities for better decision making",
+    "slogan": "Understanding website traffic and rankings is the first step, and the key step, of Brand Bid!",
+    "inputTitle": "Input Data",
+    "urlInput": "URL Input",
+    "urlPlaceholder": "Enter URLs (one per line)\nExample:\nhttps://www.example.com\nhttps://bit.ly/abc123\nhttps://t.co/xyz789",
+    "inputPlaceholder": "Enter URLs (one per line)\nExample:\nhttps://www.example.com\nhttps://bit.ly/abc123\nhttps://t.co/xyz789",
+    "fileUpload": {
+      "dragOrClick": "Drag and drop files here, or click to select",
+      "supported": "Supports CSV, XLSX, XLS formats",
+      "processing": "Processing file..."
+    },
+    "or": "OR",
+    "startAnalysis": "Start Analysis",
+    "analyzing": "Analyzing...",
+    "progress": "Progress",
+    "resultsTitle": "Analysis Results",
+    "filterPlaceholder": "Filter by domain..."
+  },
+  "batchOpen": {
+    "title": "Batch Open URLs",
+    "subtitle": "Support Basic (frontend-only), Silent (backend-executed) and AutoClick (scheduled) versions",
+    "basicVersion": {
+      "title": "Basic Version",
+      "description": "No plugin required, simple batch URL opening",
+      "tip": "It's recommended to manually refresh IP address before each detection for best results",
+      "suggestion": "Suggestion: Ensure URLs in the same batch come from the same geographic region for better detection accuracy",
+      "privacy": "🔒 Pure frontend implementation, no data storage, safe to use～",
+      "note": "Note: Only supports multi-URL batch mode, no cycle count or interval settings"
+    },
+    "advancedVersion": {
+      "title": "Advanced Version",
+      "description": "Requires Background Open plugin, supports rich background loop opening features",
+      "tip": "Must install Auto Refresh Plus plugin, configure proxy IP address page to refresh periodically (e.g., 5s)",
+      "multiUrlMode": "Multi-URL Mode",
+      "singleUrlMode": "Single-URL Mode",
+      "cycleCount": "Cycle Count",
+      "cycleCountPlaceholder": "1-60, default 1",
+      "openInterval": "Open Interval (seconds)",
+      "openIntervalPlaceholder": "1-60, default 5",
+      "openCount": "Open Count",
+      "openCountPlaceholder": "1-1000, default 5",
+      "maxTabs": "Maximum 10 tabs"
+    },
+    "common": {
+      "batchOpen": "Batch Open",
+      "clearOpenedTabs": "Clear Opened Tabs",
+      "urlInput": "URL Input",
+      "urlPlaceholder": "Enter URLs (one per line)",
+      "progress": "Progress",
+      "opening": "Opening...",
+      "completed": "Completed",
+      "error": "Error",
+      "popupBlocked": "Popup blocked",
+      "installPlugin": "Install Plugin",
+      "pluginRequired": "Background Open plugin required",
+      "switchToBasic": "Switch to Basic",
+      "switchToAdvanced": "Switch to Advanced"
+    }
+  },
+  "batchopen": {
+    "title": "Real Click",
+    "desc": "Cloud-based real clicks without plugins, supporting proxy IP rotation and customizable Referer headers to simulate real user requests",
+    "input": {
+      "title": "Input URLs",
+      "description": "Enter URLs to open, one per line",
+      "placeholder": "Enter URLs to real click, one per line...",
+      "count": "{count}/{max} URLs",
+      "urlCount": "Parsed {count} valid URLs"
+    },
+    "btn": {
+      "open": "Start Click",
+      "opening": "Clicking...",
+      "clear": "Clear",
+      "terminate": "Terminate",
+      "tip": "Tip: All previously opened tabs will be automatically closed before real clicking",
+      "install_plugin": "Install Plugin"
+    },
+    "error": {
+      "no_urls": "Please enter at least one URL",
+      "too_many_urls": "Maximum {max} URLs allowed",
+      "plugin_required": "Please install and enable the Background Open extension before using advanced features.",
+      "invalid_cycle_count": "Cycle count must be between 1-60",
+      "invalid_open_count": "Open count must be between 1-1000",
+      "invalid_interval": "Open interval must be between 1-60 seconds"
+    },
+    "status": {
+      "opening": "Real clicking in progress...",
+      "completed": "Real click completed",
+      "terminated": "Real click terminated",
+      "popup_blocked_tip": "Some browsers may block popups. Please allow popups or use the advanced plugin."
+    },
+    "tip": {
+      "limit": "Maximum {max} tabs"
+    },
+    "basicVersion": {
+      "title": "Basic Version",
+      "description": "No plugin required, simple real URL clicking"
+    },
+    "advancedVersion": {
+      "title": "Advanced Version",
+      "description": "Requires Background Open plugin, supports rich background loop opening features",
+      "multiUrlMode": "Multi-URL Mode",
+      "singleUrlMode": "Single-URL Mode",
+      "cycleCount": "Cycle Count",
+      "cycleCountPlaceholder": "1-60, default 1",
+      "openInterval": "Open Interval (seconds)",
+      "openIntervalPlaceholder": "1-60, default 5",
+      "openCount": "Open Count",
+      "openCountPlaceholder": "1-1000, default 5",
+      "maxTabs": "Maximum 10 tabs"
+    },
+    "silentVersion": {
+      "title": "Silent Version"
+    },
+    "autoclickVersion": {
+      "title": "Auto Click Version"
+    }
+  },
+  "noValidUrls": "No valid URLs found",
+  "finalUrls": "Final URLs",
+  "manual": {
+    "overview": {
+      "title": "User Manual Overview",
+      "description": "Complete guide to using AutoAds for batch URL analysis and site ranking"
+    },
+    "quickStart": {
+      "title": "Quick Start Guide",
+      "step1": "Input URLs in the text area (one per line) or upload a CSV/Excel file",
+      "step2": "Click 'Auto Detect' to start processing URLs automatically",
+      "step3": "View results and export data in your preferred format"
+    },
+    "features": {
+      "title": "Key Features",
+      "batchProcessing": {
+        "title": "Batch Processing",
+        "description": "Process multiple URLs simultaneously with intelligent concurrency control"
+      },
+      "siteRanking": {
+        "title": "Site Ranking Analysis",
+        "description": "Analyze website rankings and calculate priorities"
+      },
+      "manualOverride": {
+        "title": "Manual Override",
+        "description": "Manually input final URLs when automatic detection fails"
+      },
+      "dataExport": {
+        "title": "Data Export",
+        "description": "Export results in TXT and CSV formats for further analysis"
+      }
+    },
+    "useCases": {
+      "title": "Use Cases",
+      "developers": {
+        "title": "For Developers",
+        "items": [
+          "Validate link structures and SEO optimization",
+          "Batch process API endpoints and webhooks",
+          "Debug URL routing and navigation issues"
+        ]
+      },
+      "marketers": {
+        "title": "For Marketers",
+        "items": [
+          "Monitor competitor URL strategies",
+          "Validate campaign landing pages and CTAs",
+          "Analyze social media link effectiveness"
+        ]
+      },
+      "security": {
+        "title": "For Security Professionals",
+        "items": [
+          "Monitor suspicious URL patterns and domains",
+          "Validate security headers and SSL certificates",
+          "Track threat intelligence and IOCs"
+        ]
+      }
+    },
+    "tips": {
+      "title": "Tips & Best Practices",
+      "items": [
+        "Use HTTPS URLs for better security and reliability",
+        "Include both short and long URLs for comprehensive analysis",
+        "Export results regularly for backup and analysis",
+        "Use manual input for critical URLs that require verification"
+      ]
+    },
+    "troubleshooting": {
+      "title": "Troubleshooting",
+      "items": [
+        "If URLs fail to process, check their format and accessibility",
+        "For large batches, consider splitting into smaller groups",
+        "Ensure your internet connection is stable during processing",
+        "Contact support if you encounter persistent issues"
+      ]
+    }
+  },
+  "batchOpenSection": {
+    "basicVersion": {
+      "title": "Basic Version Instructions",
+      "tip": "No separate Background Open plugin required, but only simple real URL clicking is possible, and manual proxy IP address refresh is needed.",
+      "steps": {
+        "title": "Operation Steps:",
+        "step1": "Manually refresh proxy IP address",
+        "step2": "Input multiple URLs to open",
+        "step3": "Click \"Start Click\" to implement real URL clicking"
+      }
+    },
+    "advancedVersion": {
+      "title": "Advanced Version Info",
+      "tip": "Tip: You must install the separate <a href=\"/background-open-install\" class=\"text-blue-700 underline mx-1\" target=\"_blank\" rel=\"noopener noreferrer\">Background Open</a> extension to enable advanced background real clicking features, including multi-URL mode, single-URL mode, cycle count, and interval settings.",
+      "stepsTitle": "How to Use:",
+      "steps": [
+        "Install <a href=\"https://chromewebstore.google.com/detail/auto-refresh-plus-page-mo/hgeljhfekpckiiplhkigfehkdpldcggm\" class=\"text-blue-700 underline mx-1\" target=\"_blank\" rel=\"noopener noreferrer\">Auto Refresh Plus</a> extension and configure proxy IP page auto-refresh (e.g., every 5s)",
+        "Enter URLs and corresponding parameters in multi-URL or single-URL mode",
+        "Click \"Start Click\" to implement background real URL clicking"
+      ],
+      "scenariosTitle": "Use Cases:",
+      "scenarios": [
+        "Multi-URL: For all running offers daily click supplementation, flexibly set cycle count for gradual supplementation",
+        "Single-URL: For rapid click supplementation on high-performing offers, maximum support for 1000 clicks at once for intensive supplementation"
+      ]
+    },
+    "silentVersion": {
+      "title": "Silent Version Info",
+      "tip": "No plugin installation required. Real browser access implemented through backend Chromium browser, supporting proxy IP rotation, custom Referer and other features"
+    },
+    "autoclickVersion": {
+      "title": "Automated Version Info"
+    },
+    "featureDescription": {
+      "featuresTitle": "Features",
+      "technicalTitle": "Technical Features",
+      "notesTitle": "Important Notes",
+      "technicalFeatures": [
+        "Supports proxy IP rotation, simulating real user access",
+        "Random social media Referer to improve access authenticity",
+        "Smart User-agent rotation to avoid detection as automated access"
+      ],
+      "notes": [
+        "Requires valid proxy IP service configuration",
+        "Consumes server resources, use as needed"
+      ]
+    }
+  }
+}

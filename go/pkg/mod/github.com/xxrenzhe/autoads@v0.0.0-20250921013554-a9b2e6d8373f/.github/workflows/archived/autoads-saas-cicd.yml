@@ -1,0 +1,345 @@
+name: "[ARCHIVED] AutoAds SaaS CI/CD Pipeline"
+
+on:
+  # 已由 docker.yml 统一，保留手动触发以便排障时临时使用
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: xxrenzhe/autoads
+
+jobs:
+  # 保留原有步骤结构以便需要时手动运行，但不再随 push/PR 自动触发
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Go backend checks
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23'
+        cache: true
+        cache-dependency-path: gofly_admin_v3/go.sum
+
+    - name: Verify Go backend structure
+      run: |
+        # 验证 go.mod 文件存在
+        if [ ! -f "gofly_admin_v3/go.mod" ]; then
+          echo "Error: go.mod not found in gofly_admin_v3"
+          ls -la gofly_admin_v3/
+          exit 1
+        fi
+
+    - name: Verify Go modules
+      run: |
+        cd gofly_admin_v3
+        go mod tidy
+
+    - name: Run Go vet
+      run: |
+        cd gofly_admin_v3
+        go vet ./...
+
+    - name: Run Go fmt check
+      run: |
+        cd gofly_admin_v3
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "Go code is not formatted properly:"
+          gofmt -s -l .
+          exit 1
+        fi
+
+    - name: Run Go tests
+      run: |
+        cd gofly_admin_v3
+        go test -v -race -coverprofile=coverage.out ./...
+
+    - name: Upload Go coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: gofly_admin_v3/coverage.out
+        flags: backend
+        name: codecov-backend
+
+    # Node.js frontend checks
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install Node.js dependencies
+      run: npm ci --workspaces --include-workspace-root --no-audit --no-fund
+
+    - name: Run TypeScript type check
+      run: npm run type-check
+
+    - name: Run ESLint
+      run: npm run lint
+
+    - name: Run frontend tests
+      run: npm test -- --run --silent
+
+  # Security scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Gosec Security Scanner
+      uses: securecodewarrior/github-action-gosec@master
+      with:
+        args: '-fmt sarif -out gosec.sarif ./gofly_admin_v3/...'
+
+    - name: Upload SARIF file
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: gosec.sarif
+
+    - name: Run npm audit
+      run: npm audit --audit-level=high
+
+  # Build Docker images
+  build-image:
+    needs: [lint-and-test, security-scan]
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          # main branch -> preview-latest
+          type=raw,value=preview-latest,enable={{is_default_branch}}
+          # production branch -> prod-latest
+          type=raw,value=prod-latest,enable=${{ github.ref == 'refs/heads/production' }}
+          # tags -> prod-{tag}
+          type=match,pattern=v(.*),group=1,prefix=prod-,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+          # PR -> pr-{number}
+          type=ref,event=pr,prefix=pr-
+          # SHA for debugging
+          type=sha,prefix={{branch}}-
+
+    - name: Determine build args
+      id: build-args
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/production" ]] || [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          echo "NEXT_PUBLIC_DEPLOYMENT_ENV=production" >> $GITHUB_OUTPUT
+          echo "NEXT_PUBLIC_DOMAIN=autoads.dev" >> $GITHUB_OUTPUT
+          BASE_DOMAIN=autoads.dev
+        else
+          echo "NEXT_PUBLIC_DEPLOYMENT_ENV=preview" >> $GITHUB_OUTPUT
+          echo "NEXT_PUBLIC_DOMAIN=urlchecker.dev" >> $GITHUB_OUTPUT
+          BASE_DOMAIN=urlchecker.dev
+        fi
+        WWW_DOMAIN="www.${BASE_DOMAIN}"
+        # CI 注入域名元信息（不注入301跳转开关）
+        echo "ALLOW_ORIGINS=https://${BASE_DOMAIN},https://${WWW_DOMAIN}" >> $GITHUB_OUTPUT
+        echo "GOOGLE_REDIRECT_URI=https://${WWW_DOMAIN}/auth/google/callback" >> $GITHUB_OUTPUT
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        # 依据 MustKnow.md 使用 standalone Dockerfile
+        file: ./Dockerfile.standalone
+        platforms: linux/amd64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          NEXT_PUBLIC_DEPLOYMENT_ENV=${{ steps.build-args.outputs.NEXT_PUBLIC_DEPLOYMENT_ENV }}
+          NEXT_PUBLIC_DOMAIN=${{ steps.build-args.outputs.NEXT_PUBLIC_DOMAIN }}
+          ALLOW_ORIGINS=${{ steps.build-args.outputs.ALLOW_ORIGINS }}
+          GOOGLE_REDIRECT_URI=${{ steps.build-args.outputs.GOOGLE_REDIRECT_URI }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Generate deployment summary
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Image**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Digest**: ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ steps.build-args.outputs.NEXT_PUBLIC_DEPLOYMENT_ENV }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Domain**: ${{ steps.build-args.outputs.NEXT_PUBLIC_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+
+  # Deploy to preview environment (main branch)
+  deploy-preview:
+    if: ${{ false }}  # 已由 docker.yml 统一流程，本步骤仅保留示例与文档
+    needs: build-image
+    runs-on: ubuntu-latest
+    environment: preview
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy notification
+      run: |
+        echo "🚀 Deploying to preview environment (urlchecker.dev)"
+        echo "Image: ${{ needs.build-image.outputs.image-tag }}"
+        echo ""
+        echo "ClawCloud 手动部署步骤:"
+        echo "1. 登录 ClawCloud 控制台"
+        echo "2. 导航到 autoads-preview 服务"
+        echo "3. 更新镜像为: ghcr.io/xxrenzhe/autoads:preview-latest"
+        echo "4. 配置环境变量（参考 .env.preview.template）"
+        echo "5. 设置容器规格: 2C4G，端口: 8888"
+        echo "6. 重启服务"
+
+    - name: Health check (after manual deployment)
+      run: |
+        echo "⏳ Waiting for manual deployment to complete..."
+        echo "After deployment, verify health at: https://www.urlchecker.dev/health"
+
+  # Deploy to production environment (production branch or tags)
+  deploy-production:
+    if: ${{ false }}  # 已由 docker.yml 统一流程，本步骤仅保留示例与文档
+    needs: build-image
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create deployment backup notification
+      run: |
+        echo "📋 Production Deployment Checklist"
+        echo "=================================="
+        echo ""
+        echo "🔍 Pre-deployment:"
+        echo "- [ ] Database backup completed"
+        echo "- [ ] Current system health verified"
+        echo "- [ ] Rollback plan prepared"
+        echo ""
+        echo "🚀 Deployment:"
+        echo "- Image: ${{ needs.build-image.outputs.image-tag }}"
+        echo "- Target: autoads.dev"
+        echo ""
+        echo "📝 ClawCloud 手动部署步骤:"
+        echo "1. 登录 ClawCloud 控制台"
+        echo "2. 导航到 autoads-prod 服务"
+        if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          echo "3. 更新镜像为: ghcr.io/xxrenzhe/autoads:prod-${{ github.ref_name }}"
+        else
+          echo "3. 更新镜像为: ghcr.io/xxrenzhe/autoads:prod-latest"
+        fi
+        echo "4. 配置环境变量（参考 .env.production.template）"
+        echo "5. 设置容器规格: 2C4G，端口: 8888"
+        echo "6. 重启服务"
+        echo "7. 监控健康检查端点"
+        echo ""
+        echo "✅ Post-deployment:"
+        echo "- [ ] Health check: https://www.autoads.dev/health"
+        echo "- [ ] Functional testing"
+        echo "- [ ] Performance monitoring"
+
+    - name: Notify deployment team
+      uses: 8398a7/action-slack@v3
+      with:
+        status: custom
+        custom_payload: |
+          {
+            "text": "🚀 AutoAds SaaS Production Deployment Ready",
+            "attachments": [
+              {
+                "color": "warning",
+                "fields": [
+                  {
+                    "title": "Image",
+                    "value": "${{ needs.build-image.outputs.image-tag }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Environment",
+                    "value": "Production (autoads.dev)",
+                    "short": true
+                  },
+                  {
+                    "title": "Action Required",
+                    "value": "Manual deployment via ClawCloud console",
+                    "short": false
+                  }
+                ]
+              }
+            ]
+          }
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: always() && vars.SLACK_WEBHOOK
+
+  # Performance and integration tests
+  integration-test:
+    if: ${{ false }}  # 已由 docker.yml 统一流程，本步骤仅保留示例与文档
+    needs: deploy-preview
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Wait for deployment
+      run: |
+        echo "⏳ Waiting for preview deployment to be ready..."
+        sleep 60
+
+    - name: Run integration tests
+      run: |
+        echo "🧪 Running integration tests against preview environment"
+        
+        # Basic health check
+        curl -f https://www.urlchecker.dev/health || exit 1
+        
+        # API availability check
+        curl -f https://www.urlchecker.dev/api/health || exit 1
+        
+        echo "✅ Basic integration tests passed"
+
+    - name: Performance test
+      run: |
+        echo "⚡ Running basic performance tests"
+        
+        # Simple response time test
+        response_time=$(curl -o /dev/null -s -w '%{time_total}' https://www.urlchecker.dev/)
+        echo "Response time: ${response_time}s"
+        
+        # Check if response time is under 2 seconds
+        if (( $(echo "$response_time < 2.0" | bc -l) )); then
+          echo "✅ Performance test passed"
+        else
+          echo "❌ Performance test failed - response time too slow"
+          exit 1
+        fi
+
+  # Cleanup old images
+  cleanup:
+    if: always()
+    needs: [build-image]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Delete old container images
+      uses: actions/delete-package-versions@v4
+      with:
+        package-name: autoads
+        package-type: container
+        min-versions-to-keep: 10
+        delete-only-untagged-versions: true

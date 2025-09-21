@@ -1,0 +1,10 @@
+# services/workflow/config.yaml
+server:
+  port: 8080
+  grpc_port: 50051
+
+database:
+  url: "postgresql://user:password@localhost:5432/autoads?sslmode=disable"
+
+message_broker:
+  url: "redis://localhost:6379/0"

@@ -13,6 +13,7 @@ import { Providers } from "@/components/providers";
 // 已迁移所有调度到 Go 服务端，移除 Next 内部调度初始化
 import QueryProvider from "@/components/providers/QueryProvider";
 import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
+import { WeChatSubscribeModal } from "@/components/common/WeChatSubscribeModal";
 
 // const inter = Inter({ subsets: ["latin"] });
 
@@ -154,6 +155,7 @@ export default function RootLayout({
               <QueryProvider>
                 <ConfirmProvider>
                   <AppLayout>{children}</AppLayout>
+                  <WeChatSubscribeModal />
                 </ConfirmProvider>
               </QueryProvider>
             </LanguageProvider>

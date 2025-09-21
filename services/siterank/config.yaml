@@ -1,0 +1,11 @@
+# services/siterank/config.yaml
+server:
+  port: 8080
+  grpc_port: 50051
+
+database:
+  url: "postgresql://user:password@localhost:5432/autoads?sslmode=disable"
+
+similarweb:
+  api_url: "https://data.similarweb.com/api/v1/data"
+  api_key: "${SIMILARWEB_API_KEY}" # Injected from environment

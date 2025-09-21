@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { BarChart3, FileText, Globe, Menu, X, History, Activity, Settings, MoreHorizontal, Users, CreditCard, Database, LogIn, LogOut, User } from "lucide-react";
+import { BarChart3, FileText, Globe, Menu, X, History, Activity, Settings, MoreHorizontal, Users, CreditCard, Database, LogIn, LogOut, User, LayoutDashboard, Briefcase, Workflow, Rss } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -69,43 +69,23 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
     );
   }
 
-  // 主要导航项目（保留在导航栏中）- 始终显示中文
+  // 新的导航项目
   const navItems = [
-    { href: "/", label: "首页", icon: Globe, color: "blue" },
-    {
-      href: "/batchopen",
-      label: "真实点击", // 始终显示中文
-      icon: FileText,
-      color: "blue",
-    },
-    {
-      href: "/siterank",
-      label: "网站排名", // 始终显示中文
-      icon: BarChart3,
-      color: "green",
-    },
-    {
-      href: "/adscenter",
-      label: "自动化广告", // 始终显示中文
-      icon: FileText,
-      color: "purple",
-    },
-    {
-      href: "/pricing",
-      label: "价格", // 价格页面
-      icon: CreditCard,
-      color: "green",
-    },
+    { href: "/dashboard", label: "仪表盘", icon: LayoutDashboard, color: "blue" },
+    { href: "/offers", label: "Offer库", icon: Briefcase, color: "green" },
+    { href: "/workflows", label: "工作流", icon: Workflow, color: "purple" },
+    { href: "/blog", label: "博客", icon: Rss, color: "orange" },
+    { href: "/billing", label: "计费中心", icon: CreditCard, color: "red" },
   ];
 
-  // 下拉菜单项目（移入"更多"菜单）- 始终显示中文
+  // 下拉菜单项目
   const dropdownItems = [
     { 
       href: "/changelog", 
-      label: "更新日志", // 始终显示中文
+      label: "更新日志",
       icon: History, 
       color: "purple", 
-      description: "最新功能与版本发布" // 始终显示中文
+      description: "最新功能与版本发布"
     },
   ];
 
@@ -156,15 +136,14 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
       {/* Desktop Navigation */}
       <nav
         className="hidden lg:flex items-center space-x-6"
-        aria-label="主导航" /* 始终显示中文 */
+        aria-label="主导航"
       >
         <div className="flex items-center space-x-6 text-sm text-slate-600">
           {/* Navigation Links */}
           <div className="flex items-center">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive =
-                pathname === item.href || (item.href === "/" && pathname === "/");
+              const isActive = pathname === item.href;
 
               return (
                 <Link
@@ -191,10 +170,10 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                       ? "text-blue-600 bg-blue-50" 
                       : "text-slate-700 hover:text-blue-600 hover:bg-blue-50"
                   }`}
-                  title="更多" /* 始终显示中文 */
+                  title="更多"
                 >
                   <MoreHorizontal className="h-4 w-4" />
-                  <span className="font-medium">更多</span> {/* 始终显示中文 */}
+                  <span className="font-medium">更多</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -283,8 +262,8 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
           className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
           aria-label={
             isMobileMenuOpen
-              ? "关闭菜单" /* 始终显示中文 */
-              : "打开菜单" /* 始终显示中文 */
+              ? "关闭菜单"
+              : "打开菜单"
           }
         >
           {isMobileMenuOpen ? (
@@ -303,9 +282,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
               {/* 主要导航项目 */}
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const isActive =
-                  pathname === item.href ||
-                  (item.href === "/" && pathname === "/");
+                const isActive = pathname === item.href;
 
                 return (
                   <Link
@@ -318,13 +295,6 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
                     <div>
                       <div className="font-medium text-sm">
                         {getStr(item.label)}
-                      </div>
-                      <div className="text-xs opacity-75">
-                        {item.href === "/" && "URL分析与批量处理"}
-                        {item.href === "/batchopen" && "云端真实点击工具"} {/* 始终显示中文 */}
-                        {item.href === "/adscenter" && "智能广告管理平台"}
-                        {item.href === "/siterank" && "网站排名分析与优先级计算"}
-                        {item.href === "/pricing" && "订阅计划和价格信息"}
                       </div>
                     </div>
                   </Link>

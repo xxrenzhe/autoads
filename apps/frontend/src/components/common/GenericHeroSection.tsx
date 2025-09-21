@@ -1,45 +1,19 @@
-"use client";
+type GenericHeroSectionProps = {
+  title: string;
+  subtitle: string;
+};
 
-interface GenericHeroSectionProps {
-  title: string | React.ReactNode;
-  description: string;
-  className?: string;
-  titleClassName?: string;
-  descriptionClassName?: string;
-  children?: React.ReactNode;
-  titleTag?: "h1" | "h2" | "h3";
-}
-
-const GenericHeroSection = ({ 
-  title, 
-  description, 
-  children,
-  className = "py-8 bg-gradient-to-br from-blue-50 via-white to-indigo-50",
-  titleClassName = "text-3xl font-bold text-gray-900 mb-4",
-  descriptionClassName = "text-lg text-gray-600 max-w-3xl mx-auto",
-  titleTag = "h2"
-}: GenericHeroSectionProps) => {
-  const TitleTag = titleTag;
-  
+export function GenericHeroSection({ title, subtitle }: GenericHeroSectionProps) {
   return (
-    <section className={className}>
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <TitleTag className={titleClassName}>
-            {title}
-          </TitleTag>
-          <p className={descriptionClassName}>
-            {description}
-          </p>
-        </div>
-        {children && (
-          <div className="mt-8">
-            {children}
-          </div>
-        )}
+    <section className="py-12 text-center bg-white sm:py-16 lg:py-20">
+      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
+          {title}
+        </h1>
+        <p className="mt-6 text-xl text-gray-600">
+          {subtitle}
+        </p>
       </div>
     </section>
   );
-};
-
-export default GenericHeroSection;
+}

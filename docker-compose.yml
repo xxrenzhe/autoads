@@ -1,0 +1,113 @@
+version: '3.8'
+services:
+  identity:
+    build:
+      context: ./services/identity
+    ports:
+      - "8081:8080"
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+  billing:
+    build:
+      context: ./services/billing
+    ports:
+      - "8082:8080"
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+  offer:
+    build:
+      context: ./services/offer
+    ports:
+      - "8083:8080"
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+  siterank:
+    build:
+      context: ./services/siterank
+    ports:
+      - "8084:8080"
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+      - SITERANK_SERVICE_URL=http://siterank:8080
+    depends_on:
+      - postgres
+      - redis
+  batchopen:
+    build:
+      context: ./services/batchopen
+    ports:
+      - "8085:8080"
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+  adscenter:
+    build:
+      context: ./services/adscenter
+    ports:
+      - "8086:8080"
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+  workflow:
+    build:
+      context: ./services/workflow
+    ports:
+      - "8087:8080"
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+      - SITERANK_SERVICE_URL=http://siterank:8080 # For inter-service communication
+    depends_on:
+      - postgres
+      - redis
+  projector:
+    build:
+      context: ./services/projector
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+  frontend:
+    build:
+      context: ./apps/frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - WORKFLOW_SERVICE_URL=http://workflow:8080
+      - NEXTAUTH_URL=http://localhost:3000 # For OAuth callbacks
+    depends_on:
+      - workflow
+      - siterank
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: autoads_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"

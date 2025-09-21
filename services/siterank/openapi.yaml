@@ -1,0 +1,46 @@
+openapi: 3.0.3
+info:
+  title: Siterank Service
+  description: API for analyzing website rankings and performance.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/v1
+paths:
+  /siterank/analyze:
+    post:
+      summary: Analyze a website's rank
+      description: Initiates an asynchronous analysis of a given URL to determine its rank and other metrics.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  description: The ID of the user requesting the analysis.
+                offer_id:
+                  type: string
+                  description: The ID of the offer associated with this analysis.
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to be analyzed.
+      responses:
+        '202':
+          description: Analysis request accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analysis_id:
+                    type: string
+                    description: A unique ID for tracking the analysis progress.
+        '400':
+          description: Bad request (e.g., invalid URL).
+        '401':
+          description: Unauthorized.
+        '500':
+          description: Internal Server Error.

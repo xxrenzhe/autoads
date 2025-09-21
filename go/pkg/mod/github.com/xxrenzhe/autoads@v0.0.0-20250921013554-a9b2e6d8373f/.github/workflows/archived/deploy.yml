@@ -1,0 +1,304 @@
+name: "[ARCHIVED] Build and Push Docker Images"
+
+on:
+  # Disabled by default - use docker.yml instead
+  # push:
+  #   branches:
+  #     - main        # 构建预览环境镜像
+  #     - production  # 构建生产环境镜像
+  #   tags:
+  #     - 'v*'        # 构建带版本标签的生产镜像
+  # pull_request:
+  #   branches:
+  #     - main
+  #     - production
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force run this disabled workflow'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+        - 'false'
+        - 'true'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/xxrenzhe/url-batch-checker
+
+jobs:
+  # 测试作业
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: autoads_ci
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 3306:3306
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --workspaces --include-workspace-root
+
+      - name: Install MySQL client
+        run: sudo apt-get update && sudo apt-get install -y mysql-client
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -ppassword --silent; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL not ready" >&2
+          exit 1
+
+      - name: Setup environment
+        run: |
+          cp .env.example .env.local
+          sed -i "s|NEXT_PUBLIC_PAYMENTS_ENABLED=.*|NEXT_PUBLIC_PAYMENTS_ENABLED=false|" .env.local
+          echo "DATABASE_URL=mysql://root:password@127.0.0.1:3306/autoads_ci" >> .env.local
+          echo "REDIS_URL=redis://localhost:6379/0" >> .env.local
+          echo "NEXTAUTH_SECRET=test-secret-key" >> .env.local
+          echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
+
+      - name: Generate Prisma client
+        run: cd apps/frontend && npx prisma generate
+
+      - name: Run Go database migrations (via env URL)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+          REDIS_URL: redis://localhost:6379/0
+        run: npm run migrate:backend
+
+      - name: Run tests
+        run: |
+          npm run test
+          npm run test:integration
+
+      - name: Validate environment configuration
+        run: npm run validate:env development
+
+      - name: Build application
+        run: npm run build
+
+      - name: Generate Context7 documentation
+        run: npm run docs:context7
+
+      - name: Validate Context7 documentation
+        run: npm run docs:context7:validate
+
+  # 构建预览环境Docker镜像
+  build-preview:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push preview image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:preview-latest
+          labels: |
+            org.opencontainers.image.title=Admin Management System
+            org.opencontainers.image.description=Preview environment image
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_DEPLOYMENT_ENV=preview
+
+      - name: Image built successfully
+        run: |
+          echo "✅ Preview image built and pushed: ${{ env.IMAGE_NAME }}:preview-latest"
+
+  # 构建生产环境Docker镜像
+  build-production:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/production' || startsWith(github.ref, 'refs/tags/v'))
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            # 如果是tag推送，使用 prod-[tag] 格式
+            TAG=${GITHUB_REF#refs/tags/}
+            echo "image_tag=prod-${TAG}" >> $GITHUB_OUTPUT
+          else
+            # 如果是production分支推送，使用 prod-latest
+            echo "image_tag=prod-latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push production image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.image_tag }}
+          labels: |
+            org.opencontainers.image.title=Admin Management System
+            org.opencontainers.image.description=Production environment image
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.tag.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_DEPLOYMENT_ENV=production
+
+      - name: Image built successfully
+        run: |
+          echo "✅ Production image built and pushed: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.image_tag }}"
+
+  # 通知镜像构建完成
+  notify-build:
+    needs: [build-preview, build-production]
+    runs-on: ubuntu-latest
+    if: always() && (needs.build-preview.result == 'success' || needs.build-production.result == 'success')
+    
+    steps:
+      - name: Notify build completion
+        run: |
+          echo "🎉 Docker镜像构建完成!"
+          echo "=================================="
+          
+          if [[ "${{ needs.build-preview.result }}" == "success" ]]; then
+            echo "✅ 预览环境镜像: ghcr.io/xxrenzhe/url-batch-checker:preview-latest"
+            echo "📋 部署说明: 请在ClawCloud上配置拉取此镜像并部署到预览环境"
+            echo "🌐 预览域名: https://urlchecker.dev"
+          fi
+          
+          if [[ "${{ needs.build-production.result }}" == "success" ]]; then
+            if [[ $GITHUB_REF == refs/tags/* ]]; then
+              TAG=${GITHUB_REF#refs/tags/}
+              echo "✅ 生产环境镜像: ghcr.io/xxrenzhe/url-batch-checker:prod-${TAG}"
+            else
+              echo "✅ 生产环境镜像: ghcr.io/xxrenzhe/url-batch-checker:prod-latest"
+            fi
+            echo "📋 部署说明: 请在ClawCloud上配置拉取此镜像并部署到生产环境"
+            echo "🌐 生产域名: https://autoads.dev"
+          fi
+          
+          echo ""
+          echo "📖 部署流程:"
+          echo "1. 登录ClawCloud管理面板"
+          echo "2. 选择对应的环境配置"
+          echo "3. 更新Docker镜像地址"
+          echo "4. 触发部署"
+          echo "5. 验证部署结果"
+
+  # 安全扫描
+  security-scan:
+    needs: [build-preview, build-production]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'push' && (needs.build-preview.result == 'success' || needs.build-production.result == 'success')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner on preview image
+        if: needs.build-preview.result == 'success'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:preview-latest
+          format: 'sarif'
+          output: 'trivy-preview-results.sarif'
+
+      - name: Run Trivy vulnerability scanner on production image
+        if: needs.build-production.result == 'success'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:prod-latest
+          format: 'sarif'
+          output: 'trivy-production-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-*-results.sarif'
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          languages: javascript
+
+  # 清理旧镜像
+  cleanup:
+    needs: [build-preview, build-production]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'push'
+    
+    steps:
+      - name: Delete old images
+        run: |
+          echo "🧹 清理旧的Docker镜像..."
+          echo "注意: 请定期在GitHub Container Registry中清理旧的镜像版本"
+          echo "保留策略建议:"
+          echo "- preview-latest: 保留最新10个版本"
+          echo "- prod-latest: 保留最新5个版本"
+          echo "- prod-[tag]: 保留所有标签版本"

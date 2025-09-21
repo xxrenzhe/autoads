@@ -1,0 +1,31 @@
+openapi: 3.0.0
+info:
+  title: Batchopen Service
+  version: 1.0.0
+  description: Handles batchopen tasks and simulation.
+paths:
+  /batchopen/tasks:
+    post:
+      summary: Create a new batchopen task
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId:
+                  type: string
+                simulationConfig:
+                  type: object
+      responses:
+        '202':
+          description: Task created
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

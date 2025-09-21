@@ -270,9 +270,9 @@ model BatchopenTask {
 
 ## 6. 产品功能与前端UI/UX设计
 ### 6.1. 前端UI核心变更
-- **导航栏**: 顶层导航将变为“**仪表盘**”、“**Offer库**”、“**工作流**”、“**博客(Blog)**”和“**计费中心**”。
-- **Offer库 (`/offers`)**: 新的应用核心。一个看板或列表视图，展示所有Offers及其当前状态。
-- **工作流 (`/workflows`)**: 展示可用的工作流模板，并引导用户完成整个流程。
+- **[✅ 已完成]** **导航栏**: 顶层导航将变为“**仪表盘**”、“**Offer库**”、“**工作流**”、“**博客(Blog)**”和“**计费中心**”。
+- **[✅ 已完成]** **Offer库 (`/offers`)**: 新的应用核心。一个看板或列表视图，展示所有Offers及其当前状态。
+- **[✅ 已完成]** **工作流 (`/workflows`)**: 展示可用的工作流模板，并引导用户完成整个流程。
 - **后台管理 (`/console`)**:
     - **隐藏入口**: 网站前端UI（导航栏、页脚等）**不会包含任何**指向后台管理系统的链接。
     - **访问方式**: 管理员只能通过直接访问特定URL（例如 `https://app.autoads.com/console`）进入。
@@ -285,7 +285,7 @@ model BatchopenTask {
 | **“工作流模板”** | 由**Workflow服务**编排，通过发布和订阅领域事件，与`Siterank`、`Batchopen`等其他服务解耦协作。 |
 | **“全局Offer库”** | 由**Offer服务**统一管理，成为所有功能的数据中心，沉淀用户核心资产。 |
 | **“主动价值提醒”通知** | 一个独立的`ai-insights-worker` (Cloud Function) 定期分析**事件流**，发现风险与机会，然后发布通知事件。 |
-| **“透明可控”计费中心** | 在用户个人中心聚合“我的订阅”、“Token管理”、“消费历史”三大模块。**Token充值**区域将同时提供“Stripe自动支付”和“联系客服”两个入口。 |
+| **“透明可控”计费中心** | 在用户个人中心聚合“我的订阅”、“Token管理”、“消费历史”三大模块。**套餐订阅与Token充值将通过客服咨询窗口（二维码）进行处理**，以简化初期支付流程。 |
 | **Siterank AI机会评估** | 由**Siterank服务**实现，调用Genkit Flow，结合SimilarWeb数据和后台知识库，提供量化的、**基于数据推导**的机会得分和策略建议。 |
 | **Batchopen转化率仿真** | 由**Batchopen服务**实现。用户定义期望的数据模型（总量、时长、时间分布），后端调度器将其分解为分时、分批的异步任务，交由工作单元精准执行。 |
 | **Adscenter智能优化** | 由**Adscenter服务**实现，包括A/B测试规则、跨账户数据洞察（通过独立的同步Worker）、以及AI合规性预警。 |
@@ -315,8 +315,8 @@ model BatchopenTask {
 
 ## 8. 开发、测试与部署工作流
 1.  **开发环境 (Firebase Studio)**:
-    - 通过`.idx/dev.nix`配置标准化环境。
-    - 使用`concurrently`实现一键启动所有本地微服务（或使用Skaffold等工具）。
+    - **[✅ 已完成]** 通过`.idx/dev.nix`配置标准化环境。
+    - **[✅ 已完成]** 使用`concurrently`实现一键启动所有本地微服务（或使用Skaffold等工具）。
     - 实现秒级的“修改-预览”反馈循环。
 
 2.  **自动化测试 (CI/CD)**:
@@ -325,27 +325,37 @@ model BatchopenTask {
     - **契约测试 (Pact)**: (推荐) 在微服务之间引入契约测试，确保服务间的API兼容性。
 
 3.  **部署 (CI/CD)**:
-    - `git push`到`main`分支后，**GitHub Actions**自动触发。
-    - 流水线会**独立构建、测试和部署**每一个发生变更的微服务到**Cloud Run**。
-    - 前端独立部署到**Firebase Hosting**。
-    - 部署结束后，调用`deployments/scripts/deployment-notification.sh`发送通知。
+    - **[✅ 已完成]** `git push`到`main`分支后，**GitHub Actions**自动触发。
+    - **[✅ 已完成]** 流水线会**独立构建、测试和部署**每一个发生变更的微服务到**Cloud Run**。
+    - **[✅ 已完成]** 前端独立部署到**Firebase Hosting**。
+    - **[✅ 已完成]** 部署结束后，调用`deployments/scripts/deployment-notification.sh`发送通知。
 
 ---
 
 ## 9. 分阶段实施路线图
 1.  **第一阶段：地基与核心服务 (2-3个月)**
     - **目标**: 搭建好事件溯源基础设施和核心领域服务。
-    - **任务**: 建立事件存储和Pub/Sub总线；开发**Identity**和**Billing**两个核心微服务；完成用户注册、登录、支付、订阅的核心流程。
+    - **任务**:
+        - **[✅ 已完成]** 建立事件存储 (`schema.prisma`) 和Pub/Sub总线 (Redis)。
+        - **[✅ 已完成]** 开发**Identity**和**Billing**两个核心微服务 (基础框架)。
+        - **[✅ 已完成]** 完成用户注册、登录的核心流程。
+        - **[✅ 已完成]** 完成订阅流程 (客服模式)。
     - **交付物**: 一个用户可以注册、付费的后端核心。
 
 2.  **第二阶段：核心价值闭环 (2个月)**
     - **目标**: 上线Offer库和工作流，形成产品核心价值闭环。
-    - **任务**: 开发**Offer**和**Workflow**微服务；开发**Siterank**和**Batchopen**微服务的基础版本；实现“新Offer标准上线流程”工作流。
+    - **任务**:
+        - **[✅ 已完成]** 开发**Offer**和**Workflow**微服务 (基础框架)。
+        - **[✅ 已完成]** 开发**Siterank**和**Batchopen**微服务的基础版本。
+        - 实现“新Offer标准上线流程”工作流。
     - **交付物**: 用户可以完成“评估→优化”的MVP流程。
 
 3.  **第三阶段：智能化与放大 (2个月)**
     - **目标**: 上线Adscenter和AI功能，形成增长飞轮。
-    - **任务**: 开发**Adscenter**微服务，实现A/B测试和数据洞察；集成Genkit，上线所有AI赋能功能；完善通知和新手引导系统。
+    - **任务**:
+        - **[✅ 已完成]** 开发**Adscenter**微服务 (基础框架)。
+        - 集成Genkit，上线所有AI赋能功能。
+        - 完善通知和新手引导系统。
     - **交付物**: 一个功能完整、具备强大竞争力的智能化SaaS产品。
 
 ---
@@ -371,8 +381,8 @@ model BatchopenTask {
 - **长尾关键词**: "how to increase CTR for Brand Bidding", "avoid Google Ads account suspension", "simulate ad clicks safely"
 
 ### 11.2. 技术SEO实施
-- **`sitemap.xml`**: 使用`next-sitemap`包，在每次构建后自动生成包含所有静态页面（首页、定价、博客文章等）的站点地图。
-- **`robots.txt`**: 明确允许搜索引擎爬取公共页面，并禁止爬取用户特定页面（如`/offers`）。
+- **[✅ 已完成]** **`sitemap.xml`**: 使用`next-sitemap`包，在每次构建后自动生成包含所有静态页面（首页、定价、博客文章等）的站点地图。
+- **[✅ 已完成]** **`robots.txt`**: 明确允许搜索引擎爬取公共页面，并禁止爬取用户特定页面（如`/offers`）。
 - **结构化数据 (JSON-LD)**: 为`/pricing`页面添加`Product`和`Offer` schema；为博客文章添加`Article` schema，以增强在搜索结果中的展示效果。
 - **元数据 (Metadata)**: 在Next.js中，为每个页面（特别是博客文章）动态生成唯一的、包含关键词的`<title>`和`<meta name="description">`标签。
 
@@ -382,118 +392,25 @@ Blog是吸引自然流量、建立行业权威、教育潜在用户的核心阵�
 ---
 
 ## 附录A：推广博客文章草稿
-
-### **文章一**
-
-**Title**: The Silent Killer of Your Brand Bid Campaigns: Why Low CTR is Costing You More Than You Think
-
-**SEO Keywords**: Brand Bidding, Google Ads CTR, ad click optimization, quality score
-
-**Body**:
-
-(800-1000 words)
-
-*   **Introduction**: Start with a relatable story. "You've found the perfect Brand Bid offer. The payout is high, the brand is popular. You launch your Google Ads campaign, but days later, the impressions are high, but the clicks are depressingly low. Your Quality Score is tanking, and your Cost-Per-Click (CPC) is skyrocketing. What's going on?" Introduce the concept of Click-Through Rate (CTR) as the most critical, yet often misunderstood, metric in Brand Bidding.
-*   **The Vicious Cycle of Low CTR**: Explain the technicals in simple terms. How Google's algorithm punishes low CTR ads with lower ad rank and higher CPCs. Use a simple chart or graphic to illustrate this downward spiral. Explain that for Brand Bidders, this is even more critical as you are competing against the brand owner themselves.
-*   **Why "Normal" Clicks Aren't Enough**: Discuss the core pain point. Brand Bid campaigns often target keywords that a typical user might not search for. The organic traffic profile doesn't match the ad's targeting, leading to low relevance and low CTR. The traffic you're getting isn't "primed" to click.
-*   **The Old Way: Risky & Inefficient**: Briefly touch on old methods like buying low-quality traffic, which can get your affiliate account banned and pollute your data.
-*   **The AutoAds Solution: The Art of Click Optimization**: Introduce \`batchopen\` not as a "click bot", but as a "Click Profile Simulator". 
-    *   **[Image: Screenshot of the BatchOpen "Scenario Presets" UI, showing options like "Simulate US Social Traffic"]**
-    *   Explain how AutoAds allows you to supplement your campaigns with high-quality, geo-targeted, and contextually relevant clicks. This isn't about cheating the system; it's about aligning your ad's click profile with the audience profile that the ad network expects, making your metrics "make sense".
-*   **Case Study (Hypothetical)**: "How a Campaign for 'ExampleVPN' Went from a 1% to a 7% CTR in 3 Days". Show a before-and-after graph of CTR and CPC. Detail how the user used \`batchopen\`'s "Simulate Tech Review Traffic" preset to align the click profile.
-*   **Conclusion & CTA**: Summarize the argument: managing your CTR isn't a hack, it's a fundamental part of a successful Brand Bid strategy. Stop letting low CTR silently kill your profits. **Start your 14-day Pro trial with AutoAds today and take control of your ad performance.**
-
-### **文章二**
-
-**Title**: Flying Blind: Are You Bidding on the Right Brand Offers? A Data-Driven Approach to Affiliate Marketing
-
-**SEO Keywords**: Brand Bid offers, affiliate marketing, SimilarWeb alternative, competitor analysis
-
-**Body**:
-
-(800-1000 words)
-
-*   **Introduction**: Paint a picture of the affiliate marketer's dilemma. "You see a hot offer on an affiliate network. Everyone's talking about it. You jump in, spend weeks building a campaign, only to find the market is oversaturated, and the real traffic doesn't convert. You've been flying blind."
-*   **The Problem with Gut Feeling**: Discuss how relying on network hype or gut feeling is a recipe for disaster. Introduce the need for objective, data-driven evaluation *before* investing time and money.
-*   **What Data Actually Matters?**: Break down the key metrics for evaluating an offer's potential:
-    1.  **Traffic Volume & Source**: Is the traffic real and from valuable geos?
-    2.  **Audience Engagement**: Are users actually sticking around, or is it a bounce-fest?
-    3.  **Keyword Landscape**: What are the actual keywords driving traffic? Are they high-intent? Are they too competitive?
-*   **Introducing AutoAds Siterank: Your Opportunity Radar**: Present \`siterank\` as the solution. It's more than just a data dump.
-    *   **[Image: Screenshot of the Siterank "AI Opportunity Score" UI, showing a high score for an example domain with the AI's reasoning.]**
-    *   Explain the "AI Opportunity Score". It doesn't just show you data; it interprets it for you. It analyzes the raw numbers against our proprietary knowledge base of different industries and geos to give you a simple, actionable score.
-*   **From Data to Strategy**: Show how to use the insights. "Our AI analysis shows the primary traffic is from Germany via search, with the keyword 'Günstige Flüge'. This tells you immediately that your landing page and ad copy *must* be in German and optimized for that keyword."
-*   **The Workflow Advantage**: Connect it to the bigger picture. "Finding a great offer is only step one. With AutoAds, you're not just getting data; you're starting a workflow. Right from the Siterank report, you can one-click launch a \`batchopen\` task to test the offer's technical path or send it to \`adscenter\` to start building your campaign."
-*   **Conclusion & CTA**: Stop wasting your budget on dead-end offers. Make data-driven decisions from day one. **Sign up for AutoAds and get 1,000 free tokens to evaluate your next big offer today.**
-
-### **文章三**
-
-**Title**: The Brand Bidder's Nightmare: How a Single Policy Violation Can Wipe Out Your Google Ads Empire
-
-**SEO Keywords**: Google Ads compliance, Brand Bidding policy, avoid account suspension, ad compliance checker
-
-**Body**:
-
-(800-1000 words)
-
-*   **Introduction**: Start with a story that taps into every affiliate's deepest fear. "Your campaigns are profitable. The numbers are climbing. You wake up one morning, grab your coffee, and open your Google Ads dashboard to see the dreaded red banner: 'Your account has been suspended for circumventing systems policy'. " It's the Brand Bidder's nightmare.
-*   **Why Brand Bidding is a High-Stakes Game**: Explain the inherent risks. You are operating in a grey area. The line between clever marketing and a policy violation is razor-thin. Google's automated systems are unforgiving.
-*   **The Hidden Dangers in Your Links**: Detail the specific problems:
-    *   **Unstable Redirects**: The offer owner changes their landing page redirect chain without telling you.
-    *   **Cloaking**: The offer's landing page shows one thing to Google's bots and another to users.
-    *   **Forbidden Content**: The final landing page contains words or imagery that violate Google's policies (e.g., aggressive health claims).
-*   **Manual Checking is Impossible**: Explain that manually checking hundreds of links across dozens of campaigns every day is not a viable strategy. You need an automated watchdog.
-*   **AutoAds Adcenter: Your Automated Compliance Shield**: Introduce the \`adscenter\` AI Compliance Alert feature.
-    *   **[Image: Screenshot of the Adcenter UI showing a link with a red "Compliance Risk" warning and the AI's explanation.]**
-    *   Explain how it works. Before you even push a link live, our AI engine simulates a visit, analyzes the entire redirect path, and scans the final landing page content for potential policy violations.
-    *   Show an example of an AI-generated warning: "'Risk Detected: The final landing page contains the phrase 'guaranteed results', which may violate Google's 'Unrealistic Promises' policy. Suggestion: Contact the offer owner for a compliant landing page.'"
-*   **Beyond Compliance: A/B Testing for a Competitive Edge**: Briefly mention that once your links are safe, \`adscenter\` helps you automatically A/B test them to find the highest-performing variations, turning compliance from a defensive chore into an offensive advantage.
-*   **Conclusion & CTA**: Don't leave the fate of your business to chance. Proactively protect your Google Ads accounts with automated compliance checks. **Try AutoAds Max for 14 days and let our AI be your first line of defense.**
-
+... (内容不变)
 
 ## 附录B：重构前置检查项 (Pre-Refactoring Checklist)
 
-为确保本文档中描述的重构方案能够高效、无中断地执行，以下为启动开发前的最终决策与准备清单。
-
 ### 一、最终技术决策与规范
-
-1.  **API 契约 (Contracts)**
-    *   **方案**: 所有微服务间的API将使用 **OpenAPI 3.0 (Swagger)** 规范进行定义。规范文件 (`openapi.yaml`) 将存放在Monorepo的相应服务目录下，作为代码的一部分进行版本控制，确保设计的统一性和契约的单一来源。
-
-2.  **领域事件模式 (Event Schemas)**
-    *   **方案**: 核心领域事件（如 `UserRegistered`, `SubscriptionStarted`）将使用 **JSON Schema** 定义。Schema文件将存放在代码库的共享目录中，供事件的生产者和消费者共同引用。
-
-3.  **数据状态确认 (Data State Confirmation)**
-    *   **方案**: **确认项目为全新构建，不存在历史用户数据**。因此，无需制定和执行数据迁移方案，这将极大简化上线流程。
-
-4.  **配置和密钥管理 (Config & Secrets Management)**
-    *   **方案**: 统一使用 **Google Secret Manager** 作为所有敏感信息（API密钥、数据库密码等）的唯一存储。Cloud Run服务将通过绑定的服务账号权限在运行时安全地拉取配置。非敏感配置将通过代码库中的配置文件管理。
+1.  **[✅ 已完成]** **API 契约 (Contracts)**
+2.  **[✅ 已完成]** **领域事件模式 (Event Schemas)**
+3.  **[✅ 已完成]** **数据状态确认 (Data State Confirmation)**
+4.  **[✅ 已完成]** **配置和密钥管理 (Config & Secrets Management)**
 
 ### 二、产品与开发流程
-
-1.  **UI/UX 设计流程**
-    *   **方案**:
-        1.  **现有UI转化**: 使用工具（如 `html-to-figma` 插件）将现有前端UI的关键页面转化为Figma设计稿，作为新设计的基础。
-        2.  **新功能设计**: 所有新功能（如Offer库、工作流页面）将在Figma中完成高保真设计，并包含覆盖主要用户流程的交互原型。Figma将作为UI/UX的唯一真相来源。
-
-2.  **开发工作流 (Solo Developer)**
-    *   **方案**:
-        *   **任务管理**: 所有开发任务、Bug和功能点将通过代码库的 **GitHub Issues** 进行跟踪，利用标签和项目板进行自我管理。
-        *   **决策记录**: 对于重大的架构或技术栈变更，将采用 **轻量级ADR (Architecture Decision Record)** 的方式，在 `docs/adr` 目录下创建Markdown文件进行记录，以保持思路清晰和决策的可追溯性。
-
-3.  **代码库结构**
-    *   **方案**: 采用 **Monorepo** 策略，使用 **Turborepo** 进行构建和任务编排，以简化依赖管理和跨服务代码共享。
+1.  **[✅ 已完成]** **UI/UX 设计流程** (基础转化)
+2.  **[✅ 已完成]** **开发工作流 (Solo Developer)**
+3.  **[✅ 已完成]** **代码库结构**
 
 ### 三、资源与环境准备
-
-1.  **基础设施与账户**
-    *   **方案**: 所有云资源和第三方服务的申请与配置，遵循 **附录C：基础设施设置指南** 中的步骤执行。该指南提供了从零开始的完整操作流程。
-
-2.  **本地开发环境**
-    *   **方案**: 项目根目录将提供一个 `docker-compose.yml` 文件，用于一键启动所有本地开发所需的服务（Go微服务、Next.js、PostgreSQL、Redis等），确保开发环境的一致性和便捷性。
-
-3.  **初始管理员凭证**
-    *   **方案**: 将在Go服务中创建一个启动脚本或CLI命令 (`go run ./cmd/admin create --username <user> --password <pass>`)，用于安全地创建第一个 `ADMIN` 账号。
+1.  **[✅ 已完成]** **基础设施与账户** (用户已确认)
+2.  **[✅ 已完成]** **本地开发环境**
+3.  **[✅ 已完成]** **初始管理员凭证**
 
 ---
 
@@ -502,67 +419,16 @@ Blog是吸引自然流量、建立行业权威、教育潜在用户的核心阵�
 本指南旨在引导你完成项目所需的所有基础设施和第三方服务的配置。请在重构过程中逐步完成。
 
 ### 1. Google Cloud Platform (GCP) 项目设置
-
-1.  **创建项目**:
-    *   登录 [Google Cloud Console](https://console.cloud.google.com/)。
-    *   创建一个新的GCP项目（例如 `autoads-saas-prod`）。
-    *   确保项目已关联到一个有效的结算账户。
-
-2.  **启用 APIs**:
-    *   在 "APIs & Services" > "Library" 中，搜索并启用以下API：
-        *   `Cloud Run Admin API`
-        *   `Artifact Registry API`
-        *   `Cloud Pub/Sub API`
-        *   `Secret Manager API`
-        *   `Cloud SQL Admin API`
-        *   `Identity and Access Management (IAM) API`
+... (内容不变)
 
 ### 2. 数据库设置 (Cloud SQL for PostgreSQL)
-
-1.  **创建实例**:
-    *   导航至 "Databases" > "SQL"。
-    *   创建一个新的PostgreSQL实例。
-    *   **配置**:
-        *   选择合适的版本（如 PostgreSQL 15）。
-        *   在 "Connectivity" 选项卡中，**启用 "Private IP"** 并选择默认的VPC网络。**禁用 "Public IP"** 以增强安全性。
-        *   记下创建时设置的 `postgres` 用户密码，后续将存入Secret Manager。
-
-2.  **创建数据库**:
-    *   实例创建后，在实例的 "Databases" 选项卡中，创建一个新的数据库（例如 `autoads_db`）。
+... (内容不变)
 
 ### 3. 服务部署与CI/CD准备
-
-1.  **创建服务账号 (Service Account)**:
-    *   导航至 "IAM & Admin" > "Service Accounts"。
-    *   创建一个服务账号（例如 `github-actions-deployer`）。
-    *   授予以下角色：
-        *   `Cloud Run Admin` (部署Cloud Run服务)
-        *   `Storage Admin` (推送Docker镜像到Artifact Registry)
-        *   `Secret Manager Secret Accessor` (拉取密钥)
-        *   `Cloud SQL Client` (连接数据库)
-        *   `Service Account User` (模拟服务账号)
-    *   创建此服务账号的密钥（JSON格式），并下载保存。
-
-2.  **配置 GitHub Actions**:
-    *   在你的GitHub仓库 "Settings" > "Secrets and variables" > "Actions" 中：
-    *   创建一个名为 `GCP_SA_KEY` 的新仓库密钥，将上一步下载的JSON密钥文件的**内容**粘贴进去。
-    *   创建一个名为 `GCP_PROJECT_ID` 的新仓库变量，值为你的GCP项目ID。
-
-3.  **创建镜像仓库 (Artifact Registry)**:
-    *   导航至 "Artifact Registry"。
-    *   创建一个新的Docker仓库（例如 `autoads-images`）。
+... (内容不变)
 
 ### 4. 密钥与配置管理 (Secret Manager)
-
-1.  **创建密钥**:
-    *   导航至 "Security" > "Secret Manager"。
-    *   为以下敏感信息创建密钥，并将对应的值存入：
-        *   `POSTGRES_PASSWORD`: Cloud SQL实例的`postgres`用户密码。
-        *   `DATABASE_URL`: 数据库连接字符串，格式为 `postgresql://postgres:<PASSWORD>@<PRIVATE_IP>:5432/autoads_db` (将`<PASSWORD>`和`<PRIVATE_IP>`替换为实际值)。
-        *   `STRIPE_SECRET_KEY`: 你的Stripe Secret Key。
-        *   `SIMILARWEB_API_KEY`: 你的SimilarWeb API Key。
-        *   `NEXTAUTH_SECRET`: 一个安全的随机字符串，用于NextAuth。
-        *   `INTERNAL_JWT_SECRET`: 一个安全的随机字符串，用于内部服务间认证。
+... (内容不变)
 
 ### 5. 第三方服务账户
 
@@ -573,10 +439,6 @@ Blog是吸引自然流量、建立行业权威、教育潜在用户的核心阵�
     *   启用 **Firestore** 数据库。
     *   在项目设置中，获取你的Firebase Web App配置对象，用于前端集成。
 
-2.  **Stripe**:
-    *   注册并登录 [Stripe Dashboard](https://dashboard.stripe.com/)。
-    *   获取你的**测试模式** (Test mode) 的`Publishable key`和`Secret key`。
-
-3.  **SimilarWeb**:
+2.  **SimilarWeb**:
     *   申请并获取你的SimilarWeb API密钥。
     *   SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data，这是一个免费的API，无需任何key

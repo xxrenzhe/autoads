@@ -212,35 +212,30 @@ function getNextAuth() {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      // Persist the OAuth access_token and user id to the token right after signin
       if (account && user) {
         token.accessToken = account.access_token
         token.userId = user.id
-        // Save user info to token for session callback
         token.email = user.email
         token.name = user.name
         token.picture = user.image
         token.emailVerified = user.emailVerified ? true : false
-        // Save role and status for credentials provider
         token.role = user.role
         token.status = user.status
+        token.internalJwt = createInternalJWT({ sub: user.id })
       }
       return token
     },
     async session({ session, token }) {
-      // Send properties to the client, like an access_token and user id from the token
       const typedSession = session as any
       typedSession.accessToken = token.accessToken as string
       typedSession.userId = token.userId as string
+      typedSession.internalJwt = token.internalJwt as string
       
-      // Ensure session.user exists
       if (!typedSession.user) {
         typedSession.user = {}
       }
       
-      // For OAuth providers (Google), fetch user from database
       if (token.userId && token.email) {
-        // Use a single query with update to reduce database calls
         const user = await prisma.user.findUnique({
           where: { id: token.userId },
           select: {
@@ -256,45 +251,37 @@ function getNextAuth() {
         })
         
         if (user) {
-          // Batch all updates in a single operation
           const updateData: any = { lastLoginAt: new Date() }
           let needsUpdate = false
           
-          // Only update if data actually changed
           if (token.picture && (user as any).avatar !== token.picture) {
             updateData.avatar = token.picture
             needsUpdate = true
           }
           
-          // 仅当数据库存在 name 列时才尝试更新（通过 try/catch 容错）
           if (token.name) {
             try {
               await prisma.user.update({ where: { id: user.id }, data: { name: token.name } })
             } catch (e: any) {
-              // Prisma P2022: 列不存在，忽略即可，避免影响登录流程
               if (process.env.AUTH_DEBUG === 'true') console.warn('[auth] skip updating name:', e?.code || e)
             }
           }
           
-          // Perform update if needed
           if (needsUpdate) {
             await prisma.user.update({
               where: { id: user.id },
               data: updateData
             })
-          } else if (!user.lastLoginAt || new Date().getTime() - user.lastLoginAt.getTime() > 300000) { // 5 minutes
-            // Only update lastLoginAt if it's been more than 5 minutes
+          } else if (!user.lastLoginAt || new Date().getTime() - user.lastLoginAt.getTime() > 300000) {
             await prisma.user.update({
               where: { id: user.id },
               data: { lastLoginAt: new Date() }
             })
           }
           
-          // Set session user data
           typedSession.user = {
             ...session.user,
             id: user.id,
-            // 优先使用 DB 中的 name；若缺失则回退到 token.name 或邮箱前缀
             name: (user as any).name || (token as any).name || (user.email ? user.email.split('@')[0] : undefined),
             email: user.email,
             image: (user as any).avatar || undefined,
@@ -304,13 +291,9 @@ function getNextAuth() {
             emailVerified: user.emailVerified,
           }
           
-          // Record device information for anti-cheat - this needs to be handled elsewhere
-          // as request is not available in the session callback
-          
           return typedSession
         }
 
-        // 合并后端只读态（订阅/Token余额）
         try {
           const internal = createInternalJWT({ sub: token.userId as string })
           if (internal) {
@@ -331,7 +314,6 @@ function getNextAuth() {
             if (statsJson && typeof statsJson === 'object') (typedSession.user as any).tokenStats = statsJson
           }
         } catch (e) {
-          // 只读合并失败不影响登录
           if (process.env.AUTH_DEBUG === 'true') console.warn('[auth] merge Go read-only state failed', e)
         }
       }
@@ -340,28 +322,23 @@ function getNextAuth() {
     },
     async signIn({ user, account, profile }) {
       if (account?.provider === 'google') {
-        // Allow all Google accounts (unified Google authentication)
         if (!user.email) {
           console.error('Google account without email attempted to sign in')
           return false
         }
         
         try {
-          // Check if user already exists with this email
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email! },
-            // 显式选择必要字段，避免选择缺失的列（如 name）导致 P2022
             select: { id: true, email: true, role: true, status: true, accounts: true }
           })
           
           if (existingUser) {
-            // Check if user is active
             if (existingUser.status !== 'ACTIVE') {
               console.error('Inactive user attempted to sign in:', user.email)
               return false
             }
             
-            // Update avatar if it's different
             if ((profile as any)?.picture && (profile as any).picture !== (existingUser as any).avatar) {
               await prisma.user.update({
                 where: { id: existingUser.id },
@@ -369,7 +346,6 @@ function getNextAuth() {
               })
             }
             
-            // 更新 name 仅在列存在时尝试（容错）
             if ((profile as any)?.name) {
               try {
                 await prisma.user.update({
@@ -381,13 +357,11 @@ function getNextAuth() {
               }
             }
             
-            // Check if user already has a Google account linked
             const hasGoogleAccount = existingUser.accounts.some(
               (acc: any) => acc.provider === 'google'
             )
             
             if (!hasGoogleAccount) {
-              // Link the Google account to the existing user
               await prisma.account.create({
                 data: {
                   userId: existingUser.id,
@@ -406,9 +380,7 @@ function getNextAuth() {
               console.log(`Linked Google account to existing user: ${user.email}`)
             }
           } else {
-            // New user - the adapter will handle creation
             console.log(`New Google user signing in: ${user.email}`)
-            // The Pro trial subscription will be created in the custom adapter's createUser method
           }
           
           return true
@@ -417,7 +389,7 @@ function getNextAuth() {
           return false
         }
       }
-      return false // Deny other providers
+      return false
     }
   },
   pages: {
@@ -456,8 +428,6 @@ function getNextAuth() {
   },
     })
 
-    // 兼容层：NextAuth v5 返回 { handlers, signIn, signOut, auth }
-    // 若为 v4，NextAuth(...) 返回单个 handler 函数，需要包装成 v5 风格以供路由惰性调用
     if (na && typeof na === 'object' && 'handlers' in na) {
       __nextAuth = na
     } else {
@@ -468,14 +438,12 @@ function getNextAuth() {
           POST: handler,
         },
         signIn: (..._args: any[]) => {
-          // v4 服务器端无直接 signIn，这里留空占位以避免引用错误
           return undefined as any
         },
         signOut: (..._args: any[]) => {
           return undefined as any
         },
         auth: (..._args: any[]) => {
-          // v4 无 auth()，保持兼容返回 undefined
           return undefined as any
         }
       }

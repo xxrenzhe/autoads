@@ -1,3 +1,3 @@
-module autoads/workflow
+module autoads.dev/workflow
 
-go 1.22
+go 1.21

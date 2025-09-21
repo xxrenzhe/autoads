@@ -1,0 +1,427 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model accounts {
+  id                String  @id
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  users             users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model admin_logs {
+  id        String   @id
+  action    String
+  details   Json?
+  userId    String
+  createdAt DateTime @default(now())
+  users     users    @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+model api_access_logs {
+  id         String   @id
+  userId     String?
+  endpoint   String
+  method     String
+  statusCode Int
+  duration   Int
+  ipAddress  String
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  users      users?   @relation(fields: [userId], references: [id])
+
+  @@index([endpoint, createdAt])
+  @@index([userId, createdAt])
+}
+
+model api_performance_logs {
+  id              String   @id
+  requestId       String   @unique
+  method          String
+  url             String
+  userAgent       String?
+  clientIp        String?
+  statusCode      Int
+  responseTime    Int
+  responseSize    Int      @default(0)
+  memoryHeapUsed  BigInt?
+  memoryHeapTotal BigInt?
+  memoryRss       BigInt?
+  cpuUser         BigInt?
+  cpuSystem       BigInt?
+  error           String?
+  timestamp       DateTime @default(now())
+
+  @@index([method, url])
+  @@index([responseTime])
+  @@index([timestamp])
+}
+
+model audit_logs {
+  id         String   @id
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  sessionId  String?
+  severity   String
+  category   String
+  outcome    String
+  metadata   Json?
+  timestamp  DateTime @default(now())
+  users      users?   @relation(fields: [userId], references: [id])
+
+  @@index([category, timestamp])
+  @@index([ipAddress, timestamp])
+  @@index([severity, timestamp])
+  @@index([userId, timestamp])
+}
+
+model config_change_history {
+  id        String   @id
+  configKey String
+  oldValue  String?
+  newValue  String
+  changedBy String
+  reason    String?
+  createdAt DateTime @default(now())
+  users     users    @relation(fields: [changedBy], references: [id])
+
+  @@index([configKey, createdAt])
+}
+
+model environment_variables {
+  id                                           String   @id
+  key                                          String   @unique
+  value                                        String
+  isSecret                                     Boolean  @default(false)
+  createdAt                                    DateTime @default(now())
+  updatedAt                                    DateTime
+  createdBy                                    String
+  updatedBy                                    String?
+  users_environment_variables_createdByTousers users    @relation("environment_variables_createdByTousers", fields: [createdBy], references: [id])
+  users_environment_variables_updatedByTousers users?   @relation("environment_variables_updatedByTousers", fields: [updatedBy], references: [id])
+}
+
+model migration_backups {
+  id             String    @id @db.VarChar(255)
+  migration_id   String    @db.VarChar(255)
+  migration_name String    @db.VarChar(255)
+  backup_path    String    @db.VarChar(500)
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  size           BigInt
+  checksum       String    @db.VarChar(64)
+  metadata       Json?
+}
+
+model migration_history {
+  id          String    @id @db.VarChar(255)
+  name        String    @db.VarChar(255)
+  version     String    @db.VarChar(50)
+  executed_at DateTime? @default(now()) @db.Timestamp(6)
+  checksum    String    @db.VarChar(64)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model notification_logs {
+  id                     String                 @id
+  userId                 String
+  templateId             String
+  type                   NotificationType
+  recipient              String
+  status                 NotificationStatus     @default(PENDING)
+  errorMessage           String?
+  sentAt                 DateTime?
+  deliveredAt            DateTime?
+  createdAt              DateTime               @default(now())
+  notification_templates notification_templates @relation(fields: [templateId], references: [id])
+  users                  users                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
+model notification_templates {
+  id                String              @id
+  name              String              @unique
+  type              NotificationType
+  subject           String?
+  content           String
+  variables         Json?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  notification_logs notification_logs[]
+}
+
+model payments {
+  id             String         @id
+  userId         String
+  subscriptionId String?
+  amount         Float
+  currency       String         @default("USD")
+  status         PaymentStatus  @default(PENDING)
+  provider       String         @default("stripe")
+  providerId     String?
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  subscriptions  subscriptions? @relation(fields: [subscriptionId], references: [id])
+  users          users          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model performance_alerts {
+  id         String    @id
+  type       String
+  severity   String
+  message    String
+  endpoint   String?
+  requestId  String?
+  metadata   Json?
+  resolved   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([resolved, severity, createdAt])
+  @@index([type, createdAt])
+}
+
+model plans {
+  id                  String          @id
+  name                String
+  description         String?
+  price               Float
+  currency            String          @default("USD")
+  interval            Interval        @default(MONTH)
+  features            Json
+  metadata            Json?
+  isActive            Boolean         @default(true)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime
+  limits              Json?
+  sortOrder           Int             @default(0)
+  stripePriceId       String?
+  stripeYearlyPriceId String?
+  tokenQuota          Int             @default(0)
+  tokenReset          String          @default("MONTHLY")
+  subscriptions       subscriptions[]
+  token_usage         token_usage[]
+}
+
+model security_threats {
+  id                 String    @id
+  type               String
+  severity           String
+  description        String
+  indicators         String[]
+  affectedResources  String[]
+  recommendedActions String[]
+  triggeringEventId  String?
+  status             String    @default("detected")
+  notes              String?
+  detectedAt         DateTime  @default(now())
+  resolvedAt         DateTime?
+
+  @@index([severity, detectedAt])
+  @@index([status, detectedAt])
+  @@index([type, status])
+}
+
+model sessions {
+  id           String   @id
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  users        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model subscriptions {
+  id                     String             @id
+  userId                 String
+  planId                 String
+  status                 SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime
+  provider               String             @default("stripe")
+  providerSubscriptionId String?
+  payments               payments[]
+  plans                  plans              @relation(fields: [planId], references: [id])
+  users                  users              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model system_configs {
+  id                                    String   @id
+  key                                   String   @unique
+  value                                 String
+  category                              String
+  description                           String?
+  isSecret                              Boolean  @default(false)
+  validation                            String?
+  createdAt                             DateTime @default(now())
+  updatedAt                             DateTime
+  createdBy                             String
+  updatedBy                             String?
+  users_system_configs_createdByTousers users    @relation("system_configs_createdByTousers", fields: [createdBy], references: [id])
+  users_system_configs_updatedByTousers users?   @relation("system_configs_updatedByTousers", fields: [updatedBy], references: [id])
+}
+
+model token_usage {
+  id              String   @id
+  userId          String
+  feature         String
+  tokensConsumed  Int
+  tokensRemaining Int
+  planId          String
+  createdAt       DateTime @default(now())
+  plans           plans    @relation(fields: [planId], references: [id])
+  users           users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model usage_logs {
+  id       String   @id
+  userId   String
+  feature  String
+  usage    Int
+  date     DateTime @default(now())
+  metadata Json?
+  users    users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+model user_behavior_analytics {
+  id             String   @id
+  userId         String
+  feature        String
+  action         String
+  tokensConsumed Int      @default(0)
+  duration       Int
+  success        Boolean  @default(true)
+  errorMessage   String?
+  metadata       Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+  users          users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([feature, createdAt])
+  @@index([userId, createdAt])
+}
+
+model users {
+  id                                                           String                    @id
+  email                                                        String                    @unique
+  name                                                         String?
+  avatar                                                       String?
+  emailVerified                                                Boolean                   @default(false)
+  role                                                         UserRole                  @default(USER)
+  status                                                       UserStatus                @default(ACTIVE)
+  createdAt                                                    DateTime                  @default(now())
+  updatedAt                                                    DateTime
+  lastLoginAt                                                  DateTime?
+  loginCount                                                   Int                       @default(0)
+  preferences                                                  Json?
+  stripeCustomerId                                             String?                   @unique
+  tokenBalance                                                 Int                       @default(0)
+  tokenUsedThisMonth                                           Int                       @default(0)
+  accounts                                                     accounts[]
+  admin_logs                                                   admin_logs[]
+  api_access_logs                                              api_access_logs[]
+  audit_logs                                                   audit_logs[]
+  config_change_history                                        config_change_history[]
+  environment_variables_environment_variables_createdByTousers environment_variables[]   @relation("environment_variables_createdByTousers")
+  environment_variables_environment_variables_updatedByTousers environment_variables[]   @relation("environment_variables_updatedByTousers")
+  notification_logs                                            notification_logs[]
+  payments                                                     payments[]
+  sessions                                                     sessions[]
+  subscriptions                                                subscriptions[]
+  system_configs_system_configs_createdByTousers               system_configs[]          @relation("system_configs_createdByTousers")
+  system_configs_system_configs_updatedByTousers               system_configs[]          @relation("system_configs_updatedByTousers")
+  token_usage                                                  token_usage[]
+  usage_logs                                                   usage_logs[]
+  user_behavior_analytics                                      user_behavior_analytics[]
+}
+
+model verification_tokens {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum Interval {
+  DAY
+  WEEK
+  MONTH
+  YEAR
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  DELIVERED
+}
+
+enum NotificationType {
+  EMAIL
+  SMS
+  SYSTEM
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  PENDING
+  PAST_DUE
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+}

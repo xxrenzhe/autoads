@@ -1,0 +1,440 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth/v5-config'
+import { prisma } from '@/lib/db'
+import { errorResponse, successResponse, ResponseCode } from '@/lib/api/response'
+
+// Helper function to get Stripe instance
+function getStripe(): any {
+  throw new Error('Payments are disabled')
+}
+
+/**
+ * 订阅管理服务
+ */
+export class SubscriptionService {
+  /**
+   * 获取用户当前订阅
+   */
+  static async getUserSubscription(userId: string) {
+    // 优先：调用 Go 只读端点（通过 /ops 反代）获取当前订阅；失败则回退本地 Prisma
+    try {
+      const res = await fetch('/ops/api/v1/user/subscription/current', {
+        headers: { 'accept': 'application/json' },
+        // 同源调用，凭据默认透传 cookie；内部 JWT 在边缘层不强制
+        credentials: 'include'
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.code === 0 && data.data) {
+          // 兼容 Go 返回的 started_at/ended_at 与本地结构
+          const d = data.data
+          return {
+            id: d.id,
+            userId: d.user_id,
+            planId: d.plan_id,
+            status: d.status,
+            currentPeriodStart: d.started_at ? new Date(d.started_at) : undefined,
+            currentPeriodEnd: d.ended_at ? new Date(d.ended_at) : undefined,
+            provider: d.provider || 'system',
+            providerSubscriptionId: d.provider_subscription_id || undefined,
+            plan: d.plan_name ? { id: d.plan_id, name: d.plan_name } : undefined,
+            payments: []
+          } as any
+        }
+      }
+    } catch (e) {
+      // ignore and fallback
+    }
+    // 回退：本地 Prisma 查询（将逐步淘汰）
+    try {
+      const subscription = await prisma.subscription.findFirst({
+        where: {
+          userId,
+          status: 'ACTIVE',
+          currentPeriodEnd: { gt: new Date() }
+        },
+        include: {
+          plan: true,
+          payments: {
+            orderBy: { createdAt: 'desc' },
+            take: 1
+          }
+        }
+      })
+      return subscription
+    } catch (error) {
+      console.error('Error getting user subscription (fallback):', error)
+      throw error
+    }
+  }
+
+  /**
+   * 获取可升级的计划
+   */
+  static async getAvailablePlans(currentPlanId?: string) {
+    try {
+      const plans = await prisma.plan.findMany({
+        where: {
+          isActive: true,
+          id: { not: currentPlanId }
+        },
+        orderBy: { sortOrder: 'asc' }
+      })
+
+      return plans
+    } catch (error) {
+      console.error('Error getting available plans:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 创建升级/降级订单
+   */
+  static async createSubscriptionChange(
+    userId: string,
+    newPlanId: string,
+    billingCycle: 'monthly' | 'yearly' = 'monthly'
+  ) {
+    try {
+      // 获取当前订阅
+      const currentSubscription = await this.getUserSubscription(userId)
+      
+      // 获取新计划
+      const newPlan = await prisma.plan.findUnique({
+        where: { id: newPlanId }
+      })
+
+      if (!newPlan) {
+        throw new Error('Plan not found')
+      }
+
+      // 检查是否为同一计划
+      if (currentSubscription?.planId === newPlanId) {
+        throw new Error('Already subscribed to this plan')
+      }
+
+      // 计算价格调整
+      const priceAdjustment = await this.calculatePriceAdjustment(
+        currentSubscription,
+        newPlan,
+        billingCycle
+      )
+
+      // Payments disabled: return calculation only
+      return { clientSecret: undefined, priceAdjustment, newPlan }
+    } catch (error) {
+      console.error('Error creating subscription change:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 确认订阅变更
+   */
+  static async confirmSubscriptionChange(
+    userId: string,
+    paymentIntentId: string
+  ) {
+    try {
+      // 验证支付
+      // Payments disabled: accept the change without external verification
+      const newPlanId = ''
+      const billingCycle: any = 'monthly'
+      const currentSubscriptionId = undefined
+
+      // 取消当前订阅（如果存在）
+      if (currentSubscriptionId) {
+        await prisma.subscription.update({
+          where: { id: currentSubscriptionId },
+          data: {
+            status: 'CANCELED',
+            canceledAt: new Date(),
+            cancelAtPeriodEnd: false
+          }
+        })
+      }
+
+      // 创建新订阅
+      const newSubscription = await prisma.subscription.create({
+        data: {
+          userId,
+          planId: newPlanId,
+          status: 'ACTIVE',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: this.calculatePeriodEnd(
+            billingCycle === 'yearly'
+          ),
+          provider: 'system',
+          providerSubscriptionId: paymentIntentId
+        }
+      })
+
+      // 创建支付记录
+      await prisma.payment.create({
+        data: {
+          userId,
+          subscriptionId: newSubscription.id,
+          amount: 0,
+          status: 'COMPLETED',
+          provider: 'system',
+          providerId: paymentIntentId,
+          metadata: {
+            type: 'subscription_change',
+            billingCycle
+          }
+        }
+      })
+
+      // 调整用户令牌余额
+      await this.adjustTokenBalance(userId, newPlanId)
+
+      return newSubscription
+    } catch (error) {
+      console.error('Error confirming subscription change:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 取消订阅
+   */
+  static async cancelSubscription(userId: string, reason?: string) {
+    try {
+      const subscription = await this.getUserSubscription(userId)
+      
+      if (!subscription) {
+        throw new Error('No active subscription found')
+      }
+
+      // 如果是 Stripe 订阅，取消 Stripe 订阅
+      if (subscription.providerSubscriptionId) {
+        const stripe = getStripe()
+        await stripe.subscriptions.update(subscription.providerSubscriptionId, {
+          cancel_at_period_end: true
+        })
+      }
+
+      // 更新本地订阅状态
+      await prisma.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          cancelAtPeriodEnd: true,
+          canceledAt: new Date()
+        }
+      })
+
+      // 记录取消原因
+      if (reason) {
+        await prisma.auditLog.create({
+          data: {
+            userId,
+            action: 'subscription_canceled',
+            resource: 'subscription',
+            category: 'billing',
+            severity: 'info',
+            outcome: 'success',
+            details: JSON.stringify({ reason })
+          }
+        })
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error canceling subscription:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 恢复已取消的订阅
+   */
+  static async reactivateSubscription(userId: string) {
+    try {
+      const subscription = await prisma.subscription.findFirst({
+        where: {
+          userId,
+          status: 'ACTIVE',
+          cancelAtPeriodEnd: true,
+          currentPeriodEnd: { gt: new Date() }
+        }
+      })
+
+      if (!subscription) {
+        throw new Error('No cancellable subscription found')
+      }
+
+      // 如果是 Stripe 订阅，恢复 Stripe 订阅
+      if (subscription.providerSubscriptionId) {
+        const stripe = getStripe()
+        await stripe.subscriptions.update(subscription.providerSubscriptionId, {
+          cancel_at_period_end: false
+        })
+      }
+
+      // 更新本地订阅状态
+      await prisma.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          cancelAtPeriodEnd: false,
+          canceledAt: null
+        }
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error reactivating subscription:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 计算价格调整
+   */
+  private static async calculatePriceAdjustment(
+    currentSubscription: any,
+    newPlan: any,
+    billingCycle: 'monthly' | 'yearly'
+  ) {
+    try {
+      const newPrice = billingCycle === 'yearly' 
+        ? (newPlan.stripeYearlyPriceId ? newPlan.price * 12 * 0.8 : newPlan.price * 12) // 年付8折
+        : newPlan.price
+
+      if (!currentSubscription) {
+        // 新订阅
+        return {
+          amount: newPrice,
+          type: 'new',
+          prorated: false
+        }
+      }
+
+      // 计算剩余天数
+      const remainingDays = Math.ceil(
+        (currentSubscription.currentPeriodEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      )
+
+      if (remainingDays <= 0) {
+        // 已过期，全新订阅
+        return {
+          amount: newPrice,
+          type: 'renewal',
+          prorated: false
+        }
+      }
+
+      const currentPrice = currentSubscription.plan.price
+      const dailyCurrentPrice = currentPrice / 30
+      const dailyNewPrice = newPrice / 30
+
+      const unusedAmount = dailyCurrentPrice * remainingDays
+      const newAmount = dailyNewPrice * remainingDays
+
+      const adjustment = newAmount - unusedAmount
+
+      return {
+        amount: Math.max(0, adjustment), // 最小为0
+        type: adjustment > 0 ? 'upgrade' : 'downgrade',
+        prorated: true,
+        remainingDays,
+        unusedAmount,
+        newAmount
+      }
+    } catch (error) {
+      console.error('Error calculating price adjustment:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 计算订阅周期结束时间
+   */
+  private static calculatePeriodEnd(isYearly: boolean): Date {
+    const date = new Date()
+    if (isYearly) {
+      date.setFullYear(date.getFullYear() + 1)
+    } else {
+      date.setMonth(date.getMonth() + 1)
+    }
+    return date
+  }
+
+  /**
+   * 调整用户令牌余额 - 使用新的统一Token系统
+   */
+  private static async adjustTokenBalance(userId: string, newPlanId: string) {
+    try {
+      const newPlan = await prisma.plan.findUnique({
+        where: { id: newPlanId }
+      })
+
+      if (!newPlan) return
+
+      // 计算应增加的令牌数
+      const tokensToAdd = newPlan.tokenQuota || 0
+
+      // 使用新的统一Token系统添加订阅Token
+      if (tokensToAdd > 0) {
+        const { TokenExpirationService } = await import('./token-expiration-service');
+        await TokenExpirationService.addTokensWithExpiration(
+          userId,
+          tokensToAdd,
+          'SUBSCRIPTION' as any,
+          undefined, // 过期时间将根据订阅周期自动设置
+          {
+            source: 'subscription_upgrade',
+            planId: newPlanId,
+            planName: newPlan.name,
+            description: `Token bonus for plan: ${newPlan.name}`
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error adjusting token balance:', error)
+      // 不抛出错误，避免影响订阅流程
+    }
+  }
+
+  /**
+   * 获取订阅变更历史 - 简化版本，不依赖subscriptionChange表
+   */
+  static async getSubscriptionHistory(userId: string) {
+    try {
+      // 获取用户的订阅历史
+      const subscriptions = await prisma.subscription.findMany({
+        where: { userId },
+        include: {
+          plan: true,
+          payments: {
+            orderBy: { createdAt: 'desc' }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+
+      // 转换为历史记录格式
+      const history = subscriptions.map(subscription => ({
+        id: subscription.id,
+        userId: subscription.userId,
+        currentSubscriptionId: subscription.id,
+        newSubscriptionId: subscription.id,
+        newPlanId: subscription.planId,
+        billingCycle: 'monthly', // Default value
+        priceAdjustment: subscription.plan.price,
+        status: subscription.status,
+        stripePaymentIntentId: subscription.providerSubscriptionId,
+        createdAt: subscription.createdAt,
+        completedAt: subscription.currentPeriodEnd,
+        currentSubscription: subscription,
+        newSubscription: subscription,
+        newPlan: subscription.plan
+      }))
+
+      return history
+    } catch (error) {
+      console.error('Error getting subscription history:', error)
+      throw error
+    }
+  }
+}

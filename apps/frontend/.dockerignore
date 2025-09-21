@@ -1,0 +1,13 @@
+# Node.js
+node_modules
+.next
+npm-debug.log
+*.log
+
+# Backend code included in frontend directory
+gofly_admin_v3
+
+# IDE and OS files
+.vscode
+.idea
+.DS_Store

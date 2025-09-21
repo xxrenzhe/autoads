@@ -1,0 +1,29 @@
+openapi: 3.0.0
+info:
+  title: Adscenter Service
+  version: 1.0.0
+  description: Handles adscenter campaigns, Google Ads integration, and A/B testing.
+paths:
+  /adscenter/campaigns:
+    post:
+      summary: Create a new adscenter campaign
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Campaign created
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -5,6 +5,8 @@
     pkgs.nodejs_20
     pkgs.air
     pkgs.gcc
+    pkgs.docker
+    pkgs.docker-compose
   ];
   env = {
     GOPATH = "$PWD/go";
@@ -33,6 +35,12 @@
           cwd = "apps/frontend";
         };
       };
+    };
+  };
+  # Correctly placed services block at the top level
+  services = {
+    docker = {
+      enable = true;
     };
   };
 }

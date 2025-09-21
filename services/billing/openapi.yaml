@@ -1,0 +1,37 @@
+openapi: 3.0.0
+info:
+  title: Billing Service
+  version: 1.0.0
+  description: Handles subscriptions, payments, and token management.
+paths:
+  /subscriptions:
+    post:
+      summary: Create a new subscription
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                planId:
+                  type: string
+      responses:
+        '201':
+          description: Subscription created successfully
+  /tokens/balance:
+    get:
+      summary: Get user token balance
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token balance
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1
+
+############################
+# Frontend build (Vite)
+FROM node:20-alpine AS web
+WORKDIR /app
+# Install deps
+COPY gofly_admin_v3/web/package.json gofly_admin_v3/web/package-lock.json* gofly_admin_v3/web/yarn.lock* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+# Copy sources and build
+COPY gofly_admin_v3/web/ ./
+RUN npm run build
+
+############################
+# Backend build (Go)
+FROM golang:1.22-alpine AS build
+WORKDIR /app
+RUN apk add --no-cache git
+COPY gofly_admin_v3/ gofly_admin_v3/
+WORKDIR /app/gofly_admin_v3
+ENV CGO_ENABLED=0
+RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg/mod go build -o /app/server cmd/server/main.go
+# Copy frontend dist into static path
+COPY --from=web /app/dist ./web/dist
+
+############################
+# Runtime image
+FROM alpine:3.20
+WORKDIR /app/gofly_admin_v3
+RUN apk add --no-cache ca-certificates tzdata curl iproute2 procps ripgrep \
+    && adduser -D -h /home/app app \
+    && chown -R app:app /app
+USER app
+COPY --from=build /app/server /app/gofly_admin_v3/server
+COPY --from=build /app/gofly_admin_v3/web/dist ./web/dist
+COPY gofly_admin_v3/config.yaml.template /app/gofly_admin_v3/config.yaml.template
+COPY --chown=app:app gofly_admin_v3/config.yaml /app/gofly_admin_v3/config.yaml
+EXPOSE 8080
+ENV PORT=8080
+CMD ["/app/gofly_admin_v3/server","-config","/app/gofly_admin_v3/config.yaml","-port","8080"]

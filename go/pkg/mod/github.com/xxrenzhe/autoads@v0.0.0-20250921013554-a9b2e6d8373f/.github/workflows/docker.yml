@@ -1,0 +1,580 @@
+name: AutoAds Single CI (amd64)
+
+on:
+  push:
+    branches: [ main, production ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: xxrenzhe/autoads
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      db: ${{ steps.filter.outputs.db }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            db:
+              - 'apps/frontend/prisma/**'
+              - 'gofly_admin_v3/internal/init/**'
+              - 'gofly_admin_v3/cmd/migrate/**'
+              - 'docker-entrypoint.sh'
+              - '.github/workflows/docker.yml'
+  validate-ts:
+    name: Quick Validation - TS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Cache Prisma engines
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/prisma
+          key: ${{ runner.os }}-prisma-${{ hashFiles('apps/frontend/prisma/schema.prisma') }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-prisma-
+
+      - name: Install dependencies (root workspaces)
+        run: npm ci --workspaces --include-workspace-root --ignore-scripts
+
+      - name: Prisma format (non-blocking)
+        env:
+          DATABASE_URL: mysql://user:pass@127.0.0.1:3306/dummy
+        run: cd apps/frontend && npx prisma format --schema prisma/schema.prisma
+
+      - name: Generate Prisma Client
+        env:
+          DATABASE_URL: mysql://user:pass@127.0.0.1:3306/dummy
+        run: cd apps/frontend && npx prisma generate
+
+      - name: Prisma validate
+        env:
+          DATABASE_URL: mysql://user:pass@127.0.0.1:3306/dummy
+        run: cd apps/frontend && npx prisma validate
+
+      - name: TypeScript type check (frontend)
+        run: ./scripts/type-check-simple.sh
+
+  validate-db:
+    name: Quick Validation - DB
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    needs: [changes]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.db == 'true'
+    env:
+      GOPROXY: https://proxy.golang.org,direct
+      GOSUMDB: sum.golang.org
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: autoads_ci
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 3306:3306
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 6379:6379
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (for Prisma CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies (root workspaces)
+        run: npm ci --workspaces --include-workspace-root --ignore-scripts
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: true
+          cache-dependency-path: gofly_admin_v3/go.sum
+
+      - name: Generate Prisma Client (root)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+        run: npx prisma generate --schema apps/frontend/prisma/schema.prisma
+
+      - name: Build Go migrate binary (minimal)
+        run: |
+          cd gofly_admin_v3
+          go build -v -trimpath -buildvcs=false -ldflags "-s -w" -o migrate-ci ./cmd/migrate
+
+      # 依赖 services 健康检查，无需额外等待步骤
+
+      - name: Run Go database migrations (CI via env URL)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+          REDIS_URL: redis://127.0.0.1:6379/0
+          DB_RECREATE: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Waiting for MySQL(127.0.0.1:3306) and Redis(127.0.0.1:6379) ..."
+          for i in {1..90}; do (echo > /dev/tcp/127.0.0.1/3306) >/dev/null 2>&1 && break; sleep 1; done
+          for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/6379) >/dev/null 2>&1 && break; sleep 1; done
+          echo "Ports ready. Running migrations..."
+          cd gofly_admin_v3
+          # 以文件收集输出，并设置成功哨兵字符串
+          SUCCESS_SENTINEL="数据库初始化完成"
+          set +e
+          ./migrate-ci > migrate.out 2>&1 &
+          pid=$!
+          # 轮询输出，最多等待 300s（5 分钟）
+          for i in {1..300}; do
+            if grep -q "$SUCCESS_SENTINEL" migrate.out; then
+              echo "Detected success sentinel: $SUCCESS_SENTINEL"
+              # 进程可能尚未退出，确保结束它（忽略失败）
+              kill "$pid" >/dev/null 2>&1 || true
+              wait "$pid" >/dev/null 2>&1 || true
+              cat migrate.out
+              exit 0
+            fi
+            if ! kill -0 "$pid" >/dev/null 2>&1; then
+              echo "Process exited. Printing output:"
+              cat migrate.out
+              # 进程自行退出（成功或失败），以其退出码为准
+              wait "$pid"; exit $?
+            fi
+            sleep 1
+          done
+          echo "Timeout waiting for success sentinel within 300s; killing process..."
+          kill "$pid" >/dev/null 2>&1 || true
+          sleep 2
+          kill -KILL "$pid" >/dev/null 2>&1 || true
+          echo "--- migrate.out (truncated) ---"
+          tail -n 500 migrate.out || true
+          exit 1
+
+      - name: Seed summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "## Seed Summary" >> $GITHUB_STEP_SUMMARY
+          if [[ -f gofly_admin_v3/migrate.out ]]; then
+            sed -n 's/^\(✅[^\n]*\)$/- \1/p' gofly_admin_v3/migrate.out >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "- (no migrate.out found)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Force seed fallback (Node)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+        run: |
+          set -euo pipefail
+          node apps/frontend/prisma/seed.js
+
+      - name: SSR DB read checks (Prisma)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+        shell: bash
+        run: |
+          set -euo pipefail
+          node apps/frontend/scripts/db-check.js | tee db-check.out
+          echo "## DB Read Checks" >> $GITHUB_STEP_SUMMARY
+          # Append key results to job summary
+          sed -n 's/^ - /- /p' db-check.out >> $GITHUB_STEP_SUMMARY || true
+          sed -n 's/^\(✅[^\n]*\)$/- \1/p' db-check.out >> $GITHUB_STEP_SUMMARY || true
+
+      - name: Prisma migrate status (against CI DB)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "## Prisma migrate status" >> $GITHUB_STEP_SUMMARY
+          cd apps/frontend
+          npx prisma migrate status --schema prisma/schema.prisma 2>&1 | tee status.out | sed -n '1,200p' | tee -a $GITHUB_STEP_SUMMARY || true
+          echo "--- gating ---"
+          if grep -Eiq "drift detected|not yet applied|pending" status.out; then
+            echo "Migration status indicates drift/pending; failing the job." | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Show Prisma migration diff (DB vs. migrations)
+        if: always()
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "## Prisma migration diff" >> $GITHUB_STEP_SUMMARY
+          deployments/scripts/db-ops.sh diff | tee diff.sql | sed -n '1,200p' | tee -a $GITHUB_STEP_SUMMARY || true
+          echo "--- gating ---"
+          # If diff contains DDL statements, fail. Allow empty or comments-only.
+          if grep -Eiq "\\b(CREATE|ALTER|DROP)\\b" diff.sql; then
+            echo "DDL diff detected; failing the job." | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  build-and-push:
+    if: github.event_name != 'pull_request'
+    name: Build and Push (linux/amd64)
+    runs-on: ubuntu-latest
+    needs: [validate-db, validate-ts]
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # main -> preview-latest
+            type=raw,value=preview-latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # main -> preview-sha-{short}
+            type=sha,format=short,prefix=preview-sha-,enable=${{ github.ref == 'refs/heads/main' }}
+            # production -> prod-latest
+            type=raw,value=prod-latest,enable=${{ github.ref == 'refs/heads/production' }}
+            # production -> prod-sha-{short}
+            type=sha,format=short,prefix=prod-sha-,enable=${{ github.ref == 'refs/heads/production' }}
+            # tag v* -> prod-{tag-without-v}
+            type=match,pattern=v(.*),group=1,prefix=prod-,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Determine build args (per MustKnow.md)
+        id: build-args
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/production" ]] || [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "NEXT_PUBLIC_DEPLOYMENT_ENV=production" >> $GITHUB_OUTPUT
+            echo "NEXT_PUBLIC_DOMAIN=autoads.dev" >> $GITHUB_OUTPUT
+            BASE_DOMAIN=autoads.dev
+          else
+            echo "NEXT_PUBLIC_DEPLOYMENT_ENV=preview" >> $GITHUB_OUTPUT
+            echo "NEXT_PUBLIC_DOMAIN=urlchecker.dev" >> $GITHUB_OUTPUT
+            BASE_DOMAIN=urlchecker.dev
+          fi
+          WWW_DOMAIN="www.${BASE_DOMAIN}"
+          echo "ALLOW_ORIGINS=https://${BASE_DOMAIN},https://${WWW_DOMAIN}" >> $GITHUB_OUTPUT
+          echo "GOOGLE_REDIRECT_URI=https://${WWW_DOMAIN}/auth/google/callback" >> $GITHUB_OUTPUT
+          # Extra build args for reproducible versioning / cache-bust
+          echo "BUILD_TS=$(date -u +%FT%TZ)" >> $GITHUB_OUTPUT
+          echo "CACHE_BUST=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Build and push image (linux/amd64)
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.standalone
+          platforms: linux/amd64
+          push: true
+          no-cache: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_DEPLOYMENT_ENV=${{ steps.build-args.outputs.NEXT_PUBLIC_DEPLOYMENT_ENV }}
+            NEXT_PUBLIC_DOMAIN=${{ steps.build-args.outputs.NEXT_PUBLIC_DOMAIN }}
+            ALLOW_ORIGINS=${{ steps.build-args.outputs.ALLOW_ORIGINS }}
+            GOOGLE_REDIRECT_URI=${{ steps.build-args.outputs.GOOGLE_REDIRECT_URI }}
+            VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
+            BUILD_TS=${{ steps.build-args.outputs.BUILD_TS }}
+            CACHE_BUST=${{ steps.build-args.outputs.CACHE_BUST }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summary
+        run: |
+          echo "## ✅ Build summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Image: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Digest: ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Platform: linux/amd64" >> $GITHUB_STEP_SUMMARY
+          echo "- Env: ${{ steps.build-args.outputs.NEXT_PUBLIC_DEPLOYMENT_ENV }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Domain: ${{ steps.build-args.outputs.NEXT_PUBLIC_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "- No cache: true" >> $GITHUB_STEP_SUMMARY
+
+      - name: Deploy summary (ClawCloud copy-paste)
+        run: |
+          echo "## 🚀 Deploy on ClawCloud" >> $GITHUB_STEP_SUMMARY
+          echo "Use the following image tag+digest to avoid cache ambiguity:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for TAG in $(echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n'); do
+            echo "- ghcr.io/xxrenzhe/autoads:${TAG#*/} @ ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Pull explicitly:" >> $GITHUB_STEP_SUMMARY
+          echo "\n\`docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "\nThen select this digest in ClawCloud or ensure Always Pull is enabled." >> $GITHUB_STEP_SUMMARY
+
+  security-scan:
+    if: github.event_name != 'pull_request'
+    name: Trivy Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine image tag
+        id: tag
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "image_tag=preview-latest" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/production" ]]; then
+            echo "image_tag=prod-latest" >> $GITHUB_OUTPUT
+          else
+            # refs/tags/v*
+            NAME="${GITHUB_REF_NAME}"
+            NAME_WITHOUT_V="${NAME#v}"
+            echo "image_tag=prod-${NAME_WITHOUT_V}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Pull image for scanning
+        run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.image_tag }}
+
+      - name: Run Trivy (critical only)
+        id: trivy
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.image_tag }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: 'CRITICAL'
+          vuln-type: 'os,library'
+          timeout: '8m'
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-trivy-scan-results
+          path: trivy-results.sarif
+          retention-days: 14
+
+  smoke-run:
+    if: github.event_name != 'pull_request'
+    name: Smoke Test (run container and verify 8080)
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare docker network
+        run: |
+          echo "[time] prepare-net start: $(date -u +%FT%T)"
+          docker network create ci-net || true
+          echo "[time] prepare-net end:   $(date -u +%FT%T)"
+
+      - name: Start Redis (required by Go backend)
+        run: |
+          echo "[time] start-redis start: $(date -u +%FT%T)"
+          docker run -d --name redis --network ci-net redis:7-alpine
+          echo "[time] start-redis end:   $(date -u +%FT%T)"
+
+      - name: Start MySQL (for backend DB connection)
+        run: |
+          echo "[time] start-mysql start: $(date -u +%FT%T)"
+          docker run -d --name mysql --network ci-net \
+            -e MYSQL_ROOT_PASSWORD=password \
+            -e MYSQL_DATABASE=autoads \
+            mysql:8.0
+          # wait for mysql to be ready
+          for i in $(seq 1 60); do
+            if docker exec mysql sh -lc 'mysqladmin ping -h 127.0.0.1 -ppassword' >/dev/null 2>&1; then
+              echo "MySQL is ready"; break; fi; sleep 1; done
+          echo "[time] start-mysql end:   $(date -u +%FT%T)"
+
+      - name: Prepare DB schema (prisma migrate + seed in ci-net)
+        run: |
+          echo "[time] prepare-db start: $(date -u +%FT%T)"
+          docker run --rm --network ci-net -v "$PWD:/repo" -w /repo node:20 bash -lc '
+            set -euo pipefail
+            npm ci --workspaces --include-workspace-root --ignore-scripts --no-audit --no-fund
+            npm i -g prisma@6.16.0
+            export DATABASE_URL=mysql://root:password@mysql:3306/autoads
+            npx prisma migrate deploy --schema apps/frontend/prisma/schema.prisma
+            npx prisma generate --schema apps/frontend/prisma/schema.prisma
+            node apps/frontend/prisma/seed.js
+          '
+          echo "[time] prepare-db end:   $(date -u +%FT%T)"
+
+      - name: Build backend-only smoke image (no push)
+        run: |
+          echo "[time] build-smoke start: $(date -u +%FT%T)"
+          docker build -f Dockerfile.standalone --target smoke -t autoads:smoke .
+          echo "[time] build-smoke end:   $(date -u +%FT%T)"
+
+      - name: Write minimal config.yaml
+        run: |
+          cat > config.yaml << 'YAML'
+          app:
+            name: autoads-ci
+            debug: true
+          database:
+            type: mysql
+            host: mysql
+            port: 3306
+            username: root
+            password: "password"
+            database: autoads
+            charset: utf8mb4
+            pool: { max_idle: 5, max_open: 10, max_lifetime: 600 }
+            default:
+              type: mysql
+              hostname: mysql
+              hostport: "3306"
+              username: root
+              password: "password"
+              dbname: autoads
+              charset: utf8mb4
+              timezone: Local
+          redis:
+            enable: true
+            host: redis
+            port: 6379
+            password: ""
+            db: 1
+            prefix: "autoads:"
+            default:
+              address: redis:6379
+              db: 1
+              pass: ""
+              maxIdle: 10
+              maxActive: 100
+              idleTimeout: 10
+              waitTimeout: 5
+              protocol: 3
+          YAML
+
+      - name: Run container (map 3000,8080)
+        run: |
+          echo "[time] run-container start: $(date -u +%FT%T)"
+          docker run -d --name autoads --network ci-net \
+            -p 3000:3000 -p 8080:8080 \
+            -e NODE_ENV=production \
+            -e NEXTJS_PORT=3000 \
+            -e PORT=8080 \
+            -e BACKEND_URL=http://127.0.0.1:8080 \
+            -e RUN_MIGRATIONS_ON_START=true \
+            -e GO_SEED_ON_START=true \
+            -e GO_SEED_ALLOW_WRITE=true \
+            -e SKIP_NEXT=true \
+            -e SKIP_EXECUTORS=true \
+            -v "$PWD/config.yaml:/app/gofly_admin_v3/config.yaml:ro" \
+            autoads:smoke
+          echo "[time] run-container end:   $(date -u +%FT%T)"
+
+      - name: In-container readiness (wget /ready or /health)
+        id: in_container_ready
+        run: |
+          echo "[time] in-container-ready start: $(date -u +%FT%T)"
+          set +e
+          ready=false
+          for i in $(seq 1 60); do
+            if docker exec autoads sh -lc 'wget -qO- http://127.0.0.1:8080/ready >/dev/null 2>&1 || wget -qO- http://127.0.0.1:8080/health >/dev/null 2>&1'; then
+              echo "Backend ready (in-container) on :8080"
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          echo "ready=${ready}" >> $GITHUB_OUTPUT
+          echo "[time] in-container-ready end:   $(date -u +%FT%T)"
+
+      - name: Show container netstat (debug)
+        if: steps.in_container_ready.outputs.ready != 'true'
+        run: |
+          docker exec autoads sh -lc 'busybox netstat -lnt || true'
+
+      - name: Wait for backend ready (http://127.0.0.1:8080/ready or /health)
+        if: steps.in_container_ready.outputs.ready != 'true'
+        run: |
+          echo "[time] external-ready start: $(date -u +%FT%T)"
+          set -e
+          for i in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:8080/ready >/dev/null 2>&1 || curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1; then
+              echo "Backend ready on :8080"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Backend not ready in 120s" >&2
+          docker logs autoads || true
+          echo "--- MySQL last logs ---" >&2
+          docker logs mysql --since=2m || true
+          exit 1
+          echo "[time] external-ready end:   $(date -u +%FT%T)"
+
+      - name: Show listening ports (debug)
+        if: always()
+        run: |
+          set +e
+          echo "Containers:" && docker ps -a
+          if docker ps -a --format '{{.Names}}' | grep -q '^autoads$'; then
+            docker exec autoads sh -lc 'ss -ltnp | sed -n "1,200p" || true' || true
+          else
+            echo "autoads container not found (skipping ss output)"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f autoads || true
+          docker rm -f redis || true
+          docker rm -f mysql || true
