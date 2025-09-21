@@ -107,3 +107,16 @@ export interface UrlResult {
     error?: string;
   };
 }
+
+/**
+ * Represents an Offer in the system, aligning with the Prisma schema.
+ */
+export interface Offer {
+  id: string;
+  userId: string;
+  name: string;
+  originalUrl: string;
+  status: 'evaluating' | 'optimizing' | 'scaling' | 'archived';
+  siterankScore?: number | null;
+  createdAt: string; // Using string to represent ISO date format for simplicity in transfer
+}

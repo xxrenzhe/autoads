@@ -49,29 +49,39 @@ interface NavigationItem {
   requiresRole?: string[]
 }
 
+// 重构后的导航项
 const navigationItems: NavigationItem[] = [
   {
-    title: 'Home',
-    href: '/',
-    description: 'Return to homepage',
-    icon: Home
-  },
-  {
-    title: 'Features',
-    href: '/features',
-    description: 'Explore our features'
-  },
-  {
-    title: 'Pricing',
-    href: '/pricing',
-    description: 'View pricing plans',
-    icon: DollarSign
-  },
-  {
-    title: 'Dashboard',
+    title: '仪表盘',
     href: '/dashboard',
-    description: 'Access your dashboard',
+    description: '查看您的核心指标和活动',
     icon: BarChart3,
+    requiresAuth: true
+  },
+  {
+    title: 'Offer库',
+    href: '/offers',
+    description: '管理您的所有Offers',
+    icon: Search, // 建议用一个更贴切的图标，暂时用Search
+    requiresAuth: true
+  },
+  {
+    title: '工作流',
+    href: '/workflows',
+    description: '自动化您的增长流程',
+    icon: Settings, // 建议更换图标
+    requiresAuth: true
+  },
+  {
+    title: '博客',
+    href: '/blog',
+    description: '获取最新的行业洞察和技巧',
+  },
+  {
+    title: '计费中心',
+    href: '/billing',
+    description: '管理您的订阅和Token',
+    icon: DollarSign,
     requiresAuth: true
   }
 ]
