@@ -3,7 +3,7 @@
 .dockerignore
 .aiexclude
 dev.nix
-README.md
+*.md
 *.log
 npm-debug.log
 yarn-error.log

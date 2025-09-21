@@ -7,6 +7,7 @@
     pkgs.gcc
     pkgs.docker
     pkgs.docker-compose
+    pkgs.git-filter-repo
   ];
   env = {
     GOPATH = "$PWD/go";
