@@ -10,19 +10,19 @@ import (
 	"net/http"
 	"time"
 
-	"firebase.google.com/go/v4/auth"
+	firebaseauth "firebase.google.com/go/v4/auth"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Handler holds the dependencies for the HTTP handlers.
 type Handler struct {
 	DB             *pgxpool.Pool
-	AuthClient     *auth.Client
+	AuthClient     *firebaseauth.Client
 	EventPublisher events.Publisher
 }
 
 // NewHandler creates a new Handler with dependencies.
-func NewHandler(db *pgxpool.Pool, authClient *auth.Client, publisher events.Publisher) *Handler {
+func NewHandler(db *pgxpool.Pool, authClient *firebaseauth.Client, publisher events.Publisher) *Handler {
 	return &Handler{
 		DB:             db,
 		AuthClient:     authClient,

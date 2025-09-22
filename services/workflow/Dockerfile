@@ -1,16 +1,13 @@
-# Dockerfile for workflow service
-FROM golang:1.25-alpine
-
+# Use the official Golang image to create a build artifact.
+FROM golang:1.25-alpine as builder
 WORKDIR /app
-
 COPY go.mod go.sum ./
 RUN go mod download
-
 COPY . .
-
-RUN go build -o /workflow-service ./cmd/server && \
-    go clean -cache
-
+RUN CGO_ENABLED=0 GOOS=linux go build -o /workflow-service .
+# Start a new stage from scratch for a smaller image
+FROM alpine:latest
+WORKDIR /
+COPY --from=builder /workflow-service /workflow-service
 EXPOSE 8080
-
-CMD [ "/workflow-service" ]
+CMD ["/workflow-service"]

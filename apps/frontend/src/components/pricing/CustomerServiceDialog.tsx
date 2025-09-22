@@ -1,80 +1,43 @@
-'use client'
+'use client';
 
-import React from 'react'
-import Image from 'next/image'
-import { Button } from '@/components/ui/button'
+import React from 'react';
+import Image from 'next/image';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 interface CustomerServiceDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  planName: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export default function CustomerServiceDialog({ 
-  open, 
-  onOpenChange, 
-  planName 
-}: CustomerServiceDialogProps) {
-  const qrSrc = process.env.NEXT_PUBLIC_CUSTOMER_SERVICE_QR || '/logo-autoads.png'
+export default function CustomerServiceDialog({ open, onOpenChange }: CustomerServiceDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-center text-xl">
-            联系客服订阅{planName}套餐
-          </DialogTitle>
-          <DialogDescription className="text-center">
-            请扫码添加客服微信，我们将为您提供专业的订阅服务
+          <DialogTitle>联系客服订阅</DialogTitle>
+          <DialogDescription>
+            请扫描下方的二维码添加我们的客服。我们的团队将为您提供一对一的咨询和开通服务。
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="flex flex-col items-center space-y-4 py-6">
-          <div className="relative w-48 h-48 bg-gray-100 rounded-lg overflow-hidden">
-            <Image
-              src={qrSrc}
-              alt="客服二维码"
-              fill
-              className="object-cover"
-              unoptimized
-              onError={(e) => {
-                // 如果图片加载失败，显示占位符
-                const target = e.target as HTMLImageElement
-                target.style.display = 'none'
-                target.parentElement!.innerHTML = `
-                  <div class="w-full h-full flex items-center justify-center bg-gray-200">
-                    <span class="text-gray-500">客服二维码</span>
-                  </div>
-                `
-              }}
-            />
-          </div>
-          
-          <div className="text-center space-y-2">
-            <p className="text-sm text-gray-600">
-              扫描二维码或搜索微信号：<span className="font-semibold">xxrenzhe11</span>
-            </p>
-            <p className="text-xs text-gray-500">
-              客服工作时间：周一至周五 9:00-18:00
-            </p>
-          </div>
+        <div className="flex items-center justify-center p-4">
+          <Image
+            src="/Customer-service-QR-code.jpg" // Assuming the QR code image is in the `public` directory
+            alt="Customer Service QR Code"
+            width={250}
+            height={250}
+            className="rounded-lg"
+          />
         </div>
-        
-        <div className="flex justify-center">
-          <Button 
-            onClick={() => onOpenChange(false)}
-            variant="outline"
-          >
-            我知道了
-          </Button>
+        <div className="text-center text-sm text-muted-foreground">
+          <p>添加时请备注 "AutoAds订阅咨询"</p>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

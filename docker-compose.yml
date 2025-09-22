@@ -1,5 +1,16 @@
 version: '3.8'
 services:
+  console:
+    build:
+      context: ./services/console
+    ports:
+      - "8080:8080" # Mapped to port 8080 for the admin proxy
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
   identity:
     build:
       context: ./services/identity
@@ -97,12 +108,13 @@ services:
       - WORKFLOW_SERVICE_URL=http://workflow:8080
       - NEXTAUTH_URL=http://localhost:3000 # For OAuth callbacks
     depends_on:
+      - console # Added dependency to ensure console starts first
       - workflow
       - siterank
   postgres:
     image: postgres:15
     environment:
-      POSTGRES_DB: autoads_db
+      POSTG-RES_DB: autoads_db
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
     ports:

@@ -13,7 +13,7 @@ type User struct {
 	Role         string     `json:"role"`
 	CreatedAt    time.Time  `json:"createdAt"`
 	LastLogin    *time.Time `json:"lastLogin,omitempty"`
-	LastCheckIn  *time.time `json:"lastCheckIn,omitempty"` // New field for daily check-in
+	LastCheckIn  *time.Time `json:"lastCheckIn,omitempty"` // New field for daily check-in
 }
 
 // NewUser creates a new user with default values.
