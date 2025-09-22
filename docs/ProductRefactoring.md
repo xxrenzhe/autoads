@@ -313,22 +313,108 @@ model BatchopenTask {
 
 ---
 
-## 8. 开发、测试与部署工作流
-1.  **开发环境 (Firebase Studio)**:
-    - **[✅ 已完成]** 通过`.idx/dev.nix`配置标准化环境。
-    - **[✅ 已完成]** 使用`concurrently`实现一键启动所有本地微服务（或使用Skaffold等工具）。
-    - 实现秒级的“修改-预览”反馈循环。
+## 8. 构建、测试与部署权威指南 (V2.0)
 
-2.  **自动化测试 (CI/CD)**:
-    - **单元/集成测试**: 每个微服务都必须有自己的测试套件。
-    - **E2E测试 (Playwright)**: 在GitHub Actions中，于每次`push`后自动运行，模拟完整的用户流程。
-    - **契约测试 (Pact)**: (推荐) 在微服务之间引入契约测试，确保服务间的API兼容性。
+本节为项目提供标准化的构建、测试与部署流程。所有自动化脚本（CI/CD）和手动操作都应以此为准。
 
-3.  **部署 (CI/CD)**:
-    - **[✅ 已完成]** `git push`到`main`分支后，**GitHub Actions**自动触发。
-    - **[✅ 已完成]** 流水线会**独立构建、测试和部署**每一个发生变更的微服务到**Cloud Run**。
-    - **[✅ 已完成]** 前端独立部署到**Firebase Hosting**。
-    - **[✅ 已完成]** 部署结束后，调用`deployments/scripts/deployment-notification.sh`发送通知。
+### 8.1. 环境准备
+
+在开始之前，请确保您的本地环境或CI/CD Runner已完成以下配置：
+1.  **安装核心工具**:
+    *   `gcloud` CLI (Google Cloud SDK)
+    *   `firebase-tools` CLI
+    *   `docker`
+    *   `pnpm`
+    *   `go` (版本 >= 1.25)
+2.  **认证**:
+    *   运行 `gcloud auth login` 并登录您的GCP账户。
+    *   运行 `firebase login` 并登录您的Firebase账户。
+    *   运行 `gcloud auth configure-docker asia-northeast1-docker.pkg.dev` 来配置Docker认证。
+3.  **设置项目**:
+    *   运行 `gcloud config set project gen-lang-client-0944935873`。
+    *   运行 `firebase use gen-lang-client-0944935873`。
+
+### 8.2. 后端微服务部署流程 (以 `identity` 服务为例)
+
+所有Go微服务（位于 `./services/*`）均采用相同的流程独立部署。
+
+**第1步：构建Docker镜像**
+
+我们将使用Google Cloud Build在云端构建镜像，以获得最佳的性能和安全性。此命令会自动打包源码、发送到云端、构建镜像并推送到Artifact Registry。
+
+```bash
+# [SERVICE_NAME] 可替换为: identity, billing, offer, 等...
+SERVICE_NAME="identity"
+PROJECT_ID="gen-lang-client-0944935873"
+REGION="asia-northeast1"
+IMAGE_TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/autoads-services/${SERVICE_NAME}:latest"
+
+gcloud builds submit "./services/${SERVICE_NAME}" --tag "${IMAGE_TAG}"
+```
+
+**第2步：部署到Cloud Run**
+
+镜像构建成功后，我们将其部署为一个新的Cloud Run服务。
+
+```bash
+# 部署服务的初始版本
+gcloud run deploy "${SERVICE_NAME}" \
+  --image "${IMAGE_TAG}" \
+  --region "${REGION}" \
+  --platform "managed" \
+  --allow-unauthenticated \
+  --set-env-vars="GIN_MODE=release" \
+  --set-secrets="DATABASE_URL=DATABASE_URL:latest" # 示例：从Secret Manager挂载密钥
+```
+*   `--allow-unauthenticated`: 允许公网访问。在生产环境中，这将被API Gateway和IAP保护。
+*   `--set-secrets`: 将Google Secret Manager中的密钥安全地挂载为环境变量。
+
+**注意**: 对于后续的更新，只需重复以上两个步骤即可。Cloud Run会自动创建新的修订版本并无缝切换流量。
+
+### 8.3. 前端应用部署流程
+
+前端Next.js应用（位于 `./apps/frontend`）被部署为静态站点，并由Firebase Hosting提供服务。
+
+**第1步：构建应用**
+
+在项目根目录运行 `pnpm` 命令来构建和打包所有应用。
+
+```bash
+# 安装依赖
+pnpm install
+
+# 构建所有应用，包括前端
+pnpm build
+```
+此命令会利用 `turbo` 来高效地执行构建流程，最终的静态文件输出位于 `apps/frontend/out` 目录。
+
+**第2步：部署到Firebase Hosting**
+
+使用Firebase CLI进行部署。
+
+```bash
+# 确保您在正确的Firebase项目中
+firebase use gen-lang-client-0944935873
+
+# 部署到Firebase Hosting
+# --only hosting 指定只部署Hosting服务
+firebase deploy --only hosting
+```
+部署完成后，Firebase CLI会提供一个托管URL，您可以从中访问最新的前端应用。
+
+### 8.4. CI/CD自动化 (GitHub Actions)
+
+以上所有手动步骤都应被自动化。一个典型的 `.github/workflows/deploy.yml` 文件会包含以下作业：
+
+1.  **`lint-and-test` 作业**: 在代码`push`时触发，运行 `pnpm lint` 和 `pnpm test`，确保代码质量。
+2.  **`build-and-deploy-backend` 作业**:
+    *   在代码合并到 `main` 分支时触发。
+    *   使用`gcloud` CLI认证。
+    *   **智能判断**: 脚本会检测 `./services/*` 目录下哪些文件发生了变更，并只为那些变更了的服务执行 `gcloud builds submit` 和 `gcloud run deploy`。
+3.  **`build-and-deploy-frontend` 作业**:
+    *   在代码合并到 `main` 分支时触发。
+    *   使用`firebase-tools` CLI认证。
+    *   **智能判断**: 脚本会检测 `./apps/frontend/**` 目录下的文件是否发生变更。如果发生变更，则执行 `pnpm install`, `pnpm build` 和 `firebase deploy`。
 
 ---
 
