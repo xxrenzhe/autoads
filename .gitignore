@@ -63,3 +63,7 @@ secrets/*
 
 # Local logs (runtime/debug outputs)
 logs/
+
+# GoFly admin local caches (avoid tracking third‑party module cache)
+gofly_admin_v3/.gomodcache/
+gofly_admin_v3/.gocache/
