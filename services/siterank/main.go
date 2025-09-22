@@ -213,14 +213,24 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	log.Println("Starting Siterank service...")
 
-	dbSecretName := os.Getenv("DB_SECRET_NAME")
-	if dbSecretName == "" {
-		log.Fatalf("DB_SECRET_NAME environment variable not set")
-	}
-	dsn, err := secrets.GetSecret(dbSecretName)
-	if err != nil {
-		log.Fatalf("Failed to get database secret: %v", err)
-	}
+    // Prefer standard name; fall back to legacy
+    dbSecretName := os.Getenv("DATABASE_URL_SECRET_NAME")
+    if dbSecretName == "" {
+        dbSecretName = os.Getenv("DB_SECRET_NAME")
+    }
+    var dsn string
+    var err error
+    if dbSecretName != "" {
+        dsn, err = secrets.GetSecret(dbSecretName)
+        if err != nil {
+            log.Fatalf("Failed to get database secret: %v", err)
+        }
+    } else {
+        dsn = os.Getenv("DATABASE_URL")
+        if dsn == "" {
+            log.Fatalf("DATABASE_URL or DATABASE_URL_SECRET_NAME must be set")
+        }
+    }
 
 	db, err := database.NewConnection(dsn)
 	if err != nil {

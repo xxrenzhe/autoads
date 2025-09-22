@@ -1,13 +1,15 @@
 package auth
 
 import (
-	"context"
-	"log"
-	"net/http"
-	"strings"
+    "context"
+    "log"
+    "net/http"
+    "strings"
 
-	firebase "firebase.google.com/go/v4"
-	"firebase.google.com/go/v4/auth"
+    firebase "firebase.google.com/go/v4"
+    "firebase.google.com/go/v4/auth"
+    "google.golang.org/api/option"
+    "os"
 )
 
 // userCtxKey is a custom type to use as a key for context values.
@@ -23,10 +25,15 @@ type Client struct {
 
 // NewClient initializes and returns a new Firebase Auth client.
 func NewClient(ctx context.Context) *Client {
-	app, err := firebase.NewApp(ctx, nil)
-	if err != nil {
-		log.Fatalf("error initializing Firebase app: %v\n", err)
-	}
+    creds := os.Getenv("FIREBASE_CREDENTIALS_FILE")
+    if creds == "" {
+        creds = "secrets/firebase-adminsdk.json"
+    }
+    opt := option.WithCredentialsFile(creds)
+    app, err := firebase.NewApp(ctx, nil, opt)
+    if err != nil {
+        log.Fatalf("error initializing Firebase app: %v\n", err)
+    }
 
 	authClient, err := app.Auth(ctx)
 	if err != nil {

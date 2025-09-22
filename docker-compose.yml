@@ -6,99 +6,85 @@ services:
     ports:
       - "8080:8080" # Mapped to port 8080 for the admin proxy
     environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL_SECRET_NAME=${DATABASE_URL_SECRET_NAME}
     depends_on:
-      - postgres
-      - redis
+      - cloudsql-proxy
   identity:
     build:
       context: ./services/identity
     ports:
       - "8081:8080"
     environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL_SECRET_NAME=${DATABASE_URL_SECRET_NAME}
+      - FIREBASE_CREDENTIALS_FILE=/app/secrets/firebase-adminsdk.json
     depends_on:
-      - postgres
-      - redis
+      - cloudsql-proxy
+    volumes:
+      - ./secrets/firebase-adminsdk.json:/app/secrets/firebase-adminsdk.json:ro
   billing:
     build:
       context: ./services/billing
     ports:
       - "8082:8080"
     environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL_SECRET_NAME=${DATABASE_URL_SECRET_NAME}
     depends_on:
-      - postgres
-      - redis
+      - cloudsql-proxy
+    volumes:
+      - ./secrets/firebase-adminsdk.json:/app/secrets/firebase-adminsdk.json:ro
   offer:
     build:
       context: ./services/offer
     ports:
       - "8083:8080"
     environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL_SECRET_NAME=${DATABASE_URL_SECRET_NAME}
     depends_on:
-      - postgres
-      - redis
+      - cloudsql-proxy
+    volumes:
+      - ./secrets/firebase-adminsdk.json:/app/secrets/firebase-adminsdk.json:ro
   siterank:
     build:
       context: ./services/siterank
     ports:
       - "8084:8080"
     environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL_SECRET_NAME=${DATABASE_URL_SECRET_NAME}
       - SITERANK_SERVICE_URL=http://siterank:8080
     depends_on:
-      - postgres
-      - redis
+      - cloudsql-proxy
   batchopen:
     build:
       context: ./services/batchopen
     ports:
       - "8085:8080"
     environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL_SECRET_NAME=${DATABASE_URL_SECRET_NAME}
     depends_on:
-      - postgres
-      - redis
+      - cloudsql-proxy
   adscenter:
     build:
       context: ./services/adscenter
     ports:
       - "8086:8080"
     environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL_SECRET_NAME=${DATABASE_URL_SECRET_NAME}
     depends_on:
-      - postgres
-      - redis
+      - cloudsql-proxy
+    volumes:
+      - ./secrets/firebase-adminsdk.json:/app/secrets/firebase-adminsdk.json:ro
   workflow:
     build:
       context: ./services/workflow
     ports:
       - "8087:8080"
     environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL_SECRET_NAME=${DATABASE_URL_SECRET_NAME}
       - SITERANK_SERVICE_URL=http://siterank:8080 # For inter-service communication
     depends_on:
-      - postgres
-      - redis
-  projector:
-    build:
-      context: ./services/projector
-    environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/autoads_db?sslmode=disable
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - postgres
-      - redis
+      - cloudsql-proxy
+    volumes:
+      - ./secrets/firebase-adminsdk.json:/app/secrets/firebase-adminsdk.json:ro
   frontend:
     build:
       context: ./apps/frontend
@@ -108,18 +94,16 @@ services:
       - WORKFLOW_SERVICE_URL=http://workflow:8080
       - NEXTAUTH_URL=http://localhost:3000 # For OAuth callbacks
     depends_on:
-      - console # Added dependency to ensure console starts first
+      - console
       - workflow
       - siterank
-  postgres:
-    image: postgres:15
-    environment:
-      POSTG-RES_DB: autoads_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+
+  cloudsql-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.4
+    command: ["--private-ip", "--port", "5432", "${CLOUDSQL_CONNECTION_NAME}"]
     ports:
       - "5432:5432"
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/secrets/key.json
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/secrets/key.json:ro

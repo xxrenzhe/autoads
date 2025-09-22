@@ -1,0 +1,104 @@
+database: #数据库配置
+  default:
+    #地址
+    hostname: 127.0.0.1
+    #端口           
+    hostport: 3306
+    #账号                 
+    username: root
+    #密码              
+    password: root
+    #数据库名称           
+    dbname: autoads_gofly
+    #表名前缀
+    prefix: 
+    type:          "mysql"                   #数据库类型(如：mariadb/tidb/mysql/pgsql/mssql/sqlite/oracle/clickhouse/dm) 
+    sqlmode:       "NO_ENGINE_SUBSTITUTION"  #设置数据库sql_mode，当数据库类型mariadb/mysql可设置，不设置留空
+    extra:         "&parseTime=True"         #不同数据库的额外特性配置，由底层数据库driver定义,mysql填：&parseTime=True,如果pgsql配置：不填
+    role:          "master"                  #数据库主从角色(master/slave)，不使用应用层的主从机制请均设置为master
+    debug:         false                     #开启调试模式
+    dryrun:        0                         #ORM空跑(只读不写)
+    weight:        100                       #负载均衡权重，用于负载均衡控制，不使用应用层的负载均衡机制请置空
+    charset:       "utf8mb4"                 #数据库编码(如: utf8/utf8mb4/gbk/gb2312)，一般设置为utf8mb4,低版本数据库设置utf8
+    timezone:      "Local"                   #时区配置，例如:Local",如果pgsql配置：Asia/Shanghai
+    maxIdle:       20                        #连接池最大闲置的连接数 - 增加以应对高并发
+    maxOpen:       200                       #连接池最大打开的连接数 - 增加以支持更多并发连接
+    maxLifetime:   "3600s"                   #连接对象可重复使用的时间长度 - 延长到1小时以减少重建连接的开销
+    maxIdleTime:   "600s"                    #连接最大空闲时间 - 10分钟后关闭空闲连接
+    createdAt:     "createtime"              #自动创建时间字段名称
+    updatedAt:     "updatetime"              #自动更新时间字段名称
+    deletedAt:     "deletetime"              #软删除时间字段名称
+  #配置sql日志文件
+  logger:                                   
+    path:    "runtime/log/sql"
+    level:   "all"
+    stdout:  false                           #日志是否通在终端输出
+app: #应用配置
+  #版本号
+  version: 3.0.0
+  #运行服务端口（根据您的实际情况修改）
+  port: 8080
+  #接口合法性验证-加密字符串（为了安全部署是请修改）
+  apisecret: autoads@2024
+  #JWT验证-token秘钥（为了安全部署是请修改）
+  tokensecret: autoads-jwt-secret-key-2024
+  #跨域域名-不添加请求时报403 (开发、部署必改),部署域名时："https://xx.goflys.cn"替换成您的域名,不限制则配："*"
+  allowurl:  http://localhost:3000,http://localhost:8080,http://localhost:8081
+  #api接口合法验证超时时间(秒) 
+  apiouttime: 180
+  #jwt-token超时时间(分钟)
+  tokenouttime: 1440  # 24小时
+  #token(jwt)内存存储失效，为true表示使用(会消耗一定内存)
+  tokencache: true    # 启用token缓存以提高性能
+  #设置每个TTL内的最大访问数,建议为100
+  limiterMax: 1000    # 进一步提高并发限制
+  #调用cpu个数 如果无需设置请写0
+  cpunum: 0
+  #登录是否启用人机验证
+  loginCaptcha: true
+  # 框架运行环境，Gin框架在运行的时候默认是debug模式 有： 开发：debug，生产：release，测试模式：test
+  runEnv: debug
+  #在runEnv的debug模式下可以开启 pprof 进行性能分析 访问http://localhost:8081/debug/pprof/
+  runpprof: false
+  # 配置代码生成时-前端代码根目录位置(开发必改)
+  vueobjroot: 
+  # 图片附件存储地址
+  mainurl: http://localhost:8200/common/uploadfile/getfile?url=
+  #业务端目录名称 默认business，如果您改成其他请修改成定义目录名称
+  busDirName: business
+  #管理端目录名称 默认admin，如果您改成其他请修改成定义目录名称
+  adminDirName: admin
+  #配置企业私有仓网址-后台下载是有部署在代码仓配置
+  companyPrivateHouse: https://bs.goflys.cn
+  # resource网站前端文件夹,例如admin的前端代码、business前端代码部署
+  webStatic: webadmin,webbusiness
+  # 配置根域名访问重定向路径,默认是业务端后台
+  rootview: webbusiness
+  #不需要api接口合法性验证-app下整个模块，如admin、business
+  noVerifyAPIRoot: debug,api
+  #不需要接口合法性-具体请求路径
+  noVerifyAPI: /common/uploadfile/getfile,/common/install/index,/common/install/save,/common/upload/fileNov,/business/cronjob/getTest
+# OAuth配置
+oauth:
+  google:
+    client_id: "your-google-client-id.apps.googleusercontent.com"
+    client_secret: "your-google-client-secret"
+    redirect_url: "http://localhost:8080/api/v1/user/google/callback"
+    scopes:
+      - "https://www.googleapis.com/auth/userinfo.email"
+      - "https://www.googleapis.com/auth/userinfo.profile"
+# 日志配置
+logger:
+  path:    "runtime/log"
+  level:   "all"
+  stdout:  false
+# Redis数据库配置
+redis:
+  default:
+    address: 127.0.0.1:6379
+    db: 1
+  cache:
+    address: 127.0.0.1:6379
+    db: 1
+    pass: "123456"
+    idleTimeout: 600

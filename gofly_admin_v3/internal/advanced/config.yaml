@@ -1,0 +1,279 @@
+# AutoAds SaaS 高级功能配置文件
+
+# 插件系统配置
+plugin_system:
+  enabled: true
+  auto_load: true
+  plugin_dir: "./plugins"
+  max_plugins: 50
+  
+  # 内置插件配置
+  builtin_plugins:
+    token_consumption_monitor:
+      enabled: true
+      config:
+        threshold: 100
+        alert_enabled: true
+    
+    task_monitor:
+      enabled: true
+      config:
+        timeout_threshold: 1800  # 30分钟
+        failure_alert: true
+
+# 增强速率限制配置
+enhanced_rate_limit:
+  enabled: true
+  adaptive_enabled: true
+  hot_config_enabled: true
+  
+  # 套餐配置
+  plans:
+    FREE:
+      api:
+        per_minute: 30
+        per_hour: 1000
+        burst_limit: 60
+      siterank:
+        per_minute: 2
+        per_hour: 50
+        burst_limit: 5
+      batch:
+        per_minute: 5
+        concurrent: 1
+    
+    PRO:
+      api:
+        per_minute: 100
+        per_hour: 5000
+        burst_limit: 200
+      siterank:
+        per_minute: 10
+        per_hour: 200
+        burst_limit: 20
+      batch:
+        per_minute: 20
+        concurrent: 5
+    
+    MAX:
+      api:
+        per_minute: 500
+        per_hour: 20000
+        burst_limit: 1000
+      siterank:
+        per_minute: 50
+        per_hour: 1000
+        burst_limit: 100
+      batch:
+        per_minute: 100
+        concurrent: 20
+  
+  # 自适应配置
+  adaptive:
+    enabled: true
+    threshold: 0.8
+    analysis_window: 30  # 天
+    confidence_threshold: 0.7
+
+# 通知系统配置
+notification_system:
+  enabled: true
+  queue_size: 1000
+  workers: 5
+  retry_max: 3
+  
+  # 通知渠道配置
+  channels:
+    email:
+      enabled: true
+      smtp:
+        host: "smtp.gmail.com"
+        port: 587
+        username: "your-email@gmail.com"
+        password: "your-password"
+        from: "noreply@autoads.com"
+        use_tls: true
+    
+    websocket:
+      enabled: true
+      max_connections: 10000
+    
+    system:
+      enabled: true
+      retention_days: 30
+  
+  # 通知模板配置
+  templates:
+    token_low:
+      enabled: true
+      channels: ["email", "websocket"]
+      throttle: 3600  # 1小时
+    
+    task_completed:
+      enabled: true
+      channels: ["websocket"]
+      throttle: 0
+    
+    task_failed:
+      enabled: true
+      channels: ["email", "websocket"]
+      throttle: 300  # 5分钟
+    
+    plan_expired:
+      enabled: true
+      channels: ["email"]
+      throttle: 86400  # 24小时
+
+# 安全系统配置
+security_system:
+  enabled: true
+  
+  # 异常检测配置
+  anomaly_detection:
+    enabled: true
+    confidence_threshold: 0.6
+    pattern_analysis_days: 30
+    cache_duration: 1800  # 30分钟
+  
+  # 威胁分析配置
+  threat_analysis:
+    enabled: true
+    
+    # 威胁规则
+    rules:
+      high_frequency_requests:
+        enabled: true
+        threshold: 100
+        time_window: 60  # 秒
+        action: "rate_limit"
+        severity: "medium"
+      
+      suspicious_user_agent:
+        enabled: true
+        patterns: ["bot", "crawler", "scanner", "hack"]
+        action: "alert"
+        severity: "low"
+  
+  # IP黑名单配置
+  blacklist:
+    enabled: true
+    auto_block: true
+    block_duration: 3600  # 1小时
+  
+  # 安全报告配置
+  reports:
+    enabled: true
+    daily_report: true
+    weekly_report: true
+    monthly_report: true
+
+# 工具集成配置
+tools_integration:
+  enabled: true
+  max_concurrent_tools: 10
+  tool_timeout: 300  # 5分钟
+  
+  # 工具分类配置
+  categories:
+    data_processing:
+      enabled: true
+      tools: ["json_processor", "data_converter", "time_processor", "string_processor"]
+    
+    file_processing:
+      enabled: true
+      tools: ["file_manager", "excel_exporter"]
+      upload_dir: "./uploads"
+      max_file_size: 104857600  # 100MB
+    
+    communication:
+      enabled: true
+      tools: ["email_sender"]
+    
+    security:
+      enabled: true
+      tools: ["hash_generator", "random_generator"]
+    
+    validation:
+      enabled: true
+      tools: ["captcha_validator"]
+    
+    i18n:
+      enabled: true
+      tools: ["translator"]
+      default_language: "zh-CN"
+      supported_languages: ["zh-CN", "en-US", "ja-JP"]
+
+# 缓存配置
+cache:
+  type: "redis"  # redis, memory
+  redis:
+    host: "localhost"
+    port: 6379
+    password: ""
+    db: 0
+    pool_size: 10
+  memory:
+    max_size: 1000
+    ttl: 3600
+
+# 数据库配置
+database:
+  driver: "mysql"
+  dsn: "root:password@tcp(localhost:3306)/autoads?charset=utf8mb4&parseTime=True&loc=Local"
+  max_open_conns: 100
+  max_idle_conns: 10
+  conn_max_lifetime: 3600
+
+# 日志配置
+logging:
+  level: "info"  # debug, info, warn, error
+  format: "json"  # json, text
+  output: "stdout"  # stdout, file
+  file:
+    path: "./logs/advanced.log"
+    max_size: 100  # MB
+    max_backups: 10
+    max_age: 30  # days
+
+# 监控配置
+monitoring:
+  enabled: true
+  metrics:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+  
+  health_check:
+    enabled: true
+    port: 8081
+    path: "/health"
+  
+  profiling:
+    enabled: false
+    port: 6060
+
+# 性能配置
+performance:
+  # 并发配置
+  concurrency:
+    max_goroutines: 1000
+    worker_pool_size: 100
+  
+  # 超时配置
+  timeouts:
+    request_timeout: 30
+    database_timeout: 10
+    cache_timeout: 5
+  
+  # 限制配置
+  limits:
+    max_request_size: 10485760  # 10MB
+    max_response_size: 104857600  # 100MB
+    max_concurrent_requests: 1000
+
+# 开发配置
+development:
+  debug: false
+  hot_reload: false
+  mock_services: false
+  test_mode: false

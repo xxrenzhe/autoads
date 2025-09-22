@@ -1,18 +1,18 @@
 package main
 
 import (
-	"context"
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"os"
+    "context"
+    "database/sql"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "os"
 
-	"github.com/go-redis/redis/v8"
-	_ "github.com/lib/pq"
-	"github.com/xxrenzhe/autoads/pkg/config"
-	"github.com/xxrenzhe/autoads/pkg/logger"
-	"github.com/xxrenzhe/autoads/pkg/middleware"
+    "github.com/go-redis/redis/v8"
+    _ "github.com/lib/pq"
+    adsauth "github.com/xxrenzhe/autoads/services/adscenter/internal/auth"
+    adsconfig "github.com/xxrenzhe/autoads/services/adscenter/internal/config"
+    "github.com/xxrenzhe/autoads/pkg/logger"
 )
 
 type Campaign struct {
@@ -27,16 +27,12 @@ var (
 )
 
 func main() {
-	cfg, err := config.LoadConfig("config.yaml")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error loading config")
-	}
-
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		log.Fatal().Msg("DATABASE_URL is not set")
-	}
-	db, err = sql.Open("postgres", dbURL)
+    // Load config (DATABASE_URL may come from Secret Manager)
+    cfg, err := adsconfig.Load(context.Background())
+    if err != nil {
+        log.Fatal().Err(err).Msg("Error loading config")
+    }
+    db, err = sql.Open("postgres", cfg.DatabaseURL)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error connecting to the database")
 	}
@@ -47,34 +43,42 @@ func main() {
 	}
 	log.Info().Msg("Successfully connected to the database!")
 
-	redisURL := os.Getenv("REDIS_URL")
-	if redisURL == "" {
-		log.Fatal().Msg("REDIS_URL is not set")
-	}
-	opt, err := redis.ParseURL(redisURL)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error parsing Redis URL")
-	}
-	rdb = redis.NewClient(opt)
-	_, err = rdb.Ping(ctx).Result()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error pinging Redis at startup")
-	}
-	log.Info().Msg("Successfully connected to Redis!")
+    // Redis is optional in local; only initialize when REDIS_URL is present
+    redisURL := os.Getenv("REDIS_URL")
+    var opt *redis.Options
+    var rerr error
+    if redisURL != "" {
+        opt, err = redis.ParseURL(redisURL)
+        rerr = err
+    }
+    if rerr == nil && opt != nil {
+        rdb = redis.NewClient(opt)
+        if _, err = rdb.Ping(ctx).Result(); err == nil {
+            log.Info().Msg("Successfully connected to Redis!")
+        } else {
+            log.Warn().Err(err).Msg("Redis configured but not reachable")
+        }
+    } else {
+        log.Info().Msg("REDIS_URL not set; skipping Redis init")
+    }
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", healthCheckHandler)
+    mux := http.NewServeMux()
+    mux.HandleFunc("/healthz", healthCheckHandler)
 
-	protectedRoutes := http.NewServeMux()
-	protectedRoutes.HandleFunc("/adscenter/campaigns", createCampaignHandler)
+    protected := http.NewServeMux()
+    protected.HandleFunc("/adscenter/campaigns", createCampaignHandler)
 
-	mux.Handle("/", middleware.AuthMiddleware(protectedRoutes))
+    // Firebase Auth middleware
+    authClient := adsauth.NewClient(ctx)
+    mux.Handle("/", authClient.Middleware(protected))
 
-	log.Info().Str("port", cfg.Server.Port).Msg("Adscenter service starting...")
-	if err := http.ListenAndServe(":"+cfg.Server.Port, mux); err != nil {
-		log.Fatal().Err(err).Msg("Failed to start server")
-	}
+    log.Info().Str("port", cfg.Port).Msg("Adscenter service starting...")
+    if err := http.ListenAndServe(":"+cfg.Port, mux); err != nil {
+        log.Fatal().Err(err).Msg("Failed to start server")
+    }
 }
+
+// no-op helpers removed
 
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	dbErr := db.Ping()

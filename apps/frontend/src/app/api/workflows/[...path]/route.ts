@@ -2,8 +2,9 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth/v5-config";
 import { NextRequest, NextResponse } from "next/server";
 
-// 从环境变量中获取Go微服务的地址
-const WORKFLOW_SERVICE_URL = process.env.WORKFLOW_SERVICE_URL || "http://localhost:8083";
+// Workflow服务地址：容器内优先使用服务名，其次回退到本地映射端口
+const WORKFLOW_SERVICE_URL = process.env.WORKFLOW_SERVICE_URL
+  || (process.env.DOCKERIZED ? 'http://workflow:8080' : 'http://localhost:8087');
 
 /**
  * A generic handler to proxy requests to the Workflow microservice.
@@ -20,7 +21,7 @@ async function handler(req: NextRequest, { params }: { params: { path: string[] 
 
   try {
     const path = params.path ? params.path.join("/") : "";
-    const url = `${WORKFLOW_SERVICE_URL}/${path}`;
+    const url = `${WORKFLOW_SERVICE_URL}/api/v1/workflows/${path}`;
 
     const headers = new Headers(req.headers);
     headers.set("X-User-Id", session.user.id);

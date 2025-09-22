@@ -2,8 +2,9 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth/v5-config";
 import { NextRequest, NextResponse } from "next/server";
 
-// 从环境变量中获取Go微服务的地址，如果未设置，则默认为本地开发地址
-const OFFER_SERVICE_URL = process.env.OFFER_SERVICE_URL || "http://localhost:8082";
+// Offer服务地址：容器内优先使用服务名，其次回退到本地映射端口
+const OFFER_SERVICE_URL = process.env.OFFER_SERVICE_URL
+  || (process.env.DOCKERIZED ? 'http://offer:8080' : 'http://localhost:8083');
 
 // --- GET /api/offers ---
 export async function GET(req: NextRequest) {
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const response = await fetch(`${OFFER_SERVICE_URL}/offers`, {
+    const response = await fetch(`${OFFER_SERVICE_URL}/api/v1/offers`, {
       method: "GET",
       headers: {
         // 将用户的认证信息（如JWT或用户ID）转发给后端服务
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const response = await fetch(`${OFFER_SERVICE_URL}/offers`, {
+    const response = await fetch(`${OFFER_SERVICE_URL}/api/v1/offers`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

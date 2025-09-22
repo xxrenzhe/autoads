@@ -5,6 +5,18 @@
 
 ---
 
+## 变更记录（2025-09-22）
+
+本次对齐与确认的关键决策如下（与代码实现同步）：
+
+- 后台管理台最终形态：Next.js 路由 `/console` + `middleware.ts` 在边缘层校验 Firebase ID Token 与角色（`role=ADMIN`），前端导航不暴露入口，仅支持直达 URL；后台与前台界面风格完全独立但共享组件体系与设计变量。
+- 云集成架构：不设置“集中式集成服务”。每个领域微服务自行集成 Google Cloud 与 Firebase 能力（Secret Manager、Cloud SQL、Pub/Sub、Firestore、Firebase Auth 等）。投影器/异步任务使用 Google Cloud Functions 订阅 Pub/Sub。生产接入层使用 Google Cloud API Gateway 做 JWT 校验与路由，本地使用 Nginx 反代。
+- 配置与密钥：所有敏感环境变量（如数据库连接串）统一存放于 Google Cloud Secret Manager，通过 `*_SECRET_NAME` 环境变量传入 Secret 路径（例如 `DATABASE_URL_SECRET_NAME=projects/<PROJECT_ID>/secrets/DATABASE_URL/versions/latest`）。
+- 数据库访问：彻底移除本地 Postgres/Redis 依赖。本地使用 Cloud SQL Auth Proxy 连接 Cloud SQL；生产使用 Cloud Run 原生连接/连接器。各服务启动时通过 Secret Manager 获取 DSN。
+- Blog 内容：确定使用 Firebase Firestore 存储文章。前端 Next.js 直接使用 Firebase Web SDK 读取；开发阶段可客户端读取，生产建议结合 ISR/SSG 提升 SEO 与性能。
+- 前端去 DB 化：前端不再直连业务数据库或使用 Prisma，改为“UI + 调用后端微服务 API/读取 Firestore”。逐步移除前端侧 Prisma 依赖。
+- 镜像与发布：统一使用 Google Cloud Artifact Registry 存储镜像，Cloud Build 构建推送，Cloud Run 部署。
+
 ## 1. 指导原则与设计哲学
 本方案的每一项决策都严格遵循项目已建立的核心思想：
 
@@ -95,6 +107,11 @@ graph TD
 ---
 
 ## 4. 核心技术支柱
+### 4.0.1. Firestore 多数据库与前端配置
+- 若项目启用了非默认数据库（如 `firestoredb`），前端需显式指定数据库 ID。
+- 约定：`NEXT_PUBLIC_FIRESTORE_DB_ID=firestoredb`，前端以 Firebase Web SDK 初始化：`getFirestore(app, process.env.NEXT_PUBLIC_FIRESTORE_DB_ID)`。
+- Blog 页面 / 其他 Firestore 读取均复用该配置。
+
 ### 4.1. 领域驱动设计 (DDD) 服务边界
 我们将业务拆分为清晰、有边界的领域服务，每个服务都是一个独立的Cloud Run应用。
 
@@ -113,6 +130,30 @@ graph TD
 - **管理员**: 后台管理系统 (`/console`) 仅支持通过预设的初始化账号和密码登录，不提供注册功能。Next.js `middleware.ts` 配合 Firebase Auth JWT 进行角色校验，确保只有 `ADMIN` 角色能访问后台。
 
 **多用户数据隔离**: API Gateway验证Firebase Auth JWT并注入`user_id`。每个服务在处理命令时，都**必须**使用与该`user_id`关联的聚合根ID，从根本上保证用户数据的隔离。
+
+### 4.1.1. 环境与密钥管理（最终）
+- 敏感配置统一存储在 Secret Manager（如 `DATABASE_URL`、外部 API Key 等），服务通过 `*_SECRET_NAME` 环境变量读取 Secret 引用路径。
+- 本地开发：通过 Cloud SQL Auth Proxy 连接 Cloud SQL；生产：Cloud Run 使用原生连接或连接器。
+- 统一约定（示例）：
+  - `DATABASE_URL_SECRET_NAME=projects/<PROJECT_ID>/secrets/DATABASE_URL/versions/latest`
+  - Secret 值（PostgreSQL，本地走 Proxy 主机）：`postgres://USER:PASSWORD@cloudsql-proxy:5432/DB?sslmode=disable`
+
+### 4.1.2. Firebase Admin SDK（后端）
+- 本地开发：使用服务账号 JSON 初始化（示例路径 `secrets/firebase-adminsdk.json`）。
+  - Go 代码（示例）：
+    - `opt := option.WithCredentialsFile(os.Getenv("FIREBASE_CREDENTIALS_FILE"))`
+    - `app, _ := firebase.NewApp(ctx, nil, opt)`
+- 生产（Cloud Run）：推荐使用 ADC（工作负载身份）替代下发 JSON。
+  - 给 Cloud Run 服务账号授予最小权限：
+    - 读取 Firestore：`roles/datastore.user`（或只读 `viewer`）
+    - 管理 Firebase Auth（可选）：`roles/firebaseauth.admin`
+  - 无需设置 `FIREBASE_CREDENTIALS_FILE`，Admin SDK 自动走 ADC。
+
+### 4.0. 集成形态（最终确认）
+- 不设集中式“集成服务”。每个领域微服务直接集成所需的 Google Cloud 与 Firebase 能力（Auth、Secret、SQL、Pub/Sub、Firestore 等）。
+- 投影器/异步任务：使用 Google Cloud Functions 订阅 Pub/Sub 事件，更新读模型（PostgreSQL/Firestore）。
+- 接入层：生产使用 Google Cloud API Gateway 对外统一入口，执行 JWT 校验与路由；本地开发使用 Nginx 反代。
+- 共享能力：通过共享平台库（如 `pkg/*`）复用通用封装（Firebase Admin 中间件、Secret Manager 访问、Pub/Sub 事件发布与订阅、数据库连接）。
 
 ### 4.2. 事件溯源 (Event Sourcing) 作为事实之源
 我们将用事件溯源作为整个系统的原子级事实基础。
@@ -270,9 +311,9 @@ model BatchopenTask {
 
 ## 6. 产品功能与前端UI/UX设计
 ### 6.1. 前端UI核心变更
-- **[✅ 已完成]** **导航栏**: 顶层导航将变为“**仪表盘**”、“**Offer库**”、“**工作流**”、“**博客(Blog)**”和“**计费中心**”。
-- **[✅ 已完成]** **Offer库 (`/offers`)**: 新的应用核心。一个看板或列表视图，展示所有Offers及其当前状态。
-- **[✅ 已完成]** **工作流 (`/workflows`)**: 展示可用的工作流模板，并引导用户完成整个流程。
+- [ ] **导航栏**: 顶层导航将变为“**仪表盘**”、“**Offer库**”、“**工作流**”、“**博客(Blog)**”和“**计费中心**”。
+- [ ] **Offer库 (`/offers`)**: 新的应用核心。一个看板或列表视图，展示所有Offers及其当前状态。
+- [ ] **工作流 (`/workflows`)**: 展示可用的工作流模板，并引导用户完成整个流程。
 - **后台管理 (`/console`)**:
     - **隐藏入口**: 网站前端UI（导航栏、页脚等）**不会包含任何**指向后台管理系统的链接。
     - **访问方式**: 管理员只能通过直接访问特定URL（例如 `https://app.autoads.com/console`）进入。
@@ -289,7 +330,7 @@ model BatchopenTask {
 | **Siterank AI机会评估** | 由**Siterank服务**实现，调用Genkit Flow，结合SimilarWeb数据和后台知识库，提供量化的、**基于数据推导**的机会得分和策略建议。 |
 | **Batchopen转化率仿真** | 由**Batchopen服务**实现。用户定义期望的数据模型（总量、时长、时间分布），后端调度器将其分解为分时、分批的异步任务，交由工作单元精准执行。 |
 | **Adscenter智能优化** | 由**Adscenter服务**实现，包括A/B测试规则、跨账户数据洞察（通过独立的同步Worker）、以及AI合规性预警。 |
-| **Blog内容管理** | 采用**Headless CMS** (如Contentful, Strapi, 或Firestore) 进行文章管理。Next.js前端应用通过SSG (Static Site Generation) 在构建时获取文章内容，生成静态页面，以获得最佳的性能和SEO效果。|
+| **Blog内容管理** | 采用 **Firebase Firestore** 存储文章。前端 Next.js 直接使用 Firebase Web SDK 读取；开发阶段可客户端渲染，生产建议结合 ISR/SSG 提升 SEO 与性能。|
 
 ---
 
@@ -303,7 +344,7 @@ model BatchopenTask {
 | **Max (增长)** | **智能化决策** | "网站排名"(5000/次), 100个Google账户, **转化率仿真模式**, **AI合规预警**, **AI风险机会通知** | 100,000 |
 
 **Token消耗规则**:
-- `siterank`域名查询: 1 Token (缓存), 5 Token (实时)
+- `siterank`域名查询: 1 Token (缓存), 1 Token (实时)
 - **`siterank` AI机会评估: 10 Token**
 - `batchopen`模拟点击: 1 Token (HTTP), 2 Token (Puppeteer)
 - **`adscenter` AI合规预警: 25 Token**
@@ -340,14 +381,15 @@ model BatchopenTask {
 
 **第1步：构建Docker镜像**
 
-我们将使用Google Cloud Build在云端构建镜像，以获得最佳的性能和安全性。此命令会自动打包源码、发送到云端、构建镜像并推送到Artifact Registry。
+我们使用 Google Cloud Build 在云端构建镜像，并推送到 Google Cloud Artifact Registry。
 
 ```bash
 # [SERVICE_NAME] 可替换为: identity, billing, offer, 等...
 SERVICE_NAME="identity"
 PROJECT_ID="gen-lang-client-0944935873"
 REGION="asia-northeast1"
-IMAGE_TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/autoads-services/${SERVICE_NAME}:latest"
+REPO="autoads-services"
+IMAGE_TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${SERVICE_NAME}:latest"
 
 gcloud builds submit "./services/${SERVICE_NAME}" --tag "${IMAGE_TAG}"
 ```
@@ -364,9 +406,10 @@ gcloud run deploy "${SERVICE_NAME}" \
   --platform "managed" \
   --allow-unauthenticated \
   --set-env-vars="GIN_MODE=release" \
-  --set-secrets="DATABASE_URL=DATABASE_URL:latest" # 示例：从Secret Manager挂载密钥
+  --set-secrets="DATABASE_URL=DATABASE_URL:latest" \
+  --update-env-vars="DATABASE_URL_SECRET_NAME=projects/${PROJECT_ID}/secrets/DATABASE_URL/versions/latest"
 ```
-*   `--allow-unauthenticated`: 允许公网访问。在生产环境中，这将被API Gateway和IAP保护。
+*   `--allow-unauthenticated`: 允许公网访问。在生产环境中将通过 Google Cloud API Gateway 做 JWT/IAM 保护。
 *   `--set-secrets`: 将Google Secret Manager中的密钥安全地挂载为环境变量。
 
 **注意**: 对于后续的更新，只需重复以上两个步骤即可。Cloud Run会自动创建新的修订版本并无缝切换流量。
@@ -402,19 +445,33 @@ firebase deploy --only hosting
 ```
 部署完成后，Firebase CLI会提供一个托管URL，您可以从中访问最新的前端应用。
 
-### 8.4. CI/CD自动化 (GitHub Actions)
+### 8.4. CI/CD自动化（GitHub Actions，按改动增量部署）
 
-以上所有手动步骤都应被自动化。一个典型的 `.github/workflows/deploy.yml` 文件会包含以下作业：
+本项目采用“按改动增量部署 + 部署后自动冒烟”的 CI/CD：
 
-1.  **`lint-and-test` 作业**: 在代码`push`时触发，运行 `pnpm lint` 和 `pnpm test`，确保代码质量。
-2.  **`build-and-deploy-backend` 作业**:
-    *   在代码合并到 `main` 分支时触发。
-    *   使用`gcloud` CLI认证。
-    *   **智能判断**: 脚本会检测 `./services/*` 目录下哪些文件发生了变更，并只为那些变更了的服务执行 `gcloud builds submit` 和 `gcloud run deploy`。
-3.  **`build-and-deploy-frontend` 作业**:
-    *   在代码合并到 `main` 分支时触发。
-    *   使用`firebase-tools` CLI认证。
-    *   **智能判断**: 脚本会检测 `./apps/frontend/**` 目录下的文件是否发生变更。如果发生变更，则执行 `pnpm install`, `pnpm build` 和 `firebase deploy`。
+- 后端（Cloud Run）：`.github/workflows/deploy-backend.yml`
+  - 变更检测：`scripts/deploy/detect-changed-services.sh` 比较 BASE..HEAD，仅对改动的 `services/<name>` 做部署；若改动命中共享/关键目录（`pkg/**`、`go.work*`、`scripts/deploy/**`、`deployments/api-gateway/**`、工作流自身等）则触发全量。
+  - 部署策略：矩阵并行（strategy.matrix.service），每个服务通过 Cloud Build 构建镜像 → 推 Artifact Registry → 部署 Cloud Run。
+  - Secret 注入：部署时设置 `--set-secrets=DATABASE_URL=DATABASE_URL:latest` 与 `--update-env-vars=DATABASE_URL_SECRET_NAME=projects/${PROJECT_ID}/secrets/DATABASE_URL/versions/latest`。
+  - 网关与冒烟：部署完成后渲染 Gateway（自动替换 Cloud Run URL），发布 API Gateway 并执行 E2E 冒烟（见下）。
+
+- 网关（API Gateway）：`.github/workflows/deploy-gateway.yml`
+  - 触发：`deployments/api-gateway/gateway.yaml` 变更或后端服务发布完成。
+  - 渲染与发布：`scripts/deploy/render-gateway.sh` + `scripts/deploy/gateway-deploy.sh`。
+  - E2E 冒烟：`scripts/tests/gateway-smoke.sh`，健康 `/api/v1/identity/healthz` 预期 200；未带 JWT 访问受保护路由预期 401/403；如提供 `FIREBASE_TEST_ID_TOKEN`，带 JWT 访问受保护路由预期 200。
+
+- 前端（Firebase Hosting）：`.github/workflows/deploy-frontend.yml`
+  - 触发：`apps/frontend/**` 改动。
+  - 步骤：pnpm 安装/构建 → Firebase Hosting 部署（`FirebaseExtended/action-hosting-deploy`）。
+
+CI 需要的 GitHub Secrets（简化）：
+- `GCP_PROJECT_ID`（如：gen-lang-client-0944935873）
+- `GCP_REGION`（默认：asia-northeast1）
+- `GCP_SA_KEY`（具备 Cloud Build / Artifact Registry / Cloud Run / API Gateway 权限的 SA JSON）
+- `FIREBASE_SERVICE_ACCOUNT`（Firebase Hosting 发布用 SA JSON）
+- `FIREBASE_TEST_ID_TOKEN`（可选；E2E 冒烟带 JWT 测试）
+
+更多说明参见：`docs/deployment/CI-CD.md`。
 
 ---
 
@@ -422,27 +479,29 @@ firebase deploy --only hosting
 1.  **第一阶段：地基与核心服务 (2-3个月)**
     - **目标**: 搭建好事件溯源基础设施和核心领域服务。
     - **任务**:
-        - **[✅ 已完成]** 建立事件存储 (`schema.prisma`) 和Pub/Sub总线 (Redis)。
-        - **[✅ 已完成]** 开发**Identity**和**Billing**两个核心微服务 (基础框架)。
-        - **[✅ 已完成]** 完成用户注册、登录的核心流程。
-        - **[✅ 已完成]** 完成订阅流程 (客服模式)。
+        - [ ] 建立事件存储与 Pub/Sub 主题。
+        - [ ] 开发**Identity**和**Billing**两个核心微服务 (基础框架)。
+        - [ ] 完成用户注册、登录的核心流程。
+        - [ ] 完成订阅流程 (客服模式)。
     - **交付物**: 一个用户可以注册、付费的后端核心。
 
 2.  **第二阶段：核心价值闭环 (2个月)**
-    - **目标**: 上线Offer库和工作流，形成产品核心价值闭環。
+    - **目标**: 上线 Offer 库与工作流，形成核心闭环；完成 Secret Manager 一致化与本地 Cloud SQL Proxy 对接；前端去 DB 化。
     - **任务**:
-        - **[x] 开发**Offer**和**Workflow**微服务 (基础框架)。
-        - **[x] 开发**Siterank**和**Batchopen**微服务的基础版本。
-        - **[x] 实现“新Offer标准上线流程”工作流。**
-    - **交付物**: 用户可以完成“评估→优化”的MVP流程。
+        - **[ ]** 开发 **Offer** 与 **Workflow** 微服务（基础版本）。
+        - **[ ]** 开发 **Siterank** 与 **Batchopen** 微服务（基础版本）。
+        - **[ ]** 实现“新 Offer 标准上线流程”工作流。
+        - **[ ]** 前端移除 Prisma 依赖，改为调用微服务 API/读取 Firestore。
+    - **交付物**: 用户可以完成“评估→优化”的 MVP 流程；统一 Secret 管理与稳定的本地/生产数据库连通。
 
 3.  **第三阶段：智能化与放大 (2个月)**
-    - **目标**: 上线Adscenter和AI功能，形成增长飞輪。
+    - **目标**: 上线 Adscenter 与 AI 功能，形成增长飞轮；迁移投影器/异步任务至 Cloud Functions；接入 API Gateway。
     - **任务**:
-        - **[x] 开发**Adscenter**微服务 (基础框架)。**
-        - **[x] 集成Genkit，上线所有AI赋能功能。**
-        - **[x] 完善通知和新手引导系统。**
-    - **交付物**: 一个功能完整、具备强大竞争力的智能化SaaS产品。
+        - **[ ]** 开发 **Adscenter** 微服务（基础框架）。
+        - **[ ]** 集成 Genkit/AI 赋能能力。
+        - **[ ]** 将进程内投影器迁移为 Cloud Functions 订阅者。
+        - **[ ]** 配置 Google Cloud API Gateway（JWT 策略、路由、速率限制）。
+    - **交付物**: 功能完整、具备强实时与可扩展能力的智能化 SaaS 产品。
 
 ---
 
@@ -467,13 +526,13 @@ firebase deploy --only hosting
 - **长尾关键词**: "how to increase CTR for Brand Bidding", "avoid Google Ads account suspension", "simulate ad clicks safely"
 
 ### 11.2. 技术SEO实施
-- **[✅ 已完成]** **`sitemap.xml`**: 使用`next-sitemap`包，在每次构建后自动生成包含所有静态页面（首页、定价、博客文章等）的站点地图。
-- **[✅ 已完成]** **`robots.txt`**: 明确允许搜索引擎爬取公共页面，并禁止爬取用户特定页面（如`/offers`）。
+- [ ] **`sitemap.xml`**: 使用`next-sitemap`包，在每次构建后自动生成包含所有静态页面（首页、定价、博客文章等）的站点地图。
+- [ ] **`robots.txt`**: 明确允许搜索引擎爬取公共页面，并禁止爬取用户特定页面（如`/offers`）。
 - **结构化数据 (JSON-LD)**: 为`/pricing`页面添加`Product`和`Offer` schema；为博客文章添加`Article` schema，以增强在搜索结果中的展示效果。
 - **元数据 (Metadata)**: 在Next.js中，为每个页面（特别是博客文章）动态生成唯一的、包含关键词的`<title>`和`<meta name="description">`标签。
 
 ### 11.3. 内容策略：Blog模块
-Blog是吸引自然流量、建立行业权威、教育潜在用户的核心阵地。文章将从Brand Bid从业者的痛点出发，提供价值，并自然地引导至AutoAds解决方案。
+Blog 是吸引自然流量、建立行业权威、教育潜在用户的核心阵地。文章存储于 Firestore；内容从 Brand Bid 从业者痛点出发，提供可操作的实践，并自然引导到 AutoAds 解决方案。开发阶段允许客户端读取，生产建议结合 ISR/SSG 输出静态页面以增强 SEO 与首屏性能。
 
 ---
 
@@ -483,20 +542,20 @@ Blog是吸引自然流量、建立行业权威、教育潜在用户的核心阵�
 ## 附录B：重构前置检查项 (Pre-Refactoring Checklist)
 
 ### 一、最终技术决策与规范
-1.  **[✅ 已完成]** **API 契约 (Contracts)**
-2.  **[✅ 已完成]** **领域事件模式 (Event Schemas)**
-3.  **[✅ 已完成]** **数据状态确认 (Data State Confirmation)**
-4.  **[✅ 已完成]** **配置和密钥管理 (Config & Secrets Management)**
+1.  [ ] **API 契约 (Contracts)**
+2.  [ ] **领域事件模式 (Event Schemas)**
+3.  [ ] **数据状态确认 (Data State Confirmation)**
+4.  [ ] **配置和密钥管理 (Config & Secrets Management)**
 
 ### 二、产品与开发流程
-1.  **[✅ 已完成]** **UI/UX 设计流程** (基础转化)
-2.  **[✅ 已完成]** **开发工作流 (Solo Developer)**
-3.  **[✅ 已完成]** **代码库结构**
+1.  [ ] **UI/UX 设计流程** (基础转化)
+2.  [ ] **开发工作流 (Solo Developer)**
+3.  [ ] **代码库结构**
 
 ### 三、资源与环境准备
-1.  **[✅ 已完成]** **基础设施与账户** (用户已确认)
-2.  **[✅ 已完成]** **本地开发环境**
-3.  **[✅ 已完成]** **初始管理员凭证**
+1.  [ ] **基础设施与账户** (用户已确认)
+2.  [ ] **本地开发环境**
+3.  [ ] **初始管理员凭证**
 
 ---
 
@@ -528,3 +587,70 @@ Blog是吸引自然流量、建立行业权威、教育潜在用户的核心阵�
 2.  **SimilarWeb**:
     *   申请并获取你的SimilarWeb API密钥。
     *   SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data，这是一个免费的API，无需任何key
+### 8.5. Cloud Run 上的 Firebase Admin 配置
+- 推荐：生产环境使用 ADC（工作负载身份），不下发 JSON。
+  - 给 Cloud Run 服务账号授予：`roles/datastore.user`（读写 Firestore）、`roles/firebaseauth.admin`（如需管理用户/Claims）。
+  - 后端不设置 `FIREBASE_CREDENTIALS_FILE`，Admin SDK 自动读取 ADC。
+- 本地或特殊场景（不推荐生产）：使用 JSON 文件
+  - 设置 `FIREBASE_CREDENTIALS_FILE=/app/secrets/firebase-adminsdk.json`，将密钥文件以只读方式挂载到容器。
+  - 代码保持 `option.WithCredentialsFile` 初始化。
+
+---
+
+## 12. API Gateway（生产接入层）
+
+下面给出一个最小 OpenAPI（v2）示例，启用 Firebase JWT 校验并路由到 Cloud Run 后端。Gateway 负责校验 issuer/audience，`role=ADMIN` 的细粒度授权在后端中间件完成（配合 Next.js middleware 与后端服务中间件）。
+
+```yaml
+swagger: "2.0"
+info:
+  title: autoads-gateway
+  version: 1.0.0
+schemes:
+  - https
+produces:
+  - application/json
+securityDefinitions:
+  firebase:
+    type: oauth2
+    flow: "implicit"
+    authorizationUrl: ""
+    x-google-issuer: "https://securetoken.google.com/gen-lang-client-0944935873"
+    x-google-jwks_uri: "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+    x-google-audiences: "gen-lang-client-0944935873"
+paths:
+  /api/v1/offers:
+    get:
+      security:
+        - firebase: []
+      x-google-backend:
+        address: https://offer-<hash>-<region>-a.run.app
+      responses:
+        '200': { description: OK }
+    post:
+      security:
+        - firebase: []
+      x-google-backend:
+        address: https://offer-<hash>-<region>-a.run.app
+      responses:
+        '202': { description: Accepted }
+  /api/v1/workflows/*:
+    x-google-backend:
+      address: https://workflow-<hash>-<region>-a.run.app
+    get:
+      security: [ { firebase: [] } ]
+      responses: { '200': { description: OK } }
+    post:
+      security: [ { firebase: [] } ]
+      responses: { '202': { description: Accepted } }
+```
+
+部署步骤（概览）：
+1. 打包规范到 `gateway.yaml`
+2. `gcloud api-gateway apis create autoads-api --project=gen-lang-client-0944935873`
+3. `gcloud api-gateway api-configs create autoads-v1 --api=autoads-api --openapi-spec=gateway.yaml --project=gen-lang-client-0944935873`
+4. `gcloud api-gateway gateways create autoads-gw --api=autoads-api --api-config=autoads-v1 --location=asia-northeast1 --project=gen-lang-client-0944935873`
+
+说明：
+- API Gateway 负责 JWT 校验；自定义 `role=ADMIN` 需要在后端微服务中间件中基于 Firebase Token 的自定义 Claim 再次判定。
+- 对 `/console` 前端路由，继续使用 Next.js middleware（Edge）做角色限制。

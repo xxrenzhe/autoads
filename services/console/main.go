@@ -42,8 +42,8 @@ func main() {
 	// The middleware here should verify ADMIN role.
 	apiHandler.RegisterRoutes(mux) // Admin middleware would be passed here
 
-	log.Printf("Console service HTTP server listening on port %s", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, os.Getenv("PORT")); err != nil {
-		log.Fatalf("failed to start server: %v", err)
-	}
+    log.Printf("Console service HTTP server listening on port %s", cfg.Port)
+    if err := http.ListenAndServe(":"+cfg.Port, mux); err != nil {
+        log.Fatalf("failed to start server: %v", err)
+    }
 }

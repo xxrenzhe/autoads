@@ -1,0 +1,74 @@
+name: Deploy API Gateway
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'deployments/api-gateway/gateway.yaml'
+      - 'scripts/deploy/render-gateway.sh'
+      - 'scripts/deploy/gateway-deploy.sh'
+      - '.github/workflows/deploy-gateway.yml'
+      - 'services/**'
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-gateway-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION || 'asia-northeast1' }}
+
+jobs:
+  deploy-gateway:
+    name: Render & Publish API Gateway
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Render gateway.yaml
+        env:
+          GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
+          REGION: ${{ env.REGION }}
+        run: |
+          bash scripts/deploy/render-gateway.sh
+
+      - name: Deploy Gateway
+        env:
+          GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
+          REGION: ${{ env.REGION }}
+        run: |
+          bash scripts/deploy/gateway-deploy.sh
+
+      - name: Retrieve Gateway hostname
+        id: gw
+        run: |
+          host=$(gcloud api-gateway gateways describe autoads-gw --location=${{ env.REGION }} --format='value(defaultHostname)')
+          echo "host=$host" >> $GITHUB_OUTPUT
+          echo "Gateway Host: $host"
+
+      - name: E2E Smoke via API Gateway
+        env:
+          GATEWAY_HOST: ${{ steps.gw.outputs.host }}
+          FIREBASE_ID_TOKEN: ${{ secrets.FIREBASE_TEST_ID_TOKEN }}
+        run: |
+          if [ -z "$GATEWAY_HOST" ]; then echo "No gateway host found"; exit 1; fi
+          if [ -n "$FIREBASE_ID_TOKEN" ]; then
+            GATEWAY_HOST="$GATEWAY_HOST" bash scripts/tests/gateway-smoke.sh "$FIREBASE_ID_TOKEN"
+          else
+            echo "No FIREBASE_TEST_ID_TOKEN provided; running partial smoke"
+            GATEWAY_HOST="$GATEWAY_HOST" bash scripts/tests/gateway-smoke.sh || true
+          fi

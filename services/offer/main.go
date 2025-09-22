@@ -1,15 +1,16 @@
 package main
 
 import (
-	"context"
-	"database/sql"
-	"log"
-	"net/http"
-	"github.com/xxrenzhe/autoads/services/offer/internal/auth"
-	"github.com/xxrenzhe/autoads/services/offer/internal/config"
-	"github.com/xxrenzhe/autoads/services/offer/internal/events"
-	"github.com/xxrenzhe/autoads/services/offer/internal/handlers"
-	"github.com/xxrenzhe/autoads/services/offer/internal/projectors"
+    "context"
+    "database/sql"
+    "log"
+    "net/http"
+    "github.com/xxrenzhe/autoads/services/offer/internal/domain"
+    "github.com/xxrenzhe/autoads/services/offer/internal/auth"
+    "github.com/xxrenzhe/autoads/services/offer/internal/config"
+    "github.com/xxrenzhe/autoads/services/offer/internal/events"
+    "github.com/xxrenzhe/autoads/services/offer/internal/handlers"
+    "github.com/xxrenzhe/autoads/services/offer/internal/projectors"
 
 	_ "github.com/lib/pq"
 )
@@ -40,10 +41,10 @@ func main() {
 	// In a production setup, this would be a separate Cloud Function.
 	// Here, we simulate it in-process for simplicity.
 	offerProjector := projectors.NewOfferProjector(db)
-	subscriber, err := events.NewPubSubSubscriber(ctx, cfg.ProjectID, cfg.PubSubTopicID, cfg.PubSubSubscriptionID)
-		if err != nil {
-			log.Fatalf("Failed to create PubSub subscriber: %v", err)
-		}
+    subscriber, err := events.NewPubSubSubscriber(ctx, cfg.ProjectID, cfg.PubSubTopicID, cfg.PubSubSubscriptionID)
+    if err != nil {
+        log.Fatalf("Failed to create PubSub subscriber: %v", err)
+    }
 	subscriber.On((domain.OfferCreatedEvent{}).EventType(), func(ctx context.Context, event events.DomainEvent) error {
 			if specificEvent, ok := event.(domain.OfferCreatedEvent); ok {
 				return offerProjector.HandleOfferCreated(ctx, specificEvent)

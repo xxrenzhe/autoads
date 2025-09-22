@@ -53,3 +53,13 @@ result*
 
 # Project IDX specific
 .idx/
+
+# Secrets (never commit real credentials)
+secrets/*
+!secrets/README.md
+
+# Go build cache (local only)
+.gocache/
+
+# Local logs (runtime/debug outputs)
+logs/

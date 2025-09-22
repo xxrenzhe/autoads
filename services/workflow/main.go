@@ -34,7 +34,7 @@ func main() {
 		log.Fatalf("Failed to create PubSub publisher: %v", err)
 	}
 
-	subscriber, err := events.NewPubSubSubscriber(ctx, cfg.ProjectID, cfg.PubSubSubscriptionID)
+    subscriber, err := events.NewPubSubSubscriber(ctx, cfg.ProjectID, cfg.PubSubTopicID, cfg.PubSubSubscriptionID)
 	if err != nil {
 		log.Fatalf("Failed to create PubSub subscriber: %v", err)
 	}
@@ -58,8 +58,8 @@ func main() {
 	mux := http.NewServeMux()
 	apiHandler.RegisterRoutes(mux, authClient.Middleware)
 
-	log.Printf("Workflow service HTTP server listening on port %s", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, os.Getenv("PORT")); err != nil {
-		log.Fatalf("failed to start server: %v", err)
-	}
+    log.Printf("Workflow service HTTP server listening on port %s", cfg.Port)
+    if err := http.ListenAndServe(":"+cfg.Port, mux); err != nil {
+        log.Fatalf("failed to start server: %v", err)
+    }
 }

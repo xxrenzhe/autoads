@@ -1,34 +1,24 @@
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth/auth-config" // Assuming auth config is here
-import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth/v5-config";
 
-// This is a placeholder for your actual service discovery logic
-const BILLING_SERVICE_URL = process.env.BILLING_SERVICE_URL || 'http://localhost:8081';
+const BILLING_SERVICE_URL = process.env.BILLING_SERVICE_URL
+  || (process.env.DOCKERIZED ? 'http://billing:8080' : 'http://localhost:8082');
 
-export async function GET(req: Request) {
-  const session = await getServerSession(authOptions)
-
-  if (!session || !session.firebaseToken) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user?.id || !session.firebaseToken) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
-
   try {
-    const response = await fetch(`${BILLING_SERVICE_URL}/api/v1/billing/subscriptions/me`, {
-      headers: {
-        'Authorization': `Bearer ${session.firebaseToken}`,
-      },
+    const res = await fetch(`${BILLING_SERVICE_URL}/api/v1/billing/subscriptions/me`, {
+      headers: { Authorization: `Bearer ${session.firebaseToken}` },
+      cache: 'no-store'
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json(errorData, { status: response.status });
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
-
-  } catch (error) {
-    console.error('Error fetching subscription from billing service:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    const body = await res.text();
+    return new Response(body, { status: res.status, headers: { 'Content-Type': res.headers.get('content-type') || 'application/json' } });
+  } catch (e) {
+    console.error('Proxy billing subscription failed:', e);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
 }
+

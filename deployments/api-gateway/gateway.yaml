@@ -1,0 +1,113 @@
+swagger: "2.0"
+info:
+  title: autoads-gateway
+  version: 1.0.0
+schemes:
+  - https
+produces:
+  - application/json
+
+# Firebase JWT 验证（GAE/API Gateway 扩展）
+securityDefinitions:
+  firebase:
+    type: oauth2
+    flow: "implicit"
+    authorizationUrl: ""
+    x-google-issuer: "https://securetoken.google.com/gen-lang-client-0944935873"
+    x-google-jwks_uri: "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+    x-google-audiences: "gen-lang-client-0944935873"
+
+paths:
+  # Offer 服务
+  /api/v1/offers:
+    get:
+      security:
+        - firebase: []
+      x-google-backend:
+        address: https://offer-REPLACE_WITH_RUN_URL
+      responses:
+        '200':
+          description: OK
+    post:
+      security:
+        - firebase: []
+      x-google-backend:
+        address: https://offer-REPLACE_WITH_RUN_URL
+      responses:
+        '202':
+          description: Accepted
+
+  # Workflow 服务（模板查询与启动）
+  /api/v1/workflows:
+    get:
+      security:
+        - firebase: []
+      x-google-backend:
+        address: https://workflow-REPLACE_WITH_RUN_URL
+      responses:
+        '200': { description: OK }
+    post:
+      security:
+        - firebase: []
+      x-google-backend:
+        address: https://workflow-REPLACE_WITH_RUN_URL
+      responses:
+        '202': { description: Accepted }
+
+  # Billing 服务（示例：我的订阅、我的 Token）
+  /api/v1/billing/subscriptions/me:
+    get:
+      security:
+        - firebase: []
+      x-google-backend:
+        address: https://billing-REPLACE_WITH_RUN_URL
+      responses:
+        '200': { description: OK }
+
+  /api/v1/billing/tokens/me:
+    get:
+      security:
+        - firebase: []
+      x-google-backend:
+        address: https://billing-REPLACE_WITH_RUN_URL
+      responses:
+        '200': { description: OK }
+
+  # Adscenter 服务（示例：受保护资源）
+  /api/v1/adscenter/*:
+    x-google-backend:
+      address: https://adscenter-REPLACE_WITH_RUN_URL
+    get:
+      security: [ { firebase: [] } ]
+      responses: { '200': { description: OK } }
+    post:
+      security: [ { firebase: [] } ]
+      responses: { '201': { description: Created } }
+
+  # Identity 服务（健康检查/受保护接口按需添加）
+  /api/v1/identity/healthz:
+    get:
+      x-google-backend:
+        address: https://identity-REPLACE_WITH_RUN_URL
+      responses:
+        '200': { description: OK }
+
+x-google-endpoints:
+  - name: autoads-gateway.endpoints.gen-lang-client-0944935873.cloud.goog
+    allowCors: true
+
+# 使用说明：
+# 1) 将 REPLACE_WITH_RUN_URL 替换为各 Cloud Run 服务的 HTTPS 域名
+#    例如：offer-abc123-asia-northeast1.a.run.app
+# 2) 创建/更新 API 与网关：
+#    gcloud api-gateway apis create autoads-api --project=gen-lang-client-0944935873 || true
+#    gcloud api-gateway api-configs create autoads-v1 \
+#      --api=autoads-api --openapi-spec=deployments/api-gateway/gateway.yaml \
+#      --project=gen-lang-client-0944935873
+#    gcloud api-gateway gateways create autoads-gw \
+#      --api=autoads-api --api-config=autoads-v1 --location=asia-northeast1 \
+#      --project=gen-lang-client-0944935873
+# 说明：
+# - API Gateway 负责 JWT 校验；自定义 `role=ADMIN` 需要在后端微服务中间件中基于 Firebase Token 的自定义 Claim 再次判定。
+# - 对 `/console` 前端路由，继续使用 Next.js middleware（Edge）做角色限制。
+

@@ -108,6 +108,20 @@ CI 会根据分支注入预发/生产域名信息，并在容器启动时渲染 
 ```bash
 cp .env.example .env
 # 编辑 .env 文件配置数据库、Redis 等
+
+### Firebase / Firestore（多数据库）
+- 若项目启用了非默认 Firestore 数据库，请设置：
+  - `NEXT_PUBLIC_FIRESTORE_DB_ID=firestoredb`
+  - 前端通过 Firebase Web SDK 初始化时会读取该变量：`getFirestore(app, process.env.NEXT_PUBLIC_FIRESTORE_DB_ID)`。
+
+### Secret Manager（数据库 DSN）
+- 后端统一从 Secret Manager 读取数据库连接串：
+  - `DATABASE_URL_SECRET_NAME=projects/gen-lang-client-0944935873/secrets/DATABASE_URL/versions/latest`
+
+### Firebase Admin（本地开发）
+- 使用服务账号 JSON 初始化：
+  - `FIREBASE_CREDENTIALS_FILE=secrets/firebase-adminsdk.json`
+  - 生产（Cloud Run）建议使用 ADC（工作负载身份），不下发 JSON。
 ```
 
 ### Feature Flags

@@ -20,7 +20,7 @@ type Subscriber struct {
 }
 
 // NewSubscriber creates a new event subscriber.
-func NewSubscriber(ctx context.is, db *sql.DB, publisher *Publisher) (*Subscriber, error) {
+func NewSubscriber(ctx context.Context, db *sql.DB, publisher *Publisher) (*Subscriber, error) {
 	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if projectID == "" {
 		return nil, fmt.Errorf("GOOGLE_CLOUD_PROJECT environment variable must be set")
