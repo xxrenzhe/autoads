@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"os"
 
-	"services/workflow/internal/auth"
-	"services/workflow/internal/config"
-	"services/workflow/internal/domain"
-	"services/workflow/internal/events"
-	"services/workflow/internal/handlers"
-	"services/workflow/internal/projectors"
+	"github.com/xxrenzhe/autoads/services/workflow/internal/auth"
+	"github.com/xxrenzhe/autoads/services/workflow/internal/config"
+	"github.com/xxrenzhe/autoads/services/workflow/internal/domain"
+	"github.com/xxrenzhe/autoads/services/workflow/internal/events"
+	"github.com/xxrenzhe/autoads/services/workflow/internal/handlers"
+	"github.com/xxrenzhe/autoads/services/workflow/internal/projectors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

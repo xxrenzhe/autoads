@@ -1,4 +1,4 @@
-// services/offer/internal/events/publisher.go
+// github.com/xxrenzhe/autoads/services/offer/internal/events/publisher.go
 package events
 
 import (

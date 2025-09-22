@@ -1,4 +1,4 @@
-// services/workflow/internal/events/publisher.go
+// github.com/xxrenzhe/autoads/services/workflow/internal/events/publisher.go
 package events
 
 import (

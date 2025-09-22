@@ -1,5 +1,14 @@
-go 1.25
+go 1.25.0
 
 use (
-	./services/*
+	./services/adscenter
+	./services/batchopen
+	./services/billing
+	./services/console
+	./services/identity
+	./services/offer
+	./services/siterank
+	./services/workflow
+	./pkg/httpclient
+	./pkg/noop
 )

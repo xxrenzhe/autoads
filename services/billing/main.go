@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"services/billing/internal/auth"
-	"services/billing/internal/config"
-	"services/billing/internal/domain"
-	"services/billing/internal/events"
-	"services/billing/internal/projectors"
+	"github.com/xxrenzhe/autoads/services/billing/internal/auth"
+	"github.com/xxrenzhe/autoads/services/billing/internal/config"
+	"github.com/xxrenzhe/autoads/services/billing/internal/domain"
+	"github.com/xxrenzhe/autoads/services/billing/internal/events"
+	"github.com/xxrenzhe/autoads/services/billing/internal/projectors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"

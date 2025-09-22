@@ -1,4 +1,4 @@
-// services/siterank/internal/events/handler.go
+// github.com/xxrenzhe/autoads/services/siterank/internal/events/handler.go
 package events
 
 import (

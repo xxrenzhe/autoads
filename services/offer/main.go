@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
-	"services/offer/internal/auth"
-	"services/offer/internal/config"
-	"services/offer/internal/events"
-	"services/offer/internal/handlers"
-	"services/offer/internal/projectors"
+	"github.com/xxrenzhe/autoads/services/offer/internal/auth"
+	"github.com/xxrenzhe/autoads/services/offer/internal/config"
+	"github.com/xxrenzhe/autoads/services/offer/internal/events"
+	"github.com/xxrenzhe/autoads/services/offer/internal/handlers"
+	"github.com/xxrenzhe/autoads/services/offer/internal/projectors"
 
 	_ "github.com/lib/pq"
 )

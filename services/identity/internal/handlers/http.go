@@ -3,9 +3,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"identity-service/internal/auth"
-	"identity-service/internal/domain"
-	"identity-service/internal/events"
+	"github.com/xxrenzhe/autoads/services/identity/internal/auth"
+	"github.com/xxrenzhe/autoads/services/identity/internal/domain"
+	"github.com/xxrenzhe/autoads/services/identity/internal/events"
 	"log"
 	"net/http"
 	"time"

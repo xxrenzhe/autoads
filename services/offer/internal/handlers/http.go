@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"services/offer/internal/auth"
-	"services/offer/internal/domain"
-	"services/offer/internal/events"
+	"github.com/xxrenzhe/autoads/services/offer/internal/auth"
+	"github.com/xxrenzhe/autoads/services/offer/internal/domain"
+	"github.com/xxrenzhe/autoads/services/offer/internal/events"
 	"time"
 
 	"github.com/google/uuid"

@@ -3,7 +3,7 @@ package projectors
 import (
 	"context"
 	"log"
-	"services/workflow/internal/domain"
+	"github.com/xxrenzhe/autoads/services/workflow/internal/domain"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

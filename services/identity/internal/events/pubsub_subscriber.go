@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"identity-service/internal/domain"
+	"github.com/xxrenzhe/autoads/services/identity/internal/domain"
 	"log"
 	"sync"
 	"time"

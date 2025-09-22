@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"services/billing/internal/auth"
+	"github.com/xxrenzhe/autoads/services/billing/internal/auth"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"

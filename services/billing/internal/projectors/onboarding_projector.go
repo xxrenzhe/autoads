@@ -3,7 +3,7 @@ package projectors
 import (
 	"context"
 	"log"
-	"services/billing/internal/domain"
+	"github.com/xxrenzhe/autoads/services/billing/internal/domain"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

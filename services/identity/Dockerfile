@@ -5,11 +5,19 @@ FROM golang:1.25-alpine as builder
 # Set the Current Working Directory inside the container
 WORKDIR /app
 
-# Copy go mod and sum files
+# Configure git to be completely non-interactive
+RUN apk add --no-cache git
+RUN git config --global user.name "Cloud Build"
+RUN git config --global user.email "builder@gcp.com"
+RUN git config --global url."https://github.com/".insteadOf "git@github.com:"
+RUN git config --global credential.helper ''
+ENV GIT_TERMINAL_PROMPT=0
+
+# Copy module files
 COPY go.mod go.sum ./
 
-# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
-RUN go mod download
+# Download dependencies with environment variables explicitly set.
+RUN GOPROXY=https://proxy.golang.org,direct GOPRIVATE="" go mod download
 
 # Copy the source code
 COPY . .

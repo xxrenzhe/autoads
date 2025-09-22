@@ -2,9 +2,15 @@
 FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
+RUN apk add --no-cache git
+RUN git config --global user.name "Cloud Build"
+RUN git config --global user.email "builder@gcp.com"
+RUN git config --global url."https://github.com/".insteadOf "git@github.com:"
+RUN git config --global credential.helper ''
+ENV GIT_TERMINAL_PROMPT=0
 
 COPY go.mod go.sum ./
-RUN go mod download
+RUN GOPROXY=https://proxy.golang.org,direct GOPRIVATE="" go mod download
 
 COPY . .
 

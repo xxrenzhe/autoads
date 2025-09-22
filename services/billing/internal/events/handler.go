@@ -1,5 +1,5 @@
 
-// services/billing/internal/events/handler.go
+// github.com/xxrenzhe/autoads/services/billing/internal/events/handler.go
 package events
 
 import (

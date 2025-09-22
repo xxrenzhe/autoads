@@ -1,4 +1,4 @@
-// services/siterank/internal/events/publisher.go
+// github.com/xxrenzhe/autoads/services/siterank/internal/events/publisher.go
 package events
 
 import (

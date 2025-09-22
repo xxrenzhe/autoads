@@ -1,4 +1,4 @@
-// services/siterank/internal/events/subscriber.go
+// github.com/xxrenzhe/autoads/services/siterank/internal/events/subscriber.go
 package events
 
 import (

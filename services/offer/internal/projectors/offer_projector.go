@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	"services/offer/internal/domain"
+	"github.com/xxrenzhe/autoads/services/offer/internal/domain"
 )
 
 // OfferProjector handles events related to Offers and updates the read model.

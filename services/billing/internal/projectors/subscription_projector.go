@@ -3,7 +3,7 @@ package projectors
 import (
 	"context"
 	"database/sql"
-	"identity-service/internal/domain"
+	"github.com/xxrenzhe/autoads/services/identity/internal/domain"
 	"log"
 	"time"
 )

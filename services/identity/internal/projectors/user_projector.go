@@ -2,7 +2,7 @@ package projectors
 
 import (
 	"context"
-	"identity-service/internal/domain"
+	"github.com/xxrenzhe/autoads/services/identity/internal/domain"
 	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"

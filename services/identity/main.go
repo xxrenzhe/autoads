@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"identity-service/internal/auth"
-	"identity-service/internal/config"
-	"identity-service/internal/domain"
-	"identity-service/internal/events"
-	"identity-service/internal/handlers"
-	"identity-service/internal/projectors"
+	"github.com/xxrenzhe/autoads/services/identity/internal/auth"
+	"github.com/xxrenzhe/autoads/services/identity/internal/config"
+	"github.com/xxrenzhe/autoads/services/identity/internal/domain"
+	"github.com/xxrenzhe/autoads/services/identity/internal/events"
+	"github.com/xxrenzhe/autoads/services/identity/internal/handlers"
+	"github.com/xxrenzhe/autoads/services/identity/internal/projectors"
 	"log"
 	"net/http"
 

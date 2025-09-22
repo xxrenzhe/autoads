@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"os"
 
-	"services/console/internal/config"
-	"services/console/internal/handlers"
+	"github.com/xxrenzhe/autoads/services/console/internal/config"
+	"github.com/xxrenzhe/autoads/services/console/internal/handlers"
 	
 	"github.com/jackc/pgx/v5/pgxpool"
 )

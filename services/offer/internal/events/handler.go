@@ -1,4 +1,4 @@
-// services/offer/internal/events/handler.go
+// github.com/xxrenzhe/autoads/services/offer/internal/events/handler.go
 package events
 
 import (

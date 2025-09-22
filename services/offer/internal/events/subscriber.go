@@ -1,4 +1,4 @@
-// services/offer/internal/events/subscriber.go
+// github.com/xxrenzhe/autoads/services/offer/internal/events/subscriber.go
 package events
 
 import (

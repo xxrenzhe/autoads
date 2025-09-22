@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"services/workflow/internal/auth"
-	"services/workflow/internal/domain"
-	"services/workflow/internal/events"
+	"github.com/xxrenzhe/autoads/services/workflow/internal/auth"
+	"github.com/xxrenzhe/autoads/services/workflow/internal/domain"
+	"github.com/xxrenzhe/autoads/services/workflow/internal/events"
 	"time"
 
-	"github.comcom/google/uuid"
+	"github.com/google/uuid"
 )
 
 // Handler holds dependencies for the HTTP handlers.

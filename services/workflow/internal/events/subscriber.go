@@ -1,5 +1,5 @@
 
-// services/workflow/internal/events/subscriber.go
+// github.com/xxrenzhe/autoads/services/workflow/internal/events/subscriber.go
 package events
 
 import (

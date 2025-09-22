@@ -1,5 +1,5 @@
 
-// services/billing/internal/events/subscriber.go
+// github.com/xxrenzhe/autoads/services/billing/internal/events/subscriber.go
 package events
 
 import (
