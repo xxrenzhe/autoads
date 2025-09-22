@@ -1,7 +1,7 @@
 { pkgs, ... }: {
   channel = "stable-24.05";
   packages = [
-    pkgs.go_1_25
+    pkgs.go_1_22
     pkgs.nodejs_20
     pkgs.pnpm
     pkgs.air
@@ -14,7 +14,10 @@
     pkgs.delve
     pkgs.gh
     (pkgs.google-cloud-sdk.withExtraComponents [
+      pkgs.google-cloud-sdk.components.gsutil
+      pkgs.google-cloud-sdk.components.gke-gcloud-auth-plugin
       pkgs.google-cloud-sdk.components.cloud-datastore-emulator
+      pkgs.google-cloud-sdk.components.cloud_sql_proxy
     ])
   ];
   env = {

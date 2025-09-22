@@ -1,4 +1,4 @@
-module github.com/xxrenzhe/autoads/services/billing
+module billing-service
 
 go 1.25.0
 
@@ -6,11 +6,8 @@ require (
 	cloud.google.com/go/pubsub v1.50.1
 	cloud.google.com/go/secretmanager v1.14.7
 	firebase.google.com/go/v4 v4.18.0
+	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
-	github.com/lib/pq v1.10.9
-	github.com/xxrenzhe/autoads/pkg/config v0.0.0-20250921095352-ef8078c06b83
-	github.com/xxrenzhe/autoads/pkg/logger v0.0.0-20250921095352-ef8078c06b83
-	github.com/xxrenzhe/autoads/pkg/middleware v0.0.0-20250921095352-ef8078c06b83
 )
 
 require (
@@ -34,7 +31,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
-	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/felixge/noop v1.0.4 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

@@ -24,10 +24,7 @@
     "deploy:production": "./deployments/scripts/deploy.sh production",
     "health:check": "./deployments/scripts/health-check.sh",
     "clean": "rm -rf apps/frontend/.next apps/frontend/node_modules",
-    "setup": "npm install",
-    "migrate": "npx prisma migrate deploy --schema apps/frontend/prisma/schema.prisma",
-    "prisma:generate": "npx prisma generate --schema apps/frontend/prisma/schema.prisma",
-    "prisma:seed": "npx prisma db seed --schema apps/frontend/prisma/schema.prisma"
+    "setup": "npm install"
   },
   "devDependencies": {
     "concurrently": "8.2.2",

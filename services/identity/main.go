@@ -28,6 +28,9 @@ func main() {
 	}
 	defer dbpool.Close()
 
+	// Ensure the super admin user exists and has the ADMIN role.
+	ensureAdminExists(ctx, dbpool, cfg.SuperAdminEmail)
+
 	// Initialize Firebase Auth client
 	authClient := auth.NewClient(ctx)
 
@@ -80,5 +83,34 @@ func main() {
 	log.Printf("Identity service listening on port %s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, mux); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
+	}
+}
+
+// ensureAdminExists checks if the user with the specified email exists
+// and promotes them to ADMIN if they don't have the role already.
+func ensureAdminExists(ctx context.Context, db *pgxpool.Pool, adminEmail string) {
+	if adminEmail == "" {
+		log.Println("WARN: SUPER_ADMIN_EMAIL is not set. No admin user will be configured.")
+		return
+	}
+
+	var role string
+	err := db.QueryRow(ctx, `SELECT role FROM "User" WHERE email = $1`, adminEmail).Scan(&role)
+	if err != nil {
+		// This is not necessarily an error. The user might not exist yet,
+		// which is fine. They will be created with the "USER" role on first login.
+		log.Printf("INFO: Super admin user with email %s not found in the database. They will be promoted on next login if they register.", adminEmail)
+		return
+	}
+
+	if role == "ADMIN" {
+		log.Printf("INFO: Super admin user %s already has ADMIN role.", adminEmail)
+		return
+	}
+
+	log.Printf("INFO: Promoting user %s to ADMIN role.", adminEmail)
+	_, err = db.Exec(ctx, `UPDATE "User" SET role = 'ADMIN' WHERE email = $1`, adminEmail)
+	if err != nil {
+		log.Printf("ERROR: Failed to promote user %s to ADMIN: %v", adminEmail, err)
 	}
 }

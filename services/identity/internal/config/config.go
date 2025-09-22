@@ -18,6 +18,7 @@ type Config struct {
 	ProjectID            string
 	PubSubTopicID        string
 	PubSubSubscriptionID string
+	SuperAdminEmail      string
 }
 
 // Load reads configuration from environment variables or Google Secret Manager.
@@ -63,12 +64,15 @@ func Load(ctx context.Context) (*Config, error) {
 	pubSubTopicID := os.Getenv("PUBSUB_TOPIC_ID")             // e.g., "domain-events"
 	pubSubSubscriptionID := os.Getenv("PUBSUB_SUBSCRIPTION_ID") // e.g., "identity-service-subscriber"
 
+	superAdminEmail := os.Getenv("SUPER_ADMIN_EMAIL")
+
 	return &Config{
 		DatabaseURL:          databaseURL,
 		Port:                 port,
 		ProjectID:            projectID,
 		PubSubTopicID:        pubSubTopicID,
 		PubSubSubscriptionID: pubSubSubscriptionID,
+		SuperAdminEmail:      superAdminEmail,
 	}, nil
 }
 
