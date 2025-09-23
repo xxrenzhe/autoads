@@ -19,7 +19,8 @@ coverage/
 # Node and frontend assets (Go services don't need these)
 node_modules/
 **/node_modules/
-apps/**
+# Allow frontend app for Cloud Run builds
+!apps/frontend/**
 gofly_admin_v3/
 dist/
 build/
@@ -36,4 +37,3 @@ secrets/*
 !go.work
 !services/**
 !pkg/**
-

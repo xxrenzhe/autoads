@@ -59,6 +59,7 @@
     "googleapis": "^144.0.0",
     "https-proxy-agent": "^7.0.4",
     "ioredis": "^5.4.1",
+    "swr": "^2.2.5",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.263.1",
     "next": "15.3.5",

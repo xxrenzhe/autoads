@@ -15,6 +15,7 @@ func NewMinimalHandler() *MinimalHandler { return &MinimalHandler{} }
 
 func (h *MinimalHandler) RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler) {
     mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+    mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
     mux.HandleFunc("/api/v1/workflows/templates", h.getTemplates)
     // Minimal list endpoint (auth required) for smoke tests
     mux.Handle("/api/v1/workflows", authMiddleware(http.HandlerFunc(h.list)))

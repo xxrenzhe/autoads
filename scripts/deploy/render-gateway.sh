@@ -11,22 +11,18 @@ OUTPUT="deployments/api-gateway/gateway.rendered.yaml"
 
 gcloud config set project "${PROJECT_ID}" >/dev/null
 
-declare -A URLS
-for svc in offer workflow billing adscenter identity; do
-  url=$(gcloud run services describe "$svc" --region "$REGION" --format 'value(status.url)' || true)
+cp "$INPUT" "$OUTPUT"
+for svc in offer workflow billing adscenter identity console; do
+  url=$(gcloud run services describe "$svc" --region "$REGION" --format 'value(status.url)' 2>/dev/null || true)
   if [[ -z "$url" ]]; then
     echo "[render] WARN: service $svc not found; keep placeholder"
-  else
-    URLS[$svc]="$url"
-    echo "[render] $svc -> ${url}"
+    continue
   fi
+  host=${url#https://}
+  echo "[render] $svc -> $url"
+  # Replace placeholders like adscenter-REPLACE_WITH_RUN_URL with actual host
+  sed -i.bak "s#${svc}-REPLACE_WITH_RUN_URL#${host}#g" "$OUTPUT" || true
 done
-
-cp "$INPUT" "$OUTPUT"
-for svc in "${!URLS[@]}"; do
-  sed -i.bak "s#${svc}-REPLACE_WITH_RUN_URL#${URLS[$svc]#https://}#g" "$OUTPUT"
-done
-rm -f "$OUTPUT.bak"
+rm -f "$OUTPUT.bak" || true
 
 echo "[render] Rendered -> $OUTPUT"
-

@@ -14,8 +14,9 @@ if [[ -z "$HOST" ]]; then
   exit 1
 fi
 
-echo "[gw] Health check (identity)"
-code=$(curl -sS -o /tmp/gw_health.txt -w "%{http_code}" "https://${HOST}/api/v1/identity/healthz")
+HEALTH_PATH="${HEALTH_PATH:-/api/health}"
+echo "[gw] Health check (${HEALTH_PATH})"
+code=$(curl -sS -o /tmp/gw_health.txt -w "%{http_code}" "https://${HOST}${HEALTH_PATH}")
 head -n 1 /tmp/gw_health.txt || true
 if [[ "$code" != "200" ]]; then
   echo "[gw] ERROR: healthz expected 200, got $code" >&2

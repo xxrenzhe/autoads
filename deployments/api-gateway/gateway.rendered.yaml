@@ -22,7 +22,7 @@ paths:
   /api/health:
     get:
       x-google-backend:
-        address: https://adscenter-REPLACE_WITH_RUN_URL/health
+        address: https://adscenter-yt54xvsg5q-an.a.run.app/health
         path_translation: CONSTANT_ADDRESS
       responses:
         '200':
@@ -31,7 +31,7 @@ paths:
   /api/health/console:
     get:
       x-google-backend:
-        address: https://console-REPLACE_WITH_RUN_URL/health
+        address: https://console-yt54xvsg5q-an.a.run.app/health
         path_translation: CONSTANT_ADDRESS
       responses:
         '200':
@@ -42,7 +42,7 @@ paths:
       security:
         - firebase: []
       x-google-backend:
-        address: https://offer-REPLACE_WITH_RUN_URL
+        address: https://offer-yt54xvsg5q-an.a.run.app
       responses:
         '200':
           description: OK
@@ -50,7 +50,7 @@ paths:
       security:
         - firebase: []
       x-google-backend:
-        address: https://offer-REPLACE_WITH_RUN_URL
+        address: https://offer-yt54xvsg5q-an.a.run.app
       responses:
         '202':
           description: Accepted
@@ -61,14 +61,14 @@ paths:
       security:
         - firebase: []
       x-google-backend:
-        address: https://workflow-REPLACE_WITH_RUN_URL
+        address: https://workflow-yt54xvsg5q-an.a.run.app
       responses:
         '200': { description: OK }
     post:
       security:
         - firebase: []
       x-google-backend:
-        address: https://workflow-REPLACE_WITH_RUN_URL
+        address: https://workflow-yt54xvsg5q-an.a.run.app
       responses:
         '202': { description: Accepted }
 
@@ -78,7 +78,7 @@ paths:
       security:
         - firebase: []
       x-google-backend:
-        address: https://billing-REPLACE_WITH_RUN_URL
+        address: https://billing-yt54xvsg5q-an.a.run.app
       responses:
         '200': { description: OK }
 
@@ -87,14 +87,14 @@ paths:
       security:
         - firebase: []
       x-google-backend:
-        address: https://billing-REPLACE_WITH_RUN_URL
+        address: https://billing-yt54xvsg5q-an.a.run.app
       responses:
         '200': { description: OK }
 
   # Adscenter 服务（示例：受保护资源）
   /api/v1/adscenter/*:
     x-google-backend:
-      address: https://adscenter-REPLACE_WITH_RUN_URL
+      address: https://adscenter-yt54xvsg5q-an.a.run.app
     get:
       security: [ { firebase: [] } ]
       responses: { '200': { description: OK } }
@@ -106,7 +106,7 @@ paths:
   /api/v1/identity/healthz:
     get:
       x-google-backend:
-        address: https://identity-REPLACE_WITH_RUN_URL
+        address: https://identity-yt54xvsg5q-an.a.run.app
       responses:
         '200': { description: OK }
 

@@ -1,15 +1,14 @@
 {
   "hosting": {
     "public": "hosting",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
         "source": "**",
-        "destination": "/index.html"
+        "run": {
+          "serviceId": "frontend",
+          "region": "asia-northeast1"
+        }
       }
     ]
   },

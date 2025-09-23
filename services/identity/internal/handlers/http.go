@@ -32,11 +32,12 @@ func NewHandler(db *pgxpool.Pool, authClient *firebaseauth.Client, publisher eve
 
 // RegisterRoutes sets up the routing for the service.
 func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler) {
-    mux.HandleFunc("/healthz", h.healthz)
-    // Expose an unauthenticated health endpoint through gateway alias
-    mux.HandleFunc("/api/v1/identity/healthz", h.healthz)
-    mux.Handle("/api/v1/identity/register", authMiddleware(http.HandlerFunc(h.registerUser)))
-    mux.Handle("/api/v1/identity/me", authMiddleware(http.HandlerFunc(h.getCurrentUser)))
+	mux.HandleFunc("/healthz", h.healthz)
+	mux.HandleFunc("/health", h.healthz)
+	// Expose an unauthenticated health endpoint through gateway alias
+	mux.HandleFunc("/api/v1/identity/healthz", h.healthz)
+	mux.Handle("/api/v1/identity/register", authMiddleware(http.HandlerFunc(h.registerUser)))
+	mux.Handle("/api/v1/identity/me", authMiddleware(http.HandlerFunc(h.getCurrentUser)))
 }
 
 func (h *Handler) healthz(w http.ResponseWriter, r *http.Request) {

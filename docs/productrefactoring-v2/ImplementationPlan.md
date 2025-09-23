@@ -10,14 +10,20 @@
 - 服务与接口（上线/对齐）
   - Adscenter（上线）：鉴权中间件 + 账户占位 + Pre-flight 基础校验（校验 GOOGLE_ADS_*、accountId 格式）
   - Identity（上线）：Firebase 鉴权（ADC）+ 基本路由（/me/healthz），绑定私网数据库
-  - Siterank（部分对齐）：新增 `/api/v1/siterank/analyze`（202）与 `/api/v1/siterank/{offerId}`（最新分析）
-  - Workflow（部分对齐）：新增 `/api/v1/workflows/start` 路由别名
+  - Offer（上线）：/api/v1/offers（GET/POST），事件发布降级可运行
+  - Siterank（上线）：新增 `/api/v1/siterank/analyze`（202）与 `/api/v1/siterank/{offerId}`（最新分析）
+  - Workflow（上线，最小实现）：/api/v1/workflows/templates、/api/v1/workflows/start（202）
+  - Billing（上线，最小实现）：/api/v1/billing/subscriptions/me、/tokens/me、/tokens/transactions
+  - Batchopen（上线，最小实现）：/api/v1/batchopen/tasks（202）
+  - Console（上线，占位）：/console/* 直达页
 - 构建与交付（完成）
   - Go 版本统一 1.25.1；所有服务 Dockerfile 调整为“依赖缓存→源码构建”的两段式缓存；根 .dockerignore/.gcloudignore 优化；前端独立 .dockerignore
   - 网关模板与渲染：扩展 gateway.yaml 覆盖所有服务路径；render-gateway-config.sh 支持多服务 URL 占位符
-- 进行中
-  - Offer/Workflow/Billing/Siterank/Console 镜像构建（基于 go.work 根上下文），构建完成后将绑定 VPC 连接器与私网 DB 上线
-  - API Gateway 渲染与发布（待收集各服务 URL 后生成 out/gateway.yaml 并发布）
+  - API Gateway：已发布 autoads-gw-885pd7lz.an.gateway.dev，/api/health 健康返回 200，受保护路由未授权 401
+  - 前端 Hosting：
+    - GitHub Actions 工作流已添加（.github/workflows/deploy-frontend.yml）
+    - 方案一（推荐）：Hosting 重写至 Cloud Run frontend 服务（上线后切换）
+    - 方案二：Hosting frameworks（SSR）直接部署（使用 Actions 避免本地工具链冲突）
 
 ## 里程碑（对齐 MVP）
 - M1（3-4 个月）：MVP 闭环

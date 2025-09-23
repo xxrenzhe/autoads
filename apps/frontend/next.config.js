@@ -124,7 +124,7 @@ const nextConfig = {
   },
 
   // 服务器端外部模块
-  serverExternalPackages: ['playwright', 'playwright-core'],
+  serverExternalPackages: ['playwright', 'playwright-core', '@google-cloud/pubsub'],
 
   // 性能配置
   poweredByHeader: false,

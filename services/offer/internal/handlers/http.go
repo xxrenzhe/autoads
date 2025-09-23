@@ -37,6 +37,7 @@ func NewHandler(db *sql.DB, publisher events.Publisher) *Handler {
 // RegisterRoutes registers the HTTP routes for the service.
 func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler) {
 	mux.HandleFunc("/healthz", h.healthz)
+	mux.HandleFunc("/health", h.healthz)
 	mux.Handle("/api/v1/offers", authMiddleware(http.HandlerFunc(h.offersHandler)))
 }
 

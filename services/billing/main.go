@@ -92,6 +92,7 @@ type Handler struct { DB *pgxpool.Pool }
 func NewHandler(db *pgxpool.Pool) *Handler { return &Handler{DB: db} }
 func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler) {
 	mux.HandleFunc("/healthz", h.healthz)
+	mux.HandleFunc("/health", h.healthz)
 	mux.Handle("/api/v1/billing/subscriptions/me", authMiddleware(http.HandlerFunc(h.getSubscription)))
 	mux.Handle("/api/v1/billing/tokens/me", authMiddleware(http.HandlerFunc(h.getTokenBalance)))
 	mux.Handle("/api/v1/billing/tokens/transactions", authMiddleware(http.HandlerFunc(h.getTokenTransactions)))

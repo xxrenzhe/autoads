@@ -15,6 +15,27 @@ securityDefinitions:
     x-google-jwks_uri: "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
     x-google-audiences: "<PROJECT_ID>"
 paths:
+  /api/health:
+    get:
+      operationId: healthGlobal
+      x-google-backend:
+        address: https://adscenter-REPLACE_WITH_RUN_URL/health
+        path_translation: CONSTANT_ADDRESS
+      responses: { '200': { description: OK } }
+  /api/health/adscenter:
+    get:
+      operationId: healthAdscenter
+      x-google-backend:
+        address: https://adscenter-REPLACE_WITH_RUN_URL/health
+        path_translation: CONSTANT_ADDRESS
+      responses: { '200': { description: OK } }
+  /api/health/console:
+    get:
+      operationId: healthConsole
+      x-google-backend:
+        address: https://console-REPLACE_WITH_RUN_URL/health
+        path_translation: CONSTANT_ADDRESS
+      responses: { '200': { description: OK } }
   /api/v1/identity/healthz:
     get:
       operationId: identityHealth

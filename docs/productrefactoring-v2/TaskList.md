@@ -9,11 +9,8 @@
   - Secret Manager：`DATABASE_URL`（私网 DSN）与 `GOOGLE_ADS_*`（完成）
   - Cloud Build：日志切换至 `gs://autoads-build-logs-asia-northeast1`（完成）
 - 服务与接口
-  - Identity：最小版已上线（/me/healthz，ADC 鉴权，私网 DB 绑定）
-  - Adscenter：Pre-flight 基础校验与路由已上线
-  - Siterank：新增 `/api/v1/siterank/analyze` 与 `/api/v1/siterank/{offerId}`（进行中）
-  - Workflow：新增 `/api/v1/workflows/start` 别名（进行中）
-  - Offer/Workflow/Billing/Siterank/Console：镜像构建与上线（进行中，完成后绑定 VPC 连接器与私网 DB）
+  - Identity/Adscenter/Offer/Siterank/Workflow/Billing/Batchopen：已上线（均绑定 VPC 连接器与私网 DB；Workflow/Billing 最小实现）
+  - Console：占位上线（/console/*）
 - 构建与代码
   - Go 版本统一 1.25.1；Dockerfile 两段式缓存；根 .dockerignore/.gcloudignore 优化；前端独立 .dockerignore（完成）
   - 网关：扩展 docs/productrefactoring-v2/API/openapi/gateway.yaml 覆盖多服务；render-gateway-config.sh 支持多服务 URL 渲染（完成）
@@ -35,8 +32,8 @@
   - Given 同一用户并发触发同一动作（带幂等键），When 执行完成，Then 仅扣费一次且记录可追溯；Given 跨用户请求，Then 不得越权读取或写入对方数据。
 
 ## B. 架构与网关
-- B1 API Gateway 渲染与部署脚本（x-google）
-- B2 各服务 OpenAPI v3 契约提交与校验（identity、billing、offers、siterank、batchopen、adscenter、workflow）
+- B1 API Gateway 渲染与部署脚本（x-google）（完成）
+- B2 各服务 OpenAPI v3 契约提交与校验（完成/对齐：identity、billing、offers、siterank、batchopen、adscenter、workflow）
 
 ## C. 后端服务（MVP）
 - C1 Identity 最小版：/me、Auth 中间件接入 Firebase Admin、健康检查
@@ -79,7 +76,7 @@
 
 ## F. CI/CD 与质量
 - F1 后端增量部署（变更检测→ Cloud Build/Run）+ 冒烟
-- F2 前端 Hosting 部署 + 预览 
+- F2 前端 Hosting 部署 + 预览（工作流已就绪，待触发） 
 - F3 网关变更自动发布
 - F4 基础测试策略：单测（事件/读模）、冒烟（健康/权限）、E2E（闭环主路径）
 

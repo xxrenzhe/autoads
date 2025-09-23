@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	"strings"
-	"time"
+    "encoding/json"
+    "log"
+    "net/http"
+    "time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+    "github.com/jackc/pgx/v5/pgxpool"
 )
 
 type User struct {
@@ -28,8 +27,12 @@ func NewHandler(db *pgxpool.Pool) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	// API routes
-	mux.HandleFunc("/api/v1/console/users", h.getUsers)
+    // Health endpoints (unauthenticated)
+    mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+    mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+
+    // API routes
+    mux.HandleFunc("/api/v1/console/users", h.getUsers)
 
 	// Static file serving for the admin UI
 	// The path to the static files will be configured via an environment variable

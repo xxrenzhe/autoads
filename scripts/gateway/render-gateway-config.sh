@@ -41,6 +41,11 @@ if proj:
     text = text.replace('<PROJECT_ID>', proj)
 for placeholder, val in mapping.items():
     if val:
+        # Accept full URL or host; API Gateway spec already contains scheme
+        if val.startswith('https://'):
+            val = val[len('https://'):]
+        if val.startswith('http://'):
+            val = val[len('http://'):]
         text = text.replace(placeholder, val)
 
 with open(out, 'w', encoding='utf-8') as f:

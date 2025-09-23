@@ -1,15 +1,14 @@
 package main
 
 import (
-	"context"
-	"log"
-	"net/http"
-	"os"
+    "context"
+    "log"
+    "net/http"
 
-	"github.com/xxrenzhe/autoads/services/console/internal/config"
-	"github.com/xxrenzhe/autoads/services/console/internal/handlers"
-	
-	"github.com/jackc/pgx/v5/pgxpool"
+    "github.com/xxrenzhe/autoads/services/console/internal/config"
+    "github.com/xxrenzhe/autoads/services/console/internal/handlers"
+
+    "github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
