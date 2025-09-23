@@ -2,11 +2,19 @@ openapi: 3.0.0
 info:
   title: Adscenter Service
   version: 1.0.0
-  description: Handles adscenter campaigns, Google Ads integration, and A/B testing.
+  description: Handles Google Ads integration, pre-flight diagnostics, and bulk operations.
 paths:
-  /adscenter/campaigns:
+  /api/v1/adscenter/accounts:
+    get:
+      summary: List accessible ad accounts (placeholder)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /api/v1/adscenter/preflight:
     post:
-      summary: Create a new adscenter campaign
+      summary: Run pre-flight diagnostics for Ads integration and request
       security:
         - bearerAuth: []
       requestBody:
@@ -16,11 +24,25 @@ paths:
             schema:
               type: object
               properties:
-                name:
+                accountId:
                   type: string
       responses:
-        '201':
-          description: Campaign created
+        '200':
+          description: Diagnostics result
+  /api/v1/adscenter/bulk-actions:
+    post:
+      summary: Submit bulk actions for execution
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '202':
+          description: Accepted and queued
 components:
   securitySchemes:
     bearerAuth:

@@ -1,0 +1,59 @@
+openapi: 3.0.3
+info:
+  title: siterank-service
+  version: 0.1.0
+servers:
+  - url: https://siterank.example.com
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Analysis:
+      type: object
+      properties:
+        id: { type: string }
+        offerId: { type: string }
+        country: { type: string }
+        status: { type: string, enum: [pending, completed, failed] }
+        score: { type: number }
+        insights: { type: array, items: { type: string } }
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/siterank/analyze:
+    post:
+      summary: Analyze offer landing and traffic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [offerId, country]
+              properties:
+                offerId: { type: string }
+                country: { type: string }
+      responses:
+        '202': { description: Accepted }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+  /api/v1/siterank/{offerId}:
+    get:
+      summary: Get latest analysis by offer
+      parameters:
+        - in: path
+          name: offerId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Analysis' } } } }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+  responses:
+    UnauthorizedError:
+      description: Unauthorized
+    ForbiddenError:
+      description: Forbidden

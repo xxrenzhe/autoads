@@ -1,1 +1,4 @@
-module github.com/xxrenzhe/autoads/services/offer\n\ngo 1.25.0
+module github.com/xxrenzhe/autoads/services/offer
+
+go 1.25.1
+

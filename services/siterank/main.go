@@ -147,8 +147,43 @@ func (s *Server) getAnalysisHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(analysis)
 }
 
+// getLatestAnalysisByOfferHandler returns the latest analysis record by offerId for the current user.
+func (s *Server) getLatestAnalysisByOfferHandler(w http.ResponseWriter, r *http.Request) {
+    userID := r.Header.Get("X-User-Id")
+    if userID == "" {
+        http.Error(w, "Unauthorized: User ID is missing", http.StatusUnauthorized)
+        return
+    }
+
+    parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/siterank/"), "/")
+    if len(parts) < 1 || parts[0] == "" {
+        http.Error(w, "offerId is required in path", http.StatusBadRequest)
+        return
+    }
+    offerID := parts[0]
+
+    var analysis SiterankAnalysis
+    var result sql.NullString
+    query := `SELECT id, user_id, offer_id, status, result, created_at, updated_at FROM "SiterankAnalysis" WHERE offer_id = $1 AND user_id = $2 ORDER BY updated_at DESC LIMIT 1`
+    err := s.db.QueryRowContext(r.Context(), query, offerID, userID).Scan(
+        &analysis.ID, &analysis.UserID, &analysis.OfferID, &analysis.Status, &result, &analysis.CreatedAt, &analysis.UpdatedAt,
+    )
+    if err != nil {
+        if err == sql.ErrNoRows {
+            http.NotFound(w, r)
+            return
+        }
+        log.Printf("Error getting latest siterank analysis by offer: %v", err)
+        http.Error(w, "Internal server error", http.StatusInternalServerError)
+        return
+    }
+    if result.Valid { analysis.Result = &result.String }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(analysis)
+}
+
 func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
-	log.Printf("Starting analysis for %s...", analysisID)
+    log.Printf("Starting analysis for %s...", analysisID)
 
 	// 1. Set status to "running"
 	_, err := s.db.ExecContext(ctx, `UPDATE "SiterankAnalysis" SET status = 'running', updated_at = $1 WHERE id = $2`, time.Now(), analysisID)
@@ -173,8 +208,13 @@ func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
 		return
 	}
 
-	// 3. Call SimilarWeb API
-	apiURL := fmt.Sprintf("https://data.similarweb.com/api/v1/data?domain=%s", domain.Hostname())
+    // 3. Call SimilarWeb API (configurable base URL)
+    base := os.Getenv("SIMILARWEB_BASE_URL")
+    if base == "" {
+        // Default to public endpoint, no API key required per environment note
+        base = "https://data.similarweb.com/api/v1/data?domain=%s"
+    }
+    apiURL := fmt.Sprintf(base, domain.Hostname())
 	var apiResponse SimilarWebResponse
 	
 	err = s.httpClient.GetJSON(ctx, apiURL, &apiResponse)
@@ -211,7 +251,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 // --- Main Function ---
 
 func main() {
-	log.Println("Starting Siterank service...")
+    log.Println("Starting Siterank service...")
 
     // Prefer standard name; fall back to legacy
     dbSecretName := os.Getenv("DATABASE_URL_SECRET_NAME")
@@ -242,14 +282,32 @@ func main() {
 	httpClient := httpclient.New(15 * time.Second)
 	server := &Server{db: db, httpClient: httpClient}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", healthHandler)
-	mux.HandleFunc("/analyses/", server.analysesHandler) 
-	
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8084"
-	}
+    mux := http.NewServeMux()
+    mux.HandleFunc("/health", healthHandler)
+    // Legacy/internal route
+    mux.HandleFunc("/analyses/", server.analysesHandler)
+    // Minimal alias to align with OpenAPI analyze endpoint (202 Accepted)
+    mux.HandleFunc("/api/v1/siterank/analyze", func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodPost {
+            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+            return
+        }
+        server.createAnalysisHandler(w, r)
+    })
+    // GET latest analysis by offer
+    mux.HandleFunc("/api/v1/siterank/", func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodGet {
+            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+            return
+        }
+        server.getLatestAnalysisByOfferHandler(w, r)
+    })
+
+    port := os.Getenv("PORT")
+    if port == "" {
+        // Standardize on 8080 to match docker-compose container mapping
+        port = "8080"
+    }
 
 	log.Printf("Listening on port %s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {

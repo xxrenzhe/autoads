@@ -8,7 +8,7 @@ Place local-only credentials here for development, for example:
 Environment variables (recommended):
 
 - FIREBASE_CREDENTIALS_FILE=secrets/firebase-adminsdk.json
-- GOOGLE_APPLICATION_CREDENTIALS=secrets/gcp_sa.json
+- GOOGLE_APPLICATION_CREDENTIALS=secrets/gcp_codex_dev.json
 - DATABASE_URL_SECRET_NAME=projects/<PROJECT_ID>/secrets/DATABASE_URL/versions/latest
 
 Security notes:

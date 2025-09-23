@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: workflow-service
+  version: 0.1.0
+servers:
+  - url: https://workflow.example.com
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    UnauthorizedError:
+      description: Unauthorized
+    ForbiddenError:
+      description: Forbidden
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/workflows/templates:
+    get:
+      summary: List workflow templates
+      parameters:
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - in: query
+          name: pageToken
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+  /api/v1/workflows/start:
+    post:
+      summary: Start a workflow from template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [templateId, offerId, country]
+              properties:
+                templateId: { type: string }
+                offerId: { type: string }
+                country: { type: string }
+      responses:
+        '202': { description: Accepted }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }

@@ -23,6 +23,25 @@ paths:
       responses:
         '202':
           description: Task created
+  /api/v1/batchopen/tasks:
+    post:
+      summary: Create a new batchopen task (alias)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId:
+                  type: string
+                simulationConfig:
+                  type: object
+      responses:
+        '202':
+          description: Task created
 components:
   securitySchemes:
     bearerAuth:

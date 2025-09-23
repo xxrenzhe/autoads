@@ -28,5 +28,6 @@
 - AUTH_GOOGLE_ID=1007142410985-4945m48srrp056kp0q5n0e5he8omrdol.apps.googleusercontent.com
 - AUTH_GOOGLE_SECRET=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
 - SIMILARWEB_API_URL=https://data.similarweb.com/api/v1/data
+- BACKEND_URL=http://127.0.0.1:8080
 6）预发/生产环境的容器配置：2C4G
 7）用户通过Google OAuth一键登录进入网站（不提供邮箱注册/登录）；管理员通过单独的管理URL通过账号密码登录，进入后台管理系统；两套登录系统独立，互不影响

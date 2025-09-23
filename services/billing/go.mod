@@ -1,1 +1,4 @@
-module github.com/xxrenzhe/autoads/services/billing\n\ngo 1.25.0
+module github.com/xxrenzhe/autoads/services/billing
+
+go 1.25.1
+

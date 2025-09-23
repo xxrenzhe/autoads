@@ -1,1 +1,4 @@
-module github.com/xxrenzhe/autoads/pkg/httpclient\n\ngo 1.25.0
+module github.com/xxrenzhe/autoads/pkg/httpclient
+
+go 1.25.1
+

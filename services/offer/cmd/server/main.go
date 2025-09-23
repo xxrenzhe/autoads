@@ -26,10 +26,10 @@ type OfferCreateRequest struct {
 }
 
 var (
-	db        *sql.DB
-	ctx       = context.Background()
-	log       = logger.Get()
-	publisher *events.Publisher
+    db        *sql.DB
+    ctx       = context.Background()
+    log       = logger.Get()
+    publisher events.Publisher
 )
 
 func main() {
@@ -54,7 +54,7 @@ func main() {
 	log.Info().Msg("Successfully connected to the database!")
 
 	// Initialize the Pub/Sub publisher.
-	publisher, err = events.NewPublisher(ctx)
+    publisher, err = events.NewPublisher(ctx)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create event publisher")
 	}

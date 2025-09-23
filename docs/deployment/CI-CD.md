@@ -38,8 +38,8 @@
 
 - `scripts/deploy/cloudrun-deploy.sh`: 云端构建镜像并部署 Cloud Run。
 - `scripts/gcp/grant-run-sa.sh`: 自动为 Cloud Run 运行时服务账号授予常用权限（SecretManager/CloudSQL/PubSub）。
-- `scripts/deploy/render-gateway.sh`: 渲染 API Gateway OpenAPI（替换 Cloud Run URL）。
-- `scripts/deploy/gateway-deploy.sh`: 创建/更新 API 与 Gateway。
+- `scripts/gateway/render-gateway-config.sh`: 渲染 API Gateway OpenAPI（替换 Cloud Run URL 占位符）。
+- `scripts/gateway/deploy-gateway.sh`: 创建/更新 API 与 Gateway。
 
 ## 受保护路由联测
 
@@ -51,4 +51,3 @@ GATEWAY_HOST=<your-gateway-hostname> bash scripts/tests/gateway-smoke.sh <FIREBA
 ```
 
 未带 JWT 访问受保护路由应返回 401，带合法 ID Token 返回 200。
-

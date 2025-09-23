@@ -1,1 +1,4 @@
-module github.com/xxrenzhe/autoads/services/console\n\ngo 1.25.0
+module github.com/xxrenzhe/autoads/services/console
+
+go 1.25.1
+

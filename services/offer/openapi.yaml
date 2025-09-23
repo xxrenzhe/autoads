@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: Manages the global offer library.
 paths:
-  /offers:
+  /api/v1/offers:
     get:
       summary: List all offers for the current user
       security:

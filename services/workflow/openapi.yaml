@@ -43,3 +43,24 @@ paths:
           description: Unauthorized.
         '500':
           description: Internal Server Error.
+
+  /api/v1/workflows/start:
+    post:
+      summary: Start a new workflow (alias)
+      description: Alias path with explicit /api prefix for gateway consistency.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                template_id:
+                  type: string
+                offer_id:
+                  type: string
+      responses:
+        '202':
+          description: Accepted

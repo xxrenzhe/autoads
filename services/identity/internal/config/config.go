@@ -23,11 +23,13 @@ type Config struct {
 
 // Load reads configuration from environment variables or Google Secret Manager.
 func Load(ctx context.Context) (*Config, error) {
-	// For local development, load .env file.
-	// In production, these will be set in the Cloud Run environment.
-	if os.Getenv("ENV") == "development" {
-		_ = godotenv.Load()
-	}
+    // For local development, load .env file.
+    // In production, these will be set in the Cloud Run environment.
+    if os.Getenv("ENV") == "development" {
+        _ = godotenv.Load()
+    }
+    env := os.Getenv("ENV")
+    if env == "" { env = "production" }
 
 	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if projectID == "" {
@@ -61,19 +63,29 @@ func Load(ctx context.Context) (*Config, error) {
 		return nil, fmt.Errorf("DATABASE_URL is not set")
 	}
 
-	pubSubTopicID := os.Getenv("PUBSUB_TOPIC_ID")             // e.g., "domain-events"
-	pubSubSubscriptionID := os.Getenv("PUBSUB_SUBSCRIPTION_ID") // e.g., "identity-service-subscriber"
+    pubSubTopicID := os.Getenv("PUBSUB_TOPIC_ID") // recommend: domain-events-<stack>
+    pubSubSubscriptionID := os.Getenv("PUBSUB_SUBSCRIPTION_ID")
+    stack := os.Getenv("STACK") // logical environment namespace within single GCP project
+    if env == "development" {
+        if pubSubTopicID == "" { pubSubTopicID = "domain-events-dev" }
+        if pubSubSubscriptionID == "" { pubSubSubscriptionID = "identity-sub-dev" }
+    } else {
+        if pubSubTopicID == "" && stack != "" { pubSubTopicID = "domain-events-" + stack }
+        if pubSubSubscriptionID == "" && stack != "" { pubSubSubscriptionID = "identity-sub-" + stack }
+        if pubSubTopicID == "" { return nil, fmt.Errorf("PUBSUB_TOPIC_ID must be set (or provide STACK) in %s", env) }
+        if pubSubSubscriptionID == "" { return nil, fmt.Errorf("PUBSUB_SUBSCRIPTION_ID must be set (or provide STACK) in %s", env) }
+    }
 
 	superAdminEmail := os.Getenv("SUPER_ADMIN_EMAIL")
 
-	return &Config{
-		DatabaseURL:          databaseURL,
-		Port:                 port,
-		ProjectID:            projectID,
-		PubSubTopicID:        pubSubTopicID,
-		PubSubSubscriptionID: pubSubSubscriptionID,
-		SuperAdminEmail:      superAdminEmail,
-	}, nil
+    return &Config{
+        DatabaseURL:          databaseURL,
+        Port:                 port,
+        ProjectID:            projectID,
+        PubSubTopicID:        pubSubTopicID,
+        PubSubSubscriptionID: pubSubSubscriptionID,
+        SuperAdminEmail:      superAdminEmail,
+    }, nil
 }
 
 // accessSecretVersion accesses a secret version from Google Cloud Secret Manager.

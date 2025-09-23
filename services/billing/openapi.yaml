@@ -2,33 +2,38 @@ openapi: 3.0.0
 info:
   title: Billing Service
   version: 1.0.0
-  description: Handles subscriptions, payments, and token management.
+  description: Handles subscriptions, plans, and token management.
 paths:
-  /subscriptions:
-    post:
-      summary: Create a new subscription
+  /api/v1/billing/subscriptions/me:
+    get:
+      summary: Get current user's subscription
       security:
         - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                planId:
-                  type: string
       responses:
-        '201':
-          description: Subscription created successfully
-  /tokens/balance:
+        '200':
+          description: Subscription
+  /api/v1/billing/tokens/me:
     get:
-      summary: Get user token balance
+      summary: Get current user's token balance
       security:
         - bearerAuth: []
       responses:
         '200':
           description: Token balance
+  /api/v1/billing/tokens/transactions:
+    get:
+      summary: List token transactions for current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of token transactions
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
 components:
   securitySchemes:
     bearerAuth:

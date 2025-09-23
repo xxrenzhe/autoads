@@ -1,4 +1,6 @@
 
+//go:build ignore
+
 // github.com/xxrenzhe/autoads/services/billing/internal/events/subscriber.go
 package events
 

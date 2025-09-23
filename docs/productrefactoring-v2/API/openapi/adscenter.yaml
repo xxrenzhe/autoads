@@ -1,0 +1,83 @@
+openapi: 3.0.3
+info:
+  title: adscenter-service
+  version: 0.1.0
+servers:
+  - url: https://adscenter.example.com
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    BulkActionRequest:
+      type: object
+      properties:
+        action: { type: string, enum: [set_cpc, set_budget, set_final_url_suffix, pause, enable, remove] }
+        targets:
+          type: array
+          items:
+            type: object
+            properties:
+              accountId: { type: string }
+              campaignId: { type: string }
+        params:
+          type: object
+  responses:
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code: { type: string }
+              message: { type: string }
+    ForbiddenError:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code: { type: string }
+              message: { type: string }
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/adscenter/accounts:
+    get:
+      summary: List linked Ads accounts
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+  /api/v1/adscenter/preflight:
+    post:
+      summary: Run preflight diagnostics
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId]
+              properties:
+                accountId: { type: string }
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+  /api/v1/adscenter/bulk-actions:
+    post:
+      summary: Execute bulk actions across accounts/campaigns
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BulkActionRequest' }
+      responses:
+        '202': { description: Accepted }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+  

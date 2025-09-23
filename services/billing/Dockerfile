@@ -1,6 +1,6 @@
 # Use the official Golang image to create a build artifact.
-FROM golang:1.25-alpine as builder
-WORKDIR /app
+FROM golang:1.25.1-alpine as builder
+WORKDIR /workspace
 
 # 1. Install and configure git to be completely non-interactive.
 RUN apk add --no-cache git
@@ -10,16 +10,16 @@ RUN git config --global url."https://github.com/".insteadOf "git@github.com:"
 RUN git config --global credential.helper '' # Disable credential helper
 ENV GIT_TERMINAL_PROMPT=0
 
-# 2. Copy module files
-COPY go.mod go.sum ./
-
-# 3. Download dependencies with environment variables explicitly set for the command.
-# This is the most robust way to ensure the proxy is used.
-RUN GOPROXY=https://proxy.golang.org,direct GOPRIVATE="" go mod download
-
-# 4. Copy source code and build
+# 1) Prime module cache with minimal files
+COPY go.work ./
+RUN mkdir -p services/billing
+COPY services/billing/go.mod services/billing/go.mod
+RUN GOPROXY=https://proxy.golang.org,direct GOPRIVATE="" go mod download || true
+# 2) Copy entire repo and build from service directory (go.work aware)
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /billing-service .
+WORKDIR /workspace/services/billing
+RUN GOPROXY=https://proxy.golang.org,direct GOPRIVATE="" go mod tidy && \
+    CGO_ENABLED=0 GOOS=linux go build -o /billing-service .
 
 # Start a new stage from scratch for a smaller image
 FROM alpine:latest

@@ -1,3 +1,4 @@
 module github.com/xxrenzhe/autoads/services/identity
 
-go 1.25.0
+go 1.25.1
+

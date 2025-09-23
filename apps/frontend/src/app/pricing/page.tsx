@@ -10,19 +10,6 @@ import { PageFooter } from '@/components/PageFooter';
 
 const plans = [
   {
-    name: 'Free',
-    price: '¥0',
-    description: '体验核心工具',
-    features: [
-      '基础 "批量访问"',
-      '网站排名查询 (100次)',
-      '1个Google账户集成',
-      '包含 1,000 Tokens'
-    ],
-    cta: '开始使用',
-    icon: <Star className="h-6 w-6" />
-  },
-  {
     name: 'Pro',
     price: '¥199',
     unit: '/月',
@@ -61,8 +48,8 @@ const plans = [
 
 const faqs = [
   {
-    question: '我可以免费试用吗？',
-    answer: '是的，我们提供一个功能受限但永久免费的Free套餐，其中包含1,000个Tokens供您体验产品的核心功能。'
+    question: '是否提供免费版？',
+    answer: '当前不提供免费版。您可通过联系客服获取演示与评估建议，并按 Pro/Max/Elite 订阅使用。'
   },
   {
     question: 'Tokens是什么？如何消耗？',

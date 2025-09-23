@@ -1,1 +1,4 @@
-module github.com/xxrenzhe/autoads/services/workflow\n\ngo 1.25.0
+module github.com/xxrenzhe/autoads/services/workflow
+
+go 1.25.1
+

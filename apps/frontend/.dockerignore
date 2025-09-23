@@ -1,13 +1,21 @@
-# Node.js
-node_modules
-.next
-npm-debug.log
-*.log
-
-# Backend code included in frontend directory
-gofly_admin_v3
-
-# IDE and OS files
-.vscode
-.idea
+node_modules/
+.next/
+dist/
+build/
+.cache/
+coverage/
+**/*.log
 .DS_Store
+.env
+.env.*
+
+!public/**
+!src/**
+!package.json
+!pnpm-lock.yaml
+!yarn.lock
+!package-lock.json
+!next.config.js
+!postcss.config.mjs
+!tailwind.config.*
+!tsconfig*.json

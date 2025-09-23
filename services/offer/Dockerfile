@@ -1,16 +1,22 @@
 # Use the official Golang image to create a build artifact.
-FROM golang:1.25-alpine as builder
-WORKDIR /app
+FROM golang:1.25.1-alpine as builder
+WORKDIR /workspace
 RUN apk add --no-cache git
 RUN git config --global user.name "Cloud Build"
 RUN git config --global user.email "builder@gcp.com"
 RUN git config --global url."https://github.com/".insteadOf "git@github.com:"
 RUN git config --global credential.helper ''
 ENV GIT_TERMINAL_PROMPT=0
-COPY go.mod go.sum ./
-RUN GOPROXY=https://proxy.golang.org,direct GOPRIVATE="" go mod download
+# 1) Prime module cache with minimal files
+COPY go.work ./
+RUN mkdir -p services/offer
+COPY services/offer/go.mod services/offer/go.mod
+RUN GOPROXY=https://proxy.golang.org,direct GOPRIVATE="" go mod download || true
+# 2) Copy full repo and build with workspace
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /offer-service .
+WORKDIR /workspace/services/offer
+RUN GOPROXY=https://proxy.golang.org,direct GOPRIVATE="" go mod tidy && \
+    CGO_ENABLED=0 GOOS=linux go build -o /offer-service .
 # Start a new stage from scratch for a smaller image
 FROM alpine:latest
 WORKDIR /

@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info:
+  title: batchopen-service
+  version: 0.1.0
+servers:
+  - url: https://batchopen.example.com
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Task:
+      type: object
+      properties:
+        id: { type: string }
+        offerId: { type: string }
+        country: { type: string }
+        templateId: { type: string }
+        status: { type: string, enum: [queued, running, completed, failed] }
+        qualityScore: { type: number }
+    TaskList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Task' }
+        nextPageToken: { type: string }
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/batchopen/tasks:
+    post:
+      summary: Create simulation task from template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [offerId, country, templateId]
+              properties:
+                offerId: { type: string }
+                country: { type: string }
+                templateId: { type: string }
+      responses:
+        '202': { description: Accepted }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+    get:
+      summary: List tasks
+      parameters:
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - in: query
+          name: pageToken
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaskList' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+  /api/v1/batchopen/tasks/{id}:
+    get:
+      summary: Get task
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Task' } } } }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+  responses:
+    UnauthorizedError:
+      description: Unauthorized
+    ForbiddenError:
+      description: Forbidden

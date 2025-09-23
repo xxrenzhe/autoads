@@ -44,3 +44,24 @@ paths:
           description: Unauthorized.
         '500':
           description: Internal Server Error.
+
+  /api/v1/siterank/analyze:
+    post:
+      summary: Analyze a website's rank (alias)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                offer_id:
+                  type: string
+                url:
+                  type: string
+                  format: uri
+      responses:
+        '202':
+          description: Accepted

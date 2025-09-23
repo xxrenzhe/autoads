@@ -13,9 +13,7 @@ import (
 
 	"github.com/xxrenzhe/autoads/services/billing/internal/auth"
 	"github.com/xxrenzhe/autoads/services/billing/internal/config"
-	"github.com/xxrenzhe/autoads/services/billing/internal/domain"
-	"github.com/xxrenzhe/autoads/services/billing/internal/events"
-	"github.com/xxrenzhe/autoads/services/billing/internal/projectors"
+
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
@@ -39,35 +37,8 @@ func main() {
 	}
 	defer dbpool.Close()
 
-	if cfg.PubSubTopicID != "" {
-		subscriber, err := events.NewPubSubSubscriber(ctx, cfg.ProjectID, cfg.PubSubTopicID, cfg.PubSubSubscriptionID)
-		if err != nil {
-			log.Fatalf("Failed to create PubSub subscriber: %v", err)
-		}
-
-		// --- Setup Projectors ---
-		subscriptionProjector := projectors.NewSubscriptionProjector(dbpool)
-		onboardingProjector := projectors.NewOnboardingProjector(dbpool)
-
-		// --- Subscribe to Events ---
-		subscriber.On((domain.UserRegisteredEvent{}).EventType(), func(ctx context.Context, event events.DomainEvent) error {
-			if e, ok := event.(domain.UserRegisteredEvent); ok {
-				return subscriptionProjector.HandleUserRegistered(ctx, e)
-			}
-			return nil
-		})
-
-		subscriber.On((domain.OfferCreatedEvent{}).EventType(), func(ctx context.Context, event events.DomainEvent) error {
-			if e, ok := event.(domain.OfferCreatedEvent); ok {
-				return onboardingProjector.HandleOfferCreated(ctx, e)
-			}
-			return nil
-		})
-
-		go subscriber.Start(ctx) 
-	} else {
-		log.Println("Pub/Sub not configured, subscriber not started.")
-	}
+    // Omit Pub/Sub subscriber in minimal deployment; projections run via CFs in prod.
+    log.Println("Billing: skipping in-process Pub/Sub subscriber (use CFs in prod)")
 
 	authClient := auth.NewClient(ctx)
 	apiHandler := NewHandler(dbpool)
@@ -94,8 +65,14 @@ func runMigrations(databaseURL string) error {
 	if err != nil { return err }
 	defer tx.Rollback()
 	migrationsDir := "internal/migrations"
-	files, err := os.ReadDir(migrationsDir)
-	if err != nil { return err }
+    files, err := os.ReadDir(migrationsDir)
+    if err != nil {
+        if os.IsNotExist(err) {
+            log.Printf("No migrations directory found (%s); skipping DB migrations.", migrationsDir)
+            return tx.Commit()
+        }
+        return err
+    }
 	for _, file := range files {
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".sql") {
 			log.Printf("Applying migration: %s", file.Name())

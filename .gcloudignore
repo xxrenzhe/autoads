@@ -1,0 +1,39 @@
+# Files/directories excluded from gcloud builds submit
+
+# VCS and editor files
+.git/
+.vscode/
+.idea/
+.DS_Store
+
+# Caches and temporary
+.gocache/
+.cache/
+.swc/
+.idx/
+**/*.log
+logs/
+test-results/
+coverage/
+
+# Node and frontend assets (Go services don't need these)
+node_modules/
+**/node_modules/
+apps/**
+gofly_admin_v3/
+dist/
+build/
+out/
+.next/
+
+# Secrets and env (keep README only)
+.env
+.env.*
+secrets/*
+!secrets/README.md
+
+# Keep Go workspace files and required source
+!go.work
+!services/**
+!pkg/**
+

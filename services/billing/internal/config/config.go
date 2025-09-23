@@ -1,52 +1,86 @@
 package config
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"os"
+    "context"
+    "fmt"
+    "log"
+    "os"
 
-	"github.com/joho/godotenv"
+    secretmanager "cloud.google.com/go/secretmanager/apiv1"
+    "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+    "github.com/joho/godotenv"
 )
 
 // Config holds the application configuration.
 type Config struct {
-	DatabaseURL          string
-	Port                 string
-	ProjectID            string
-	PubSubTopicID        string
-	PubSubSubscriptionID string
+    DatabaseURL          string
+    Port                 string
+    ProjectID            string
+    PubSubTopicID        string
+    PubSubSubscriptionID string
 }
 
 // Load reads configuration from environment variables.
 func Load(ctx context.Context) (*Config, error) {
-	if os.Getenv("ENV") == "development" {
-		_ = godotenv.Load()
-	}
+    if os.Getenv("ENV") == "development" {
+        _ = godotenv.Load()
+    }
+    env := os.Getenv("ENV")
+    if env == "" { env = "production" }
 
-	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
-	if projectID == "" {
-		log.Println("WARN: GOOGLE_CLOUD_PROJECT environment variable not set.")
-	}
+    projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
+    if projectID == "" {
+        log.Println("WARN: GOOGLE_CLOUD_PROJECT environment variable not set.")
+    }
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "8080"
+    }
 
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		return nil, fmt.Errorf("DATABASE_URL is not set")
-	}
+    // Prefer Secret Manager when DATABASE_URL_SECRET_NAME is provided, else fallback to env
+    var databaseURL string
+    if sec := os.Getenv("DATABASE_URL_SECRET_NAME"); sec != "" {
+        s, err := accessSecretVersion(ctx, sec)
+        if err != nil {
+            return nil, fmt.Errorf("failed to access DATABASE_URL from Secret Manager: %w", err)
+        }
+        databaseURL = s
+    } else {
+        databaseURL = os.Getenv("DATABASE_URL")
+    }
+    if databaseURL == "" {
+        return nil, fmt.Errorf("DATABASE_URL is not set (or DATABASE_URL_SECRET_NAME missing)")
+    }
 
-	pubSubTopicID := os.Getenv("PUBSUB_TOPIC_ID")
-	pubSubSubscriptionID := os.Getenv("PUBSUB_SUBSCRIPTION_ID")
+    pubSubTopicID := os.Getenv("PUBSUB_TOPIC_ID")
+    pubSubSubscriptionID := os.Getenv("PUBSUB_SUBSCRIPTION_ID")
+    stack := os.Getenv("STACK")
+    if env == "development" {
+        if pubSubTopicID == "" { pubSubTopicID = "domain-events-dev" }
+        if pubSubSubscriptionID == "" { pubSubSubscriptionID = "billing-sub-dev" }
+    } else {
+        if pubSubTopicID == "" && stack != "" { pubSubTopicID = "domain-events-" + stack }
+        if pubSubSubscriptionID == "" && stack != "" { pubSubSubscriptionID = "billing-sub-" + stack }
+        if pubSubTopicID == "" { return nil, fmt.Errorf("PUBSUB_TOPIC_ID must be set (or provide STACK) in %s", env) }
+        if pubSubSubscriptionID == "" { return nil, fmt.Errorf("PUBSUB_SUBSCRIPTION_ID must be set (or provide STACK) in %s", env) }
+    }
 
-	return &Config{
-		DatabaseURL:          databaseURL,
-		Port:                 port,
-		ProjectID:            projectID,
-		PubSubTopicID:        pubSubTopicID,
-		PubSubSubscriptionID: pubSubSubscriptionID,
-	}, nil
+    return &Config{
+        DatabaseURL:          databaseURL,
+        Port:                 port,
+        ProjectID:            projectID,
+        PubSubTopicID:        pubSubTopicID,
+        PubSubSubscriptionID: pubSubSubscriptionID,
+    }, nil
+}
+
+// accessSecretVersion accesses a secret version from Google Cloud Secret Manager.
+func accessSecretVersion(ctx context.Context, name string) (string, error) {
+    client, err := secretmanager.NewClient(ctx)
+    if err != nil { return "", err }
+    defer client.Close()
+    res, err := client.AccessSecretVersion(ctx, &secretmanagerpb.AccessSecretVersionRequest{Name: name})
+    if err != nil { return "", err }
+    return string(res.Payload.Data), nil
 }

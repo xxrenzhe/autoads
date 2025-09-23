@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: billing-service
+  version: 0.1.0
+servers:
+  - url: https://billing.example.com
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code: { type: string }
+              message: { type: string }
+    ForbiddenError:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code: { type: string }
+              message: { type: string }
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/billing/subscriptions/me:
+    get:
+      summary: Get my subscription and entitlements
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+  /api/v1/billing/tokens/me:
+    get:
+      summary: Get my token balance and usage
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }

@@ -20,9 +20,14 @@ type Client struct{ *auth.Client }
 
 func NewClient(ctx context.Context) *Client {
     creds := os.Getenv("FIREBASE_CREDENTIALS_FILE")
-    if creds == "" { creds = "secrets/firebase-adminsdk.json" }
-    opt := option.WithCredentialsFile(creds)
-    app, err := firebase.NewApp(ctx, nil, opt)
+    var app *firebase.App
+    var err error
+    if creds != "" {
+        app, err = firebase.NewApp(ctx, nil, option.WithCredentialsFile(creds))
+    } else {
+        // Prefer ADC on Cloud Run
+        app, err = firebase.NewApp(ctx, nil)
+    }
     if err != nil { log.Fatalf("error initializing Firebase app: %v", err) }
     c, err := app.Auth(ctx)
     if err != nil { log.Fatalf("error getting Firebase Auth client: %v", err) }
@@ -40,4 +45,3 @@ func (c *Client) Middleware(next http.Handler) http.Handler {
         next.ServeHTTP(w, r.WithContext(ctx))
     })
 }
-

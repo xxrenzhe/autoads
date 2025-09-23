@@ -25,13 +25,13 @@ type Offer struct {
 
 // Handler holds dependencies for the HTTP handlers.
 type Handler struct {
-	DB        *sql.DB
-	Publisher events.Publisher
+    DB        *sql.DB
+    Publisher events.Publisher
 }
 
 // NewHandler creates a new Handler.
 func NewHandler(db *sql.DB, publisher events.Publisher) *Handler {
-	return &Handler{DB: db, Publisher: publisher}
+    return &Handler{DB: db, Publisher: publisher}
 }
 
 // RegisterRoutes registers the HTTP routes for the service.
@@ -87,11 +87,11 @@ func (h *Handler) createOffer(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:   time.Now(),
 	}
 
-	if err := h.Publisher.Publish(r.Context(), event); err != nil {
-		log.Printf("Error publishing OfferCreatedEvent: %v", err)
-		http.Error(w, "Failed to process the request", http.StatusInternalServerError)
-		return
-	}
+    if err := h.Publisher.Publish(r.Context(), event); err != nil {
+        log.Printf("Error publishing OfferCreatedEvent: %v", err)
+        http.Error(w, "Failed to process the request", http.StatusInternalServerError)
+        return
+    }
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)

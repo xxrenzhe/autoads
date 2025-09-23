@@ -17,22 +17,35 @@ type userCtxKey string
 // UserIDContextKey is the key for the user ID in the context.
 const UserIDContextKey = userCtxKey("userID")
 
-type Client struct{
+// Client holds the firebase auth client.
+type Client struct {
     *auth.Client
 }
 
+// NewClient initializes and returns a new Firebase Auth client.
 func NewClient(ctx context.Context) *Client {
     creds := os.Getenv("FIREBASE_CREDENTIALS_FILE")
-    if creds == "" { creds = "secrets/firebase-adminsdk.json" }
-    opt := option.WithCredentialsFile(creds)
-    app, err := firebase.NewApp(ctx, nil, opt)
-    if err != nil { log.Fatalf("error initializing Firebase app: %v", err) }
-    c, err := app.Auth(ctx)
-    if err != nil { log.Fatalf("error getting Firebase Auth client: %v", err) }
-    return &Client{c}
+    var app *firebase.App
+    var err error
+    if creds != "" {
+        opt := option.WithCredentialsFile(creds)
+        app, err = firebase.NewApp(ctx, nil, opt)
+    } else {
+        // Fallback to ADC
+        app, err = firebase.NewApp(ctx, nil)
+    }
+    if err != nil {
+        log.Fatalf("error initializing Firebase app: %v\n", err)
+    }
+
+    authClient, err := app.Auth(ctx)
+    if err != nil {
+        log.Fatalf("error getting Firebase Auth client: %v\n", err)
+    }
+    return &Client{authClient}
 }
 
-// Middleware verifies the Firebase ID token from Authorization header.
+// Middleware verifies the Firebase ID token from the Authorization header.
 func (c *Client) Middleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         authHeader := r.Header.Get("Authorization")
@@ -43,7 +56,7 @@ func (c *Client) Middleware(next http.Handler) http.Handler {
         idToken := strings.TrimPrefix(authHeader, "Bearer ")
         token, err := c.VerifyIDToken(r.Context(), idToken)
         if err != nil {
-            log.Printf("error verifying ID token: %v", err)
+            log.Printf("Error verifying ID token: %v", err)
             http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
             return
         }
@@ -51,3 +64,4 @@ func (c *Client) Middleware(next http.Handler) http.Handler {
         next.ServeHTTP(w, r.WithContext(ctx))
     })
 }
+

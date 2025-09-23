@@ -4,45 +4,15 @@ info:
   version: 1.0.0
   description: Handles user authentication, registration, and profile management.
 paths:
-  /register:
+  /api/v1/identity/register:
     post:
-      summary: Register a new user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  format: email
-                password:
-                  type: string
-                  format: password
+      summary: Idempotent register current Firebase-authenticated user
+      security:
+        - bearerAuth: []
       responses:
-        '201':
-          description: User registered successfully
-  /login:
-    post:
-      summary: Log in a user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  format: email
-                password:
-                  type: string
-                  format: password
-      responses:
-        '200':
-          description: User logged in successfully
-  /me:
+        '202':
+          description: Registration accepted (or already exists)
+  /api/v1/identity/me:
     get:
       summary: Get current user profile
       security:
@@ -50,6 +20,12 @@ paths:
       responses:
         '200':
           description: User profile
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
 components:
   securitySchemes:
     bearerAuth:

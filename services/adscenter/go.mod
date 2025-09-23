@@ -1,1 +1,3 @@
-module github.com/xxrenzhe/autoads/services/adscenter\n\ngo 1.25.0
+module github.com/xxrenzhe/autoads/services/adscenter
+
+go 1.25.1

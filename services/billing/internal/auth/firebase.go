@@ -26,11 +26,15 @@ type Client struct {
 // NewClient initializes and returns a new Firebase Auth client.
 func NewClient(ctx context.Context) *Client {
     creds := os.Getenv("FIREBASE_CREDENTIALS_FILE")
-    if creds == "" {
-        creds = "secrets/firebase-adminsdk.json"
+    var app *firebase.App
+    var err error
+    if creds != "" {
+        opt := option.WithCredentialsFile(creds)
+        app, err = firebase.NewApp(ctx, nil, opt)
+    } else {
+        // Prefer ADC on Cloud Run
+        app, err = firebase.NewApp(ctx, nil)
     }
-    opt := option.WithCredentialsFile(creds)
-    app, err := firebase.NewApp(ctx, nil, opt)
     if err != nil {
         log.Fatalf("error initializing Firebase app: %v\n", err)
     }
