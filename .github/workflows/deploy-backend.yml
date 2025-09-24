@@ -115,7 +115,7 @@ jobs:
             --project "${PROJECT_ID}" \
             --tag "${IMAGE}:${PRIMARY_TAG}" \
             --async \
-            --format='value(name)' 2>/dev/null || true)
+            --format='value(name)' || true)
           BUILD_ID="${BUILD_NAME##*/}"
           if [[ -z "$BUILD_ID" ]]; then
             echo "ERROR: Failed to parse Cloud Build ID from submit output" >&2
