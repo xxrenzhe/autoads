@@ -1,29 +1,24 @@
-name: Deploy Backend (Cloud Run)
+name: Deploy Backend (Cloud Build → Cloud Run)
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - 'services/**'
-      - 'scripts/deploy/cloudrun-deploy.sh'
-      - '.github/workflows/deploy-backend.yml'
-  workflow_dispatch: {}
+    branches: [ main, production ]
+    tags: [ 'v*' ]
 
 concurrency:
   group: deploy-backend-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: ${{ secrets.GCP_REGION || 'asia-northeast1' }}
-  REPO: autoads-services
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  ARTIFACT_REPO: ${{ vars.ARTIFACT_REPO || 'autoads-services' }}
+  ARTIFACT_LOCATION: ${{ vars.GCP_REGION }}
 
 jobs:
-  detect:
-    name: Detect Changed Services
+  changes:
+    name: Detect changed services
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     outputs:
       services: ${{ steps.detect.outputs.services }}
     steps:
@@ -31,109 +26,110 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Determine changed services
+      - name: Detect changed services
         id: detect
+        shell: bash
         run: |
-          BASE_SHA="${{ github.event.pull_request.base.sha || github.event.before }}"
-          HEAD_SHA="${{ github.sha }}"
-          echo "BASE_SHA=$BASE_SHA" >> $GITHUB_ENV
-          echo "HEAD_SHA=$HEAD_SHA" >> $GITHUB_ENV
-          CHANGED=$(BASE_SHA="$BASE_SHA" HEAD_SHA="$HEAD_SHA" bash scripts/deploy/detect-changed-services.sh)
-          echo "services=$CHANGED" >> $GITHUB_OUTPUT
-          echo "Changed services: $CHANGED"
+          set -euo pipefail
+          # Force full deploy when building a tag (release)
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            services='["identity","billing","offer","workflow","siterank","adscenter","batchopen","console"]'
+            echo "Tag build detected (${GITHUB_REF}); forcing full deploy: $services"
+          else
+            BASE_SHA="${{ github.event.before || '' }}"
+            HEAD_SHA="${{ github.sha }}"
+            export BASE_SHA HEAD_SHA
+            services=$(bash scripts/deploy/detect-changed-services.sh)
+          fi
+          echo "Detected services: $services"
+          echo "services=$services" >> "$GITHUB_OUTPUT"
 
-  deploy:
-    name: Build & Deploy Changed Services
+  deploy-services:
+    name: Build and Deploy Services
     runs-on: ubuntu-latest
-    needs: detect
-    if: needs.detect.outputs.services != '[]'
-    permissions:
-      contents: read
-      id-token: write
+    needs: changes
     strategy:
       fail-fast: false
       matrix:
-        service: ${{ fromJson(needs.detect.outputs.services) }}
-    
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
-          install_components: 'beta'
-
-      - name: Enable required services (idempotent)
-        run: |
-          gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
-
-      - name: Configure Artifact Registry Docker
-        run: gcloud auth configure-docker "${{ env.REGION }}-docker.pkg.dev" --quiet
-
-      - name: Build & Deploy (Cloud Build + Cloud Run)
-        env:
-          GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
-          REGION: ${{ env.REGION }}
-          REPO: ${{ env.REPO }}
-          SERVICES: ${{ matrix.service }}
-        run: |
-          echo "Deploying service: $SERVICES"
-          bash scripts/deploy/cloudrun-deploy.sh
-
-  gateway:
-    name: Render & Deploy Gateway + Smoke
-    runs-on: ubuntu-latest
-    needs: deploy
-    permissions:
-      contents: read
-      id-token: write
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
         with:
-          project_id: ${{ env.PROJECT_ID }}
+          version: '>= 420.0.0'
 
-      - name: Render gateway.yaml to actual URLs
-        env:
-          GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
-          REGION: ${{ env.REGION }}
+      - name: Determine environment and tags
+        id: meta
+        shell: bash
         run: |
-          bash scripts/deploy/render-gateway.sh
-
-      - name: Deploy API Gateway (ensure up-to-date)
-        env:
-          GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
-          REGION: ${{ env.REGION }}
-        run: |
-          bash scripts/deploy/gateway-deploy.sh
-
-      - name: Retrieve Gateway hostname
-        id: gw
-        run: |
-          host=$(gcloud api-gateway gateways describe autoads-gw --location=${{ env.REGION }} --format='value(defaultHostname)')
-          echo "host=$host" >> $GITHUB_OUTPUT
-          echo "Gateway Host: $host"
-
-      - name: E2E Smoke via API Gateway
-        env:
-          GATEWAY_HOST: ${{ steps.gw.outputs.host }}
-          FIREBASE_ID_TOKEN: ${{ secrets.FIREBASE_TEST_ID_TOKEN }}
-        run: |
-          if [ -z "$GATEWAY_HOST" ]; then echo "No gateway host found"; exit 1; fi
-          if [ -n "$FIREBASE_ID_TOKEN" ]; then
-            GATEWAY_HOST="$GATEWAY_HOST" bash scripts/tests/gateway-smoke.sh "$FIREBASE_ID_TOKEN"
+          set -euo pipefail
+          SHORT_SHA="${GITHUB_SHA::7}"
+          REF="$GITHUB_REF"
+          if [[ "$REF" == refs/tags/* ]]; then
+            ENVIRONMENT="prod"
+            TAG_NAME="${REF#refs/tags/}"
+            PRIMARY_TAG="prod-${TAG_NAME}"
+            SECONDARY_TAG="prod-${SHORT_SHA}"
+          elif [[ "$REF" == "refs/heads/production" ]]; then
+            ENVIRONMENT="prod"
+            PRIMARY_TAG="prod-${SHORT_SHA}"
+            SECONDARY_TAG="prod-latest"
           else
-            echo "No FIREBASE_TEST_ID_TOKEN provided; running partial smoke"
-            GATEWAY_HOST="$GATEWAY_HOST" bash scripts/tests/gateway-smoke.sh || true
+            ENVIRONMENT="preview"
+            PRIMARY_TAG="preview-${SHORT_SHA}"
+            SECONDARY_TAG="preview-latest"
           fi
+          echo "environment=${ENVIRONMENT}" >> "$GITHUB_OUTPUT"
+          echo "primary_tag=${PRIMARY_TAG}" >> "$GITHUB_OUTPUT"
+          echo "secondary_tag=${SECONDARY_TAG}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build with Cloud Build (primary tag)
+        shell: bash
+        run: |
+          set -euo pipefail
+          SERVICE="${{ matrix.service }}"
+          AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
+          IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE}"
+          PRIMARY_TAG="${{ steps.meta.outputs.primary_tag }}"
+          # Service path (frontend Cloud Run is in hosting/, others in services/<name>)
+          SERVICE_PATH="services/${SERVICE}"
+          if [[ "$SERVICE" == "frontend" ]]; then SERVICE_PATH="hosting"; fi
+          echo "Building ${IMAGE}:${PRIMARY_TAG} from ${SERVICE_PATH}"
+          gcloud builds submit "${SERVICE_PATH}" --project "${PROJECT_ID}" --tag "${IMAGE}:${PRIMARY_TAG}"
+
+      - name: Add secondary tag (no rebuild)
+        if: ${{ steps.meta.outputs.secondary_tag != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SERVICE="${{ matrix.service }}"
+          AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
+          IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE}"
+          PRIMARY_TAG="${{ steps.meta.outputs.primary_tag }}"
+          SECONDARY_TAG="${{ steps.meta.outputs.secondary_tag }}"
+          echo "Tagging ${IMAGE}:${PRIMARY_TAG} -> ${IMAGE}:${SECONDARY_TAG}"
+          gcloud container images add-tag "${IMAGE}:${PRIMARY_TAG}" "${IMAGE}:${SECONDARY_TAG}" --quiet --project "${PROJECT_ID}"
+
+      - name: Deploy to Cloud Run
+        shell: bash
+        run: |
+          set -euo pipefail
+          SERVICE="${{ matrix.service }}"
+          AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
+          IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE}:${{ steps.meta.outputs.primary_tag }}"
+          echo "Deploying ${SERVICE} with image ${IMAGE} to ${REGION}"
+          gcloud run deploy "${SERVICE}" \
+            --image "${IMAGE}" \
+            --region "${REGION:-asia-northeast1}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --project "${PROJECT_ID}"

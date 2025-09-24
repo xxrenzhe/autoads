@@ -23,7 +23,17 @@
 - Secret Manager：存在 DATABASE_URL、GOOGLE_ADS_*、NEXTAUTH_SECRET、INTERNAL_JWT_SECRET、SIMILARWEB_API_KEY 等键（仅校验名称）
 - Cloud Run：adscenter/identity/offer/siterank/workflow/billing/batchopen/console 服务均可见，均在 asia-northeast1
 - API Gateway：autoads-gw（ACTIVE），/api/health=200，受保护路由 /api/v1/offers=401
+- 新增：/api/health（透传 adscenter /health）、/api/health/console（透传 console /health）
 - 服务健康（直连 best-effort）：adscenter/siterank/batchopen /health=200；其他服务 /health 返回 404（路由未定义或是 /healthz）
+
+### 本地环境准备（执行 MustKnowV2）
+- 已激活服务账号并设置项目：`codex-dev@gen-lang-client-0944935873.iam.gserviceaccount.com` / `gen-lang-client-0944935873`
+- 已列出 Secret Manager 键名（未输出值），确认存在数据库与 Google Ads 相关密钥
+- 已生成 `.env.local`（不含敏感值展示）：
+  - `GOOGLE_APPLICATION_CREDENTIALS=./secrets/gcp_codex_dev.json`
+  - `CLOUDSQL_CONNECTION_NAME=gen-lang-client-0944935873:asia-northeast1:autoads`
+  - `DATABASE_URL` 取自 Secret Manager，并将主机改写为 `cloudsql-proxy:5432` 以便本地容器经代理私网访问
+- 已构建后端镜像：`autoads-identity:dev`（本地构建通过）
 
 ## 调整（代码就绪，待部署）
 - 统一健康检查路由：为 identity/offer/workflow/billing 新增 `/health`（保留 `/healthz` 兼容），便于 API Gateway/监控统一探测。
@@ -34,6 +44,47 @@
 - 冒烟结果：
   - Gateway `/api/health`=200，受保护路由 `/api/v1/offers`=401（未携带 JWT）
   - 直连 `/health` 均返回 200：identity/offer/workflow/billing/adscenter/siterank/batchopen
+
+## 前端改造（已完成）
+- 统一 API 入口：Next 重写 `/api/:path* → /api/go/:path*`，同源 BFF 反代至 Google Cloud API Gateway；保留 `/api/auth/*` 给 NextAuth
+- 去 Prisma：apps/frontend 不再安装/打包 `@prisma/client`、`prisma`；`@auth/prisma-adapter` 永久指向本地桩；NextAuth 无 DB 时使用 JWT 会话
+- SSR 函数瘦身：在服务器端对 `google-ads-api`、`googleapis`、`puppeteer`、`exceljs`、`swagger-ui-react` 强制 alias 到本地桩，避免重依赖进入函数包
+- 页面示范：`/user/center` 已改为 BFF 聚合端点（或并行多端点组装），构建通过（Next 15）
+
+## 近期增量（2025-09-24）
+- Secret Manager（adscenter 注入）
+  - ADS_OAUTH_REDIRECT_URLS（多行 4 个回调域名；服务按 Host 精确匹配）
+  - OAUTH_STATE_SECRET（state 的 HMAC-SHA256 秘钥）
+  - REFRESH_TOKEN_ENC_KEY_B64（base64 的 32B AES-GCM 密钥，用于加密用户 refresh token）
+- adscenter（OAuth + 用户 refresh token + MCC 绑定 + 预检）
+  - 新增 OAuth 端点：GET `/api/v1/adscenter/oauth/url`、GET `/api/v1/adscenter/oauth/callback`
+  - 用户 refresh token 加密入库（写入时加密；读取时支持新旧双密钥解密回退）
+  - 账号列表：GET `/api/v1/adscenter/accounts`（基于用户 refresh token 调用 listAccessibleCustomers）
+  - 统一 MCC 管理：
+    - POST `/api/v1/adscenter/mcc/link` 发送邀请（`ADS_MCC_ENABLE_LIVE=true` 时真实调用，否则 stub）
+    - GET  `/api/v1/adscenter/mcc/status` 查询状态
+    - POST `/api/v1/adscenter/mcc/unlink` 解绑（已实现调度，慎用）
+  - Pre-flight 强制用户级 refresh token（缺失直接 400，不做平台级降级）；结构化诊断已增强
+- 数据库/配置统一
+  - 所有服务生产统一使用 `DATABASE_URL_SECRET_NAME`（Cloud Run `services update --update-env-vars` 已完成）
+  - adscenter 增加最小迁移执行容错（无迁移目录时跳过）
+- 迁移工具（一次性将明文 refresh token 重写为密文）
+  - 位置：`services/adscenter/cmd/migrate-refresh-tokens`
+  - 使用：
+    - `export DATABASE_URL=$(gcloud secrets versions access latest --secret=DATABASE_URL)`
+    - `export REFRESH_TOKEN_ENC_KEY_B64=<base64(32B)>`
+    - `go run ./services/adscenter/cmd/migrate-refresh-tokens -dry-run=false`
+
+## Hosting 与发布（最新）
+- 多站点：
+  - 预发：`autoads-preview`（默认 URL: https://autoads-preview.web.app）
+  - 生产：`autoads-prod`（默认 URL: https://autoads-prod.web.app）
+- WebFrameworks：两个站点的 SSR 函数区域固定 `asia-northeast1`
+- 预发防收录：middleware 对 `urlchecker.dev` 域返回 `X‑Robots‑Tag: noindex, nofollow`
+- 自定义域（需在控制台绑定）：
+  - 预发 → https://www.urlchecker.dev 绑定到 `autoads-preview`
+  - 生产 → https://www.autoads.dev 绑定到 `autoads-prod`
+- 构建稳定性：对 sharp 相关依赖增加 overrides，规避 Cloud Build 安装期版本不一致；建议设置 Artifact Registry 清理策略：`firebase functions:artifacts:setpolicy`
 
 ## 服务与接口（上线/对齐）
 - Adscenter（上线）：/api/v1/adscenter/accounts|preflight|bulk-actions；URL：https://adscenter-yt54xvsg5q-an.a.run.app
@@ -52,11 +103,15 @@
 - 网关脚本：scripts/gateway/render-gateway-config.sh 扩展为支持多服务占位符（identity/billing/offer/siterank/batchopen/adscenter/workflow/console）
 
 ## 进行中
-- 前端（Firebase Hosting）
-  - Hosting 配置与 GitHub Actions 已就绪（.github/workflows/deploy-frontend.yml，FIREBASE_SERVICE_ACCOUNT）
-  - 方案一：Hosting → Cloud Run frontend（重写），Cloud Run 前端镜像构建中；修复 Next API 路由编译问题后切换
-  - 方案二：Hosting frameworks（SSR）直接部署，受限于本地 npm 工具链问题，建议走 Actions 执行
-- API Gateway 冒烟与前端联调（授权路由需提供 Firebase ID Token 验证 200/202）
+- 前端（替换与清理）
+  - 批量替换剩余 prisma 使用点为 BFF 调用（订阅/令牌 → AdsCenter/BatchOpen/SiteRank → 统计/管理）
+  - 删除 `apps/frontend/src/lib/prisma.ts`、`apps/frontend/src/lib/types/prisma-types.ts`、`apps/frontend/prisma/`（已完成）
+  - 对客户端特性的大型包使用 `next/dynamic({ ssr:false })`，持续瘦身 SSR 函数
+- 自定义域绑定与发布
+  - 控制台绑定 `www.urlchecker.dev` 与 `www.autoads.dev` 各自站点，生效后执行：
+    - 预发：`firebase deploy --only hosting:autoads-preview --project gen-lang-client-0944935873`
+    - 生产：`firebase deploy --only hosting:autoads-prod --project gen-lang-client-0944935873`
+- API Gateway 冒烟与前端联调（BFF 注入内部 JWT；网关验证 JWT/Firebase ID Token 均可）
 
 ## 下一步（MVP 路线）
 - 网关冒烟验证与统一入口发布：autoads-gw-885pd7lz.an.gateway.dev（受保护路由 JWT 校验）
@@ -66,5 +121,15 @@
 ## 校验脚本（只读）
 - 基础设施校验：`scripts/ops/verify-infra.sh`（列出 Secret/Cloud Run/API Gateway/PubSub；使用 `secrets/gcp_codex_dev.json` 激活 SA）
 - 网关与服务冒烟：`scripts/ops/smoke-gateway.sh`（检查 `/api/health`=200、受保护路由=401 及服务 `/health(z)`）
+ - 前端直连冒烟（Cloud Run）：
+   - `curl -i https://frontend-644672509127.asia-northeast1.run.app/api/health` （expect 200）
+   - `curl -i https://frontend-644672509127.asia-northeast1.run.app/api/go/api/health` （expect 200）
 
 说明：当前代理环境网络受限时，可在本地拉仓库执行上述脚本完成 MustKnowV2 的只读校验，不会读取或输出 Secret 值。
+- 前端（Cloud Run + Hosting 重写路径）
+  - 新建并发布 Cloud Run 服务：frontend（源：`hosting/` Next 最小应用，提供 `/api/health` 与 `/api/go/*` 反向代理）
+  - 环境：`NEXT_PUBLIC_DEPLOYMENT_ENV=production`、`NEXT_PUBLIC_FIREBASE_PROJECT_ID=gen-lang-client-0944935873`、`BACKEND_URL=https://autoads-gw-885pd7lz.an.gateway.dev`
+  - 访问：`https://frontend-644672509127.asia-northeast1.run.app`（/api/health=200，/api/go/api/health=200）
+  - Hosting：`firebase.json` 已配置将 `**` 重写到 Cloud Run `frontend`，待执行 `firebase deploy --only hosting` 生效（见“进行中”）
+
+预发部署触发校验：2025-09-24T14:06:42Z

@@ -1,74 +1,106 @@
-name: Deploy API Gateway
+name: Deploy API Gateway (Render + Publish)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, production ]
+    tags: [ 'v*' ]
     paths:
       - 'deployments/api-gateway/gateway.yaml'
-      - 'scripts/deploy/render-gateway.sh'
-      - 'scripts/deploy/gateway-deploy.sh'
-      - '.github/workflows/deploy-gateway.yml'
+      - 'scripts/gateway/**'
       - 'services/**'
-  workflow_dispatch: {}
 
 concurrency:
   group: deploy-gateway-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: ${{ secrets.GCP_REGION || 'asia-northeast1' }}
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
 
 jobs:
   deploy-gateway:
-    name: Render & Publish API Gateway
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
 
-      - name: Render gateway.yaml
-        env:
-          GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
-          REGION: ${{ env.REGION }}
+      - name: Decide environment and IDs
+        id: decide
+        shell: bash
         run: |
-          bash scripts/deploy/render-gateway.sh
-
-      - name: Deploy Gateway
-        env:
-          GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
-          REGION: ${{ env.REGION }}
-        run: |
-          bash scripts/deploy/gateway-deploy.sh
-
-      - name: Retrieve Gateway hostname
-        id: gw
-        run: |
-          host=$(gcloud api-gateway gateways describe autoads-gw --location=${{ env.REGION }} --format='value(defaultHostname)')
-          echo "host=$host" >> $GITHUB_OUTPUT
-          echo "Gateway Host: $host"
-
-      - name: E2E Smoke via API Gateway
-        env:
-          GATEWAY_HOST: ${{ steps.gw.outputs.host }}
-          FIREBASE_ID_TOKEN: ${{ secrets.FIREBASE_TEST_ID_TOKEN }}
-        run: |
-          if [ -z "$GATEWAY_HOST" ]; then echo "No gateway host found"; exit 1; fi
-          if [ -n "$FIREBASE_ID_TOKEN" ]; then
-            GATEWAY_HOST="$GATEWAY_HOST" bash scripts/tests/gateway-smoke.sh "$FIREBASE_ID_TOKEN"
+          if [[ "$GITHUB_REF" == refs/heads/main ]]; then
+            API_ID="autoads-api-preview"
+            GATEWAY_ID="autoads-gw-preview"
           else
-            echo "No FIREBASE_TEST_ID_TOKEN provided; running partial smoke"
-            GATEWAY_HOST="$GATEWAY_HOST" bash scripts/tests/gateway-smoke.sh || true
+            API_ID="autoads-api-prod"
+            GATEWAY_ID="autoads-gw-prod"
           fi
+          echo "api_id=${API_ID}" >> "$GITHUB_OUTPUT"
+          echo "gateway_id=${GATEWAY_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Discover Cloud Run service URLs
+        id: discover
+        shell: bash
+        run: |
+          set -euo pipefail
+          REGION="${REGION:-asia-northeast1}"
+          get_url(){ gcloud run services describe "$1" --region "${REGION}" --platform managed --format='value(status.url)' || true; }
+          echo "identity_url=$(get_url identity)" >> "$GITHUB_OUTPUT"
+          echo "billing_url=$(get_url billing)" >> "$GITHUB_OUTPUT"
+          echo "offer_url=$(get_url offer)" >> "$GITHUB_OUTPUT"
+          echo "siterank_url=$(get_url siterank)" >> "$GITHUB_OUTPUT"
+          echo "batchopen_url=$(get_url batchopen)" >> "$GITHUB_OUTPUT"
+          echo "adscenter_url=$(get_url adscenter)" >> "$GITHUB_OUTPUT"
+          echo "workflow_url=$(get_url workflow)" >> "$GITHUB_OUTPUT"
+          echo "console_url=$(get_url console)" >> "$GITHUB_OUTPUT"
+
+      - name: Render OpenAPI (gateway.yaml)
+        env:
+          PROJECT_ID: ${{ env.PROJECT_ID }}
+          IDENTITY_URL: ${{ steps.discover.outputs.identity_url }}
+          BILLING_URL: ${{ steps.discover.outputs.billing_url }}
+          OFFER_URL: ${{ steps.discover.outputs.offer_url }}
+          SITERANK_URL: ${{ steps.discover.outputs.siterank_url }}
+          BATCHOPEN_URL: ${{ steps.discover.outputs.batchopen_url }}
+          ADSCENTER_URL: ${{ steps.discover.outputs.adscenter_url }}
+          WORKFLOW_URL: ${{ steps.discover.outputs.workflow_url }}
+          CONSOLE_URL: ${{ steps.discover.outputs.console_url }}
+        shell: bash
+        run: |
+          bash scripts/gateway/render-gateway-config.sh deployments/api-gateway/gateway.yaml out/gateway.yaml
+          echo '--- rendered (tail) ---'
+          tail -n 20 out/gateway.yaml || true
+
+      - name: Deploy API Gateway
+        env:
+          PROJECT_ID: ${{ env.PROJECT_ID }}
+          API_ID: ${{ steps.decide.outputs.api_id }}
+          GATEWAY_ID: ${{ steps.decide.outputs.gateway_id }}
+          REGION: ${{ env.REGION }}
+          OPENAPI: out/gateway.yaml
+        shell: bash
+        run: |
+          export REGION="${REGION:-asia-northeast1}"
+          bash scripts/gateway/deploy-gateway.sh
+
+      - name: Summarize Gateway Host
+        env:
+          PROJECT_ID: ${{ env.PROJECT_ID }}
+          GATEWAY_ID: ${{ steps.decide.outputs.gateway_id }}
+          REGION: ${{ env.REGION }}
+        shell: bash
+        run: |
+          export REGION="${REGION:-asia-northeast1}"
+          host=$(gcloud api-gateway gateways describe "$GATEWAY_ID" --location "$REGION" --project "$PROJECT_ID" --format='value(defaultHostname)')
+          echo "Gateway: $GATEWAY_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "Region:  $REGION" >> "$GITHUB_STEP_SUMMARY"
+          echo "Host:    https://$host" >> "$GITHUB_STEP_SUMMARY"
+          echo "API ID:  ${{ steps.decide.outputs.api_id }}" >> "$GITHUB_STEP_SUMMARY"

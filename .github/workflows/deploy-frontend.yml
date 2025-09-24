@@ -1,22 +1,62 @@
-name: Deploy Frontend to Firebase Hosting
+name: Deploy Frontend (Firebase Hosting)
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - 'firebase.json'
-      - '.firebaserc'
-      - 'apps/frontend/**'
+    branches: [ main, production ]
+    tags: [ 'v*' ]
+
+concurrency:
+  group: deploy-frontend-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  deploy-frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Deploy Hosting (rewrite to Cloud Run frontend)
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            apps/frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Decide Hosting target
+        id: decide
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/heads/main ]]; then
+            TARGET="autoads-preview"
+          else
+            TARGET="autoads-prod"
+          fi
+          echo "target=${TARGET}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-          projectId: 'gen-lang-client-0944935873'
-          channelId: 'live'
+          channelId: live
+          projectId: '${{ vars.GCP_PROJECT_ID }}'
+          target: '${{ steps.decide.outputs.target }}'
+      - name: Cache Turbo build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            apps/frontend/.next/cache
+          key: ${{ runner.os }}-turbo-${{ github.ref }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ github.ref }}-
+            ${{ runner.os }}-turbo-
