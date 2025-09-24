@@ -104,11 +104,14 @@ jobs:
           SERVICE_PATH="services/${SERVICE}"
           if [[ "$SERVICE" == "frontend" ]]; then SERVICE_PATH="hosting"; fi
           echo "Submitting Cloud Build for ${IMAGE}:${PRIMARY_TAG} from ${SERVICE_PATH}"
-          SUBMIT_OUTPUT=$(gcloud builds submit "${SERVICE_PATH}" \
+          # Request machine-readable output for build ID
+          BUILD_NAME=$(gcloud builds submit "${SERVICE_PATH}" \
             --project "${PROJECT_ID}" \
             --tag "${IMAGE}:${PRIMARY_TAG}" \
-            --async 2>&1 | tee /dev/stderr || true)
-          BUILD_ID=$(printf "%s" "$SUBMIT_OUTPUT" | grep -Eo 'builds/[a-f0-9-]+' | sed 's#builds/##' | tail -n1)
+            --async \
+            --format='value(name)' 2>/dev/null || true)
+          # BUILD_NAME may be projects/<proj>/builds/<id> or just <id>
+          BUILD_ID="${BUILD_NAME##*/}"
           if [[ -z "$BUILD_ID" ]]; then
             echo "ERROR: Failed to parse Cloud Build ID from submit output" >&2
             exit 1
