@@ -3,7 +3,7 @@ const nextConfig = {
   // 生产环境优化
   // 注意：为避免 Next.js 15 在构建阶段对 _document 进行不完整的文件跟踪，
   // 暂不启用 standalone 打包（Firebase Web Frameworks 部署不依赖 standalone）。
-  // output: 'standalone',
+  output: 'standalone',
   
   // 环境变量配置
   env: {
@@ -139,8 +139,8 @@ const nextConfig = {
       (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV || 'development').toLowerCase() !== 'production',
   },
 
-  // 服务器端外部模块
-  serverExternalPackages: ['playwright', 'playwright-core', '@google-cloud/pubsub'],
+  // 服务器端外部模块（仅保留必要外部包）
+  serverExternalPackages: ['@google-cloud/pubsub'],
 
   // 性能配置
   poweredByHeader: false,
