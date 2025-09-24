@@ -122,7 +122,10 @@ jobs:
         run: |
           export REGION="${REGION:-asia-northeast1}"
           host=$(gcloud api-gateway gateways describe "$GATEWAY_ID" --location "$REGION" --project "$PROJECT_ID" --format='value(defaultHostname)')
-          echo "Gateway: $GATEWAY_ID" >> "$GITHUB_STEP_SUMMARY"
-          echo "Region:  $REGION" >> "$GITHUB_STEP_SUMMARY"
-          echo "Host:    https://$host" >> "$GITHUB_STEP_SUMMARY"
-          echo "API ID:  ${{ needs.discover-render.outputs.api_id }}" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## API Gateway"
+            echo "- Gateway: ${GATEWAY_ID}"
+            echo "- Region:  ${REGION}"
+            echo "- Host:    https://${host}"
+            echo "- API ID:  ${{ needs.discover-render.outputs.api_id }}"
+          } >> "$GITHUB_STEP_SUMMARY"

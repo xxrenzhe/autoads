@@ -55,8 +55,24 @@ jobs:
           channelId: live
           projectId: '${{ vars.GCP_PROJECT_ID }}'
           target: '${{ steps.decide.outputs.target }}'
-        env:
-          FIREBASE_CLI_EXPERIMENTS: webframeworks
+        # No frameworks deploy; Hosting rewrites to Cloud Run service
+
+      - name: Summarize Hosting URL
+        shell: bash
+        run: |
+          TARGET='${{ steps.decide.outputs.target }}'
+          DEFAULT_URL="https://${TARGET}.web.app"
+          if [[ "$TARGET" == "autoads-preview" ]]; then
+            CUSTOM_URL="https://www.urlchecker.dev (if configured)"
+          else
+            CUSTOM_URL="https://www.autoads.dev (if configured)"
+          fi
+          {
+            echo "## Frontend Hosting"
+            echo "- Target:  ${TARGET}"
+            echo "- Default: ${DEFAULT_URL}"
+            echo "- Custom:  ${CUSTOM_URL}"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Cache Turbo build artifacts
         uses: actions/cache@v4
         with:

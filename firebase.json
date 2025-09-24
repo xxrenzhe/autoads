@@ -2,7 +2,7 @@
   "hosting": [
     {
       "site": "autoads-preview",
-      "source": "apps/frontend",
+      "public": "apps/frontend/public",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [
         { "source": "**", "run": { "serviceId": "frontend", "region": "asia-northeast1" } }
@@ -10,7 +10,7 @@
     },
     {
       "site": "autoads-prod",
-      "source": "apps/frontend",
+      "public": "apps/frontend/public",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [
         { "source": "**", "run": { "serviceId": "frontend", "region": "asia-northeast1" } }
