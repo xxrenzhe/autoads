@@ -57,6 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.detect.outputs.services }}
+      has_services: ${{ steps.detect.outputs.has_services }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -79,11 +80,18 @@ jobs:
           fi
           echo "Detected services: $services"
           echo "services=$services" >> "$GITHUB_OUTPUT"
+          # whether matrix has any items
+          if [[ -z "$services" || "$services" == "[]" ]]; then
+            echo "has_services=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_services=true" >> "$GITHUB_OUTPUT"
+          fi
 
   build-images:
     name: Build images (Cloud Build)
     runs-on: ubuntu-latest
     needs: [meta, changes]
+    if: ${{ needs.changes.outputs.has_services == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -146,7 +154,7 @@ jobs:
     name: Tag images (secondary)
     runs-on: ubuntu-latest
     needs: [meta, changes, build-images]
-    if: ${{ needs.meta.outputs.secondary_tag != '' }}
+    if: ${{ needs.changes.outputs.has_services == 'true' && needs.meta.outputs.secondary_tag != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -174,6 +182,7 @@ jobs:
     name: Deploy to Cloud Run
     runs-on: ubuntu-latest
     needs: [meta, changes, tag-images]
+    if: ${{ needs.changes.outputs.has_services == 'true' }}
     strategy:
       fail-fast: false
       matrix:

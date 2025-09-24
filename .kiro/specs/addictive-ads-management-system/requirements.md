@@ -256,16 +256,36 @@
 **用户故事：** 作为系统管理员，我希望有一个完善的后台管理系统，以便高效管理用户、套餐、风险策略等系统资源。
 
 **验收标准：**
-1. WHEN 管理员访问后台 THEN 系统 SHALL 显示仪表盘，包含用户统计、收入统计、系统状态等关键指标
-2. WHEN 管理员管理用户 THEN 系统 SHALL 支持查看用户列表、用户详情、套餐配置、账户状态管理
-3. WHEN 管理员管理套餐 THEN 系统 SHALL 支持创建、编辑、删除套餐，配置功能权限和价格
-4. WHEN 管理员管理Token THEN 系统 SHALL 支持查看Token消耗规则、用户Token余额、手动充值Token
-5. WHEN 管理员处理订阅 THEN 系统 SHALL 支持手动激活用户套餐和重置Token余额
-6. WHEN 管理员管理风险策略 THEN 系统 SHALL 支持创建、编辑、删除风险识别规则和处理策略
-7. WHEN 管理员配置风险规则 THEN 系统 SHALL 支持设置触发条件、预警级别、自动处理动作等参数
-8. WHEN 风险规则更新 THEN 系统 SHALL 立即生效并应用到所有相关的监控流程中
-9. WHEN 管理员配置系统参数 THEN 系统 SHALL 支持动态配置评估标准、AI提示词、套餐权限等所有业务规则
-10. WHEN 配置热更新 THEN 系统 SHALL 通过Firestore实现配置的实时推送和无缝更新
+
+#### 仪表盘功能
+1. WHEN 管理员访问后台仪表盘 THEN 系统 SHALL 显示实时统计数据：用户总数、活跃用户、收入统计、系统状态
+2. WHEN 显示收入统计 THEN 系统 SHALL 包含日/周/月收入趋势、套餐订阅分布、Token消耗统计
+3. WHEN 显示系统状态 THEN 系统 SHALL 包含服务健康状态、API调用统计、错误率监控、性能指标
+4. WHEN 显示用户活跃度 THEN 系统 SHALL 包含登录统计、功能使用热力图、用户留存率分析
+
+#### 用户管理功能
+5. WHEN 管理员管理用户 THEN 系统 SHALL 支持用户列表查看、搜索、筛选（按套餐、状态、注册时间）
+6. WHEN 查看用户详情 THEN 系统 SHALL 显示用户基本信息、套餐状态、Token余额、使用统计、操作历史
+7. WHEN 管理用户账户 THEN 系统 SHALL 支持账户状态管理（激活、暂停、封禁）、套餐变更、Token充值
+8. WHEN 处理用户问题 THEN 系统 SHALL 支持查看用户操作日志、错误记录、支持工单管理
+
+#### 套餐管理功能
+9. WHEN 管理员管理套餐 THEN 系统 SHALL 支持创建、编辑、删除套餐，配置功能权限列表
+10. WHEN 配置套餐权限 THEN 系统 SHALL 支持设置功能模块访问权限、API调用限制、资源配额
+11. WHEN 设置套餐价格 THEN 系统 SHALL 支持多币种定价、促销价格、试用期配置
+12. WHEN 套餐变更 THEN 系统 SHALL 支持套餐升级/降级规则、数据迁移策略、计费调整
+
+#### Token管理功能
+13. WHEN 管理员管理Token THEN 系统 SHALL 支持查看全局Token消耗统计、用户Token余额、消耗趋势
+14. WHEN 配置消耗规则 THEN 系统 SHALL 支持设置不同功能的Token消耗标准、批量操作计费规则
+15. WHEN 手动充值Token THEN 系统 SHALL 支持批量充值、充值记录、充值原因备注
+16. WHEN 监控Token使用 THEN 系统 SHALL 支持异常消耗预警、Token滥用检测、使用模式分析
+
+#### 动态配置功能
+17. WHEN 管理员配置系统参数 THEN 系统 SHALL 支持评估标准、AI提示词、风险规则、代理设置的可视化配置
+18. WHEN 配置AI参数 THEN 系统 SHALL 支持Firebase AI Logic提示词模板管理、模型参数调整
+19. WHEN 配置业务规则 THEN 系统 SHALL 支持自动状态转换规则、预警阈值、操作限制的动态设置
+20. WHEN 配置更新 THEN 系统 SHALL 通过Firestore实现配置的实时推送、版本管理、回滚功能
 
 ### 需求13：用户认证与访问控制
 
