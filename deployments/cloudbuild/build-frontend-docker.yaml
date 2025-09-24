@@ -1,0 +1,18 @@
+timeout: "3600s"
+options:
+  logging: CLOUD_LOGGING_ONLY
+substitutions:
+  _IMAGE: "asia-northeast1-docker.pkg.dev/PROJECT/REPO/frontend:dev"
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Build frontend
+    args:
+      - build
+      - '-f'
+      - 'apps/frontend/Dockerfile'
+      - '-t'
+      - '${_IMAGE}'
+      - '.'
+images:
+  - '${_IMAGE}'
+

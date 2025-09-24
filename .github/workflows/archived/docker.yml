@@ -1,0 +1,212 @@
+name: AutoAds Single CI (amd64)
+
+on:
+  push:
+    branches: [ main, production ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: xxrenzhe/autoads
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      db: ${{ steps.filter.outputs.db }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            db:
+              - 'apps/frontend/prisma/**'
+              - 'gofly_admin_v3/internal/init/**'
+              - 'gofly_admin_v3/cmd/migrate/**'
+              - 'docker-entrypoint.sh'
+              - '.github/workflows/docker.yml'
+  validate-ts:
+    name: Quick Validation - TS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Cache Prisma engines
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/prisma
+          key: ${{ runner.os }}-prisma-${{ hashFiles('apps/frontend/prisma/schema.prisma') }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-prisma-
+
+      - name: Install dependencies (root workspaces)
+        run: npm ci --workspaces --include-workspace-root --ignore-scripts
+
+      - name: Prisma format (non-blocking)
+        env:
+          DATABASE_URL: mysql://user:pass@127.0.0.1:3306/dummy
+        run: cd apps/frontend && npx prisma format --schema prisma/schema.prisma
+
+      - name: Generate Prisma Client
+        env:
+          DATABASE_URL: mysql://user:pass@127.0.0.1:3306/dummy
+        run: cd apps/frontend && npx prisma generate
+
+      - name: Prisma validate
+        env:
+          DATABASE_URL: mysql://user:pass@127.0.0.1:3306/dummy
+        run: cd apps/frontend && npx prisma validate
+
+      - name: TypeScript type check (frontend)
+        run: ./scripts/type-check-simple.sh
+
+  validate-db:
+    name: Quick Validation - DB
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    needs: [changes]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.db == 'true'
+    env:
+      GOPROXY: https://proxy.golang.org,direct
+      GOSUMDB: sum.golang.org
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: autoads_ci
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 3306:3306
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 6379:6379
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (for Prisma CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies (root workspaces)
+        run: npm ci --workspaces --include-workspace-root --ignore-scripts
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: true
+          cache-dependency-path: gofly_admin_v3/go.sum
+
+      - name: Generate Prisma Client (root)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+        run: npx prisma generate --schema apps/frontend/prisma/schema.prisma
+
+      - name: Build Go migrate binary (minimal)
+        run: |
+          cd gofly_admin_v3
+          go build -v -trimpath -buildvcs=false -ldflags "-s -w" -o migrate-ci ./cmd/migrate
+
+      - name: Run Go database migrations (CI via env URL)
+        env:
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/autoads_ci
+          REDIS_URL: redis://127.0.0.1:6379/0
+          DB_RECREATE: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Waiting for MySQL and Redis ..."
+          for i in {1..90}; do (echo > /dev/tcp/127.0.0.1/3306) >/dev/null 2>&1 && break; sleep 1; done
+          for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/6379) >/dev/null 2>&1 && break; sleep 1; done
+          cd gofly_admin_v3
+          SUCCESS_SENTINEL="数据库初始化完成"
+          set +e
+          ./migrate-ci > migrate.out 2>&1 & pid=$!
+          for i in {1..300}; do
+            if grep -q "$SUCCESS_SENTINEL" migrate.out; then
+              kill "$pid" >/dev/null 2>&1 || true
+              wait "$pid" >/dev/null 2>&1 || true
+              cat migrate.out
+              exit 0
+            fi
+            if ! kill -0 "$pid" >/dev/null 2>&1; then
+              cat migrate.out
+              wait "$pid"; exit $?
+            fi
+            sleep 1
+          done
+          kill "$pid" >/dev/null 2>&1 || true
+          sleep 2; kill -KILL "$pid" >/dev/null 2>&1 || true
+          tail -n 500 migrate.out || true
+          exit 1
+
+  build-and-push:
+    if: github.event_name != 'pull_request'
+    name: Build and Push (linux/amd64)
+    runs-on: ubuntu-latest
+    needs: [validate-db, validate-ts]
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=preview-latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,format=short,prefix=preview-sha-,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=prod-latest,enable=${{ github.ref == 'refs/heads/production' }}
+            type=sha,format=short,prefix=prod-sha-,enable=${{ github.ref == 'refs/heads/production' }}
+            type=match,pattern=v(.*),group=1,prefix=prod-,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+      - name: Build and push image (linux/amd64)
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.standalone
+          platforms: linux/amd64
+          push: true
+          no-cache: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
