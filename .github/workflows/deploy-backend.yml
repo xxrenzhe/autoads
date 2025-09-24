@@ -16,6 +16,41 @@ env:
   ARTIFACT_LOCATION: ${{ vars.GCP_REGION }}
 
 jobs:
+  meta:
+    name: Prepare metadata (env & tags)
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.determine.outputs.environment }}
+      primary_tag: ${{ steps.determine.outputs.primary_tag }}
+      secondary_tag: ${{ steps.determine.outputs.secondary_tag }}
+      short_sha: ${{ steps.determine.outputs.short_sha }}
+    steps:
+      - name: Determine environment and tags
+        id: determine
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHORT_SHA="${GITHUB_SHA::7}"
+          REF="$GITHUB_REF"
+          if [[ "$REF" == refs/tags/* ]]; then
+            ENVIRONMENT="prod"
+            TAG_NAME="${REF#refs/tags/}"
+            PRIMARY_TAG="prod-${TAG_NAME}"
+            SECONDARY_TAG="prod-${SHORT_SHA}"
+          elif [[ "$REF" == "refs/heads/production" ]]; then
+            ENVIRONMENT="prod"
+            PRIMARY_TAG="prod-${SHORT_SHA}"
+            SECONDARY_TAG="prod-latest"
+          else
+            ENVIRONMENT="preview"
+            PRIMARY_TAG="preview-${SHORT_SHA}"
+            SECONDARY_TAG="preview-latest"
+          fi
+          echo "environment=${ENVIRONMENT}" >> "$GITHUB_OUTPUT"
+          echo "primary_tag=${PRIMARY_TAG}" >> "$GITHUB_OUTPUT"
+          echo "secondary_tag=${SECONDARY_TAG}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
   changes:
     name: Detect changed services
     runs-on: ubuntu-latest
@@ -44,10 +79,10 @@ jobs:
           echo "Detected services: $services"
           echo "services=$services" >> "$GITHUB_OUTPUT"
 
-  deploy-services:
-    name: Build and Deploy Services
+  build-images:
+    name: Build images (Cloud Build)
     runs-on: ubuntu-latest
-    needs: changes
+    needs: [meta, changes]
     strategy:
       fail-fast: false
       matrix:
@@ -55,82 +90,48 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Auth to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-
       - name: Setup gcloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
           version: '>= 420.0.0'
-
-      - name: Determine environment and tags
-        id: meta
-        shell: bash
-        run: |
-          set -euo pipefail
-          SHORT_SHA="${GITHUB_SHA::7}"
-          REF="$GITHUB_REF"
-          if [[ "$REF" == refs/tags/* ]]; then
-            ENVIRONMENT="prod"
-            TAG_NAME="${REF#refs/tags/}"
-            PRIMARY_TAG="prod-${TAG_NAME}"
-            SECONDARY_TAG="prod-${SHORT_SHA}"
-          elif [[ "$REF" == "refs/heads/production" ]]; then
-            ENVIRONMENT="prod"
-            PRIMARY_TAG="prod-${SHORT_SHA}"
-            SECONDARY_TAG="prod-latest"
-          else
-            ENVIRONMENT="preview"
-            PRIMARY_TAG="preview-${SHORT_SHA}"
-            SECONDARY_TAG="preview-latest"
-          fi
-          echo "environment=${ENVIRONMENT}" >> "$GITHUB_OUTPUT"
-          echo "primary_tag=${PRIMARY_TAG}" >> "$GITHUB_OUTPUT"
-          echo "secondary_tag=${SECONDARY_TAG}" >> "$GITHUB_OUTPUT"
-          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
-
-      - name: Build with Cloud Build (primary tag)
+      - name: Cloud Build submit (primary tag)
         shell: bash
         run: |
           set -euo pipefail
           SERVICE="${{ matrix.service }}"
           AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
           IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE}"
-          PRIMARY_TAG="${{ steps.meta.outputs.primary_tag }}"
+          PRIMARY_TAG="${{ needs.meta.outputs.primary_tag }}"
           # Service path (frontend Cloud Run is in hosting/, others in services/<name>)
           SERVICE_PATH="services/${SERVICE}"
           if [[ "$SERVICE" == "frontend" ]]; then SERVICE_PATH="hosting"; fi
           echo "Submitting Cloud Build for ${IMAGE}:${PRIMARY_TAG} from ${SERVICE_PATH}"
-          # Request machine-readable output for build ID
           BUILD_NAME=$(gcloud builds submit "${SERVICE_PATH}" \
             --project "${PROJECT_ID}" \
             --tag "${IMAGE}:${PRIMARY_TAG}" \
             --async \
             --format='value(name)' 2>/dev/null || true)
-          # BUILD_NAME may be projects/<proj>/builds/<id> or just <id>
           BUILD_ID="${BUILD_NAME##*/}"
           if [[ -z "$BUILD_ID" ]]; then
             echo "ERROR: Failed to parse Cloud Build ID from submit output" >&2
             exit 1
           fi
           echo "Cloud Build ID: $BUILD_ID"
-          # Poll for completion without streaming logs (avoids VPC-SC restrictions)
           ATTEMPTS=0
           while :; do
             STATUS=$(gcloud builds describe "$BUILD_ID" --project "$PROJECT_ID" --format='value(status)' || true)
             echo "Build $BUILD_ID status: $STATUS"
             case "$STATUS" in
-              SUCCESS)
-                break;;
+              SUCCESS) break;;
               FAILURE|CANCELLED|TIMEOUT|EXPIRED)
                 echo "Cloud Build failed with status: $STATUS (ID: $BUILD_ID)" >&2
                 echo "View logs: https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=$(gcloud config get-value core/project)" >&2
                 exit 1;;
-              *)
-                :;;
+              *) :;;
             esac
             ATTEMPTS=$((ATTEMPTS+1))
             if [[ $ATTEMPTS -gt 180 ]]; then
@@ -140,26 +141,56 @@ jobs:
             sleep 10
           done
 
-      - name: Add secondary tag (no rebuild)
-        if: ${{ steps.meta.outputs.secondary_tag != '' }}
+  tag-images:
+    name: Tag images (secondary)
+    runs-on: ubuntu-latest
+    needs: [meta, changes, build-images]
+    if: ${{ needs.meta.outputs.secondary_tag != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
+    steps:
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      - name: Add secondary tag
         shell: bash
         run: |
           set -euo pipefail
           SERVICE="${{ matrix.service }}"
           AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
           IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE}"
-          PRIMARY_TAG="${{ steps.meta.outputs.primary_tag }}"
-          SECONDARY_TAG="${{ steps.meta.outputs.secondary_tag }}"
+          PRIMARY_TAG="${{ needs.meta.outputs.primary_tag }}"
+          SECONDARY_TAG="${{ needs.meta.outputs.secondary_tag }}"
           echo "Tagging ${IMAGE}:${PRIMARY_TAG} -> ${IMAGE}:${SECONDARY_TAG}"
           gcloud container images add-tag "${IMAGE}:${PRIMARY_TAG}" "${IMAGE}:${SECONDARY_TAG}" --quiet --project "${PROJECT_ID}"
 
-      - name: Deploy to Cloud Run
+  deploy-services:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    needs: [meta, changes, tag-images]
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
+    steps:
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      - name: Deploy service
         shell: bash
         run: |
           set -euo pipefail
           SERVICE="${{ matrix.service }}"
           AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
-          IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE}:${{ steps.meta.outputs.primary_tag }}"
+          IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE}:${{ needs.meta.outputs.primary_tag }}"
           echo "Deploying ${SERVICE} with image ${IMAGE} to ${REGION}"
           gcloud run deploy "${SERVICE}" \
             --image "${IMAGE}" \
