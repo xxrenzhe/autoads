@@ -17,75 +17,62 @@ env:
   ARTIFACT_LOCATION: ${{ vars.GCP_REGION }}
 
 jobs:
-  deploy-frontend:
+  meta:
+    name: Prepare metadata
     runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.determine.outputs.environment }}
+      primary_tag: ${{ steps.determine.outputs.primary_tag }}
+      secondary_tag: ${{ steps.determine.outputs.secondary_tag }}
+      short_sha: ${{ steps.determine.outputs.short_sha }}
+      target: ${{ steps.determine.outputs.target }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: |
-            package-lock.json
-            apps/frontend/package-lock.json
-
-      - name: Install Dependencies (frontend only)
-        run: |
-          cd apps/frontend
-          npm ci
-
-      - name: Build (frontend only)
-        run: |
-          cd apps/frontend
-          npm run build
-
-      - name: Auth to Google Cloud
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Setup gcloud SDK
-        uses: google-github-actions/setup-gcloud@v1
-
-      - name: Determine environment and tags
-        id: meta
+      - name: Determine environment, tags, hosting target
+        id: determine
         shell: bash
         run: |
           set -euo pipefail
           SHORT_SHA="${GITHUB_SHA::7}"
           REF="$GITHUB_REF"
           if [[ "$REF" == refs/tags/* ]]; then
-            ENVIRONMENT="prod"
-            TAG_NAME="${REF#refs/tags/}"
-            PRIMARY_TAG="prod-${TAG_NAME}"
-            SECONDARY_TAG="prod-${SHORT_SHA}"
+            ENVIRONMENT="prod"; TAG_NAME="${REF#refs/tags/}";
+            PRIMARY_TAG="prod-${TAG_NAME}"; SECONDARY_TAG="prod-${SHORT_SHA}"; TARGET="autoads-prod"
           elif [[ "$REF" == "refs/heads/production" ]]; then
-            ENVIRONMENT="prod"
-            PRIMARY_TAG="prod-${SHORT_SHA}"
-            SECONDARY_TAG="prod-latest"
+            ENVIRONMENT="prod"; PRIMARY_TAG="prod-${SHORT_SHA}"; SECONDARY_TAG="prod-latest"; TARGET="autoads-prod"
           else
-            ENVIRONMENT="preview"
-            PRIMARY_TAG="preview-${SHORT_SHA}"
-            SECONDARY_TAG="preview-latest"
+            ENVIRONMENT="preview"; PRIMARY_TAG="preview-${SHORT_SHA}"; SECONDARY_TAG="preview-latest"; TARGET="autoads-preview"
           fi
           echo "environment=${ENVIRONMENT}" >> "$GITHUB_OUTPUT"
           echo "primary_tag=${PRIMARY_TAG}" >> "$GITHUB_OUTPUT"
           echo "secondary_tag=${SECONDARY_TAG}" >> "$GITHUB_OUTPUT"
           echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "target=${TARGET}" >> "$GITHUB_OUTPUT"
 
-      - name: Build frontend image (Cloud Build)
+  build-image:
+    name: Build frontend image (Cloud Build)
+    runs-on: ubuntu-latest
+    needs: meta
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      - name: Cloud Build submit
         shell: bash
         run: |
           set -euo pipefail
           AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
-          IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/frontend:${{ steps.meta.outputs.primary_tag }}"
-          echo "Submitting Cloud Build for ${IMAGE} via build-frontend-docker.yaml"
+          IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/frontend:${{ needs.meta.outputs.primary_tag }}"
+          echo "Submitting Cloud Build for ${IMAGE}"
+          CONFIG_PATH="$GITHUB_WORKSPACE/deployments/cloudbuild/build-frontend-docker.yaml"
+          ls -l "$CONFIG_PATH" || { echo "Config not found at $CONFIG_PATH" >&2; exit 1; }
           BUILD_NAME=$(gcloud builds submit . \
             --project "${PROJECT_ID}" \
-            --config ./deployments/cloudbuild/build-frontend-docker.yaml \
+            --config "$CONFIG_PATH" \
             --substitutions _IMAGE="${IMAGE}" \
             --async --format='value(name)')
           BUILD_ID="${BUILD_NAME##*/}"
@@ -96,24 +83,46 @@ jobs:
             case "$STATUS" in SUCCESS) break;; FAILURE|CANCELLED|TIMEOUT|EXPIRED) exit 1;; esac
             sleep 10; done
 
-      - name: Add secondary tag (no rebuild)
-        if: ${{ steps.meta.outputs.secondary_tag != '' }}
+  tag-image:
+    name: Tag image (secondary)
+    runs-on: ubuntu-latest
+    needs: [meta, build-image]
+    if: ${{ needs.meta.outputs.secondary_tag != '' }}
+    steps:
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      - name: Add secondary tag
         shell: bash
         run: |
           set -euo pipefail
           AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
           IMAGE_BASE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/frontend"
           gcloud container images add-tag \
-            "${IMAGE_BASE}:${{ steps.meta.outputs.primary_tag }}" \
-            "${IMAGE_BASE}:${{ steps.meta.outputs.secondary_tag }}" \
+            "${IMAGE_BASE}:${{ needs.meta.outputs.primary_tag }}" \
+            "${IMAGE_BASE}:${{ needs.meta.outputs.secondary_tag }}" \
             --quiet --project "${PROJECT_ID}"
 
-      - name: Deploy Cloud Run (frontend)
+  deploy-cloudrun:
+    name: Deploy Cloud Run frontend
+    runs-on: ubuntu-latest
+    needs: [meta, build-image]
+    steps:
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      - name: Deploy service
         shell: bash
         run: |
           set -euo pipefail
           AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
-          IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/frontend:${{ steps.meta.outputs.primary_tag }}"
+          IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/frontend:${{ needs.meta.outputs.primary_tag }}"
           gcloud run deploy frontend \
             --image "$IMAGE" \
             --region "${REGION:-asia-northeast1}" \
@@ -121,17 +130,13 @@ jobs:
             --allow-unauthenticated \
             --project "${PROJECT_ID}"
 
-      - name: Decide Hosting target
-        id: decide
-        shell: bash
-        run: |
-          if [[ "$GITHUB_REF" == refs/heads/main ]]; then
-            TARGET="autoads-preview"
-          else
-            TARGET="autoads-prod"
-          fi
-          echo "target=${TARGET}" >> "$GITHUB_OUTPUT"
-
+  deploy-hosting:
+    name: Deploy Firebase Hosting
+    runs-on: ubuntu-latest
+    needs: [meta, deploy-cloudrun]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -139,13 +144,25 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
           channelId: live
           projectId: '${{ vars.GCP_PROJECT_ID }}'
-          target: '${{ steps.decide.outputs.target }}'
-        # No frameworks deploy; Hosting rewrites to Cloud Run service
+          target: '${{ needs.meta.outputs.target }}'
 
-      - name: Summarize Hosting URL
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs: [meta, deploy-cloudrun, deploy-hosting]
+    steps:
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      - name: Summarize endpoints
         shell: bash
         run: |
-          TARGET='${{ steps.decide.outputs.target }}'
+          export REGION="${{ env.REGION || 'asia-northeast1' }}"
+          run_url=$(gcloud run services describe frontend --region "$REGION" --format='value(status.url)' || true)
+          TARGET='${{ needs.meta.outputs.target }}'
           DEFAULT_URL="https://${TARGET}.web.app"
           if [[ "$TARGET" == "autoads-preview" ]]; then
             CUSTOM_URL="https://www.urlchecker.dev (if configured)"
@@ -153,18 +170,9 @@ jobs:
             CUSTOM_URL="https://www.autoads.dev (if configured)"
           fi
           {
-            echo "## Frontend Hosting"
-            echo "- Target:  ${TARGET}"
-            echo "- Default: ${DEFAULT_URL}"
-            echo "- Custom:  ${CUSTOM_URL}"
+            echo "## Frontend Deploy"
+            echo "- Cloud Run: ${run_url:-N/A}"
+            echo "- Hosting Target: ${TARGET}"
+            echo "- Hosting Default: ${DEFAULT_URL}"
+            echo "- Hosting Custom:  ${CUSTOM_URL}"
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Cache Turbo build artifacts
-        uses: actions/cache@v4
-        with:
-          path: |
-            .turbo
-            apps/frontend/.next/cache
-          key: ${{ runner.os }}-turbo-${{ github.ref }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-${{ github.ref }}-
-            ${{ runner.os }}-turbo-
