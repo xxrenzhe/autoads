@@ -103,12 +103,10 @@ jobs:
           # Service path (frontend Cloud Run is in hosting/, others in services/<name>)
           SERVICE_PATH="services/${SERVICE}"
           if [[ "$SERVICE" == "frontend" ]]; then SERVICE_PATH="hosting"; fi
-          LOG_BUCKET="gs://autoads-build-logs-asia-northeast1"
-          echo "Submitting Cloud Build for ${IMAGE}:${PRIMARY_TAG} from ${SERVICE_PATH} (logs: ${LOG_BUCKET})"
+          echo "Submitting Cloud Build for ${IMAGE}:${PRIMARY_TAG} from ${SERVICE_PATH}"
           SUBMIT_OUTPUT=$(gcloud builds submit "${SERVICE_PATH}" \
             --project "${PROJECT_ID}" \
             --tag "${IMAGE}:${PRIMARY_TAG}" \
-            --gcs-log-dir="${LOG_BUCKET}" \
             --async 2>&1 | tee /dev/stderr || true)
           BUILD_ID=$(printf "%s" "$SUBMIT_OUTPUT" | grep -Eo 'builds/[a-f0-9-]+' | sed 's#builds/##' | tail -n1)
           if [[ -z "$BUILD_ID" ]]; then
