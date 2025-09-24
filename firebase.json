@@ -4,13 +4,17 @@
       "site": "autoads-preview",
       "source": "apps/frontend",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "frameworksBackend": { "region": "asia-northeast1" }
+      "rewrites": [
+        { "source": "**", "run": { "serviceId": "frontend", "region": "asia-northeast1" } }
+      ]
     },
     {
       "site": "autoads-prod",
       "source": "apps/frontend",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "frameworksBackend": { "region": "asia-northeast1" }
+      "rewrites": [
+        { "source": "**", "run": { "serviceId": "frontend", "region": "asia-northeast1" } }
+      ]
     }
   ],
   "firestore": {
