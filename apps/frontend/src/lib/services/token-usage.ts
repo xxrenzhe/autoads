@@ -82,12 +82,12 @@ export async function recordTokenUsage(options: TokenUsageOptions) {
         }
       })
 
-      return { updatedUser, token_usage }
+      return { remainingBalance, token_usage }
     })
 
     return {
       success: true,
-      remainingBalance: result.updatedUser.tokenBalance,
+      remainingBalance: result.remainingBalance,
       usageRecord: result.token_usage
     }
   } catch (error) {

@@ -14,7 +14,7 @@ import { ProtectedButton } from "@/components/auth/ProtectedButton";
 import { useTokenConsumption } from "@/hooks/useTokenConsumption";
 import { getUiDefaultRpm, fetchUiDefaultRpm, getPlanFeatureRpmSync } from "@/lib/config/rate-limit";
 import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
-import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal';
+import { WeChatSubscribeModal } from '@/components/common/WeChatSubscribeModal';
 const logger = createClientLogger('BatchOpenSection');
 
 // Secure postMessage utility

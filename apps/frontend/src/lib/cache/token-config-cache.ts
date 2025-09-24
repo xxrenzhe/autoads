@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '../types/prisma-types'
+// Removed Prisma types; cache works independently of DB layer
 
 // TokenConfig interface - table not in schema
 interface TokenConfig {

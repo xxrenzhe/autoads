@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { getCacheService } from './cache-service';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 
 export interface Task {
   id: string;

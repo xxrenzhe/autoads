@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/db'
 import { auditLogger } from '@/lib/security/audit/audit-logger'
 import { getRedisClient } from '@/lib/cache/redis-client'
 import { randomBytes, createHash } from 'crypto'

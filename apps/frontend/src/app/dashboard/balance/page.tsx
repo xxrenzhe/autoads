@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { auth } from '@/lib/auth/v5-config'
 import { redirect } from 'next/navigation'
+export const dynamic = 'force-dynamic'
 import TokenBalanceManager from '@/components/user/TokenBalanceManager'
 
 export const metadata: Metadata = {
@@ -8,7 +9,6 @@ export const metadata: Metadata = {
   description: 'Manage your token balance and top-up account',
 }
 
-export const dynamic = 'force-dynamic'
 
 export default async function TokenBalancePage() {
   const session = await auth()

@@ -5,13 +5,13 @@
 
 import { prisma } from '@/lib/db'
 import { tokenConfigCache, ConfigChangeNotification } from '@/lib/cache/token-config-cache'
-import { tokenusagefeature } from '@prisma/client'
+// Avoid Prisma enum coupling; use string literals for features
 
 // Token配置接口
 export interface TokenConfig {
   id: string
   name: string
-  feature: tokenusagefeature
+  feature: string
   dailyLimit: number | null
   monthlyLimit: number | null
   costPerUse: number
@@ -60,7 +60,7 @@ export interface BatchConfigUpdateRequest {
 export interface TokenConfigData {
   id: string
   name: string
-  feature: tokenusagefeature
+  feature: string
   dailyLimit: number | null
   monthlyLimit: number | null
   costPerUse: number
@@ -172,7 +172,7 @@ export class TokenConfigService {
   /**
    * 获取特定功能的Token消耗（带缓存）
    */
-  static async getTokenCost(feature: tokenusagefeature): Promise<number> {
+  static async getTokenCost(feature: string): Promise<number> {
     const cacheKey = `${feature}`
     const now = Date.now()
     
@@ -194,13 +194,13 @@ export class TokenConfigService {
       
       // Use default costs since config is always null
       // 如果没有找到配置，使用默认值
-      const defaultCosts: Partial<Record<tokenusagefeature, number>> = {
-        [tokenusagefeature.SITERANK]: 1,
-        [tokenusagefeature.BATCHOPEN]: 1,
-        [tokenusagefeature.CHANGELINK]: 2,
-        [tokenusagefeature.AUTOCLICK]: 1
+      const defaultCosts: Record<string, number> = {
+        SITERANK: 1,
+        BATCHOPEN: 1,
+        CHANGELINK: 2,
+        AUTOCLICK: 1
       }
-      cost = defaultCosts[feature] || 1
+      cost = defaultCosts[feature] ?? 1
 
       // 更新缓存
       configCache.set(cacheKey, { cost, timestamp: now })
@@ -226,7 +226,7 @@ export class TokenConfigService {
     createdBy
   }: {
     name: string
-    feature: tokenusagefeature
+    feature: string
     dailyLimit?: number
     monthlyLimit?: number
     costPerUse?: number
@@ -332,7 +332,7 @@ export class TokenConfigService {
       const currentConfig = { // Mock config
         id,
         name: name || 'Config',
-        feature: tokenusagefeature.SITERANK,
+        feature: 'SITERANK',
         dailyLimit: dailyLimit || 0,
         monthlyLimit: monthlyLimit || 0,
         costPerUse: costPerUse || 1,
@@ -752,28 +752,28 @@ export class TokenConfigService {
     const defaultConfigs = [
       {
         name: 'SiteRank域名分析',
-        feature: tokenusagefeature.SITERANK,
+        feature: 'SITERANK',
         dailyLimit: 100,
         monthlyLimit: 1000,
         costPerUse: 1
       },
       {
         name: 'BatchOpen URL访问',
-        feature: tokenusagefeature.BATCHOPEN,
+        feature: 'BATCHOPEN',
         dailyLimit: 200,
         monthlyLimit: 2000,
         costPerUse: 1
       },
       {
         name: 'AdsCenter链接更换',
-        feature: (tokenusagefeature as any)[['CHAN','GELINK'].join('')],
+        feature: 'CHANGELINK',
         dailyLimit: 50,
         monthlyLimit: 500,
         costPerUse: 2
       },
       {
         name: 'AutoClick自动点击',
-        feature: tokenusagefeature.AUTOCLICK,
+        feature: 'AUTOCLICK',
         dailyLimit: 500,
         monthlyLimit: 5000,
         costPerUse: 1

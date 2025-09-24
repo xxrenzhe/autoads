@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { ArrowRight, BarChart3, Link as LinkIcon, Zap } from "lucide-react";
 import { DeploymentBanner } from "@/components/DeploymentStatus";
-import GenericHeroSection from "@/components/common/GenericHeroSection";
+import { GenericHeroSection } from "@/components/common/GenericHeroSection";
 
 export default function HomePage() {
   const { isLoading } = useLanguage();

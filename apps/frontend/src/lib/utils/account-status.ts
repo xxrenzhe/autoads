@@ -1,4 +1,3 @@
-import { User } from '@prisma/client';
 
 /**
  * 统一的账户状态判断工具
@@ -19,7 +18,7 @@ export interface AccountStatusInfo {
  * 获取账户状态信息
  * 统一使用 status 字段作为状态源
  */
-export function getAccountStatus(user: Pick<User, 'status'>): AccountStatusInfo {
+export function getAccountStatus(user: { status: string }): AccountStatusInfo {
   const status = user.status as AccountStatus;
   
   switch (status) {
@@ -75,21 +74,21 @@ export function getAccountStatus(user: Pick<User, 'status'>): AccountStatusInfo 
  * 判断账户是否活跃
  * 替代直接使用 user.status === 'ACTIVE'
  */
-export function isAccountActive(user: Pick<User, 'status'>): boolean {
+export function isAccountActive(user: { status: string }): boolean {
   return getAccountStatus(user).isActive;
 }
 
 /**
  * 判断账户是否可以登录
  */
-export function canAccountLogin(user: Pick<User, 'status'>): boolean {
+export function canAccountLogin(user: { status: string }): boolean {
   return user.status === 'ACTIVE' || user.status === 'INACTIVE';
 }
 
 /**
  * 判断账户是否有功能使用权限
  */
-export function hasAccountPermission(user: Pick<User, 'status'>): boolean {
+export function hasAccountPermission(user: { status: string }): boolean {
   return user.status === 'ACTIVE';
 }
 
@@ -121,7 +120,7 @@ export async function updateAccountStatus(
   newStatus: AccountStatus,
   updateFn: (userId: string, data: any) => Promise<any>
 ): Promise<void> {
-  const statusInfo = getAccountStatus({ status: newStatus } as User);
+  const statusInfo = getAccountStatus({ status: newStatus });
   
   // 同时更新 status 和 isActive
   await updateFn(userId, {

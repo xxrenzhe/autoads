@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma'
-import { UserRole } from '@/lib/types/prisma-types'
+import { prisma } from '@/lib/db'
+type UserRole = string
 
 export interface AdminLoginCredentials {
   email: string
@@ -49,7 +49,7 @@ export class AdminAuthService {
       }
 
       // Check if user has admin role
-      if (!(UserRole.ADMIN === user.role)) {
+      if (!('ADMIN' === user.role)) {
         return { success: false, error: 'Insufficient permissions' }
       }
 
@@ -206,7 +206,7 @@ export class AdminAuthService {
     const basePermissions = ['read']
     
     switch (role) {
-      case UserRole.ADMIN:
+      case 'ADMIN':
         return [...basePermissions, 'write', 'delete', 'user_management', 'system_config', 'billing', 'security']
       default:
         return basePermissions

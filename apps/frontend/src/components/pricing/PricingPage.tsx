@@ -8,12 +8,12 @@ import { usePathname } from 'next/navigation'
 
 export function PricingPage() {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
 
   const handleSelectPlan = (plan: "Pro" | "Max") => {
     console.log(`Selected plan: ${plan}, navigating to subscribe modal trigger.`);
     // Store the current path to return to it after the modal is closed
-    window.sessionStorage.setItem('currentPathForModal', pathname);
+    window.sessionStorage.setItem('currentPathForModal', pathname || '/');
     router.push("/wechat-subscribe");
   };
 

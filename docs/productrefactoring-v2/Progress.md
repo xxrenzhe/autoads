@@ -133,3 +133,5 @@
   - Hosting：`firebase.json` 已配置将 `**` 重写到 Cloud Run `frontend`，待执行 `firebase deploy --only hosting` 生效（见“进行中”）
 
 预发部署触发校验：2025-09-24T14:06:42Z
+
+CI触发校验：2025-09-24T14:53:46Z

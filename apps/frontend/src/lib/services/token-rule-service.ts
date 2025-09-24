@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { Logger } from '@/lib/core/Logger';
 import { getRemoteConfig, getConfigValue } from '@/lib/config/remote-config';
 

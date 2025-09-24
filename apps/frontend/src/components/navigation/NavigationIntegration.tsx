@@ -63,7 +63,7 @@ const adminNavigationItems: NavigationItem[] = []
 
 export function NavigationLinks() {
   const { data: session } = useSession()
-  const pathname = usePathname()
+  const pathname = usePathname() || ''
 
   const hasRole = (requiredRoles?: string[]) => {
     if (!requiredRoles || !session?.user?.role) return false

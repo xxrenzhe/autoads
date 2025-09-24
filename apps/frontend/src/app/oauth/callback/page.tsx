@@ -21,9 +21,9 @@ export default function OAuthCallbackPage() {
   const handleOAuthCallback = async () => {
     try {
       const config = getDomainConfig();
-      const code = searchParams.get('code');
-      const state = searchParams.get('state'); // 账户ID
-      const error = searchParams.get('error');
+      const code = searchParams?.get('code');
+      const state = searchParams?.get('state'); // 账户ID
+      const error = searchParams?.get('error');
 
       if (error) {
         setStatus('error');
@@ -124,3 +124,4 @@ export default function OAuthCallbackPage() {
     </div>
   );
 }
+export const dynamic = 'force-dynamic'

@@ -1,5 +1,5 @@
 /** @type {import('next-sitemap').IConfig} */
-module.exports = {
+const config = {
   siteUrl: process.env.SITE_URL || 'https://autoads.com',
   generateRobotsTxt: true,
   robotsTxtOptions: {
@@ -12,3 +12,5 @@ module.exports = {
     ],
   },
 };
+
+export default config;

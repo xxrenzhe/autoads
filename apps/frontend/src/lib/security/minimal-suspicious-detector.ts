@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { createLogger } from '@/lib/utils/security/secure-logger';
 
 const logger = createLogger('MinimalSuspiciousDetector');

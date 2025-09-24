@@ -1,6 +1,6 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { NotificationService } from './notification-service';
-import { SubscriptionSource, SubscriptionChangeReason } from '@prisma/client';
+// Avoid Prisma enum coupling; use string literals in notifications
 
 /**
  * Service for handling subscription-related notifications
@@ -30,7 +30,7 @@ export class SubscriptionNotificationService {
       }
     });
 
-    if (!subscription || subscription.source !== SubscriptionSource.MANUAL) {
+    if (!subscription || subscription.source !== 'MANUAL') {
       return;
     }
 
@@ -134,7 +134,7 @@ export class SubscriptionNotificationService {
     userId: string,
     oldPlanName: string,
     newPlanName: string,
-    changeReason: SubscriptionChangeReason,
+    changeReason: any,
     effectiveDate: Date
   ) {
     const user = await prisma.user.findUnique({
@@ -147,15 +147,15 @@ export class SubscriptionNotificationService {
 
     if (!user) return;
 
-    const changeReasonMap = {
-      [SubscriptionChangeReason.UPGRADE]: '升级',
-      [SubscriptionChangeReason.DOWNGRADE]: '降级',
-      [SubscriptionChangeReason.CANCELLATION]: '取消',
-      [SubscriptionChangeReason.EXPIRATION]: '到期',
-      'TRIAL_END': '试用结束',
-      'INVITATION_ACCEPTED': '邀请奖励',
-      'PAYMENT_FAILURE': '支付失败',
-      [SubscriptionChangeReason.MANUAL_CHANGE]: '手动更改'
+    const changeReasonMap: Record<string,string> = {
+      UPGRADE: '升级',
+      DOWNGRADE: '降级',
+      CANCELLATION: '取消',
+      EXPIRATION: '到期',
+      TRIAL_END: '试用结束',
+      INVITATION_ACCEPTED: '邀请奖励',
+      PAYMENT_FAILURE: '支付失败',
+      MANUAL_CHANGE: '手动更改'
     };
 
     await NotificationService.sendNotification({
@@ -272,7 +272,7 @@ export class SubscriptionNotificationService {
       }
     });
 
-    if (!subscription || subscription.source !== SubscriptionSource.MANUAL) {
+    if (!subscription || subscription.source !== 'MANUAL') {
       return;
     }
 
@@ -323,7 +323,7 @@ export class SubscriptionNotificationService {
     
     const expiringTrials = await prisma.subscription.findMany({
       where: {
-        source: SubscriptionSource.MANUAL,
+        source: 'MANUAL',
         status: 'ACTIVE',
         trialEnd: {
           lte: trialReminderDate,

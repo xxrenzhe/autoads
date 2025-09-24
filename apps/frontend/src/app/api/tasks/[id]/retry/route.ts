@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/db'
 import { auth } from '@/lib/auth/v5-config'
 import { getRedisClient } from '@/lib/cache/redis-client'
 import { withApiProtection } from '@/lib/api-utils'

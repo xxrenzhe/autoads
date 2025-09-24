@@ -5,13 +5,13 @@
 
 import { prisma } from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
-import { tokenusagefeature } from '@prisma/client'
+// Avoid Prisma enum coupling
 
 // Token消耗记录接口
 export interface TokenUsageRecord {
   id: string
   userId: string
-  feature: tokenusagefeature
+  feature: string
   operation: string
   tokensConsumed: number
   itemCount: number
@@ -25,7 +25,7 @@ export interface TokenUsageRecord {
 export interface BatchOperation {
   batchId: string
   userId: string
-  feature: tokenusagefeature
+  feature: string
   operation: string
   operations: Array<{
     metadata: any
@@ -58,7 +58,7 @@ export interface TokenUsageStats {
 // 查询选项接口
 export interface TokenUsageQueryOptions {
   userId: string
-  feature?: tokenusagefeature
+  feature?: string
   startDate?: Date
   endDate?: Date
   page?: number
@@ -69,7 +69,7 @@ export interface TokenUsageQueryOptions {
 // 批量操作详情接口
 export interface BatchOperationDetails {
   batchId: string
-  feature: tokenusagefeature
+  feature: string
   operation: string
   totalTokensConsumed: number
   operationCount: number
@@ -99,7 +99,7 @@ export class TokenConsumptionService {
     metadata = {}
   }: {
     userId: string
-    feature: tokenusagefeature
+    feature: string
     operation: string
     tokensConsumed: number
     itemCount?: number
@@ -208,7 +208,7 @@ export class TokenConsumptionService {
   /**
    * 生成批量操作ID
    */
-  static generateBatchId(feature: tokenusagefeature, userId: string): string {
+  static generateBatchId(feature: string, userId: string): string {
     const timestamp = Date.now()
     const randomSuffix = Math.random().toString(36).substring(2, 8)
     return `batch_${feature}_${userId.substring(0, 8)}_${timestamp}_${randomSuffix}`
@@ -224,7 +224,7 @@ export class TokenConsumptionService {
     expectedSize
   }: {
     userId: string
-    feature: tokenusagefeature
+    feature: string
     operation: string
     expectedSize?: number
   }): Promise<string> {
@@ -248,7 +248,7 @@ export class TokenConsumptionService {
   }: {
     batchId: string
     userId: string
-    feature: tokenusagefeature
+    feature: string
     operation: string
     operations: Array<{ metadata: any; tokensConsumed: number; description?: string }>
     description?: string
@@ -369,7 +369,7 @@ export class TokenConsumptionService {
 
       return {
         batchId,
-        feature: batchRecord.feature as tokenusagefeature,
+        feature: batchRecord.feature as any,
         operation: batchRecord.operation || '',
         totalTokensConsumed: batchRecord.tokensConsumed,
         operationCount: batchRecord.itemCount || 0,

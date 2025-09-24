@@ -14,10 +14,18 @@ const logger = new Logger("USER-CHECK-IN-ROUTE");
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.userId) {
+  if (!session?.userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
-
+        { status: 401 }
+      );
+    }
+    // Minimal status response for GET
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+}
 
 /**
  * Perform daily check-in (Event-Driven Refactor)
@@ -88,5 +96,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-

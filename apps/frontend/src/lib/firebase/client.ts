@@ -21,5 +21,5 @@ function ensureApp() {
 export function getDb() {
   const app = ensureApp()
   const dbId = process.env.NEXT_PUBLIC_FIRESTORE_DB_ID
-  return getFirestore(app, dbId)
+  return dbId ? getFirestore(app, dbId) : getFirestore(app)
 }

@@ -14,7 +14,8 @@
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const BACKEND_BASE = process.env.BACKEND_URL || 'http://127.0.0.1:8080'
+// 生产环境默认走 API Gateway；可通过 BACKEND_URL 覆盖
+const BACKEND_BASE = process.env.BACKEND_URL || 'https://autoads-gw-885pd7lz.an.gateway.dev'
 const MAX_BODY_BYTES = Number(process.env.BACKEND_PROXY_MAX_BODY || 2 * 1024 * 1024)
 const UPSTREAM_TIMEOUT_MS = Number(process.env.BACKEND_PROXY_TIMEOUT_MS || 15000)
 const CONSOLE_DIST_DIR = process.env.CONSOLE_DIST_DIR || '/app/gofly_admin_v3/web/dist'

@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma';
-import { TokenType } from '@prisma/client';
+import { prisma } from '@/lib/db';
+// Use string literal to avoid Prisma enum coupling
 import { TokenExpirationService } from './token-expiration-service';
 
 /**
@@ -101,7 +101,7 @@ export class SubscriptionInheritanceService {
       await TokenExpirationService.addTokensWithExpiration(
         userId,
         plan.tokenQuota,
-        TokenType.SUBSCRIPTION,
+        'SUBSCRIPTION' as any,
         currentPeriodEnd, // Tokens expire when subscription ends
         {
           subscriptionId: subscription.id,

@@ -1,5 +1,5 @@
 import { tokenConfigService } from '@/lib/services/token-config'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/db'
 import { TokenTransactionService } from '@/lib/services/token-transaction-service'
 import { Prisma } from '@prisma/client'
 

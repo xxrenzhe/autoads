@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/db'
-import { $Enums } from '@prisma/client'
 
 export interface Permission {
   id: string
@@ -12,7 +11,7 @@ export interface Permission {
 }
 
 export interface RolePermissions {
-  role: $Enums.UserRole | string
+  role: string
   permissions: Permission[]
 }
 
@@ -24,7 +23,7 @@ export interface PermissionCheck {
 
 export interface PermissionContext {
   userId: string
-  role: $Enums.UserRole | string
+  role: string
   userStatus: string
   resourceId?: string
   metadata?: Record<string, any>
@@ -120,14 +119,14 @@ export interface PermissionContext {
    */
   private static async getRolePermissionsWithInheritance(roleName: string): Promise<Permission[]> {
     // 使用硬编码的权限配置
-    return this.getLegacyRolePermissions(roleName as $Enums.UserRole)
+    return this.getLegacyRolePermissions(roleName as any)
   }
 
   /**
    * 获取传统角色权限（向后兼容）
    */
-  private static getLegacyRolePermissions(role: $Enums.UserRole): Permission[] {
-    const legacyPermissions: Record<$Enums.UserRole, Permission[]> = {
+  private static getLegacyRolePermissions(role: string): Permission[] {
+    const legacyPermissions: Record<string, Permission[]> = {
       USER: [
         { id: 'profile-read', name: 'profile:read', resource: 'profile', action: 'read' },
         { id: 'profile-write', name: 'profile:write', resource: 'profile', action: 'write' },
@@ -144,7 +143,7 @@ export interface PermissionContext {
       ]
     }
 
-    return legacyPermissions[role] || []
+    return legacyPermissions[role as keyof typeof legacyPermissions] || []
   }
 
   /**

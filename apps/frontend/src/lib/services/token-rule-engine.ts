@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/db'
 import { getRedisClient } from '@/lib/cache/redis-client'
 import { getRemoteConfig, getConfigValue } from '@/lib/config/remote-config'
 

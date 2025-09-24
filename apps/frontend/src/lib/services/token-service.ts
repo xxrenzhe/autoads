@@ -5,10 +5,8 @@ import { TokenConfigService } from './token-config-service'
 import { TokenPriorityService } from './token-priority-service'
 import { TokenRuleEngine } from './token-rule-engine'
 import { getRedisClient } from '@/lib/cache/redis-client'
-import { $Enums } from '@prisma/client'
-
-type TokenType = $Enums.TokenType
-type TokenUsageFeature = $Enums.tokenusagefeature
+// Avoid Prisma enum coupling in frontend build
+type TokenUsageFeature = string
 
 export interface TokenBalance {
   userId: string
@@ -361,7 +359,7 @@ export class TokenService {
     amount: number,
     reason: string,
     addedBy: string,
-    tokenType: TokenType = 'BONUS'
+    tokenType: string = 'BONUS'
   ): Promise<{
     success: boolean
     newBalance?: number

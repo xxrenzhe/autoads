@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { UserQueryService } from './optimized/user-query-service';
 import { TokenQueryService } from './optimized/token-query-service';
 import { createLogger } from '@/lib/utils/security/secure-logger';

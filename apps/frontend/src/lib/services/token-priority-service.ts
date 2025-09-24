@@ -1,11 +1,8 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
-import { TokenType } from '@prisma/client';
 import { TokenTransactionService } from './token-transaction-service';
 import { TokenExpirationService } from './token-expiration-service';
-import { $Enums } from '@prisma/client';
-
-type TokenUsageFeature = $Enums.tokenusagefeature;
+type TokenUsageFeature = string;
 
 /**
  * Service for handling token consumption using unified token system
@@ -59,7 +56,7 @@ export class TokenPriorityService {
       await tx.tokenTransaction.create({
         data: {
           userId,
-          type: 'DEBIT' as TokenType,
+          type: 'DEBIT' as any,
           amount: -requiredAmount,
           balanceBefore: beforeBalance,
           balanceAfter: afterBalance,
@@ -86,6 +83,7 @@ export class TokenPriorityService {
       });
     });
 
+    const newBalance = availableTokens - requiredAmount
     return {
       success: true,
       consumed: requiredAmount,
@@ -157,7 +155,7 @@ export class TokenPriorityService {
     ]);
 
     // Aggregate consumption by type
-    const consumptionByType = recentTransactions.reduce((acc: Record<string, { count: number; totalAmount: number }>, tx: { type: TokenType; amount: number }) => {
+      const consumptionByType = recentTransactions.reduce((acc: Record<string, { count: number; totalAmount: number }>, tx: { type: any; amount: number }) => {
       const type = tx.type;
       if (!acc[type]) {
         acc[type] = { count: 0, totalAmount: 0 };
@@ -173,7 +171,7 @@ export class TokenPriorityService {
         total: effectiveBalance.total
       },
       recentConsumption: consumptionByType,
-      recentTransactions: recentTransactions.map((tx: { type: TokenType; amount: number; source: string; createdAt: Date }) => ({
+      recentTransactions: recentTransactions.map((tx: { type: any; amount: number; source: string; createdAt: Date }) => ({
         type: tx.type,
         amount: Math.abs(tx.amount),
         source: tx.source,

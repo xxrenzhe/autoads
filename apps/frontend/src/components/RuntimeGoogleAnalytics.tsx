@@ -19,7 +19,7 @@ declare global {
 
 // 内部GA组件
 function RuntimeGoogleAnalyticsInner() {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const searchParams = useSearchParams();
   const [gaId, setGaId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -129,7 +129,7 @@ function RuntimeGoogleAnalyticsInner() {
   // 发送页面浏览事件
   useEffect(() => {
     if (gaId && isLoaded && window.gtag) {
-      const url = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+      const url = pathname + ((searchParams?.toString() ?? '') ? `?${searchParams?.toString()}` : '');
       window.gtag('config', gaId, {
         page_path: url,
       });

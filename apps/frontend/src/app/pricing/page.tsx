@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Check, Star, Zap } from 'lucide-react';
 import CustomerServiceDialog from '@/components/pricing/CustomerServiceDialog';
-import { MainNavigation } from '@/components/navigation/MainNavigation';
-import { PageFooter } from '@/components/PageFooter';
+import MainNavigation from '@/components/navigation/MainNavigation';
+import PageFooter from '@/components/PageFooter';
 
 const plans = [
   {

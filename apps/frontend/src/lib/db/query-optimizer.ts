@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '../types/prisma-types';
+// Removed Prisma types; frontend does not optimize DB queries directly.
 
 export interface QueryOptions {
   include?: Record<string, any>;

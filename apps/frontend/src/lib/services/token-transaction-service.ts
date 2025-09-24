@@ -1,7 +1,6 @@
-import { prisma } from '@/lib/prisma'
-import { $Enums, Prisma } from '@prisma/client';
-
-type TokenType = $Enums.TokenType;
+import { prisma } from '@/lib/db'
+import { Prisma } from '@prisma/client';
+type TokenType = string;
 
 export interface TokenTransactionRecord {
   id: string
@@ -31,7 +30,7 @@ export interface TokenTransactionStats {
   totalTransactions: number
   totalAcquired: number
   totalConsumed: number
-  byType: Record<TokenType, { acquired: number; consumed: number }>
+  byType: Record<string, { acquired: number; consumed: number }>
   bySource: Record<string, number>
   recentTransactions: TokenTransactionRecord[]
 }

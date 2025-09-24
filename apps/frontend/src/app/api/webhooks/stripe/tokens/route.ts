@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { TokenService } from '@/lib/services/token-service';
-import { $Enums } from '@prisma/client';
-
-type TokenType = $Enums.TokenType;
+// Note: Prisma Enum types are not required here since Stripe integration is disabled.
 
 /**
  * POST /api/webhooks/stripe/tokens

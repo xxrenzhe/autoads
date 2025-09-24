@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { InvitationService } from '@/lib/services/invitation-service';
 import { TrialService } from '@/lib/services/trial-service';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import * as bcrypt from 'bcryptjs';
 import { AuthError, handleAuthError } from '@/lib/auth/auth-errors';
 

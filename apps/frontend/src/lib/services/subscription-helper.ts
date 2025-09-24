@@ -1,8 +1,7 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { TokenExpirationService } from './token-expiration-service';
 import { SubscriptionNotificationService } from './subscription-notification-service';
-import { TokenType } from '@prisma/client';
-import { $Enums } from '@prisma/client';
+// Avoid direct Prisma enum imports; use string literals for build compatibility
 
 /**
  * Helper service for creating subscriptions for invitations and trials
@@ -89,7 +88,7 @@ export class SubscriptionHelper {
         currentPeriodEnd: endDate,
         provider: 'invitation',
         providerSubscriptionId: `invitation_${invitationId}_${Date.now()}`,
-        source: $Enums.SubscriptionSource.INVITATION,
+        source: 'INVITATION' as any,
         cancelAtPeriodEnd: true // Auto-cancel after 30 days
       },
       include: {
@@ -136,7 +135,7 @@ export class SubscriptionHelper {
     await TokenExpirationService.addTokensWithExpiration(
       userId,
       tokenAmount,
-      TokenType.SUBSCRIPTION,
+      'SUBSCRIPTION' as any,
       monthEnd, // Tokens expire at end of current month
       {
         subscriptionId,
@@ -166,7 +165,7 @@ export class SubscriptionHelper {
         currentPeriodEnd: endDate,
         provider: 'trial',
         providerSubscriptionId: `trial_${userId}_${Date.now()}`,
-        source: $Enums.SubscriptionSource.MANUAL,
+        source: 'MANUAL' as any,
         cancelAtPeriodEnd: true // Auto-cancel after trial period
       },
       include: {
@@ -186,7 +185,7 @@ export class SubscriptionHelper {
       await TokenExpirationService.addTokensWithExpiration(
         userId,
         subscription.plan.tokenQuota,
-        TokenType.SUBSCRIPTION,
+        'SUBSCRIPTION' as any,
         endDate, // Tokens expire when subscription ends
         {
           subscriptionId: subscription.id,
@@ -268,7 +267,7 @@ export class SubscriptionHelper {
         status: 'EXPIRED',
         canceledAt: new Date(),
         currentPeriodEnd: new Date(), // Set end date to now
-        changeReason: $Enums.SubscriptionChangeReason.EXPIRATION
+        changeReason: 'EXPIRATION' as any
       },
       include: {
         plan: true
@@ -398,7 +397,7 @@ export class SubscriptionHelper {
         currentPeriodEnd: endDate,
         provider: 'invitation',
         providerSubscriptionId: `invitation_queued_${userId}_${Date.now()}`,
-        source: $Enums.SubscriptionSource.INVITATION,
+        source: 'INVITATION' as any,
         cancelAtPeriodEnd: true
       },
       include: {
@@ -560,7 +559,7 @@ export class SubscriptionHelper {
     userId: string,
     oldPlanName: string,
     newPlanName: string,
-    changeReason: $Enums.SubscriptionChangeReason
+    changeReason: any
   ) {
     await SubscriptionNotificationService.sendSubscriptionChangeNotification(
       userId,

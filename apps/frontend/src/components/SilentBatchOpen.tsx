@@ -1,7 +1,7 @@
 "use client";
 
 import { EnhancedError } from '@/lib/utils/error-handling';
-import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal';
+import { WeChatSubscribeModal } from '@/components/common/WeChatSubscribeModal';
 import { useLanguage  } from "@/contexts/LanguageContext";
 import React from "react";
 import { useCallback, useEffect, useRef, useState, useMemo, useReducer } from "react";

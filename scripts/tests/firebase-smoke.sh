@@ -5,6 +5,7 @@ set -euo pipefail
 # Requires: gcloud auth application-default login
 
 PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-${PROJECT_ID:-${NEXT_PUBLIC_FIREBASE_PROJECT_ID:-}}}"
+DB_ID="${FIRESTORE_DATABASE_ID:-${NEXT_PUBLIC_FIRESTORE_DB_ID:-\(default\)}}"
 
 if [[ -z "${PROJECT_ID}" ]]; then
   echo "[firebase-smoke] ERROR: Set GOOGLE_CLOUD_PROJECT or NEXT_PUBLIC_FIREBASE_PROJECT_ID" >&2
@@ -17,7 +18,7 @@ if [[ -z "${ACCESS_TOKEN}" ]]; then
   exit 2
 fi
 
-URL="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/blog_posts?pageSize=1"
+URL="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DB_ID}/documents/blog_posts?pageSize=1"
 echo "[firebase-smoke] GET ${URL}"
 HTTP_CODE=$(curl -s -o /tmp/fs.json -w "%{http_code}" -H "Authorization: Bearer ${ACCESS_TOKEN}" "${URL}")
 if [[ "${HTTP_CODE}" != "200" ]]; then
@@ -29,4 +30,3 @@ echo "[firebase-smoke] Firestore access OK"
 cat /tmp/fs.json | head -c 400 || true
 echo
 echo "[firebase-smoke] Done"
-

@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/db'
-import { UserRole } from '../types/prisma-types'
 
 export interface RateLimitRule {
   id?: string

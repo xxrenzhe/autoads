@@ -11,9 +11,8 @@ import {
   AuthContext,
   PermissionOptions
 } from './enhanced-auth-middleware'
-import { $Enums } from '@prisma/client'
-
-type TokenUsageFeature = $Enums.tokenusagefeature;
+// Prisma $Enums not available in current client version; use string union instead
+type TokenUsageFeature = string;
 
 /**
  * Type for API handler functions
@@ -190,7 +189,7 @@ export const withAnalytics = withMiddleware({
 // Feature-specific decorators
 export const withSiteRankAccess = withMiddleware({
   auth: true,
-  feature: $Enums.tokenusagefeature.SITERANK,
+  feature: 'SITERANK',
   logging: true,
   rateLimit: {
     windowMs: 60 * 1000,
@@ -200,7 +199,7 @@ export const withSiteRankAccess = withMiddleware({
 
 export const withBatchOpenAccess = withMiddleware({
   auth: true,
-  feature: $Enums.tokenusagefeature.BATCHOPEN,
+  feature: 'BATCHOPEN',
   logging: true,
   rateLimit: {
     windowMs: 60 * 1000,
@@ -210,7 +209,7 @@ export const withBatchOpenAccess = withMiddleware({
 
 export const withAdsCenterAccess = withMiddleware({
   auth: true,
-  feature: $Enums.tokenusagefeature.CHANGELINK,
+  feature: 'CHANGELINK',
   logging: true,
   rateLimit: {
     windowMs: 60 * 1000,

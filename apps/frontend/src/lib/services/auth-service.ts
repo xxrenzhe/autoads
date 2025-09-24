@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/db'
-import { $Enums, tokenusagefeature } from '@prisma/client'
-
-type UserRole = $Enums.UserRole
-type UserStatus = $Enums.UserStatus
+// Prisma enum types are not imported; use string unions to keep build lightweight
+type UserRole = string
+type UserStatus = string
 import { PermissionService } from './permission-service'
 
 export interface AuthUser {
@@ -324,7 +323,7 @@ export class AuthService {
       await prisma.token_usage.create({
         data: {
           userId: request.userId,
-          feature: tokenusagefeature.ADMIN,
+          feature: 'ADMIN',
           operation: 'admin_adjustment',
           tokensConsumed: request.operation === 'subtract' ? request.amount : 0,
           tokensRemaining: newBalance,

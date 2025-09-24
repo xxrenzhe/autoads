@@ -1,8 +1,8 @@
-import { PrismaClient } from '../types/prisma-types';
+// Removed Prisma types; frontend does not run migrations.
 import { dbPool, dbQuery, dbTransaction } from '../db-pool';
 import { createLogger } from './security/secure-logger';
 import { getRedisClient } from '../redis-config';
-import { prisma } from '../prisma';
+import { prisma } from '../db';
 
 const logger = createLogger('DatabaseMigrationHelper');
 
@@ -19,7 +19,7 @@ export { prisma };
  */
 export async function withConnection<T>(
   operation: string,
-  fn: (prisma: PrismaClient) => Promise<T>
+  fn: (prisma: any) => Promise<T>
 ): Promise<T> {
   return dbQuery(operation, fn);
 }
@@ -28,7 +28,7 @@ export async function withConnection<T>(
  * 执行事务的包装器
  */
 export async function withTransaction<T>(
-  fn: (prisma: PrismaClient) => Promise<T>
+  fn: (prisma: any) => Promise<T>
 ): Promise<T> {
   return dbTransaction(fn);
 }
@@ -37,7 +37,7 @@ export async function withTransaction<T>(
  * 批量操作包装器
  */
 export async function withBatch<T>(
-  operations: Array<(prisma: PrismaClient) => Promise<T>>
+  operations: Array<(prisma: any) => Promise<T>>
 ): Promise<T[]> {
   return dbPool.executeBatch(operations);
 }
@@ -47,7 +47,7 @@ export async function withBatch<T>(
  */
 export async function withRetry<T>(
   operation: string,
-  fn: (prisma: PrismaClient) => Promise<T>,
+  fn: (prisma: any) => Promise<T>,
   maxRetries: number = 3,
   delayMs: number = 1000
 ): Promise<T> {
@@ -101,7 +101,7 @@ function isConnectionError(error: Error): boolean {
  */
 export async function withCache<T>(
   key: string,
-  fn: (prisma: PrismaClient) => Promise<T>,
+  fn: (prisma: any) => Promise<T>,
   options: {
     ttl?: number; // 缓存时间（秒）
     useCache?: boolean; // 是否使用缓存
@@ -139,7 +139,7 @@ export async function withCache<T>(
  * 分页查询辅助函数
  */
 export async function paginate<T>(
-  model: keyof PrismaClient,
+  model: string,
   options: {
     where?: Record<string, any>;
     orderBy?: Record<string, 'asc' | 'desc'>;
@@ -168,7 +168,7 @@ export async function paginate<T>(
   
   return withTransaction(async (prisma) => {
     const [data, totalCount] = await Promise.all([
-      (prisma[model as keyof PrismaClient] as any).findMany({
+      (prisma[model as any] as any).findMany({
         where,
         orderBy,
         skip,
@@ -176,7 +176,7 @@ export async function paginate<T>(
         include,
         select
       }),
-      (prisma[model as keyof PrismaClient] as any).count({ where })
+      (prisma[model as any] as any).count({ where })
     ]);
     
     return {
@@ -213,14 +213,14 @@ export async function bulkInsert<T>(
         async (prisma) => {
           if (skipDuplicates) {
             // 使用 createMany 并忽略重复错误
-            return (prisma[model as keyof PrismaClient] as any).createMany({
+            return (prisma[model as any] as any).createMany({
               data: batch,
               skipDuplicates: true
             });
           } else {
             // 逐个插入以捕获错误
             const results = await Promise.allSettled(
-              batch.map((item: any) => (prisma[model as keyof PrismaClient] as any).create({ data: item }))
+              batch.map((item: any) => (prisma[model as any] as any).create({ data: item }))
             );
             
             const successful = results.filter((r: any) => r.status === 'fulfilled');

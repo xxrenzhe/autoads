@@ -1,0 +1,25 @@
+# *
+User-agent: *
+Allow: /
+
+# *
+User-agent: *
+Disallow: /dashboard
+
+# *
+User-agent: *
+Disallow: /offers
+
+# *
+User-agent: *
+Disallow: /workflows
+
+# *
+User-agent: *
+Disallow: /billing
+
+# Host
+Host: https://autoads.com
+
+# Sitemaps
+Sitemap: https://autoads.com/sitemap.xml

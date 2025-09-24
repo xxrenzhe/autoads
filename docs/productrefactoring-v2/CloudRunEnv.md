@@ -46,6 +46,12 @@
   - GOOGLE_ADS_LOGIN_CUSTOMER_ID（MCC，如 5010618892）
   - GOOGLE_ADS_REFRESH_TOKEN（由授权用户生成）
 - 可选：GOOGLE_ADS_TEST_CUSTOMER_ID（测试账户 ID）
+- OAuth/安全（Secret 注入推荐）：
+  - ADS_OAUTH_REDIRECT_URLS（多行，每行一个回调 URL）
+  - OAUTH_STATE_SECRET（用于 state 的 HMAC-SHA256 秘钥）
+  - REFRESH_TOKEN_ENC_KEY_B64（base64 的 32B AES-GCM 密钥，用于加密用户 refresh token）
+- 开关：
+  - ADS_MCC_ENABLE_LIVE=true|false（启用统一 MCC 的真实 Invitation/Status 调用）
 
 > 说明：adscenter 当前 Pre-flight 仅做凭据与格式校验；后续将增加 AccessibleCustomers 探测与 validate_only 检查。
 
@@ -71,4 +77,3 @@ gcloud run services update identity \
   --set-env-vars=PUBSUB_TOPIC_ID=domain-events-prod,PUBSUB_SUBSCRIPTION_ID=identity-sub-prod \
   --set-secrets=DATABASE_URL_SECRET_NAME=projects/gen-lang-client-0944935873/secrets/DATABASE_URL:latest
 ```
-

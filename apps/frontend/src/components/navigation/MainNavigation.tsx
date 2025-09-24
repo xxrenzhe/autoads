@@ -100,7 +100,7 @@ const adminNavigationItems: NavigationItem[] = []
 
 export default function MainNavigation() {
   const { data: session } = useSession()
-  const pathname = usePathname()
+  const pathname = usePathname() || ''
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null)

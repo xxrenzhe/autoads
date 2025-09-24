@@ -14,6 +14,7 @@ import { Providers } from "@/components/providers";
 import QueryProvider from "@/components/providers/QueryProvider";
 import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
 import { WeChatSubscribeModal } from "@/components/common/WeChatSubscribeModal";
+import { Suspense } from "react";
 
 // const inter = Inter({ subsets: ["latin"] });
 
@@ -155,7 +156,9 @@ export default function RootLayout({
               <QueryProvider>
                 <ConfirmProvider>
                   <AppLayout>{children}</AppLayout>
-                  <WeChatSubscribeModal />
+                  <Suspense fallback={null}>
+                    <WeChatSubscribeModal />
+                  </Suspense>
                 </ConfirmProvider>
               </QueryProvider>
             </LanguageProvider>

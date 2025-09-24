@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 生产环境优化 - 启用standalone模式以支持Docker部署
-  output: 'standalone',
+  // 生产环境优化
+  // 注意：为避免 Next.js 15 在构建阶段对 _document 进行不完整的文件跟踪，
+  // 暂不启用 standalone 打包（Firebase Web Frameworks 部署不依赖 standalone）。
+  // output: 'standalone',
   
   // 环境变量配置
   env: {
@@ -31,9 +33,19 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        // 保留 NextAuth 内置路由，不走 BFF
+        source: '/api/auth/:path*',
+        destination: '/api/auth/:path*',
+      },
+      {
         // 兼容旧 API 前缀，重写到新 adscenter 路由
         source: '/api/changelink/:path*',
         destination: '/api/adscenter/:path*',
+      },
+      {
+        // 统一将所有 /api/* 转发到 BFF 代理 /api/go/*（避免与自身再次匹配）
+        source: '/api/:path*',
+        destination: '/api/go/:path*',
       },
     ];
   },
@@ -191,6 +203,20 @@ const nextConfig = {
       config.externals.push('playwright', 'playwright-core');
     }
 
+    // 始终为服务端提供本地桩，避免在 SSR 函数中安装/打包重量级依赖
+    config.resolve = config.resolve || {}
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@auth/prisma-adapter': path.resolve(__dirname, 'src/stubs/auth-prisma-adapter.ts'),
+      ...(isServer ? {
+        'google-ads-api': path.resolve(__dirname, 'src/stubs/google-ads-api.ts'),
+        'googleapis': path.resolve(__dirname, 'src/stubs/googleapis.ts'),
+        'puppeteer': path.resolve(__dirname, 'src/stubs/puppeteer.ts'),
+        'exceljs': path.resolve(__dirname, 'src/stubs/exceljs.ts'),
+        'swagger-ui-react': path.resolve(__dirname, 'src/stubs/swagger-ui-react.tsx'),
+      } : {}),
+    }
+
     // 为缺失三方依赖提供本地构建桩
     // 规则：
     // - 开发环境总是启用
@@ -215,7 +241,6 @@ const nextConfig = {
         'framer-motion': path.resolve(__dirname, 'src/stubs/framer-motion.tsx'),
         'zod': path.resolve(__dirname, 'src/stubs/zod.ts'),
         'ioredis': path.resolve(__dirname, 'src/stubs/ioredis.ts'),
-        '@auth/prisma-adapter': path.resolve(__dirname, 'src/stubs/auth-prisma-adapter.ts'),
         'croner': path.resolve(__dirname, 'src/stubs/croner.ts'),
         'redis': path.resolve(__dirname, 'src/stubs/redis.ts'),
         'axios': path.resolve(__dirname, 'src/stubs/axios.ts'),

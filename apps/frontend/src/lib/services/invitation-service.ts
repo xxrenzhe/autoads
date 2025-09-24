@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { TokenType } from '@/types/auth';
 import { TokenExpirationService } from './token-expiration-service';
 import { TokenTransactionService } from './token-transaction-service';

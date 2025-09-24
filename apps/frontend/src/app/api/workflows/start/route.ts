@@ -1,6 +1,6 @@
 // apps/frontend/src/app/api/workflows/start/route.ts
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth/v5-config"
+import { authOptions } from "@/lib/auth"
 
 // Updated to use service discovery friendly name. 
 // The frontend service can resolve 'workflow' because they are on the same docker network.

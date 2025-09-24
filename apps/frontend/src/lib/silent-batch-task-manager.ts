@@ -13,7 +13,7 @@ export class SilentBatchTaskManager {
   }
 
   async setTask(_taskId: string, _status: any): Promise<void> { /* no-op */ }
-  getTask(_taskId: string) { return undefined }
+  getTask(_taskId: string): any { return undefined }
   async getTaskSafe(_taskId: string): Promise<any | undefined> { return undefined }
   removeTask(_taskId: string) { return false }
   getAllTasks() { return [] as any[] }
@@ -30,4 +30,3 @@ export class SilentBatchTaskManager {
 }
 
 export const silentBatchTaskManager = SilentBatchTaskManager.getInstance()
-

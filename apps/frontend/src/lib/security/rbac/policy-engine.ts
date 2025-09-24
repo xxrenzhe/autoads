@@ -1,5 +1,5 @@
 import { permissionManager, Permission, PolicyCondition, SecurityContext } from './permission-manager'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/db'
 import { auditLogger } from '@/lib/security/audit/audit-logger'
 
 export interface PolicyRule {

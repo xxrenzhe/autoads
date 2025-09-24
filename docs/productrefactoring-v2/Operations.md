@@ -7,6 +7,11 @@
   - 方案二：Firebase Hosting frameworks（SSR）直接部署（使用 GitHub Actions 避免本地工具链冲突）。
 - 网关：API Gateway（JWT 校验与路由）。
 
+### CI/CD 触发策略（主干）
+- 推送到 `main`：预发（preview）环境构建与部署；镜像标注 `preview-latest`、`preview-<commit>`；Hosting 目标 `autoads-preview`。
+- 推送到 `production`：生产（prod）环境构建与部署；镜像标注 `prod-latest`、`prod-<commit>`；Hosting 目标 `autoads-prod`。
+- 推送 tag（`v*`）：生产（prod）版本发布；镜像标注 `prod-<tag>`、`prod-<commit>`；Hosting 目标 `autoads-prod`。
+
 ## 配置与密钥
 - Secret Manager：DATABASE_URL、外部 API Key 等；以 *_SECRET_NAME 注入。
 - Firebase Admin：生产用 ADC，开发用 JSON（不推荐）。

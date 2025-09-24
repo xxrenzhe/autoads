@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -9,7 +10,7 @@ import { AlertCircle, ArrowLeft } from 'lucide-react'
 export default function AuthError() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const error = searchParams.get('error')
+  const error = searchParams?.get('error') ?? null
 
   useEffect(() => {
     // Log error for debugging

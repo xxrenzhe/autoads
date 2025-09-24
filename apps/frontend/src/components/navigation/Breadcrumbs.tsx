@@ -54,7 +54,7 @@ function generateBreadcrumbsFromPath(pathname: string): BreadcrumbItem[] {
 }
 
 export default function Breadcrumbs({ items, className }: BreadcrumbsProps) {
-  const pathname = usePathname()
+  const pathname = usePathname() || ''
   
   // Use provided items or generate from pathname
   const breadcrumbItems = items || generateBreadcrumbsFromPath(pathname)
@@ -108,7 +108,7 @@ export default function Breadcrumbs({ items, className }: BreadcrumbsProps) {
 
 // Hook for programmatic breadcrumb management
 export function useBreadcrumbs() {
-  const pathname = usePathname()
+  const pathname = usePathname() || ''
   
   const setBreadcrumbs = (items: BreadcrumbItem[]) => {
     // This could be implemented with a context provider

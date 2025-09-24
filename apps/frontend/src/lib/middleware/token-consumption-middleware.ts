@@ -6,10 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { TokenService } from '@/lib/services/token-service'
 import { auth } from '@/lib/auth/v5-config'
-import { tokenusagefeature } from '@prisma/client'
 
 export interface TokenConsumptionOptions {
-  feature: tokenusagefeature
+  feature: string
   action: string
   extractBatchSize?: (request: NextRequest, body?: any) => number | Promise<number>
   extractMetadata?: (request: NextRequest, body?: any) => any | Promise<any>
@@ -186,7 +185,7 @@ export function extractSiteRankMetadata(request: NextRequest, body?: any): any {
  * 预定义的SiteRank Token消耗配置
  */
 export const siteRankTokenConfig: TokenConsumptionOptions = {
-  feature: tokenusagefeature.SITERANK,
+  feature: 'SITERANK',
   action: 'domain_analysis',
   extractBatchSize: (request, body) => {
     if (request.method === 'GET') {
@@ -210,7 +209,7 @@ export const siteRankTokenConfig: TokenConsumptionOptions = {
  * 预定义的BatchOpen Token消耗配置
  */
 export const batchOpenTokenConfig: TokenConsumptionOptions = {
-  feature: tokenusagefeature.BATCHOPEN,
+  feature: 'BATCHOPEN',
   action: 'url_access',
   extractBatchSize: (request, body) => {
     if (!body || !Array.isArray(body.urls)) {
@@ -228,7 +227,7 @@ export const batchOpenTokenConfig: TokenConsumptionOptions = {
  * 预定义的 AdsCenter Token 消耗配置
  */
 export const adsCenterTokenConfig: TokenConsumptionOptions = {
-  feature: tokenusagefeature.CHANGELINK,
+  feature: 'CHANGELINK',
   action: 'link_replace',
   extractBatchSize: (request, body) => {
     if (!body || !Array.isArray(body.links)) {

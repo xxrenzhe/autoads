@@ -1,4 +1,4 @@
-import { prisma, SubscriptionStatus } from '@/lib/db';
+import { prisma } from '@/lib/db';
 
 /**
  * User cache service for optimized user management queries
@@ -87,7 +87,7 @@ export class UserCacheService {
               currentPeriodEnd: true,
               plan: { select: { id: true, name: true } }
             },
-            where: { status: SubscriptionStatus.ACTIVE },
+            where: { status: 'ACTIVE' as any },
             orderBy: { currentPeriodEnd: 'desc' as const },
             take: 1
           },

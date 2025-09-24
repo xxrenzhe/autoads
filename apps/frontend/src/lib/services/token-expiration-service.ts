@@ -1,8 +1,8 @@
-import { prisma } from '@/lib/prisma';
-import { $Enums, Prisma } from '@prisma/client';
+import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { TokenTransactionService } from './token-transaction-service';
 
-type TokenType = $Enums.TokenType;
+type TokenType = any;
 
 // Cleanup interval reference
 let cleanupInterval: NodeJS.Timeout | null = null;
@@ -26,7 +26,7 @@ export class TokenExpirationService {
     
     if (!finalExpiresAt) {
       switch (type) {
-        case $Enums.TokenType.SUBSCRIPTION:
+        case 'SUBSCRIPTION':
           // Subscription tokens expire when subscription ends
           const subscription = await prisma.subscription.findFirst({
             where: {
@@ -41,9 +41,9 @@ export class TokenExpirationService {
             finalExpiresAt = subscription.currentPeriodEnd;
           }
           break;
-        case $Enums.TokenType.PURCHASED:
-        case $Enums.TokenType.ACTIVITY:
-        case $Enums.TokenType.BONUS:
+        case 'PURCHASED':
+        case 'ACTIVITY':
+        case 'BONUS':
         default:
           // These tokens don't expire
           finalExpiresAt = undefined;
@@ -100,7 +100,7 @@ export class TokenExpirationService {
     // Find expired subscription tokens
     const expiredSubscriptionTokens = await prisma.tokenTransaction.findMany({
       where: {
-        type: $Enums.TokenType.SUBSCRIPTION,
+        type: 'SUBSCRIPTION' as any,
         metadata: {
           path: ['expiresAt'],
           lt: now.toISOString()
@@ -133,7 +133,7 @@ export class TokenExpirationService {
 
           await TokenTransactionService.recordTransaction({
             userId: tokenRecord.userId,
-            type: $Enums.TokenType.SUBSCRIPTION,
+            type: 'SUBSCRIPTION' as any,
             amount: -tokenRecord.amount,
             balanceBefore,
             balanceAfter: balanceBefore - tokenRecord.amount,
@@ -193,7 +193,7 @@ export class TokenExpirationService {
     const upcomingExpirations = await prisma.tokenTransaction.findMany({
       where: {
         userId,
-        type: $Enums.TokenType.SUBSCRIPTION,
+        type: 'SUBSCRIPTION' as any,
         amount: { gt: 0 },
         metadata: {
           path: ['expiresAt'],
@@ -229,7 +229,7 @@ export class TokenExpirationService {
     const subscriptionTokens = await prisma.tokenTransaction.findMany({
       where: {
         userId,
-        type: $Enums.TokenType.SUBSCRIPTION,
+        type: 'SUBSCRIPTION' as any,
         amount: { gt: 0 },
         metadata: {
           path: ['subscriptionId'],
@@ -265,7 +265,7 @@ export class TokenExpirationService {
 
       await TokenTransactionService.recordTransaction({
         userId,
-        type: $Enums.TokenType.SUBSCRIPTION,
+        type: 'SUBSCRIPTION' as any,
         amount: -totalToRemove,
         balanceBefore,
         balanceAfter: balanceBefore - totalToRemove,
@@ -292,7 +292,7 @@ export class TokenExpirationService {
     // Find subscription tokens expiring within the specified days
     const expiringSoon = await prisma.tokenTransaction.findMany({
       where: {
-        type: $Enums.TokenType.SUBSCRIPTION,
+        type: 'SUBSCRIPTION' as any,
         amount: { gt: 0 },
         metadata: {
           path: ['expiresAt'],

@@ -21,8 +21,9 @@ paths:
   # Global health endpoints
   /api/health:
     get:
+      operationId: healthAggregate
       x-google-backend:
-        address: https://adscenter-yt54xvsg5q-an.a.run.app/health
+        address: https://identity-yt54xvsg5q-an.a.run.app/api/health
         path_translation: CONSTANT_ADDRESS
       responses:
         '200':
@@ -30,6 +31,7 @@ paths:
 
   /api/health/console:
     get:
+      operationId: healthConsole
       x-google-backend:
         address: https://console-yt54xvsg5q-an.a.run.app/health
         path_translation: CONSTANT_ADDRESS
@@ -39,6 +41,7 @@ paths:
   # Offer 服务
   /api/v1/offers:
     get:
+      operationId: offersList
       security:
         - firebase: []
       x-google-backend:
@@ -47,6 +50,7 @@ paths:
         '200':
           description: OK
     post:
+      operationId: offersCreate
       security:
         - firebase: []
       x-google-backend:
@@ -58,6 +62,7 @@ paths:
   # Workflow 服务（模板查询与启动）
   /api/v1/workflows:
     get:
+      operationId: workflowsList
       security:
         - firebase: []
       x-google-backend:
@@ -65,6 +70,7 @@ paths:
       responses:
         '200': { description: OK }
     post:
+      operationId: workflowsStart
       security:
         - firebase: []
       x-google-backend:
@@ -75,6 +81,7 @@ paths:
   # Billing 服务（示例：我的订阅、我的 Token）
   /api/v1/billing/subscriptions/me:
     get:
+      operationId: billingMySubscription
       security:
         - firebase: []
       x-google-backend:
@@ -84,6 +91,7 @@ paths:
 
   /api/v1/billing/tokens/me:
     get:
+      operationId: billingMyTokens
       security:
         - firebase: []
       x-google-backend:
@@ -93,20 +101,26 @@ paths:
 
   # Adscenter 服务（示例：受保护资源）
   /api/v1/adscenter/*:
-    x-google-backend:
-      address: https://adscenter-yt54xvsg5q-an.a.run.app
     get:
+      operationId: adscenterWildcardGet
       security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://adscenter-yt54xvsg5q-an.a.run.app
       responses: { '200': { description: OK } }
     post:
+      operationId: adscenterWildcardPost
       security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://adscenter-yt54xvsg5q-an.a.run.app
       responses: { '201': { description: Created } }
 
   # Identity 服务（健康检查/受保护接口按需添加）
   /api/v1/identity/healthz:
     get:
+      operationId: identityHealthz
       x-google-backend:
-        address: https://identity-yt54xvsg5q-an.a.run.app
+        address: https://identity-yt54xvsg5q-an.a.run.app/healthz
+        path_translation: CONSTANT_ADDRESS
       responses:
         '200': { description: OK }
 

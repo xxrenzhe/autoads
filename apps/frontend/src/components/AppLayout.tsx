@@ -11,7 +11,7 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const pathname = usePathname()
+  const pathname = usePathname() || ''
   
   // Check if current path is admin-related
   const isAdminPath = pathname.startsWith('/admin') || pathname.startsWith('/admin-dashboard')

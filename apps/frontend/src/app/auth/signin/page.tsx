@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -12,13 +13,13 @@ export default function SignIn() {
   const searchParams = useSearchParams()
   const { status } = useSession()
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(searchParams.get('error'))
+  const [error, setError] = useState<string | null>(searchParams?.get('error') ?? null)
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
     // If user is already authenticated, redirect to dashboard
     if (status === 'authenticated') {
-      const callbackUrl = searchParams.get('callbackUrl') || '/'
+      const callbackUrl = searchParams?.get('callbackUrl') || '/'
       router.push(callbackUrl)
     }
   }, [status, router, searchParams])
@@ -28,7 +29,7 @@ export default function SignIn() {
     setError(null)
     
     try {
-      const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+      const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard'
       await signIn('google', { 
         callbackUrl,
         redirect: true // Let NextAuth handle the redirect

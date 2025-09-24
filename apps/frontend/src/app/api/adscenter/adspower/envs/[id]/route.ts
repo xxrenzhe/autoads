@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/v5-config'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/db'
 import { withFeatureGuard } from '@/lib/middleware/feature-guard-middleware'
 import { withApiProtection } from '@/lib/api-utils'
 

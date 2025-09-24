@@ -99,7 +99,7 @@ export default function Layout({ children }: LayoutProps) {
    });
   
   const [isLoading, setIsLoading] = useState(true);
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
 
   // 模拟系统状态更新
   useEffect(() => {

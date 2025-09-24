@@ -213,7 +213,7 @@ interface SidebarNavigationProps {
 export default function SidebarNavigation({ type, className }: SidebarNavigationProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>([])
-  const pathname = usePathname()
+  const pathname = usePathname() || ''
   const { data: session } = useSession()
 
   const navigationItems = type === 'admin' ? adminNavigationItems : userNavigationItems

@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { PermissionService } from './permission-service';
 
 export interface FeaturePermission {

@@ -6,9 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import axios from 'axios';
 
 export default function SiterankPage() {
-  const [offers, setOffers] = useState([]);
-  const [selectedOffer, setSelectedOffer] = useState(null);
-  const [analysis, setAnalysis] = useState(null);
+  const [offers, setOffers] = useState<any[]>([]);
+  const [selectedOffer, setSelectedOffer] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
 
@@ -43,7 +43,7 @@ export default function SiterankPage() {
     }
   };
 
-  const fetchAnalysis = async (offerId) => {
+  const fetchAnalysis = async (offerId: string) => {
     try {
       const { data } = await axios.get(`/api/siterank/results/${offerId}`);
       if (data.status === 'completed') {

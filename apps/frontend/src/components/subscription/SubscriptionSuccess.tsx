@@ -17,8 +17,8 @@ export default function SubscriptionSuccess() {
   const [subscriptionData, setSubscriptionData] = useState<any>(null)
 
   useEffect(() => {
-    const sessionId = searchParams.get('session_id')
-    const subscriptionId = searchParams.get('subscription_id')
+    const sessionId = searchParams?.get('session_id')
+    const subscriptionId = searchParams?.get('subscription_id')
 
     if (sessionId || subscriptionId) {
       verifySubscription(sessionId, subscriptionId)

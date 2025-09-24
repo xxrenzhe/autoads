@@ -1,6 +1,6 @@
-import { PrismaClient } from './types/prisma-types';
-import { createLogger } from './utils/security/secure-logger';
-import { prisma as sharedPrisma } from './prisma';
+// Removed Prisma types; frontend does not manage DB pool anymore.
+import { createLogger } from './utils/security/secure-logger'
+import { prisma as sharedPrisma } from './db'
 
 const logger = createLogger('DatabasePool');
 
@@ -24,7 +24,7 @@ interface PoolStats {
 
 // Prisma连接池包装器
 export class PrismaConnectionPool {
-  private prisma: PrismaClient;
+  private prisma: any;
   private config: Required<PoolConfig>;
   private stats: PoolStats;
   private connectionTimeout: NodeJS.Timeout | null = null;
@@ -47,7 +47,7 @@ export class PrismaConnectionPool {
     };
 
     // 使用全局单例 Prisma 客户端，避免重复创建连接
-    this.prisma = sharedPrisma as unknown as PrismaClient;
+    this.prisma = sharedPrisma as any
 
     // 监听查询事件（仅开发环境详细记录）
     try {
@@ -69,14 +69,14 @@ export class PrismaConnectionPool {
   }
 
   // 获取Prisma客户端实例
-  get client(): PrismaClient {
+  get client(): any {
     return this.prisma;
   }
 
   // 执行带监控的查询
   async executeQuery<T>(
     operation: string,
-    fn: (prisma: PrismaClient) => Promise<T>
+    fn: (prisma: any) => Promise<T>
   ): Promise<T> {
     const startTime = Date.now();
     
@@ -104,7 +104,7 @@ export class PrismaConnectionPool {
 
   // 事务执行
   async executeTransaction<T>(
-    fn: (prisma: PrismaClient) => Promise<T>
+    fn: (prisma: any) => Promise<T>
   ): Promise<T> {
     const startTime = Date.now();
     
@@ -127,7 +127,7 @@ export class PrismaConnectionPool {
 
   // 批量操作
   async executeBatch<T>(
-    operations: Array<(prisma: PrismaClient) => Promise<T>>
+    operations: Array<(prisma: any) => Promise<T>>
   ): Promise<T[]> {
     const startTime = Date.now();
     
@@ -221,14 +221,14 @@ export const dbPool = new PrismaConnectionPool({
 // 便捷的查询执行器
 export async function dbQuery<T>(
   operation: string,
-  fn: (prisma: PrismaClient) => Promise<T>
+  fn: (prisma: any) => Promise<T>
 ): Promise<T> {
   return dbPool.executeQuery(operation, fn);
 }
 
 // 便捷的事务执行器
 export async function dbTransaction<T>(
-  fn: (prisma: PrismaClient) => Promise<T>
+  fn: (prisma: any) => Promise<T>
 ): Promise<T> {
   return dbPool.executeTransaction(fn);
 }

@@ -6,7 +6,7 @@ import { UI_CONSTANTS } from "@/components/ui/ui-constants";
 import GenericStepsSection from "@/components/common/GenericStepsSection";
 import { BatchOpenSection } from "@/components/BatchOpenSection";
 import { Link, Zap, Shield, Globe } from "lucide-react";
-import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal';
+import { WeChatSubscribeModal } from '@/components/common/WeChatSubscribeModal';
 import { Button } from '@/components/ui/button';
 
 export default function BatchOpenClientPage() {

@@ -3,7 +3,7 @@ import Google from 'next-auth/providers/google'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 // 延迟使用 prisma：import 保留，但仅在确有 DATABASE_URL 时附加到 NextAuth 适配器，
 // 避免无数据库环境下模块初始化失败或无意义的引擎加载。
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/db'
 import { NextRequest } from 'next/server'
 import { 
   getAuthUrl, 

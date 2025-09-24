@@ -10,7 +10,7 @@ import AutoClickProgressMonitor from '@/components/AutoClickProgressMonitor';
 import { AlertCircle, CheckCircle, Clock, Play, Pause, Square, Settings, BarChart3, Lock } from 'lucide-react';
 import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
 import Link from 'next/link';
-import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal';
+import { WeChatSubscribeModal } from '@/components/common/WeChatSubscribeModal';
 
 interface AutoClickTask {
   id: string;

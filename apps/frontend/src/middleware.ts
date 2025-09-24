@@ -19,14 +19,29 @@ export async function middleware(req: NextRequest) {
   const pathname = nextUrl.pathname
 
   // 忽略静态资源与内部文件
-  if (/^\/(?:_next|static|favicon\.ico|robots\.txt|sitemap(?:-.*)?\.xml)/.test(pathname)) {
-    return NextResponse.next()
+  const isStatic = /^\/(?:_next|static|favicon\.ico|robots\.txt|sitemap(?:-.*)?\.xml)/.test(pathname)
+  if (isStatic) {
+    const res = NextResponse.next()
+    // 预发域名避免被搜索引擎索引
+    const host = headers.get('host') || ''
+    if (host.includes('urlchecker.dev')) {
+      res.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    }
+    return res
   }
 
   // 访问日志（stdout）：方法、路径、ip、ua
   const ip = headers.get('x-forwarded-for') || headers.get('x-real-ip') || req.ip || 'unknown'
   const ua = headers.get('user-agent') || 'unknown'
   console.info(`[access] ${method} ${pathname} ip=${ip} ua=${ua}`)
+
+  // 预发域名避免被搜索引擎索引
+  const host = headers.get('host') || ''
+  if (host.includes('urlchecker.dev')) {
+    const res = NextResponse.next()
+    res.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    return res
+  }
 
   // 仅对 /console 做强校验
   if (pathname === '/console' || pathname.startsWith('/console/')) {

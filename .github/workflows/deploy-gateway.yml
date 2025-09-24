@@ -8,6 +8,7 @@ on:
       - 'deployments/api-gateway/gateway.yaml'
       - 'scripts/gateway/**'
       - 'services/**'
+  workflow_dispatch:
 
 concurrency:
   group: deploy-gateway-${{ github.ref }}

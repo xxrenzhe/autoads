@@ -8,12 +8,12 @@ import { Suspense, useEffect } from "react";
 // Head-optimized Google Analytics component
 // This version includes pageview tracking
 function HeadGoogleAnalyticsInner() {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const searchParams = useSearchParams();
 
   useEffect(() => {
     if (isGAEnabled()) {
-      const url = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+      const url = pathname + ((searchParams?.toString() ?? '') ? `?${searchParams?.toString()}` : '');
       pageview(url);
     }
   }, [pathname, searchParams]);

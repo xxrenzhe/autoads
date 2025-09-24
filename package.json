@@ -23,6 +23,7 @@
     "deploy:preview": "./deployments/scripts/deploy.sh preview",
     "deploy:production": "./deployments/scripts/deploy.sh production",
     "health:check": "./deployments/scripts/health-check.sh",
+    "test:firebase:admin": "node scripts/tests/admin-sdk-smoke.mjs",
     "clean": "rm -rf apps/frontend/.next apps/frontend/node_modules",
     "setup": "npm install"
   },
@@ -48,10 +49,12 @@
   "author": "AutoAds Team",
   "license": "MIT",
   "dependencies": {
+    "next": "15.3.5",
     "@prisma/client": "6.16.0",
     "@types/react": "18.3.18",
     "@types/react-dom": "18.3.5",
-    "firebase": "12.3.0"
+    "firebase": "12.3.0",
+    "firebase-admin": "^12.7.0"
   },
   "packageManager": "pnpm@latest"
 }

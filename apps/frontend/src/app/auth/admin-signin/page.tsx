@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -17,7 +18,7 @@ export default function AdminSignIn() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(searchParams.get('error'))
+  const [error, setError] = useState<string | null>(searchParams?.get('error') ?? null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,7 +60,7 @@ export default function AdminSignIn() {
       document.cookie = `OPS_ADMIN_TOKEN=${encodeURIComponent(token)}; ${attrs}`
 
       // 跳转到管理台
-      const callbackUrl = searchParams.get('callbackUrl') || '/ops/console/panel'
+      const callbackUrl = searchParams?.get('callbackUrl') || '/ops/console/panel'
       router.push(callbackUrl)
       router.refresh()
     } catch (err) {

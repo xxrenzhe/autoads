@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
-import GenericHeroSection from "@/components/common/GenericHeroSection";
+import { GenericHeroSection } from "@/components/common/GenericHeroSection";
 import {
   Award,
   BarChart3,

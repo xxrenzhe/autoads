@@ -43,7 +43,7 @@ export default function SubscriptionFlow() {
 
   // Check for pre-selected plan from URL params
   useEffect(() => {
-    const planId = searchParams.get('plan')
+    const planId = searchParams?.get('plan') || undefined
     if (planId) {
       loadPlanDetails(planId)
     }

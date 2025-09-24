@@ -15,6 +15,7 @@ curl_s() {
 
 echo "== API Gateway =="
 curl_s "https://${GATEWAY_HOST}/api/health" || true
+curl_s "https://${GATEWAY_HOST}/api/health/console" || true
 curl_s "https://${GATEWAY_HOST}/api/v1/offers" || true  # expect 401 when no JWT
 
 echo

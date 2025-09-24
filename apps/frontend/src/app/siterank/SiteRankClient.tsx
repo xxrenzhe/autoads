@@ -20,7 +20,7 @@ import { defaultSiteRankConfig, validateBatchQueryCount } from '@/lib/config/sit
 import { ProtectedButton } from '@/components/auth/ProtectedButton';
 import { useTokenConsumption } from '@/hooks/useTokenConsumption';
 import { getUiDefaultRpm, fetchUiDefaultRpm, getPlanFeatureRpmSync } from '@/lib/config/rate-limit';
-import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal';
+import { WeChatSubscribeModal } from '@/components/common/WeChatSubscribeModal';
 import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
 const logger = createClientLogger('SiteRankClient');
 

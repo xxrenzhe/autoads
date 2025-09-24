@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { auth } from '@/lib/auth/v5-config'
 import { redirect } from 'next/navigation'
+export const dynamic = 'force-dynamic'
 import TokenUsageAnalytics from '@/components/user/TokenUsageAnalytics'
 
 export const metadata: Metadata = {
@@ -8,7 +9,6 @@ export const metadata: Metadata = {
   description: 'View your token usage analytics and consumption patterns',
 }
 
-export const dynamic = 'force-dynamic'
 
 export default async function TokenUsagePage() {
   const session = await auth()

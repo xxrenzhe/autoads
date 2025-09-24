@@ -19,7 +19,7 @@ paths:
     get:
       operationId: healthGlobal
       x-google-backend:
-        address: https://adscenter-REPLACE_WITH_RUN_URL/health
+        address: https://identity-REPLACE_WITH_RUN_URL/api/health
         path_translation: CONSTANT_ADDRESS
       responses: { '200': { description: OK } }
   /api/health/adscenter:

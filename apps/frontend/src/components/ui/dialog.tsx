@@ -100,8 +100,18 @@ const DialogContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTML
 })
 DialogContent.displayName = "DialogContent"
 
-const DialogClose: React.FC<React.PropsWithChildren<React.HTMLAttributes<HTMLButtonElement>>> = ({ children, className, ...props }) => {
+const DialogClose: React.FC<React.PropsWithChildren<{ asChild?: boolean } & React.HTMLAttributes<HTMLButtonElement>>> = ({ asChild, children, className, ...props }) => {
   const { setOpen } = useDialogContext()
+  if (asChild && React.isValidElement(children)) {
+    const child = React.Children.only(children) as React.ReactElement<any>
+    return React.cloneElement(child, {
+      onClick: (...args: any[]) => {
+        child.props?.onClick?.(...args)
+        ;(props.onClick as any)?.(...args)
+        setOpen(false)
+      }
+    })
+  }
   return (
     <button
       type="button"

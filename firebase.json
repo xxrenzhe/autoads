@@ -1,17 +1,18 @@
 {
-  "hosting": {
-    "public": "hosting",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [
-      {
-        "source": "**",
-        "run": {
-          "serviceId": "frontend",
-          "region": "asia-northeast1"
-        }
-      }
-    ]
-  },
+  "hosting": [
+    {
+      "site": "autoads-preview",
+      "source": "apps/frontend",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "frameworksBackend": { "region": "asia-northeast1" }
+    },
+    {
+      "site": "autoads-prod",
+      "source": "apps/frontend",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "frameworksBackend": { "region": "asia-northeast1" }
+    }
+  ],
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"

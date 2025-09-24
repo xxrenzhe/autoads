@@ -48,7 +48,7 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
   const { data: session } = useSession();
   const { openLoginModal, openUserCenterModal } = useAuthContext();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const pathname = usePathname();
+  const pathname = usePathname() || undefined;
 
   // 如果语言还在加载中，显示加载状态
   if (isLoading) {

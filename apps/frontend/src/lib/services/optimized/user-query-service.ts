@@ -1,4 +1,4 @@
-import { prisma, SubscriptionStatus } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { createLogger } from '@/lib/utils/security/secure-logger';
 
 const logger = createLogger('UserQueryService');
@@ -30,7 +30,7 @@ export class UserQueryService {
           tokenUsedThisMonth: true,
           // 关联的订阅信息
           subscriptions: {
-            where: { status: SubscriptionStatus.ACTIVE },
+            where: { status: 'ACTIVE' as any },
             select: {
               id: true,
               planId: true,
@@ -208,7 +208,7 @@ export class UserQueryService {
             tokenBalance: true,
             // 只获取活跃订阅
             subscriptions: {
-              where: { status: SubscriptionStatus.ACTIVE },
+              where: { status: 'ACTIVE' as any },
               select: {
                 plan: {
                   select: {

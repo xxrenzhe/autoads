@@ -1,10 +1,9 @@
 import { prisma } from '@/lib/db'
 import { getCachedRemoteConfig, getConfigValue } from '@/lib/config/remote-config'
-import { PrismaClient, Prisma } from '../types/prisma-types'
+// Removed Prisma types; service should query configs via BFF endpoints
 
-type SystemConfig = Prisma.SystemConfigGetPayload<{
-  include: {}
-}>
+// Fallback to any to avoid tight coupling with generated client enums in this build path
+type SystemConfig = any
 
 export interface ConfigValue {
   key: string

@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { freeTierControl } from '@/lib/access-control/free-tier-control'
-import { $Enums } from '@prisma/client'
-
-type TokenUsageFeature = $Enums.tokenusagefeature;
 
 export interface AccessControlConfig {
   enableAccessControl: boolean
   protectedRoutes: Array<{
     path: string
-    feature: TokenUsageFeature
+    feature: string
     operation?: string
     requiresAuth?: boolean
   }>
@@ -21,17 +18,17 @@ export class AccessControlMiddleware {
     enableAccessControl: true,
     protectedRoutes: [
       // API routes
-      { path: '/api/features/siterank', feature: $Enums.tokenusagefeature.SITERANK, operation: 'analyze', requiresAuth: true },
-      { path: '/api/features/batchopen', feature: $Enums.tokenusagefeature.BATCHOPEN, operation: 'batch', requiresAuth: true },
-      { path: '/api/features/adscenter', feature: $Enums.tokenusagefeature.CHANGELINK, operation: 'change', requiresAuth: true },
-      { path: '/api/user/tokens', feature: $Enums.tokenusagefeature.REPORT, requiresAuth: true },
-      { path: '/api/user/export', feature: $Enums.tokenusagefeature.EXPORT, requiresAuth: true },
+      { path: '/api/features/siterank', feature: 'SITERANK', operation: 'analyze', requiresAuth: true },
+      { path: '/api/features/batchopen', feature: 'BATCHOPEN', operation: 'batch', requiresAuth: true },
+      { path: '/api/features/adscenter', feature: 'CHANGELINK', operation: 'change', requiresAuth: true },
+      { path: '/api/user/tokens', feature: 'REPORT', requiresAuth: true },
+      { path: '/api/user/export', feature: 'EXPORT', requiresAuth: true },
       
       // Page routes
-      { path: '/dashboard', feature: $Enums.tokenusagefeature.ADMIN, requiresAuth: true },
-      { path: '/features/siterank', feature: $Enums.tokenusagefeature.SITERANK, requiresAuth: true },
-      { path: '/features/batchopen', feature: $Enums.tokenusagefeature.BATCHOPEN, requiresAuth: true },
-      { path: '/features/adscenter', feature: $Enums.tokenusagefeature.CHANGELINK, requiresAuth: true }
+      { path: '/dashboard', feature: 'ADMIN', requiresAuth: true },
+      { path: '/features/siterank', feature: 'SITERANK', requiresAuth: true },
+      { path: '/features/batchopen', feature: 'BATCHOPEN', requiresAuth: true },
+      { path: '/features/adscenter', feature: 'CHANGELINK', requiresAuth: true }
     ],
     bypassPaths: [
       '/api/auth',

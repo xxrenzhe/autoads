@@ -29,7 +29,7 @@ import {
   Activity
 } from 'lucide-react';
 import { toast } from 'sonner'
-import WeChatSubscribeModal from '@/components/common/WeChatSubscribeModal'
+import { WeChatSubscribeModal } from '@/components/common/WeChatSubscribeModal'
 import type { HttpError } from '@/shared/http/client'
 
 interface GoogleAdsAccount {

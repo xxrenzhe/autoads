@@ -6,13 +6,13 @@ import Script from "next/script";
 import { Suspense, useEffect } from "react";
 
 function GoogleAnalyticsInner() {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!isGAEnabled()) return;
 
-    const url = pathname + searchParams.toString();
+    const url = pathname + (searchParams?.toString() ?? '');
     pageview(url);
   }, [pathname, searchParams]);
   

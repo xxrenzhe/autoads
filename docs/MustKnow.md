@@ -6,7 +6,7 @@
 背景知识，在设计时需要考虑，不要违反：
 1）部署流程：代码部署发布分2步，第一步：利用Github action生成不同环境的docker镜像；第二步，手动在ClawCloud上配置镜像拉取并部署
 - 代码推送到main分支，触发preview环境docker镜像构建：标注 docker image tag 为 ghcr.io/xxrenzhe/autoads:preview-latest
-- 代码推送带production分支，触发production环境docker镜像构建：标注 docker image tag 为 ghcr.io/xxrenzhe/autoads:prod-latest
+- 代码推送到production分支，触发production环境docker镜像构建：标注 docker image tag 为 ghcr.io/xxrenzhe/autoads:prod-latest
 - 当production分支打了tag（如v3.0.0），则触发production环境docker镜像构建：标注 docker image tag 为 ghcr.io/xxrenzhe/autoads:prod-[tag]
 - 当前镜像构建使用的是：Dockerfile.standalone
 2）基本架构：前端Next，后端Go，单镜像单容器部署，实现多用户高并发SaaS应用

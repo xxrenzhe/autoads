@@ -1,9 +1,7 @@
 import { prisma } from '@/lib/db'
-import { Interval, PrismaClient, Prisma } from '../types/prisma-types'
+// Removed Prisma types; service should use BFF endpoints instead of direct DB access
 
-type Plan = Prisma.PlanGetPayload<{
-  include: {}
-}>
+type Plan = any
 
 export interface CreatePlanData {
   name: string
@@ -90,7 +88,7 @@ export class PlanService {
           description: data.description,
           price: data.price,
           currency: data.currency,
-          interval: data.interval as Interval,
+          interval: data.interval as any,
           billingPeriod: String(data.billingPeriod),
           tokenQuota: data.tokenQuota,
           features: {
@@ -124,7 +122,7 @@ export class PlanService {
         description: data.description,
         price: data.price,
         currency: data.currency,
-        interval: data.interval as Interval,
+          interval: data.interval as any,
         billingPeriod: String(data.billingPeriod),
         tokenQuota: data.tokenQuota,
         features: {
@@ -154,7 +152,7 @@ export class PlanService {
           ...(data.description && { description: data.description }),
           ...(data.price !== undefined && { price: data.price }),
           ...(data.currency && { currency: data.currency }),
-          ...(data.interval && { interval: data.interval as Interval }),
+          ...(data.interval && { interval: data.interval as any }),
           ...(data.billingPeriod && { billingPeriod: String(data.billingPeriod) }),
           ...(data.tokenQuota !== undefined && { tokenQuota: data.tokenQuota }),
           ...(data.features && { 
@@ -228,7 +226,7 @@ export class PlanService {
    */
   static async getPlansByInterval(interval: 'MONTH' | 'YEAR', includeInactive: boolean = false): Promise<Plan[]> {
     const whereClause = {
-      interval: interval as Interval,
+      interval: interval as any,
       ...(includeInactive ? {} : { isActive: true })
     }
     

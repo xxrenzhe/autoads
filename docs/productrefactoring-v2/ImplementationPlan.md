@@ -22,8 +22,11 @@
   - API Gateway：已发布 autoads-gw-885pd7lz.an.gateway.dev，/api/health 健康返回 200，受保护路由未授权 401
   - 前端 Hosting：
     - GitHub Actions 工作流已添加（.github/workflows/deploy-frontend.yml）
-    - 方案一（推荐）：Hosting 重写至 Cloud Run frontend 服务（上线后切换）
-    - 方案二：Hosting frameworks（SSR）直接部署（使用 Actions 避免本地工具链冲突）
+    - 采用 Hosting WebFrameworks（SSR）直接部署；SSR 函数区域固定 `asia-northeast1`
+    - 站点：`autoads-preview`（预发）、`autoads-prod`（生产），待控制台绑定自定义域（www.urlchecker.dev / www.autoads.dev）
+    - 统一 BFF：Next 重写 `/api/:path* → /api/go/:path*`，同源反代至 API Gateway；NextAuth `/api/auth/*` 原路透传
+    - 去 Prisma：apps/frontend 不再打包/运行 Prisma；`@auth/prisma-adapter` 指向本地桩；NextAuth 缺 DB 时走 JWT 会话
+    - SSR 函数瘦身：对 `google-ads-api`、`googleapis`、`puppeteer`、`exceljs`、`swagger-ui-react` 施加服务器端别名桩
 
 ## 里程碑（对齐 MVP）
 - M1（3-4 个月）：MVP 闭环

@@ -2,8 +2,8 @@
 
 import { useSession } from 'next-auth/react'
 import useSWR from 'swr'
-import { MainNavigation } from "@/components/navigation/MainNavigation"
-import { PageFooter } from "@/components/PageFooter"
+import MainNavigation from "@/components/navigation/MainNavigation"
+import PageFooter from "@/components/PageFooter"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
