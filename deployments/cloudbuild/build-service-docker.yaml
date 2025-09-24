@@ -1,0 +1,18 @@
+timeout: "3600s"
+options:
+  logging: CLOUD_LOGGING_ONLY
+substitutions:
+  _SERVICE: "identity"
+  _IMAGE: "asia-northeast1-docker.pkg.dev/PROJECT/REPO/identity:dev"
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Build
+    args:
+      - build
+      - '-f'
+      - 'services/${_SERVICE}/Dockerfile'
+      - '-t'
+      - '${_IMAGE}'
+      - '.'
+images:
+  - '${_IMAGE}'

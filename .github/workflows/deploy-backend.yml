@@ -109,13 +109,12 @@ jobs:
           # Use repository root as build context to allow Dockerfile to COPY go.work/pkg
           DOCKERFILE_PATH="services/${SERVICE}/Dockerfile"
           if [[ ! -f "$DOCKERFILE_PATH" ]]; then echo "Dockerfile not found: $DOCKERFILE_PATH" >&2; exit 1; fi
-          echo "Submitting Cloud Build for ${IMAGE}:${PRIMARY_TAG} using -f ${DOCKERFILE_PATH} (context: repo root)"
+          echo "Submitting Cloud Build for ${IMAGE}:${PRIMARY_TAG} via config (service=${SERVICE})"
           BUILD_NAME=$(gcloud builds submit . \
-            -f "$DOCKERFILE_PATH" \
             --project "${PROJECT_ID}" \
-            --tag "${IMAGE}:${PRIMARY_TAG}" \
-            --async \
-            --format='value(name)' || true)
+            --config deployments/cloudbuild/build-service-docker.yaml \
+            --substitutions _SERVICE="${SERVICE}",_IMAGE="${IMAGE}:${PRIMARY_TAG}" \
+            --async --format='value(name)' || true)
           BUILD_ID="${BUILD_NAME##*/}"
           if [[ -z "$BUILD_ID" ]]; then
             echo "ERROR: Failed to parse Cloud Build ID from submit output" >&2
