@@ -26,11 +26,15 @@ jobs:
             package-lock.json
             apps/frontend/package-lock.json
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install Dependencies (frontend only)
+        run: |
+          cd apps/frontend
+          npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Build (frontend only)
+        run: |
+          cd apps/frontend
+          npm run build
 
       - name: Decide Hosting target
         id: decide
