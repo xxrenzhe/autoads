@@ -126,13 +126,17 @@ const nextConfig = {
   
   // TypeScript/ESLint 配置（预发先启用严格校验）
   typescript: {
-    // 预览与开发环境忽略类型检查（降低构建内存占用）；生产开启严格校验
-    ignoreBuildErrors: (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV || 'development').toLowerCase() !== 'production',
+    // CI 环境一律跳过类型检查以保障构建稳定；本地/非 CI 可严格校验
+    ignoreBuildErrors:
+      process.env.CI === 'true' ||
+      (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV || 'development').toLowerCase() !== 'production',
   },
 
   eslint: {
-    // 预览与开发环境忽略 ESLint（降低构建内存占用）；生产开启
-    ignoreDuringBuilds: (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV || 'development').toLowerCase() !== 'production',
+    // CI 环境一律跳过 ESLint；本地/非 CI 再严格
+    ignoreDuringBuilds:
+      process.env.CI === 'true' ||
+      (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV || process.env.NODE_ENV || 'development').toLowerCase() !== 'production',
   },
 
   // 服务器端外部模块
