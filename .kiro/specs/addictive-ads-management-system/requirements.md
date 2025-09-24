@@ -47,6 +47,7 @@
 4. WHEN 用户查看Offer详情 THEN 系统 SHALL 显示完整的ROSC计算过程和历史趋势图
 5. WHEN Offer卡片显示 THEN 系统 SHALL 用颜色编码表示表现（绿色=盈利，红色=亏损，黄色=测试中）
 6. WHEN 用户将Offer设置为"归档"状态 THEN 系统 SHALL 同步下线补点击任务和相关广告系列，并明确告知用户操作风险
+7. WHEN Offer连续5天出现0曝光0点击 THEN 系统 SHALL 自动将Offer状态转为"衰退期"并通知用户
 7. WHEN 用户批量录入Offer THEN 系统 SHALL 支持输入广告联盟Offer URL和投放国家，快速积累机会池
 8. WHEN 用户进行批量评估或批量仿真 THEN 系统 SHALL 验证用户套餐权限，仅Max/Elite套餐支持高级批量操作##
 # 需求2：智能Offer评估系统
@@ -132,7 +133,7 @@
 - 简化操作类型，专注最常用的CPC调整、预算调整、换链接
 
 **验收标准：**
-1. WHEN 用户访问批量操作矩阵 THEN 系统 SHALL 显示类似Excel的界面，支持多选和批量编辑
+1. WHEN 用户访问批量操作矩阵 THEN 系统 SHALL 以Offer为操作对象显示界面，用户选择Offer进行批量操作而非直接操作Google Ads账户
 2. WHEN 用户设置过滤条件 THEN 系统 SHALL 提供智能筛选（如"ROSC<1.0且花费>$50"），快速定位问题广告系列
 3. WHEN 用户选择批量操作 THEN 系统 SHALL 显示操作预览，包含影响的广告系列数量和预期效果
 4. WHEN 用户确认批量操作 THEN 系统 SHALL 显示进度条，完成后提供一键撤销功能
@@ -163,7 +164,7 @@
 1. WHEN 系统检测到风险 THEN 系统 SHALL 在AI洞察信息流中推送红色预警，包含具体数据和建议操作
 2. WHEN 系统发现优化机会 THEN 系统 SHALL 推送绿色优化建议，包含预期收益和一键执行按钮
 3. WHEN 用户采纳建议后 THEN 系统 SHALL 跟踪效果并在24小时后反馈结果，强化正向体验
-4. WHEN AI分析完成 THEN 系统 SHALL 使用Firebase AI Logic分析数据趋势和异常模式
+4. WHEN AI分析完成 THEN 系统 SHALL 使用Firebase AI Logic进行多场景分析：落地页内容分析、优化建议生成、风险识别、广告文案合规性检查
 5. IF ROSC连续3天下滑超过20% THEN 系统 SHALL 自动发送紧急预警并建议暂停相关广告系列
 6. WHEN 系统分析表现数据 THEN 系统 SHALL 监控曝光量、CTR、CPC、质量得分等关键指标的异常变化
 7. WHEN 检测到表现异常 THEN 系统 SHALL 提供具体原因分析和3个可选的优化方案
@@ -225,6 +226,8 @@
 3. WHEN 系统检测违规内容 THEN 系统 SHALL 标记并阻止相关操作
 4. WHEN 用户执行批量操作 THEN 系统 SHALL 记录完整的操作审计日志
 5. WHEN 系统访问Google Ads API THEN 系统 SHALL 遵循API使用限制和最佳实践
+6. WHEN 用户访问数据 THEN 系统 SHALL 实施严格的多用户数据隔离，确保用户只能访问自己的数据
+7. WHEN 执行数据库查询 THEN 系统 SHALL 在所有查询中强制包含用户ID条件，防止数据泄露
 
 ### 需求10：系统性能与可扩展性
 
@@ -306,6 +309,8 @@
 7. WHEN 访问URL THEN 系统 SHALL 根据投放国家匹配相应的时区、语言和User-Agent，提高访问真实性
 8. WHEN 检测到反爬虫 THEN 系统 SHALL 自动切换代理IP和优化User-Agent策略
 9. WHEN 服务空闲 THEN 系统 SHALL 保持浏览器实例活跃，避免频繁创建销毁带来的性能损耗
+10. WHEN 处理相同国家的不同Offer URL THEN 系统 SHALL 在时间窗口内复用代理IP，但确保同一Offer URL每次访问使用不重复的代理IP
+11. WHEN 管理员配置代理设置 THEN 系统 SHALL 支持配置"国家-代理IP API URL"的关联关系，便于获取不同国家的代理IP
 
 ### 需求16：Google Ads账号授权与关联管理
 

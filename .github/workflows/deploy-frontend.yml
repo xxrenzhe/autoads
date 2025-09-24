@@ -55,6 +55,8 @@ jobs:
           channelId: live
           projectId: '${{ vars.GCP_PROJECT_ID }}'
           target: '${{ steps.decide.outputs.target }}'
+        env:
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
       - name: Cache Turbo build artifacts
         uses: actions/cache@v4
         with:
