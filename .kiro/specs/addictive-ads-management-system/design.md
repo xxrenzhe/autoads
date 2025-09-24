@@ -296,6 +296,23 @@ GET    /api/v1/admin/click-analysis/stats // 获取点击分析统计
 POST   /api/v1/admin/click-analysis/optimize // 执行AI优化分析
 PUT    /api/v1/admin/click-analysis/strategy // 更新点击策略
 POST   /api/v1/admin/click-analysis/deploy   // 部署优化策略到URL解析服务
+
+// 系统监控API
+GET    /api/v1/admin/system/events        // 获取系统异常事件
+GET    /api/v1/admin/system/events/{id}   // 获取异常事件详情
+PUT    /api/v1/admin/system/events/{id}   // 更新异常事件状态
+GET    /api/v1/admin/system/tasks         // 获取定时任务执行结果
+GET    /api/v1/admin/system/tasks/{id}    // 获取任务执行详情
+
+// 国际化API
+GET    /api/v1/i18n/translations/{lang}   // 获取语言包
+PUT    /api/v1/i18n/translations/{lang}   // 更新语言包
+GET    /api/v1/i18n/languages             // 获取支持的语言列表
+
+// SEO管理API
+GET    /api/v1/seo/sitemap                // 获取站点地图
+PUT    /api/v1/seo/meta/{page}            // 更新页面SEO信息
+GET    /api/v1/seo/pages                  // 获取所有页面SEO配置
 ```## 
 数据模型设计
 
@@ -479,6 +496,69 @@ POST   /api/v1/admin/click-analysis/deploy   // 部署优化策略到URL解析�
     interval: number
   }
 }
+
+// /configs/i18n_settings
+{
+  defaultLanguage: "zh",
+  supportedLanguages: ["zh", "en"],
+  translations: {
+    "zh": {
+      "common.save": "保存",
+      "common.cancel": "取消",
+      "offer.status.pool": "机会池",
+      // ... 更多翻译
+    },
+    "en": {
+      "common.save": "Save",
+      "common.cancel": "Cancel", 
+      "offer.status.pool": "Opportunity Pool",
+      // ... 更多翻译
+    }
+  },
+  aiPrompts: {
+    "zh": {
+      "evaluation": "请分析以下Offer的投放价值...",
+      "optimization": "请为以下广告数据提供优化建议..."
+    },
+    "en": {
+      "evaluation": "Please analyze the advertising value of the following Offer...",
+      "optimization": "Please provide optimization suggestions for the following ad data..."
+    }
+  }
+}
+
+// /configs/seo_settings
+{
+  pages: {
+    "/": {
+      "zh": {
+        title: "上瘾式广告管理系统 - 智能Google Ads多账户管理平台",
+        description: "专业的Google Ads多账户管理系统，提供智能Offer评估、批量操作、AI预警等功能",
+        keywords: "Google Ads, 广告管理, 多账户, AI优化, 批量操作"
+      },
+      "en": {
+        title: "Addictive Ads Management System - Intelligent Google Ads Multi-Account Platform",
+        description: "Professional Google Ads multi-account management system with intelligent Offer evaluation, bulk operations, AI alerts",
+        keywords: "Google Ads, Ad Management, Multi-Account, AI Optimization, Bulk Operations"
+      }
+    },
+    "/about": {
+      "zh": {
+        title: "关于我们 - 上瘾式广告管理系统",
+        description: "了解上瘾式广告管理系统的产品理念、核心功能和技术优势"
+      },
+      "en": {
+        title: "About Us - Addictive Ads Management System", 
+        description: "Learn about the product philosophy, core features and technical advantages"
+      }
+    }
+  },
+  sitemap: {
+    changefreq: "weekly",
+    priority: 0.8,
+    lastmod: "auto"
+  }
+}
 ```
 
 ### Cloud SQL 数据结构
@@ -595,6 +675,44 @@ CREATE TABLE market_trends (
     UNIQUE KEY unique_trend (industry, country, metric_name, period_start),
     INDEX idx_industry_country (industry, country),
     INDEX idx_period (period_start, period_end)
+);
+
+-- 系统异常事件表
+CREATE TABLE system_events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    event_type ENUM('business_risk', 'system_risk', 'api_limit', 'service_error') NOT NULL,
+    event_category VARCHAR(50) NOT NULL, -- account_suspended, url_parsing_failed, etc.
+    severity ENUM('low', 'medium', 'high', 'critical') NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    affected_resources JSON, -- 受影响的资源ID列表
+    status ENUM('open', 'investigating', 'resolved', 'ignored') DEFAULT 'open',
+    resolved_at TIMESTAMP NULL,
+    resolved_by VARCHAR(50) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_type_severity (event_type, severity),
+    INDEX idx_status_created (status, created_at),
+    INDEX idx_category (event_category)
+);
+
+-- 定时任务执行记录表
+CREATE TABLE scheduled_task_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    task_name VARCHAR(100) NOT NULL,
+    task_type ENUM('click_simulation', 'link_rotation', 'data_sync', 'cleanup') NOT NULL,
+    execution_id VARCHAR(50) NOT NULL, -- 执行批次ID
+    status ENUM('running', 'completed', 'failed', 'timeout') NOT NULL,
+    started_at TIMESTAMP NOT NULL,
+    completed_at TIMESTAMP NULL,
+    duration_seconds INT NULL,
+    processed_count INT DEFAULT 0,
+    success_count INT DEFAULT 0,
+    error_count INT DEFAULT 0,
+    error_details JSON NULL,
+    logs TEXT NULL,
+    INDEX idx_task_status (task_name, status),
+    INDEX idx_execution_id (execution_id),
+    INDEX idx_started_at (started_at)
 );
 ```
 
@@ -781,7 +899,16 @@ func checkAutoStatusTransition(userID string, performanceData []*PerformanceData
 - **表格组件：** Ant Design Table
 - **表单组件：** Ant Design Form
 - **布局：** Ant Design Pro Layout
+- **国际化：** next-i18next
+- **移动端适配：** Ant Design Mobile
 - **部署：** Firebase Hosting (独立子域名)
+
+#### 共享技术栈
+- **国际化：** next-i18next + react-i18next
+- **SEO优化：** next-seo + next-sitemap
+- **移动端适配：** 响应式设计 + PWA支持
+- **多语言路由：** Next.js i18n routing
+- **站点地图：** 自动生成多语言sitemap
 
 ### 页面结构设计
 

@@ -3,8 +3,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install dependencies
-COPY apps/frontend/package.json apps/frontend/package-lock.json ./
-RUN npm ci
+COPY apps/frontend/package*.json ./
+RUN npm ci || npm install
 
 # Copy source
 COPY apps/frontend/ ./
@@ -22,11 +22,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Copy only the built app and minimal files
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
+COPY --from=builder /app/package*.json ./
 
 # Install production dependencies only
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev || npm install --omit=dev
 
 # Expose port and run
 ENV PORT=8080
