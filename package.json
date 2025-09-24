@@ -56,5 +56,5 @@
     "firebase": "12.3.0",
     "firebase-admin": "^12.7.0"
   },
-  "packageManager": "pnpm@latest"
+  "packageManager": "npm@10.8.2"
 }
