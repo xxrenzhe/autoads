@@ -85,7 +85,7 @@ jobs:
           echo "Submitting Cloud Build for ${IMAGE} via build-frontend-docker.yaml"
           BUILD_NAME=$(gcloud builds submit . \
             --project "${PROJECT_ID}" \
-            --config deployments/cloudbuild/build-frontend-docker.yaml \
+            --config ./deployments/cloudbuild/build-frontend-docker.yaml \
             --substitutions _IMAGE="${IMAGE}" \
             --async --format='value(name)')
           BUILD_ID="${BUILD_NAME##*/}"
