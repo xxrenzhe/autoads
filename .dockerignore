@@ -17,7 +17,9 @@ build/
 out/
 .next/
 gofly_admin_v3/
+# Ignore all apps by default, except frontend for its own Docker build
 apps/**
+!apps/frontend/**
 
 # Environment and secrets (keep README only)
 .env
