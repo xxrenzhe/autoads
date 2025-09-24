@@ -1,18 +1,35 @@
-# Dockerfile for frontend service
-FROM node:20-alpine
-
+# Build stage
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy only frontend package manifests, install deps
-COPY package*.json ./
-RUN npm install --no-audit --no-fund
+# Install dependencies
+COPY apps/frontend/package.json apps/frontend/package-lock.json ./
+RUN npm ci
 
-# Copy app sources
-COPY . ./
+# Copy source
+COPY apps/frontend/ ./
 
-# Build Next.js
-ENV NEXT_PUBLIC_DEPLOYMENT_ENV=production
+# Build Next.js app
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-EXPOSE 3000
-CMD [ "npm", "start" ]
+# Runtime stage
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Copy only the built app and minimal files
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package-lock.json ./package-lock.json
+
+# Install production dependencies only
+RUN npm ci --omit=dev
+
+# Expose port and run
+ENV PORT=8080
+ENV HOSTNAME=0.0.0.0
+EXPOSE 8080
+CMD ["npm","run","start","--","-p","8080"]

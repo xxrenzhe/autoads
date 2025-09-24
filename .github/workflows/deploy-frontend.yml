@@ -10,6 +10,12 @@ concurrency:
   group: deploy-frontend-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  ARTIFACT_REPO: ${{ vars.ARTIFACT_REPO || 'autoads-services' }}
+  ARTIFACT_LOCATION: ${{ vars.GCP_REGION }}
+
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
@@ -35,6 +41,85 @@ jobs:
         run: |
           cd apps/frontend
           npm run build
+
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Determine environment and tags
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHORT_SHA="${GITHUB_SHA::7}"
+          REF="$GITHUB_REF"
+          if [[ "$REF" == refs/tags/* ]]; then
+            ENVIRONMENT="prod"
+            TAG_NAME="${REF#refs/tags/}"
+            PRIMARY_TAG="prod-${TAG_NAME}"
+            SECONDARY_TAG="prod-${SHORT_SHA}"
+          elif [[ "$REF" == "refs/heads/production" ]]; then
+            ENVIRONMENT="prod"
+            PRIMARY_TAG="prod-${SHORT_SHA}"
+            SECONDARY_TAG="prod-latest"
+          else
+            ENVIRONMENT="preview"
+            PRIMARY_TAG="preview-${SHORT_SHA}"
+            SECONDARY_TAG="preview-latest"
+          fi
+          echo "environment=${ENVIRONMENT}" >> "$GITHUB_OUTPUT"
+          echo "primary_tag=${PRIMARY_TAG}" >> "$GITHUB_OUTPUT"
+          echo "secondary_tag=${SECONDARY_TAG}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build frontend image (Cloud Build)
+        shell: bash
+        run: |
+          set -euo pipefail
+          AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
+          IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/frontend:${{ steps.meta.outputs.primary_tag }}"
+          echo "Submitting Cloud Build for ${IMAGE} via build-frontend-docker.yaml"
+          BUILD_NAME=$(gcloud builds submit . \
+            --project "${PROJECT_ID}" \
+            --config deployments/cloudbuild/build-frontend-docker.yaml \
+            --substitutions _IMAGE="${IMAGE}" \
+            --async --format='value(name)')
+          BUILD_ID="${BUILD_NAME##*/}"
+          if [[ -z "$BUILD_ID" ]]; then echo "Failed to parse build id" >&2; exit 1; fi
+          for i in $(seq 1 180); do
+            STATUS=$(gcloud builds describe "$BUILD_ID" --project "$PROJECT_ID" --format='value(status)' || true)
+            echo "Build $BUILD_ID status: $STATUS";
+            case "$STATUS" in SUCCESS) break;; FAILURE|CANCELLED|TIMEOUT|EXPIRED) exit 1;; esac
+            sleep 10; done
+
+      - name: Add secondary tag (no rebuild)
+        if: ${{ steps.meta.outputs.secondary_tag != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
+          IMAGE_BASE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/frontend"
+          gcloud container images add-tag \
+            "${IMAGE_BASE}:${{ steps.meta.outputs.primary_tag }}" \
+            "${IMAGE_BASE}:${{ steps.meta.outputs.secondary_tag }}" \
+            --quiet --project "${PROJECT_ID}"
+
+      - name: Deploy Cloud Run (frontend)
+        shell: bash
+        run: |
+          set -euo pipefail
+          AR_HOST="${ARTIFACT_LOCATION:-asia-northeast1}-docker.pkg.dev"
+          IMAGE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/frontend:${{ steps.meta.outputs.primary_tag }}"
+          gcloud run deploy frontend \
+            --image "$IMAGE" \
+            --region "${REGION:-asia-northeast1}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --project "${PROJECT_ID}"
 
       - name: Decide Hosting target
         id: decide
