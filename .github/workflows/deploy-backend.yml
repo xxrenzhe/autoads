@@ -103,8 +103,41 @@ jobs:
           # Service path (frontend Cloud Run is in hosting/, others in services/<name>)
           SERVICE_PATH="services/${SERVICE}"
           if [[ "$SERVICE" == "frontend" ]]; then SERVICE_PATH="hosting"; fi
-          echo "Building ${IMAGE}:${PRIMARY_TAG} from ${SERVICE_PATH}"
-          gcloud builds submit "${SERVICE_PATH}" --project "${PROJECT_ID}" --tag "${IMAGE}:${PRIMARY_TAG}"
+          LOG_BUCKET="gs://autoads-build-logs-asia-northeast1"
+          echo "Submitting Cloud Build for ${IMAGE}:${PRIMARY_TAG} from ${SERVICE_PATH} (logs: ${LOG_BUCKET})"
+          SUBMIT_OUTPUT=$(gcloud builds submit "${SERVICE_PATH}" \
+            --project "${PROJECT_ID}" \
+            --tag "${IMAGE}:${PRIMARY_TAG}" \
+            --gcs-log-dir="${LOG_BUCKET}" \
+            --async 2>&1 | tee /dev/stderr || true)
+          BUILD_ID=$(printf "%s" "$SUBMIT_OUTPUT" | grep -Eo 'builds/[a-f0-9-]+' | sed 's#builds/##' | tail -n1)
+          if [[ -z "$BUILD_ID" ]]; then
+            echo "ERROR: Failed to parse Cloud Build ID from submit output" >&2
+            exit 1
+          fi
+          echo "Cloud Build ID: $BUILD_ID"
+          # Poll for completion without streaming logs (avoids VPC-SC restrictions)
+          ATTEMPTS=0
+          while :; do
+            STATUS=$(gcloud builds describe "$BUILD_ID" --project "$PROJECT_ID" --format='value(status)' || true)
+            echo "Build $BUILD_ID status: $STATUS"
+            case "$STATUS" in
+              SUCCESS)
+                break;;
+              FAILURE|CANCELLED|TIMEOUT|EXPIRED)
+                echo "Cloud Build failed with status: $STATUS (ID: $BUILD_ID)" >&2
+                echo "View logs: https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=$(gcloud config get-value core/project)" >&2
+                exit 1;;
+              *)
+                :;;
+            esac
+            ATTEMPTS=$((ATTEMPTS+1))
+            if [[ $ATTEMPTS -gt 180 ]]; then
+              echo "ERROR: Timed out waiting for Cloud Build (30m)" >&2
+              exit 1
+            fi
+            sleep 10
+          done
 
       - name: Add secondary tag (no rebuild)
         if: ${{ steps.meta.outputs.secondary_tag != '' }}
