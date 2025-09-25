@@ -41,8 +41,8 @@
 - **offer**：Offer生命周期管理
 - **siterank**：10秒智能评估分析
 - **batchopen**：仿真编排与任务管理
-- **adscenter**：Google Ads集成与批量操作
-- **workflow**：业务流程编排
+- **adscenter**：Google Ads集成与批量操作（集成数据同步功能）
+- **notifications**：统一通知管理与分发
 - **console**：后台管理系统
 - **frontend**：用户前端界面
 
@@ -73,11 +73,11 @@
 **API路由规范：**
 - **identity**：`/api/v1/identity/register`、`/api/v1/identity/me`
 - **offer**：`/api/v1/offers`（GET/POST）、`/api/v1/offers/{id}`
-- **siterank**：`POST /api/v1/siterank/analyze`（202返回analysisId）、`GET /api/v1/siterank/{offerId}`最新结果
-- **adscenter**：`/api/v1/adscenter/accounts`、`/api/v1/adscenter/preflight`、`/api/v1/adscenter/bulk-actions`、`/api/v1/adscenter/oauth/url`、`/api/v1/adscenter/oauth/callback`（回调免鉴权）
+- **siterank**：`POST /api/v1/siterank/analyze`（202返回analysisId）、`GET /api/v1/siterank/{offerId}`最新结果、`/api/v1/siterank/alerts`（集成AI预警功能）
+- **adscenter**：`/api/v1/adscenter/accounts`、`/api/v1/adscenter/preflight`、`/api/v1/adscenter/bulk-actions`、`/api/v1/adscenter/oauth/url`、`/api/v1/adscenter/oauth/callback`、`/api/v1/adscenter/sync`（集成数据同步功能）
 - **batchopen**：`POST /api/v1/batchopen/tasks`（202返回taskId）、`GET /api/v1/batchopen/tasks/{id}`
 - **billing**：`/api/v1/billing/subscriptions/me`、`/api/v1/billing/tokens/me`、`/api/v1/billing/tokens/transactions`
-- **workflow**：`/api/v1/workflows/templates`、`POST /api/v1/workflows/start`（202返回workflow_instance_id）、`GET /api/v1/workflows/{id}`
+- **notifications**：`/api/v1/notifications`（GET获取列表/PUT批量操作）、`/api/v1/notifications/summary`、`/api/v1/notifications/{id}/read`、`/api/v1/notifications/mark-all-read`
 
 **验收标准：**
 1. WHEN 设计API路由 THEN 系统 SHALL 采用统一格式：`/api/v1/{service}/{resource}`
@@ -150,16 +150,23 @@
 
 ## 核心域落地需求
 
-### 需求C1：Siterank（10秒评估）
-**用户故事：** 作为广告投放管理者，我希望在10秒内获得Offer评估结果，以便快速决策是否值得投放。
+### 需求C1：Siterank（10秒评估 + AI预警）
+**用户故事：** 作为广告投放管理者，我希望在10秒内获得Offer评估结果，并获得智能预警和优化建议，以便快速决策和风险管控。
 
-**技术流程：** Browser-Exec解析URL/品牌 → SimilarWeb拉取 → 评分器（权重表+阈值，KISS） → SiterankCompleted → 投影
+**技术流程：** Browser-Exec解析URL/品牌 → SimilarWeb拉取 → 评分器（权重表+阈值，KISS） → AI预警分析 → SiterankCompleted → 投影
+
+**集成AI预警功能：**
+- **风险识别**：落地页可用性检测、合规风险分析、季节性波动预警
+- **智能建议**：基于Firebase AI Logic的内容分析和优化建议
+- **相似机会发现**：基于成功Offer特征的相似域名推荐
 
 **验收标准：**
 1. WHEN 用户提交评估请求 THEN 系统 SHALL 在10秒内返回评估结果，超时则返回"已提交深评"
 2. WHEN 执行评估流程 THEN 系统 SHALL 并行拉取数据、支持超时分段、实现域名+国家缓存
-3. WHEN 评估完成 THEN 系统 SHALL 通过投影/通知更新前端显示
-4. WHEN 评估失败 THEN 系统 SHALL 提供降级策略和错误恢复机制
+3. WHEN 评估完成 THEN 系统 SHALL 通过投影/通知更新前端显示，包含AI预警信息
+4. WHEN 检测到风险 THEN 系统 SHALL 自动生成预警通知并提供具体的优化建议
+5. WHEN 发现相似机会 THEN 系统 SHALL 推荐相似的高价值Offer并支持一键入库
+6. WHEN 评估失败 THEN 系统 SHALL 提供降级策略和错误恢复机制
 
 ### 需求C2：Browser-Exec（Node.js + Playwright）
 **用户故事：** 作为系统架构师，我希望有专业的浏览器执行服务，以便处理所有Web交互任务。
@@ -172,18 +179,27 @@
 3. WHEN 管理浏览器池 THEN 系统 SHALL 实现并发与内存护栏、指数退避与隔离
 4. WHEN 服务调用 THEN 系统 SHALL 仅允许服务间调用（IAM受限），禁止外部直接访问
 
-### 需求C3：Adscenter（诊断+批量）
-**用户故事：** 作为广告投放管理者，我希望有完整的Google Ads诊断和批量操作能力，以便高效管理广告账户。
+### 需求C3：Adscenter（诊断+批量+数据同步）
+**用户故事：** 作为广告投放管理者，我希望有完整的Google Ads诊断、批量操作和数据同步能力，以便高效管理广告账户并获得实时数据视图。
 
 **诊断能力：** Pre-flight输出结构化检查项（code/severity/message/details/summary）：环境/授权/结构/余额/回传/落地/Ads API可达性
 
 **批量能力：** 提交"变更计划" → validate-only → 入队执行（队列/限流/退避） → 审计快照（前后对比） → 支持回滚
+
+**集成数据同步功能：**
+- **增量同步**：定时同步Google Ads数据，支持增量更新和全量刷新
+- **多账户聚合**：按Offer维度聚合多个账户的数据，提供统一视图
+- **实时仪表盘**：提供全局数据视图和趋势分析
+- **配额管理**：智能管理API调用配额，确保不超过每日15000次限制
 
 **验收标准：**
 1. WHEN 执行Pre-flight检查 THEN 系统 SHALL 支持validate-only模式，输出结构化诊断结果
 2. WHEN 执行批量操作 THEN 系统 SHALL 实现MCC链接状态机（invited/pending/active/inactive）
 3. WHEN 处理安全 THEN 系统 SHALL 实现刷新令牌加密、state HMAC、回调域白名单
 4. WHEN 管理配额 THEN 系统 SHALL 实现配额策略配置化管理
+5. WHEN 同步数据 THEN 系统 SHALL 支持增量同步和多账户数据聚合，提供按Offer维度的统一视图
+6. WHEN 监控API使用 THEN 系统 SHALL 智能管理配额使用，自动调整调用频率避免超限
+7. WHEN 提供仪表盘 THEN 系统 SHALL 显示实时的全局数据视图和性能趋势分析
 
 ### 需求C4：Batchopen（仿真编排）
 **用户故事：** 作为广告投放管理者，我希望有灵活的仿真编排能力，以便测试不同的投放策略。
@@ -228,6 +244,51 @@
 2. WHEN 发现机会 THEN 系统 SHALL 使用SimilarWeb相似域分析 + 业务规则评分
 3. WHEN 推荐机会 THEN 系统 SHALL 支持一键入库到机会池
 4. WHEN 分析相似性 THEN 系统 SHALL 基于成功Offer的特征进行相似度计算
+
+### 需求C8：统一通知管理系统
+**用户故事：** 作为广告投放管理者，我希望有完整的通知中心，以便及时了解系统状态和重要事件，提升工作效率。
+
+**核心通知场景：**
+- **Offer生命周期通知**：
+  - 状态自动转换（连续5天0曝光0点击→衰退期）
+  - ROSC异常（连续3天下滑超过20%）
+  - 状态变更确认（用户手动状态变更）
+  - Offer表现突破（ROSC首次>2.0）
+- **评估与仿真通知**：
+  - 10秒评估完成（评分>80分高亮推荐）
+  - 深度评估完成（超时后台完成）
+  - 仿真任务状态（启动/进行中/完成/失败）
+  - 仿真结果异常（成功率<50%或大量失败）
+- **业务风险预警**：
+  - 账号风险（Ads账号被封禁、认证触发）
+  - 广告审核（广告被拒绝、受限）
+  - 预算不足（广告费余额<20美元）
+  - 落地页问题（URL无法解析、页面不可用）
+- **批量操作结果**：
+  - 操作完成（成功数量、影响范围）
+  - 操作异常（失败原因、部分成功）
+  - 回滚确认（回滚完成、恢复状态）
+- **计费相关通知**：
+  - Token余额预警（余额<100、<50、<10）
+  - 套餐到期提醒（7天前、1天前、已到期）
+  - 扣费异常（扣费失败、余额不足）
+- **机会发现通知**：
+  - 相似机会推荐（基于ROSC>2.0的Offer）
+  - 市场趋势提醒（季节性机会窗口）
+
+**技术架构：** 独立通知服务 + 事件驱动 + 分层存储 + 规则引擎
+
+**验收标准：**
+1. WHEN 发生业务事件 THEN 系统 SHALL 根据通知规则自动生成用户通知，支持事件驱动触发
+2. WHEN 用户访问通知中心 THEN 系统 SHALL 显示完整历史通知，支持分类查看、搜索筛选、分页加载
+3. WHEN 用户管理通知 THEN 系统 SHALL 支持标记已读、批量操作、归档删除等完整功能
+4. WHEN 存储通知数据 THEN 系统 SHALL 严格按user_id隔离，确保数据安全和隐私保护
+5. WHEN 管理员配置通知 THEN 系统 SHALL 支持在后台管理系统配置通知规则、模板和渠道
+6. WHEN 扩展通知渠道 THEN 系统 SHALL 预留Push/Email/SMS等渠道的扩展接口
+7. WHEN 优化性能 THEN 系统 SHALL 使用Firestore缓存最近30天通知，PostgreSQL存储完整历史
+8. WHEN 控制频率 THEN 系统 SHALL 支持通知限流和去重，避免通知疲劳和重复推送
+9. WHEN 监控通知系统 THEN 系统 SHALL 提供通知发送成功率、用户阅读率等关键指标
+10. WHEN 处理通知失败 THEN 系统 SHALL 支持重试机制和降级策略，确保重要通知不丢失
 
 ## 可观测性与SLO需求
 

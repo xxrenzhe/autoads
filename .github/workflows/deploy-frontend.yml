@@ -150,7 +150,8 @@ jobs:
   summary:
     name: Summary
     runs-on: ubuntu-latest
-    needs: [meta, deploy-cloudrun, deploy-hosting]
+    if: always()
+    needs: [meta, build-image, deploy-cloudrun]
     steps:
       - name: Auth to Google Cloud
         uses: google-github-actions/auth@v1
@@ -161,8 +162,11 @@ jobs:
       - name: Summarize endpoints
         shell: bash
         run: |
-          export REGION="${{ env.REGION || 'asia-northeast1' }}"
-          run_url=$(gcloud run services describe frontend --region "$REGION" --format='value(status.url)' || true)
+          set -euo pipefail
+          REGION="${{ env.REGION }}"; REGION="${REGION:-asia-northeast1}"
+          RUN_URL=$(gcloud run services describe frontend --region "$REGION" --format='value(status.url)' || true)
+          REV_NAME=$(gcloud run services describe frontend --region "$REGION" --format='value(status.latestReadyRevisionName)' || true)
+          IMAGE=$(gcloud run services describe frontend --region "$REGION" --format='value(spec.template.spec.containers[0].image)' || true)
           TARGET='${{ needs.meta.outputs.target }}'
           DEFAULT_URL="https://${TARGET}.web.app"
           if [[ "$TARGET" == "autoads-preview" ]]; then
@@ -171,8 +175,10 @@ jobs:
             CUSTOM_URL="https://www.autoads.dev (if configured)"
           fi
           {
-            echo "## Frontend Deploy"
-            echo "- Cloud Run: ${run_url:-N/A}"
+            echo "## Frontend Deploy Summary"
+            echo "- Cloud Run URL: ${RUN_URL:-N/A}"
+            echo "- Cloud Run Revision: ${REV_NAME:-N/A}"
+            echo "- Deployed Image: ${IMAGE:-N/A}"
             echo "- Hosting Target: ${TARGET}"
             echo "- Hosting Default: ${DEFAULT_URL}"
             echo "- Hosting Custom:  ${CUSTOM_URL}"

@@ -47,11 +47,11 @@
 │                   微服务层 (Cloud Run)                          │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐ │
 │  │identity  │ │billing   │ │offer     │ │siterank  │ │batch   │ │
-│  │          │ │          │ │          │ │          │ │open    │ │
+│  │          │ │          │ │          │ │+ai-alerts│ │open    │ │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └────────┘ │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│  │adscenter │ │workflow  │ │console   │ │frontend  │           │
-│  │          │ │          │ │          │ │          │           │
+│  │adscenter │ │notifications│ │console │ │frontend  │           │
+│  │+data-sync│ │            │ │        │ │          │           │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
@@ -80,8 +80,9 @@
 │  │事件存储+读模型│ │UI实时缓存   │ │文件/日志    │ │密钥管理     ││
 │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘│
 └─────────────────────────────────────────────────────────────────┘
-```## 
-核心组件设计
+```
+
+## 核心组件设计
 
 ### 1. Offer管理服务 (Offer Management Service)
 
@@ -157,7 +158,7 @@ GET    /api/v1/bulk/ab-tests             // 获取A/B测试列表
 POST   /api/v1/bulk/ab-tests             // 创建A/B测试
 ```
 
-### 1. 高并发浏览器执行服务 (Browser-Exec Service)
+### 4. 高并发浏览器执行服务 (Browser-Exec Service)
 
 **职责：** 支持数百用户并发的企业级浏览器自动化服务，提供高性能、高可靠的Web交互能力
 
@@ -432,7 +433,7 @@ class MetricsCollector {
 }
 ```
 
-### 2. Identity服务 (身份认证)
+### 5. Identity服务 (身份认证)
 
 **职责：** 统一身份认证、授权和用户管理
 
@@ -449,7 +450,7 @@ GET    /api/v1/identity/profile         // 获取用户信息
 PUT    /api/v1/identity/profile         // 更新用户信息
 ```
 
-### 3. Billing服务 (计费管理)
+### 6. Billing服务 (计费管理)
 
 **职责：** 原子化Token管理和计费处理
 
@@ -491,7 +492,7 @@ type Transaction struct {
 }
 ```
 
-### 4. Offer服务 (Offer管理)
+### 7. Offer服务 (Offer管理)
 
 **职责：** Offer生命周期管理和状态流转
 
@@ -509,16 +510,17 @@ POST   /api/v1/offers/batch             // 批量创建Offer
 GET    /api/v1/offers/{id}/history      // 获取状态历史
 ```
 
-### 5. Siterank服务 (评估分析)
+### 8. Siterank服务 (评估分析 + AI预警)
 
-**职责：** Offer智能评估和市场分析
+**职责：** Offer智能评估、市场分析、风险识别和智能预警
 
-**技术栈：** Go + Cloud Run + SimilarWeb API + Firebase AI
+**技术栈：** Go + Cloud Run + SimilarWeb API + Firebase AI Logic + 规则引擎
 
 **核心特性：**
 - **10秒SLO**：分阶段返回结果，支持降级
 - **并行处理**：域名解析、SimilarWeb、AI分析并行
 - **缓存策略**：评估结果缓存，避免重复计算
+- **集成AI预警**：风险识别、智能建议、相似机会发现
 
 **API设计：**
 ```go
@@ -527,9 +529,113 @@ POST   /api/v1/siterank/evaluate        // 启动评估 (返回202 + analysisId)
 GET    /api/v1/siterank/analysis/{id}   // 查询评估进度和结果
 GET    /api/v1/siterank/similar/{id}    // 获取相似机会
 POST   /api/v1/siterank/batch-evaluate  // 批量评估
+
+// 集成AI预警API
+GET    /api/v1/siterank/alerts          // 获取预警列表
+POST   /api/v1/siterank/alerts/acknowledge // 确认预警
+GET    /api/v1/siterank/suggestions     // 获取优化建议
+POST   /api/v1/siterank/suggestions/apply // 应用建议
+GET    /api/v1/siterank/insights        // 获取AI洞察
+POST   /api/v1/siterank/analyze-content // Firebase AI内容分析
+POST   /api/v1/siterank/compliance-check // Firebase AI合规检查
 ```
 
-### 6. Batchopen服务 (批量操作)
+**集成AI预警功能实现：**
+```go
+// AI预警模块
+type AIAlertsModule struct {
+    ruleEngine    *RiskRuleEngine
+    aiClient      *FirebaseAIClient
+    similarWeb    *SimilarWebClient
+}
+
+type RiskRuleEngine struct {
+    rules map[string]*RiskRule
+}
+
+type RiskRule struct {
+    ID         string                 `json:"id"`
+    Name       string                 `json:"name"`
+    Conditions map[string]interface{} `json:"conditions"`
+    Severity   string                 `json:"severity"` // low, medium, high, critical
+    Action     string                 `json:"action"`   // alert, pause, stop
+    Enabled    bool                   `json:"enabled"`
+}
+
+// 风险检测实现
+func (ai *AIAlertsModule) DetectRisks(offer *Offer) ([]*RiskAlert, error) {
+    var alerts []*RiskAlert
+    
+    // 1. 落地页可用性检测
+    if availability, err := ai.checkLandingPageAvailability(offer.URL); err != nil || !availability.Available {
+        alerts = append(alerts, &RiskAlert{
+            Type:     "landing_page_unavailable",
+            Severity: "high",
+            Message:  "落地页无法访问或加载异常",
+            Details:  availability,
+        })
+    }
+    
+    // 2. 合规风险分析
+    if compliance, err := ai.aiClient.CheckCompliance(offer.URL); err == nil && compliance.HasRisk {
+        alerts = append(alerts, &RiskAlert{
+            Type:     "compliance_risk",
+            Severity: compliance.Severity,
+            Message:  compliance.Message,
+            Details:  compliance.Details,
+        })
+    }
+    
+    // 3. 季节性波动预警
+    if seasonal, err := ai.analyzeSeasonal(offer); err == nil && seasonal.HasRisk {
+        alerts = append(alerts, &RiskAlert{
+            Type:     "seasonal_risk",
+            Severity: "medium",
+            Message:  "检测到季节性流量下降趋势",
+            Details:  seasonal,
+        })
+    }
+    
+    return alerts, nil
+}
+
+// 相似机会发现
+func (ai *AIAlertsModule) FindSimilarOpportunities(offer *Offer) ([]*SimilarOpportunity, error) {
+    // 基于成功Offer特征分析
+    if offer.ROSC <= 2.0 {
+        return nil, nil // 仅为高价值Offer推荐相似机会
+    }
+    
+    // 使用SimilarWeb API获取相似域名
+    similar, err := ai.similarWeb.GetSimilarDomains(offer.Domain, offer.Country)
+    if err != nil {
+        return nil, err
+    }
+    
+    var opportunities []*SimilarOpportunity
+    for _, domain := range similar.Domains {
+        // 快速评估相似域名
+        score, err := ai.quickEvaluate(domain, offer.Country)
+        if err != nil {
+            continue
+        }
+        
+        if score >= 70 { // 仅推荐高分机会
+            opportunities = append(opportunities, &SimilarOpportunity{
+                Domain:      domain,
+                Score:       score,
+                Similarity:  domain.Similarity,
+                Reason:      fmt.Sprintf("与成功Offer %s 相似度 %.1f%%", offer.Name, domain.Similarity*100),
+                ActionURL:   fmt.Sprintf("/offers/create?url=%s", domain.URL),
+            })
+        }
+    }
+    
+    return opportunities, nil
+}
+```
+
+### 9. Batchopen服务 (批量操作)
 
 **职责：** 批量操作编排和执行
 
@@ -551,7 +657,7 @@ POST   /api/v1/batch/rollback/{id}      // 回滚操作
 GET    /api/v1/batch/audit/{id}         // 获取审计快照
 ```
 
-### 7. Adscenter服务 (广告中心)
+### 10. Adscenter服务 (广告中心)
 
 **职责：** Google Ads集成和Pre-flight检查
 
@@ -572,15 +678,22 @@ GET    /api/v1/ads/performance          // 获取性能数据
 POST   /api/v1/ads/sync                 // 同步数据
 ```
 
-### 8. Workflow服务 (工作流)
+### 11. Workflow服务 (工作流) - 可选
 
-**职责：** 业务流程编排和状态管理
+**状态：** 可选服务，当前事件驱动架构已提供流程编排能力
+
+**职责：** 复杂业务流程编排和状态管理（如需要跨服务的长时间运行流程）
 
 **技术栈：** Go + Cloud Run + Pub/Sub
 
+**评估建议：** 
+- 当前系统通过事件驱动架构已实现流程编排
+- 各服务内部状态管理已足够
+- 建议暂不实现，根据后续复杂度需求再评估
+
 **API设计：**
 ```go
-// 工作流API
+// 工作流API (如需要时实现)
 POST   /api/v1/workflow/start           // 启动工作流
 GET    /api/v1/workflow/status/{id}     // 查询流程状态
 POST   /api/v1/workflow/pause/{id}      // 暂停流程
@@ -647,7 +760,7 @@ type AvailabilityChecker struct {
 func (ac *AvailabilityChecker) CheckOfferAvailability(offerURL string) (*AvailabilityResult, error)
 ```
 
-### 5. AI预警与优化服务 (AI Alert & Optimization Service)
+### 12. AI预警与优化服务 (AI Alert & Optimization Service)
 
 **职责：** 提供智能预警、风险识别、优化建议等AI驱动功能
 
@@ -674,7 +787,7 @@ POST   /api/v1/ai/compliance-check       // Firebase AI合规检查
 POST   /api/v1/ai/generate-suggestions   // Firebase AI优化建议
 ```
 
-### 6. 数据同步服务 (Data Sync Service)
+### 13. 数据同步服务 (Data Sync Service)
 
 **职责：** 管理与Google Ads API的数据同步，提供全局数据视图
 
@@ -697,7 +810,7 @@ GET    /api/v1/sync/trends               // 获取趋势数据
 POST   /api/v1/sync/accounts/connect     // 连接Google Ads账户
 ```
 
-### 7. 后台管理服务 (Admin Management Service)
+### 14. 后台管理服务 (Admin Management Service)
 
 **职责：** 提供完整的后台管理功能，包括仪表盘、用户管理、套餐管理、Token管理、动态配置
 
@@ -775,7 +888,380 @@ GET    /api/v1/i18n/languages             // 获取支持的语言列表
 GET    /api/v1/seo/sitemap                // 获取站点地图
 PUT    /api/v1/seo/meta/{page}            // 更新页面SEO信息
 GET    /api/v1/seo/pages                  // 获取所有页面SEO配置
-```## 
+```
+
+### 15. 统一通知管理服务 (Notification Service)
+
+**职责：** 提供完整的通知管理功能，包括事件监听、通知生成、分发和用户通知中心
+
+**技术栈：** Go + Cloud Run + Pub/Sub + Firestore + PostgreSQL
+
+**架构设计：**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Notification Service                        │
+│                    (独立Cloud Run服务)                          │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐   │
+│  │  规则引擎       │ │  通知分发器     │ │  通知管理器     │   │
+│  │ Rule Engine     │ │  Dispatcher     │ │  Manager        │   │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘   │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────────┐
+│              事件总线 (现有Pub/Sub)                              │
+│         监听业务事件 → 触发通知规则 → 生成通知                   │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────────┐
+│                   分层存储                                      │
+│  ┌─────────────────┐ ┌─────────────────┐                       │
+│  │   Firestore     │ │   PostgreSQL    │                       │
+│  │  实时缓存(30天)  │ │  完整历史存储   │                       │
+│  └─────────────────┘ └─────────────────┘                       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**核心功能：**
+- 事件驱动的通知规则引擎
+- 多渠道通知分发（应用内/Push/Email/SMS）
+- 分层存储策略（实时缓存+历史存储）
+- 用户通知中心完整功能
+- 通知规则和模板管理
+- 通知统计和监控
+
+**API设计：**
+```go
+// 用户通知API
+GET    /api/v1/notifications              // 获取通知列表（支持分页、筛选）
+GET    /api/v1/notifications/summary      // 获取通知统计
+PUT    /api/v1/notifications/{id}/read    // 标记单个通知已读
+PUT    /api/v1/notifications/batch        // 批量操作通知
+PUT    /api/v1/notifications/mark-all-read // 全部标记已读
+DELETE /api/v1/notifications/{id}         // 删除通知
+GET    /api/v1/notifications/categories   // 获取通知分类
+
+// 管理员通知配置API
+GET    /api/v1/admin/notification-rules   // 获取通知规则
+POST   /api/v1/admin/notification-rules   // 创建通知规则
+PUT    /api/v1/admin/notification-rules/{id} // 更新通知规则
+DELETE /api/v1/admin/notification-rules/{id} // 删除通知规则
+GET    /api/v1/admin/notification-channels // 获取通知渠道配置
+PUT    /api/v1/admin/notification-channels // 更新通知渠道配置
+GET    /api/v1/admin/notification-stats   // 获取通知统计数据
+POST   /api/v1/admin/notification-test    // 测试通知规则
+```
+
+**核心组件实现：**
+```go
+// 通知服务主体
+type NotificationService struct {
+    ruleEngine    *NotificationRuleEngine
+    eventListener *EventListener
+    dispatcher    *NotificationDispatcher
+    storage       *NotificationStorage
+    api          *NotificationAPI
+}
+
+// 通知规则引擎
+type NotificationRuleEngine struct {
+    rules map[string]*NotificationRule
+}
+
+type NotificationRule struct {
+    ID         string                 `json:"id"`
+    EventType  string                 `json:"event_type"`
+    Conditions map[string]interface{} `json:"conditions"`
+    Template   NotificationTemplate   `json:"template"`
+    Channels   []string               `json:"channels"`
+    Priority   string                 `json:"priority"`
+    Throttling *ThrottlingConfig      `json:"throttling,omitempty"`
+    Enabled    bool                   `json:"enabled"`
+}
+
+type NotificationTemplate struct {
+    TitleTemplate   string `json:"title_template"`
+    MessageTemplate string `json:"message_template"`
+    ActionURL       string `json:"action_url,omitempty"`
+    ActionLabel     string `json:"action_label,omitempty"`
+}
+
+// 事件监听器
+type EventListener struct {
+    subscriptions map[string]*pubsub.Subscription
+}
+
+// 监听的业务事件
+var BusinessEvents = []string{
+    "OfferStatusChanged",
+    "SiterankCompleted", 
+    "BatchopenTaskCompleted",
+    "TokenReserved",
+    "RiskDetected",
+    "AdsPreflightCompleted",
+    "BulkOperationCompleted",
+}
+
+// 通知分发器
+type NotificationDispatcher struct {
+    channels map[string]NotificationChannel
+}
+
+type NotificationChannel interface {
+    Send(notification *Notification) error
+    GetType() string
+}
+
+// 支持的通知渠道
+type InAppChannel struct{}      // 应用内通知
+type PushChannel struct{}       // 推送通知(预留)
+type EmailChannel struct{}      // 邮件通知(预留)
+type SMSChannel struct{}        // 短信通知(预留)
+
+// 通知存储管理
+type NotificationStorage struct {
+    firestore *firestore.Client
+    postgres  *sql.DB
+}
+
+type UserNotification struct {
+    ID           int64     `json:"id"`
+    UserID       string    `json:"user_id"`
+    Type         string    `json:"type"`
+    Category     string    `json:"category"`
+    Title        string    `json:"title"`
+    Message      string    `json:"message"`
+    ActionURL    *string   `json:"action_url,omitempty"`
+    ActionLabel  *string   `json:"action_label,omitempty"`
+    Priority     string    `json:"priority"`
+    Status       string    `json:"status"`
+    Metadata     *string   `json:"metadata,omitempty"`
+    CreatedAt    time.Time `json:"created_at"`
+    ReadAt       *time.Time `json:"read_at,omitempty"`
+    ArchivedAt   *time.Time `json:"archived_at,omitempty"`
+}
+
+// 通知规则示例
+var ExampleNotificationRules = []NotificationRule{
+    {
+        ID: "offer_declined_5_days",
+        EventType: "OfferStatusChanged",
+        Conditions: map[string]interface{}{
+            "status": "declining",
+            "reason": "zero_performance_5_days",
+        },
+        Template: NotificationTemplate{
+            TitleTemplate: "Offer自动转入衰退期",
+            MessageTemplate: "您的Offer {{.OfferName}} 连续5天无曝光无点击，已自动转入衰退期",
+            ActionURL: "/offers/{{.OfferID}}",
+            ActionLabel: "查看详情",
+        },
+        Channels: []string{"in_app"},
+        Priority: "high",
+        Enabled: true,
+    },
+    {
+        ID: "evaluation_high_score",
+        EventType: "SiterankCompleted",
+        Conditions: map[string]interface{}{
+            "score": map[string]interface{}{"gte": 80},
+        },
+        Template: NotificationTemplate{
+            TitleTemplate: "发现高价值Offer！",
+            MessageTemplate: "{{.OfferURL}} 评分达到 {{.Score}} 分，建议立即启动仿真",
+            ActionURL: "/offers/{{.OfferID}}/simulate",
+            ActionLabel: "立即仿真",
+        },
+        Channels: []string{"in_app"},
+        Priority: "high",
+        Enabled: true,
+    },
+}
+```
+
+**数据模型设计：**
+
+**PostgreSQL通知表：**
+```sql
+-- 用户通知表（完整历史）
+CREATE TABLE user_notifications (
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    notification_type VARCHAR(50) NOT NULL,
+    category VARCHAR(20) NOT NULL,         -- offer, evaluation, risk, billing, system
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    action_url VARCHAR(500),
+    action_label VARCHAR(50),
+    priority VARCHAR(20) DEFAULT 'normal', -- low, normal, high, critical
+    status VARCHAR(20) DEFAULT 'unread',   -- unread, read, archived, deleted
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT NOW(),
+    read_at TIMESTAMP NULL,
+    archived_at TIMESTAMP NULL,
+    expires_at TIMESTAMP NULL,
+    
+    INDEX idx_user_status_created (user_id, status, created_at DESC),
+    INDEX idx_user_category_created (user_id, category, created_at DESC),
+    INDEX idx_user_created (user_id, created_at DESC)
+);
+
+-- 通知规则配置表
+CREATE TABLE notification_rules (
+    id BIGSERIAL PRIMARY KEY,
+    rule_name VARCHAR(100) NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    conditions JSONB NOT NULL,
+    template JSONB NOT NULL,
+    channels JSONB NOT NULL,
+    priority VARCHAR(20) DEFAULT 'normal',
+    throttling JSONB,
+    enabled BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 用户通知统计表
+CREATE TABLE user_notification_stats (
+    user_id VARCHAR(50) PRIMARY KEY,
+    total_count INTEGER DEFAULT 0,
+    unread_count INTEGER DEFAULT 0,
+    last_notification_at TIMESTAMP,
+    category_stats JSONB,
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+**Firestore实时缓存：**
+```javascript
+// /users/{userId}/notifications/{notificationId} - 仅最近30天
+{
+  id: string,
+  type: string,
+  category: string,
+  title: string,
+  message: string,
+  actionUrl?: string,
+  actionLabel?: string,
+  priority: "low" | "normal" | "high" | "critical",
+  status: "unread" | "read" | "archived",
+  createdAt: timestamp,
+  readAt?: timestamp,
+  metadata?: object
+}
+
+// /users/{userId}/notification_summary - 实时统计
+{
+  totalCount: number,
+  unreadCount: number,
+  lastNotificationAt: timestamp,
+  categories: {
+    offer: { total: number, unread: number, lastAt: timestamp },
+    evaluation: { total: number, unread: number, lastAt: timestamp },
+    risk: { total: number, unread: number, lastAt: timestamp },
+    billing: { total: number, unread: number, lastAt: timestamp }
+  }
+}
+```
+
+**服务集成设计：**
+
+**事件监听集成：**
+```go
+// 通知服务监听的业务事件映射
+var EventNotificationMapping = map[string][]string{
+    "OfferStatusChanged": {
+        "offer_status_auto_changed",    // 自动状态转换
+        "offer_status_manual_changed",  // 手动状态变更
+        "offer_rosc_breakthrough",      // ROSC突破
+    },
+    "SiterankCompleted": {
+        "evaluation_high_score",        // 高分评估
+        "evaluation_completed",         // 评估完成
+    },
+    "BatchopenTaskCompleted": {
+        "simulation_completed",         // 仿真完成
+        "simulation_failed",           // 仿真失败
+    },
+    "TokenReserved": {
+        "token_low_balance",           // 余额不足
+        "token_debit_failed",          // 扣费失败
+    },
+    "RiskDetected": {
+        "ads_account_suspended",       // 账号风险
+        "landing_page_unavailable",    // 落地页问题
+        "budget_insufficient",         // 预算不足
+    },
+}
+```
+
+**与现有服务的API集成：**
+```go
+// 通知服务调用其他服务的接口
+type ServiceIntegration struct {
+    offerService    OfferServiceClient
+    billingService  BillingServiceClient
+    userService     UserServiceClient
+}
+
+// 获取通知相关的业务数据
+func (si *ServiceIntegration) GetNotificationContext(event *BusinessEvent) (*NotificationContext, error) {
+    switch event.Type {
+    case "OfferStatusChanged":
+        offer, err := si.offerService.GetOffer(event.OfferID)
+        if err != nil {
+            return nil, err
+        }
+        return &NotificationContext{
+            OfferName: offer.Name,
+            OfferID:   offer.ID,
+            UserID:    offer.UserID,
+        }, nil
+    case "TokenReserved":
+        balance, err := si.billingService.GetBalance(event.UserID)
+        if err != nil {
+            return nil, err
+        }
+        return &NotificationContext{
+            UserID:      event.UserID,
+            TokenBalance: balance.Available,
+        }, nil
+    }
+    return nil, nil
+}
+```
+
+**前端集成设计：**
+```typescript
+// 前端通知中心组件集成
+interface NotificationCenterProps {
+  userId: string;
+  realTimeUpdates?: boolean;
+  maxDisplayCount?: number;
+}
+
+// 实时通知更新机制
+class NotificationManager {
+  private websocket: WebSocket;
+  private pollingInterval: number = 30000; // 30秒轮询备用
+  
+  // WebSocket实时更新
+  connectRealTime(userId: string) {
+    this.websocket = new WebSocket(`/api/v1/notifications/ws?user_id=${userId}`);
+    this.websocket.onmessage = (event) => {
+      const notification = JSON.parse(event.data);
+      this.updateNotificationUI(notification);
+    };
+  }
+  
+  // 轮询备用机制
+  startPolling(userId: string) {
+    setInterval(() => {
+      this.fetchLatestNotifications(userId);
+    }, this.pollingInterval);
+  }
+}
+```
+
+## 
 数据模型设计
 
 ### Firestore 数据结构
