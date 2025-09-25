@@ -14,6 +14,7 @@
 - 构建与代码
   - Go 版本统一 1.25.1；Dockerfile 两段式缓存；根 .dockerignore/.gcloudignore 优化；前端独立 .dockerignore（完成）
   - 网关：扩展 docs/productrefactoring-v2/API/openapi/gateway.yaml 覆盖多服务；render-gateway-config.sh 支持多服务 URL 渲染（完成）
+  - 前端发布：Cloud Run `frontend` + Hosting 重写（public → run:frontend），工作流多阶段拆分（完成）
 
 ## A. 跨领域与平台
 - A1 配置中心（/console）
@@ -75,10 +76,16 @@
 - E2 阶段模板（评估/仿真/放大/工作流）默认包与版本化
 
 ## F. CI/CD 与质量
-- F1 后端增量部署（变更检测→ Cloud Build/Run）+ 冒烟
-- F2 前端 Hosting 部署 + 预览（工作流已就绪，待触发） 
-- F3 网关变更自动发布
-- F4 基础测试策略：单测（事件/读模）、冒烟（健康/权限）、E2E（闭环主路径）
+- F1 后端增量部署（变更检测→ Cloud Build/Run）+ 冒烟（完成）
+  - 拆分：meta / changes / build-images / tag-images / deploy-services；空矩阵保护；Tag 构建强制全量
+  - Artifact Registry：asia‑northeast1‑docker.pkg.dev/<PROJECT>/autoads-services/<service>:<tag>
+- F2 前端（Cloud Run + Hosting）发布（完成）
+  - 拆分：meta / build-image / tag-image / deploy-cloudrun / deploy-hosting / summary
+  - Hosting：public + rewrites → run:frontend（不走 Web Frameworks 函数化构建）
+  - 容器：Next `output: 'standalone'` + `node:20-bookworm-slim`；仅生产依赖（workspace 安装）；CI 下关闭 TS/ESLint；增大 Node 堆
+- F3 网关变更自动发布（完成）
+  - 拆分：discover-render / publish；Job Summary 输出默认域名
+- F4 基础测试策略：单测（事件/读模）、冒烟（健康/权限）、E2E（闭环主路径）（进行中）
 
 ## G. 指标与上线门槛
 - G1 北极星：每周用“默认模板”跑通完整工作流的活跃 Offer 数

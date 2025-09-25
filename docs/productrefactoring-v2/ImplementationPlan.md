@@ -20,13 +20,13 @@
   - Go 版本统一 1.25.1；所有服务 Dockerfile 调整为“依赖缓存→源码构建”的两段式缓存；根 .dockerignore/.gcloudignore 优化；前端独立 .dockerignore
   - 网关模板与渲染：扩展 gateway.yaml 覆盖所有服务路径；render-gateway-config.sh 支持多服务 URL 占位符
   - API Gateway：已发布 autoads-gw-885pd7lz.an.gateway.dev，/api/health 健康返回 200，受保护路由未授权 401
-  - 前端 Hosting：
-    - GitHub Actions 工作流已添加（.github/workflows/deploy-frontend.yml）
-    - 采用 Hosting WebFrameworks（SSR）直接部署；SSR 函数区域固定 `asia-northeast1`
-    - 站点：`autoads-preview`（预发）、`autoads-prod`（生产），待控制台绑定自定义域（www.urlchecker.dev / www.autoads.dev）
-    - 统一 BFF：Next 重写 `/api/:path* → /api/go/:path*`，同源反代至 API Gateway；NextAuth `/api/auth/*` 原路透传
-    - 去 Prisma：apps/frontend 不再打包/运行 Prisma；`@auth/prisma-adapter` 指向本地桩；NextAuth 缺 DB 时走 JWT 会话
-    - SSR 函数瘦身：对 `google-ads-api`、`googleapis`、`puppeteer`、`exceljs`、`swagger-ui-react` 施加服务器端别名桩
+  - 前端（Cloud Run + Hosting 重写）
+    - 工作流（.github/workflows/deploy-frontend.yml）拆分为 meta/build-image/tag-image/deploy-cloudrun/deploy-hosting/summary
+    - Hosting 采用 public + rewrites → Cloud Run `frontend`（不走 Web Frameworks 函数化构建）；站点：`autoads-preview`/`autoads-prod`（待自定义域绑定）
+    - 容器化：Next `output: 'standalone'` + `node:20-bookworm-slim`；仅安装生产依赖（workspace 安装）；CI 下关闭 TS/ESLint；提升 Node 堆
+    - BFF：Next 重写 `/api/:path* → /api/go/:path*` 直达 API Gateway；NextAuth `/api/auth/*` 原路透传
+    - 去 Prisma：apps/frontend 不再打包/运行 Prisma；`@auth/prisma-adapter` 指向本地桩；NextAuth 无 DB 时走 JWT 会话
+    - SSR 侧重瘦身：对 `google-ads-api`、`googleapis`、`exceljs`、`swagger-ui-react` 等施加服务器端别名桩；移除 puppeteer/@playwright/test 运行依赖
 
 ## 里程碑（对齐 MVP）
 - M1（3-4 个月）：MVP 闭环

@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20-bookworm-slim AS builder
+FROM mirror.gcr.io/library/node:20-bookworm-slim AS builder
 WORKDIR /app
 
 # Environment for reproducible and faster builds
@@ -22,7 +22,7 @@ COPY apps/frontend/ apps/frontend/
 RUN npm run -w apps/frontend build
 
 # Runtime stage
-FROM node:20-bookworm-slim AS runner
+FROM mirror.gcr.io/library/node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

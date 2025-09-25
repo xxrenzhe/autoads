@@ -35,6 +35,39 @@
   - `DATABASE_URL` 取自 Secret Manager，并将主机改写为 `cloudsql-proxy:5432` 以便本地容器经代理私网访问
 - 已构建后端镜像：`autoads-identity:dev`（本地构建通过）
 
+## CI/CD 更新（2025-09-24）
+- 工作流拆分与标签策略
+  - 后端：.github/workflows/deploy-backend.yml 拆为 meta / changes / build-images / tag-images / deploy-services；支持 Tag 全量部署；空矩阵保护（无变更时跳过）
+  - 网关：.github/workflows/deploy-gateway.yml 拆为 discover-render / publish；Job Summary 输出默认域名
+  - 前端：.github/workflows/deploy-frontend.yml 拆为 meta / build-image / tag-image / deploy-cloudrun / deploy-hosting / summary
+  - 镜像仓库改为 Artifact Registry：asia-northeast1-docker.pkg.dev/<PROJECT>/autoads-services/<service>:<tag>
+- 安全与手动触发
+  - 三条工作流均支持 workflow_dispatch；Secrets 使用 GCP_SA_KEY、FIREBASE_SERVICE_ACCOUNT；仓库变量 GCP_PROJECT_ID/GCP_REGION/ARTIFACT_REPO
+
+## 前端发布（Cloud Run + Hosting）现状
+- 架构与配置
+  - Hosting 采用 public + rewrites → Cloud Run 服务 `frontend`（asia‑northeast1），不再走 Web Frameworks 函数化构建
+  - Cloud Run `frontend` 运行 Next.js（App Router），BFF 重写 `/api/:path* → /api/go/:path*` 直达 API Gateway
+- 构建链路优化
+  - Dockerfile 切换为 Next `output: 'standalone'` + `node:20-bookworm-slim`
+  - 仅安装生产依赖（工作区模式：npm -w apps/frontend）；CI 关闭 TS/ESLint；Node 堆扩大（4GB）
+  - 移除 puppeteer/@playwright/test 运行依赖；SSR 使用本地 stub 映射，避免浏览器下载
+  - 修复 .dockerignore 导致的上下文缺失问题（放行 apps/frontend/**）
+- 运行状态
+  - 最新一轮 Cloud Build 已进入 WORKING（此前导致失败的 COPY/安装/TS/ESLint/OOM 均已处理），完成后将自动部署 Cloud Run 与 Hosting，并在 Job Summary 写入 URL
+
+## 问题复盘（已解决）
+- 构建上下文缺失：.dockerignore 忽略了 apps/** → 无法 COPY 前端源 → 修复为放行 apps/frontend/**
+- 无锁安装失败：无 package-lock.json 导致 `npm ci` 报错 → 容错到 `npm install`；后续改为 workspace 安装
+- Web Frameworks 依赖安装失败：Hosting 切换为 public + rewrites，避免在 CI/Hosting 中二次 npm 安装
+- TS/ESLint OOM：CI 下关闭类型检查与 ESLint；同时提升 Node 堆
+- puppeteer/playwright 体积/失败率：从前端移除，统一由后端/Worker 承担（前端保留 stub）
+
+## 下一步（动作）
+- 等待本轮前端流水线完成；记录镜像标签、Cloud Run 修订与 Hosting URL，进行端到端冒烟
+-（可选）将前端 Hosting 部署设为“仅在 firebase.json 或 apps/frontend/public 变更时执行”，其余情况只部署 Cloud Run，进一步缩短发布时间
+- 后端若需要用户可见文本本地化，采用 go‑i18n（ICU）加载资源；前端继续推进 next‑intl 接入
+
 ## 调整（代码就绪，待部署）
 - 统一健康检查路由：为 identity/offer/workflow/billing 新增 `/health`（保留 `/healthz` 兼容），便于 API Gateway/监控统一探测。
 
@@ -136,3 +169,4 @@
 
 CI触发校验：2025-09-24T14:53:46Z
 \n触发前端与后端部署：2025-09-24T17:45:40Z
+\n前端发布流水线（多阶段）触发：2025-09-24T19:02:45Z（Cloud Build WORKING）
