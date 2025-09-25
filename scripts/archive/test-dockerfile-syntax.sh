@@ -21,7 +21,7 @@ fi
 echo "🔧 测试npm配置命令..."
 
 # 创建临时容器测试npm配置
-docker run --rm node:20.18.0-alpine sh -c "
+docker run --rm node:22-alpine sh -c "
     npm config set registry https://registry.npmjs.org/
     npm config set cache /tmp/.npm
     npm config set prefer-offline true

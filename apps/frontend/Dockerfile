@@ -1,5 +1,5 @@
 # Build stage
-FROM mirror.gcr.io/library/node:20-bookworm-slim AS builder
+FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 
 # Environment for reproducible and faster builds
@@ -14,15 +14,16 @@ ENV CI=true \
 # Install production dependencies for frontend workspace only
 COPY package*.json ./
 COPY apps/frontend/package*.json apps/frontend/
-RUN npm ci --workspace=apps/frontend --omit=dev --no-audit --no-fund || \
-    npm install -w apps/frontend --omit=dev --no-audit --no-fund
+# Install all dependencies (including dev) for build-time tools like Tailwind/PostCSS
+RUN npm ci --workspace=apps/frontend --no-audit --no-fund || \
+    npm install -w apps/frontend --no-audit --no-fund
 
 # Copy source and build (workspace-aware)
 COPY apps/frontend/ apps/frontend/
 RUN npm run -w apps/frontend build
 
 # Runtime stage
-FROM mirror.gcr.io/library/node:20-bookworm-slim AS runner
+FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

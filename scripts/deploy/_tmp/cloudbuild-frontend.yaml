@@ -1,5 +1,7 @@
+timeout: "3600s"
+options:
+  logging: GCS_ONLY
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  dir: 'apps/frontend'
-  args: ['build','-f','Dockerfile','-t','asia-northeast1-docker.pkg.dev/gen-lang-client-0944935873/autoads-services/frontend:latest','.']
+  args: ['build','-f','apps/frontend/Dockerfile','-t','asia-northeast1-docker.pkg.dev/gen-lang-client-0944935873/autoads-services/frontend:latest','.']
 images: ['asia-northeast1-docker.pkg.dev/gen-lang-client-0944935873/autoads-services/frontend:latest']

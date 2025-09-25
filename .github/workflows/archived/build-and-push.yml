@@ -18,7 +18,7 @@ on:
         - 'true'
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
   REGISTRY: ghcr.io
   IMAGE_NAME: xxrenzhe/url-batch-checker
 

@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}🚀 Starting Docker build with GA support...${NC}"
 
 # Build arguments
-NODE_VERSION=${NODE_VERSION:-"18"}
+NODE_VERSION=${NODE_VERSION:-"22"}
 IMAGE_TAG=${IMAGE_TAG:-"ghcr.io/xxrenzhe/url-batch-checker:ga-$(date +%Y%m%d-%H%M%S)"}
 NEXT_PUBLIC_GA_ID=${NEXT_PUBLIC_GA_ID:-""}
 

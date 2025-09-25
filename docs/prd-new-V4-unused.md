@@ -1225,7 +1225,7 @@ CREATE TABLE consultation_requests (
 
 **环境要求**:
 - Go 1.21+
-- Node.js 18+
+- Node.js 22+
 - MySQL 8.0+
 - Redis 7+
 - Docker (可选)

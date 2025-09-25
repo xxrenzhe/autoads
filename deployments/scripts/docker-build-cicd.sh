@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 # Script configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-NODE_VERSION=${NODE_VERSION:-"18"}
+NODE_VERSION=${NODE_VERSION:-"22"}
 REGISTRY=${REGISTRY:-"ghcr.io"}
 IMAGE_NAME=${IMAGE_NAME:-"xxrenzhe/url-batch-checker"}
 PLATFORMS=${PLATFORMS:-"linux/amd64,linux/arm64"}

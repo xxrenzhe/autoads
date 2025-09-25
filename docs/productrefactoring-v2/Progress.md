@@ -49,7 +49,7 @@
   - Hosting 采用 public + rewrites → Cloud Run 服务 `frontend`（asia‑northeast1），不再走 Web Frameworks 函数化构建
   - Cloud Run `frontend` 运行 Next.js（App Router），BFF 重写 `/api/:path* → /api/go/:path*` 直达 API Gateway
 - 构建链路优化
-  - Dockerfile 切换为 Next `output: 'standalone'` + `node:20-bookworm-slim`
+  - Dockerfile 切换为 Next `output: 'standalone'` + `node:22-bookworm-slim`
   - 仅安装生产依赖（工作区模式：npm -w apps/frontend）；CI 关闭 TS/ESLint；Node 堆扩大（4GB）
   - 移除 puppeteer/@playwright/test 运行依赖；SSR 使用本地 stub 映射，避免浏览器下载
   - 修复 .dockerignore 导致的上下文缺失问题（放行 apps/frontend/**）

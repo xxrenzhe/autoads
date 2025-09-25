@@ -122,6 +122,7 @@ jobs:
           BUILD_NAME=$(gcloud builds submit . \
             --project "${PROJECT_ID}" \
             --config deployments/cloudbuild/build-service-docker.yaml \
+            --gcs-log-dir gs://autoads-build-logs-asia-northeast1/logs \
             --substitutions _SERVICE="${SERVICE}",_IMAGE="${IMAGE}:${PRIMARY_TAG}" \
             --async --format='value(name)' || true)
           BUILD_ID="${BUILD_NAME##*/}"

@@ -63,7 +63,7 @@ setup_node() {
     
     # Check Node.js version
     NODE_VERSION=$(node --version | cut -d'v' -f2)
-    REQUIRED_VERSION="18.0.0"
+    REQUIRED_VERSION="22.0.0"
     
     if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$NODE_VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
         log_error "Node.js version $NODE_VERSION is not supported. Please install Node.js $REQUIRED_VERSION or higher."
