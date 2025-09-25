@@ -164,18 +164,22 @@ jobs:
         run: |
           set -euo pipefail
           REGION="${{ env.REGION }}"; REGION="${REGION:-asia-northeast1}"
+          ENVIRONMENT='${{ needs.meta.outputs.environment }}'
           RUN_URL=$(gcloud run services describe frontend --region "$REGION" --format='value(status.url)' || true)
           REV_NAME=$(gcloud run services describe frontend --region "$REGION" --format='value(status.latestReadyRevisionName)' || true)
           IMAGE=$(gcloud run services describe frontend --region "$REGION" --format='value(spec.template.spec.containers[0].image)' || true)
           TARGET='${{ needs.meta.outputs.target }}'
           DEFAULT_URL="https://${TARGET}.web.app"
-          if [[ "$TARGET" == "autoads-preview" ]]; then
-            CUSTOM_URL="https://www.urlchecker.dev (if configured)"
-          else
+          if [[ "$ENVIRONMENT" == "prod" ]]; then
+            TITLE="Production Deploy Summary"
             CUSTOM_URL="https://www.autoads.dev (if configured)"
+          else
+            TITLE="Preview Deploy Summary"
+            CUSTOM_URL="https://www.urlchecker.dev (if configured)"
           fi
           {
-            echo "## Frontend Deploy Summary"
+            echo "## ${TITLE}"
+            echo "- Environment: ${ENVIRONMENT}"
             echo "- Cloud Run URL: ${RUN_URL:-N/A}"
             echo "- Cloud Run Revision: ${REV_NAME:-N/A}"
             echo "- Deployed Image: ${IMAGE:-N/A}"

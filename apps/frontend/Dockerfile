@@ -18,6 +18,10 @@ COPY apps/frontend/package*.json apps/frontend/
 RUN npm ci --workspace=apps/frontend --no-audit --no-fund || \
     npm install -w apps/frontend --no-audit --no-fund
 
+# Copy source and build (workspace-aware) in builder
+COPY apps/frontend/ apps/frontend/
+RUN npm run -w apps/frontend build
+
 # Production dependencies stage (smaller runtime deps)
 FROM node:22-bookworm-slim AS prod-deps
 WORKDIR /app
@@ -30,10 +34,6 @@ COPY apps/frontend/package*.json apps/frontend/
 RUN npm ci --workspace=apps/frontend --omit=dev --no-audit --no-fund || \
     npm install -w apps/frontend --omit=dev --no-audit --no-fund
 
-# Copy source and build (workspace-aware)
-COPY apps/frontend/ apps/frontend/
-RUN npm run -w apps/frontend build
-
 # Runtime stage
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app
@@ -44,8 +44,10 @@ ENV NODE_ENV=production \
 
 ### Copy standalone output for the frontend workspace
 COPY --from=builder /app/apps/frontend/.next/standalone ./
-COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend/.next/static
-COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
+# Place static assets where Next expects them
+COPY --from=builder /app/apps/frontend/.next/static ./.next/static
+# Public assets at repo root for Next server
+COPY --from=builder /app/apps/frontend/public ./public
 # Next.js 15 standalone doesn't include Next runtime; copy production node_modules only
 COPY --from=prod-deps /app/node_modules ./node_modules
 

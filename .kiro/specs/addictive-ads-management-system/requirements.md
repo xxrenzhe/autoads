@@ -36,7 +36,6 @@
 ## 服务与边界
 
 ### 外部服务
-- **identity**：用户认证与权限管理
 - **billing**：套餐管理与原子计费
 - **offer**：Offer生命周期管理
 - **siterank**：10秒智能评估分析
@@ -46,15 +45,20 @@
 - **console**：后台管理系统
 - **frontend**：用户前端界面
 
+### 网关与底座
+- **API Gateway**：统一入口 + Firebase Auth直连 + pkg/auth中间件（承载Identity功能）
+
 ### 执行器服务
 - **browser-exec**：Node.js 22 + Playwright，常驻独立Cloud Run服务
 
 ### 共享底座
-- **pkg/auth**：Firebase Bearer中间件
+- **pkg/auth**：Firebase Bearer中间件 + PostgreSQL RLS集成
 - **pkg/config**：Secret Manager + STACK环境配置
 - **pkg/events**：发布/订阅 + 幂等工具
 - **pkg/http**：错误码/限流/重试统一处理
 - **pkg/telemetry**：日志/指标/追踪
+- **pkg/database**：PostgreSQL连接池 + RLS自动设置
+- **pkg/outbox**：Outbox模式实现 + 轮询发布
 
 ## API契约与网关需求
 
@@ -71,7 +75,7 @@
 **用户故事：** 作为API开发者，我希望有统一的路由规范和错误处理，以便提供一致的开发体验。
 
 **API路由规范：**
-- **identity**：`/api/v1/identity/register`、`/api/v1/identity/me`
+- **identity**：`/api/v1/identity/register`、`/api/v1/identity/me`（由API Gateway + pkg/auth中间件实现）
 - **offer**：`/api/v1/offers`（GET/POST）、`/api/v1/offers/{id}`
 - **siterank**：`POST /api/v1/siterank/analyze`（202返回analysisId）、`GET /api/v1/siterank/{offerId}`最新结果、`/api/v1/siterank/alerts`（集成AI预警功能）
 - **adscenter**：`/api/v1/adscenter/accounts`、`/api/v1/adscenter/preflight`、`/api/v1/adscenter/bulk-actions`、`/api/v1/adscenter/oauth/url`、`/api/v1/adscenter/oauth/callback`、`/api/v1/adscenter/sync`（集成数据同步功能）
@@ -81,9 +85,11 @@
 
 **验收标准：**
 1. WHEN 设计API路由 THEN 系统 SHALL 采用统一格式：`/api/v1/{service}/{resource}`
-2. WHEN 处理长耗时操作 THEN 系统 SHALL 返回202状态码和任务ID，支持异步查询
-3. WHEN 发生错误 THEN 系统 SHALL 返回统一错误体：`{code, message, details?, traceId}`
-4. WHEN 执行变更操作 THEN 系统 SHALL 支持X-Idempotency-Key幂等处理
+2. WHEN 处理长耗时操作 THEN 系统 SHALL 统一返回202状态码和taskId，支持异步查询
+3. WHEN 发生错误 THEN 系统 SHALL 返回统一错误体：`{code, message, details?, traceId}`，响应码与业务码映射表集中管理
+4. WHEN 执行变更操作 THEN 系统 SHALL 强制支持X-Idempotency-Key幂等处理
+5. WHEN 生成OpenAPI THEN 系统 SHALL 使用oapi-codegen生成Go stubs，orval生成TS SDK
+6. WHEN 部署网关 THEN 系统 SHALL 由OpenAPI渲染x-google-backend/IAM/配额策略，生成API Gateway配置
 
 ## 鉴权与安全需求
 
@@ -96,25 +102,33 @@
 3. WHEN 处理回调请求 THEN 系统 SHALL 对OAuth回调和健康检查进行白名单管理
 4. WHEN 验证失败 THEN 系统 SHALL 返回标准的401/403错误响应
 
-### 需求S2：机密治理与数据隔离
-**用户故事：** 作为安全管理员，我希望建立严格的机密管理和数据隔离机制，以便保护敏感信息。
+### 需求S2：机密治理与数据隔离（企业级安全）
+**用户故事：** 作为安全管理员，我希望建立企业级的机密管理和数据隔离机制，采用PostgreSQL RLS确保用户数据强隔离。
+
+**技术架构：** Secret Manager + KMS加密 + PostgreSQL RLS + GCP IAM全链路
 
 **验收标准：**
-1. WHEN 存储密钥 THEN 系统 SHALL 仅使用Secret Manager，禁止明文存储
-2. WHEN 处理Ads刷新令牌 THEN 系统 SHALL 使用AES-GCM(256)加密
-3. WHEN 处理OAuth状态 THEN 系统 SHALL 使用state HMAC + 回调域白名单验证
-4. WHEN 访问数据 THEN 系统 SHALL 以user_id强隔离，服务端判定状态，前端不可越权
+1. WHEN 存储密钥 THEN 系统 SHALL 仅使用Secret Manager，按{KEY}-{stack}命名，禁止明文存储
+2. WHEN 处理Ads刷新令牌 THEN 系统 SHALL 使用KMS加密存储，state HMAC + 回调域白名单验证
+3. WHEN 访问数据 THEN 系统 SHALL 启用PostgreSQL行级安全（RLS），连接后SET app.user_id，策略约束user_id = current_setting('app.user_id')
+4. WHEN 服务间鉴权 THEN 系统 SHALL 使用GCP IAM全链路（网关到服务、服务间调用），Cloud Run to Cloud SQL使用Workload Identity
+5. WHEN 审计追踪 THEN 系统 SHALL 统一注入trace_id、user_id、offer_id、task_id到结构化日志
+6. WHEN 密钥管理 THEN 系统 SHALL 建立密钥轮换策略和安全演练机制
 
 ## 数据与事件需求
 
-### 需求D1：事件存储与投影
-**用户故事：** 作为系统架构师，我希望建立完整的事件驱动架构，以便实现数据的最终一致性。
+### 需求D1：事件存储与投影（企业级一次成型）
+**用户故事：** 作为系统架构师，我希望建立企业级的事件驱动架构，采用ULID和Outbox模式确保数据的最终一致性。
+
+**技术架构：** PostgreSQL事件存储 + Outbox轮询发布 + ULID单调递增 + 投影器幂等处理
 
 **验收标准：**
-1. WHEN 设计事件存储 THEN 系统 SHALL 使用Cloud SQL PostgreSQL存储事件：`event_store(id, aggregate_type, aggregate_id, event_type, event_version, payload jsonb, metadata jsonb, occurred_at timestamptz, trace_id)`
-2. WHEN 发布事件 THEN 系统 SHALL 包含标准事件：UserRegistered、OfferCreated、SiterankRequested/Completed、BatchopenTaskQueued/Started/Completed/Failed、AdsPreflightRequested/Completed、TokenReserved/Debited/Reverted
-3. WHEN 处理事件 THEN 系统 SHALL 使用Cloud Functions投影器订阅Pub/Sub，写入Cloud SQL读模型与Firestore UI缓存
-4. WHEN 确保幂等 THEN 系统 SHALL 以事件id/版本做投影幂等处理
+1. WHEN 设计事件存储 THEN 系统 SHALL 使用PostgreSQL存储事件：`event_store(event_id ULID, aggregate_type, aggregate_id, version, user_id, occurred_at, correlation_id, causation_id, schema_version, payload jsonb, headers jsonb)`
+2. WHEN 发布事件 THEN 系统 SHALL 使用Outbox模式：`outbox(event_id, topic, payload, status, created_at, published_at)`确保"写-发"最终一致性
+3. WHEN 生成事件ID THEN 系统 SHALL 使用ULID单调递增避免热点，按日/周分区存储
+4. WHEN 处理事件 THEN 系统 SHALL 使用Cloud Functions投影器订阅Pub/Sub，实现幂等投影到读模型
+5. WHEN 确保一致性 THEN 系统 SHALL 通过Outbox轮询发布到Pub/Sub，支持失败重试和去重键（event_id）
+6. WHEN 建立索引 THEN 系统 SHALL 创建关键索引：(aggregate_type, aggregate_id, version)、(user_id, occurred_at DESC)
 
 ### 需求D2：读模型与缓存策略
 **用户故事：** 作为系统架构师，我希望建立高效的读模型和缓存策略，以便提供优秀的查询性能。

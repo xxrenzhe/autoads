@@ -39,20 +39,20 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    API Gateway (统一入口)                       │
-│              OpenAPI契约 + Firebase Bearer认证                  │
+│              API Gateway + Identity (统一入口)                  │
+│    OpenAPI契约 + Firebase Auth直连 + pkg/auth中间件            │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────────┐
 │                   微服务层 (Cloud Run)                          │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐ │
-│  │identity  │ │billing   │ │offer     │ │siterank  │ │batch   │ │
-│  │          │ │          │ │          │ │+ai-alerts│ │open    │ │
+│  │billing   │ │offer     │ │siterank  │ │batch     │ │ads     │ │
+│  │          │ │          │ │+ai-alerts│ │open      │ │center  │ │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └────────┘ │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│  │adscenter │ │notifications│ │console │ │frontend  │           │
-│  │+data-sync│ │            │ │        │ │          │           │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐                       │
+│  │notifications│ │console │ │frontend  │                       │
+│  │            │ │        │ │          │                       │
+│  └──────────┘ └──────────┘ └──────────┘                       │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────────┐
@@ -80,6 +80,117 @@
 │  │事件存储+读模型│ │UI实时缓存   │ │文件/日志    │ │密钥管理     ││
 │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘│
 └─────────────────────────────────────────────────────────────────┘
+```
+
+## 共享底座设计
+
+### pkg/auth - Firebase认证中间件
+```go
+// Firebase Auth + PostgreSQL RLS集成
+type AuthMiddleware struct {
+    firebaseAuth *auth.Client
+    db          *sql.DB
+}
+
+func (am *AuthMiddleware) ValidateToken(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // 1. 验证Firebase Token
+        token := extractBearerToken(r)
+        decodedToken, err := am.firebaseAuth.VerifyIDToken(r.Context(), token)
+        if err != nil {
+            writeErrorResponse(w, "UNAUTHORIZED", "Invalid token", nil)
+            return
+        }
+        
+        // 2. 设置PostgreSQL RLS上下文
+        _, err = am.db.Exec("SET app.user_id = $1", decodedToken.UID)
+        if err != nil {
+            writeErrorResponse(w, "INTERNAL_ERROR", "Failed to set user context", nil)
+            return
+        }
+        
+        // 3. 注入用户上下文
+        ctx := context.WithValue(r.Context(), "user_id", decodedToken.UID)
+        next.ServeHTTP(w, r.WithContext(ctx))
+    })
+}
+```
+
+### pkg/outbox - Outbox模式实现
+```go
+// Outbox轮询发布器
+type OutboxPublisher struct {
+    db     *sql.DB
+    pubsub *pubsub.Client
+}
+
+func (op *OutboxPublisher) PublishPendingEvents() error {
+    // 1. 查询待发布事件
+    rows, err := op.db.Query(`
+        SELECT id, event_id, topic, payload 
+        FROM outbox 
+        WHERE status = 'pending' 
+        ORDER BY created_at 
+        LIMIT 100
+    `)
+    
+    // 2. 批量发布到Pub/Sub
+    for rows.Next() {
+        var outboxEvent OutboxEvent
+        rows.Scan(&outboxEvent.ID, &outboxEvent.EventID, &outboxEvent.Topic, &outboxEvent.Payload)
+        
+        // 发布事件（带去重键）
+        result := op.pubsub.Topic(outboxEvent.Topic).Publish(ctx, &pubsub.Message{
+            Data: outboxEvent.Payload,
+            Attributes: map[string]string{
+                "event_id": outboxEvent.EventID, // 去重键
+            },
+        })
+        
+        // 3. 更新发布状态
+        if _, err := result.Get(ctx); err == nil {
+            op.db.Exec("UPDATE outbox SET status = 'published', published_at = NOW() WHERE id = $1", outboxEvent.ID)
+        }
+    }
+}
+```
+
+### pkg/http - 统一错误处理
+```go
+// 统一错误体
+type ErrorResponse struct {
+    Code    string      `json:"code"`
+    Message string      `json:"message"`
+    Details interface{} `json:"details,omitempty"`
+    TraceID string      `json:"traceId"`
+}
+
+// 错误码映射表
+var ErrorCodeMap = map[string]int{
+    "VALIDATION_ERROR":   400,
+    "UNAUTHORIZED":       401,
+    "FORBIDDEN":          403,
+    "NOT_FOUND":          404,
+    "CONFLICT":           409,
+    "INTERNAL_ERROR":     500,
+    "SERVICE_UNAVAILABLE": 503,
+}
+
+func writeErrorResponse(w http.ResponseWriter, code, message string, details interface{}) {
+    traceID := getTraceIDFromContext(r.Context())
+    statusCode := ErrorCodeMap[code]
+    
+    response := ErrorResponse{
+        Code:    code,
+        Message: message,
+        Details: details,
+        TraceID: traceID,
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(statusCode)
+    json.NewEncoder(w).Encode(response)
+}
 ```
 
 ## 核心组件设计
@@ -158,34 +269,34 @@ GET    /api/v1/bulk/ab-tests             // 获取A/B测试列表
 POST   /api/v1/bulk/ab-tests             // 创建A/B测试
 ```
 
-### 4. 高并发浏览器执行服务 (Browser-Exec Service)
+### 4. 高并发浏览器执行服务 (Browser-Exec Service) - 企业级优化
 
-**职责：** 支持数百用户并发的企业级浏览器自动化服务，提供高性能、高可靠的Web交互能力
+**职责：** 支持数百用户并发的企业级浏览器自动化服务，采用Cloud Tasks队列和代理池熔断机制
 
-**技术栈：** Node.js 22 + Playwright + Cloud Run + Redis + 分层架构
+**技术栈：** Node.js 22 + Playwright + Cloud Run + Cloud Tasks + 代理池管理
 
-**高并发架构设计：**
+**企业级高并发架构设计：**
 
-#### 分层架构图
+#### 优化架构图
 ```
 ┌─────────────────────────────────────────┐
 │           API Gateway Layer             │
-│     (请求路由 + 负载均衡 + 限流)          │
+│     (统一入口 + 认证 + 路由)             │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────┴───────────────────────┐
-│         Task Queue Layer                │
-│    (Redis Cluster + 优先级队列)         │
+│         Cloud Tasks Queue               │
+│  (按type-country分队列 + 优先级调度)     │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────┴───────────────────────┐
 │       Browser Pool Manager             │
-│    (浏览器池管理 + 智能任务调度)         │
+│ (按国家+优先级分池 + 代理池熔断隔离)     │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────┴───────────────────────┐
 │    Browser Worker Instances             │
-│  (2-50个Cloud Run实例，弹性扩缩容)       │
+│ (min-instances>0预热 + 并发/内存护栏)    │
 └─────────────────────────────────────────┘
 ```
 
@@ -433,21 +544,75 @@ class MetricsCollector {
 }
 ```
 
-### 5. Identity服务 (身份认证)
+### 5. API Gateway + Identity中间件 (统一认证)
 
-**职责：** 统一身份认证、授权和用户管理
+**职责：** 统一入口、Firebase Auth直连、身份认证中间件
 
-**技术栈：** Go + Cloud Run + Firebase Auth
+**技术栈：** API Gateway + pkg/auth中间件 + Firebase Auth
+
+**架构优势：**
+- **减少一跳**：去掉独立Identity服务，降低冷启动和跨服务失败点
+- **直连Firebase**：API Gateway直接集成Firebase Auth，性能更优
+- **中间件承载**：pkg/auth中间件处理认证/鉴权逻辑，复用性强
 
 **API设计：**
 ```go
-// 身份认证API
-POST   /api/v1/identity/register         // 用户注册
-POST   /api/v1/identity/login           // 用户登录  
-POST   /api/v1/identity/refresh         // 刷新Token
-DELETE /api/v1/identity/logout          // 用户登出
-GET    /api/v1/identity/profile         // 获取用户信息
-PUT    /api/v1/identity/profile         // 更新用户信息
+// Identity API (由API Gateway + pkg/auth实现)
+POST   /api/v1/identity/register         // 用户注册 (直连Firebase)
+POST   /api/v1/identity/login           // 用户登录 (直连Firebase)
+POST   /api/v1/identity/refresh         // 刷新Token (直连Firebase)
+DELETE /api/v1/identity/logout          // 用户登出 (直连Firebase)
+GET    /api/v1/identity/profile         // 获取用户信息 (中间件处理)
+PUT    /api/v1/identity/profile         // 更新用户信息 (中间件处理)
+```
+
+**pkg/auth中间件实现：**
+```go
+// Firebase Auth中间件
+type AuthMiddleware struct {
+    firebaseAuth *auth.Client
+}
+
+func (am *AuthMiddleware) ValidateToken(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // 1. 提取Bearer Token
+        token := extractBearerToken(r)
+        if token == "" {
+            http.Error(w, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+        
+        // 2. 验证Firebase Token
+        decodedToken, err := am.firebaseAuth.VerifyIDToken(r.Context(), token)
+        if err != nil {
+            http.Error(w, "Invalid token", http.StatusUnauthorized)
+            return
+        }
+        
+        // 3. 注入用户上下文
+        ctx := context.WithValue(r.Context(), "user_id", decodedToken.UID)
+        ctx = context.WithValue(ctx, "user_email", decodedToken.Claims["email"])
+        
+        // 4. 设置PostgreSQL RLS上下文
+        if db := getDBFromContext(ctx); db != nil {
+            db.Exec("SET app.user_id = $1", decodedToken.UID)
+        }
+        
+        next.ServeHTTP(w, r.WithContext(ctx))
+    })
+}
+
+// API Gateway路由配置
+func setupGatewayRoutes() {
+    // Identity路由直接处理
+    http.HandleFunc("/api/v1/identity/register", handleFirebaseRegister)
+    http.HandleFunc("/api/v1/identity/login", handleFirebaseLogin)
+    http.HandleFunc("/api/v1/identity/profile", authMiddleware.ValidateToken(handleUserProfile))
+    
+    // 其他服务路由转发
+    http.HandleFunc("/api/v1/offers/", authMiddleware.ValidateToken(proxyToOfferService))
+    http.HandleFunc("/api/v1/billing/", authMiddleware.ValidateToken(proxyToBillingService))
+}
 ```
 
 ### 6. Billing服务 (计费管理)
@@ -657,160 +822,186 @@ POST   /api/v1/batch/rollback/{id}      // 回滚操作
 GET    /api/v1/batch/audit/{id}         // 获取审计快照
 ```
 
-### 10. Adscenter服务 (广告中心)
+### 10. Adscenter服务 (广告中心 + 数据同步)
 
-**职责：** Google Ads集成和Pre-flight检查
+**职责：** Google Ads集成、Pre-flight检查、批量操作和数据同步
 
-**技术栈：** Go + Cloud Run + Google Ads API
+**技术栈：** Go + Cloud Run + Google Ads API + Cloud SQL + Cloud Scheduler
 
 **核心特性：**
 - **Live/Stub分离**：build tag控制真实/模拟模式
 - **OAuth治理**：AES-GCM加密 + 状态机管理
 - **配额管理**：QPS限制 + 并发控制
+- **集成数据同步**：增量同步 + 多账户聚合 + 实时仪表盘
 
 **API设计：**
 ```go
 // 广告中心API
-POST   /api/v1/ads/connect              // 连接Ads账户
-GET    /api/v1/ads/accounts             // 获取账户列表
-POST   /api/v1/ads/preflight            // Pre-flight检查
-GET    /api/v1/ads/performance          // 获取性能数据
-POST   /api/v1/ads/sync                 // 同步数据
+POST   /api/v1/adscenter/connect        // 连接Ads账户
+GET    /api/v1/adscenter/accounts       // 获取账户列表
+POST   /api/v1/adscenter/preflight      // Pre-flight检查
+POST   /api/v1/adscenter/bulk-actions   // 批量操作
+GET    /api/v1/adscenter/oauth/url      // OAuth授权URL
+POST   /api/v1/adscenter/oauth/callback // OAuth回调
+
+// 集成数据同步API
+POST   /api/v1/adscenter/sync/trigger   // 触发数据同步
+GET    /api/v1/adscenter/sync/status    // 获取同步状态
+GET    /api/v1/adscenter/sync/dashboard // 获取仪表盘数据
+GET    /api/v1/adscenter/sync/trends    // 获取趋势数据
+POST   /api/v1/adscenter/sync/accounts/connect // 连接Google Ads账户
+GET    /api/v1/adscenter/sync/quota     // 获取API配额使用情况
 ```
 
-### 11. Workflow服务 (工作流) - 可选
-
-**状态：** 可选服务，当前事件驱动架构已提供流程编排能力
-
-**职责：** 复杂业务流程编排和状态管理（如需要跨服务的长时间运行流程）
-
-**技术栈：** Go + Cloud Run + Pub/Sub
-
-**评估建议：** 
-- 当前系统通过事件驱动架构已实现流程编排
-- 各服务内部状态管理已足够
-- 建议暂不实现，根据后续复杂度需求再评估
-
-**API设计：**
+**集成数据同步功能实现：**
 ```go
-// 工作流API (如需要时实现)
-POST   /api/v1/workflow/start           // 启动工作流
-GET    /api/v1/workflow/status/{id}     // 查询流程状态
-POST   /api/v1/workflow/pause/{id}      // 暂停流程
-POST   /api/v1/workflow/resume/{id}     // 恢复流程
-POST   /api/v1/workflow/cancel/{id}     // 取消流程
-```
-
-**核心组件实现：**
-```go
-// 浏览器实例池管理
-type BrowserPool struct {
-    browsers    []*playwright.Browser
-    maxSize     int
-    currentSize int
-    mutex       sync.RWMutex
+// 数据同步模块
+type DataSyncModule struct {
+    adsClient     *GoogleAdsClient
+    db           *sql.DB
+    scheduler    *CloudScheduler
+    quotaManager *QuotaManager
 }
 
-func (p *BrowserPool) GetBrowser() *playwright.Browser
-func (p *BrowserPool) ReleaseBrowser(browser *playwright.Browser)
-func (p *BrowserPool) HealthCheck() error
-
-// 浏览器执行器
-type BrowserExecutor struct {
-    pool         *BrowserPool
-    proxyManager *ProxyManager
-    brandExtractor *BrandExtractor
+type SyncTask struct {
+    ID          string    `json:"id"`
+    Type        string    `json:"type"`        // incremental, full
+    AccountIDs  []string  `json:"account_ids"`
+    Status      string    `json:"status"`      // pending, running, completed, failed
+    Progress    int       `json:"progress"`    // 0-100
+    StartedAt   time.Time `json:"started_at"`
+    CompletedAt *time.Time `json:"completed_at,omitempty"`
+    ErrorMsg    string    `json:"error_msg,omitempty"`
 }
 
-// 品牌名提取器
-type BrandExtractor struct {
-    patterns map[string]string // 域名模式到品牌名的映射
-}
-
-func (be *BrandExtractor) ExtractBrand(domain string) string {
-    // nike.com -> nike, amazon.com -> amazon
-    parts := strings.Split(domain, ".")
-    if len(parts) >= 2 {
-        return strings.ToLower(parts[len(parts)-2])
+// 增量数据同步
+func (ds *DataSyncModule) IncrementalSync(accountIDs []string) (*SyncTask, error) {
+    task := &SyncTask{
+        ID:         generateTaskID(),
+        Type:       "incremental",
+        AccountIDs: accountIDs,
+        Status:     "pending",
+        StartedAt:  time.Now(),
     }
-    return domain
+    
+    // 异步执行同步任务
+    go ds.executeSyncTask(task)
+    
+    return task, nil
 }
 
-// 智能代理IP管理
-type ProxyManager struct {
-    countryPools map[string]*CountryProxyPool
-    timeWindow   time.Duration // 5分钟复用窗口
+// 执行同步任务
+func (ds *DataSyncModule) executeSyncTask(task *SyncTask) {
+    task.Status = "running"
+    ds.updateTaskStatus(task)
+    
+    totalAccounts := len(task.AccountIDs)
+    for i, accountID := range task.AccountIDs {
+        // 检查配额限制
+        if !ds.quotaManager.CanMakeRequest() {
+            // 等待配额恢复或调整调用频率
+            ds.quotaManager.WaitForQuota()
+        }
+        
+        // 同步单个账户数据
+        if err := ds.syncAccountData(accountID); err != nil {
+            task.ErrorMsg = err.Error()
+            task.Status = "failed"
+            ds.updateTaskStatus(task)
+            return
+        }
+        
+        // 更新进度
+        task.Progress = (i + 1) * 100 / totalAccounts
+        ds.updateTaskStatus(task)
+    }
+    
+    task.Status = "completed"
+    completedAt := time.Now()
+    task.CompletedAt = &completedAt
+    ds.updateTaskStatus(task)
 }
 
-type CountryProxyPool struct {
-    currentIP    string
-    usedByOffers map[string]bool // 记录已使用此IP的Offer URL
-    lastRotation time.Time
-    apiURL       string // 该国家的代理IP API URL
+// 多账户数据聚合
+func (ds *DataSyncModule) GetAggregatedDashboard(userID string) (*DashboardData, error) {
+    // 按Offer维度聚合多账户数据
+    query := `
+        SELECT 
+            o.id as offer_id,
+            o.name as offer_name,
+            SUM(p.impressions) as total_impressions,
+            SUM(p.clicks) as total_clicks,
+            SUM(p.cost_micros) as total_cost,
+            COUNT(DISTINCT p.account_id) as account_count,
+            AVG(p.ctr) as avg_ctr,
+            AVG(p.avg_cpc_micros) as avg_cpc
+        FROM offers o
+        LEFT JOIN ads_performance_history p ON o.id = p.offer_id
+        WHERE o.user_id = $1 
+        AND p.date >= $2
+        GROUP BY o.id, o.name
+        ORDER BY total_cost DESC
+    `
+    
+    rows, err := ds.db.Query(query, userID, time.Now().AddDate(0, 0, -30))
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    
+    var offers []*OfferPerformance
+    for rows.Next() {
+        var offer OfferPerformance
+        err := rows.Scan(&offer.OfferID, &offer.OfferName, &offer.TotalImpressions,
+            &offer.TotalClicks, &offer.TotalCost, &offer.AccountCount,
+            &offer.AvgCTR, &offer.AvgCPC)
+        if err != nil {
+            return nil, err
+        }
+        offers = append(offers, &offer)
+    }
+    
+    return &DashboardData{
+        Offers:      offers,
+        LastUpdated: time.Now(),
+        Summary:     ds.calculateSummary(offers),
+    }, nil
 }
 
-func (pm *ProxyManager) GetProxyForOffer(country, offerURL string) string
-func (pm *ProxyManager) ConfigureCountryAPI(country, apiURL string) error
-
-// 页面可用性检测器
-type AvailabilityChecker struct {
-    executor *BrowserExecutor
+// 配额管理器
+type QuotaManager struct {
+    dailyLimit    int
+    currentUsage  int
+    resetTime     time.Time
+    rateLimiter   *rate.Limiter
 }
 
-func (ac *AvailabilityChecker) CheckOfferAvailability(offerURL string) (*AvailabilityResult, error)
+func (qm *QuotaManager) CanMakeRequest() bool {
+    // 检查每日配额
+    if qm.currentUsage >= qm.dailyLimit {
+        return false
+    }
+    
+    // 检查速率限制
+    return qm.rateLimiter.Allow()
+}
+
+func (qm *QuotaManager) WaitForQuota() {
+    // 智能等待策略
+    if qm.currentUsage >= qm.dailyLimit {
+        // 等待到第二天重置
+        time.Sleep(time.Until(qm.resetTime))
+    } else {
+        // 等待速率限制恢复
+        qm.rateLimiter.Wait(context.Background())
+    }
+}
 ```
 
-### 12. AI预警与优化服务 (AI Alert & Optimization Service)
 
-**职责：** 提供智能预警、风险识别、优化建议等AI驱动功能
 
-**技术栈：** Go + Cloud Run + Firebase AI Logic + 规则引擎
 
-**核心功能：**
-- 实时数据监控和自动状态转换（连续5天0曝光0点击→衰退期）
-- 风险识别和预警
-- Firebase AI Logic多场景应用：内容分析、优化建议、合规检查
-- 效果跟踪反馈
-- 规则引擎管理
-
-**API设计：**
-```go
-// AI预警优化API
-GET    /api/v1/ai/alerts                 // 获取预警列表
-POST   /api/v1/ai/alerts/acknowledge     // 确认预警
-GET    /api/v1/ai/suggestions            // 获取优化建议
-POST   /api/v1/ai/suggestions/apply      // 应用建议
-GET    /api/v1/ai/insights               // 获取AI洞察
-POST   /api/v1/ai/rules                  // 配置预警规则
-POST   /api/v1/ai/analyze-content        // Firebase AI内容分析
-POST   /api/v1/ai/compliance-check       // Firebase AI合规检查
-POST   /api/v1/ai/generate-suggestions   // Firebase AI优化建议
-```
-
-### 13. 数据同步服务 (Data Sync Service)
-
-**职责：** 管理与Google Ads API的数据同步，提供全局数据视图
-
-**技术栈：** Go + Cloud Run + Google Ads API + Cloud SQL
-
-**核心功能：**
-- 增量数据同步
-- 多账户数据聚合
-- 趋势数据计算
-- API限制管理
-- 数据质量监控
-
-**API设计：**
-```go
-// 数据同步API
-POST   /api/v1/sync/trigger              // 触发同步
-GET    /api/v1/sync/status               // 获取同步状态
-GET    /api/v1/sync/dashboard            // 获取仪表盘数据
-GET    /api/v1/sync/trends               // 获取趋势数据
-POST   /api/v1/sync/accounts/connect     // 连接Google Ads账户
-```
-
-### 14. 后台管理服务 (Admin Management Service)
+### 11. 后台管理服务 (Admin Management Service)
 
 **职责：** 提供完整的后台管理功能，包括仪表盘、用户管理、套餐管理、Token管理、动态配置
 
@@ -890,7 +1081,7 @@ PUT    /api/v1/seo/meta/{page}            // 更新页面SEO信息
 GET    /api/v1/seo/pages                  // 获取所有页面SEO配置
 ```
 
-### 15. 统一通知管理服务 (Notification Service)
+### 12. 统一通知管理服务 (Notification Service)
 
 **职责：** 提供完整的通知管理功能，包括事件监听、通知生成、分发和用户通知中心
 
@@ -1511,7 +1702,101 @@ class NotificationManager {
 
 ### Cloud SQL 数据结构
 
-#### 1. 历史数据表
+#### 1. 事件存储与Outbox表（企业级一次成型）
+
+```sql
+-- 事件存储表 (ULID + 分区)
+CREATE TABLE event_store (
+    event_id CHAR(26) PRIMARY KEY,           -- ULID单调递增
+    aggregate_type VARCHAR(50) NOT NULL,     -- Offer, User, Task等
+    aggregate_id VARCHAR(50) NOT NULL,       -- 聚合根ID
+    version INTEGER NOT NULL,                -- 事件版本
+    user_id VARCHAR(50) NOT NULL,            -- 用户ID (RLS隔离)
+    occurred_at TIMESTAMPTZ DEFAULT NOW(),   -- 事件发生时间
+    correlation_id VARCHAR(50),              -- 关联ID
+    causation_id VARCHAR(50),                -- 因果ID
+    schema_version INTEGER DEFAULT 1,        -- 事件模式版本
+    payload JSONB NOT NULL,                  -- 事件数据
+    headers JSONB,                           -- 事件头信息
+    
+    -- 关键索引
+    INDEX idx_aggregate (aggregate_type, aggregate_id, version),
+    INDEX idx_user_occurred (user_id, occurred_at DESC),
+    INDEX idx_occurred (occurred_at DESC)
+) PARTITION BY RANGE (EXTRACT(EPOCH FROM occurred_at)::BIGINT);
+
+-- 按周分区 (示例)
+CREATE TABLE event_store_2024_w01 PARTITION OF event_store
+    FOR VALUES FROM (1704067200) TO (1704672000);
+
+-- Outbox表 (确保事件发布的最终一致性)
+CREATE TABLE outbox (
+    id BIGSERIAL PRIMARY KEY,
+    event_id CHAR(26) NOT NULL UNIQUE,      -- 关联event_store
+    topic VARCHAR(100) NOT NULL,            -- Pub/Sub主题
+    payload JSONB NOT NULL,                 -- 发布载荷
+    status VARCHAR(20) DEFAULT 'pending',   -- pending, published, failed
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    published_at TIMESTAMPTZ,
+    retry_count INTEGER DEFAULT 0,
+    last_error TEXT,
+    
+    INDEX idx_status_created (status, created_at),
+    INDEX idx_event_id (event_id)
+);
+
+-- 读模型表 (启用RLS)
+CREATE TABLE offers (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,           -- RLS隔离字段
+    name VARCHAR(255) NOT NULL,
+    url TEXT NOT NULL,
+    country VARCHAR(2) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    rosc DECIMAL(10,2) DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    INDEX idx_user_status (user_id, status),
+    INDEX idx_user_created (user_id, created_at DESC)
+);
+
+-- 启用RLS
+ALTER TABLE offers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY offers_user_isolation ON offers
+    FOR ALL TO PUBLIC
+    USING (user_id = current_setting('app.user_id'));
+
+-- 通知表 (启用RLS)
+CREATE TABLE user_notifications (
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,           -- RLS隔离字段
+    notification_type VARCHAR(50) NOT NULL,
+    category VARCHAR(20) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    action_url VARCHAR(500),
+    action_label VARCHAR(50),
+    priority VARCHAR(20) DEFAULT 'normal',
+    status VARCHAR(20) DEFAULT 'unread',
+    metadata JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    read_at TIMESTAMPTZ,
+    archived_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ,
+    
+    INDEX idx_user_status_created (user_id, status, created_at DESC),
+    INDEX idx_user_category_created (user_id, category, created_at DESC)
+);
+
+-- 启用RLS
+ALTER TABLE user_notifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY notifications_user_isolation ON user_notifications
+    FOR ALL TO PUBLIC
+    USING (user_id = current_setting('app.user_id'));
+```
+
+#### 2. 历史数据表
 
 ```sql
 -- 广告账户表
