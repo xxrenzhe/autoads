@@ -6,9 +6,16 @@ use (
 	./services/billing
 	./services/console
 	./services/identity
+	./services/notifications
 	./services/offer
 	./services/siterank
 	./services/workflow
 	./pkg/httpclient
 	./pkg/noop
+	./pkg/logger
+	./pkg/errors
+	./pkg/auth
+	./pkg/middleware
+	./pkg/config
+	./pkg/idempotency
 )

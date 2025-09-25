@@ -1,0 +1,140 @@
+swagger: "2.0"
+info:
+  title: autoads-gateway-v2
+  version: 2.0.0
+schemes:
+  - https
+produces:
+  - application/json
+securityDefinitions:
+  firebase:
+    type: oauth2
+    flow: "implicit"
+    authorizationUrl: ""
+    x-google-issuer: "https://securetoken.google.com/<PROJECT_ID>"
+    x-google-jwks_uri: "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+    x-google-audiences: "<PROJECT_ID>"
+paths:
+  /readyz:
+    get:
+      operationId: readyz
+      # point to one lightweight service health endpoint
+      x-google-backend:
+        address: https://siterank-REPLACE_WITH_RUN_URL/healthz
+        path_translation: CONSTANT_ADDRESS
+      responses: { '200': { description: OK } }
+  /api/health/adscenter:
+    get:
+      operationId: healthAdscenter
+      x-google-backend:
+        address: https://adscenter-REPLACE_WITH_RUN_URL/health
+        path_translation: CONSTANT_ADDRESS
+      responses: { '200': { description: OK } }
+  /api/health/console:
+    get:
+      operationId: healthConsole
+      x-google-backend:
+        address: https://console-REPLACE_WITH_RUN_URL/health
+        path_translation: CONSTANT_ADDRESS
+      responses: { '200': { description: OK } }
+
+  # Identity service removed; Firebase auth is enforced at gateway.
+
+  /api/v1/billing/*:
+    get:
+      operationId: billingProxyGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://billing-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+    post:
+      operationId: billingProxyPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://billing-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+
+  /api/v1/offers:
+    get:
+      operationId: offersList
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://offer-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+    post:
+      operationId: offersCreate
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://offer-REPLACE_WITH_RUN_URL
+      responses: { '201': { description: Created } }
+  /api/v1/offers/*:
+    get:
+      operationId: offersWildcardGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://offer-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+    post:
+      operationId: offersWildcardPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://offer-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+
+  /api/v1/siterank/*:
+    get:
+      operationId: siterankWildcardGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://siterank-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+    post:
+      operationId: siterankWildcardPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://siterank-REPLACE_WITH_RUN_URL
+      responses: { '202': { description: Accepted } }
+
+  /api/v1/batchopen/*:
+    get:
+      operationId: batchopenWildcardGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://batchopen-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+    post:
+      operationId: batchopenWildcardPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://batchopen-REPLACE_WITH_RUN_URL
+      responses: { '202': { description: Accepted } }
+
+  /api/v1/adscenter/*:
+    get:
+      operationId: adscenterWildcardGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://adscenter-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+    post:
+      operationId: adscenterWildcardPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://adscenter-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+
+  # Workflow routes removed in v2.
+
+  /api/v1/notifications/*:
+    get:
+      operationId: notificationsGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://notifications-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+    post:
+      operationId: notificationsPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://notifications-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }

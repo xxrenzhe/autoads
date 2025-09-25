@@ -1,14 +1,13 @@
 package handlers
 
 import (
-	"context"
-	"encoding/json"
-	"log"
-	"net/http"
-	"github.com/xxrenzhe/autoads/services/billing/internal/auth"
-	"time"
+    "encoding/json"
+    "log"
+    "net/http"
+    "github.com/xxrenzhe/autoads/services/billing/internal/auth"
+    "time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+    "github.com/jackc/pgx/v5/pgxpool"
 )
 
 // ... (Handler struct and NewHandler function are the same) ...

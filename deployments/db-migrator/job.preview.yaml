@@ -1,0 +1,25 @@
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: db-migrator-preview
+  labels:
+    autoads-stack: preview
+spec:
+  template:
+    template:
+      containers:
+      - image: asia-northeast1-docker.pkg.dev/gen-lang-client-0944935873/autoads-services/db-migrator:preview-latest
+        env:
+        - name: DATABASE_URL_SECRET_NAME
+          value: projects/gen-lang-client-0944935873/secrets/DATABASE_URL/versions/latest
+        # Optional: override timeout if needed
+        # args: []
+      serviceAccountName: codex-dev@gen-lang-client-0944935873.iam.gserviceaccount.com
+      # Private IP to Cloud SQL via VPC Connector
+      vpcAccess:
+        connector: projects/gen-lang-client-0944935873/locations/asia-northeast1/connectors/autoads-vpc
+        egress: ALL_TRAFFIC
+      timeout: 600s
+  taskCount: 1
+  parallelism: 1
+

@@ -1,0 +1,82 @@
+openapi: 3.0.3
+info:
+  title: Billing Service
+  version: 0.1.0
+  license:
+    name: Elastic-Internal
+servers:
+  - url: /api
+paths:
+  /tokens/balance:
+    get:
+      operationId: getTokenBalance
+      summary: Get current user's token balance
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  balance: { type: integer }
+                required: [balance]
+        '401': { description: Unauthorized }
+  /tokens/transactions:
+    get:
+      operationId: listTokenTransactions
+      summary: List token transactions (last 50)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TokenTransaction'
+        '401': { description: Unauthorized }
+  /subscription:
+    get:
+      operationId: getSubscription
+      summary: Get current subscription
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '401': { description: Unauthorized }
+        '404': { description: Not Found }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Subscription:
+      type: object
+      properties:
+        id: { type: string }
+        planName: { type: string }
+        status: { type: string }
+        currentPeriodEnd: { type: string, format: date-time }
+      required: [id, planName, status, currentPeriodEnd]
+    TokenTransaction:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string }
+        amount: { type: integer }
+        description: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, type, amount, createdAt]

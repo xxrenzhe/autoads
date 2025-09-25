@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: Batchopen Service
+  version: 0.1.0
+  license:
+    name: Elastic-Internal
+servers:
+  - url: /api/v1
+paths:
+  /batchopen/tasks:
+    post:
+      operationId: createBatchopenTask
+      summary: Create a batchopen task
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId: { type: string }
+                simulationConfig:
+                  type: object
+                  additionalProperties: true
+              required: [offerId]
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  taskId: { type: string }
+                  status: { type: string }
+                  createdAt: { type: string, format: date-time }
+                required: [taskId, status, createdAt]
+        '400': { description: Invalid input }
+        '401': { description: Unauthorized }
+        '405': { description: Method not allowed }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

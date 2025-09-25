@@ -1,0 +1,106 @@
+openapi: 3.0.3
+info:
+  title: Offer Service
+  version: 0.1.0
+  license:
+    name: Elastic-Internal
+servers:
+  - url: /api/v1
+paths:
+  /offers:
+    get:
+      operationId: listOffers
+      summary: List offers for current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Offer'
+    post:
+      operationId: createOffer
+      summary: Create a new offer (202)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferCreateRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferCreatedEvent'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Offer:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        name: { type: string }
+        originalUrl: { type: string }
+        status: { type: string, enum: [evaluating, optimizing, scaling, archived] }
+        siterankScore: { type: number, format: float, nullable: true }
+        createdAt: { type: string, format: date-time }
+      required: [id, userId, name, originalUrl, status, createdAt]
+    OfferCreateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        originalUrl: { type: string }
+      required: [name, originalUrl]
+    OfferCreatedEvent:
+      type: object
+      properties:
+        offerId: { type: string }
+        userId: { type: string }
+        name: { type: string }
+        originalUrl: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [offerId, userId, name, originalUrl, status, createdAt]
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: {}
+            traceId: { type: string }
+          required: [code, message]

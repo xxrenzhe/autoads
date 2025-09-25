@@ -118,6 +118,7 @@ async function proxy(req: Request, path: string[]) {
       if (token) {
         headers.set('authorization', `Bearer ${token}`);
       }
+      headers.set('X-User-Id', userId)
     }
   } catch {
     // 会话不可用时，保持匿名透传，让后端自行判定权限

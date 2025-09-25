@@ -1,11 +1,12 @@
 package httpclient
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"time"
+    "context"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "time"
+    "github.com/xxrenzhe/autoads/pkg/idempotency"
 )
 
 // Client is a simple wrapper around http.Client.
@@ -24,13 +25,17 @@ func New(timeout time.Duration) *Client {
 
 // GetJSON performs a GET request and decodes the JSON response into the target interface.
 func (c *Client) GetJSON(ctx context.Context, url string, target interface{}) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
+    req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+    if err != nil {
+        return fmt.Errorf("failed to create request: %w", err)
+    }
 
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "AutoAds-HTTP-Client/1.0")
+    req.Header.Set("Accept", "application/json")
+    req.Header.Set("User-Agent", "AutoAds-HTTP-Client/1.0")
+    // propagate idempotency key if available
+    if k, ok := idempotency.FromContext(ctx); ok && k != "" {
+        req.Header.Set("X-Idempotency-Key", k)
+    }
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

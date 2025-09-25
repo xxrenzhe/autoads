@@ -139,6 +139,8 @@ async function proxy(req: Request, path: string[]) {
       if (uid) {
         const ijwt = createInternalJWT({ sub: uid, role })
         if (ijwt) headers.set('authorization', `Bearer ${ijwt}`)
+        // Also forward explicit user id header for Go services (gateway-off paths)
+        headers.set('X-User-Id', uid)
       }
     } catch { /* no-op */ }
   }

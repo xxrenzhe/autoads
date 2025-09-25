@@ -101,7 +101,7 @@
 
 ### B1. 事件存储与工作流基础设施
 
-- [ ] B1.1 建立事件存储表结构
+- [x] B1.1 建立事件存储表结构
   - 创建PostgreSQL事件存储表：event_store
   - 实现事件写入和查询接口
   - 建立事件版本管理和迁移
@@ -130,7 +130,7 @@
   - 实现读模型更新和同步
   - _需求: 需求D1 - 事件存储与投影_
 
-- [ ] B2.2 建立读模型表结构
+- [x] B2.2 建立读模型表结构
   - 创建User、Offer、SiterankAnalysis、BatchopenTask表
   - 创建UserAdsConnection、Subscription、UserToken表
   - 创建TokenTransaction、AuditSnapshot表
@@ -148,14 +148,14 @@
 
 ### C1. Browser-Exec服务
 
-- [ ] C1.1 建立Node.js服务架构
+- [x] C1.1 建立Node.js服务架构
   - 创建Node.js 22 + Playwright项目结构
   - 实现浏览器池管理和并发控制
   - 建立代理池管理（租借/归还/失败隔离）
   - 实现Cloud Run最小实例>0预热策略
   - _需求: 需求C2 - Browser-Exec服务_
 
-- [ ] C1.2 实现核心API能力
+- [x] C1.2 实现核心API能力
   - 实现/parse-url：URL解析和品牌提取
   - 实现/check-availability：落地页可用性检测
   - 实现/simulate-click：点击仿真
@@ -191,11 +191,18 @@
 
 ### D1. 评估流程实现
 
-- [ ] D1.1 建立10秒评估流程
+- [x] D1.1 建立10秒评估流程
   - 实现Browser-Exec解析URL/品牌
   - 集成SimilarWeb API拉取数据
   - 建立评分器（权重表+阈值，KISS）
   - 实现SiterankCompleted事件发布
+  - _需求: 需求C1 - Siterank 10秒评估_
+
+- [x] D1.5 SimilarWeb域名数据全局缓存（7天/1天）
+  - 成功返回缓存7天，失败返回缓存1天
+  - 以域名host为key建立全局缓存（PostgreSQL表：domain_cache）
+  - 服务实例共享缓存，无需用户层面的数据隔离
+  - 已在siterank服务接入（优先命中缓存，否则回源SimilarWeb并回写缓存）
   - _需求: 需求C1 - Siterank 10秒评估_
 
 - [ ] D1.2 实现性能优化策略
@@ -405,7 +412,7 @@
   - 实现契约测试自动生成
   - _需求: 需求24 - 事件驱动架构与CQRS_
 
-- [ ] 2.3 建立API Gateway配置
+- [x] 2.3 建立API Gateway配置
   - 配置Google Cloud API Gateway
   - 实现统一认证和授权策略
   - 建立限流和监控配置
@@ -1174,3 +1181,32 @@
 - [ ] **运维就绪**：监控告警、故障恢复、扩缩容策略全部验证通过
 
 这个企业级实施计划确保系统具备生产环境的高可用性、高性能和高安全性要求，能够完全解决用户的8个核心痛点。
+
+---
+
+## 新增任务（阶段性交付）
+
+- [x] OAS 初版（6个服务）
+  - offer/siterank/adscenter/batchopen/billing/notifications 的 OpenAPI 3 契约初版已落地
+- [x] TS 类型生成脚本 + 前端最小接入
+  - 脚本 scripts/openapi/gen-ts-sdk.sh；前端引入 apps/frontend/src/sdk/{offer,siterank}
+- [x] Notifications 服务 MVP
+  - 独立服务 + /api/v1/notifications/recent（分页）+ /readyz + 统一错误体
+- [x] 统一错误体与 /readyz（多服务）
+  - adscenter/offer/batchopen/billing/siterank/console 已接入
+- [x] Gateway v2 路由包含 notifications
+  - deployments/gateway/gateway.v2.yaml + 渲染脚本支持 NOTIFICATIONS_URL
+- [x] Siterank 事件发布（Requested/Completed）
+  - siterank 服务在创建与完成分析时发布标准事件
+- [x] Browser-Exec 服务骨架
+  - Node.js 22 + Express：/healthz、/readyz、/api/v1/browser/{parse-url,check-availability,simulate-click,batch-execute}
+- [x] Browser-Exec 指标与真实执行参数
+  - /metrics 暴露（Prometheus），check/simulate/batch增加耗时与失败计数；simulate-click 支持 selector/wait/dwell/指纹/代理
+- [x] Browser-Exec 上下文池（共享浏览器+Context池）
+  - 无代理复用共享 browser，多 Context 并发；有代理使用临时 browser；容量护栏（BROWSER_MAX_CONTEXTS）
+- [x] Browser-Exec 任务查询接口
+  - 新增 GET /api/v1/browser/tasks/{id} 查询任务状态（queued/running/completed/failed）
+- [x] Notifications 事件订阅（投影器）
+  - 监听 SiterankRequested/SiterankCompleted/OfferCreated，写入 user_notifications（最近列表分页）
+- [x] Siterank 主机级缓存（5分钟）
+  - 对域名 host 级别结果缓存，减少重复 SimilarWeb 拉取

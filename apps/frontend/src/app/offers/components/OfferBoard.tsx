@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { listOffers as listOffersSDK } from '@/sdk/offer/client'
 import { Button } from '@/components/ui/button';
 import { PlusCircle, RefreshCw } from 'lucide-react';
 import { OfferCard } from './OfferCard';
@@ -25,12 +26,8 @@ export function OfferBoard() {
   async function fetchOffers() {
     if (!isRefreshing) setLoading(true);
     try {
-      const response = await fetch('/api/offers');
-      if (!response.ok) {
-        throw new Error('Failed to fetch offers');
-      }
-      const data = await response.json();
-      setOffers(data);
+      const data = await listOffersSDK()
+      setOffers(data as any);
     } catch (error) {
       console.error(error);
     } finally {

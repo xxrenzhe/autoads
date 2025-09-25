@@ -5,14 +5,13 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
 
 	_ "github.com/lib/pq"
-	"github.com/xxrenzhe/autoads/services/billing/internal/events"
 	"github.com/xxrenzhe/autoads/pkg/config"
+	"github.com/xxrenzhe/autoads/pkg/errors"
 	"github.com/xxrenzhe/autoads/pkg/logger"
 	"github.com/xxrenzhe/autoads/pkg/middleware"
 )
@@ -64,18 +63,12 @@ func main() {
 	}
 	log.Info().Msg("Successfully connected to the database!")
 
-	// Initialize the Pub/Sub subscriber.
-	subscriber, err := events.NewSubscriber(ctx, db)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to create event subscriber")
-	}
-
-	// Start listening for events in a background goroutine.
-	go subscriber.StartListening(ctx)
+	// Event subscriber is optional and not compiled in this build (build tags).
 
 	// --- HTTP Server Setup ---
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", healthCheckHandler)
+    mux := http.NewServeMux()
+    mux.HandleFunc("/healthz", healthCheckHandler)
+    mux.HandleFunc("/readyz", healthCheckHandler)
 
 	// Define protected routes that require authentication.
 	protectedRoutes := http.NewServeMux()
@@ -93,22 +86,17 @@ func main() {
 }
 
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	err := db.Ping()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Health check failed: Database error: %v\n", err)
+	if err := db.Ping(); err != nil {
+		errors.Write(w, r, http.StatusInternalServerError, "NOT_READY", "dependencies not ready", map[string]string{"db": err.Error()})
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "OK")
+	_, _ = w.Write([]byte("OK"))
 }
 
 func getTokenBalanceHandler(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-	if !ok || userID == "" {
-		http.Error(w, "Unauthorized: User ID not found in context", http.StatusUnauthorized)
-		return
-	}
+    userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+    if !ok || userID == "" { errors.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context", nil); return }
 
 	var balance int64
 	err := db.QueryRowContext(r.Context(), `SELECT balance FROM "UserToken" WHERE "userId" = $1`, userID).Scan(&balance)
@@ -128,11 +116,8 @@ func getTokenBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func getTokenTransactionsHandler(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-	if !ok || userID == "" {
-		http.Error(w, "Unauthorized: User ID not found in context", http.StatusUnauthorized)
-		return
-	}
+    userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+    if !ok || userID == "" { errors.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context", nil); return }
 
 	limit := r.URL.Query().Get("limit")
 	if limit == "" {
@@ -150,30 +135,18 @@ func getTokenTransactionsHandler(w http.ResponseWriter, r *http.Request) {
 		ORDER BY "createdAt" DESC
 		LIMIT $2 OFFSET $3
 	`
-	rows, err := db.QueryContext(r.Context(), query, userID, limit, offset)
-	if err != nil {
-		log.Error().Err(err).Str("userID", userID).Msg("Failed to query token transactions")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
+    rows, err := db.QueryContext(r.Context(), query, userID, limit, offset)
+    if err != nil { log.Error().Err(err).Str("userID", userID).Msg("Failed to query token transactions"); errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil); return }
 	defer rows.Close()
 
 	var transactions []TokenTransaction
 	for rows.Next() {
 		var t TokenTransaction
-		if err := rows.Scan(&t.ID, &t.Type, &t.Amount, &t.Source, &t.Description, &t.CreatedAt); err != nil {
-			log.Error().Err(err).Str("userID", userID).Msg("Failed to scan transaction row")
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
+        if err := rows.Scan(&t.ID, &t.Type, &t.Amount, &t.Source, &t.Description, &t.CreatedAt); err != nil { log.Error().Err(err).Str("userID", userID).Msg("Failed to scan transaction row"); errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil); return }
 		transactions = append(transactions, t)
 	}
 
-	if err := rows.Err(); err != nil {
-		log.Error().Err(err).Str("userID", userID).Msg("Error during transaction rows iteration")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
+    if err := rows.Err(); err != nil { log.Error().Err(err).Str("userID", userID).Msg("Error during transaction rows iteration"); errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil); return }
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(transactions)
@@ -192,18 +165,15 @@ func getSubscriptionHandler(w http.ResponseWriter, r *http.Request) {
 		FROM "Subscription"
 		WHERE "userId" = $1
 	`
-	err := db.QueryRowContext(r.Context(), query, userID).Scan(
+    err := db.QueryRowContext(r.Context(), query, userID).Scan(
 		&sub.ID, &sub.PlanName, &sub.Status, &sub.TrialEndsAt, &sub.CurrentPeriodEnd,
 	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			http.Error(w, "Subscription not found", http.SatusNotFound)
-			return
-		}
-		log.Error().Err(err).Str("userID", userID).Msg("Failed to query subscription")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+        if err == sql.ErrNoRows { errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "Subscription not found", nil); return }
+        log.Error().Err(err).Str("userID", userID).Msg("Failed to query subscription")
+        errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil)
+        return
 	}
 
 	w.Header().Set("Content-Type", "application/json")

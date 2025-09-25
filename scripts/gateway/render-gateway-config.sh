@@ -13,7 +13,7 @@ set -euo pipefail
 #  ADSCENTER_URL=https://adscenter-xxx.run.app \
 #  WORKFLOW_URL=https://workflow-xxx.run.app \
 #  CONSOLE_URL=https://console-xxx.run.app \
-#  ./scripts/gateway/render-gateway-config.sh docs/productrefactoring-v2/API/openapi/gateway.yaml out/gateway.yaml
+#  ./scripts/gateway/render-gateway-config.sh deployments/gateway/gateway.v2.yaml out/gateway.yaml
 
 SRC=${1:?source gateway.yaml required}
 OUT=${2:?output path required}
@@ -35,6 +35,7 @@ mapping = {
     'adscenter-REPLACE_WITH_RUN_URL': os.getenv('ADSCENTER_URL', ''),
     'workflow-REPLACE_WITH_RUN_URL': os.getenv('WORKFLOW_URL', ''),
     'console-REPLACE_WITH_RUN_URL': os.getenv('CONSOLE_URL', ''),
+    'notifications-REPLACE_WITH_RUN_URL': os.getenv('NOTIFICATIONS_URL', ''),
 }
 proj = os.getenv('PROJECT_ID') or os.getenv('GOOGLE_CLOUD_PROJECT')
 if proj:

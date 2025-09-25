@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import axios from 'axios';
+import { listOffers as listOffersSDK } from '@/sdk/offer/client'
+import { analyze as analyzeSDK, getLatestByOffer as getLatestByOfferSDK } from '@/sdk/siterank/client'
 
 export default function SiterankPage() {
   const [offers, setOffers] = useState<any[]>([]);
@@ -36,8 +37,8 @@ export default function SiterankPage() {
 
   const fetchOffers = async () => {
     try {
-      const response = await axios.get('/api/offers');
-      setOffers(Object.values(response.data));
+      const data = await listOffersSDK()
+      setOffers(data as any[])
     } catch (error) {
       console.error("Failed to fetch offers", error);
     }
@@ -45,15 +46,17 @@ export default function SiterankPage() {
 
   const fetchAnalysis = async (offerId: string) => {
     try {
-      const { data } = await axios.get(`/api/siterank/results/${offerId}`);
-      if (data.status === 'completed') {
-        setIsPolling(false);
+      const data: any = await getLatestByOfferSDK(offerId)
+      // Backward-compat: result may be stringified JSON; parse if needed
+      if (typeof data.result === 'string') {
+        try { data.result = JSON.parse(data.result) } catch {}
       }
-      setAnalysis(data);
-    } catch (error) {
-      // It's normal to get a 404 if analysis hasn't started yet
-      if (error.response?.status !== 404) {
-        console.error("Failed to fetch analysis", error);
+      if (data.status === 'completed') setIsPolling(false)
+      setAnalysis(data)
+    } catch (error: any) {
+      // 404 is acceptable before analysis exists
+      if (!(error?.status === 404 || error?.response?.status === 404)) {
+        console.error("Failed to fetch analysis", error)
       }
     }
   };
@@ -61,13 +64,13 @@ export default function SiterankPage() {
   const handleAnalyze = async () => {
     if (selectedOffer) {
       try {
-        setIsLoading(true);
-        await axios.post('/api/siterank/analyze', { url: selectedOffer.originalUrl, offerId: selectedOffer.id });
-        setIsPolling(true);
+        setIsLoading(true)
+        await analyzeSDK(selectedOffer.id)
+        setIsPolling(true)
       } catch (error) {
-        console.error("Failed to start analysis", error);
+        console.error("Failed to start analysis", error)
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
     }
   };

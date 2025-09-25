@@ -1,0 +1,74 @@
+openapi: 3.0.3
+info:
+  title: Adscenter Service
+  version: 0.1.0
+  license:
+    name: Elastic-Internal
+servers:
+  - url: /
+paths:
+  /api/v1/adscenter/accounts:
+    get:
+      operationId: listAccounts
+      summary: List accessible ad accounts
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: OK }
+        '401': { description: Unauthorized }
+  /api/v1/adscenter/preflight:
+    post:
+      operationId: runPreflight
+      summary: Run pre-flight diagnostics
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200': { description: Diagnostics result }
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+  /api/v1/adscenter/bulk-actions:
+    post:
+      operationId: submitBulkActions
+      summary: Submit bulk actions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '202': { description: Accepted }
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+  /api/v1/adscenter/oauth/url:
+    get:
+      operationId: getOAuthUrl
+      summary: Get OAuth URL
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: OK }
+        '401': { description: Unauthorized }
+  /api/v1/adscenter/oauth/callback:
+    get:
+      operationId: oauthCallback
+      summary: OAuth callback
+      security: []
+      responses:
+        '200': { description: OK }
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

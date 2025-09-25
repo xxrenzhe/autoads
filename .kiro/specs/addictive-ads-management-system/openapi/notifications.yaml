@@ -1,0 +1,54 @@
+openapi: 3.0.3
+info:
+  title: Notifications Service
+  version: 0.1.0
+  license:
+    name: Elastic-Internal
+servers:
+  - url: /
+paths:
+  /api/v1/notifications/recent:
+    get:
+      operationId: listRecentNotifications
+      summary: List recent notifications (last 30 days)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: cursor
+          schema: { type: string, nullable: true }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  next:
+                    type: string
+                    nullable: true
+        '401': { description: Unauthorized }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Notification:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string }
+        title: { type: string }
+        message: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, type, title, message, createdAt]

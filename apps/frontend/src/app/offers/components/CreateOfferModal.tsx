@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { createOffer as sdkCreateOffer } from '@/sdk/offer/client'
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -40,19 +41,14 @@ export function CreateOfferModal({ isOpen, onClose, onOfferCreated }: CreateOffe
     }
 
     try {
-      const response = await fetch('/api/offers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, originalUrl }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '创建失败');
-      }
-
-      const newOffer = await response.json();
-      onOfferCreated(newOffer);
+      const evt = await sdkCreateOffer({ name, originalUrl })
+      onOfferCreated({
+        id: evt.offerId,
+        name: evt.name,
+        originalUrl: evt.originalUrl,
+        status: evt.status,
+        createdAt: evt.createdAt,
+      } as any)
       onClose();
       // Reset form
       setName('');

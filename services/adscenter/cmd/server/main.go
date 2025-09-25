@@ -7,12 +7,14 @@ import (
     "fmt"
     "net/http"
     "os"
+    "time"
 
     "github.com/go-redis/redis/v8"
     _ "github.com/lib/pq"
+    "github.com/xxrenzhe/autoads/pkg/errors"
+    "github.com/xxrenzhe/autoads/pkg/logger"
     adsauth "github.com/xxrenzhe/autoads/services/adscenter/internal/auth"
     adsconfig "github.com/xxrenzhe/autoads/services/adscenter/internal/config"
-    "github.com/xxrenzhe/autoads/pkg/logger"
 )
 
 type Campaign struct {
@@ -64,6 +66,15 @@ func main() {
 
     mux := http.NewServeMux()
     mux.HandleFunc("/healthz", healthCheckHandler)
+    mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+        c, cancel := context.WithTimeout(r.Context(), 800*time.Millisecond)
+        defer cancel()
+        if err := db.PingContext(c); err != nil {
+            errors.Write(w, r, http.StatusInternalServerError, "NOT_READY", "dependencies not ready", map[string]string{"db": err.Error()})
+            return
+        }
+        w.WriteHeader(http.StatusOK)
+    })
 
     protected := http.NewServeMux()
     protected.HandleFunc("/adscenter/campaigns", createCampaignHandler)
@@ -99,14 +110,9 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createCampaignHandler(w http.ResponseWriter, r *http.Request) {
-	userID, _ := r.Context().Value(middleware.UserIDKey).(string)
-	
+	userID, _ := r.Context().Value(adsauth.UserIDContextKey).(string)
 	var campaign Campaign
-	if err := json.NewDecoder(r.Body).Decode(&campaign); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
+	if err := json.NewDecoder(r.Body).Decode(&campaign); err != nil { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error(), nil); return }
 	log.Info().Str("userID", userID).Str("campaignName", campaign.Name).Msg("Adscenter campaign created")
 	w.WriteHeader(http.StatusCreated)
 }

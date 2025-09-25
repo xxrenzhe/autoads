@@ -2,21 +2,21 @@
 package main
 
 import (
-	"context"
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"os"
-	"time"
+    "context"
+    "database/sql"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "os"
+    "time"
 
-	"github.com/google/uuid"
-	_ "github.com/lib/pq"
-	"github.com/xxrenzhe/autoads/services/offer/internal/domain"
-	"github.com/xxrenzhe/autoads/services/offer/internal/events"
-	"github.com/xxrenzhe/autoads/pkg/config"
-	"github.com/xxrenzhe/autoads/pkg/logger"
-	"github.com/xxrenzhe/autoads/pkg/middleware"
+    "github.com/google/uuid"
+    _ "github.com/lib/pq"
+    "github.com/xxrenzhe/autoads/services/offer/internal/domain"
+    "github.com/xxrenzhe/autoads/services/offer/internal/events"
+    "github.com/xxrenzhe/autoads/pkg/config"
+    "github.com/xxrenzhe/autoads/pkg/logger"
+    "github.com/xxrenzhe/autoads/pkg/middleware"
 )
 
 // OfferCreateRequest defines the expected JSON body for creating an offer.
@@ -55,19 +55,15 @@ func main() {
 
 	// Initialize the Pub/Sub publisher.
     publisher, err = events.NewPublisher(ctx)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to create event publisher")
-	}
-	defer publisher.Close()
+    if err != nil {
+        log.Fatal().Err(err).Msg("Failed to create event publisher")
+    }
+    if closer, ok := publisher.(interface{ Close() }); ok {
+        defer closer.Close()
+    }
 	
 	// Initialize the Pub/Sub subscriber.
-	subscriber, err := events.NewSubscriber(ctx, db)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to create event subscriber")
-	}
-	
-	// Start listening for events in a background goroutine.
-	go subscriber.StartListening(ctx)
+    // (Optional) Event subscriber can be initialized here if available.
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", healthCheckHandler)
@@ -151,17 +147,22 @@ func createOffer(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	offerID := uuid.New().String()
-	// Use the domain model to create a new offer.
-	offer := domain.NewOffer(offerID, userID, req.Name, req.OriginalUrl)
-
-	// Publish the OfferCreated event.
-	err := publisher.Publish(r.Context(), "OfferCreated", offer)
+    // Publish the OfferCreated domain event (CQRS write path)
+    evt := domain.OfferCreatedEvent{
+        OfferID:     offerID,
+        UserID:      userID,
+        Name:        req.Name,
+        OriginalUrl: req.OriginalUrl,
+        Status:      "evaluating",
+        CreatedAt:   time.Now(),
+    }
+    err := publisher.Publish(r.Context(), evt)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to publish OfferCreated event")
 		http.Error(w, "Failed to create offer", http.StatusInternalServerError)
 		return
 	}
 	
-	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(offer)
+    w.WriteHeader(http.StatusAccepted)
+    json.NewEncoder(w).Encode(evt)
 }

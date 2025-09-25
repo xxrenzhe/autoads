@@ -1,0 +1,76 @@
+openapi: 3.0.3
+info:
+  title: Siterank Service
+  version: 0.1.0
+  license:
+    name: Elastic-Internal
+servers:
+  - url: /api/v1
+paths:
+  /siterank/analyze:
+    post:
+      operationId: requestSiterankAnalysis
+      summary: Request siterank analysis for an offer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId: { type: string }
+              required: [offerId]
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Analysis'
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+        '409': { description: Conflict }
+  /siterank/{offerId}:
+    get:
+      operationId: getLatestSiterankByOffer
+      summary: Get latest siterank analysis by offerId
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: offerId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Analysis'
+        '401': { description: Unauthorized }
+        '404': { description: Not Found }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Analysis:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        offerId: { type: string }
+        status: { type: string, enum: [pending, running, completed, failed] }
+        result:
+          type: object
+          nullable: true
+          additionalProperties: true
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, userId, offerId, status, createdAt, updatedAt]

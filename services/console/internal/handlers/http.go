@@ -7,6 +7,7 @@ import (
     "time"
 
     "github.com/jackc/pgx/v5/pgxpool"
+    "github.com/xxrenzhe/autoads/pkg/errors"
 )
 
 type User struct {
@@ -30,6 +31,14 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
     // Health endpoints (unauthenticated)
     mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
     mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+    mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+        // simple ping against DB
+        if err := h.DB.Ping(r.Context()); err != nil {
+            errors.Write(w, r, http.StatusInternalServerError, "NOT_READY", "dependencies not ready", map[string]string{"db": err.Error()})
+            return
+        }
+        w.WriteHeader(http.StatusOK)
+    })
 
     // API routes
     mux.HandleFunc("/api/v1/console/users", h.getUsers)
@@ -54,27 +63,16 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 
 func (h *Handler) getUsers(w http.ResponseWriter, r *http.Request) {
 	// In a real app, this handler would be protected by an admin-only middleware.
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+    if r.Method != http.MethodGet { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
 
-	rows, err := h.DB.Query(r.Context(), `SELECT id, email, name, role, "createdAt" FROM "User" ORDER BY "createdAt" DESC`)
-	if err != nil {
-		log.Printf("Error querying users: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
+    rows, err := h.DB.Query(r.Context(), `SELECT id, email, name, role, "createdAt" FROM "User" ORDER BY "createdAt" DESC`)
+    if err != nil { log.Printf("Error querying users: %v", err); errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil); return }
 	defer rows.Close()
 
 	var users []User
 	for rows.Next() {
 		var u User
-		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt); err != nil {
-			log.Printf("Error scanning user row: %v", err)
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
+        if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt); err != nil { log.Printf("Error scanning user row: %v", err); errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil); return }
 		users = append(users, u)
 	}
 

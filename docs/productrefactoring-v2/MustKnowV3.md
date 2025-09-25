@@ -5,15 +5,17 @@
 4.若遇到不清楚的地方，或需要申请网络访问权限的，请向我申请
 5.完成阶段性的功能迭代后，及时进行功能测试，确保功能正常，且符合预期
 6.完成阶段性的功能迭代后，及时编译对应服务镜像，确保构建成功
-7.完成阶段性的功能迭代后，及时更新进展文档，保存进展
-8.secrets目录和其下的所有文件都不能上传Github，也不能打包进入镜像
+7.完成阶段性的功能迭代后，及时更新进展文档，只标注完成状态，不要修改任务内容，也可以根据需要补充新的任务
+8.发布相关的配置请放置在deployments目录下
+9.secrets目录和其下的所有文件都不能上传Github，也不能打包进入镜像
+10.执行过程中生成的文档请放置在.kiro/specs/addictive-ads-management-system/目录下
 
 重要信息：
 1.GCP服务账号：codex-dev@gen-lang-client-0944935873.iam.gserviceaccount.com
 2.Firebase服务账号：firebase-adminsdk-fbsvc@gen-lang-client-0944935873.iam.gserviceaccount.com
 3.Firebase项目ID：gen-lang-client-0944935873，Firestore数据库：firestoredb
 4.GCP Project ID：gen-lang-client-0944935873
-5.Cloud SQL数据库：数据库实例autoads，数据库autoads_db，通过VPC Connector进行内网访问数据库
+5.Cloud SQL for PostgreSQL数据库：数据库实例autoads，数据库autoads_db，通过VPC Connector（cr-conn-default-ane1）进行内网访问数据库
 6.前端: Next.js，部署于Firebase Hosting; 后端: Go微服务，部署于Google Cloud Run
 7.Firebase Hosting 和 Cloud Run 都部署在 asia-northeast1 地区
 8.域名
