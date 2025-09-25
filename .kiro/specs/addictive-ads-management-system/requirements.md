@@ -292,6 +292,7 @@
 2. WHEN 调用Ads API THEN 系统 SHALL 实现validate-only预检 + 限流/退避 + 批量分片
 3. WHEN 实现缓存 THEN 系统 SHALL 缓存Siterank（域名+国家）与OAuth配置
 4. WHEN 优化性能 THEN 系统 SHALL 实现Pre-flight结果短缓存（数分钟）助力P95达标
+
 ### 需求2：智能Offer评估系统
 **解决痛点：** 痛点2 - 快速评估Offer价值
 
@@ -315,6 +316,7 @@
 6. WHEN 系统生成评分 THEN 系统 SHALL 显示流量潜力、关键词精准度、预估CPC成本、合规风险、季节性机会五个维度的雷达图
 7. IF 评分高于80分 THEN 系统 SHALL 显示醒目的绿色"启动仿真"按钮，并播放成功音效
 8. WHEN 系统检测到合规风险 THEN 系统 SHALL 用红色标记风险类型并提供详细说明和建议### 需求3：一
+
 ### 需求3：一键仿真启动系统
 **解决痛点：** 痛点3 - 快速串联评估-仿真-放大流程
 

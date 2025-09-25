@@ -21,10 +21,10 @@ func NewOfferProjector(db *sql.DB) *OfferProjector {
 func (p *OfferProjector) HandleOfferCreated(ctx context.Context, event domain.OfferCreatedEvent) error {
 	log.Printf("PROJECTOR: Handling OfferCreatedEvent for offer ID %s", event.OfferID)
 
-	query := `
-		INSERT INTO "Offer" (id, "userId", name, "originalUrl", status, "createdAt")
-		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (id) DO NOTHING`
+    query := `
+        INSERT INTO "Offer" (id, userid, name, originalurl, status, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (id) DO NOTHING`
 
 	_, err := p.db.ExecContext(ctx, query, event.OfferID, event.UserID, event.Name, event.OriginalUrl, event.Status, event.CreatedAt)
 	if err != nil {

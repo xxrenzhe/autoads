@@ -11,17 +11,19 @@ import (
     "os"
     "sync"
     "strings"
+    "strconv"
     "time"
 
+    "cloud.google.com/go/firestore"
     "github.com/google/uuid"
-    "github.com/lib/pq"
+    _ "github.com/lib/pq"
     "github.com/go-chi/chi/v5"
     "github.com/xxrenzhe/autoads/pkg/httpclient"
     "github.com/xxrenzhe/autoads/pkg/errors"
     "github.com/xxrenzhe/autoads/pkg/auth"
     "github.com/xxrenzhe/autoads/services/siterank/internal/pkg/database"
     "github.com/xxrenzhe/autoads/services/siterank/internal/pkg/secrets"
-    "github.com/xxrenzhe/autoads/services/siterank/internal/events"
+    ev "github.com/xxrenzhe/autoads/pkg/events"
     api "github.com/xxrenzhe/autoads/services/siterank/internal/oapi"
     "github.com/xxrenzhe/autoads/pkg/middleware"
 )
@@ -53,7 +55,7 @@ type SimilarWebResponse struct {
 type Server struct {
     db          *sql.DB
     httpClient  *httpclient.Client
-    publisher   *events.Publisher
+    publisher   *ev.Publisher
     cacheMu     sync.RWMutex
     cache       map[string]cacheEntry
 }
@@ -104,45 +106,33 @@ func (s *Server) createAnalysisHandler(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    analysis := SiterankAnalysis{
-        ID:        uuid.New().String(),
-        UserID:    userID,
-        OfferID:   req.OfferID,
-        Status:    "pending",
-        CreatedAt: time.Now(),
-        UpdatedAt: time.Now(),
-    }
-
-	query := `INSERT INTO "SiterankAnalysis" (id, user_id, offer_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)`
-    _, err := s.db.Exec(query, analysis.ID, analysis.UserID, analysis.OfferID, analysis.Status, analysis.CreatedAt, analysis.UpdatedAt)
+    // Try insert; if exists, return existing row via ON CONFLICT ... RETURNING
+    analysis := SiterankAnalysis{ID: uuid.New().String(), UserID: userID, OfferID: req.OfferID, Status: "pending", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+    var result sql.NullString
+    err := s.db.QueryRowContext(r.Context(), `
+        INSERT INTO "SiterankAnalysis"(id, user_id, offer_id, status, created_at, updated_at)
+        VALUES ($1,$2,$3,$4,$5,$6)
+        ON CONFLICT (offer_id, user_id)
+        DO UPDATE SET updated_at = GREATEST("SiterankAnalysis".updated_at, EXCLUDED.updated_at)
+        RETURNING id, user_id, offer_id, status, result, created_at, updated_at
+    `, analysis.ID, analysis.UserID, analysis.OfferID, analysis.Status, analysis.CreatedAt, analysis.UpdatedAt).Scan(
+        &analysis.ID, &analysis.UserID, &analysis.OfferID, &analysis.Status, &result, &analysis.CreatedAt, &analysis.UpdatedAt,
+    )
     if err != nil {
-        if pqErr, ok := err.(*pq.Error); ok && pqErr.Code.Name() == "unique_violation" {
-            // If idempotency key is present, map it to the latest analysis for this offer/user and return it.
-            if idemKey != "" {
-                if latest, ok := s.getLatestAnalysisByOffer(r.Context(), req.OfferID, userID); ok {
-                    _ = s.upsertIdempotency(r.Context(), idemKey, userID, "siterank.analyze", latest.ID, 24*time.Hour)
-                    w.Header().Set("Content-Type", "application/json")
-                    w.WriteHeader(http.StatusAccepted)
-                    _ = json.NewEncoder(w).Encode(latest)
-                    return
-                }
-            }
-            errors.Write(w, r, http.StatusConflict, "ALREADY_EXISTS", "An analysis for this offer already exists.", nil)
-            return
-        }
-        log.Printf("Error inserting new siterank analysis: %v", err)
+        log.Printf("Error upserting siterank analysis: %v", err)
         errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil)
         return
     }
+    if result.Valid { analysis.Result = &result.String }
 
     // Publish requested event (best-effort)
     if s.publisher != nil {
-        _ = s.publisher.Publish(r.Context(), "SiterankRequested", map[string]any{
+        _ = s.publisher.Publish(r.Context(), ev.EventSiterankRequested, map[string]any{
             "analysisId": analysis.ID,
             "offerId":    analysis.OfferID,
             "userId":     analysis.UserID,
             "requestedAt": time.Now().UTC().Format(time.RFC3339),
-        })
+        }, ev.WithSource("siterank"), ev.WithSubject(analysis.OfferID))
     }
 
     // Persist idempotency map (best-effort)
@@ -241,14 +231,40 @@ func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
 		return
 	}
 
-	// 2. Get the offer URL from the database
-	var originalUrl string
-    err = s.db.QueryRowContext(ctx, `SELECT o.originalUrl FROM "Offer" o JOIN "SiterankAnalysis" sa ON o.id = sa.offer_id WHERE sa.id = $1`, analysisID).Scan(&originalUrl)
-	if err != nil {
-		log.Printf("Failed to get offer URL for analysis %s: %v", analysisID, err)
-		s.updateAnalysisStatus(ctx, analysisID, "failed", fmt.Sprintf(`{"error": "offer URL not found: %v"}`, err))
-		return
-	}
+    // 2. Get the offer URL from the database
+    var originalUrl string
+    err = s.db.QueryRowContext(ctx, `SELECT o.originalurl FROM "Offer" o JOIN "SiterankAnalysis" sa ON o.id = sa.offer_id WHERE sa.id = $1`, analysisID).Scan(&originalUrl)
+    if err != nil {
+        // Fallback: try Offer API if configured
+        log.Printf("WARN: DB join failed to get offer URL for %s: %v; trying Offer API fallback", analysisID, err)
+        // read offer id and user id
+        var offID, uid string
+        _ = s.db.QueryRowContext(ctx, `SELECT offer_id, user_id FROM "SiterankAnalysis" WHERE id=$1`, analysisID).Scan(&offID, &uid)
+        if offID != "" && uid != "" {
+            if base := os.Getenv("OFFER_SERVICE_URL"); base != "" {
+                type offerResp struct{ OriginalUrl string `json:"originalUrl"` }
+                var or offerResp
+                url := strings.TrimRight(base, "/") + "/api/v1/offers/" + offID
+                // clone ctx with small timeout
+                cctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+                defer cancel()
+                // set idempotency header via ctx already; add user id header via client wrapper here
+                req, _ := http.NewRequestWithContext(cctx, "GET", url, nil)
+                req.Header.Set("X-User-Id", uid)
+                req.Header.Set("Accept", "application/json")
+                resp, herr := s.httpClient.Do(req)
+                if herr == nil && resp != nil && resp.StatusCode == 200 {
+                    _ = json.NewDecoder(resp.Body).Decode(&or)
+                    resp.Body.Close()
+                    if or.OriginalUrl != "" { originalUrl = or.OriginalUrl }
+                } else if resp != nil { if resp.Body != nil { resp.Body.Close() } }
+            }
+        }
+        if originalUrl == "" {
+            s.updateAnalysisStatus(ctx, analysisID, "failed", fmt.Sprintf(`{"error": "offer URL not found: %v"}`, err))
+            return
+        }
+    }
 
 	domain, err := url.Parse(originalUrl)
 	if err != nil {
@@ -262,12 +278,13 @@ func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
     if payload, ok, found := s.lookupDomainCache(ctx, host); found {
         if ok {
             s.updateAnalysisStatus(ctx, analysisID, "completed", payload)
+            _ = s.maybeWriteFirestoreUI(ctx, analysisID, payload)
             if s.publisher != nil {
-                _ = s.publisher.Publish(ctx, "SiterankCompleted", map[string]any{
+                _ = s.publisher.Publish(ctx, ev.EventSiterankCompleted, map[string]any{
                     "analysisId":  analysisID,
                     "completedAt": time.Now().UTC().Format(time.RFC3339),
                     "cacheHit":    true,
-                })
+                }, ev.WithSource("siterank"))
             }
             log.Printf("Siterank global cache hit for %s", host)
             return
@@ -297,8 +314,15 @@ func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
     apiURL := fmt.Sprintf(base, host)
 	var apiResponse SimilarWebResponse
 	
-    err = s.httpClient.GetJSON(ctx, apiURL, &apiResponse)
+    // Build headers and retries for SimilarWeb
+    headers := map[string]string{ "User-Agent": defaultUA() }
+    if h := strings.TrimSpace(os.Getenv("SIMILARWEB_USER_AGENT")); h != "" { headers["User-Agent"] = h }
+    retries := 3
+    if v := strings.TrimSpace(os.Getenv("SIMILARWEB_RETRIES")); v != "" { if n, e := strconv.Atoi(v); e == nil && n > 0 { retries = n } }
+    err = s.httpClient.GetJSONWithHeaders(ctx, apiURL, headers, retries, &apiResponse)
     if err != nil {
+        log.Printf("WARN: SimilarWeb direct failed for %s: %v; trying browser-exec via proxy", analysisID, err)
+        if tryBrowserJSON(ctx, s, apiURL, headers, host, analysisID) { return }
         log.Printf("Failed to get data from SimilarWeb for analysis %s: %v", analysisID, err)
         // Cache failure for 1 day (global)
         failPayload := fmt.Sprintf(`{"error": "SimilarWeb API failed: %v"}`, err)
@@ -317,15 +341,16 @@ func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
 	
     result := string(resultBytes)
     s.updateAnalysisStatus(ctx, analysisID, "completed", result)
+    _ = s.maybeWriteFirestoreUI(ctx, analysisID, result)
     // Global cache success for 7 days
     _ = s.upsertDomainCache(ctx, host, result, true, 7*24*time.Hour)
     // fill local in-memory cache (short TTL)
     s.cacheMu.Lock(); if s.cache == nil { s.cache = map[string]cacheEntry{} }; s.cache[host] = cacheEntry{val: result, exp: time.Now().Add(5 * time.Minute)}; s.cacheMu.Unlock()
     if s.publisher != nil {
-        _ = s.publisher.Publish(ctx, "SiterankCompleted", map[string]any{
+        _ = s.publisher.Publish(ctx, ev.EventSiterankCompleted, map[string]any{
             "analysisId":  analysisID,
             "completedAt": time.Now().UTC().Format(time.RFC3339),
-        })
+        }, ev.WithSource("siterank"))
     }
     log.Printf("Successfully completed analysis for %s", analysisID)
 }
@@ -335,6 +360,40 @@ func (s *Server) updateAnalysisStatus(ctx context.Context, analysisID, status, r
     if err != nil {
         log.Printf("Failed to update analysis %s to %s: %v", analysisID, status, err)
     }
+}
+
+// tryBrowserJSON calls browser-exec /json-fetch with optional proxy provider to fetch SimilarWeb JSON.
+func tryBrowserJSON(ctx context.Context, s *Server, apiURL string, headers map[string]string, host, analysisID string) bool {
+    beURL := strings.TrimRight(os.Getenv("BROWSER_EXEC_URL"), "/")
+    if beURL == "" { return false }
+    provider := os.Getenv("PROXY_URL_US")
+    body := map[string]any{
+        "url": apiURL,
+        "headers": headers,
+    }
+    if provider != "" { body["proxyProviderURL"] = provider }
+    b, _ := json.Marshal(body)
+    req, _ := http.NewRequestWithContext(ctx, "POST", beURL+"/api/v1/browser/json-fetch", strings.NewReader(string(b)))
+    req.Header.Set("Content-Type", "application/json")
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil { return false }
+    defer resp.Body.Close()
+    var out struct{ Status int `json:"status"`; Json map[string]any `json:"json"`; Text string `json:"text"` }
+    if err := json.NewDecoder(resp.Body).Decode(&out); err != nil { return false }
+    if out.Status >= 200 && out.Status < 300 && out.Json != nil {
+        // success: write completed and cache 7 days
+        resultBytes, _ := json.Marshal(out.Json)
+        result := string(resultBytes)
+        s.updateAnalysisStatus(ctx, analysisID, "completed", result)
+        _ = s.maybeWriteFirestoreUI(ctx, analysisID, result)
+        _ = s.upsertDomainCache(ctx, host, result, true, 7*24*time.Hour)
+        if s.publisher != nil {
+            _ = s.publisher.Publish(ctx, ev.EventSiterankCompleted, map[string]any{"analysisId": analysisID, "completedAt": time.Now().UTC().Format(time.RFC3339), "via": "browser-exec"}, ev.WithSource("siterank"))
+        }
+        log.Printf("SimilarWeb fetched via browser-exec: %s", apiURL)
+        return true
+    }
+    return false
 }
 
 // --- Idempotency helpers ---
@@ -426,6 +485,10 @@ func (s *Server) readyHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprint(w, "ready")
 }
 
+func defaultUA() string {
+    return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+}
+
 // --- Main Function ---
 
 func main() {
@@ -460,8 +523,8 @@ func main() {
     httpClient := httpclient.New(15 * time.Second)
 
     // Init publisher (best-effort)
-    var pub *events.Publisher
-    if p, err := events.NewPublisher(context.Background()); err != nil {
+    var pub *ev.Publisher
+    if p, err := ev.NewPublisher(context.Background()); err != nil {
         log.Printf("WARN: siterank publisher init failed: %v", err)
     } else { pub = p; defer pub.Close() }
 
@@ -538,4 +601,30 @@ CREATE INDEX IF NOT EXISTS ix_domain_cache_expires ON domain_cache(expires_at);
 `
     _, err := db.Exec(ddl)
     return err
+}
+
+// maybeWriteFirestoreUI writes the latest analysis result to Firestore as a UI cache layer.
+// Controlled by FIRESTORE_ENABLED=1; best-effort and non-blocking.
+func (s *Server) maybeWriteFirestoreUI(ctx context.Context, analysisID string, payload string) error {
+    if strings.TrimSpace(os.Getenv("FIRESTORE_ENABLED")) != "1" { return nil }
+    // resolve offer_id and user_id
+    var offerID, userID string
+    if err := s.db.QueryRowContext(ctx, `SELECT offer_id, user_id FROM "SiterankAnalysis" WHERE id=$1`, analysisID).Scan(&offerID, &userID); err != nil {
+        return err
+    }
+    if offerID == "" || userID == "" { return nil }
+    ctx2, cancel := context.WithTimeout(ctx, 1500*time.Millisecond)
+    defer cancel()
+    projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
+    if projectID == "" { projectID = os.Getenv("PROJECT_ID") }
+    if projectID == "" { return fmt.Errorf("missing GOOGLE_CLOUD_PROJECT for firestore") }
+    cli, err := firestore.NewClient(ctx2, projectID)
+    if err != nil { return err }
+    defer cli.Close()
+    // users/{uid}/siterank/{offerId}
+    doc := map[string]any{"analysisId": analysisID, "updatedAt": time.Now().UTC(), "payload": payload}
+    if _, err := cli.Collection(fmt.Sprintf("users/%s/siterank", userID)).Doc(offerID).Set(ctx2, doc); err != nil {
+        return err
+    }
+    return nil
 }

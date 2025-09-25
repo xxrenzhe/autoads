@@ -5,11 +5,13 @@ go 1.25.1
 require (
 	cloud.google.com/go/pubsub v1.50.1
 	cloud.google.com/go/secretmanager v1.15.0
+	github.com/go-chi/chi/v5 v5.2.3
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 	github.com/xxrenzhe/autoads/pkg/auth v0.0.1
 	github.com/xxrenzhe/autoads/pkg/config v0.0.0-20250921095352-ef8078c06b83
 	github.com/xxrenzhe/autoads/pkg/errors v0.0.1
+	github.com/xxrenzhe/autoads/pkg/events v0.0.0-00010101000000-000000000000
 	github.com/xxrenzhe/autoads/pkg/logger v0.0.1
 	github.com/xxrenzhe/autoads/pkg/middleware v0.0.1
 )
@@ -30,6 +32,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/rs/zerolog v1.33.0 // indirect
+	github.com/xxrenzhe/autoads/pkg/idempotency v0.0.0-20250925113750-f38a0734af10 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
@@ -60,3 +63,5 @@ replace github.com/xxrenzhe/autoads/pkg/errors => ../../pkg/errors
 replace github.com/xxrenzhe/autoads/pkg/logger => ../../pkg/logger
 
 replace github.com/xxrenzhe/autoads/pkg/middleware => ../../pkg/middleware
+
+replace github.com/xxrenzhe/autoads/pkg/events => ../../pkg/events

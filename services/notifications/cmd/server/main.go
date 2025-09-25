@@ -47,6 +47,9 @@ func main() {
     api := http.NewServeMux()
     api.HandleFunc("/api/v1/notifications/recent", recentHandler)
     // future: /api/v1/notifications/rules
+    if os.Getenv("DEBUG") == "1" {
+        api.HandleFunc("/api/v1/debug/offers", debugOffersHandler)
+    }
 
     mux.Handle("/", middleware.AuthMiddleware(api))
 
@@ -112,4 +115,25 @@ func recentHandler(w http.ResponseWriter, r *http.Request) {
         Items []Notification `json:"items"`
         Next  string         `json:"next,omitempty"`
     }{ Items: items, Next: func() string { if len(items) == limit { return lastID }; return "" }() })
+}
+
+// debugOffersHandler returns recent offers for a user (preprod debugging only)
+func debugOffersHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    uid := r.URL.Query().Get("userId")
+    if uid == "" { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "userId required", nil); return }
+    rows, err := db.Query(`SELECT id, "userId", name, "originalUrl", status, "createdAt" FROM "Offer" WHERE "userId"=$1 ORDER BY "createdAt" DESC LIMIT 10`, uid)
+    if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    type Offer struct{ ID, UserID, Name, OriginalUrl, Status, CreatedAt string }
+    var out []Offer
+    for rows.Next() {
+        var o Offer
+        var createdAt sql.NullTime
+        if err := rows.Scan(&o.ID, &o.UserID, &o.Name, &o.OriginalUrl, &o.Status, &createdAt); err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "scan failed", map[string]string{"error": err.Error()}); return }
+        if createdAt.Valid { o.CreatedAt = createdAt.Time.UTC().Format(time.RFC3339) }
+        out = append(out, o)
+    }
+    w.Header().Set("Content-Type", "application/json")
+    _ = json.NewEncoder(w).Encode(out)
 }

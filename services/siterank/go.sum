@@ -7,6 +7,8 @@ cloud.google.com/go/auth/oauth2adapt v0.2.8 h1:keo8NaayQZ6wimpNSmW5OPc283g65QNIi
 cloud.google.com/go/auth/oauth2adapt v0.2.8/go.mod h1:XQ9y31RkqZCcwJWNSx2Xvric3RrU88hAYYbjDWYDL+c=
 cloud.google.com/go/compute/metadata v0.8.0 h1:HxMRIbao8w17ZX6wBnjhcDkW6lTFpgcaobyVfZWqRLA=
 cloud.google.com/go/compute/metadata v0.8.0/go.mod h1:sYOGTp851OV9bOFJ9CH7elVvyzopvWQFNNghtDQ/Biw=
+cloud.google.com/go/firestore v1.18.0 h1:cuydCaLS7Vl2SatAeivXyhbhDEIR8BDmtn4egDhIn2s=
+cloud.google.com/go/firestore v1.18.0/go.mod h1:5ye0v48PhseZBdcl0qbl3uttu7FIEwEYVaWm0UIEOEU=
 cloud.google.com/go/iam v1.5.2 h1:qgFRAGEmd8z6dJ/qyEchAuL9jpswyODjA2lS+w234g8=
 cloud.google.com/go/iam v1.5.2/go.mod h1:SE1vg0N81zQqLzQEwxL2WI6yhetBdbNQuTvIKCSkUHE=
 cloud.google.com/go/kms v1.22.0 h1:dBRIj7+GDeeEvatJeTB19oYZNV0aj6wEqSIT/7gLqtk=
@@ -130,6 +132,8 @@ github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOf
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/xxrenzhe/autoads/pkg/config v0.0.0-20250921095352-ef8078c06b83 h1:fRJ7h2OYJLl7Q8+mGfACLDqAXXrF/2gNxKGiFe56pU0=
 github.com/xxrenzhe/autoads/pkg/config v0.0.0-20250921095352-ef8078c06b83/go.mod h1:/rWs6o065x+77Z74Ac4cE7e1RezrRYNau60Yy1KF56M=
+github.com/xxrenzhe/autoads/pkg/idempotency v0.0.0-20250925113750-f38a0734af10 h1:Uzj2YpM3DiCEnCKGeBLfFy3QKpXfsTY3rhYnf01NYR0=
+github.com/xxrenzhe/autoads/pkg/idempotency v0.0.0-20250925113750-f38a0734af10/go.mod h1:Pqo0epADSVnRRsSpQAnQsRft7+yxVgSSNiJ+al/PK7w=
 github.com/xxrenzhe/autoads/pkg/middleware v0.0.0-20250921095352-ef8078c06b83 h1:lLagG+oairzslZFcM5iejh440e6YK+87yfc2uOPtSbc=
 github.com/xxrenzhe/autoads/pkg/middleware v0.0.0-20250921095352-ef8078c06b83/go.mod h1:aJd9hRQgUD4dIUr3s7zZ9R6lf1GEhqsqHHpaoM5184s=
 go.einride.tech/aip v0.73.0 h1:bPo4oqBo2ZQeBKo4ZzLb1kxYXTY1ysJhpvQyfuGzvps=

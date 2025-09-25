@@ -48,12 +48,16 @@ func (s *Subscriber) Start(ctx context.Context) {
             case "SiterankCompleted":
                 var payload map[string]any
                 if err := json.Unmarshal(msg.Data, &payload); err != nil { log.Printf("notifications: bad payload: %v", err); msg.Nack(); return }
+                // unwrap envelope if present
+                if dv, ok := payload["data"].(map[string]any); ok { payload = dv }
                 _ = s.insertNotification(cctx, payload, "SiterankCompleted")
                 msg.Ack()
             case "OfferCreated", "SiterankRequested":
                 var payload map[string]any
                 if err := json.Unmarshal(msg.Data, &payload); err != nil { log.Printf("notifications: bad payload: %v", err); msg.Nack(); return }
+                if dv, ok := payload["data"].(map[string]any); ok { payload = dv }
                 _ = s.insertNotification(cctx, payload, et)
+                if et == "OfferCreated" { _ = s.projectOfferCreated(cctx, payload) }
                 msg.Ack()
             default:
                 msg.Ack()
@@ -76,3 +80,22 @@ func (s *Subscriber) insertNotification(ctx context.Context, payload map[string]
     return err
 }
 
+// projectOfferCreated writes the Offer read model row (id,userId,name,originalUrl,status,createdAt)
+func (s *Subscriber) projectOfferCreated(ctx context.Context, p map[string]any) error {
+    // extract fields safely
+    getStr := func(k string) string { if v, ok := p[k].(string); ok { return v }; return "" }
+    id := getStr("offerId")
+    user := getStr("userId")
+    name := getStr("name")
+    original := getStr("originalUrl")
+    status := getStr("status")
+    if id == "" || user == "" || original == "" { return nil }
+    // createdAt is optional; server defaults now()
+    _, err := s.db.ExecContext(ctx, `
+        INSERT INTO "Offer" (id, userid, name, originalurl, status, created_at)
+        VALUES ($1,$2,$3,$4,$5, NOW())
+        ON CONFLICT (id) DO NOTHING
+    `, id, user, name, original, status)
+    if err != nil { log.Printf("notifications: projectOfferCreated failed: %v", err) }
+    return err
+}

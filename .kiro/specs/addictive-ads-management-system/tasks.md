@@ -118,6 +118,10 @@
   - 实现NotificationCreated/Sent事件（新增notifications路由）
   - _需求: 需求24 - 事件驱动架构与工作流实现_
 
+- [x] B1.2.a SiterankRequested/Completed事件（siterank服务发布）
+  - siterank 发布 SiterankRequested/SiterankCompleted 事件（pkg/events 封装，Pub/Sub）
+  - Notifications 订阅兼容事件信封并入库（最小实现）
+
 ### B2. 投影器与Saga工作流
 
 - [ ] B2.1 实现投影器框架与Saga模式
@@ -143,6 +147,10 @@
   - 确保"SQL为事实来源"的架构
   - 建立缓存失效和更新机制
   - _需求: 需求D2 - 读模型与缓存策略_
+
+- [x] B2.3.a Siterank UI缓存最小实现
+  - 分析完成后写入 Firestore 文档：users/{uid}/siterank/{offerId}
+  - 通过环境变量 FIRESTORE_ENABLED 控制开关（最佳努力）
 
 ## C组：Browser-Exec高并发执行服务
 
@@ -204,6 +212,15 @@
   - 服务实例共享缓存，无需用户层面的数据隔离
   - 已在siterank服务接入（优先命中缓存，否则回源SimilarWeb并回写缓存）
   - _需求: 需求C1 - Siterank 10秒评估_
+
+- [ ] D1.6 Browser‑Exec代理访问SimilarWeb（提升成功率）
+  - siterank 调用 browser‑exec 新增接口 /api/v1/browser/json-fetch 通过浏览器访问 SimilarWeb API
+  - browser‑exec 支持美国代理：从 Proxy_URL_US 获取代理文本（每行一个），按行解析并为浏览器上下文配置代理
+  - siterank 在直连失败时回退调用 browser‑exec（带自定义 User‑Agent、重试），成功则写入“成功7天缓存”
+  - 已在预发启用，支持通过环境变量配置：
+    - siterank：BROWSER_EXEC_URL、PROXY_URL_US、SIMILARWEB_USER_AGENT、SIMILARWEB_RETRIES
+    - browser‑exec：PROXY_URL_US（可选，亦可由 siterank 指定）
+  - _需求: 需求C1/C2 - Siterank评估/Browser‑Exec服务_
 
 - [ ] D1.2 实现性能优化策略
   - 建立并行拉取机制
@@ -307,6 +324,10 @@
   - 实现用户数据严格隔离机制（按user_id强制隔离）
   - _需求: 需求C8 - 统一通知管理系统_
 
+- [x] G2.1.a Service与存储最小实现
+  - Notifications 服务提供 /readyz 与 /api/v1/notifications/recent（按 user_id 隔离）
+  - 持久化到 user_notifications 表（最近列表基础能力）
+
 - [ ] G2.2 实现通知规则引擎和事件监听
   - 建立事件驱动的通知规则引擎
   - 集成现有Pub/Sub事件总线，监听业务事件
@@ -314,6 +335,9 @@
   - 建立通知创建和存储服务
   - 实现通知分发器（支持应用内通知）
   - _需求: 需求C8 - 统一通知管理系统_
+
+- [x] G2.2.a 监听与入库最小实现
+  - 监听 SiterankRequested/SiterankCompleted/OfferCreated，写入 user_notifications（最近列表分页）
 
 ### G3. Console后台管理
 

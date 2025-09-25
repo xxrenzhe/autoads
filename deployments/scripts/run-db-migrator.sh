@@ -15,7 +15,8 @@ SA=${SERVICE_ACCOUNT:-codex-dev@${PROJECT_ID}.iam.gserviceaccount.com}
 echo "[build] building ${IMAGE}"
 gcloud builds submit . --project "$PROJECT_ID" --region "$REGION" \
   --config deployments/db-migrator/cloudbuild.yaml \
-  --substitutions _IMAGE="$IMAGE"
+  --substitutions _IMAGE="$IMAGE" \
+  --logging=CLOUD_LOGGING_ONLY
 
 echo "[deploy] deploying job db-migrator-preview"
 gcloud run jobs deploy db-migrator-preview \

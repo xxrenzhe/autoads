@@ -142,6 +142,69 @@ app.get('/api/v1/browser/tasks/:id', (req, res) => {
   res.json(st)
 })
 
+// JSON fetch via browser with optional proxy provider
+app.post('/api/v1/browser/json-fetch', async (req, res) => {
+  if (!USE_PW) return res.status(400).json({ error: { code: 'PLAYWRIGHT_DISABLED', message: 'playwright disabled' } })
+  const { url, headers = {}, proxyProviderURL } = req.body || {}
+  if (!url) return res.status(400).json({ error: { code: 'INVALID_ARGUMENT', message: 'url required' } })
+  let proxyOpt = undefined
+  try {
+    const provider = String(proxyProviderURL || process.env.PROXY_URL_US || '').trim()
+    if (provider) {
+      const txt = await (await fetch(provider)).text()
+      const lines = txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+      if (lines.length) {
+        proxyOpt = toPlaywrightProxy(lines[(Math.random()*lines.length)|0])
+      }
+    }
+  } catch (e) {
+    // ignore provider errors; proceed without proxy
+  }
+  let h
+  try {
+    h = await pool.getContext({ proxy: proxyOpt })
+  } catch (e) {
+    return res.status(500).json({ error: { code: 'PROXY_INIT_FAILED', message: String(e?.message || e) } })
+  }
+  const page = await h.context.newPage()
+  try {
+    const resp = await page.goto(url, { timeout: 12000, waitUntil: 'domcontentloaded' })
+    const status = resp?.status() || 0
+    let bodyText = ''
+    try { bodyText = await page.evaluate(() => document.body && document.body.innerText || '') } catch {}
+    let parsed = null
+    try { parsed = JSON.parse(bodyText) } catch {}
+    return res.json({ status, json: parsed, text: parsed ? undefined : bodyText, via: proxyOpt ? 'proxy' : 'direct' })
+  } catch (e) {
+    return res.status(502).json({ error: { code: 'BROWSER_FETCH_FAILED', message: String(e?.message || e) } })
+  } finally {
+    try { await page.close() } catch {}
+    await pool.release(h)
+  }
+})
+
+function toPlaywrightProxy(line) {
+  try {
+    let server = '', username = undefined, password = undefined
+    if (line.includes('://')) {
+      const u = new URL(line)
+      server = `${u.protocol}//${u.hostname}:${u.port}`
+      if (u.username) username = decodeURIComponent(u.username)
+      if (u.password) password = decodeURIComponent(u.password)
+    } else if (line.includes('@')) {
+      const [cred, host] = line.split('@')
+      const [user, pass] = cred.split(':')
+      const [h, p] = host.split(':')
+      server = `http://${h}:${p}`
+      username = user; password = pass
+    } else {
+      const [h, p] = line.split(':')
+      server = `http://${h}:${p}`
+    }
+    return { server, username, password }
+  } catch { return undefined }
+}
+
 const port = process.env.PORT || 8080
 app.listen(port, () => console.log(`[browser-exec] listening on :${port}`))
 

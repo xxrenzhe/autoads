@@ -5,12 +5,11 @@ import (
     "database/sql"
     "log"
     "net/http"
-    "github.com/xxrenzhe/autoads/services/offer/internal/domain"
     "github.com/xxrenzhe/autoads/services/offer/internal/auth"
     "github.com/xxrenzhe/autoads/services/offer/internal/config"
     "github.com/xxrenzhe/autoads/services/offer/internal/events"
     "github.com/xxrenzhe/autoads/services/offer/internal/handlers"
-    "github.com/xxrenzhe/autoads/services/offer/internal/projectors"
+    ev "github.com/xxrenzhe/autoads/pkg/events"
 
 	_ "github.com/lib/pq"
 )
@@ -30,33 +29,13 @@ func main() {
 
 	authClient := auth.NewClient(ctx)
 
-    // Offer service PUBLISHES its own events (fallback to Noop if Pub/Sub not available)
-    var (
-        publisherPub events.Publisher = &events.NoopPublisher{}
-        publisherCloser interface{ Close() } = nil
-    )
-    if pub, err := events.NewPubSubPublisher(ctx, cfg.ProjectID, cfg.PubSubTopicID); err != nil {
-        log.Printf("WARN: Pub/Sub publisher unavailable: %v; falling back to NoopPublisher", err)
+    // Offer service: publish via unified pkg/events. Projections由 notifications 服务负责。
+    var publisherPub events.Publisher = &events.NoopPublisher{}
+    if p, err := ev.NewPublisher(ctx); err != nil {
+        log.Printf("WARN: pkg/events publisher unavailable: %v; falling back to NoopPublisher", err)
     } else {
-        publisherPub = pub
-        publisherCloser = pub
-    }
-    if publisherCloser != nil { defer publisherCloser.Close() }
-	
-	// Offer service also SUBSCRIBES to its own events to update its read model (projection)
-	// In a production setup, this would be a separate Cloud Function.
-	// Here, we simulate it in-process for simplicity.
-	offerProjector := projectors.NewOfferProjector(db)
-    if sub, err := events.NewPubSubSubscriber(ctx, cfg.ProjectID, cfg.PubSubTopicID, cfg.PubSubSubscriptionID); err != nil {
-        log.Printf("WARN: Pub/Sub subscriber unavailable: %v; projections will not update in-process", err)
-    } else {
-        sub.On((domain.OfferCreatedEvent{}).EventType(), func(ctx context.Context, event events.DomainEvent) error {
-            if specificEvent, ok := event.(domain.OfferCreatedEvent); ok {
-                return offerProjector.HandleOfferCreated(ctx, specificEvent)
-            }
-            return nil
-        })
-        sub.Start(ctx)
+        publisherPub = events.NewEVAdapter(p)
+        defer p.Close()
     }
 
 

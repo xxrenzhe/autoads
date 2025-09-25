@@ -1,8 +1,8 @@
 import playwright from 'playwright-extra'
-import StealthPlugin from 'playwright-extra-plugin-stealth'
 
 const USE_PW = String(process.env.PLAYWRIGHT || '').toLowerCase() === '1'
-if (USE_PW) { try { playwright.use(StealthPlugin()) } catch {} }
+// Optional stealth plugin (best-effort); not required for JSON fetch
+;(async () => { if (USE_PW) { try { const m = await import('playwright-extra-plugin-stealth'); playwright.use(m.default()); } catch {} } })()
 
 const MAX_CONTEXTS = Number(process.env.BROWSER_MAX_CONTEXTS || 12)
 
@@ -61,4 +61,3 @@ class BrowserPool {
 
 export const pool = new BrowserPool()
 export { buildContextOptions }
-
