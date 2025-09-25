@@ -297,8 +297,8 @@
 #### API调用管理功能
 21. WHEN 管理员监控API调用 THEN 系统 SHALL 提供Google Ads API调用统计、频率分析、配额管理，确保不超过每日15000次限制
 22. WHEN API调用接近限制 THEN 系统 SHALL 自动调整调用频率并发送预警通知
-23. WHEN 管理员分析点击真实性 THEN 系统 SHALL 提供AI优化的仿真阶段点击分析，并支持将优化策略更新到URL解析服务
-24. WHEN 点击策略优化 THEN 系统 SHALL 支持实时推送优化后的点击模式到所有URL解析服务实例
+23. WHEN 管理员分析点击真实性 THEN 系统 SHALL 提供AI优化的仿真阶段点击分析，并支持将优化策略更新到浏览器执行服务
+24. WHEN 点击策略优化 THEN 系统 SHALL 支持实时推送优化后的点击模式到所有浏览器执行服务实例
 
 ### 需求13：用户认证与访问控制
 
@@ -372,13 +372,13 @@
 - **维护简化：** 集中管理反检测策略和代理IP轮换
 
 **验收标准：**
-1. WHEN 部署URL解析服务 THEN 系统 SHALL 创建独立的Cloud Run常驻服务，维持最小1个实例运行
-2. WHEN 服务启动 THEN 系统 SHALL 初始化Playwright浏览器实例池，支持并发处理多个URL解析请求
-3. WHEN 任何模块需要解析Offer URL THEN 系统 SHALL 调用统一的URL解析服务API
-4. WHEN 解析URL THEN 系统 SHALL 返回最终落地页地址、Final URL、Final URL suffix等结构化数据
-5. WHEN 解析失败 THEN 系统 SHALL 提供重试机制和错误详情
-6. WHEN 服务调用 THEN 系统 SHALL 支持批量解析，提高处理效率
-7. WHEN 访问URL THEN 系统 SHALL 根据投放国家匹配相应的时区、语言和User-Agent，提高访问真实性
+1. WHEN 部署浏览器执行服务 THEN 系统 SHALL 创建独立的Cloud Run常驻服务，维持最小1个实例运行
+2. WHEN 服务启动 THEN 系统 SHALL 初始化Playwright浏览器实例池，支持并发处理多个浏览器执行请求
+3. WHEN Offer评估需要获取落地页信息 THEN 系统 SHALL 通过真实浏览器访问获取域名并提取品牌名（如nike.com→nike）
+4. WHEN 仿真阶段执行补点击任务 THEN 系统 SHALL 使用真实浏览器模拟用户访问，包含地域化配置和反检测策略
+5. WHEN 换链接功能需要URL信息 THEN 系统 SHALL 预获取Final URL和Final URL suffix，支持批量处理
+6. WHEN 风险识别检测落地页可用性 THEN 系统 SHALL 定期访问广告联盟Offer URL，检测页面可用性和异常情况
+7. WHEN 浏览器执行任务 THEN 系统 SHALL 根据投放国家匹配相应的时区、语言和User-Agent，提高访问真实性
 8. WHEN 检测到反爬虫 THEN 系统 SHALL 自动切换代理IP和优化User-Agent策略
 9. WHEN 服务空闲 THEN 系统 SHALL 保持浏览器实例活跃，避免频繁创建销毁带来的性能损耗
 10. WHEN 处理相同国家的不同Offer URL THEN 系统 SHALL 在时间窗口内复用代理IP，但确保同一Offer URL每次访问使用不重复的代理IP

@@ -22,7 +22,7 @@
 ┌─────────────────────────┴───────────────────────────────────────┐
 │                     业务逻辑层 (Business Logic)                 │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐│
-│  │Offer管理服务│ │评估分析服务 │ │批量操作服务 │ │URL解析服务  ││
+│  │Offer管理服务│ │评估分析服务 │ │批量操作服务 │ │浏览器执行服务││
 │  │             │ │             │ │             │ │(常驻服务)   ││
 │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘│
 │                        Google Cloud Run                         │
@@ -125,9 +125,9 @@ GET    /api/v1/bulk/ab-tests             // 获取A/B测试列表
 POST   /api/v1/bulk/ab-tests             // 创建A/B测试
 ```
 
-### 4. URL解析服务 (URL Parsing Service) - 常驻服务
+### 4. 浏览器执行服务 (Browser Executor Service) - 常驻服务
 
-**职责：** 提供高性能的URL解析能力，处理多重重定向和反检测
+**职责：** 提供高性能的真实浏览器执行能力，支持多种Web交互任务
 
 **技术栈：** Go + Cloud Run (常驻) + Playwright + 代理IP池
 
@@ -137,26 +137,33 @@ POST   /api/v1/bulk/ab-tests             // 创建A/B测试
 - 智能代理IP轮换
 - 批量处理支持
 
-**核心功能：**
-- 多重重定向解析
-- Final URL和suffix提取
-- 智能代理IP复用策略
-- 反检测策略
-- 地域化配置（时区、语言、User-Agent）
-- 批量解析优化
+**核心功能模块：**
+- **URL解析模块**：多重重定向解析，Final URL和suffix提取
+- **品牌识别模块**：从域名提取品牌名（nike.com→nike）
+- **页面分析模块**：获取页面内容用于AI分析
+- **点击仿真模块**：执行真实的浏览器访问
+- **可用性监控模块**：检测落地页健康状态
+- **反检测策略**：模拟真实用户行为模式
+- **地域化配置**：时区、语言、User-Agent适配
 
 **API设计：**
 ```go
-// URL解析API
-POST   /api/v1/url-parser/parse          // 解析单个URL
-POST   /api/v1/url-parser/batch-parse    // 批量解析URL
-GET    /api/v1/url-parser/health         // 服务健康检查
-POST   /api/v1/url-parser/proxy/rotate   // 轮换代理IP
-GET    /api/v1/url-parser/stats          // 获取解析统计
+// 浏览器执行API
+POST   /api/v1/browser/parse-url         // 解析URL并提取信息
+POST   /api/v1/browser/extract-brand     // 从域名提取品牌名
+POST   /api/v1/browser/analyze-page      // 分析页面内容
+POST   /api/v1/browser/simulate-click    // 执行点击仿真
+POST   /api/v1/browser/check-availability // 检测页面可用性
+POST   /api/v1/browser/batch-execute     // 批量执行任务
+GET    /api/v1/browser/health            // 服务健康检查
+POST   /api/v1/browser/proxy/rotate      // 轮换代理IP
+GET    /api/v1/browser/stats             // 获取执行统计
+PUT    /api/v1/browser/strategy/update   // 更新点击策略
 ```
 
-**实例池管理：**
+**核心组件实现：**
 ```go
+// 浏览器实例池管理
 type BrowserPool struct {
     browsers    []*playwright.Browser
     maxSize     int
@@ -167,6 +174,27 @@ type BrowserPool struct {
 func (p *BrowserPool) GetBrowser() *playwright.Browser
 func (p *BrowserPool) ReleaseBrowser(browser *playwright.Browser)
 func (p *BrowserPool) HealthCheck() error
+
+// 浏览器执行器
+type BrowserExecutor struct {
+    pool         *BrowserPool
+    proxyManager *ProxyManager
+    brandExtractor *BrandExtractor
+}
+
+// 品牌名提取器
+type BrandExtractor struct {
+    patterns map[string]string // 域名模式到品牌名的映射
+}
+
+func (be *BrandExtractor) ExtractBrand(domain string) string {
+    // nike.com -> nike, amazon.com -> amazon
+    parts := strings.Split(domain, ".")
+    if len(parts) >= 2 {
+        return strings.ToLower(parts[len(parts)-2])
+    }
+    return domain
+}
 
 // 智能代理IP管理
 type ProxyManager struct {
@@ -183,6 +211,13 @@ type CountryProxyPool struct {
 
 func (pm *ProxyManager) GetProxyForOffer(country, offerURL string) string
 func (pm *ProxyManager) ConfigureCountryAPI(country, apiURL string) error
+
+// 页面可用性检测器
+type AvailabilityChecker struct {
+    executor *BrowserExecutor
+}
+
+func (ac *AvailabilityChecker) CheckOfferAvailability(offerURL string) (*AvailabilityResult, error)
 ```
 
 ### 5. AI预警与优化服务 (AI Alert & Optimization Service)
@@ -295,7 +330,7 @@ GET    /api/v1/admin/api-monitor/alerts  // 获取API预警
 GET    /api/v1/admin/click-analysis/stats // 获取点击分析统计
 POST   /api/v1/admin/click-analysis/optimize // 执行AI优化分析
 PUT    /api/v1/admin/click-analysis/strategy // 更新点击策略
-POST   /api/v1/admin/click-analysis/deploy   // 部署优化策略到URL解析服务
+POST   /api/v1/admin/click-analysis/deploy   // 部署优化策略到浏览器执行服务
 
 // 系统监控API
 GET    /api/v1/admin/system/events        // 获取系统异常事件
@@ -2867,10 +2902,10 @@ func (ams *APIMonitorService) UpdateRateLimit(ctx context.Context, limits *RateL
 
 // internal/admin/click_analysis_service.go
 type ClickAnalysisService struct {
-    clickRepo     ClickRepository
-    aiService     *FirebaseAIService
-    configManager *ConfigManager
-    urlParserAPI  URLParserAPIClient
+    clickRepo           ClickRepository
+    aiService           *FirebaseAIService
+    configManager       *ConfigManager
+    browserExecutorAPI  BrowserExecutorAPIClient
 }
 
 func (cas *ClickAnalysisService) AnalyzeClickReality(ctx context.Context, offerID string) (*ClickAnalysisResult, error) {
@@ -2936,14 +2971,14 @@ func (cas *ClickAnalysisService) OptimizeClickStrategy(ctx context.Context, anal
 }
 
 func (cas *ClickAnalysisService) DeployStrategy(ctx context.Context, strategy *OptimizedStrategy) error {
-    // 将优化策略推送到URL解析服务
+    // 将优化策略推送到浏览器执行服务
     deployRequest := &StrategyDeployRequest{
         OfferID:  strategy.OfferID,
         Patterns: strategy.Patterns,
         Version:  time.Now().Unix(),
     }
     
-    return cas.urlParserAPI.UpdateClickStrategy(ctx, deployRequest)
+    return cas.browserExecutorAPI.UpdateClickStrategy(ctx, deployRequest)
 }
 ```
 
