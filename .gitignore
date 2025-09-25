@@ -15,6 +15,9 @@ storybook-static/
 *.tsbuildinfo
 apps/frontend/.next/
 
+# Firebase local/preview artifacts
+.firebase/
+
 # Go Microservices
 services/*/bin/
 services/*/*.log
