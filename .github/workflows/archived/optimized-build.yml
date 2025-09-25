@@ -35,7 +35,7 @@ jobs:
     - name: Setup Node.js with cache
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
         
     - name: Install dependencies (including dev for type checking)
@@ -105,7 +105,7 @@ jobs:
       run: |
         echo "🔥 预热Docker构建缓存..."
         # 尝试拉取基础镜像以预热
-        docker pull node:20.18.0-alpine || true
+        docker pull node:22-alpine || true
         
     - name: Build and push Docker image
       id: build

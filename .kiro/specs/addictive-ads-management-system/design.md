@@ -2,50 +2,82 @@
 
 ## 概述
 
-本设计文档基于需求文档中的18个核心需求，提供了完整的技术架构、组件设计、数据模型和实现方案。系统采用微服务架构，充分利用Google Cloud Platform的技术栈，实现高性能、可扩展的广告管理平台。
+本设计文档基于专家评审建议，采用企业级事件驱动微服务架构。遵循"好品味、KISS与实用主义、一次成型"的设计原则，实现契约先行、事件为核的高可扩展性广告管理平台。
+
+## 设计原则
+
+### 好品味
+- 用数据与流程消除特例
+- 统一模型、统一错误体、统一鉴权
+- 保持架构的一致性和优雅性
+
+### KISS与实用主义  
+- 契约先行、事件为核、大任务入队
+- 少即是多，避免过度设计
+- 专注核心业务价值
+
+### 一次成型
+- 不保留旧端点/旧头/旧路径
+- 最终形态直达（无需历史迁移）
+- 避免技术债务积累
 
 ## 系统架构
 
-### 整体架构图
+## 架构总览
+
+### 技术形态
+- **Cloud Run微服务** + **Cloud SQL PostgreSQL**（主库：事件与读模型）
+- **Pub/Sub**（事件总线/任务队列） + **Cloud Functions**（投影器）  
+- **Secret Manager**（密钥） + **API Gateway**（统一入口）
+- **Firestore**（UI级缓存）
+
+### 解耦策略
+- **命令→事件→投影→读模型**
+- **长耗时/高配额动作**（浏览器执行/批量Ads操作/AI分析）统一入队
+
+### 系统架构图
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        前端层 (Frontend)                        │
-│                    Next.js + Firebase Hosting                   │
+│                    API Gateway (统一入口)                       │
+│              OpenAPI契约 + Firebase Bearer认证                  │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────────┐
-│                      API网关层 (API Gateway)                    │
-│                   Google Cloud API Gateway                      │
+│                   微服务层 (Cloud Run)                          │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐ │
+│  │identity  │ │billing   │ │offer     │ │siterank  │ │batch   │ │
+│  │          │ │          │ │          │ │          │ │open    │ │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └────────┘ │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
+│  │adscenter │ │workflow  │ │console   │ │frontend  │           │
+│  │          │ │          │ │          │ │          │           │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────────┐
-│                     业务逻辑层 (Business Logic)                 │
+│              执行器服务 (独立Cloud Run)                          │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │           browser-exec (Node.js 22 + Playwright)           │ │
+│  │              常驻服务，专业浏览器自动化                      │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────────┐
+│                   事件总线 (Pub/Sub)                            │
+│              domain-events + 任务队列 + 投影触发                │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────────┐
+│              投影器 (Cloud Functions)                           │
+│                事件 → 读模型 + UI缓存                           │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────────┐
+│                   数据存储层                                    │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐│
-│  │Offer管理服务│ │评估分析服务 │ │批量操作服务 │ │浏览器执行服务││
-│  │             │ │             │ │             │ │(常驻服务)   ││
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘│
-│                        Google Cloud Run                         │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                     定时任务层 (Scheduled Tasks)                │
-│  Cloud Scheduler → Pub/Sub → Cloud Functions → Cloud Run       │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                      数据存储层 (Data Storage)                  │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐│
-│  │  Firestore  │ │ Cloud SQL   │ │Cloud Storage│ │Secret Mgr   ││
-│  │配置/状态/缓存│ │历史/分析数据│ │文件/日志存储│ │密钥管理     ││
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘│
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                     外部集成层 (External APIs)                  │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐│
-│  │Google Ads   │ │SimilarWeb   │ │Firebase AI  │ │代理IP服务   ││
-│  │    API      │ │    API      │ │   Logic     │ │             ││
+│  │PostgreSQL   │ │  Firestore  │ │Cloud Storage│ │Secret Mgr   ││
+│  │事件存储+读模型│ │UI实时缓存   │ │文件/日志    │ │密钥管理     ││
 │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘│
 └─────────────────────────────────────────────────────────────────┘
 ```## 
@@ -125,40 +157,435 @@ GET    /api/v1/bulk/ab-tests             // 获取A/B测试列表
 POST   /api/v1/bulk/ab-tests             // 创建A/B测试
 ```
 
-### 4. 浏览器执行服务 (Browser Executor Service) - 常驻服务
+### 1. 高并发浏览器执行服务 (Browser-Exec Service)
 
-**职责：** 提供高性能的真实浏览器执行能力，支持多种Web交互任务
+**职责：** 支持数百用户并发的企业级浏览器自动化服务，提供高性能、高可靠的Web交互能力
 
-**技术栈：** Go + Cloud Run (常驻) + Playwright + 代理IP池
+**技术栈：** Node.js 22 + Playwright + Cloud Run + Redis + 分层架构
 
-**架构特点：**
-- 常驻服务，维持最小1个实例
-- 浏览器实例池管理
-- 智能代理IP轮换
-- 批量处理支持
+**高并发架构设计：**
+
+#### 分层架构图
+```
+┌─────────────────────────────────────────┐
+│           API Gateway Layer             │
+│     (请求路由 + 负载均衡 + 限流)          │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────┴───────────────────────┐
+│         Task Queue Layer                │
+│    (Redis Cluster + 优先级队列)         │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────┴───────────────────────┐
+│       Browser Pool Manager             │
+│    (浏览器池管理 + 智能任务调度)         │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────┴───────────────────────┐
+│    Browser Worker Instances             │
+│  (2-50个Cloud Run实例，弹性扩缩容)       │
+└─────────────────────────────────────────┘
+```
+
+#### 容量规划
+- **单实例配置**：4-8GB内存，2-4vCPU，8-12个浏览器实例
+- **集群规模**：最小2个实例（预热），正常5-10个，峰值20-50个
+- **处理能力**：单实例100-200任务/分钟，集群2000-10000任务/分钟
+- **并发支持**：数百用户同时使用，数千任务排队处理
 
 **核心功能模块：**
-- **URL解析模块**：多重重定向解析，Final URL和suffix提取
-- **品牌识别模块**：从域名提取品牌名（nike.com→nike）
-- **页面分析模块**：获取页面内容用于AI分析
-- **点击仿真模块**：执行真实的浏览器访问
-- **可用性监控模块**：检测落地页健康状态
-- **反检测策略**：模拟真实用户行为模式
-- **地域化配置**：时区、语言、User-Agent适配
+
+#### 任务调度与队列管理
+- **智能调度器**：按任务类型、优先级、地理位置分配
+- **队列管理**：Redis多队列，支持优先级和批量处理
+- **负载均衡**：实时监控实例负载，动态分配任务
+- **故障转移**：实例故障自动转移，任务重试机制
+
+#### 浏览器池管理
+- **实例池管理**：每个Worker维护多个浏览器实例
+- **上下文隔离**：BrowserContext隔离，避免任务间污染
+- **资源回收**：定期回收长时间运行的实例
+- **预热策略**：保持最小实例数，减少冷启动时间
+
+#### 业务处理能力
+- **URL解析模块**：多重重定向处理，Final URL和suffix提取
+- **品牌识别模块**：智能域名品牌提取（nike.com→nike）
+- **可用性探测**：落地页健康检测和异常识别
+- **点击仿真模块**：真实用户行为模拟和反检测
+- **批量处理**：相同类型任务批量执行优化
+
+**高并发API设计：**
+```typescript
+// 任务提交API (异步处理)
+POST   /api/v1/browser/tasks             // 提交任务 (返回202 + taskId)
+POST   /api/v1/browser/tasks/batch       // 批量提交任务
+GET    /api/v1/browser/tasks/{taskId}    // 查询任务状态和结果
+DELETE /api/v1/browser/tasks/{taskId}    // 取消任务
+GET    /api/v1/browser/tasks             // 查询任务列表 (支持分页)
+
+// 实时状态API
+GET    /api/v1/browser/health            // 服务健康检查
+GET    /api/v1/browser/stats             // 获取执行统计
+GET    /api/v1/browser/capacity          // 获取容量信息
+GET    /api/v1/browser/instances         // 获取实例状态
+
+// 管理API
+PUT    /api/v1/browser/config            // 更新配置
+POST   /api/v1/browser/scale             // 手动扩缩容
+POST   /api/v1/browser/maintenance       // 维护模式切换
+
+// WebSocket实时通知
+WS     /api/v1/browser/notifications     // 任务状态实时推送
+```
+
+**高并发核心实现：**
+```typescript
+// 浏览器池管理器 (支持多池管理)
+class BrowserPoolManager {
+    private pools: Map<string, BrowserPool> = new Map();
+    private maxInstancesPerPool = 12; // 每个池最大实例数
+    private maxPoolsPerWorker = 5;    // 每个Worker最大池数
+    
+    async getBrowser(country: string, priority: 'high' | 'normal' = 'normal'): Promise<BrowserContext> {
+        const poolKey = `${country}-${priority}`;
+        let pool = this.pools.get(poolKey);
+        
+        if (!pool) {
+            pool = new BrowserPool({
+                maxSize: this.maxInstancesPerPool,
+                country: country,
+                priority: priority
+            });
+            this.pools.set(poolKey, pool);
+        }
+        
+        return await pool.acquire();
+    }
+    
+    async getPoolStats(): Promise<PoolStats[]> {
+        return Array.from(this.pools.entries()).map(([key, pool]) => ({
+            poolKey: key,
+            activeInstances: pool.getActiveCount(),
+            queuedTasks: pool.getQueuedCount(),
+            avgResponseTime: pool.getAvgResponseTime()
+        }));
+    }
+}
+
+// 智能任务调度器
+class TaskScheduler {
+    private queues: Map<string, Queue> = new Map();
+    private loadBalancer: LoadBalancer;
+    
+    async scheduleTask(task: BrowserTask): Promise<string> {
+        // 根据任务类型和优先级选择队列
+        const queueName = this.selectQueue(task);
+        const taskId = generateTaskId();
+        
+        await this.queues.get(queueName)?.add(taskId, task, {
+            priority: this.calculatePriority(task),
+            delay: task.delay || 0,
+            attempts: 3,
+            backoff: 'exponential'
+        });
+        
+        return taskId;
+    }
+    
+    private selectQueue(task: BrowserTask): string {
+        // 评估任务 -> 高优先级队列 (eval-{country})
+        // 仿真任务 -> 普通队列 (sim-{country})
+        // 检测任务 -> 低优先级队列 (check-{country})
+        return `${task.type}-${task.country}`;
+    }
+    
+    private calculatePriority(task: BrowserTask): number {
+        const priorities = {
+            'url-parse': 100,      // 最高优先级
+            'evaluation': 90,      // 高优先级
+            'simulation': 50,      // 普通优先级
+            'availability': 20     // 低优先级
+        };
+        return priorities[task.type] || 50;
+    }
+}
+
+// 负载均衡器
+class LoadBalancer {
+    private instances: WorkerInstance[] = [];
+    private healthChecker: HealthChecker;
+    
+    async selectInstance(task: BrowserTask): Promise<WorkerInstance> {
+        // 1. 过滤健康实例
+        const healthyInstances = this.instances.filter(i => i.isHealthy());
+        
+        // 2. 按地理位置就近选择
+        const nearbyInstances = healthyInstances.filter(i => 
+            i.supportsCountry(task.country)
+        );
+        
+        // 3. 按负载选择最优实例
+        const candidates = nearbyInstances
+            .filter(i => i.currentLoad < i.maxCapacity * 0.8)
+            .sort((a, b) => a.currentLoad - b.currentLoad);
+            
+        if (candidates.length > 0) {
+            return candidates[0];
+        }
+        
+        // 4. 触发扩容
+        return await this.scaleUp(task.country);
+    }
+    
+    async scaleUp(country: string): Promise<WorkerInstance> {
+        // 触发Cloud Run自动扩容
+        const newInstance = await this.createInstance({
+            country: country,
+            memory: '8Gi',
+            cpu: '4',
+            minInstances: 1,
+            maxInstances: 1
+        });
+        
+        this.instances.push(newInstance);
+        return newInstance;
+    }
+}
+
+// 批量任务处理器
+class BatchTaskProcessor {
+    async processBatch(tasks: BrowserTask[]): Promise<TaskResult[]> {
+        // 按类型分组批处理
+        const groups = this.groupByType(tasks);
+        const results: TaskResult[] = [];
+        
+        for (const [type, groupTasks] of groups) {
+            switch (type) {
+                case 'url-parse':
+                    // URL解析可以批量处理
+                    results.push(...await this.batchParseUrls(groupTasks));
+                    break;
+                case 'availability-check':
+                    // 可用性检测并行处理
+                    results.push(...await this.parallelAvailabilityCheck(groupTasks));
+                    break;
+                case 'click-simulation':
+                    // 点击仿真需要串行处理（避免检测）
+                    results.push(...await this.serialClickSimulation(groupTasks));
+                    break;
+            }
+        }
+        
+        return results;
+    }
+    
+    private async batchParseUrls(tasks: BrowserTask[]): Promise<TaskResult[]> {
+        // 使用单个浏览器实例批量解析多个URL
+        const browser = await this.poolManager.getBrowser(tasks[0].country);
+        const results: TaskResult[] = [];
+        
+        try {
+            for (const task of tasks) {
+                const page = await browser.newPage();
+                try {
+                    const result = await this.parseUrl(page, task.url);
+                    results.push({ taskId: task.id, success: true, data: result });
+                } catch (error) {
+                    results.push({ taskId: task.id, success: false, error: error.message });
+                } finally {
+                    await page.close();
+                }
+            }
+        } finally {
+            await this.poolManager.releaseBrowser(browser);
+        }
+        
+        return results;
+    }
+}
+
+// 监控和指标收集
+class MetricsCollector {
+    private metrics: Map<string, Metric> = new Map();
+    
+    recordTaskExecution(task: BrowserTask, duration: number, success: boolean): void {
+        const key = `${task.type}_${task.country}`;
+        
+        if (!this.metrics.has(key)) {
+            this.metrics.set(key, new Metric(key));
+        }
+        
+        const metric = this.metrics.get(key)!;
+        metric.recordExecution(duration, success);
+    }
+    
+    getMetrics(): MetricsSummary {
+        return {
+            totalTasks: this.getTotalTasks(),
+            successRate: this.getSuccessRate(),
+            avgResponseTime: this.getAvgResponseTime(),
+            instanceUtilization: this.getInstanceUtilization(),
+            queueDepth: this.getQueueDepth()
+        };
+    }
+}
+```
+
+### 2. Identity服务 (身份认证)
+
+**职责：** 统一身份认证、授权和用户管理
+
+**技术栈：** Go + Cloud Run + Firebase Auth
 
 **API设计：**
 ```go
-// 浏览器执行API
-POST   /api/v1/browser/parse-url         // 解析URL并提取信息
-POST   /api/v1/browser/extract-brand     // 从域名提取品牌名
-POST   /api/v1/browser/analyze-page      // 分析页面内容
-POST   /api/v1/browser/simulate-click    // 执行点击仿真
-POST   /api/v1/browser/check-availability // 检测页面可用性
-POST   /api/v1/browser/batch-execute     // 批量执行任务
-GET    /api/v1/browser/health            // 服务健康检查
-POST   /api/v1/browser/proxy/rotate      // 轮换代理IP
-GET    /api/v1/browser/stats             // 获取执行统计
-PUT    /api/v1/browser/strategy/update   // 更新点击策略
+// 身份认证API
+POST   /api/v1/identity/register         // 用户注册
+POST   /api/v1/identity/login           // 用户登录  
+POST   /api/v1/identity/refresh         // 刷新Token
+DELETE /api/v1/identity/logout          // 用户登出
+GET    /api/v1/identity/profile         // 获取用户信息
+PUT    /api/v1/identity/profile         // 更新用户信息
+```
+
+### 3. Billing服务 (计费管理)
+
+**职责：** 原子化Token管理和计费处理
+
+**技术栈：** Go + Cloud Run + PostgreSQL
+
+**核心特性：**
+- **双分录账本**：balance/hold/expense分离
+- **原子操作**：reserve → commit/release机制
+- **事务保障**：outbox模式确保一致性
+
+**API设计：**
+```go
+// 计费管理API
+GET    /api/v1/billing/balance          // 查询账户余额
+POST   /api/v1/billing/reserve          // 预留Token
+POST   /api/v1/billing/commit           // 确认扣费
+POST   /api/v1/billing/release          // 释放预留
+GET    /api/v1/billing/transactions     // 查询交易记录
+POST   /api/v1/billing/recharge         // Token充值
+```
+
+**账本模型：**
+```go
+type Account struct {
+    UserID          string `json:"user_id"`
+    AvailableBalance int   `json:"available_balance"`
+    ReservedBalance  int   `json:"reserved_balance"`
+    TotalExpense     int   `json:"total_expense"`
+}
+
+type Transaction struct {
+    ID          string    `json:"id"`
+    UserID      string    `json:"user_id"`
+    Type        string    `json:"type"` // reserve/commit/release/recharge
+    Amount      int       `json:"amount"`
+    RequestID   string    `json:"request_id"`
+    Description string    `json:"description"`
+    CreatedAt   time.Time `json:"created_at"`
+}
+```
+
+### 4. Offer服务 (Offer管理)
+
+**职责：** Offer生命周期管理和状态流转
+
+**技术栈：** Go + Cloud Run + Firestore
+
+**API设计：**
+```go
+// Offer管理API
+POST   /api/v1/offers                   // 创建Offer
+GET    /api/v1/offers                   // 获取Offer列表
+GET    /api/v1/offers/{id}              // 获取Offer详情
+PUT    /api/v1/offers/{id}/status       // 更新Offer状态
+DELETE /api/v1/offers/{id}              // 删除Offer
+POST   /api/v1/offers/batch             // 批量创建Offer
+GET    /api/v1/offers/{id}/history      // 获取状态历史
+```
+
+### 5. Siterank服务 (评估分析)
+
+**职责：** Offer智能评估和市场分析
+
+**技术栈：** Go + Cloud Run + SimilarWeb API + Firebase AI
+
+**核心特性：**
+- **10秒SLO**：分阶段返回结果，支持降级
+- **并行处理**：域名解析、SimilarWeb、AI分析并行
+- **缓存策略**：评估结果缓存，避免重复计算
+
+**API设计：**
+```go
+// 评估分析API
+POST   /api/v1/siterank/evaluate        // 启动评估 (返回202 + analysisId)
+GET    /api/v1/siterank/analysis/{id}   // 查询评估进度和结果
+GET    /api/v1/siterank/similar/{id}    // 获取相似机会
+POST   /api/v1/siterank/batch-evaluate  // 批量评估
+```
+
+### 6. Batchopen服务 (批量操作)
+
+**职责：** 批量操作编排和执行
+
+**技术栈：** Go + Cloud Run + Google Ads API
+
+**核心特性：**
+- **变更计划**：干跑预览 → 执行确认
+- **分级重试**：失败任务自动重试和局部回滚
+- **审计快照**：操作前后状态对比
+
+**API设计：**
+```go
+// 批量操作API
+POST   /api/v1/batch/plan               // 创建变更计划
+POST   /api/v1/batch/validate           // 干跑验证
+POST   /api/v1/batch/execute            // 执行变更
+GET    /api/v1/batch/operations/{id}    // 查询操作状态
+POST   /api/v1/batch/rollback/{id}      // 回滚操作
+GET    /api/v1/batch/audit/{id}         // 获取审计快照
+```
+
+### 7. Adscenter服务 (广告中心)
+
+**职责：** Google Ads集成和Pre-flight检查
+
+**技术栈：** Go + Cloud Run + Google Ads API
+
+**核心特性：**
+- **Live/Stub分离**：build tag控制真实/模拟模式
+- **OAuth治理**：AES-GCM加密 + 状态机管理
+- **配额管理**：QPS限制 + 并发控制
+
+**API设计：**
+```go
+// 广告中心API
+POST   /api/v1/ads/connect              // 连接Ads账户
+GET    /api/v1/ads/accounts             // 获取账户列表
+POST   /api/v1/ads/preflight            // Pre-flight检查
+GET    /api/v1/ads/performance          // 获取性能数据
+POST   /api/v1/ads/sync                 // 同步数据
+```
+
+### 8. Workflow服务 (工作流)
+
+**职责：** 业务流程编排和状态管理
+
+**技术栈：** Go + Cloud Run + Pub/Sub
+
+**API设计：**
+```go
+// 工作流API
+POST   /api/v1/workflow/start           // 启动工作流
+GET    /api/v1/workflow/status/{id}     // 查询流程状态
+POST   /api/v1/workflow/pause/{id}      // 暂停流程
+POST   /api/v1/workflow/resume/{id}     // 恢复流程
+POST   /api/v1/workflow/cancel/{id}     // 取消流程
 ```
 
 **核心组件实现：**
@@ -974,7 +1401,804 @@ src/
 └── types/                        # TypeScript类型定义
 ```
 
-### 核心组件设计
+### 服务与边界
+
+### 外部服务
+- **identity**：用户认证与权限管理
+- **billing**：套餐管理与原子计费  
+- **offer**：Offer生命周期管理
+- **siterank**：10秒智能评估分析
+- **batchopen**：仿真编排与任务管理
+- **adscenter**：Google Ads集成与批量操作
+- **workflow**：业务流程编排
+- **console**：后台管理系统
+- **frontend**：用户前端界面
+
+### 新增执行器
+- **browser-exec**：Node.js 22 + Playwright，常驻独立Cloud Run
+
+## API契约与网关
+
+### OpenAPI-first流程
+1. **.kiro规范输出OpenAPI**（所有域）
+2. **生成Go server stubs与TS SDK**
+3. **CI契约测试**
+4. **自动渲染API Gateway**
+
+### 统一路由形态（/api/v1）
+
+#### Identity服务
+```
+POST /api/v1/identity/register
+GET  /api/v1/identity/me
+POST /api/v1/identity/refresh
+```
+
+#### Offer服务  
+```
+GET  /api/v1/offers
+POST /api/v1/offers
+GET  /api/v1/offers/{id}
+PUT  /api/v1/offers/{id}
+```
+
+#### Siterank服务
+```
+POST /api/v1/siterank/analyze     # 202返回analysisId
+GET  /api/v1/siterank/{offerId}   # 最新结果
+```
+
+#### Adscenter服务
+```
+GET  /api/v1/adscenter/accounts
+POST /api/v1/adscenter/preflight
+POST /api/v1/adscenter/bulk-actions
+GET  /api/v1/adscenter/oauth/url
+POST /api/v1/adscenter/oauth/callback  # 回调免鉴权
+```
+
+#### Batchopen服务
+```
+POST /api/v1/batchopen/tasks      # 202返回taskId  
+GET  /api/v1/batchopen/tasks/{id}
+```
+
+#### Billing服务
+```
+GET /api/v1/billing/subscriptions/me
+GET /api/v1/billing/tokens/me
+GET /api/v1/billing/tokens/transactions
+```
+
+#### Workflow服务
+```
+GET  /api/v1/workflows/templates
+POST /api/v1/workflows/start      # 202返回workflow_instance_id
+GET  /api/v1/workflows/{id}
+```
+
+### 统一错误体
+```json
+{
+  "code": "VALIDATION_ERROR",
+  "message": "Invalid input parameters", 
+  "details": {
+    "field": "email",
+    "reason": "Invalid email format"
+  },
+  "traceId": "abc123"
+}
+```
+
+### 幂等处理
+- 所有变更型POST支持`X-Idempotency-Key`
+- 基于key去重，相同key返回相同结果
+
+## 鉴权与安全
+
+### 统一认证
+- **所有受保护接口**：Firebase Bearer Token
+- **Console访问**：role=ADMIN验证
+- **白名单管理**：OAuth回调与健康检查
+
+### 机密治理
+- **密钥存储**：仅Secret Manager，禁止明文
+- **Ads刷新令牌**：AES-GCM(256)加密
+- **OAuth状态**：state HMAC + 回调域白名单
+- **数据隔离**：user_id强隔离，服务端判定状态
+
+### Secret Manager配置
+```
+DATABASE_URL-{stack}
+REFRESH_TOKEN_KEY-{stack}        # AES-GCM 256
+OAUTH_STATE_SECRET-{stack}
+GOOGLE_ADS_*_{stack}            # developer token / OAuth client / MCC / test id
+```
+
+## 数据与事件
+
+### 事件存储（Cloud SQL）
+```sql
+CREATE TABLE event_store (
+    id BIGSERIAL PRIMARY KEY,
+    aggregate_type VARCHAR(100) NOT NULL,
+    aggregate_id VARCHAR(100) NOT NULL, 
+    event_type VARCHAR(100) NOT NULL,
+    event_version INTEGER NOT NULL,
+    payload JSONB NOT NULL,
+    metadata JSONB NOT NULL,
+    occurred_at TIMESTAMPTZ DEFAULT NOW(),
+    trace_id VARCHAR(100),
+    UNIQUE(aggregate_id, event_version),
+    INDEX (aggregate_id, occurred_at)
+);
+```
+
+### 标准事件集
+- **UserRegistered**、**OfferCreated**
+- **SiterankRequested/Completed**  
+- **BatchopenTaskQueued/Started/Completed/Failed**
+- **AdsPreflightRequested/Completed**
+- **TokenReserved/Debited/Reverted**
+
+### 投影器（Cloud Functions）
+- 订阅Pub/Sub写Cloud SQL读模型与Firestore UI缓存
+- 以事件id/版本做投影幂等
+
+### 读模型（Cloud SQL）
+- **User**、**Offer**、**SiterankAnalysis**、**BatchopenTask**
+- **UserAdsConnection**、**Subscription**、**UserToken**、**TokenTransaction**、**AuditSnapshot**
+- 统一迁移脚本一次到位
+
+### Firestore缓存策略
+- 仅作UI实时缓存层（与SQL投影同步写入）
+- "SQL为事实来源"
+
+## 企业级架构设计
+
+## 核心域落地
+
+### Siterank（10秒评估）
+
+#### 技术流程
+```
+Browser-Exec解析URL/品牌 → SimilarWeb拉取 → 评分器（权重表+阈值，KISS） → SiterankCompleted → 投影
+```
+
+#### 性能策略
+- **并行拉取**：URL解析、SimilarWeb、评分并行执行
+- **超时分段**：10秒内返回结果，超时返回"已提交深评"
+- **缓存优化**：域名+国家缓存，避免重复计算
+- **降级处理**：后台完成后通过投影/通知更新
+
+#### 实现架构
+```go
+type SiterankService struct {
+    browserExec   BrowserExecClient
+    similarWeb    SimilarWebClient
+    scorer        OfferScorer
+    eventBus      EventBus
+}
+
+func (s *SiterankService) AnalyzeOffer(ctx context.Context, req *AnalyzeRequest) (*AnalysisResult, error) {
+    // 10秒超时控制
+    ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+    defer cancel()
+    
+    // 并行执行
+    var wg sync.WaitGroup
+    var urlInfo *URLInfo
+    var trafficData *TrafficData
+    var err error
+    
+    wg.Add(2)
+    go func() {
+        defer wg.Done()
+        urlInfo, _ = s.browserExec.ParseURL(ctx, req.URL)
+    }()
+    
+    go func() {
+        defer wg.Done()
+        trafficData, _ = s.similarWeb.GetTrafficData(ctx, req.Domain, req.Country)
+    }()
+    
+    wg.Wait()
+    
+    // 评分计算
+    score := s.scorer.Calculate(urlInfo, trafficData)
+    
+    // 发布事件
+    event := &SiterankCompleted{
+        OfferID: req.OfferID,
+        Score:   score,
+        Analysis: map[string]interface{}{
+            "url_info": urlInfo,
+            "traffic": trafficData,
+        },
+    }
+    
+    return &AnalysisResult{Score: score}, s.eventBus.Publish(ctx, event)
+}
+```
+
+### Browser-Exec（Node.js + Playwright）
+
+#### 核心能力API
+```typescript
+// /parse-url - URL解析和品牌提取
+POST /api/v1/browser/parse-url
+{
+  "url": "https://affiliate.com/offer/123",
+  "country": "US"
+}
+
+// /check-availability - 落地页可用性检测  
+POST /api/v1/browser/check-availability
+{
+  "urls": ["https://example.com"],
+  "country": "US"
+}
+
+// /simulate-click - 点击仿真
+POST /api/v1/browser/simulate-click
+{
+  "url": "https://example.com",
+  "pattern": "workday",
+  "country": "US"
+}
+
+// /batch-execute - 批量执行
+POST /api/v1/browser/batch-execute
+{
+  "tasks": [
+    {"type": "parse-url", "url": "...", "country": "US"},
+    {"type": "check-availability", "url": "...", "country": "UK"}
+  ]
+}
+```
+
+#### 架构实现
+```typescript
+class BrowserExecService {
+    private browserPool: BrowserPool;
+    private proxyManager: ProxyManager;
+    
+    async parseURL(request: ParseURLRequest): Promise<URLInfo> {
+        const browser = await this.browserPool.acquire(request.country);
+        const proxy = await this.proxyManager.getProxy(request.country);
+        
+        try {
+            const page = await browser.newPage({
+                proxy: proxy,
+                userAgent: this.getUserAgent(request.country),
+                locale: this.getLocale(request.country)
+            });
+            
+            // 多重重定向处理
+            const finalURL = await this.followRedirects(page, request.url);
+            const domain = new URL(finalURL).hostname;
+            const brand = this.extractBrand(domain);
+            
+            return {
+                originalURL: request.url,
+                finalURL: finalURL,
+                domain: domain,
+                brand: brand,
+                country: request.country
+            };
+        } finally {
+            await this.browserPool.release(browser);
+            await this.proxyManager.releaseProxy(proxy);
+        }
+    }
+    
+    private extractBrand(domain: string): string {
+        // nike.com -> nike, amazon.com -> amazon
+        const parts = domain.split('.');
+        return parts.length >= 2 ? parts[parts.length - 2] : domain;
+    }
+}
+
+// 代理池管理
+class ProxyManager {
+    private countryPools: Map<string, ProxyPool>;
+    
+    async getProxy(country: string): Promise<ProxyInfo> {
+        let pool = this.countryPools.get(country);
+        if (!pool) {
+            pool = new ProxyPool(country);
+            this.countryPools.set(country, pool);
+        }
+        return await pool.acquire();
+    }
+}
+
+// 浏览器池管理  
+class BrowserPool {
+    private browsers: Browser[] = [];
+    private maxSize = 10;
+    
+    async acquire(country: string): Promise<Browser> {
+        if (this.browsers.length > 0) {
+            return this.browsers.pop()!;
+        }
+        
+        return await playwright.chromium.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-dev-shm-usage']
+        });
+    }
+    
+    async release(browser: Browser): Promise<void> {
+        if (this.browsers.length < this.maxSize) {
+            this.browsers.push(browser);
+        } else {
+            await browser.close();
+        }
+    }
+}
+```
+
+### Adscenter（诊断+批量）
+
+#### Pre-flight诊断
+```go
+type PreflightChecker struct {
+    adsClient GoogleAdsClient
+}
+
+type CheckResult struct {
+    Code     string `json:"code"`
+    Severity string `json:"severity"`  // info/warning/error/critical
+    Message  string `json:"message"`
+    Details  map[string]interface{} `json:"details,omitempty"`
+    Summary  string `json:"summary"`
+}
+
+func (pc *PreflightChecker) RunChecks(ctx context.Context, accountID string) ([]*CheckResult, error) {
+    var results []*CheckResult
+    
+    // 环境检查
+    results = append(results, pc.checkEnvironment()...)
+    
+    // 授权检查
+    results = append(results, pc.checkAuthorization(ctx, accountID)...)
+    
+    // 结构检查
+    results = append(results, pc.checkAccountStructure(ctx, accountID)...)
+    
+    // 余额检查
+    results = append(results, pc.checkBudget(ctx, accountID)...)
+    
+    // 回传检查
+    results = append(results, pc.checkConversionTracking(ctx, accountID)...)
+    
+    // 落地页检查
+    results = append(results, pc.checkLandingPages(ctx, accountID)...)
+    
+    // Ads API可达性
+    results = append(results, pc.checkAPIReachability(ctx)...)
+    
+    return results, nil
+}
+```
+
+#### 批量操作
+```go
+type BatchOperationService struct {
+    adsClient    GoogleAdsClient
+    eventBus     EventBus
+    auditService AuditService
+}
+
+func (bos *BatchOperationService) ExecuteBatchOperation(ctx context.Context, plan *ChangePlan) (*BatchResult, error) {
+    // 1. validate-only预检
+    validateResult, err := bos.validatePlan(ctx, plan)
+    if err != nil {
+        return nil, err
+    }
+    
+    // 2. 创建审计快照
+    snapshot, err := bos.auditService.CreateSnapshot(ctx, plan.TargetAccounts)
+    if err != nil {
+        return nil, err
+    }
+    
+    // 3. 入队执行（队列/限流/退避）
+    taskID := generateTaskID()
+    task := &BatchTask{
+        ID:       taskID,
+        Plan:     plan,
+        Snapshot: snapshot,
+        Status:   "queued",
+    }
+    
+    // 发布任务事件
+    event := &BatchopenTaskQueued{
+        TaskID:      taskID,
+        UserID:      plan.UserID,
+        Operation:   plan.Operation,
+        TargetCount: len(plan.Targets),
+    }
+    
+    return &BatchResult{TaskID: taskID}, bos.eventBus.Publish(ctx, event)
+}
+```
+
+### Billing（原子扣费）
+
+#### Reserve/Commit/Release机制
+```go
+type BillingService struct {
+    tokenRepo TokenRepository
+    eventBus  EventBus
+}
+
+func (bs *BillingService) ReserveTokens(ctx context.Context, userID string, amount int, operation string) (*Reservation, error) {
+    requestID := generateRequestID()
+    
+    // 检查余额
+    balance, err := bs.tokenRepo.GetBalance(ctx, userID)
+    if err != nil {
+        return nil, err
+    }
+    
+    if balance.Available < amount {
+        return nil, ErrInsufficientBalance
+    }
+    
+    // 原子预留
+    err = bs.tokenRepo.ReserveTokens(ctx, userID, amount, requestID)
+    if err != nil {
+        return nil, err
+    }
+    
+    // 发布预留事件
+    event := &TokenReserved{
+        UserID:    userID,
+        Amount:    amount,
+        Operation: operation,
+        RequestID: requestID,
+    }
+    
+    bs.eventBus.Publish(ctx, event)
+    
+    return &Reservation{
+        RequestID: requestID,
+        Amount:    amount,
+        ExpiresAt: time.Now().Add(30 * time.Minute),
+    }, nil
+}
+
+func (bs *BillingService) CommitTokens(ctx context.Context, requestID string) error {
+    err := bs.tokenRepo.CommitReservation(ctx, requestID)
+    if err != nil {
+        return err
+    }
+    
+    // 发布扣费事件
+    reservation, _ := bs.tokenRepo.GetReservation(ctx, requestID)
+    event := &TokenDebited{
+        UserID:    reservation.UserID,
+        Amount:    reservation.Amount,
+        RequestID: requestID,
+    }
+    
+    return bs.eventBus.Publish(ctx, event)
+}
+
+func (bs *BillingService) ReleaseTokens(ctx context.Context, requestID string, reason string) error {
+    err := bs.tokenRepo.ReleaseReservation(ctx, requestID)
+    if err != nil {
+        return err
+    }
+    
+    // 发布释放事件
+    reservation, _ := bs.tokenRepo.GetReservation(ctx, requestID)
+    event := &TokenReverted{
+        UserID:    reservation.UserID,
+        Amount:    reservation.Amount,
+        RequestID: requestID,
+        Reason:    reason,
+    }
+    
+    return bs.eventBus.Publish(ctx, event)
+}
+```
+
+## 共享底座 (pkg/*)
+
+### pkg/auth - Firebase Bearer中间件
+```go
+type AuthMiddleware struct {
+    firebase *auth.Client
+}
+
+func (am *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        token := extractBearerToken(r)
+        if token == "" {
+            writeError(w, http.StatusUnauthorized, "MISSING_TOKEN", "Authorization header required")
+            return
+        }
+        
+        idToken, err := am.firebase.VerifyIDToken(r.Context(), token)
+        if err != nil {
+            writeError(w, http.StatusUnauthorized, "INVALID_TOKEN", "Token verification failed")
+            return
+        }
+        
+        // 注入用户上下文
+        ctx := context.WithValue(r.Context(), "user_id", idToken.UID)
+        ctx = context.WithValue(ctx, "user_email", idToken.Claims["email"])
+        
+        next.ServeHTTP(w, r.WithContext(ctx))
+    })
+}
+```
+
+### pkg/config - Secret Manager + STACK
+```go
+type Config struct {
+    Stack       string
+    SecretNames map[string]string
+    secrets     map[string]string
+}
+
+func LoadConfig(stack string) (*Config, error) {
+    config := &Config{
+        Stack: stack,
+        SecretNames: map[string]string{
+            "DATABASE_URL":        fmt.Sprintf("DATABASE_URL-%s", stack),
+            "REFRESH_TOKEN_KEY":   fmt.Sprintf("REFRESH_TOKEN_KEY-%s", stack),
+            "OAUTH_STATE_SECRET":  fmt.Sprintf("OAUTH_STATE_SECRET-%s", stack),
+        },
+        secrets: make(map[string]string),
+    }
+    
+    // 从Secret Manager加载
+    client, err := secretmanager.NewClient(context.Background())
+    if err != nil {
+        return nil, err
+    }
+    
+    for key, secretName := range config.SecretNames {
+        secret, err := client.AccessSecretVersion(context.Background(), &secretmanagerpb.AccessSecretVersionRequest{
+            Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", getProjectID(), secretName),
+        })
+        if err != nil {
+            return nil, err
+        }
+        config.secrets[key] = string(secret.Payload.Data)
+    }
+    
+    return config, nil
+}
+```
+
+### pkg/events - 发布/订阅 + 幂等
+```go
+type EventBus struct {
+    pubsub       *pubsub.Client
+    topicName    string
+    idempotency  IdempotencyManager
+}
+
+func (eb *EventBus) Publish(ctx context.Context, event Event) error {
+    // 幂等检查
+    if eb.idempotency.IsProcessed(event.EventID()) {
+        return nil
+    }
+    
+    // 序列化事件
+    data, err := json.Marshal(event)
+    if err != nil {
+        return err
+    }
+    
+    // 发布到Pub/Sub
+    topic := eb.pubsub.Topic(eb.topicName)
+    result := topic.Publish(ctx, &pubsub.Message{
+        Data: data,
+        Attributes: map[string]string{
+            "event_type":    event.EventType(),
+            "aggregate_id":  event.AggregateID(),
+            "trace_id":     getTraceID(ctx),
+        },
+    })
+    
+    // 等待发布完成
+    _, err = result.Get(ctx)
+    if err != nil {
+        return err
+    }
+    
+    // 标记已处理
+    return eb.idempotency.MarkProcessed(event.EventID())
+}
+```
+
+### pkg/http - 统一错误码/重试/限流
+```go
+type ErrorResponse struct {
+    Code    string      `json:"code"`
+    Message string      `json:"message"`
+    Details interface{} `json:"details,omitempty"`
+    TraceID string      `json:"traceId"`
+}
+
+func WriteError(w http.ResponseWriter, statusCode int, code, message string) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(statusCode)
+    
+    response := ErrorResponse{
+        Code:    code,
+        Message: message,
+        TraceID: getTraceIDFromContext(w),
+    }
+    
+    json.NewEncoder(w).Encode(response)
+}
+
+type HTTPClient struct {
+    client      *http.Client
+    retryPolicy RetryPolicy
+    rateLimiter RateLimiter
+}
+
+func (hc *HTTPClient) Do(req *http.Request) (*http.Response, error) {
+    // 限流检查
+    if err := hc.rateLimiter.Wait(req.Context()); err != nil {
+        return nil, err
+    }
+    
+    // 重试机制
+    return hc.retryPolicy.Execute(func() (*http.Response, error) {
+        return hc.client.Do(req)
+    })
+}
+```
+
+### pkg/telemetry - 日志/指标/追踪
+```go
+type Logger struct {
+    logger *slog.Logger
+}
+
+func (l *Logger) Info(ctx context.Context, msg string, fields ...Field) {
+    attrs := []slog.Attr{
+        slog.String("trace_id", getTraceID(ctx)),
+        slog.String("user_id", getUserID(ctx)),
+        slog.String("service", getServiceName()),
+        slog.String("version", getVersion()),
+        slog.String("stack", getStack()),
+    }
+    
+    for _, field := range fields {
+        attrs = append(attrs, slog.Any(field.Key, field.Value))
+    }
+    
+    l.logger.LogAttrs(ctx, slog.LevelInfo, msg, attrs...)
+}
+
+type Metrics struct {
+    registry *prometheus.Registry
+}
+
+func (m *Metrics) Counter(name string) prometheus.Counter {
+    counter := prometheus.NewCounter(prometheus.CounterOpts{
+        Name: name,
+        Help: fmt.Sprintf("Counter for %s", name),
+    })
+    m.registry.MustRegister(counter)
+    return counter
+}
+```
+
+### 事件驱动架构核心
+
+#### 事件存储设计
+
+```sql
+-- PostgreSQL事件存储表
+CREATE TABLE event_store (
+    id BIGSERIAL PRIMARY KEY,
+    aggregate_type VARCHAR(100) NOT NULL,
+    aggregate_id VARCHAR(100) NOT NULL,
+    event_type VARCHAR(100) NOT NULL,
+    event_version INTEGER NOT NULL,
+    payload JSONB NOT NULL,
+    metadata JSONB NOT NULL,
+    occurred_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    trace_id VARCHAR(100),
+    UNIQUE(aggregate_id, event_version),
+    INDEX idx_aggregate_occurred (aggregate_id, occurred_at),
+    INDEX idx_event_type (event_type),
+    INDEX idx_trace_id (trace_id)
+);
+```
+
+#### 核心事件定义
+
+```go
+// 最小事件集
+type Event interface {
+    EventID() string
+    EventType() string
+    AggregateID() string
+    Version() int
+    OccurredAt() time.Time
+    Payload() interface{}
+}
+
+// 用户事件
+type UserRegistered struct {
+    UserID    string `json:"user_id"`
+    Email     string `json:"email"`
+    Plan      string `json:"plan"`
+    CreatedAt time.Time `json:"created_at"`
+}
+
+// Offer事件
+type OfferCreated struct {
+    OfferID   string `json:"offer_id"`
+    UserID    string `json:"user_id"`
+    URL       string `json:"url"`
+    Country   string `json:"country"`
+    CreatedAt time.Time `json:"created_at"`
+}
+
+// 评估事件
+type SiterankRequested struct {
+    RequestID string `json:"request_id"`
+    OfferID   string `json:"offer_id"`
+    UserID    string `json:"user_id"`
+}
+
+type SiterankCompleted struct {
+    RequestID string `json:"request_id"`
+    OfferID   string `json:"offer_id"`
+    Score     int    `json:"score"`
+    Analysis  map[string]interface{} `json:"analysis"`
+}
+
+// 批量操作事件
+type BatchTaskQueued struct {
+    TaskID      string `json:"task_id"`
+    UserID      string `json:"user_id"`
+    Operation   string `json:"operation"`
+    TargetCount int    `json:"target_count"`
+}
+
+type BatchTaskCompleted struct {
+    TaskID       string `json:"task_id"`
+    SuccessCount int    `json:"success_count"`
+    FailureCount int    `json:"failure_count"`
+}
+
+// Token事件
+type TokenReserved struct {
+    UserID    string `json:"user_id"`
+    Amount    int    `json:"amount"`
+    Operation string `json:"operation"`
+    RequestID string `json:"request_id"`
+}
+
+type TokenDebited struct {
+    UserID    string `json:"user_id"`
+    Amount    int    `json:"amount"`
+    RequestID string `json:"request_id"`
+}
+
+type TokenReverted struct {
+    UserID    string `json:"user_id"`
+    Amount    int    `json:"amount"`
+    RequestID string `json:"request_id"`
+    Reason    string `json:"reason"`
+}
+```
+
+## 微服务组件设计
 
 #### 1. Offer指挥中心组件
 

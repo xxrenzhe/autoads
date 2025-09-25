@@ -2587,7 +2587,7 @@ go version go1.21.0 darwin/arm64
 # 依赖工具
 - MySQL 8.0+
 - Redis 7.0+
-- Node.js 18+
+- Node.js 22+
 ```
 
 #### 生产环境

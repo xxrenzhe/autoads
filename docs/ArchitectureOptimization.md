@@ -225,6 +225,6 @@
 - 端口与默认地址：`127.0.0.1:8081`（Puppeteer）、`127.0.0.1:8082`（AdsCenter）；可通过环境变量覆盖或显式指向外部服务以平滑迁移。
 - 限制与保护：执行器内置最大并发与固定窗口限流（返回 429 与标准限流头），Go 端亦有上层限流与超时保护。
 - Docker 实现：
-  - 基于 `node:20-bookworm-slim` 作为运行时镜像，仅安装运行 Playwright/Chromium 的必要依赖。
+  - 基于 `node:22-bookworm-slim` 作为运行时镜像，仅安装运行 Playwright/Chromium 的必要依赖。
   - 构建阶段执行 `npx playwright install --with-deps chromium`，仅安装 Chromium（不包含 WebKit/Firefox），减少体积。
   - 使用 `tini` 作为 init，entrypoint 并行启动 Next/Go/执行器与迁移脚本。

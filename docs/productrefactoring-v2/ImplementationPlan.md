@@ -23,7 +23,7 @@
   - 前端（Cloud Run + Hosting 重写）
     - 工作流（.github/workflows/deploy-frontend.yml）拆分为 meta/build-image/tag-image/deploy-cloudrun/deploy-hosting/summary
     - Hosting 采用 public + rewrites → Cloud Run `frontend`（不走 Web Frameworks 函数化构建）；站点：`autoads-preview`/`autoads-prod`（待自定义域绑定）
-    - 容器化：Next `output: 'standalone'` + `node:20-bookworm-slim`；仅安装生产依赖（workspace 安装）；CI 下关闭 TS/ESLint；提升 Node 堆
+    - 容器化：Next `output: 'standalone'` + `node:22-bookworm-slim`；仅安装生产依赖（workspace 安装）；CI 下关闭 TS/ESLint；提升 Node 堆
     - BFF：Next 重写 `/api/:path* → /api/go/:path*` 直达 API Gateway；NextAuth `/api/auth/*` 原路透传
     - 去 Prisma：apps/frontend 不再打包/运行 Prisma；`@auth/prisma-adapter` 指向本地桩；NextAuth 无 DB 时走 JWT 会话
     - SSR 侧重瘦身：对 `google-ads-api`、`googleapis`、`exceljs`、`swagger-ui-react` 等施加服务器端别名桩；移除 puppeteer/@playwright/test 运行依赖

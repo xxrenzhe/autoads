@@ -11,10 +11,14 @@
 - **成就感：** 通过ROSC提升和智能建议采纳，持续给用户正向激励
 - **简单化：** 复杂的技术实现对用户透明，只暴露最核心的业务价值
 
-### 技术原则
-- 使用Firebase AI Logic实现AI能力，避免自训练模型
-- 使用SimilarWeb API获取第三方市场数据
-- 优先最简单的方式解决用户痛点，避免过度设计
+### 设计原则
+- **好品味：** 用数据与流程消除特例；统一模型、统一错误体、统一鉴权
+- **KISS与实用主义：** 契约先行、事件为核、大任务入队，少即是多
+- **一次成型：** 不保留旧端点/旧头/旧路径；最终形态直达（无需历史迁移）
+
+### 架构总览
+- **形态：** Cloud Run微服务 + Cloud SQL PostgreSQL（主库：事件与读模型）+ Pub/Sub（事件总线/任务队列）+ Cloud Functions（投影器）+ Secret Manager（密钥）+ API Gateway（统一入口）+ Firestore（UI级缓存）
+- **解耦策略：** 命令→事件→投影→读模型；长耗时/高配额动作（浏览器执行/批量Ads操作/AI分析）统一入队
 
 ## 用户痛点分析
 
@@ -27,8 +31,101 @@
 | 痛点5 | 多账户操作效率低，重复工作量大 | 批量操作矩阵，一键执行多账户操作 |
 | 痛点6 | 风险识别滞后，需要人工每天检查 | AI主动预警，24/7智能监控 |
 | 痛点7 | 不知道如何找到相似的高价值Offer | 机会雷达，基于成功案例自动发现 |
-| 痛点8 | 广告表现不佳不知如何优化 | 一键诊断，智能优化建议 |## 核
-心业务需求
+| 痛点8 | 广告表现不佳不知如何优化 | 一键诊断，智能优化建议 |
+
+## 服务与边界
+
+### 外部服务
+- **identity**：用户认证与权限管理
+- **billing**：套餐管理与原子计费
+- **offer**：Offer生命周期管理
+- **siterank**：10秒智能评估分析
+- **batchopen**：仿真编排与任务管理
+- **adscenter**：Google Ads集成与批量操作
+- **workflow**：业务流程编排
+- **console**：后台管理系统
+- **frontend**：用户前端界面
+
+### 执行器服务
+- **browser-exec**：Node.js 22 + Playwright，常驻独立Cloud Run服务
+
+### 共享底座
+- **pkg/auth**：Firebase Bearer中间件
+- **pkg/config**：Secret Manager + STACK环境配置
+- **pkg/events**：发布/订阅 + 幂等工具
+- **pkg/http**：错误码/限流/重试统一处理
+- **pkg/telemetry**：日志/指标/追踪
+
+## API契约与网关需求
+
+### 需求A1：OpenAPI契约先行
+**用户故事：** 作为系统架构师，我希望建立OpenAPI-first的开发流程，以便确保API的一致性和可维护性。
+
+**验收标准：**
+1. WHEN 定义API THEN 系统 SHALL 以.kiro规范输出OpenAPI（所有域），生成Go server stubs与TS SDK
+2. WHEN 开发API THEN 系统 SHALL 在CI中进行契约测试，确保实现与规范一致
+3. WHEN 部署API THEN 系统 SHALL 自动渲染API Gateway配置
+4. WHEN API变更 THEN 系统 SHALL 确保向后兼容，避免破坏性变更
+
+### 需求A2：统一路由与错误处理
+**用户故事：** 作为API开发者，我希望有统一的路由规范和错误处理，以便提供一致的开发体验。
+
+**API路由规范：**
+- **identity**：`/api/v1/identity/register`、`/api/v1/identity/me`
+- **offer**：`/api/v1/offers`（GET/POST）、`/api/v1/offers/{id}`
+- **siterank**：`POST /api/v1/siterank/analyze`（202返回analysisId）、`GET /api/v1/siterank/{offerId}`最新结果
+- **adscenter**：`/api/v1/adscenter/accounts`、`/api/v1/adscenter/preflight`、`/api/v1/adscenter/bulk-actions`、`/api/v1/adscenter/oauth/url`、`/api/v1/adscenter/oauth/callback`（回调免鉴权）
+- **batchopen**：`POST /api/v1/batchopen/tasks`（202返回taskId）、`GET /api/v1/batchopen/tasks/{id}`
+- **billing**：`/api/v1/billing/subscriptions/me`、`/api/v1/billing/tokens/me`、`/api/v1/billing/tokens/transactions`
+- **workflow**：`/api/v1/workflows/templates`、`POST /api/v1/workflows/start`（202返回workflow_instance_id）、`GET /api/v1/workflows/{id}`
+
+**验收标准：**
+1. WHEN 设计API路由 THEN 系统 SHALL 采用统一格式：`/api/v1/{service}/{resource}`
+2. WHEN 处理长耗时操作 THEN 系统 SHALL 返回202状态码和任务ID，支持异步查询
+3. WHEN 发生错误 THEN 系统 SHALL 返回统一错误体：`{code, message, details?, traceId}`
+4. WHEN 执行变更操作 THEN 系统 SHALL 支持X-Idempotency-Key幂等处理
+
+## 鉴权与安全需求
+
+### 需求S1：统一身份认证
+**用户故事：** 作为安全管理员，我希望建立统一的身份认证体系，以便确保系统安全。
+
+**验收标准：**
+1. WHEN 用户访问受保护接口 THEN 系统 SHALL 统一使用Firebase Bearer Token验证
+2. WHEN 管理员访问Console THEN 系统 SHALL 验证role=ADMIN权限
+3. WHEN 处理回调请求 THEN 系统 SHALL 对OAuth回调和健康检查进行白名单管理
+4. WHEN 验证失败 THEN 系统 SHALL 返回标准的401/403错误响应
+
+### 需求S2：机密治理与数据隔离
+**用户故事：** 作为安全管理员，我希望建立严格的机密管理和数据隔离机制，以便保护敏感信息。
+
+**验收标准：**
+1. WHEN 存储密钥 THEN 系统 SHALL 仅使用Secret Manager，禁止明文存储
+2. WHEN 处理Ads刷新令牌 THEN 系统 SHALL 使用AES-GCM(256)加密
+3. WHEN 处理OAuth状态 THEN 系统 SHALL 使用state HMAC + 回调域白名单验证
+4. WHEN 访问数据 THEN 系统 SHALL 以user_id强隔离，服务端判定状态，前端不可越权
+
+## 数据与事件需求
+
+### 需求D1：事件存储与投影
+**用户故事：** 作为系统架构师，我希望建立完整的事件驱动架构，以便实现数据的最终一致性。
+
+**验收标准：**
+1. WHEN 设计事件存储 THEN 系统 SHALL 使用Cloud SQL PostgreSQL存储事件：`event_store(id, aggregate_type, aggregate_id, event_type, event_version, payload jsonb, metadata jsonb, occurred_at timestamptz, trace_id)`
+2. WHEN 发布事件 THEN 系统 SHALL 包含标准事件：UserRegistered、OfferCreated、SiterankRequested/Completed、BatchopenTaskQueued/Started/Completed/Failed、AdsPreflightRequested/Completed、TokenReserved/Debited/Reverted
+3. WHEN 处理事件 THEN 系统 SHALL 使用Cloud Functions投影器订阅Pub/Sub，写入Cloud SQL读模型与Firestore UI缓存
+4. WHEN 确保幂等 THEN 系统 SHALL 以事件id/版本做投影幂等处理
+
+### 需求D2：读模型与缓存策略
+**用户故事：** 作为系统架构师，我希望建立高效的读模型和缓存策略，以便提供优秀的查询性能。
+
+**验收标准：**
+1. WHEN 设计读模型 THEN 系统 SHALL 在Cloud SQL中建立：User、Offer、SiterankAnalysis、BatchopenTask、UserAdsConnection、Subscription、UserToken、TokenTransaction、AuditSnapshot等表
+2. WHEN 更新缓存 THEN 系统 SHALL 使用Firestore仅作UI实时缓存层，与SQL投影同步写入
+3. WHEN 查询数据 THEN 系统 SHALL 以"SQL为事实来源"，Firestore为性能优化
+4. WHEN 数据迁移 THEN 系统 SHALL 使用统一迁移脚本一次到位
+
+## 核心业务需求
 
 ### 需求1：Offer生命周期可视化管理
 **解决痛点：** 痛点1 - Offer库管理混乱
@@ -49,8 +146,137 @@
 6. WHEN 用户将Offer设置为"归档"状态 THEN 系统 SHALL 同步下线补点击任务和相关广告系列，并明确告知用户操作风险
 7. WHEN Offer连续5天出现0曝光0点击 THEN 系统 SHALL 自动将Offer状态转为"衰退期"并通知用户
 7. WHEN 用户批量录入Offer THEN 系统 SHALL 支持输入广告联盟Offer URL和投放国家，快速积累机会池
-8. WHEN 用户进行批量评估或批量仿真 THEN 系统 SHALL 验证用户套餐权限，仅Max/Elite套餐支持高级批量操作##
-# 需求2：智能Offer评估系统
+8. WHEN 用户进行批量评估或批量仿真 THEN 系统 SHALL 验证用户套餐权限，仅Max/Elite套餐支持高级批量操作
+
+## 核心域落地需求
+
+### 需求C1：Siterank（10秒评估）
+**用户故事：** 作为广告投放管理者，我希望在10秒内获得Offer评估结果，以便快速决策是否值得投放。
+
+**技术流程：** Browser-Exec解析URL/品牌 → SimilarWeb拉取 → 评分器（权重表+阈值，KISS） → SiterankCompleted → 投影
+
+**验收标准：**
+1. WHEN 用户提交评估请求 THEN 系统 SHALL 在10秒内返回评估结果，超时则返回"已提交深评"
+2. WHEN 执行评估流程 THEN 系统 SHALL 并行拉取数据、支持超时分段、实现域名+国家缓存
+3. WHEN 评估完成 THEN 系统 SHALL 通过投影/通知更新前端显示
+4. WHEN 评估失败 THEN 系统 SHALL 提供降级策略和错误恢复机制
+
+### 需求C2：Browser-Exec（Node.js + Playwright）
+**用户故事：** 作为系统架构师，我希望有专业的浏览器执行服务，以便处理所有Web交互任务。
+
+**核心能力：** `/parse-url`、`/check-availability`、`/simulate-click`、`/batch-execute`
+
+**验收标准：**
+1. WHEN 部署Browser-Exec THEN 系统 SHALL 使用Cloud Run最小实例>0（预热），配置合适内存（2-4GB起）
+2. WHEN 管理代理池 THEN 系统 SHALL 按国别提供租借/归还/失败隔离机制
+3. WHEN 管理浏览器池 THEN 系统 SHALL 实现并发与内存护栏、指数退避与隔离
+4. WHEN 服务调用 THEN 系统 SHALL 仅允许服务间调用（IAM受限），禁止外部直接访问
+
+### 需求C3：Adscenter（诊断+批量）
+**用户故事：** 作为广告投放管理者，我希望有完整的Google Ads诊断和批量操作能力，以便高效管理广告账户。
+
+**诊断能力：** Pre-flight输出结构化检查项（code/severity/message/details/summary）：环境/授权/结构/余额/回传/落地/Ads API可达性
+
+**批量能力：** 提交"变更计划" → validate-only → 入队执行（队列/限流/退避） → 审计快照（前后对比） → 支持回滚
+
+**验收标准：**
+1. WHEN 执行Pre-flight检查 THEN 系统 SHALL 支持validate-only模式，输出结构化诊断结果
+2. WHEN 执行批量操作 THEN 系统 SHALL 实现MCC链接状态机（invited/pending/active/inactive）
+3. WHEN 处理安全 THEN 系统 SHALL 实现刷新令牌加密、state HMAC、回调域白名单
+4. WHEN 管理配额 THEN 系统 SHALL 实现配额策略配置化管理
+
+### 需求C4：Batchopen（仿真编排）
+**用户故事：** 作为广告投放管理者，我希望有灵活的仿真编排能力，以便测试不同的投放策略。
+
+**模板能力：** 国家曲线/UA/Referer/时区；命令入队、进度与质量评分；失败重试分级
+
+**验收标准：**
+1. WHEN 配置仿真模板 THEN 系统 SHALL 支持国家曲线、UA、Referer、时区等参数配置
+2. WHEN 执行仿真任务 THEN 系统 SHALL 实现命令入队、进度追踪、质量评分
+3. WHEN 处理失败 THEN 系统 SHALL 实现失败重试分级机制
+4. WHEN 计费集成 THEN 系统 SHALL 与Billing服务打通，执行下沉至Browser-Exec
+
+### 需求C5：Billing（套餐/限额/令牌）
+**用户故事：** 作为计费管理员，我希望有完整的原子计费体系，以便确保计费的准确性和可追溯性。
+
+**原子扣费：** reserve(n) → 成功commit(n) / 失败release(n)；扣费点：评估、仿真、批量
+
+**验收标准：**
+1. WHEN 执行消耗操作 THEN 系统 SHALL 先reserve预留，成功后commit确认，失败则release释放
+2. WHEN 配置价格 THEN 系统 SHALL 实现价格/限额集中配置（只读下发）
+3. WHEN 追溯明细 THEN 系统 SHALL 记录动作/对象/任务/事件链路，确保可追溯
+4. WHEN 更新余额 THEN 系统 SHALL 通过事件驱动更新读模型
+
+### 需求C6：Risk Engine（基础规则）
+**用户故事：** 作为风险管理员，我希望有智能的风险识别和处理机制，以便主动发现和处理问题。
+
+**规则能力：** 低曝低点/无点/落地不可用/数据缺失；动作：提示/建任务/触发工作流/自动处置
+
+**验收标准：**
+1. WHEN 检测风险 THEN 系统 SHALL 识别低曝低点、无点击、落地不可用、数据缺失等风险
+2. WHEN 触发动作 THEN 系统 SHALL 支持提示、建任务、触发工作流、自动处置等动作
+3. WHEN 去重处理 THEN 系统 SHALL 实现去重抑制与优先级管理
+4. WHEN 审计留痕 THEN 系统 SHALL 记录完整的风险处理审计日志
+
+### 需求C7：Offer/Recommendation（机会发现）
+**用户故事：** 作为广告投放管理者，我希望系统能自动发现相似的高价值机会，以便扩大成功案例。
+
+**机会雷达：** SimilarWeb相似域 + 业务规则评分；一键入库
+
+**验收标准：**
+1. WHEN 管理看板状态 THEN 系统 SHALL 由后端派生状态（评估/仿真/放大/衰退/归档），前端不可越权
+2. WHEN 发现机会 THEN 系统 SHALL 使用SimilarWeb相似域分析 + 业务规则评分
+3. WHEN 推荐机会 THEN 系统 SHALL 支持一键入库到机会池
+4. WHEN 分析相似性 THEN 系统 SHALL 基于成功Offer的特征进行相似度计算
+
+## 可观测性与SLO需求
+
+### 需求O1：结构化日志与追踪
+**用户故事：** 作为运维工程师，我希望有完整的日志和追踪体系，以便快速定位和解决问题。
+
+**验收标准：**
+1. WHEN 输出日志 THEN 系统 SHALL 使用JSON格式，包含trace_id、user_id、offer_id、task_id、stack、service、version
+2. WHEN 记录异常 THEN 系统 SHALL 包含code与堆栈摘要
+3. WHEN 实现追踪 THEN 系统 SHALL 使用OpenTelemetry进行分布式追踪
+4. WHEN 监控健康 THEN 系统 SHALL 每服务提供/healthz端点，Gateway提供/api/health聚合
+
+### 需求O2：关键指标与SLO
+**用户故事：** 作为产品经理，我希望有明确的SLO指标，以便监控系统性能和用户体验。
+
+**关键指标P95：**
+- 评估 ≤10s
+- 仿真入队 ≤1s  
+- Pre-flight ≤800ms
+- 批量成功率 ≥99%
+- 浏览器执行错误率 ≤1%
+
+**验收标准：**
+1. WHEN 监控性能 THEN 系统 SHALL 确保关键指标达到P95要求
+2. WHEN 配置告警 THEN 系统 SHALL 按stack/service维度配置告警规则
+3. WHEN 分析趋势 THEN 系统 SHALL 提供性能趋势分析和容量规划
+4. WHEN 故障处理 THEN 系统 SHALL 提供快速故障定位和恢复机制
+
+## 环境与部署需求
+
+### 需求E1：环境隔离与配置
+**用户故事：** 作为DevOps工程师，我希望有完整的环境隔离和配置管理，以便支持多环境部署。
+
+**环境策略：** 统一STACK=dev|preview|prod；单GCP项目、资源后缀与标签隔离（autoads-stack=dev|preview|prod）
+
+**验收标准：**
+1. WHEN 部署服务 THEN 系统 SHALL 使用{service}-{stack}命名规范
+2. WHEN 配置数据库 THEN 系统 SHALL 使用autoads-pg单实例多库（autoads_dev/preview/prod）
+3. WHEN 配置消息队列 THEN 系统 SHALL 使用Topic domain-events-{stack}、Subscription {service}-sub-{stack}
+4. WHEN 管理密钥 THEN 系统 SHALL 按环境隔离：DATABASE_URL-{stack}、REFRESH_TOKEN_KEY-{stack}等
+
+### 需求E2：性能与成本优化
+**用户故事：** 作为成本管理员，我希望有合理的性能和成本优化策略，以便控制运营成本。
+
+**验收标准：**
+1. WHEN 部署Browser-Exec THEN 系统 SHALL 使用独立镜像（Playwright体积大），单独扩缩容
+2. WHEN 调用Ads API THEN 系统 SHALL 实现validate-only预检 + 限流/退避 + 批量分片
+3. WHEN 实现缓存 THEN 系统 SHALL 缓存Siterank（域名+国家）与OAuth配置
+4. WHEN 优化性能 THEN 系统 SHALL 实现Pre-flight结果短缓存（数分钟）助力P95达标
 **解决痛点：** 痛点2 - 快速评估Offer价值
 
 **用户故事：** 作为广告投放管理者，我希望输入一个URL就能立即知道这个Offer值不值得投放，就像有一个专业分析师在10秒内给我完整的投资建议。
@@ -359,30 +585,97 @@
 5. WHEN 搜索引擎索引网站 THEN 系统 SHALL 提供robots.txt和结构化数据标记
 6. WHEN 用户访问不同语言版本 THEN 系统 SHALL 提供正确的hreflang标签指向对应语言页面
 
-## 技术架构需求
+### 需求24：事件驱动架构与CQRS
 
-### 需求15：浏览器执行服务（常驻服务）
-
-**用户故事：** 作为系统架构师，我希望有一个高性能的浏览器执行服务，以便为多个业务模块提供稳定可靠的真实浏览器交互能力。
-
-**技术架构考虑：**
-- **服务复用：** Offer评估、换链接、仿真启动、风险检测都需要真实浏览器执行
-- **常驻服务：** 部署为Cloud Run常驻服务，避免冷启动，维持浏览器实例池
-- **性能优化：** 统一的服务可以实现批量处理和资源复用
-- **维护简化：** 集中管理反检测策略和代理IP轮换
+**用户故事：** 作为系统架构师，我希望构建事件驱动的微服务架构，以便实现高可扩展性、可靠性和可维护性。
 
 **验收标准：**
-1. WHEN 部署浏览器执行服务 THEN 系统 SHALL 创建独立的Cloud Run常驻服务，维持最小1个实例运行
-2. WHEN 服务启动 THEN 系统 SHALL 初始化Playwright浏览器实例池，支持并发处理多个浏览器执行请求
-3. WHEN Offer评估需要获取落地页信息 THEN 系统 SHALL 通过真实浏览器访问获取域名并提取品牌名（如nike.com→nike）
-4. WHEN 仿真阶段执行补点击任务 THEN 系统 SHALL 使用真实浏览器模拟用户访问，包含地域化配置和反检测策略
-5. WHEN 换链接功能需要URL信息 THEN 系统 SHALL 预获取Final URL和Final URL suffix，支持批量处理
-6. WHEN 风险识别检测落地页可用性 THEN 系统 SHALL 定期访问广告联盟Offer URL，检测页面可用性和异常情况
-7. WHEN 浏览器执行任务 THEN 系统 SHALL 根据投放国家匹配相应的时区、语言和User-Agent，提高访问真实性
-8. WHEN 检测到反爬虫 THEN 系统 SHALL 自动切换代理IP和优化User-Agent策略
-9. WHEN 服务空闲 THEN 系统 SHALL 保持浏览器实例活跃，避免频繁创建销毁带来的性能损耗
-10. WHEN 处理相同国家的不同Offer URL THEN 系统 SHALL 在时间窗口内复用代理IP，但确保同一Offer URL每次访问使用不重复的代理IP
-11. WHEN 管理员配置代理设置 THEN 系统 SHALL 支持配置"国家-代理IP API URL"的关联关系，便于获取不同国家的代理IP
+1. WHEN 系统执行业务操作 THEN 系统 SHALL 发布领域事件到事件存储，支持事件溯源
+2. WHEN 事件发布 THEN 系统 SHALL 通过Pub/Sub分发事件到相关投影器和下游服务
+3. WHEN 处理命令 THEN 系统 SHALL 携带X-Idempotency-Key确保幂等性
+4. WHEN 读取数据 THEN 系统 SHALL 从优化的读模型获取，实现命令查询职责分离
+5. WHEN 事件处理失败 THEN 系统 SHALL 支持重试、死信队列和补偿机制
+6. WHEN 系统扩展 THEN 系统 SHALL 通过事件解耦服务间依赖，支持独立部署和扩展
+
+### 需求25：原子计费与Token管理
+
+**用户故事：** 作为计费系统管理员，我希望实现原子化的Token扣费机制，以便确保计费的准确性和一致性。
+
+**验收标准：**
+1. WHEN 用户执行消耗型操作 THEN 系统 SHALL 先执行TokenReserved预留，成功后执行操作
+2. WHEN 操作成功完成 THEN 系统 SHALL 执行TokenDebited确认扣费
+3. WHEN 操作失败 THEN 系统 SHALL 执行TokenReverted释放预留Token
+4. WHEN 扣费操作 THEN 系统 SHALL 使用事务消息确保扣费事件与业务事件的一致性
+5. WHEN 查询账户余额 THEN 系统 SHALL 区分可用余额、预留余额和已消费余额
+6. WHEN 系统异常 THEN 系统 SHALL 支持扣费补偿和对账机制
+
+### 需求26：企业级安全与治理
+
+**用户故事：** 作为安全管理员，我希望系统具备企业级的安全防护和治理能力，以便保护用户数据和系统安全。
+
+**验收标准：**
+1. WHEN 系统存储敏感信息 THEN 系统 SHALL 使用Secret Manager + KMS加密存储，禁止明文
+2. WHEN 服务间通信 THEN 系统 SHALL 使用最小权限原则配置服务账号
+3. WHEN 用户访问数据 THEN 系统 SHALL 严格执行行级数据隔离和审计日志
+4. WHEN 系统部署 THEN 系统 SHALL 使用固定出网IP(NAT)对接第三方白名单
+5. WHEN 密钥管理 THEN 系统 SHALL 支持密钥轮换策略和安全演练
+6. WHEN 审计需求 THEN 系统 SHALL 记录所有敏感操作的完整审计链路
+
+### 需求27：可观测性与SLO
+
+**用户故事：** 作为运维工程师，我希望系统具备完整的可观测性，以便监控系统健康状态和性能指标。
+
+**验收标准：**
+1. WHEN 系统运行 THEN 系统 SHALL 输出结构化日志(JSON)，包含trace_id/user_id/offer_id/task_id
+2. WHEN 监控系统性能 THEN 系统 SHALL 提供关键SLO指标：评估<10s、仿真入队<1s、Pre-flight<800ms
+3. WHEN 追踪请求链路 THEN 系统 SHALL 使用OpenTelemetry实现分布式追踪
+4. WHEN 系统异常 THEN 系统 SHALL 自动触发告警并记录错误详情
+5. WHEN 分析系统状态 THEN 系统 SHALL 提供浏览器执行、Ads API、计费等关键组件的健康指标
+6. WHEN 容量规划 THEN 系统 SHALL 提供资源使用率、并发数、成功率等运营指标
+
+## 技术架构需求
+
+### 需求15：高并发浏览器执行服务（Browser-Exec）
+
+**用户故事：** 作为系统架构师，我希望有一个支持高并发的企业级浏览器执行服务，以便为数百用户同时提供稳定可靠的真实浏览器交互能力。
+
+**高并发架构考虑：**
+- **多用户并发：** 支持数百用户同时使用，数千任务/分钟处理能力
+- **技术选型：** Node.js 22 + Playwright + Cloud Run + Redis队列的分层架构
+- **异步处理：** 任务队列 + 浏览器池 + 智能调度的完整异步处理链路
+- **弹性扩展：** 自动扩缩容 + 负载均衡 + 资源优化的弹性架构
+
+**验收标准：**
+
+#### 高并发架构要求
+1. WHEN 部署浏览器执行服务 THEN 系统 SHALL 建立分层架构：API Gateway → Task Queue → Browser Pool Manager → Worker Instances
+2. WHEN 系统启动 THEN 系统 SHALL 维持最小2个预热实例，支持自动扩缩容至50个实例
+3. WHEN 处理并发请求 THEN 系统 SHALL 支持数百用户同时使用，处理能力达到2000-10000任务/分钟
+4. WHEN 任务调度 THEN 系统 SHALL 使用Redis队列实现任务分发，支持优先级调度和批量处理
+
+#### 浏览器池管理要求
+5. WHEN 管理浏览器实例 THEN 系统 SHALL 每个Worker维护8-12个浏览器实例，总并发能力100-500个浏览器
+6. WHEN 浏览器实例复用 THEN 系统 SHALL 通过BrowserContext隔离任务，避免实例间污染
+7. WHEN 资源回收 THEN 系统 SHALL 定期回收长时间运行的浏览器实例，防止内存泄漏
+8. WHEN 冷启动优化 THEN 系统 SHALL 预热浏览器实例池，确保任务响应时间<2秒
+
+#### 智能调度要求
+9. WHEN 任务分配 THEN 系统 SHALL 按地理位置、负载情况、任务类型进行智能调度
+10. WHEN 负载均衡 THEN 系统 SHALL 监控实例负载，自动分配任务到最优实例
+11. WHEN 批量处理 THEN 系统 SHALL 支持相同类型任务批量执行，提高处理效率
+12. WHEN 优先级处理 THEN 系统 SHALL 支持评估任务高优先级，仿真任务普通优先级，检测任务低优先级
+
+#### 业务功能要求
+13. WHEN Offer评估需要获取落地页信息 THEN 系统 SHALL 通过真实浏览器访问获取域名并提取品牌名（如nike.com→nike）
+14. WHEN 仿真阶段执行补点击任务 THEN 系统 SHALL 使用真实浏览器模拟用户访问，包含地域化配置和反检测策略
+15. WHEN 换链接功能需要URL信息 THEN 系统 SHALL 预获取Final URL和Final URL suffix，支持批量处理
+16. WHEN 风险识别检测落地页可用性 THEN 系统 SHALL 定期访问广告联盟Offer URL，检测页面可用性和异常情况
+
+#### 性能与监控要求
+17. WHEN 监控系统性能 THEN 系统 SHALL 提供实例负载、任务处理速度、成功率等关键指标
+18. WHEN 容量规划 THEN 系统 SHALL 支持单实例4-8GB内存、2-4vCPU配置，处理100-200任务/分钟
+19. WHEN 成本优化 THEN 系统 SHALL 通过智能调度和资源复用，保持成本效率最优
+20. WHEN 故障处理 THEN 系统 SHALL 支持任务重试、实例故障转移、降级处理等容错机制
 
 ### 需求16：Google Ads账号授权与关联管理
 

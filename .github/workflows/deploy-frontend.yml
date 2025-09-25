@@ -73,6 +73,7 @@ jobs:
           BUILD_NAME=$(gcloud builds submit . \
             --project "${PROJECT_ID}" \
             --config "$CONFIG_PATH" \
+            --gcs-log-dir gs://autoads-build-logs-asia-northeast1/logs \
             --substitutions _IMAGE="${IMAGE}" \
             --async --format='value(name)')
           BUILD_ID="${BUILD_NAME##*/}"

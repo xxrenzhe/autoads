@@ -31,7 +31,7 @@ autoads/
 
 ### 环境要求
 
-- Node.js >= 20.0.0
+- Node.js >= 22.0.0
 - Go >= 1.21.0
 - Docker & Docker Compose
 - Redis

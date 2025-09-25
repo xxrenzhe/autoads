@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}🚀 Starting optimized Docker build process...${NC}"
 
 # Build arguments
-NODE_VERSION=${NODE_VERSION:-"18"}
+NODE_VERSION=${NODE_VERSION:-"22"}
 IMAGE_TAG=${IMAGE_TAG:-"ghcr.io/xxrenzhe/url-batch-checker:optimized-$(date +%Y%m%d-%H%M%S)"}
 
 echo -e "${YELLOW}📋 Build configuration:${NC}"

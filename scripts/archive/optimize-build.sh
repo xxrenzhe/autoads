@@ -37,7 +37,7 @@ echo "🎯 目标镜像: $IMAGE_TAG"
 
 # 1. 预热Docker缓存
 echo "🔥 预热Docker缓存..."
-docker pull node:20.18.0-alpine || true
+docker pull node:22-alpine || true
 docker pull $IMAGE_TAG || true
 
 # 2. 清理构建缓存（如果需要）

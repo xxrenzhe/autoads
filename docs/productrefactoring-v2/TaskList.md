@@ -82,7 +82,7 @@
 - F2 前端（Cloud Run + Hosting）发布（完成）
   - 拆分：meta / build-image / tag-image / deploy-cloudrun / deploy-hosting / summary
   - Hosting：public + rewrites → run:frontend（不走 Web Frameworks 函数化构建）
-  - 容器：Next `output: 'standalone'` + `node:20-bookworm-slim`；仅生产依赖（workspace 安装）；CI 下关闭 TS/ESLint；增大 Node 堆
+  - 容器：Next `output: 'standalone'` + `node:22-bookworm-slim`；仅生产依赖（workspace 安装）；CI 下关闭 TS/ESLint；增大 Node 堆
 - F3 网关变更自动发布（完成）
   - 拆分：discover-render / publish；Job Summary 输出默认域名
 - F4 基础测试策略：单测（事件/读模）、冒烟（健康/权限）、E2E（闭环主路径）（进行中）
