@@ -52,6 +52,12 @@ jobs:
     name: Build frontend image (Cloud Build)
     runs-on: ubuntu-latest
     needs: meta
+    outputs:
+      build_id: ${{ steps.cb.outputs.build_id }}
+      build_log_url: ${{ steps.cb.outputs.build_log_url }}
+      image: ${{ steps.cb.outputs.image }}
+      image_base: ${{ steps.cb.outputs.image_base }}
+      image_digest: ${{ steps.cb.outputs.image_digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,6 +68,7 @@ jobs:
       - name: Setup gcloud SDK
         uses: google-github-actions/setup-gcloud@v1
       - name: Cloud Build submit
+        id: cb
         shell: bash
         run: |
           set -euo pipefail
@@ -83,6 +90,16 @@ jobs:
             echo "Build $BUILD_ID status: $STATUS";
             case "$STATUS" in SUCCESS) break;; FAILURE|CANCELLED|TIMEOUT|EXPIRED) exit 1;; esac
             sleep 10; done
+          # Resolve image base and digest for the tag
+          IMAGE_BASE="${AR_HOST}/${PROJECT_ID}/${ARTIFACT_REPO}/frontend"
+          TAG='${{ needs.meta.outputs.primary_tag }}'
+          DIGEST=$(gcloud artifacts docker tags list "$IMAGE_BASE" --format='csv[no-heading](tag,digest)' \
+            | awk -F, -v t="$TAG" '$1==t{print $2; exit}')
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          echo "build_log_url=https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=$PROJECT_ID" >> "$GITHUB_OUTPUT"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "image_base=$IMAGE_BASE" >> "$GITHUB_OUTPUT"
+          echo "image_digest=${DIGEST:-}" >> "$GITHUB_OUTPUT"
 
   tag-image:
     name: Tag image (secondary)
@@ -168,6 +185,9 @@ jobs:
           RUN_URL=$(gcloud run services describe frontend --region "$REGION" --format='value(status.url)' || true)
           REV_NAME=$(gcloud run services describe frontend --region "$REGION" --format='value(status.latestReadyRevisionName)' || true)
           IMAGE=$(gcloud run services describe frontend --region "$REGION" --format='value(spec.template.spec.containers[0].image)' || true)
+          BUILD_ID='${{ needs.build-image.outputs.build_id }}'
+          BUILD_LOG_URL='${{ needs.build-image.outputs.build_log_url }}'
+          IMAGE_DIGEST='${{ needs.build-image.outputs.image_digest }}'
           TARGET='${{ needs.meta.outputs.target }}'
           DEFAULT_URL="https://${TARGET}.web.app"
           if [[ "$ENVIRONMENT" == "prod" ]]; then
@@ -183,6 +203,9 @@ jobs:
             echo "- Cloud Run URL: ${RUN_URL:-N/A}"
             echo "- Cloud Run Revision: ${REV_NAME:-N/A}"
             echo "- Deployed Image: ${IMAGE:-N/A}"
+            echo "- Image Digest: ${IMAGE_DIGEST:-N/A}"
+            echo "- Build ID: ${BUILD_ID:-N/A}"
+            echo "- Build Logs: ${BUILD_LOG_URL:-N/A}"
             echo "- Hosting Target: ${TARGET}"
             echo "- Hosting Default: ${DEFAULT_URL}"
             echo "- Hosting Custom:  ${CUSTOM_URL}"
