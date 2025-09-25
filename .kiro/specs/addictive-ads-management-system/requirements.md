@@ -17,8 +17,10 @@
 - **一次成型：** 不保留旧端点/旧头/旧路径；最终形态直达（无需历史迁移）
 
 ### 架构总览
-- **形态：** Cloud Run微服务 + Cloud SQL PostgreSQL（主库：事件与读模型）+ Pub/Sub（事件总线/任务队列）+ Cloud Functions（投影器）+ Secret Manager（密钥）+ API Gateway（统一入口）+ Firestore（UI级缓存）
-- **解耦策略：** 命令→事件→投影→读模型；长耗时/高配额动作（浏览器执行/批量Ads操作/AI分析）统一入队
+- **技术形态：** Cloud Run微服务 + PostgreSQL（事件存储+读模型）+ Pub/Sub（事件总线）+ Cloud Functions（投影器）+ API Gateway（统一入口+认证）+ Firestore（UI缓存）
+- **解耦策略：** 命令→事件→投影→读模型；长耗时操作（浏览器执行/批量Ads操作/AI分析）统一入队
+- **认证方式：** Firebase Bearer Token在API Gateway层统一处理，无需独立Identity服务
+- **工作流实现：** 通过事件驱动架构自然实现，无需独立Workflow服务
 
 ## 用户痛点分析
 
@@ -36,25 +38,31 @@
 ## 服务与边界
 
 ### 外部服务
-- **identity**：用户认证与权限管理
 - **billing**：套餐管理与原子计费
 - **offer**：Offer生命周期管理
 - **siterank**：10秒智能评估分析
 - **batchopen**：仿真编排与任务管理
 - **adscenter**：Google Ads集成与批量操作
-- **workflow**：业务流程编排
+- **notifications**：统一通知管理与分发
 - **console**：后台管理系统
 - **frontend**：用户前端界面
 
 ### 执行器服务
 - **browser-exec**：Node.js 22 + Playwright，常驻独立Cloud Run服务
 
+### 网关与底座
+- **API Gateway**：统一入口 + Firebase Auth直连 + pkg/auth中间件（承载Identity功能）
+  - 统一路由分发到8个核心微服务
+  - 集成共享底座组件进行统一处理
+
 ### 共享底座
-- **pkg/auth**：Firebase Bearer中间件
+- **pkg/auth**：Firebase Bearer中间件（简化版，专注Token验证和用户上下文注入）
 - **pkg/config**：Secret Manager + STACK环境配置
 - **pkg/events**：发布/订阅 + 幂等工具
 - **pkg/http**：错误码/限流/重试统一处理
 - **pkg/telemetry**：日志/指标/追踪
+- **pkg/database**：PostgreSQL连接池 + RLS自动设置
+- **pkg/outbox**：Outbox模式实现 + 轮询发布
 
 ## API契约与网关需求
 
@@ -71,19 +79,20 @@
 **用户故事：** 作为API开发者，我希望有统一的路由规范和错误处理，以便提供一致的开发体验。
 
 **API路由规范：**
-- **identity**：`/api/v1/identity/register`、`/api/v1/identity/me`
 - **offer**：`/api/v1/offers`（GET/POST）、`/api/v1/offers/{id}`
-- **siterank**：`POST /api/v1/siterank/analyze`（202返回analysisId）、`GET /api/v1/siterank/{offerId}`最新结果
-- **adscenter**：`/api/v1/adscenter/accounts`、`/api/v1/adscenter/preflight`、`/api/v1/adscenter/bulk-actions`、`/api/v1/adscenter/oauth/url`、`/api/v1/adscenter/oauth/callback`（回调免鉴权）
+- **siterank**：`POST /api/v1/siterank/analyze`（202返回analysisId）、`GET /api/v1/siterank/{offerId}`最新结果、`/api/v1/siterank/alerts`（集成AI预警功能）
+- **adscenter**：`/api/v1/adscenter/accounts`、`/api/v1/adscenter/preflight`、`/api/v1/adscenter/bulk-actions`、`/api/v1/adscenter/oauth/url`、`/api/v1/adscenter/oauth/callback`、`/api/v1/adscenter/sync`（集成数据同步功能）
 - **batchopen**：`POST /api/v1/batchopen/tasks`（202返回taskId）、`GET /api/v1/batchopen/tasks/{id}`
 - **billing**：`/api/v1/billing/subscriptions/me`、`/api/v1/billing/tokens/me`、`/api/v1/billing/tokens/transactions`
-- **workflow**：`/api/v1/workflows/templates`、`POST /api/v1/workflows/start`（202返回workflow_instance_id）、`GET /api/v1/workflows/{id}`
+- **notifications**：`/api/v1/notifications`（GET获取列表/PUT批量操作）、`/api/v1/notifications/summary`、`/api/v1/notifications/{id}/read`、`/api/v1/notifications/mark-all-read`
 
 **验收标准：**
 1. WHEN 设计API路由 THEN 系统 SHALL 采用统一格式：`/api/v1/{service}/{resource}`
-2. WHEN 处理长耗时操作 THEN 系统 SHALL 返回202状态码和任务ID，支持异步查询
-3. WHEN 发生错误 THEN 系统 SHALL 返回统一错误体：`{code, message, details?, traceId}`
-4. WHEN 执行变更操作 THEN 系统 SHALL 支持X-Idempotency-Key幂等处理
+2. WHEN 处理长耗时操作 THEN 系统 SHALL 统一返回202状态码和taskId，支持异步查询
+3. WHEN 发生错误 THEN 系统 SHALL 返回统一错误体：`{code, message, details?, traceId}`，响应码与业务码映射表集中管理
+4. WHEN 执行变更操作 THEN 系统 SHALL 强制支持X-Idempotency-Key幂等处理
+5. WHEN 生成OpenAPI THEN 系统 SHALL 使用oapi-codegen生成Go stubs，orval生成TS SDK
+6. WHEN 部署网关 THEN 系统 SHALL 由OpenAPI渲染x-google-backend/IAM/配额策略，生成API Gateway配置
 
 ## 鉴权与安全需求
 
@@ -223,11 +232,17 @@
 
 **机会雷达：** SimilarWeb相似域 + 业务规则评分；一键入库
 
+**简化增强实现：**
+- **深度相似度算法优化**：基于现有SimilarWeb数据的规则匹配，包含域名关键词匹配(30%)、流量规模相似性(25%)、国家重叠度(20%)、行业分类匹配(25%)
+- **关键词扩展建议系统**：利用Google Ads API关键词规划师，基于种子关键词生成扩展建议，简单过滤搜索量>1000且竞争度非高的关键词
+
 **验收标准：**
 1. WHEN 管理看板状态 THEN 系统 SHALL 由后端派生状态（评估/仿真/放大/衰退/归档），前端不可越权
-2. WHEN 发现机会 THEN 系统 SHALL 使用SimilarWeb相似域分析 + 业务规则评分
-3. WHEN 推荐机会 THEN 系统 SHALL 支持一键入库到机会池
-4. WHEN 分析相似性 THEN 系统 SHALL 基于成功Offer的特征进行相似度计算
+2. WHEN 发现机会 THEN 系统 SHALL 使用SimilarWeb相似域分析 + 简化相似度算法计算匹配度评分
+3. WHEN 推荐机会 THEN 系统 SHALL 支持一键入库到机会池，显示具体相似原因和评分详情
+4. WHEN 分析相似性 THEN 系统 SHALL 使用简化算法：域名关键词匹配30分+流量规模相似性25分+国家重叠度20分+行业分类匹配25分
+5. WHEN 扩展关键词 THEN 系统 SHALL 从成功Offer提取种子关键词，调用Google Ads关键词规划师API获取建议，过滤并返回前20个高价值关键词
+6. WHEN 计算关键词扩展 THEN 系统 SHALL 过滤搜索量>1000且竞争度非HIGH的关键词，按搜索量降序排列
 
 ## 可观测性与SLO需求
 
@@ -435,12 +450,19 @@
 - 使用Google Ads API的质量得分和建议API，避免复杂的诊断算法
 - 基于规则引擎进行问题分类，避免复杂的机器学习诊断
 
+**简化增强实现：**
+- **精细化广告诊断引擎**：基于Google Ads API质量得分的规则诊断，包含无曝光、低CTR等预定义诊断规则，支持结构化诊断输出
+- **具体优化操作指导系统**：预定义操作模板库，包含提高CPC、暂停低质量关键词、扩展匹配类型等可执行操作，支持一键执行和效果预估
+
 **验收标准：**
 1. WHEN 用户点击"一键诊断"按钮 THEN 系统 SHALL 分析关键词质量分、广告相关性、出价策略、落地页体验等维度
 2. WHEN 诊断完成 THEN 系统 SHALL 输出简单的诊断报告，用红绿灯显示各维度状态，并提供具体优化建议
 3. WHEN 系统识别主要问题 THEN 系统 SHALL 提供一键修复按钮，如"一键优化CPC"、"一键暂停低质量关键词"
 4. WHEN 诊断无曝光无点击问题 THEN 系统 SHALL 分析CPC过低、关键词匹配过严格、广告质量差等具体原因
-5. WHEN 提供优化建议 THEN 系统 SHALL 预估优化后的效果，如"预计CTR提升30%，CPC降低15%"#
+5. WHEN 提供优化建议 THEN 系统 SHALL 预估优化后的效果，如"预计CTR提升30%，CPC降低15%"
+6. WHEN 执行诊断规则 THEN 系统 SHALL 使用预定义规则引擎：无曝光问题、低CTR问题等，每个规则包含条件判断和原因分析
+7. WHEN 生成操作建议 THEN 系统 SHALL 使用操作模板库生成可执行建议，包含操作描述、参数配置、预期效果和一键执行功能
+8. WHEN 用户执行优化操作 THEN 系统 SHALL 调用Google Ads API执行具体操作，并记录操作历史和效果跟踪#
 # 支撑系统需求
 
 ### 需求9：数据安全与合规管理
@@ -526,16 +548,19 @@
 23. WHEN 管理员分析点击真实性 THEN 系统 SHALL 提供AI优化的仿真阶段点击分析，并支持将优化策略更新到浏览器执行服务
 24. WHEN 点击策略优化 THEN 系统 SHALL 支持实时推送优化后的点击模式到所有浏览器执行服务实例
 
-### 需求13：用户认证与访问控制
+### 需求13：统一认证与访问控制
 
-**用户故事：** 作为系统安全管理员，我希望实现安全的用户认证和精细的访问控制，以便保护系统安全。
+**用户故事：** 作为系统安全管理员，我希望在API Gateway层实现统一的用户认证和访问控制，以便简化架构并保护系统安全。
+
+**架构决策：** Identity服务已合并到API Gateway中，使用Firebase Bearer Token统一认证
 
 **验收标准：**
 1. WHEN 用户未登录访问网站 THEN 系统 SHALL 允许浏览静态页面，确保SEO有效
-2. WHEN 用户尝试使用业务功能 THEN 系统 SHALL 强制通过Firebase Authentication登录
-3. WHEN 用户登录成功 THEN 系统 SHALL 根据用户套餐权限显示可用功能
-4. WHEN 用户会话过期 THEN 系统 SHALL 自动跳转到登录页面
-5. WHEN 用户登出 THEN 系统 SHALL 清除会话信息并跳转到首页
+2. WHEN 用户尝试使用业务功能 THEN API Gateway SHALL 验证Firebase Bearer Token
+3. WHEN 用户登录成功 THEN API Gateway SHALL 注入用户上下文到后续服务调用
+4. WHEN 用户会话过期 THEN API Gateway SHALL 返回401状态码，前端自动跳转登录页面
+5. WHEN 管理员访问Console THEN API Gateway SHALL 验证role=ADMIN权限
+6. WHEN OAuth回调和健康检查 THEN API Gateway SHALL 提供白名单免认证访问
 
 ### 需求14：前端UI/UX优化
 
@@ -585,17 +610,21 @@
 5. WHEN 搜索引擎索引网站 THEN 系统 SHALL 提供robots.txt和结构化数据标记
 6. WHEN 用户访问不同语言版本 THEN 系统 SHALL 提供正确的hreflang标签指向对应语言页面
 
-### 需求24：事件驱动架构与CQRS
+### 需求24：事件驱动架构与工作流实现
 
-**用户故事：** 作为系统架构师，我希望构建事件驱动的微服务架构，以便实现高可扩展性、可靠性和可维护性。
+**用户故事：** 作为系统架构师，我希望通过事件驱动架构自然实现业务工作流，以便避免独立Workflow服务的复杂性。
+
+**架构决策：** 删除独立Workflow服务，通过事件驱动架构实现业务流程编排
 
 **验收标准：**
 1. WHEN 系统执行业务操作 THEN 系统 SHALL 发布领域事件到事件存储，支持事件溯源
 2. WHEN 事件发布 THEN 系统 SHALL 通过Pub/Sub分发事件到相关投影器和下游服务
 3. WHEN 处理命令 THEN 系统 SHALL 携带X-Idempotency-Key确保幂等性
 4. WHEN 读取数据 THEN 系统 SHALL 从优化的读模型获取，实现命令查询职责分离
-5. WHEN 事件处理失败 THEN 系统 SHALL 支持重试、死信队列和补偿机制
-6. WHEN 系统扩展 THEN 系统 SHALL 通过事件解耦服务间依赖，支持独立部署和扩展
+5. WHEN 业务流程需要编排 THEN 系统 SHALL 通过事件链和Saga模式实现分布式事务
+6. WHEN 事件处理失败 THEN 系统 SHALL 支持重试、死信队列和补偿机制
+7. WHEN 系统扩展 THEN 系统 SHALL 通过事件解耦服务间依赖，支持独立部署和扩展
+8. WHEN 删除workflow路由 THEN 系统 SHALL 新增notifications路由，通过事件驱动实现通知分发
 
 ### 需求25：原子计费与Token管理
 
@@ -834,6 +863,12 @@
 - 保持系统的可扩展性但不过度设计
 - 统一的URL解析服务为后续功能扩展提供坚实基础
 
+### 简化增强策略
+- **深度相似度算法优化**：基于现有SimilarWeb数据的规则匹配，避免复杂的机器学习算法，使用简单的加权评分模型
+- **关键词扩展建议系统**：直接利用Google Ads API关键词规划师，避免自建NLP分析，使用简单的过滤条件
+- **精细化广告诊断引擎**：基于Google Ads API质量得分数据，使用预定义规则引擎，避免复杂的诊断算法
+- **具体优化操作指导系统**：使用预定义操作模板库，支持参数插值和一键执行，避免复杂的决策树算法
+
 ### 架构优化考虑
 - 通用URL解析服务支持Offer评估、换链接、仿真启动等多个模块
 - 实现批量处理，提高系统性能
@@ -842,27 +877,26 @@
 
 ## 需求总结
 
-本需求文档包含20个核心需求模块：
+本需求文档基于架构决策优化，包含27个核心需求模块：
 
-**核心业务需求（需求1-8）：**
-- 解决8个核心用户痛点
-- 实现完整的上瘾体验闭环
-- 提供核心的广告管理功能
+### **核心业务需求（需求1-8）**
+- 解决8个核心用户痛点，实现完整的上瘾体验闭环
+- 10秒评估SLO、企业级浏览器执行、原子计费系统
+- 提供核心的广告管理功能和智能优化建议
 
-**支撑系统需求（需求9-16）：**
-- 确保系统安全性和合规性
-- 提供良好的用户体验
-- 支持商业模式和运营管理
-- Google Ads账号授权与关联管理
+### **支撑系统需求（需求9-16）**
+- **需求13已优化**：统一认证与访问控制（Identity服务合并到API Gateway）
+- 确保系统安全性和合规性，提供良好的用户体验
+- 支持商业模式和运营管理，Google Ads账号授权与关联管理
 
-**技术架构需求（需求17-18）：**
-- 构建稳定高效的技术架构
-- 充分利用现有技术栈
+### **技术架构需求（需求17-27）**
+- **需求24已优化**：事件驱动架构与工作流实现（删除独立Workflow服务）
+- 构建7个核心微服务的稳定高效架构
 - 支持系统的可扩展性和可维护性
 
-**质量保证需求（需求19-20）：**
-- 完善的测试策略和质量保证体系
-- 动态配置管理和热更新能力
-- 提高系统的可维护性和扩展性
+### **架构决策体现**
+- ✅ **Identity服务合并**：需求13体现Firebase Bearer认证在API Gateway层统一处理
+- ✅ **Workflow服务删除**：需求24体现通过事件驱动架构和Saga模式实现工作流
+- ✅ **7个核心服务**：精简架构，专注核心业务价值
 
-每个需求都包含清晰的用户故事、上瘾设计要点（适用时）、简化实现策略（适用时）和详细的EARS格式验收标准，为后续的设计和开发提供了完整的指导。
+每个需求都包含清晰的用户故事、架构决策说明（适用时）、上瘾设计要点和详细的EARS格式验收标准，为后续的设计和开发提供了完整的指导。

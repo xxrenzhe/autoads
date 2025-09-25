@@ -2,7 +2,20 @@
 
 ## 概述
 
-本设计文档基于专家评审建议，采用企业级事件驱动微服务架构。遵循"好品味、KISS与实用主义、一次成型"的设计原则，实现契约先行、事件为核的高可扩展性广告管理平台。
+本设计文档基于需求分析和架构决策，采用企业级事件驱动微服务架构。通过7个核心服务实现完整的上瘾式广告管理体验，遵循"好品味、KISS与实用主义、一次成型"的设计原则。
+
+## 核心架构决策
+
+### 服务精简化
+- **Identity服务合并**：认证功能合并到API Gateway，使用Firebase Bearer Token
+- **Workflow服务删除**：通过事件驱动架构自然实现工作流，避免过度设计
+- **7个核心服务**：精简架构，专注核心业务价值
+
+### 技术栈统一
+- **微服务**：Go + Cloud Run（统一技术栈，降低维护成本）
+- **浏览器执行**：Node.js 22 + Playwright（专业浏览器自动化）
+- **数据存储**：PostgreSQL（事件存储+读模型）+ Firestore（UI缓存）
+- **事件驱动**：Pub/Sub + Cloud Functions（投影器）
 
 ## 设计原则
 
@@ -39,28 +52,28 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    API Gateway (统一入口)                       │
-│              OpenAPI契约 + Firebase Bearer认证                  │
+│                API Gateway (统一入口+认证)                      │
+│         OpenAPI契约 + Firebase Bearer认证 + 路由分发            │
+│              (合并Identity服务功能，简化架构)                   │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────────┐
-│                   微服务层 (Cloud Run)                          │
+│                    7个核心微服务 (Cloud Run)                     │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐ │
-│  │identity  │ │billing   │ │offer     │ │siterank  │ │batch   │ │
-│  │          │ │          │ │          │ │          │ │open    │ │
+│  │offer     │ │siterank  │ │batchopen │ │browser   │ │adscenter│ │
+│  │管理服务   │ │评估+AI   │ │批量操作   │ │执行服务   │ │Ads+同步 │ │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └────────┘ │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│  │adscenter │ │workflow  │ │console   │ │frontend  │           │
-│  │          │ │          │ │          │ │          │           │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐                       │
+│  │billing   │ │notifications│ │console │                       │
+│  │原子计费   │ │统一通知   │ │后台管理   │                       │
+│  └──────────┘ └──────────┘ └──────────┘                       │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────────┐
-│              执行器服务 (独立Cloud Run)                          │
-│  ┌─────────────────────────────────────────────────────────────┐ │
-│  │           browser-exec (Node.js 22 + Playwright)           │ │
-│  │              常驻服务，专业浏览器自动化                      │ │
-│  └─────────────────────────────────────────────────────────────┘ │
+│  ┌──────────┐ ┌──────────┐                                     │
+│  │billing   │ │其他服务   │                                     │
+│  │原子计费   │ │...       │                                     │
+│  └──────────┘ └──────────┘                                     │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────────┐
@@ -157,7 +170,7 @@ GET    /api/v1/bulk/ab-tests             // 获取A/B测试列表
 POST   /api/v1/bulk/ab-tests             // 创建A/B测试
 ```
 
-### 1. 高并发浏览器执行服务 (Browser-Exec Service)
+### 4. 高并发浏览器执行服务 (Browser-Exec Service)
 
 **职责：** 支持数百用户并发的企业级浏览器自动化服务，提供高性能、高可靠的Web交互能力
 
@@ -432,149 +445,7 @@ class MetricsCollector {
 }
 ```
 
-### 2. Identity服务 (身份认证)
 
-**职责：** 统一身份认证、授权和用户管理
-
-**技术栈：** Go + Cloud Run + Firebase Auth
-
-**API设计：**
-```go
-// 身份认证API
-POST   /api/v1/identity/register         // 用户注册
-POST   /api/v1/identity/login           // 用户登录  
-POST   /api/v1/identity/refresh         // 刷新Token
-DELETE /api/v1/identity/logout          // 用户登出
-GET    /api/v1/identity/profile         // 获取用户信息
-PUT    /api/v1/identity/profile         // 更新用户信息
-```
-
-### 3. Billing服务 (计费管理)
-
-**职责：** 原子化Token管理和计费处理
-
-**技术栈：** Go + Cloud Run + PostgreSQL
-
-**核心特性：**
-- **双分录账本**：balance/hold/expense分离
-- **原子操作**：reserve → commit/release机制
-- **事务保障**：outbox模式确保一致性
-
-**API设计：**
-```go
-// 计费管理API
-GET    /api/v1/billing/balance          // 查询账户余额
-POST   /api/v1/billing/reserve          // 预留Token
-POST   /api/v1/billing/commit           // 确认扣费
-POST   /api/v1/billing/release          // 释放预留
-GET    /api/v1/billing/transactions     // 查询交易记录
-POST   /api/v1/billing/recharge         // Token充值
-```
-
-**账本模型：**
-```go
-type Account struct {
-    UserID          string `json:"user_id"`
-    AvailableBalance int   `json:"available_balance"`
-    ReservedBalance  int   `json:"reserved_balance"`
-    TotalExpense     int   `json:"total_expense"`
-}
-
-type Transaction struct {
-    ID          string    `json:"id"`
-    UserID      string    `json:"user_id"`
-    Type        string    `json:"type"` // reserve/commit/release/recharge
-    Amount      int       `json:"amount"`
-    RequestID   string    `json:"request_id"`
-    Description string    `json:"description"`
-    CreatedAt   time.Time `json:"created_at"`
-}
-```
-
-### 4. Offer服务 (Offer管理)
-
-**职责：** Offer生命周期管理和状态流转
-
-**技术栈：** Go + Cloud Run + Firestore
-
-**API设计：**
-```go
-// Offer管理API
-POST   /api/v1/offers                   // 创建Offer
-GET    /api/v1/offers                   // 获取Offer列表
-GET    /api/v1/offers/{id}              // 获取Offer详情
-PUT    /api/v1/offers/{id}/status       // 更新Offer状态
-DELETE /api/v1/offers/{id}              // 删除Offer
-POST   /api/v1/offers/batch             // 批量创建Offer
-GET    /api/v1/offers/{id}/history      // 获取状态历史
-```
-
-### 5. Siterank服务 (评估分析)
-
-**职责：** Offer智能评估和市场分析
-
-**技术栈：** Go + Cloud Run + SimilarWeb API + Firebase AI
-
-**核心特性：**
-- **10秒SLO**：分阶段返回结果，支持降级
-- **并行处理**：域名解析、SimilarWeb、AI分析并行
-- **缓存策略**：评估结果缓存，避免重复计算
-
-**API设计：**
-```go
-// 评估分析API
-POST   /api/v1/siterank/evaluate        // 启动评估 (返回202 + analysisId)
-GET    /api/v1/siterank/analysis/{id}   // 查询评估进度和结果
-GET    /api/v1/siterank/similar/{id}    // 获取相似机会
-POST   /api/v1/siterank/batch-evaluate  // 批量评估
-```
-
-### 6. Batchopen服务 (批量操作)
-
-**职责：** 批量操作编排和执行
-
-**技术栈：** Go + Cloud Run + Google Ads API
-
-**核心特性：**
-- **变更计划**：干跑预览 → 执行确认
-- **分级重试**：失败任务自动重试和局部回滚
-- **审计快照**：操作前后状态对比
-
-**API设计：**
-```go
-// 批量操作API
-POST   /api/v1/batch/plan               // 创建变更计划
-POST   /api/v1/batch/validate           // 干跑验证
-POST   /api/v1/batch/execute            // 执行变更
-GET    /api/v1/batch/operations/{id}    // 查询操作状态
-POST   /api/v1/batch/rollback/{id}      // 回滚操作
-GET    /api/v1/batch/audit/{id}         // 获取审计快照
-```
-
-### 7. Adscenter服务 (广告中心)
-
-**职责：** Google Ads集成和Pre-flight检查
-
-**技术栈：** Go + Cloud Run + Google Ads API
-
-**核心特性：**
-- **Live/Stub分离**：build tag控制真实/模拟模式
-- **OAuth治理**：AES-GCM加密 + 状态机管理
-- **配额管理**：QPS限制 + 并发控制
-
-**API设计：**
-```go
-// 广告中心API
-POST   /api/v1/ads/connect              // 连接Ads账户
-GET    /api/v1/ads/accounts             // 获取账户列表
-POST   /api/v1/ads/preflight            // Pre-flight检查
-GET    /api/v1/ads/performance          // 获取性能数据
-POST   /api/v1/ads/sync                 // 同步数据
-```
-
-### 8. Workflow服务 (工作流)
-
-**职责：** 业务流程编排和状态管理
 
 **技术栈：** Go + Cloud Run + Pub/Sub
 
@@ -1403,16 +1274,32 @@ src/
 
 ### 服务与边界
 
-### 外部服务
-- **identity**：用户认证与权限管理
-- **billing**：套餐管理与原子计费  
-- **offer**：Offer生命周期管理
-- **siterank**：10秒智能评估分析
-- **batchopen**：仿真编排与任务管理
-- **adscenter**：Google Ads集成与批量操作
-- **workflow**：业务流程编排
-- **console**：后台管理系统
-- **frontend**：用户前端界面
+### 7个核心微服务（基于架构决策优化）
+
+**架构决策说明：**
+- ✅ **Identity服务已合并**到API Gateway，使用Firebase Bearer认证
+- ✅ **Workflow服务已删除**，通过事件驱动架构实现工作流
+
+**最终服务架构（10个核心组件）：**
+1. **Offer管理服务** (Offer Management Service)
+2. **智能评估分析服务** (Evaluation & Analysis Service) 
+3. **批量操作服务** (Bulk Operations Service)
+4. **高并发浏览器执行服务** (Browser-Exec Service)
+5. **API Gateway + Identity中间件** (统一认证)
+6. **Billing服务** (计费管理)
+7. **Siterank服务** (评估分析 + AI预警)
+8. **Adscenter服务** (广告中心 + 数据同步)
+9. **后台管理服务** (Admin Management Service)
+10. **统一通知管理服务** (Notification Service)
+
+**架构决策：**
+- ✅ **Identity服务已合并**到API Gateway
+- ✅ **Workflow服务已删除**，通过事件驱动架构实现
+
+### 共享基础设施
+- **API Gateway**：统一入口 + Firebase认证 + 路由分发（合并Identity功能）
+- **事件总线**：Pub/Sub + Cloud Functions投影器（替代Workflow服务）
+- **数据存储**：PostgreSQL（事件存储+读模型）+ Firestore（UI缓存）
 
 ### 新增执行器
 - **browser-exec**：Node.js 22 + Playwright，常驻独立Cloud Run

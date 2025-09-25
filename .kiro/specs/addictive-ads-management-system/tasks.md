@@ -2,7 +2,26 @@
 
 ## 项目概述
 
-本实施计划基于专家评审建议，采用企业级事件驱动微服务架构。遵循"好品味、KISS与实用主义、一次成型"的设计原则，通过并行分工最大化开发效率，直接实现最终目标架构。
+本实施计划基于需求分析和架构决策，采用8个核心微服务的事件驱动架构。通过并行分工最大化开发效率，实现完整的上瘾式广告管理体验。
+
+## 核心架构决策汇总
+
+### 服务精简化决策
+- **Identity服务合并**：认证功能合并到API Gateway，使用Firebase Bearer Token
+- **Workflow服务删除**：通过事件驱动架构（Pub/Sub + Saga模式）自然实现工作流
+- **删除workflow路由，新增notifications路由**：通过事件驱动实现通知分发
+- **8个核心服务**：精简架构，专注核心业务价值，避免过度设计
+
+### 技术栈统一决策
+- **微服务**：Go + Cloud Run（统一技术栈，降低维护成本）
+- **浏览器执行**：Node.js 22 + Playwright（专业浏览器自动化，支持数百用户并发）
+- **数据存储**：PostgreSQL（事件存储+读模型）+ Firestore（UI缓存）
+- **事件驱动**：Pub/Sub + Cloud Functions（投影器）+ Saga模式（分布式事务）
+
+### 业务体验决策
+- **10秒评估SLO**：智能评估必须在10秒内完成，支持降级和缓存
+- **原子计费系统**：reserve → commit/release机制确保计费准确性
+- **上瘾体验闭环**：发现→评估→测试→监控→操作→优化的完整用户旅程
 
 ## 设计原则
 
@@ -20,21 +39,24 @@
 
 ## 并行分工策略
 
-### 交付与分工（并行执行）
-- **A组**：契约/SDK/网关/错误码/鉴权统一
-- **B组**：事件存储/事件集/投影器/读模型迁移
-- **C组**：Browser-Exec（池/代理/API/资源配额） + Batchopen编排
-- **D组**：Siterank（10秒评估：评分器/缓存/降级/指标）
-- **E组**：Adscenter（Pre-flight/批量矩阵/快照/回滚/限流）
-- **F组**：Billing（reserve/commit/release、明细、套餐/单价配置）
-- **G组**：Risk Engine基础 + 通知/Console
-- **H组**：观测/SLO/告警 + CI/CD（按stack打标签）
+### 并行分工策略（基于8个核心服务）
+
+**分工原则：** 基于架构决策，删除Identity和Workflow相关任务，专注8个核心服务
+
+- **A组**：API Gateway + 统一认证（合并Identity功能）+ OpenAPI契约
+- **B组**：事件存储 + 投影器 + 事件驱动工作流（替代Workflow服务）+ notifications路由
+- **C组**：Browser-Exec高并发执行服务（Node.js + Playwright）
+- **D组**：Siterank评估服务 + AI预警（SimilarWeb + Firebase AI + 规则引擎）
+- **E组**：Batchopen批量操作服务（换链接 + A/B测试 + CPC调整）
+- **F组**：Adscenter服务 + 数据同步（Google Ads API + Pre-flight检查）
+- **G组**：Billing原子计费 + Notifications通知管理 + Console后台管理
+- **H组**：观测性 + SLO监控 + CI/CD部署
 
 ---
 
-## A组：契约/SDK/网关/错误码/鉴权统一
+## A组：API Gateway + 统一认证（合并Identity功能）
 
-### A1. OpenAPI契约与代码生成
+### A1. OpenAPI契约与统一认证
 
 - [ ] A1.1 建立OpenAPI规范体系
   - 以.kiro规范输出OpenAPI（所有域）
@@ -57,25 +79,27 @@
   - 建立X-Idempotency-Key幂等处理
   - _需求: 需求A2 - 统一路由与错误处理_
 
-### A2. API Gateway与统一认证
+### A2. API Gateway配置与Firebase认证集成
 
-- [ ] A2.1 配置API Gateway
-  - 配置Google Cloud API Gateway
-  - 实现统一认证和授权策略
+- [ ] A2.1 配置API Gateway统一入口
+  - 配置Google Cloud API Gateway作为统一入口
+  - 实现路由分发到8个核心微服务
   - 建立限流和监控配置
-  - 实现路由和负载均衡规则
-  - _需求: 需求S1 - 统一身份认证_
+  - 实现负载均衡规则
+  - _需求: 需求13 - 统一认证与访问控制_
 
-- [ ] A2.2 实现Firebase Bearer认证
-  - 实现Firebase Bearer Token验证中间件
-  - 建立用户上下文注入和权限检查
-  - 实现Console role=ADMIN验证
-  - 建立OAuth回调和健康检查白名单
-  - _需求: 需求S1 - 统一身份认证_
+- [ ] A2.2 集成Firebase Bearer认证（合并Identity服务功能）
+  - 在API Gateway层实现Firebase Bearer Token验证
+  - 建立用户上下文注入到后续服务调用
+  - 实现Console role=ADMIN权限验证
+  - 建立OAuth回调和健康检查白名单免认证
+  - 删除独立Identity服务相关代码和配置
+  - 实现pkg/auth中间件（简化版）
+  - _需求: 需求13 - 统一认证与访问控制_
 
-## B组：事件存储/事件集/投影器/读模型迁移
+## B组：事件存储 + 事件驱动工作流（替代Workflow服务）
 
-### B1. 事件存储基础设施
+### B1. 事件存储与工作流基础设施
 
 - [ ] B1.1 建立事件存储表结构
   - 创建PostgreSQL事件存储表：event_store
@@ -84,20 +108,25 @@
   - 实现事件快照和归档策略
   - _需求: 需求D1 - 事件存储与投影_
 
-- [ ] B1.2 定义标准事件集
+- [ ] B1.2 定义标准事件集与工作流事件
   - 实现UserRegistered、OfferCreated事件
   - 实现SiterankRequested/Completed事件
-  - 实现BatchopenTaskQueued/Started/Completed/Failed事件
-  - 实现AdsPreflightRequested/Completed事件
+  - 实现BatchOpsTaskQueued/Started/Completed/Failed事件
+  - 实现BrowserExecRequested/Completed事件
   - 实现TokenReserved/Debited/Reverted事件
-  - _需求: 需求D1 - 事件存储与投影_
+  - 实现WorkflowStarted/StepCompleted/WorkflowCompleted事件（替代Workflow服务）
+  - 实现NotificationCreated/Sent事件（新增notifications路由）
+  - _需求: 需求24 - 事件驱动架构与工作流实现_
 
-### B2. 投影器与读模型
+### B2. 投影器与Saga工作流
 
-- [ ] B2.1 实现投影器框架
+- [ ] B2.1 实现投影器框架与Saga模式
   - 建立Cloud Functions投影器模板
   - 实现Pub/Sub事件分发机制
-  - 建立投影器幂等性和错误处理
+  - 建立Saga协调器处理分布式事务（替代Workflow服务）
+  - 实现投影器幂等性和错误处理
+  - 实现notifications路由的事件驱动通知分发
+  - _需求: 需求24 - 事件驱动架构与工作流实现_
   - 实现读模型更新和同步
   - _需求: 需求D1 - 事件存储与投影_
 
@@ -115,7 +144,7 @@
   - 建立缓存失效和更新机制
   - _需求: 需求D2 - 读模型与缓存策略_
 
-## C组：Browser-Exec + Batchopen编排
+## C组：Browser-Exec高并发执行服务
 
 ### C1. Browser-Exec服务
 
@@ -140,16 +169,18 @@
   - 实现资源监控和性能指标
   - _需求: 需求C2 - Browser-Exec服务_
 
-### C2. Batchopen仿真编排
+## E组：Batchopen批量操作服务
 
-- [ ] C2.1 实现仿真模板系统
+### E1. Batchopen仿真编排
+
+- [ ] E1.1 实现仿真模板系统
   - 建立国家曲线/UA/Referer/时区模板
   - 实现命令入队和进度追踪
   - 建立质量评分机制
   - 实现失败重试分级
   - _需求: 需求C4 - Batchopen仿真编排_
 
-- [ ] C2.2 集成Browser-Exec执行
+- [ ] E1.2 集成Browser-Exec执行
   - 实现执行下沉至Browser-Exec
   - 建立与Billing服务的计费集成
   - 实现任务状态追踪和通知
@@ -181,6 +212,13 @@
   - 实现相似机会发现算法
   - _需求: 需求C1 - Siterank 10秒评估_
 
+- [ ] D1.4 实现简化增强功能
+  - 实现深度相似度算法：域名关键词匹配30分+流量规模相似性25分+国家重叠度20分+行业分类匹配25分
+  - 集成Google Ads关键词规划师API，实现关键词扩展建议功能
+  - 建立简单过滤机制：搜索量>1000且竞争度非HIGH
+  - 实现相似度评分详情和推荐理由展示
+  - _需求: 需求C7 - 机会发现增强_
+
 ## E组：Adscenter（Pre-flight/批量矩阵）
 
 ### E1. Pre-flight诊断系统
@@ -208,6 +246,14 @@
   - 实现配额策略配置化管理
   - _需求: 需求C3 - Adscenter诊断+批量_
 
+- [ ] E2.3 实现精细化诊断和操作指导系统
+  - 建立预定义诊断规则库：无曝光问题、低CTR问题等规则
+  - 实现基于Google Ads API质量得分的规则匹配引擎
+  - 建立操作模板库：提高CPC、暂停低质量关键词、扩展匹配类型等
+  - 实现一键执行功能和效果预估
+  - 建立操作历史记录和效果跟踪
+  - _需求: 需求8 - 广告诊断与优化系统增强_
+
 ## F组：Billing（reserve/commit/release）
 
 ### F1. 原子计费系统
@@ -226,25 +272,51 @@
   - 实现事件驱动的读模型更新
   - _需求: 需求C5 - Billing原子计费_
 
-## G组：Risk Engine + Console
+## G组：Billing原子计费 + Notifications通知管理 + Console后台管理
 
-### G1. Risk Engine基础
+### G1. Billing原子计费系统
 
-- [ ] G1.1 实现基础风险规则
-  - 建立低曝低点/无点/落地不可用/数据缺失检测
-  - 实现提示/建任务/触发工作流/自动处置动作
-  - 建立去重抑制与优先级管理
-  - 实现风险处理审计日志
-  - _需求: 需求C6 - Risk Engine基础规则_
+- [ ] G1.1 实现原子扣费机制
+  - 建立reserve(n) → 成功commit(n) / 失败release(n)机制
+  - 实现扣费点：评估、仿真、批量操作
+  - 建立事务消息和补偿机制
+  - 实现Token余额和预留管理
+  - _需求: 需求C5 - Billing原子计费_
 
-### G2. Console后台管理
+- [ ] G1.2 实现计费配置和明细
+  - 建立价格/限额集中配置（只读下发）
+  - 实现动作/对象/任务/事件链路追溯
+  - 建立计费明细和交易记录
+  - 实现事件驱动的读模型更新
+  - _需求: 需求C5 - Billing原子计费_
 
-- [ ] G2.1 实现Console管理界面
+### G2. Notifications通知管理系统
+
+- [ ] G2.1 建立通知服务基础架构
+  - 创建独立的Notification Service (Cloud Run)
+  - 建立PostgreSQL通知表结构（user_notifications、notification_rules）
+  - 实现Firestore实时缓存结构（最近30天通知）
+  - 建立分层存储策略（实时缓存+历史存储）
+  - 实现用户数据严格隔离机制（按user_id强制隔离）
+  - _需求: 需求C8 - 统一通知管理系统_
+
+- [ ] G2.2 实现通知规则引擎和事件监听
+  - 建立事件驱动的通知规则引擎
+  - 集成现有Pub/Sub事件总线，监听业务事件
+  - 实现事件到通知的转换逻辑
+  - 建立通知创建和存储服务
+  - 实现通知分发器（支持应用内通知）
+  - _需求: 需求C8 - 统一通知管理系统_
+
+### G3. Console后台管理
+
+- [ ] G3.1 实现Console管理界面
   - 建立管理员仪表盘和统计
   - 实现用户管理和权限控制
   - 建立套餐管理和Token充值
   - 实现系统配置和监控界面
-  - _需求: 需求C7 - Offer/Recommendation_
+  - 建立通知规则配置管理
+  - _需求: 需求12 - 后台管理系统_
 
 ## H组：观测/SLO/告警 + CI/CD
 
@@ -560,6 +632,31 @@
   - 建立hreflang标签和语言路由
   - 实现SEO元数据管理
   - _需求: 需求23 - SEO优化与站点地图_
+
+## M2.5: 简化功能增强 (1-2周)
+
+### 15. 痛点7&8增强实施
+
+- [ ] 15.1 Siterank服务增强
+  - 在现有Siterank服务中添加简化相似度算法
+  - 实现域名关键词匹配、流量规模相似性、国家重叠度、行业分类匹配四个维度评分
+  - 集成Google Ads关键词规划师API
+  - 实现关键词扩展建议功能，过滤搜索量>1000且竞争度非HIGH的关键词
+  - _需求: 需求C7 - 机会发现增强_
+
+- [ ] 15.2 Adscenter服务诊断增强
+  - 在现有Adscenter服务中添加诊断规则引擎
+  - 建立预定义诊断规则库（无曝光、低CTR等）
+  - 实现操作模板库和一键执行功能
+  - 建立效果预估和操作历史跟踪
+  - _需求: 需求8 - 广告诊断与优化系统增强_
+
+- [ ] 15.3 前端界面增强
+  - 在Offer详情页面添加相似机会展示模块
+  - 实现相似度评分详情和推荐理由展示
+  - 在广告管理界面添加一键诊断按钮
+  - 实现诊断结果展示和一键优化操作界面
+  - _需求: 前端增强需求_
 
 ## M3: 生产级打磨 (3-4周)
 
