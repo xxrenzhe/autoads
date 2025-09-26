@@ -5,11 +5,10 @@ use (
 	./services/batchopen
 	./services/billing
 	./services/console
-	./services/identity
 	./services/notifications
+	./services/recommendations
 	./services/offer
 	./services/siterank
-	./services/workflow
 	./pkg/httpclient
 	./pkg/noop
 	./pkg/logger
@@ -19,4 +18,5 @@ use (
 	./pkg/config
 	./pkg/idempotency
 	./pkg/events
+	./pkg/telemetry
 )

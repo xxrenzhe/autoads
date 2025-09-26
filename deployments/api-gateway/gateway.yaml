@@ -100,6 +100,16 @@ paths:
         '200': { description: OK }
 
   # Adscenter 服务（示例：受保护资源）
+  # OAuth 回调（公开）
+  /api/v1/adscenter/oauth/callback:
+    get:
+      operationId: adscenterOauthCallback
+      x-google-backend:
+        address: https://adscenter-REPLACE_WITH_RUN_URL
+        path_translation: APPEND_PATH_TO_ADDRESS
+      responses:
+        '200': { description: OK }
+
   /api/v1/adscenter/*:
     get:
       operationId: adscenterWildcardGet

@@ -12,7 +12,7 @@ OUTPUT="deployments/api-gateway/gateway.rendered.yaml"
 gcloud config set project "${PROJECT_ID}" >/dev/null
 
 cp "$INPUT" "$OUTPUT"
-for svc in offer workflow billing adscenter identity console; do
+for svc in offer billing adscenter console siterank batchopen notifications; do
   url=$(gcloud run services describe "$svc" --region "$REGION" --format 'value(status.url)' 2>/dev/null || true)
   if [[ -z "$url" ]]; then
     echo "[render] WARN: service $svc not found; keep placeholder"

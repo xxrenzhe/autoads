@@ -1,0 +1,38 @@
+name: OpenAPI Contract
+
+on:
+  pull_request:
+    branches: [ main, production, develop ]
+    paths:
+      - '.kiro/specs/addictive-ads-management-system/openapi/**'
+      - 'scripts/openapi/**'
+      - 'services/**/openapi.yaml'
+  push:
+    branches: [ main, production ]
+    paths:
+      - '.kiro/specs/addictive-ads-management-system/openapi/**'
+      - 'scripts/openapi/**'
+
+jobs:
+  contract:
+    name: Validate specs and generate stubs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+
+      - name: Run contract checks
+        shell: bash
+        run: |
+          bash scripts/openapi/contract-test.sh
+

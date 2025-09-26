@@ -28,11 +28,44 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                accountId:
+                  type: string
+                  description: Google Ads customer id (10 digits)
+                validateOnly:
+                  type: boolean
+                  description: If true, skip live checks and only validate environment/config
+                landingUrl:
+                  type: string
+                  description: Optional landing page URL to check reachability
+              required: []
       responses:
         '200': { description: Diagnostics result }
         '400': { description: Bad Request }
         '401': { description: Unauthorized }
   /api/v1/adscenter/bulk-actions:
+    get:
+      operationId: listBulkActions
+      summary: List recent bulk action operations for current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BulkActionOperation'
+        '401': { description: Unauthorized }
     post:
       operationId: submitBulkActions
       summary: Submit bulk actions
@@ -44,10 +77,219 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                validateOnly:
+                  type: boolean
+                actions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        description: Action type
+                        enum: [ADJUST_CPC, ADJUST_BUDGET, ROTATE_LINK]
+                      filter:
+                        type: object
+                        description: Filter conditions (implementation-defined)
+                        additionalProperties: true
+                      params:
+                        type: object
+                        description: Action parameters (implementation-defined)
+                        additionalProperties: true
+                  minItems: 1
       responses:
-        '202': { description: Accepted }
+        '200': { description: OK (validateOnly) }
+        '202': { description: Accepted (enqueued) }
         '400': { description: Bad Request }
         '401': { description: Unauthorized }
+
+  /api/v1/adscenter/bulk-actions/{id}:
+    get:
+      operationId: getBulkAction
+      summary: Get bulk action operation status
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkActionOperation'
+        '401': { description: Unauthorized }
+        '404': { description: Not Found }
+
+  /api/v1/adscenter/bulk-actions/{id}/plan:
+    get:
+      operationId: getBulkActionPlan
+      summary: Get the submitted plan body of a bulk action
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    type: object
+                    additionalProperties: true
+        '401': { description: Unauthorized }
+        '404': { description: Not Found }
+
+  /api/v1/adscenter/bulk-actions/validate:
+    post:
+      operationId: validateBulkActions
+      summary: Validate a bulk action plan without enqueuing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkActionPlan'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkActionValidationResult'
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+
+  /api/v1/adscenter/bulk-actions/{id}/audits:
+    get:
+      operationId: getBulkActionAudits
+      summary: List audit snapshots for an operation
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BulkActionAuditItem'
+        '401': { description: Unauthorized }
+        '404': { description: Not Found }
+
+  /api/v1/adscenter/bulk-actions/{id}/rollback:
+    post:
+      operationId: rollbackBulkAction
+      summary: Mark operation as rolled back and append a rollback snapshot (stub)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Rolled back }
+        '401': { description: Unauthorized }
+        '404': { description: Not Found }
+
+  /api/v1/adscenter/bulk-actions/{id}/rollback-plan:
+    post:
+      operationId: getRollbackPlan
+      summary: Generate a rollback plan (inverse actions) without executing
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    $ref: '#/components/schemas/BulkActionPlan'
+        '401': { description: Unauthorized }
+        '404': { description: Not Found }
+
+  /api/v1/adscenter/bulk-actions/{id}/rollback-execute:
+    post:
+      operationId: rollbackExecute
+      summary: Execute rollback (stub; writes audits only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  executed: { type: integer }
+                  errors: { type: integer }
+        '401': { description: Unauthorized }
+        '404': { description: Not Found }
+
+  /api/v1/adscenter/bulk-actions/{id}/report:
+    get:
+      operationId: getRollbackReport
+      summary: Get rollback execution report (audit snapshots)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: kind
+          schema: { type: string, enum: [rollback, rollback_exec] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BulkActionAuditItem'
+        '401': { description: Unauthorized }
+        '404': { description: Not Found }
   /api/v1/adscenter/oauth/url:
     get:
       operationId: getOAuthUrl
@@ -66,9 +308,318 @@ paths:
         '200': { description: OK }
         '400': { description: Bad Request }
         '401': { description: Unauthorized }
+  /api/v1/adscenter/oauth/revoke:
+    post:
+      operationId: oauthRevoke
+      summary: Revoke stored Google Ads refresh token for current user (stub)
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: OK }
+        '401': { description: Unauthorized }
+
+  /api/v1/adscenter/mcc/link:
+    post:
+      operationId: mccLink
+      summary: Send manager link invitation (stub/live)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerId: { type: string }
+              required: [customerId]
+      responses:
+        '200': { description: OK }
+        '202': { description: Accepted (idempotent queued) }
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+  /api/v1/adscenter/mcc/status:
+    get:
+      operationId: mccStatus
+      summary: Get manager link status
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: customerId
+          schema: { type: string }
+          required: true
+      responses:
+        '200': { description: OK }
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+        '404': { description: Not Found }
+  /api/v1/adscenter/mcc/unlink:
+    post:
+      operationId: mccUnlink
+      summary: Request unlink from manager account (stub/live)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerId: { type: string }
+              required: [customerId]
+      responses:
+        '200': { description: OK }
+        '202': { description: Accepted (idempotent queued) }
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+
+  /api/v1/adscenter/mcc/refresh:
+    post:
+      operationId: mccRefresh
+      summary: Refresh statuses for all pending/invited MCC links (best-effort)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                shard: { type: integer, minimum: 0 }
+                totalShards: { type: integer, minimum: 1 }
+              required: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checked: { type: integer }
+                  updated: { type: integer }
+                  live: { type: boolean }
+        '401': { description: Unauthorized }
+
+  /api/v1/adscenter/mcc/links:
+    get:
+      operationId: listMccLinks
+      summary: List MCC links for current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [invited, pending, active, inactive] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MccLink'
+        '401': { description: Unauthorized }
+
+  /api/v1/adscenter/connections:
+    get:
+      operationId: listAdsConnections
+      summary: List stored Google Ads connections (sanitized)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdsConnection'
+        '401': { description: Unauthorized }
+
+  /api/v1/adscenter/audits:
+    get:
+      operationId: listAuditEvents
+      summary: List audit events
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: kind
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200 }
+        - in: query
+          name: since
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEventItem'
+        '401': { description: Unauthorized }
+
+  /api/v1/adscenter/keywords/expand:
+    post:
+      operationId: expandKeywords
+      summary: Expand keywords using seed domain/keywords
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                seedDomain: { type: string }
+                seedKeywords:
+                  type: array
+                  items: { type: string }
+                validateOnly:
+                  type: boolean
+                  description: If true, returns stub suggestions without live API calls
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KeywordIdea'
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    BulkActionOperation:
+      type: object
+      properties:
+        operationId: { type: string }
+        status: { type: string, enum: [queued, running, completed, failed] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        summary:
+          type: object
+          properties:
+            actions: { type: integer }
+            estimatedAffected: { type: integer }
+      required: [operationId, status]
+    BulkActionPlan:
+      type: object
+      properties:
+        validateOnly:
+          type: boolean
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [ADJUST_CPC, ADJUST_BUDGET, ROTATE_LINK]
+              filter:
+                type: object
+                additionalProperties: true
+              params:
+                type: object
+                additionalProperties: true
+          minItems: 1
+      required: [actions]
+    BulkActionValidationResult:
+      type: object
+      properties:
+        ok: { type: boolean }
+        summary:
+          type: object
+          properties:
+            actions: { type: integer }
+            estimatedAffected: { type: integer }
+        warnings:
+          type: array
+          items: { type: string }
+        errors:
+          type: array
+          items: { type: string }
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationViolation'
+      required: [ok, summary]
+    ValidationViolation:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        severity: { type: string, enum: [info, warn, error] }
+        actionIndex: { type: integer }
+        field: { type: string }
+    BulkActionAuditItem:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [before, after, rollback, other]
+        snapshot:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [kind, snapshot, createdAt]
+    KeywordIdea:
+      type: object
+      properties:
+        keyword: { type: string }
+        avgMonthlySearches: { type: integer }
+        competition:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+      required: [keyword, avgMonthlySearches, competition]
+    MccLink:
+      type: object
+      properties:
+        customerId: { type: string }
+        status: { type: string, enum: [invited, pending, active, inactive] }
+        updatedAt: { type: string, format: date-time }
+      required: [customerId, status]
+    AdsConnection:
+      type: object
+      properties:
+        loginCustomerId: { type: string }
+        primaryCustomerId: { type: string }
+        updatedAt: { type: string, format: date-time }
+    AuditEventItem:
+      type: object
+      properties:
+        kind: { type: string }
+        data: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+      required: [kind, data, createdAt]

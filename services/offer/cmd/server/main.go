@@ -17,6 +17,7 @@ import (
     "github.com/xxrenzhe/autoads/pkg/config"
     "github.com/xxrenzhe/autoads/pkg/logger"
     "github.com/xxrenzhe/autoads/pkg/middleware"
+    apperr "github.com/xxrenzhe/autoads/pkg/errors"
 )
 
 // OfferCreateRequest defines the expected JSON body for creating an offer.
@@ -96,9 +97,9 @@ func offersHandler(w http.ResponseWriter, r *http.Request) {
 		getOffers(w, r)
 	case http.MethodPost:
 		createOffer(w, r)
-	default:
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-	}
+    default:
+        apperr.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+    }
 }
 
 func getOffers(w http.ResponseWriter, r *http.Request) {
@@ -111,22 +112,22 @@ func getOffers(w http.ResponseWriter, r *http.Request) {
 		ORDER BY "createdAt" DESC
 	`
 	rows, err := db.QueryContext(r.Context(), query, userID)
-	if err != nil {
-		log.Error().Err(err).Str("userID", userID).Msg("Failed to query offers")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
+    if err != nil {
+        log.Error().Err(err).Str("userID", userID).Msg("Failed to query offers")
+        apperr.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil)
+        return
+    }
 	defer rows.Close()
 
 	var offers []*domain.Offer
 	for rows.Next() {
 		var o domain.Offer
 		var score sql.NullFloat64
-		if err := rows.Scan(&o.ID, &o.Name, &o.OriginalURL, &o.Status, &score, &o.CreatedAt); err != nil {
-			log.Error().Err(err).Str("userID", userID).Msg("Failed to scan offer row")
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
+        if err := rows.Scan(&o.ID, &o.Name, &o.OriginalURL, &o.Status, &score, &o.CreatedAt); err != nil {
+            log.Error().Err(err).Str("userID", userID).Msg("Failed to scan offer row")
+            apperr.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil)
+            return
+        }
 		if score.Valid {
 			o.SiterankScore = &score.Float64
 		}
@@ -141,10 +142,7 @@ func createOffer(w http.ResponseWriter, r *http.Request) {
 	userID, _ := r.Context().Value(middleware.UserIDKey).(string)
 
 	var req OfferCreateRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
 	
 	offerID := uuid.New().String()
     // Publish the OfferCreated domain event (CQRS write path)
@@ -157,11 +155,11 @@ func createOffer(w http.ResponseWriter, r *http.Request) {
         CreatedAt:   time.Now(),
     }
     err := publisher.Publish(r.Context(), evt)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to publish OfferCreated event")
-		http.Error(w, "Failed to create offer", http.StatusInternalServerError)
-		return
-	}
+    if err != nil {
+        log.Error().Err(err).Msg("Failed to publish OfferCreated event")
+        apperr.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Failed to create offer", nil)
+        return
+    }
 	
     w.WriteHeader(http.StatusAccepted)
     json.NewEncoder(w).Encode(evt)

@@ -8,6 +8,7 @@ import (
 
     "github.com/jackc/pgx/v5/pgxpool"
     "github.com/xxrenzhe/autoads/pkg/errors"
+    "github.com/xxrenzhe/autoads/pkg/middleware"
 )
 
 type User struct {
@@ -40,8 +41,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
         w.WriteHeader(http.StatusOK)
     })
 
-    // API routes
-    mux.HandleFunc("/api/v1/console/users", h.getUsers)
+    // API routes (admin-only)
+    mux.Handle("/api/v1/console/users", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.getUsers))))
 
 	// Static file serving for the admin UI
 	// The path to the static files will be configured via an environment variable

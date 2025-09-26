@@ -367,6 +367,96 @@ export default function AdsCenterClient() {
     }
   };
 
+  // --- Diagnostics (plan/execute) ---
+  const [diagMetrics, setDiagMetrics] = useState<any>({ impressions: 0, ctr: 0, qualityScore: 0, dailyBudget: 0, budgetPacing: 0 });
+  const [diagLoading, setDiagLoading] = useState<boolean>(false);
+  const [diagResult, setDiagResult] = useState<any>(null);
+  const [planResult, setPlanResult] = useState<any>(null);
+  const [validateResult, setValidateResult] = useState<any>(null);
+  const [planText, setPlanText] = useState<string>("");
+  const [selectedAccount, setSelectedAccount] = useState<string>("");
+  const onDiagChange = (k: string, v: string) => {
+    const num = Number(v);
+    setDiagMetrics((m: any) => ({ ...m, [k]: isNaN(num) ? v : num }));
+  };
+  const autoFill = async () => {
+    try {
+      setDiagLoading(true);
+      const accId = selectedAccount || accounts?.[0]?.id || ''
+      const res = await http.get<any>(`/adscenter/diagnose/metrics`, { accountId: accId })
+      setDiagMetrics((m: any) => ({ ...m, ...res }))
+      toast.success('已自动填充诊断指标（预设/Stub）')
+    } catch { toast.error('自动填充失败') } finally { setDiagLoading(false) }
+  }
+  const doDiagnose = async () => {
+    try {
+      setDiagLoading(true);
+      const out = await http.post<any>('/adscenter/diagnose', { metrics: diagMetrics });
+      setDiagResult(out);
+      toast.success('诊断完成');
+    } catch (e) {
+      toast.error('诊断失败');
+    } finally { setDiagLoading(false); }
+  };
+  const doPlan = async () => {
+    try {
+      setDiagLoading(true);
+      const out = await http.post<any>('/adscenter/diagnose/plan', { metrics: diagMetrics });
+      setPlanResult(out);
+      try { setPlanText(JSON.stringify(out?.plan ?? {}, null, 2)); } catch { setPlanText(''); }
+      toast.success('已生成计划（校验模式）');
+    } catch (e) {
+      toast.error('生成计划失败');
+    } finally { setDiagLoading(false); }
+  };
+  const doValidate = async () => {
+    try {
+      setDiagLoading(true);
+      // 如果没有现成计划，先生成
+      let plan = planResult?.plan;
+      if (!plan) {
+        const out = await http.post<any>('/adscenter/diagnose/plan', { metrics: diagMetrics });
+        setPlanResult(out);
+        plan = out?.plan;
+      }
+      // 优先使用编辑器中的计划
+      if (planText && planText.trim()) {
+        try { plan = JSON.parse(planText) } catch { toast.error('计划 JSON 无法解析'); return; }
+      }
+      if (!plan) { toast.error('无可用计划'); return }
+      const res = await http.post<any>('/adscenter/bulk-actions/validate', plan);
+      setValidateResult(res);
+      if (res?.ok) toast.success('校验通过'); else toast.error('校验存在问题');
+    } catch (e) {
+      toast.error('计划校验失败');
+    } finally { setDiagLoading(false); }
+  };
+  const doExecute = async () => {
+    try {
+      setDiagLoading(true);
+      // 强制先校验，若存在错误则阻止执行
+      if (!validateResult) {
+        await doValidate();
+      }
+      if (validateResult && validateResult.ok === false) {
+        toast.error('计划存在错误，请修复后再执行');
+        return;
+      }
+      // 若用户修改了计划，直接入队；否则走 diagnose/execute（自动生成）
+      if (planText && planText.trim()) {
+        let plan: any = null;
+        try { plan = JSON.parse(planText) } catch { toast.error('计划 JSON 无法解析'); return; }
+        const out = await http.post<any>('/adscenter/bulk-actions', plan);
+        toast.success(`计划已入队：${out?.operationId || ''}`);
+      } else {
+        const out = await http.post<any>('/adscenter/diagnose/execute', { metrics: diagMetrics });
+        toast.success(`计划已入队：${out?.operationId || ''}`);
+      }
+    } catch (e) {
+      toast.error('入队执行失败');
+    } finally { setDiagLoading(false); }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -745,6 +835,106 @@ export default function AdsCenterClient() {
                   <p className="text-sm text-muted-foreground">成功执行</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>诊断与一键执行</CardTitle>
+              <CardDescription>输入核心指标，生成优化建议或直接生成/执行批量操作计划（预览）。</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="md:col-span-1 col-span-2">
+                  <Label htmlFor="account">账户</Label>
+                  <select id="account" className="w-full border rounded px-2 py-1 text-sm" value={selectedAccount} onChange={(e)=>setSelectedAccount(e.target.value)}>
+                    <option value="">默认</option>
+                    {accounts.map((a) => (<option key={a.id} value={a.id}>{a.account_name || a.id}</option>))}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="impr">近7天曝光</Label>
+                  <Input id="impr" type="number" value={diagMetrics.impressions}
+                    onChange={(e)=>onDiagChange('impressions', e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="ctr">CTR(%)</Label>
+                  <Input id="ctr" type="number" step="0.1" value={diagMetrics.ctr}
+                    onChange={(e)=>onDiagChange('ctr', e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="qs">质量得分</Label>
+                  <Input id="qs" type="number" step="1" value={diagMetrics.qualityScore}
+                    onChange={(e)=>onDiagChange('qualityScore', e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="budget">日预算</Label>
+                  <Input id="budget" type="number" step="1" value={diagMetrics.dailyBudget}
+                    onChange={(e)=>onDiagChange('dailyBudget', e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="pacing">预算进度(0..1)</Label>
+                  <Input id="pacing" type="number" step="0.1" value={diagMetrics.budgetPacing}
+                    onChange={(e)=>onDiagChange('budgetPacing', e.target.value)} />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={autoFill} disabled={diagLoading}>自动填充</Button>
+                <Button variant="secondary" onClick={doDiagnose} disabled={diagLoading}>诊断</Button>
+                <Button variant="outline" onClick={doPlan} disabled={diagLoading}>生成计划(校验)</Button>
+                <Button variant="outline" onClick={doValidate} disabled={diagLoading}>校验计划</Button>
+                <ProtectedButton featureName="adscenter" onClick={doExecute} disabled={diagLoading || (validateResult && validateResult.ok === false)}>一键执行</ProtectedButton>
+              </div>
+              {diagResult && (
+                <div className="text-xs bg-muted p-2 rounded">
+                  <div className="font-semibold mb-1">诊断结果</div>
+                  {/* 结构化展示规则与建议 */}
+                  <div className="space-y-1">
+                    {(Array.isArray(diagResult?.rules) ? diagResult.rules : []).map((r: any, idx: number) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs">
+                        <span className={`px-1 rounded ${r.severity==='error' ? 'bg-red-600 text-white' : r.severity==='warn' ? 'bg-yellow-600 text-white' : 'bg-gray-500 text-white'}`}>{r.severity || 'info'}</span>
+                        <span className="font-mono">{r.code}</span>
+                        <span className="text-muted-foreground">{r.message}</span>
+                      </div>
+                    ))}
+                    {(Array.isArray(diagResult?.suggestedActions) ? diagResult.suggestedActions : []).length > 0 && (
+                      <div className="mt-2">
+                        <div className="font-semibold">建议动作</div>
+                        <ul className="list-disc pl-5">
+                          {diagResult.suggestedActions.map((a: any, i: number) => (
+                            <li key={i}><span className="font-mono">{a.action}</span> — {a.reason || ''}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {planResult && (
+                <div className="text-xs bg-muted p-2 rounded">
+                  <div className="font-semibold mb-1">计划(校验)</div>
+                  <pre className="overflow-auto whitespace-pre-wrap">{JSON.stringify(planResult, null, 2)}</pre>
+                  <div className="mt-2">
+                    <Label htmlFor="planEditor">编辑计划 JSON（支持 ADJUST_BUDGET / ADJUST_CPC）</Label>
+                    <Textarea id="planEditor" rows={8} value={planText} onChange={(e)=>setPlanText(e.target.value)} />
+                  </div>
+                </div>
+              )}
+              {validateResult && (
+                <div className="text-xs bg-muted p-2 rounded">
+                  <div className="font-semibold mb-1">校验结果 {validateResult.ok ? '(通过)' : '(存在问题)'} </div>
+                  {/* 高亮 violations */}
+                  {(Array.isArray(validateResult?.violations) ? validateResult.violations : []).map((v: any, idx: number) => (
+                    <div key={idx} className="flex items-start gap-2 text-xs">
+                      <span className={`px-1 rounded ${v.severity==='error' ? 'bg-red-600 text-white' : v.severity==='warn' ? 'bg-yellow-600 text-white' : 'bg-gray-500 text-white'}`}>{v.severity || 'info'}</span>
+                      <span className="font-mono">{v.code}</span>
+                      <span className="text-muted-foreground">{v.message}</span>
+                      {v.field && <span className="font-mono text-gray-400">({v.field})</span>}
+                    </div>
+                  ))}
+                  <pre className="overflow-auto whitespace-pre-wrap mt-2">{JSON.stringify(validateResult, null, 2)}</pre>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

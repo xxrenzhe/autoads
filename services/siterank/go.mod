@@ -12,6 +12,10 @@ replace github.com/xxrenzhe/autoads/pkg/logger => ../../pkg/logger
 
 replace github.com/xxrenzhe/autoads/pkg/events => ../../pkg/events
 
+replace github.com/xxrenzhe/autoads/pkg/telemetry => ../../pkg/telemetry
+
+replace github.com/xxrenzhe/autoads/pkg/middleware => ../../pkg/middleware
+
 require (
 	cloud.google.com/go/firestore v1.18.0
 	cloud.google.com/go/pubsub v1.50.1
@@ -27,6 +31,7 @@ require (
 	github.com/xxrenzhe/autoads/pkg/httpclient v0.0.1
 	github.com/xxrenzhe/autoads/pkg/logger v0.0.1
 	github.com/xxrenzhe/autoads/pkg/middleware v0.0.0-20250921095352-ef8078c06b83
+	github.com/xxrenzhe/autoads/pkg/telemetry v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -38,18 +43,20 @@ require (
 	cloud.google.com/go/longrunning v0.6.7 // indirect
 	cloud.google.com/go/pubsub/v2 v2.0.0 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-redis/redis/v8 v8.11.5 // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.15.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/prometheus/client_golang v1.19.1 // indirect
+	github.com/prometheus/client_model v0.5.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
+	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/xxrenzhe/autoads/pkg/idempotency v0.0.0-20250925113750-f38a0734af10 // indirect
 	go.opencensus.io v0.24.0 // indirect

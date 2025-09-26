@@ -229,6 +229,16 @@ export default function MainNavigation() {
                   <DropdownMenuItem asChild><Link href="/api/auth/signout"><LogOut className="mr-2 h-4 w-4" />Log out</Link></DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            ) : null}
+            {session ? (
+              <Link href="/notifications" className="relative inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent focus:bg-accent">
+                <Bell className="h-5 w-5" />
+                {unread > 0 && (
+                  <span aria-label={`${unread} unread notifications`} className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] px-1.5 py-0.5">
+                    {unread > 99 ? '99+' : unread}
+                  </span>
+                )}
+              </Link>
             ) : (
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild><Link href="/auth/signin">Sign In</Link></Button>
@@ -268,3 +278,28 @@ export default function MainNavigation() {
     </>
   )
 }
+  // Notifications unread badge
+  const [unread, setUnread] = useState<number>(0)
+  const refreshUnread = async () => {
+    try {
+      const r = await fetch('/api/notifications/unread-count', { cache: 'no-store' })
+      const d = await r.json().catch(()=>({ count: 0 }))
+      setUnread(Number(d?.count || 0))
+    } catch { setUnread(0) }
+  }
+  useEffect(() => {
+    refreshUnread()
+    const id = setInterval(refreshUnread, 30000)
+    const onVis = () => { if (document.visibilityState === 'visible') refreshUnread() }
+    document.addEventListener('visibilitychange', onVis)
+    // Try SSE (best-effort)
+    let es: EventSource | null = null
+    try {
+      es = new EventSource('/api/notifications/stream')
+      es.addEventListener('unread', (ev: MessageEvent) => {
+        try { const d = JSON.parse(ev.data || '{}'); if (typeof d.count === 'number') setUnread(d.count) } catch {}
+      })
+      es.onerror = () => { /* ignore; fallback to polling */ }
+    } catch {}
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); try { es?.close() } catch {} }
+  }, [])

@@ -70,7 +70,7 @@ jobs:
           set -euo pipefail
           # Force full deploy when building a tag (release)
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            services='["identity","billing","offer","workflow","siterank","adscenter","batchopen","console"]'
+            services='["identity","billing","offer","workflow","siterank","adscenter","batchopen","console","recommendations"]'
             echo "Tag build detected (${GITHUB_REF}); forcing full deploy: $services"
           else
             BASE_SHA="${{ github.event.before || '' }}"

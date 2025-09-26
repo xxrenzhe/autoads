@@ -5,6 +5,7 @@ const USE_PW = String(process.env.PLAYWRIGHT || '').toLowerCase() === '1'
 ;(async () => { if (USE_PW) { try { const m = await import('playwright-extra-plugin-stealth'); playwright.use(m.default()); } catch {} } })()
 
 const MAX_CONTEXTS = Number(process.env.BROWSER_MAX_CONTEXTS || 12)
+const MAX_MEMORY_MB = Number(process.env.BROWSER_MAX_MEMORY_MB || 1024)
 
 function buildContextOptions(fp = {}) {
   const {
@@ -36,11 +37,14 @@ class BrowserPool {
       await ctx.addInitScript(this._patch)
       return { browser, context: ctx, isEphemeral: true }
     }
+    // capacity guard: memory
+    const rssMb = (process.memoryUsage().rss / (1024*1024)) | 0
+    if (rssMb >= MAX_MEMORY_MB) throw new Error('capacity_exhausted:memory')
     if (!this.sharedBrowser) {
       this.sharedBrowser = await playwright.chromium.launch(launchOpts)
       this.sharedContexts = 0
     }
-    if (this.sharedContexts >= MAX_CONTEXTS) throw new Error('capacity_exhausted')
+    if (this.sharedContexts >= MAX_CONTEXTS) throw new Error('capacity_exhausted:contexts')
     const ctx = await this.sharedBrowser.newContext(buildContextOptions(fingerprint))
     await ctx.addInitScript(this._patch)
     this.sharedContexts++
@@ -55,6 +59,16 @@ class BrowserPool {
     Object.defineProperty(navigator, 'webdriver', { get: () => undefined })
     if (!navigator.languages || !navigator.languages.length) {
       Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] })
+    }
+  }
+  stats() {
+    const rssMb = (process.memoryUsage().rss / (1024*1024)) | 0
+    return {
+      sharedContexts: this.sharedContexts,
+      hasSharedBrowser: !!this.sharedBrowser,
+      maxContexts: MAX_CONTEXTS,
+      memoryRssMb: rssMb,
+      maxMemoryMb: MAX_MEMORY_MB,
     }
   }
 }

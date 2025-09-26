@@ -4,10 +4,10 @@ import (
     "encoding/json"
     "log"
     "net/http"
-    "github.com/xxrenzhe/autoads/services/billing/internal/auth"
     "time"
 
     "github.com/jackc/pgx/v5/pgxpool"
+    "github.com/xxrenzhe/autoads/pkg/middleware"
 )
 
 // ... (Handler struct and NewHandler function are the same) ...
@@ -52,7 +52,7 @@ type TokenTransaction struct {
 
 // --- Route Handlers ---
 func (h *Handler) getSubscription(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(auth.UserIDContextKey).(string)
+    userID, ok := r.Context().Value(middleware.UserIDKey).(string)
 	if !ok { http.Error(w, "Unauthorized", http.StatusUnauthorized); return }
 	var sub Subscription
 	err := h.DB.QueryRow(r.Context(), `SELECT id, "planName", status, "currentPeriodEnd" FROM "Subscription" WHERE "userId" = $1`, userID).Scan(&sub.ID, &sub.PlanName, &sub.Status, &sub.CurrentPeriodEnd)
@@ -60,7 +60,7 @@ func (h *Handler) getSubscription(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, sub)
 }
 func (h *Handler) getTokenBalance(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(auth.UserIDContextKey).(string)
+    userID, ok := r.Context().Value(middleware.UserIDKey).(string)
 	if !ok { http.Error(w, "Unauthorized", http.StatusUnauthorized); return }
 	var balance TokenBalance
 	err := h.DB.QueryRow(r.Context(), `SELECT balance, "updatedAt" FROM "UserToken" WHERE "userId" = $1`, userID).Scan(&balance.Balance, &balance.UpdatedAt)
@@ -69,7 +69,7 @@ func (h *Handler) getTokenBalance(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getTokenTransactions(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(auth.UserIDContextKey).(string)
+    userID, ok := r.Context().Value(middleware.UserIDKey).(string)
 	if !ok || userID == "" {
 		http.Error(w, "Could not extract user ID from token", http.StatusInternalServerError)
 		return

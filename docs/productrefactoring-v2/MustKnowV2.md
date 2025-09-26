@@ -40,3 +40,4 @@
 - 敏感信息管理：Google Cloud Secret Manager
 - 监控&日志：Google Cloud Monitoring & Logging
 - 定时任务调度：Google Cloud Scheduler
+- 数据仓库/分析：BigQuery

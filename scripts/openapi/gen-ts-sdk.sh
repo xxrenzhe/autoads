@@ -48,4 +48,5 @@ generate batchopen.yaml batchopen
 generate billing.yaml billing
 generate notifications.yaml notifications
 generate browser-exec.yaml browser
+generate recommendations.yaml recommendations
 echo "[DONE] SDKs written to $OUT_DIR"

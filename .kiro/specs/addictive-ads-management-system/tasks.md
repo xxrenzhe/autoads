@@ -54,41 +54,53 @@
 
 ---
 
+## 变更决议（2025-09-26）
+
+- 解析落地SLO调整
+  - 取消“10秒SLO预算”对“浏览器解析落地”的约束。解析多重重定向允许>10s（默认45–60s），评估端到端SLO按阶段拆分管理。
+  - H1 SLO章节补充：评估≤10s适用于“数据获取与评分”阶段，不包含“浏览器解析落地”环节。
+- 价值分评估引入AI为主判分
+  - 评分环节必须引入AI评分作为主判分；AI失败或超时时回退到规则化评分（KISS）。
+  - 新路径：resolve-offer → SimilarWeb(metrics) → page-signals → AI评分（HTTP端点：AI_SCORING_URL，可由 Firebase AI Logic 提供）。
+
 ## A组：API Gateway + 统一认证（合并Identity功能）
 
 ### A1. OpenAPI契约与统一认证
 
-- [ ] A1.1 建立OpenAPI规范体系
+- [x] A1.1 建立OpenAPI规范体系
   - 以.kiro规范输出OpenAPI（所有域）
   - 定义统一的数据模型和错误码
   - 建立API版本管理和兼容性策略
   - 实现API文档自动生成
   - _需求: 需求A1 - OpenAPI契约先行_
 
-- [ ] A1.2 实现代码生成工具链
+- [x] A1.2 实现代码生成工具链
   - 建立Go server stubs生成器
   - 实现TypeScript客户端SDK生成
   - 建立API Gateway配置渲染
   - 实现契约测试自动生成
   - _需求: 需求A1 - OpenAPI契约先行_
 
-- [ ] A1.3 建立统一路由与错误处理
+- [x] A1.3 建立统一路由与错误处理
   - 实现统一路由格式：`/api/v1/{service}/{resource}`
   - 建立202异步模式和任务ID机制
   - 实现统一错误体：`{code, message, details?, traceId}`
   - 建立X-Idempotency-Key幂等处理
   - _需求: 需求A2 - 统一路由与错误处理_
 
+- [x] A1.3.a 幂等处理最小实现
+  - offer.create、billing.reserve 与 batchopen.create 接入 X-Idempotency-Key（24h TTL）
+
 ### A2. API Gateway配置与Firebase认证集成
 
-- [ ] A2.1 配置API Gateway统一入口
+- [x] A2.1 配置API Gateway统一入口
   - 配置Google Cloud API Gateway作为统一入口
   - 实现路由分发到8个核心微服务
   - 建立限流和监控配置
   - 实现负载均衡规则
   - _需求: 需求13 - 统一认证与访问控制_
 
-- [ ] A2.2 集成Firebase Bearer认证（合并Identity服务功能）
+- [x] A2.2 集成Firebase Bearer认证（合并Identity服务功能）
   - 在API Gateway层实现Firebase Bearer Token验证
   - 建立用户上下文注入到后续服务调用
   - 实现Console role=ADMIN权限验证
@@ -108,7 +120,7 @@
   - 实现事件快照和归档策略
   - _需求: 需求D1 - 事件存储与投影_
 
-- [ ] B1.2 定义标准事件集与工作流事件
+- [x] B1.2 定义标准事件集与工作流事件
   - 实现UserRegistered、OfferCreated事件
   - 实现SiterankRequested/Completed事件
   - 实现BatchOpsTaskQueued/Started/Completed/Failed事件
@@ -122,9 +134,24 @@
   - siterank 发布 SiterankRequested/SiterankCompleted 事件（pkg/events 封装，Pub/Sub）
   - Notifications 订阅兼容事件信封并入库（最小实现）
 
+- [x] B1.2.b OfferCreated 事件（offer服务迁移到 pkg/events）
+  - offer 使用 pkg/events 发布 OfferCreated（Envelope），由 notifications 投影到 Offer 读模型
+
+- [x] B1.2.c BatchOpsTaskQueued 事件（batchopen服务发布）
+  - batchopen 创建任务时发布 BatchOpsTaskQueued（Envelope）
+
+- [x] B1.2.d BatchOpsTaskStarted/Completed/Failed 事件（batchopen服务）
+  - 增加 /api/v1/batchopen/tasks/{id}/start|complete|fail 端点，发布事件并同步 UI 缓存
+
+- [x] B1.2.e TokenReserved/Debited/Reverted 事件（billing服务）
+  - 增加 /api/tokens/reserve|commit|release 端点（最小实现），发布事件并写交易记录
+
+- [x] B1.2.f BrowserExecRequested/Completed 事件（siterank服务回退路径）
+  - siterank 在浏览器回退抓取 JSON 前后发布请求/完成事件
+
 ### B2. 投影器与Saga工作流
 
-- [ ] B2.1 实现投影器框架与Saga模式
+- [x] B2.1 实现投影器框架与Saga模式
   - 建立Cloud Functions投影器模板
   - 实现Pub/Sub事件分发机制
   - 建立Saga协调器处理分布式事务（替代Workflow服务）
@@ -134,6 +161,10 @@
   - 实现读模型更新和同步
   - _需求: 需求D1 - 事件存储与投影_
 
+- [x] B2.1.a 投影器最小实现（内置于 notifications）
+  - 监听 BatchOpsTask* 事件，投影到 SQL 读模型表 "BatchopenTask"（新建迁移 008）
+  - 同步写 UI 缓存（notifications 集合）
+
 - [x] B2.2 建立读模型表结构
   - 创建User、Offer、SiterankAnalysis、BatchopenTask表
   - 创建UserAdsConnection、Subscription、UserToken表
@@ -141,7 +172,7 @@
   - 实现统一迁移脚本一次到位
   - _需求: 需求D2 - 读模型与缓存策略_
 
-- [ ] B2.3 实现Firestore缓存策略
+- [x] B2.3 实现Firestore缓存策略
   - 建立Firestore作为UI实时缓存层
   - 实现与SQL投影同步写入
   - 确保"SQL为事实来源"的架构
@@ -151,6 +182,18 @@
 - [x] B2.3.a Siterank UI缓存最小实现
   - 分析完成后写入 Firestore 文档：users/{uid}/siterank/{offerId}
   - 通过环境变量 FIRESTORE_ENABLED 控制开关（最佳努力）
+
+- [x] B2.3.b Batchopen 任务UI缓存最小实现
+  - 创建任务后写入 Firestore：users/{uid}/batchopen/tasks/{taskId}
+
+- [x] B2.3.c Adscenter Preflight UI缓存最小实现
+  - 预检成功后写入 Firestore：users/{uid}/adscenter/preflight/{accountId}
+
+- [x] B2.3.d Billing UI缓存最小实现
+  - 查询订阅/余额时写入 Firestore：users/{uid}/billing/summary（merge）
+
+- [x] B2.3.e Notifications UI缓存最小实现
+  - 监听事件入库同时写入 Firestore：users/{uid}/notifications（最近 N 条）
 
 ## C组：Browser-Exec高并发执行服务
 
@@ -170,18 +213,24 @@
   - 实现/batch-execute：批量执行
   - _需求: 需求C2 - Browser-Exec服务_
 
-- [ ] C1.3 实现资源管理和监控
-  - 建立浏览器池并发与内存护栏
-  - 实现指数退避与隔离机制
-  - 建立IAM受限的服务间调用
-  - 实现资源监控和性能指标
+- [x] C1.3 实现资源管理和监控（第一阶段）
+  - 浏览器池并发与内存护栏：BROWSER_MAX_CONTEXTS、BROWSER_MAX_MEMORY_MB，超过阈值拒绝创建（capacity_exhausted）
+  - 指数退避与隔离：/json-fetch 与 /check-availability 支持 retries/backoffMs；容量耗尽计数器
+  - IAM受限服务间调用：可选 BROWSER_INTERNAL_TOKEN，校验 Authorization Bearer 或 X-Service-Token
+  - 资源监控与指标：Prometheus 指标 be_pool_shared_contexts、be_memory_rss_mb、be_capacity_exhausted_total、运行中任务等
+  - 新增 /api/v1/browser/stats 调试端点
   - _需求: 需求C2 - Browser-Exec服务_
+
+- [x] C1.4 新增解析落地端点（resolve-offer）
+  - 增加 `POST /api/v1/browser/resolve-offer` 用于解析多重重定向，返回 finalUrl/finalUrlSuffix/domain/brand/chain
+  - 支持 `waitUntil=networkidle|load|domcontentloaded`、`timeoutMs`（默认45s，上限60s）、`stabilizeMs` URL 稳定判定窗口
+  - 继承代理预检、UA/Headers 注入、并发护栏与指标；新增冒烟脚本 `scripts/ops/smoke-resolve-offer.sh`
 
 ## E组：Batchopen批量操作服务
 
 ### E1. Batchopen仿真编排
 
-- [ ] E1.1 实现仿真模板系统
+- [x] E1.1 实现仿真模板系统
   - 建立国家曲线/UA/Referer/时区模板
   - 实现命令入队和进度追踪
   - 建立质量评分机制
@@ -194,6 +243,16 @@
   - 实现任务状态追踪和通知
   - 建立批量处理优化
   - _需求: 需求C4 - Batchopen仿真编排_
+
+- [x] E1.2.a Batchopen 与 Billing 最小闭环
+  - 在 start/complete/fail 时分别调用 reserve/commit/release（最佳努力、2s 超时）
+  - 通过 X-User-Id 透传用户上下文，无需额外授权
+
+- [x] E1.2.b 批量任务列表读模型接口
+  - 新增 GET /batchopen/tasks（按 userId 列出最近任务），读取 SQL 读模型 "BatchopenTask"
+
+- [x] E1.2.c 执行下沉至 Browser-Exec（最小实现）
+  - createTask 后台调用 Browser-Exec /check-availability 完成/失败回写 UI 与发布事件，并触发计费 commit/release
 
 ## D组：Siterank（10秒评估）
 
@@ -213,7 +272,7 @@
   - 已在siterank服务接入（优先命中缓存，否则回源SimilarWeb并回写缓存）
   - _需求: 需求C1 - Siterank 10秒评估_
 
-- [ ] D1.6 Browser‑Exec代理访问SimilarWeb（提升成功率）
+- [x] D1.6 Browser‑Exec代理访问SimilarWeb（提升成功率）
   - siterank 调用 browser‑exec 新增接口 /api/v1/browser/json-fetch 通过浏览器访问 SimilarWeb API
   - browser‑exec 支持美国代理：从 Proxy_URL_US 获取代理文本（每行一个），按行解析并为浏览器上下文配置代理
   - siterank 在直连失败时回退调用 browser‑exec（带自定义 User‑Agent、重试），成功则写入“成功7天缓存”
@@ -222,18 +281,25 @@
     - browser‑exec：PROXY_URL_US（可选，亦可由 siterank 指定）
   - _需求: 需求C1/C2 - Siterank评估/Browser‑Exec服务_
 
-- [ ] D1.2 实现性能优化策略
-  - 建立并行拉取机制
-  - 实现超时分段处理
-  - 建立域名+国家缓存
-  - 实现降级策略和错误恢复
+- [x] D1.2 实现性能优化策略
+  - 并行直连/浏览器抓取（Hedged，300ms延迟触发）
+  - 总预算 ~9.5s 超时分段；直连重试可配
+  - 新增 domain_country_cache(host,country) 读写；本地5分钟短缓存按host|country
+  - 失败回退写入1天失败缓存；事件携带 via/country 字段
   - _需求: 需求C1 - Siterank 10秒评估_
 
-- [ ] D1.3 实现评估结果投影
+- [x] D1.3 实现评估结果投影
   - 建立评估结果投影到读模型
   - 实现通过投影/通知更新前端
   - 建立评估历史和趋势分析
   - 实现相似机会发现算法
+  - _需求: 需求C1 - Siterank 10秒评估_
+  
+- [x] D1.3 实现评估结果投影
+  - 新增读模型表 SiterankHistory（analysis_id/user_id/offer_id/score/result/created_at）
+  - Analysis 完成即落表，并写 UI 历史缓存 users/{uid}/siterank-history/{offerId}/items/{analysisId}
+  - 新增端点：GET /siterank/{offerId}/history 与 /siterank/{offerId}/trend（按天聚合avg score）
+  - 评分 computeScore 基于 SimilarWeb 响应做简化0-100分（KISS）
   - _需求: 需求C1 - Siterank 10秒评估_
 
 - [ ] D1.4 实现简化增强功能
@@ -242,6 +308,21 @@
   - 建立简单过滤机制：搜索量>1000且竞争度非HIGH
   - 实现相似度评分详情和推荐理由展示
   - _需求: 需求C7 - 机会发现增强_
+
+- [x] D1.4.a 相似度评分端点（简化实现）
+  - 新增 POST /siterank/similar：入参 seedDomain/candidates/country，返回每个候选的相似度评分与分项因子
+  - 评分规则：关键词Jaccard(30) + 访问量尺度相似(25) + 国家(20,有国别即给) + 类目(25,两者有类目排名)
+  - 依赖 SimilarWeb metrics（命中缓存，未命中走直连/浏览器回退）
+
+- [x] D1.7 引入“解析落地 + AI评分”主路径（可开关）
+  - 新增分析路径（由 `ANALYZE_WITH_RESOLVE=1` 启用）：resolve-offer → SimilarWeb(metrics) → page-signals → AI评分
+  - AI评分端点通过 `AI_SCORING_URL` 配置（HTTP JSON），超时8s，失败回退规则评分
+  - 结果包含：resolve 结果、SimilarWeb 摘要、pageSignals、score、usedAI、degraded、country
+  - 前端展示 degraded=true 时的提示文案与后续重试建议（待联动 G2 通知）
+
+- [x] D1.7.b 前端/通知联动
+  - SimilarWeb 拉取失败或AI降级时，创建 Notification（warning）并在 UI 提醒
+  - 文案与CTA：建议稍后重试或更换代理/时段；可一键重试
 
 ## E组：Adscenter（Pre-flight/批量矩阵）
 
@@ -254,23 +335,35 @@
   - 实现诊断结果缓存和优化
   - _需求: 需求C3 - Adscenter诊断+批量_
 
+- [x] E1.1.a Validate-only 预检 + 短缓存
+  - 请求支持 validateOnly，跳过 live 调用，仅校验环境/配置
+  - 短缓存按 (user, account, validateOnly) 维度隔离
+  - 初步 live 检查项：ads.api_ping/accessible_customers/structure.campaigns/attribution.conversion_tracking/balance.budget（可扩展）
+
+- [x] E1.1.b 诊断自动填充（Stub/LIVE开关）
+  - 提供 /api/v1/adscenter/diagnose/metrics（ADS_DIAG_LIVE=true 尝试拉取LIVE，失败回退Stub）
+  - 前端“诊断与一键执行”面板支持自动填充核心指标
+
 ### E2. 批量操作矩阵
 
-- [ ] E2.1 实现批量操作流程
+- [x] E2.1 实现批量操作流程
   - 建立"变更计划"提交机制
   - 实现validate-only预检
   - 建立入队执行（队列/限流/退避）
   - 实现审计快照（前后对比）和回滚支持
   - _需求: 需求C3 - Adscenter诊断+批量_
 
-- [ ] E2.2 实现MCC链接管理
+- [x] E2.1.b 诊断→计划→执行闭环（前端最小接入）
+  - 前端加入“诊断/生成计划(校验)/校验计划/一键执行”流程，计划支持编辑 JSON 并校验后入队
+
+- [x] E2.2 实现MCC链接管理
   - 建立MCC链接状态机（invited/pending/active/inactive）
   - 实现刷新令牌加密存储
   - 建立state HMAC和回调域白名单
   - 实现配额策略配置化管理
   - _需求: 需求C3 - Adscenter诊断+批量_
 
-- [ ] E2.3 实现精细化诊断和操作指导系统
+- [x] E2.3 实现精细化诊断和操作指导系统
   - 建立预定义诊断规则库：无曝光问题、低CTR问题等规则
   - 实现基于Google Ads API质量得分的规则匹配引擎
   - 建立操作模板库：提高CPC、暂停低质量关键词、扩展匹配类型等
@@ -282,7 +375,7 @@
 
 ### F1. 原子计费系统
 
-- [ ] F1.1 实现原子扣费机制
+- [x] F1.1 实现原子扣费机制
   - 建立reserve(n) → 成功commit(n) / 失败release(n)机制
   - 实现扣费点：评估、仿真、批量操作
   - 建立事务消息和补偿机制
@@ -316,7 +409,7 @@
 
 ### G2. Notifications通知管理系统
 
-- [ ] G2.1 建立通知服务基础架构
+- [x] G2.1 建立通知服务基础架构
   - 创建独立的Notification Service (Cloud Run)
   - 建立PostgreSQL通知表结构（user_notifications、notification_rules）
   - 实现Firestore实时缓存结构（最近30天通知）
@@ -328,7 +421,7 @@
   - Notifications 服务提供 /readyz 与 /api/v1/notifications/recent（按 user_id 隔离）
   - 持久化到 user_notifications 表（最近列表基础能力）
 
-- [ ] G2.2 实现通知规则引擎和事件监听
+- [x] G2.2 实现通知规则引擎和事件监听
   - 建立事件驱动的通知规则引擎
   - 集成现有Pub/Sub事件总线，监听业务事件
   - 实现事件到通知的转换逻辑
@@ -338,6 +431,9 @@
 
 - [x] G2.2.a 监听与入库最小实现
   - 监听 SiterankRequested/SiterankCompleted/OfferCreated，写入 user_notifications（最近列表分页）
+
+- [x] G2.3 实时通知（SSE）
+  - 提供 /api/v1/notifications/stream（SSE）推送 unread 与新通知摘要；前端导航未读红点接入
 
 ### G3. Console后台管理
 
@@ -353,14 +449,22 @@
 
 ### H1. 可观测性系统
 
-- [ ] H1.1 实现结构化日志
+- [x] H1.1 实现结构化日志
   - 建立JSON格式日志：trace_id、user_id、offer_id、task_id、stack、service、version
   - 实现异常日志包含code与堆栈摘要
   - 建立OpenTelemetry分布式追踪
   - 实现每服务/healthz端点和Gateway /api/health聚合
   - _需求: 需求O1 - 结构化日志与追踪_
 
-- [ ] H1.2 实现SLO监控和告警
+- [x] H1.1.a /metrics 与HTTP请求指标（最小实现）
+  - 引入 pkg/telemetry 并在 siterank/billing/batchopen/adscenter 挂载 /metrics
+  - 统一请求计数与时延指标（service/method/path/status），chi 中间件接入
+
+- [x] H1.0 SLO范围澄清与指标拆分
+  - 评估≤10s适用于“数据获取与评分”阶段，不包含“浏览器解析落地”环节
+  - 新增阶段性指标：resolve_nav_ms、resolve_stabilize_ms、sw_fetch_ms、ai_score_ms，便于P95分解与优化
+
+- [x] H1.2 实现SLO监控和告警
   - 建立关键指标P95：评估≤10s、仿真入队≤1s、Pre-flight≤800ms、批量成功率≥99%、浏览器执行错误率≤1%
   - 实现按stack/service维度配置告警
   - 建立性能趋势分析和容量规划
@@ -376,6 +480,12 @@
   - 实现按环境的Secret管理
   - _需求: 需求E1 - 环境隔离与配置_
 
+- [x] H2.1.a Cloud Run 资源标签脚本
+  - 新增 deployments/scripts/label-services.sh 批量更新 autoads-stack 标签
+
+- [x] H2.1.b Secret 管理同步脚本
+  - 新增 deployments/scripts/secret-env-sync.sh，从 Secret Manager 读取并更新 Cloud Run 环境变量
+
 - [ ] H2.2 实现性能和成本优化
   - 建立Browser-Exec独立镜像和扩缩容
   - 实现Ads API的validate-only预检+限流/退避+批量分片
@@ -383,14 +493,20 @@
   - 实现Pre-flight结果短缓存助力P95达标
   - _需求: 需求E2 - 性能与成本优化_
 
+- [x] H2.2.a Adscenter Pre-flight 短缓存
+  - 内存短缓存（用户+账号）默认2分钟（可通过 PREFLIGHT_CACHE_TTL_MS 配置）
+
+- [x] H2.2.b Browser-Exec 扩缩容脚本
+  - 新增 deployments/scripts/set-scaling.sh，支持 min/max/concurrency/cpu/mem 配置
+
 ### 1. 共享底座开发 (pkg/*)
 
-- [ ] 1.1 实现认证中间件 (pkg/auth)
-  - 实现Firebase Bearer Token验证中间件
-  - 建立用户上下文注入和权限检查
-  - 实现JWT Token解析和验证
-  - 建立统一的认证错误处理
-  - _需求: 需求26 - 企业级安全与治理_
+ - [x] 1.1 实现认证中间件 (pkg/auth)
+   - 实现Firebase Bearer Token验证中间件
+   - 建立用户上下文注入和权限检查
+   - 实现JWT Token解析和验证
+   - 建立统一的认证错误处理
+   - _需求: 需求26 - 企业级安全与治理_
 
 - [ ] 1.2 实现配置管理 (pkg/config)
   - 实现Secret Manager集成和KMS加密
@@ -413,6 +529,9 @@
   - 建立请求追踪和日志记录
   - _需求: 需求27 - 可观测性与SLO_
 
+- [x] 1.4.a HTTP客户端最小增强（重试/退避 + 断路器骨架）
+  - 新增 PostJSONWithRetry 与可选 CircuitBreaker；保留 Idempotency-Key 透传
+
 - [ ] 1.5 实现可观测性 (pkg/telemetry)
   - 实现结构化日志(JSON格式)
   - 建立指标收集和上报(Prometheus格式)
@@ -429,12 +548,21 @@
   - 建立API文档自动生成
   - _需求: 需求24 - 事件驱动架构与CQRS_
 
+- [x] 2.1.a Batchopen 扩展端点契约
+  - 补充 /batchopen/tasks/{id}/start|complete|fail OpenAPI 定义
+
 - [ ] 2.2 实现代码生成工具
   - 建立Go服务端代码生成器
   - 实现TypeScript客户端SDK生成
   - 建立API Gateway配置渲染
   - 实现契约测试自动生成
   - _需求: 需求24 - 事件驱动架构与CQRS_
+
+- [x] 2.2.a 生成 batchopen Go stubs（types + chi-server）
+  - [x] 2.2.b 生成 billing 扩展端点 Go stubs（types + chi-server）
+  - [x] 2.2.c 生成前端 TypeScript 类型（offer/siterank/adscenter/batchopen/billing/notifications/browser）
+- [x] 2.2.d 绑定 OpenAPI chi-server 到服务（offer/batchopen/billing/adscenter）
+  - [x] 2.2.e 绑定 OpenAPI chi-server 到通知服务（notifications）
 
 - [x] 2.3 建立API Gateway配置
   - 配置Google Cloud API Gateway
@@ -465,6 +593,9 @@
   - 实现环境隔离和Secret管理
   - 建立自动化测试和质量门禁
   - _需求: 需求26 - 企业级安全与治理_
+
+- [x] 3.3.a 为 offer/batchopen/billing/adscenter 增加 Cloud Build 配置
+  - 新增 deployments/{service}/cloudbuild.yaml（Docker 构建与推送）
 
 ## M1: MVP闭环 (4-6周)
 
@@ -665,6 +796,24 @@
   - _需求: 需求23 - SEO优化与站点地图_
 
 ## M2.5: 简化功能增强 (1-2周)
+
+## 新增任务（预发落地）
+
+- [x] 创建并绑定 siterank 专用服务账号（最小权限）
+  - 运行身份切换至 siterank-sa@gen-lang-client-0944935873.iam.gserviceaccount.com（Cloud Run）
+  - 事件发布验证通过（autoads-events 收到 SiterankCompleted）
+
+- [x] 创建并绑定 notifications 专用服务账号（最小权限）
+  - 运行身份切换至 notifications-sa@gen-lang-client-0944935873.iam.gserviceaccount.com（Cloud Run）
+  - 订阅接收器启动并接收事件（新增运行日志与插入成功日志）
+
+- [x] Pub/Sub 资源创建与验证
+  - 创建 topic=autoads-events 与 subscription=notifications-preview-sub
+  - 临时订阅验证发布链路（temp-debug-sub 拉取 SiterankCompleted）
+
+- [x] 数据库迁移（通知读模型）
+  - 通过 Cloud Run Job 执行 009_user_notifications.sql，落地 user_notifications 表
+
 
 ### 15. 痛点7&8增强实施
 
@@ -1234,3 +1383,74 @@
   - 监听 SiterankRequested/SiterankCompleted/OfferCreated，写入 user_notifications（最近列表分页）
 - [x] Siterank 主机级缓存（5分钟）
   - 对域名 host 级别结果缓存，减少重复 SimilarWeb 拉取
+
+### 新任务：推荐/评估层离线化方案（解耦 Adscenter，降低 Ads API 调用）
+
+- [ ] R1. 架构分工与调用最小化
+  - 将“发现/建议/风险识别”前移至推荐/评估层；adscenter 仅承担 validate-only + mutate（执行）
+  - validate-only 与 mutate 仅在“计划确认/执行链路”触发；不被建议/分析阻塞
+  - 优先使用 BigQuery Export、SimilarWeb、browser-exec 等数据源，尽量避免 Ads API 读调用
+  - 仅在必要场景使用 Ads API（validate-only、mutate、必要的 Planner/Forecast），并配速/配额受控
+
+- [ ] R2. 离线任务与缓存
+  - Cloud Scheduler 触发，分片（按账户/seed 哈希）+ 幂等游标推进；失败重试分级
+  - 结果写入 SQL 读模型 + Firestore UI 缓存，并通过 notifications 推送
+  - 强缓存：brand profile(seed→aliases) 7天，keyword 风险体检结果 24小时，Pre-flight 2分钟短缓存
+
+ - [x] R3. 品牌画像与词源（评估阶段，不依赖 Ads API）
+  - 结论：评估阶段仍需要“品牌画像采集”（brand profile），即获取品牌词/别名，用于后续覆盖度分析与建议；不阻拦品牌词投放，也不做“避开品牌词”的校验
+  - 品牌词来源：SimilarWeb 指标、域名解析、落地页信号（title/og:site_name/h1）
+  - 关键词来源：用户输入、落地页自动抽取（browser-exec 简抽）、域名启发式扩展（可选）
+  - 别名构建与缓存：buildAliases（规范化/去空格/长词去元音变体），brand profile 7天缓存
+  - 已落地：Recommendations 服务 + POST /recommend/keywords/brand-check（域名解析+可选落地页信号）；内存级 brand profile 缓存（7天）
+
+- [ ] R4. 已投放关键词体检（离线）
+  - 数据来自 BigQuery Export（不占用 Ads API 配额）；对“已投放关键词”周期性做品牌词体检
+  - 按严重度分级推送风险；可生成否词/结构收敛建议（进入计划候选）
+
+ - [x] R5. 接口与数据模型
+  - 新增推荐层接口：POST /recommend/keywords/brand-check（body: seedDomain, keywords[], locale?）
+  - 结果模型：items[{ keyword, containsBrand, matchedAlias, method, score, severity }]
+  - 表/缓存：brand_profile、keyword_risk_results、keyword_suggestions；Firestore 映射 users/{uid}/recommendations/*
+  - 已落地（部分）：brand-check 服务与内存缓存已就绪；brand_profile/keyword_risk_results 表已在服务内自动迁移并持久化写入
+
+- [ ] R6. 与 adscenter 的衔接
+  - 推荐层产出“变更计划候选”；adscenter 仅承接“已确认”的计划
+  - adscenter 执行链：validate-only（估计影响+快照）→ 入队 mutate（限流/退避/回滚/审计）
+
+ - [x] R7. 离线体检调度与分片
+  - Cloud Scheduler 触发 offline brand-audit；按 shard/totalShards 分片执行
+  - 提供部署脚本：create-reco-scheduler.sh / create-reco-scheduler-sharded.sh
+  - BigQuery Export 拉取关键词：支持 days/limit/customer_id，表/列名通过 env 配置
+
+- [ ] R8. 前端接入与可视化
+  - 在“导入/新建计划”调用 brand-check，高亮风险并提供替换建议
+  - 新建“体检记录”视图，调用 /recommend/keywords/brand-results 分页展示，支持 severity/containsBrand 过滤
+  - 读取 users/{uid}/recommendations/brand-check/* 的最新记录，显示更新时间与摘要
+
+- [ ] R9. 阶段化规则（评估提取品牌词；放大做覆盖度离线审计）
+  - 评估(Evaluation)：仅“提取品牌词/别名”，不阻拦品牌词投放；brand profile 作为“放大”阶段覆盖度审计的基础
+  - 放大(Scale)：不重复 brand-check；通过离线“品牌覆盖度（brand coverage）”分析识别“未覆盖品牌别名”的风险（我们目标是覆盖品牌词）
+  - UI：评估阶段执行 brand-check（提取别名并高亮建议）；放大阶段仅展示覆盖度指标与缺失别名建议，不发起 brand-check
+  - 后端：adscenter 不调用 brand-check；离线覆盖度依赖 BigQuery Export + brand profile（无 Ads API）
+
+ - [x] R10. 品牌覆盖度离线审计与指标
+  - 接口：POST /recommend/internal/offline/brand-coverage-audit（days/shard/totalShards）
+  - 数据源：BigQuery Export 拉取关键词，按 brand profile 别名计算 totalKeywords/brandKeywords/coverageRatio/missingAliases
+  - 存储：brand_coverage_results（seed_domain, account_id, ratio, missing_aliases, updated_at）
+  - 查询：GET /recommend/brand-coverage?seedDomain&accountId
+  - 发布调度：支持单作业与分片作业脚本（deployments/scripts/create-reco-scheduler*.sh）
+
+ - [ ] R11. 放大阶段“非准入”，仅事后风险识别（覆盖度报告）
+  - 结论：放大阶段不做“准入/门禁”；品牌覆盖度仅作为“事后风险识别与报告”，用于提醒“未覆盖品牌别名”的风险，不阻塞 validate-only/mutate
+  - UI：展示覆盖度指标与缺失别名建议（提示补充），不作为执行前置条件；/recommend/eligibility/scale 若存在仅作为“提示接口”，默认不在前端使用
+
+ - [x] R12. 无历史/新计划的“计划覆盖”准确校验（不估算，非门禁）
+  - 结论：在无历史/新计划场景，直接对“拟投放关键词集”做准确覆盖校验（accuracy-first），仅作为“计划质量报告/建议”，不作为执行门禁
+  - 接口：POST /recommend/brand-coverage/planned（seedDomain, keywords[]）→ 返回覆盖度与缺失别名列表
+  - 使用：前端在“变更计划确认前/确认页”展示报告，提示补充与建议；不作为阻塞条件，不依赖 Ads API
+
+ - [x] D1.4.b 关键词扩展端点（Stub + 过滤）
+  - 新增 POST /api/v1/adscenter/keywords/expand：seedDomain/seedKeywords/validateOnly
+  - 过滤规则：搜索量>1000 且竞争度!=HIGH，按搜索量降序，返回前20
+  - 后续可切换至真实 Google Ads Keyword Planner 客户端

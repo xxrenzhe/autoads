@@ -11,6 +11,20 @@ const (
 	BearerAuthScopes = "bearerAuth.Scopes"
 )
 
+// Defines values for NotificationRuleChannel.
+const (
+	NotificationRuleChannelEmail   NotificationRuleChannel = "email"
+	NotificationRuleChannelInapp   NotificationRuleChannel = "inapp"
+	NotificationRuleChannelWebhook NotificationRuleChannel = "webhook"
+)
+
+// Defines values for NotificationRuleInputChannel.
+const (
+	NotificationRuleInputChannelEmail   NotificationRuleInputChannel = "email"
+	NotificationRuleInputChannelInapp   NotificationRuleInputChannel = "inapp"
+	NotificationRuleInputChannelWebhook NotificationRuleInputChannel = "webhook"
+)
+
 // Notification defines model for Notification.
 type Notification struct {
 	CreatedAt time.Time `json:"createdAt"`
@@ -20,8 +34,42 @@ type Notification struct {
 	Type      string    `json:"type"`
 }
 
+// NotificationRule defines model for NotificationRule.
+type NotificationRule struct {
+	Channel   NotificationRuleChannel `json:"channel"`
+	CreatedAt *time.Time              `json:"createdAt,omitempty"`
+	Enabled   bool                    `json:"enabled"`
+	EventType string                  `json:"eventType"`
+	Id        string                  `json:"id"`
+	UpdatedAt *time.Time              `json:"updatedAt,omitempty"`
+}
+
+// NotificationRuleChannel defines model for NotificationRule.Channel.
+type NotificationRuleChannel string
+
+// NotificationRuleInput defines model for NotificationRuleInput.
+type NotificationRuleInput struct {
+	Channel   NotificationRuleInputChannel `json:"channel"`
+	Enabled   bool                         `json:"enabled"`
+	EventType string                       `json:"eventType"`
+}
+
+// NotificationRuleInputChannel defines model for NotificationRuleInput.Channel.
+type NotificationRuleInputChannel string
+
+// MarkNotificationsReadJSONBody defines parameters for MarkNotificationsRead.
+type MarkNotificationsReadJSONBody struct {
+	LastId string `json:"lastId"`
+}
+
 // ListRecentNotificationsParams defines parameters for ListRecentNotifications.
 type ListRecentNotificationsParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
+
+// MarkNotificationsReadJSONRequestBody defines body for MarkNotificationsRead for application/json ContentType.
+type MarkNotificationsReadJSONRequestBody MarkNotificationsReadJSONBody
+
+// UpsertNotificationRuleJSONRequestBody defines body for UpsertNotificationRule for application/json ContentType.
+type UpsertNotificationRuleJSONRequestBody = NotificationRuleInput

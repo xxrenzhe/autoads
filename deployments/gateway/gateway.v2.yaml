@@ -20,7 +20,7 @@ paths:
       operationId: readyz
       # point to one lightweight service health endpoint
       x-google-backend:
-        address: https://siterank-REPLACE_WITH_RUN_URL/healthz
+        address: https://siterank-REPLACE_WITH_RUN_URL/health
         path_translation: CONSTANT_ADDRESS
       responses: { '200': { description: OK } }
   /api/health/adscenter:
@@ -36,6 +36,16 @@ paths:
       x-google-backend:
         address: https://console-REPLACE_WITH_RUN_URL/health
         path_translation: CONSTANT_ADDRESS
+      responses: { '200': { description: OK } }
+
+  # OAuth 回调无需鉴权（由 Google 调用）
+  /api/v1/adscenter/oauth/callback:
+    get:
+      operationId: adscenterOauthCallback
+      # 不配置 security 即为公开
+      x-google-backend:
+        address: https://adscenter-REPLACE_WITH_RUN_URL
+        path_translation: APPEND_PATH_TO_ADDRESS
       responses: { '200': { description: OK } }
 
   # Identity service removed; Firebase auth is enforced at gateway.
@@ -132,9 +142,17 @@ paths:
       x-google-backend:
         address: https://notifications-REPLACE_WITH_RUN_URL
       responses: { '200': { description: OK } }
-    post:
-      operationId: notificationsPost
+
+  /api/v1/recommend/*:
+    get:
+      operationId: recommendGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://notifications-REPLACE_WITH_RUN_URL
+        address: https://recommendations-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+    post:
+      operationId: recommendPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://recommendations-REPLACE_WITH_RUN_URL
       responses: { '200': { description: OK } }

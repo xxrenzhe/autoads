@@ -17,9 +17,18 @@ type ServerInterface interface {
 	// Request siterank analysis for an offer
 	// (POST /siterank/analyze)
 	RequestSiterankAnalysis(w http.ResponseWriter, r *http.Request)
+	// Compute similarity scores for candidate domains
+	// (POST /siterank/similar)
+	ComputeSimilarOffers(w http.ResponseWriter, r *http.Request)
 	// Get latest siterank analysis by offerId
 	// (GET /siterank/{offerId})
 	GetLatestSiterankByOffer(w http.ResponseWriter, r *http.Request, offerId string)
+	// Get siterank analysis history by offerId
+	// (GET /siterank/{offerId}/history)
+	GetSiterankHistory(w http.ResponseWriter, r *http.Request, offerId string, params GetSiterankHistoryParams)
+	// Get daily trend (avg score) by offerId
+	// (GET /siterank/{offerId}/trend)
+	GetSiterankTrend(w http.ResponseWriter, r *http.Request, offerId string, params GetSiterankTrendParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -32,9 +41,27 @@ func (_ Unimplemented) RequestSiterankAnalysis(w http.ResponseWriter, r *http.Re
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Compute similarity scores for candidate domains
+// (POST /siterank/similar)
+func (_ Unimplemented) ComputeSimilarOffers(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Get latest siterank analysis by offerId
 // (GET /siterank/{offerId})
 func (_ Unimplemented) GetLatestSiterankByOffer(w http.ResponseWriter, r *http.Request, offerId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get siterank analysis history by offerId
+// (GET /siterank/{offerId}/history)
+func (_ Unimplemented) GetSiterankHistory(w http.ResponseWriter, r *http.Request, offerId string, params GetSiterankHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get daily trend (avg score) by offerId
+// (GET /siterank/{offerId}/trend)
+func (_ Unimplemented) GetSiterankTrend(w http.ResponseWriter, r *http.Request, offerId string, params GetSiterankTrendParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -67,6 +94,26 @@ func (siw *ServerInterfaceWrapper) RequestSiterankAnalysis(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
+// ComputeSimilarOffers operation middleware
+func (siw *ServerInterfaceWrapper) ComputeSimilarOffers(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ComputeSimilarOffers(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetLatestSiterankByOffer operation middleware
 func (siw *ServerInterfaceWrapper) GetLatestSiterankByOffer(w http.ResponseWriter, r *http.Request) {
 
@@ -89,6 +136,90 @@ func (siw *ServerInterfaceWrapper) GetLatestSiterankByOffer(w http.ResponseWrite
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetLatestSiterankByOffer(w, r, offerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSiterankHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetSiterankHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "offerId" -------------
+	var offerId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "offerId", chi.URLParam(r, "offerId"), &offerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offerId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetSiterankHistoryParams
+
+	// ------------- Optional query parameter "days" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "days", r.URL.Query(), &params.Days)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "days", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSiterankHistory(w, r, offerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSiterankTrend operation middleware
+func (siw *ServerInterfaceWrapper) GetSiterankTrend(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "offerId" -------------
+	var offerId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "offerId", chi.URLParam(r, "offerId"), &offerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offerId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetSiterankTrendParams
+
+	// ------------- Optional query parameter "days" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "days", r.URL.Query(), &params.Days)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "days", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSiterankTrend(w, r, offerId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -215,7 +346,16 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/siterank/analyze", wrapper.RequestSiterankAnalysis)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/siterank/similar", wrapper.ComputeSimilarOffers)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/siterank/{offerId}", wrapper.GetLatestSiterankByOffer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/siterank/{offerId}/history", wrapper.GetSiterankHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/siterank/{offerId}/trend", wrapper.GetSiterankTrend)
 	})
 
 	return r

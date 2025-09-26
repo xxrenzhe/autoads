@@ -13,7 +13,7 @@ import (
     _ "github.com/lib/pq"
     "github.com/xxrenzhe/autoads/pkg/errors"
     "github.com/xxrenzhe/autoads/pkg/logger"
-    adsauth "github.com/xxrenzhe/autoads/services/adscenter/internal/auth"
+    "github.com/xxrenzhe/autoads/pkg/middleware"
     adsconfig "github.com/xxrenzhe/autoads/services/adscenter/internal/config"
 )
 
@@ -80,8 +80,7 @@ func main() {
     protected.HandleFunc("/adscenter/campaigns", createCampaignHandler)
 
     // Firebase Auth middleware
-    authClient := adsauth.NewClient(ctx)
-    mux.Handle("/", authClient.Middleware(protected))
+    mux.Handle("/", middleware.AuthMiddleware(protected))
 
     log.Info().Str("port", cfg.Port).Msg("Adscenter service starting...")
     if err := http.ListenAndServe(":"+cfg.Port, mux); err != nil {
@@ -110,7 +109,7 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createCampaignHandler(w http.ResponseWriter, r *http.Request) {
-	userID, _ := r.Context().Value(adsauth.UserIDContextKey).(string)
+    userID, _ := r.Context().Value(middleware.UserIDKey).(string)
 	var campaign Campaign
 	if err := json.NewDecoder(r.Body).Decode(&campaign); err != nil { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error(), nil); return }
 	log.Info().Str("userID", userID).Str("campaignName", campaign.Name).Msg("Adscenter campaign created")

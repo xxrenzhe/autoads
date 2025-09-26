@@ -86,6 +86,7 @@ interface SystemConfig {
       start: string;
       end: string;
     };
+    rules?: Array<{ eventType: string; channel: 'inapp' | 'email' | 'webhook'; enabled: boolean }>;
   };
 }
 
@@ -927,6 +928,60 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       onChange={(e) => updateNestedConfig('notifications', 'quietHours', 'end', e.target.value)}
                     />
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Notification Rules</CardTitle>
+              <CardDescription>Enable/disable specific event notifications</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                {(config.notifications.rules || []).map((r, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <div className="font-medium">{r.eventType}</div>
+                      <div className="text-muted-foreground">Channel: {r.channel}</div>
+                    </div>
+                    <div>
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={!!r.enabled}
+                        onChange={async (e) => {
+                          const enabled = e.target.checked
+                          const next = { ...config }
+                          next.notifications.rules = (next.notifications.rules || []).map((x, i) => i === idx ? { ...x, enabled } : x)
+                          setConfig(next)
+                          try {
+                            await fetch('/api/go/api/v1/notifications/rules', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventType: r.eventType, channel: r.channel, enabled }) })
+                          } catch {}
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {(config.notifications.rules || []).length === 0 && (
+                  <div className="text-sm text-muted-foreground">No rules yet.</div>
+                )}
+                <div>
+                  <button
+                    className="text-sm underline"
+                    onClick={async () => {
+                      try {
+                        const r = await fetch('/api/go/api/v1/notifications/rules', { cache: 'no-store' })
+                        if (!r.ok) return
+                        const data = await r.json()
+                        const items = Array.isArray(data.items) ? data.items : []
+                        setConfig((prev) => ({ ...prev, notifications: { ...prev.notifications, rules: items.map((x: any) => ({ eventType: x.eventType || x.event_type, channel: (x.channel || 'inapp') as any, enabled: !!x.enabled })) } }))
+                      } catch {}
+                    }}
+                  >
+                    Refresh Rules
+                  </button>
                 </div>
               </div>
             </CardContent>

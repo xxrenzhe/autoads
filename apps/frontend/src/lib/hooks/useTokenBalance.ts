@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from '@tanstack/react-query';
-import { backend } from '@/shared/http/backend';
+// fetch via Next API BFF
 
 export type TokenBalance = {
   total?: number;
@@ -13,9 +13,12 @@ export type TokenBalance = {
 export function useTokenBalance() {
   return useQuery({
     queryKey: ['backend', 'tokens', 'balance'],
-    queryFn: async (): Promise<TokenBalance> => backend.get<TokenBalance>('/api/tokens/balance'),
+    queryFn: async (): Promise<TokenBalance> => {
+      const res = await fetch('/api/billing/tokens/balance', { cache: 'no-store' })
+      if (!res.ok) return { total: undefined, remaining: undefined, used: undefined }
+      return res.json()
+    },
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
 }
-

@@ -33,10 +33,58 @@ type Analysis struct {
 // AnalysisStatus defines model for Analysis.Status.
 type AnalysisStatus string
 
+// HistoryItem defines model for HistoryItem.
+type HistoryItem struct {
+	AnalysisId string                  `json:"analysisId"`
+	CreatedAt  time.Time               `json:"createdAt"`
+	OfferId    string                  `json:"offerId"`
+	Result     *map[string]interface{} `json:"result"`
+	Score      int                     `json:"score"`
+	UserId     string                  `json:"userId"`
+}
+
+// SimilarityItem defines model for SimilarityItem.
+type SimilarityItem struct {
+	Domain  string                  `json:"domain"`
+	Factors *map[string]interface{} `json:"factors,omitempty"`
+	Score   float32                 `json:"score"`
+}
+
+// TrendPoint defines model for TrendPoint.
+type TrendPoint struct {
+	AvgScore float32 `json:"avgScore"`
+	Count    int     `json:"count"`
+
+	// Date YYYY-MM-DD
+	Date string `json:"date"`
+}
+
 // RequestSiterankAnalysisJSONBody defines parameters for RequestSiterankAnalysis.
 type RequestSiterankAnalysisJSONBody struct {
 	OfferId string `json:"offerId"`
 }
 
+// ComputeSimilarOffersJSONBody defines parameters for ComputeSimilarOffers.
+type ComputeSimilarOffersJSONBody struct {
+	Candidates []string `json:"candidates"`
+
+	// Country Optional ISO country code
+	Country    *string `json:"country,omitempty"`
+	SeedDomain string  `json:"seedDomain"`
+}
+
+// GetSiterankHistoryParams defines parameters for GetSiterankHistory.
+type GetSiterankHistoryParams struct {
+	Days *int `form:"days,omitempty" json:"days,omitempty"`
+}
+
+// GetSiterankTrendParams defines parameters for GetSiterankTrend.
+type GetSiterankTrendParams struct {
+	Days *int `form:"days,omitempty" json:"days,omitempty"`
+}
+
 // RequestSiterankAnalysisJSONRequestBody defines body for RequestSiterankAnalysis for application/json ContentType.
 type RequestSiterankAnalysisJSONRequestBody RequestSiterankAnalysisJSONBody
+
+// ComputeSimilarOffersJSONRequestBody defines body for ComputeSimilarOffers for application/json ContentType.
+type ComputeSimilarOffersJSONRequestBody ComputeSimilarOffersJSONBody

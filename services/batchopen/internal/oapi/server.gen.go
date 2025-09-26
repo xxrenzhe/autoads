@@ -9,22 +9,68 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 )
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// List recent batchopen tasks for current user
+	// (GET /batchopen/tasks)
+	ListBatchopenTasks(w http.ResponseWriter, r *http.Request)
 	// Create a batchopen task
 	// (POST /batchopen/tasks)
 	CreateBatchopenTask(w http.ResponseWriter, r *http.Request)
+	// Mark a batchopen task as completed
+	// (POST /batchopen/tasks/{id}/complete)
+	CompleteBatchopenTask(w http.ResponseWriter, r *http.Request, id string)
+	// Mark a batchopen task as failed
+	// (POST /batchopen/tasks/{id}/fail)
+	FailBatchopenTask(w http.ResponseWriter, r *http.Request, id string)
+	// Mark a batchopen task as started
+	// (POST /batchopen/tasks/{id}/start)
+	StartBatchopenTask(w http.ResponseWriter, r *http.Request, id string)
+	// List built-in simulation templates (country curves, UA, referrer, timezone)
+	// (GET /batchopen/templates)
+	ListSimulationTemplates(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
 
+// List recent batchopen tasks for current user
+// (GET /batchopen/tasks)
+func (_ Unimplemented) ListBatchopenTasks(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Create a batchopen task
 // (POST /batchopen/tasks)
 func (_ Unimplemented) CreateBatchopenTask(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Mark a batchopen task as completed
+// (POST /batchopen/tasks/{id}/complete)
+func (_ Unimplemented) CompleteBatchopenTask(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Mark a batchopen task as failed
+// (POST /batchopen/tasks/{id}/fail)
+func (_ Unimplemented) FailBatchopenTask(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Mark a batchopen task as started
+// (POST /batchopen/tasks/{id}/start)
+func (_ Unimplemented) StartBatchopenTask(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List built-in simulation templates (country curves, UA, referrer, timezone)
+// (GET /batchopen/templates)
+func (_ Unimplemented) ListSimulationTemplates(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -37,6 +83,26 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// ListBatchopenTasks operation middleware
+func (siw *ServerInterfaceWrapper) ListBatchopenTasks(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListBatchopenTasks(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CreateBatchopenTask operation middleware
 func (siw *ServerInterfaceWrapper) CreateBatchopenTask(w http.ResponseWriter, r *http.Request) {
 
@@ -48,6 +114,119 @@ func (siw *ServerInterfaceWrapper) CreateBatchopenTask(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateBatchopenTask(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompleteBatchopenTask operation middleware
+func (siw *ServerInterfaceWrapper) CompleteBatchopenTask(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompleteBatchopenTask(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// FailBatchopenTask operation middleware
+func (siw *ServerInterfaceWrapper) FailBatchopenTask(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.FailBatchopenTask(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartBatchopenTask operation middleware
+func (siw *ServerInterfaceWrapper) StartBatchopenTask(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartBatchopenTask(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSimulationTemplates operation middleware
+func (siw *ServerInterfaceWrapper) ListSimulationTemplates(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSimulationTemplates(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -171,7 +350,22 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/batchopen/tasks", wrapper.ListBatchopenTasks)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/batchopen/tasks", wrapper.CreateBatchopenTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/batchopen/tasks/{id}/complete", wrapper.CompleteBatchopenTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/batchopen/tasks/{id}/fail", wrapper.FailBatchopenTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/batchopen/tasks/{id}/start", wrapper.StartBatchopenTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/batchopen/templates", wrapper.ListSimulationTemplates)
 	})
 
 	return r

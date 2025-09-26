@@ -9,6 +9,7 @@
 8.发布相关的配置请放置在deployments目录下
 9.secrets目录和其下的所有文件都不能上传Github，也不能打包进入镜像
 10.执行过程中生成的文档请放置在.kiro/specs/addictive-ads-management-system/目录下
+11.请自行完成各种GCP和Firebase操作，若缺少权限，请说明并申请
 
 重要信息：
 1.GCP服务账号：codex-dev@gen-lang-client-0944935873.iam.gserviceaccount.com
@@ -41,3 +42,4 @@
 - 敏感信息管理：Google Cloud Secret Manager
 - 监控&日志：Google Cloud Monitoring & Logging
 - 定时任务调度：Google Cloud Scheduler
+- 数据仓库/分析：BigQuery

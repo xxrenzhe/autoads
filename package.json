@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "concurrently \"npm:dev:services\" \"npm:dev:frontend\"",
     "dev:frontend": "cd apps/frontend && npm run dev",
-    "dev:services": "concurrently \"go run services/identity/main.go\" \"go run services/billing/main.go\" \"go run services/offer/main.go\" \"go run services/workflow/main.go\" \"go run services/siterank/main.go\" \"go run services/batchopen/main.go\" \"go run services/adscenter/main.go\"",
+    "dev:services": "concurrently \"go run services/billing/main.go\" \"go run services/offer/main.go\" \"go run services/siterank/main.go\" \"go run services/batchopen/main.go\" \"go run services/adscenter/main.go\" \"go run services/notifications/cmd/server/main.go\" \"go run services/console/main.go\"",
     "build": "turbo build",
     "lint": "turbo lint",
     "test": "npm run test:frontend",

@@ -1,10 +1,11 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Badge } from '@/components/ui/badge'
 import {
   NavigationMenu,
@@ -148,6 +149,50 @@ export function NavigationLinks() {
 
 export function UserActions() {
   const { data: session } = useSession()
+  const [unread, setUnread] = useState<number>(0)
+  const [items, setItems] = useState<Array<{ id: string; title: string; message: string; createdAt?: string }>>([])
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const load = async () => {
+      try {
+        const r = await fetch('/api/go/api/v1/notifications/unread-count', { cache: 'no-store' })
+        if (!r.ok) return
+        const data = await r.json()
+        if (active) setUnread(Number(data.count || 0))
+      } catch {}
+    }
+    if (session) load()
+    const t = setInterval(load, 30000)
+    return () => { active = false; clearInterval(t) }
+  }, [session])
+
+  const openNotifications = async () => {
+    try {
+      setOpen(true)
+      const r = await fetch('/api/go/api/v1/notifications/recent?limit=20', { cache: 'no-store' })
+      if (!r.ok) return
+      const data = await r.json()
+      const list = Array.isArray(data.items) ? data.items : []
+      setItems(list)
+      // mark read up to last id
+      const last = list.length ? list[0].id : ''
+      if (last) {
+        await fetch('/api/go/api/v1/notifications/read', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ lastId: String(last) }) })
+        setUnread(0)
+      }
+    } catch {}
+  }
+
+  const removeNotification = async (id: string) => {
+    try {
+      const r = await fetch(`/api/go/api/v1/notifications/${encodeURIComponent(id)}`, { method: 'DELETE' })
+      if (r.status === 204) {
+        setItems((prev) => prev.filter((n) => n.id !== id))
+      }
+    } catch {}
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -165,10 +210,45 @@ export function UserActions() {
 
       {/* Notifications */}
       {session && (
-        <Button variant="ghost" size="sm" className="h-8 w-8 px-0">
-          <Bell className="h-4 w-4" />
-          <span className="sr-only">Notifications</span>
-        </Button>
+        <Popover open={open} onOpenChange={(v) => { setOpen(v); if (v) openNotifications() }}>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="relative h-8 w-8 px-0">
+              <Bell className="h-4 w-4" />
+              {unread > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] leading-none h-4 min-w-[1rem] px-1">
+                  {unread > 99 ? '99+' : unread}
+                </span>
+              )}
+              <span className="sr-only">Notifications</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 p-0">
+            <div className="p-3 border-b text-sm font-medium">Notifications</div>
+            <div className="max-h-80 overflow-auto divide-y">
+              {items.length === 0 && (
+                <div className="p-3 text-sm text-muted-foreground">No notifications</div>
+              )}
+              {items.map((n) => (
+                <div key={n.id} className="p-3 text-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-medium">{n.title}</div>
+                      <div className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{n.message}</div>
+                      {n.createdAt && <div className="text-xs text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleString()}</div>}
+                    </div>
+                    <button
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeNotification(n.id) }}
+                      aria-label="Delete notification"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       )}
 
       {/* User Menu */}

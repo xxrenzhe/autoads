@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from '@tanstack/react-query';
-import { backend } from '@/shared/http/backend';
 
 export type TokenTransaction = {
   id: string;
@@ -29,9 +28,12 @@ export type TokenTransactionsResponse = {
 
 export function useTokenTransactions(page: number = 1, limit: number = 20) {
   return useQuery({
-    queryKey: ['backend', 'tokens', 'transactions', page, limit],
-    queryFn: async (): Promise<TokenTransactionsResponse> =>
-      backend.get<TokenTransactionsResponse>('/api/tokens/transactions', { page, limit }),
+    queryKey: ['tokens', 'transactions', page, limit],
+    queryFn: async (): Promise<TokenTransactionsResponse> => {
+      const res = await fetch(`/api/tokens/transactions`, { cache: 'no-store' })
+      if (!res.ok) return { records: [], pagination: { page, limit, total: 0, totalPages: 0, hasMore: false } }
+      return res.json()
+    },
     staleTime: 30_000,
   });
 }

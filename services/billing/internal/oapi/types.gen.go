@@ -27,3 +27,32 @@ type TokenTransaction struct {
 	Id          string    `json:"id"`
 	Type        string    `json:"type"`
 }
+
+// CommitTokensJSONBody defines parameters for CommitTokens.
+type CommitTokensJSONBody struct {
+	Amount int     `json:"amount"`
+	TaskId *string `json:"taskId,omitempty"`
+	TxId   *string `json:"txId,omitempty"`
+}
+
+// ReleaseTokensJSONBody defines parameters for ReleaseTokens.
+type ReleaseTokensJSONBody struct {
+	Amount int     `json:"amount"`
+	TaskId *string `json:"taskId,omitempty"`
+	TxId   *string `json:"txId,omitempty"`
+}
+
+// ReserveTokensJSONBody defines parameters for ReserveTokens.
+type ReserveTokensJSONBody struct {
+	Amount int     `json:"amount"`
+	TaskId *string `json:"taskId,omitempty"`
+}
+
+// CommitTokensJSONRequestBody defines body for CommitTokens for application/json ContentType.
+type CommitTokensJSONRequestBody CommitTokensJSONBody
+
+// ReleaseTokensJSONRequestBody defines body for ReleaseTokens for application/json ContentType.
+type ReleaseTokensJSONRequestBody ReleaseTokensJSONBody
+
+// ReserveTokensJSONRequestBody defines body for ReserveTokens for application/json ContentType.
+type ReserveTokensJSONRequestBody ReserveTokensJSONBody

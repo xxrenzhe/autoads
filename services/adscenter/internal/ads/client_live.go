@@ -164,3 +164,59 @@ func (c *LiveClient) RemoveManagerLink(ctx context.Context, clientCustomerID str
     _, _, err = c.doJSON(ctx, http.MethodPost, mutateURL, req)
     return err
 }
+
+// GetCampaignsCount returns number of campaigns (last 7 days scope) for a given account.
+func (c *LiveClient) GetCampaignsCount(ctx context.Context, accountID string) (int, error) {
+    // Use GAQL over searchStream to count campaigns updated/visible; fallback to counting all campaigns.
+    url := fmt.Sprintf("https://googleads.googleapis.com/v16/customers/%s/googleAds:searchStream", accountID)
+    // segments.date DURING LAST_7_DAYS may require permission; if fails, we still count results.
+    q := "SELECT campaign.id FROM campaign"
+    body := map[string]any{"query": q}
+    data, _, err := c.doJSON(ctx, http.MethodPost, url, body)
+    if err != nil { return 0, err }
+    // searchStream returns NDJSON-like JSON array chunks
+    var arr []map[string]any
+    if err := json.Unmarshal(data, &arr); err != nil { return 0, err }
+    total := 0
+    for _, chunk := range arr {
+        if results, ok := chunk["results"].([]any); ok { total += len(results) }
+    }
+    return total, nil
+}
+
+// Keyword ideas via Google Ads REST (generateKeywordIdeas)
+type KeywordIdea struct { Text string; AvgMonthlySearches int; Competition string }
+
+func (c *LiveClient) KeywordIdeas(ctx context.Context, seedDomain string, seeds []string) ([]KeywordIdea, error) {
+    cid := c.loginCID
+    if cid == "" { return nil, fmt.Errorf("login customer id required") }
+    url := fmt.Sprintf("https://googleads.googleapis.com/v16/customers/%s:generateKeywordIdeas", cid)
+    body := map[string]any{
+        "keywordPlanNetwork": "GOOGLE_SEARCH_AND_PARTNERS",
+    }
+    if seedDomain != "" { body["urlSeed"] = map[string]any{"url": seedDomain} }
+    if len(seeds) > 0 {
+        // Trim empties
+        arr := make([]string, 0, len(seeds))
+        for _, s := range seeds { s = strings.TrimSpace(s); if s != "" { arr = append(arr, s) } }
+        if len(arr) > 0 { body["keywordSeed"] = map[string]any{"keywords": arr} }
+    }
+    data, _, err := c.doJSON(ctx, http.MethodPost, url, body)
+    if err != nil { return nil, err }
+    // Parse results
+    var resp struct{ Results []map[string]any `json:"results"` }
+    _ = json.Unmarshal(data, &resp)
+    out := make([]KeywordIdea, 0, len(resp.Results))
+    for _, r := range resp.Results {
+        kw := ""
+        if t, ok := r["text"].(string); ok { kw = t }
+        avg := 0
+        comp := "MEDIUM"
+        if m, ok := r["keywordIdeaMetrics"].(map[string]any); ok {
+            if v, ok := m["avgMonthlySearches"].(float64); ok { avg = int(v) }
+            if v2, ok := m["competition"].(string); ok && v2 != "" { comp = strings.ToUpper(v2) }
+        }
+        if kw != "" { out = append(out, KeywordIdea{Text: kw, AvgMonthlySearches: avg, Competition: comp}) }
+    }
+    return out, nil
+}

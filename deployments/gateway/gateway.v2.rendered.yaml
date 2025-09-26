@@ -1,0 +1,158 @@
+swagger: "2.0"
+info:
+  title: autoads-gateway-v2
+  version: 2.0.0
+schemes:
+  - https
+produces:
+  - application/json
+securityDefinitions:
+  firebase:
+    type: oauth2
+    flow: "implicit"
+    authorizationUrl: ""
+    x-google-issuer: "https://securetoken.google.com/gen-lang-client-0944935873"
+    x-google-jwks_uri: "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+    x-google-audiences: "gen-lang-client-0944935873"
+paths:
+  /readyz:
+    get:
+      operationId: readyz
+      # point to one lightweight service health endpoint
+      x-google-backend:
+        address: https://siterank-yt54xvsg5q-an.a.run.app/health
+        path_translation: CONSTANT_ADDRESS
+      responses: { '200': { description: OK } }
+  /api/health/adscenter:
+    get:
+      operationId: healthAdscenter
+      x-google-backend:
+        address: https://adscenter-yt54xvsg5q-an.a.run.app/health
+        path_translation: CONSTANT_ADDRESS
+      responses: { '200': { description: OK } }
+  /api/health/console:
+    get:
+      operationId: healthConsole
+      x-google-backend:
+        address: https://console-yt54xvsg5q-an.a.run.app/health
+        path_translation: CONSTANT_ADDRESS
+      responses: { '200': { description: OK } }
+
+  # OAuth 回调无需鉴权（由 Google 调用）
+  /api/v1/adscenter/oauth/callback:
+    get:
+      operationId: adscenterOauthCallback
+      # 不配置 security 即为公开
+      x-google-backend:
+        address: https://adscenter-yt54xvsg5q-an.a.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      responses: { '200': { description: OK } }
+
+  # Identity service removed; Firebase auth is enforced at gateway.
+
+  /api/v1/billing/*:
+    get:
+      operationId: billingProxyGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://billing-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+    post:
+      operationId: billingProxyPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://billing-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+
+  /api/v1/offers:
+    get:
+      operationId: offersList
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://offer-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+    post:
+      operationId: offersCreate
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://offer-yt54xvsg5q-an.a.run.app
+      responses: { '201': { description: Created } }
+  /api/v1/offers/*:
+    get:
+      operationId: offersWildcardGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://offer-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+    post:
+      operationId: offersWildcardPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://offer-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+
+  /api/v1/siterank/*:
+    get:
+      operationId: siterankWildcardGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://siterank-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+    post:
+      operationId: siterankWildcardPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://siterank-yt54xvsg5q-an.a.run.app
+      responses: { '202': { description: Accepted } }
+
+  /api/v1/batchopen/*:
+    get:
+      operationId: batchopenWildcardGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://batchopen-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+    post:
+      operationId: batchopenWildcardPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://batchopen-yt54xvsg5q-an.a.run.app
+      responses: { '202': { description: Accepted } }
+
+  /api/v1/adscenter/*:
+    get:
+      operationId: adscenterWildcardGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://adscenter-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+    post:
+      operationId: adscenterWildcardPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://adscenter-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+
+  # Workflow routes removed in v2.
+
+  /api/v1/notifications/*:
+    get:
+      operationId: notificationsGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://notifications-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+
+  /api/v1/recommend/*:
+    get:
+      operationId: recommendGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://recommendations-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+    post:
+      operationId: recommendPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://recommendations-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }

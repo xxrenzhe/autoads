@@ -23,7 +23,7 @@ changed=$(git diff --name-only "$BASE" "$HEAD" || true)
 
 # If core/shared changed -> deploy all
 if echo "$changed" | grep -Eq '^(pkg/|go\.work|go\.work\.sum|scripts/deploy/|deployments/api-gateway/|.github/workflows/deploy-backend\.yml|.github/workflows/deploy-gateway\.yml|nginx\.conf|flake\.nix|\.idx/)'; then
-  echo '["identity","billing","offer","workflow","siterank","adscenter","batchopen","console"]'
+  echo '["identity","billing","offer","workflow","siterank","adscenter","batchopen","console","recommendations"]'
   exit 0
 fi
 

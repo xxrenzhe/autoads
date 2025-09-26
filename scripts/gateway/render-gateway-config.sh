@@ -36,6 +36,7 @@ mapping = {
     'workflow-REPLACE_WITH_RUN_URL': os.getenv('WORKFLOW_URL', ''),
     'console-REPLACE_WITH_RUN_URL': os.getenv('CONSOLE_URL', ''),
     'notifications-REPLACE_WITH_RUN_URL': os.getenv('NOTIFICATIONS_URL', ''),
+    'recommendations-REPLACE_WITH_RUN_URL': os.getenv('RECOMMENDATIONS_URL', ''),
 }
 proj = os.getenv('PROJECT_ID') or os.getenv('GOOGLE_CLOUD_PROJECT')
 if proj:

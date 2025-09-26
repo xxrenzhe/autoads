@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { http } from '@/shared/http/client'
+import { useTokenTransactions } from '@/lib/hooks/useTokenTransactions'
 
 interface TokenBalance {
   currentBalance: number
@@ -49,6 +50,7 @@ export default function TokenBalanceManager() {
   const [topUpAmount, setTopUpAmount] = useState(100)
   const [isTopUpLoading, setIsTopUpLoading] = useState(false)
   const [showTopUpForm, setShowTopUpForm] = useState(false)
+  const { data: txData } = useTokenTransactions(1, 10)
 
   useEffect(() => {
     fetchBalance()
@@ -339,6 +341,42 @@ export default function TokenBalanceManager() {
               <p className="text-sm text-muted-foreground">Tokens per item</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Transactions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Transactions</CardTitle>
+          <CardDescription>Latest token transactions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {txData?.records && txData.records.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-muted-foreground">
+                    <th className="py-2 pr-4">Time</th>
+                    <th className="py-2 pr-4">Type</th>
+                    <th className="py-2 pr-4">Amount</th>
+                    <th className="py-2">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {txData.records.map((t: any, idx: number) => (
+                    <tr key={idx} className="border-t">
+                      <td className="py-2 pr-4">{t.timestamp ? new Date(t.timestamp).toLocaleString() : '-'}</td>
+                      <td className="py-2 pr-4">{String(t.action || '-')}</td>
+                      <td className="py-2 pr-4">{typeof t.amount === 'number' ? t.amount : '-'}</td>
+                      <td className="py-2">{t.description || ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No recent transactions</div>
+          )}
         </CardContent>
       </Card>
 

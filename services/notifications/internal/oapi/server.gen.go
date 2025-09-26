@@ -14,18 +14,63 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Mark notifications as read up to lastId (inclusive)
+	// (POST /api/v1/notifications/read)
+	MarkNotificationsRead(w http.ResponseWriter, r *http.Request)
 	// List recent notifications (last 30 days)
 	// (GET /api/v1/notifications/recent)
 	ListRecentNotifications(w http.ResponseWriter, r *http.Request, params ListRecentNotificationsParams)
+	// List notification rules for current user
+	// (GET /api/v1/notifications/rules)
+	ListNotificationRules(w http.ResponseWriter, r *http.Request)
+	// Create or update a notification rule
+	// (POST /api/v1/notifications/rules)
+	UpsertNotificationRule(w http.ResponseWriter, r *http.Request)
+	// Get the number of unread notifications
+	// (GET /api/v1/notifications/unread-count)
+	GetUnreadCount(w http.ResponseWriter, r *http.Request)
+	// Delete a notification by id (SQL read model only)
+	// (DELETE /api/v1/notifications/{id})
+	DeleteNotification(w http.ResponseWriter, r *http.Request, id string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
 
+// Mark notifications as read up to lastId (inclusive)
+// (POST /api/v1/notifications/read)
+func (_ Unimplemented) MarkNotificationsRead(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // List recent notifications (last 30 days)
 // (GET /api/v1/notifications/recent)
 func (_ Unimplemented) ListRecentNotifications(w http.ResponseWriter, r *http.Request, params ListRecentNotificationsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List notification rules for current user
+// (GET /api/v1/notifications/rules)
+func (_ Unimplemented) ListNotificationRules(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create or update a notification rule
+// (POST /api/v1/notifications/rules)
+func (_ Unimplemented) UpsertNotificationRule(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get the number of unread notifications
+// (GET /api/v1/notifications/unread-count)
+func (_ Unimplemented) GetUnreadCount(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a notification by id (SQL read model only)
+// (DELETE /api/v1/notifications/{id})
+func (_ Unimplemented) DeleteNotification(w http.ResponseWriter, r *http.Request, id string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -37,6 +82,26 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// MarkNotificationsRead operation middleware
+func (siw *ServerInterfaceWrapper) MarkNotificationsRead(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MarkNotificationsRead(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ListRecentNotifications operation middleware
 func (siw *ServerInterfaceWrapper) ListRecentNotifications(w http.ResponseWriter, r *http.Request) {
@@ -70,6 +135,97 @@ func (siw *ServerInterfaceWrapper) ListRecentNotifications(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListRecentNotifications(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListNotificationRules operation middleware
+func (siw *ServerInterfaceWrapper) ListNotificationRules(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListNotificationRules(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpsertNotificationRule operation middleware
+func (siw *ServerInterfaceWrapper) UpsertNotificationRule(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpsertNotificationRule(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUnreadCount operation middleware
+func (siw *ServerInterfaceWrapper) GetUnreadCount(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUnreadCount(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteNotification operation middleware
+func (siw *ServerInterfaceWrapper) DeleteNotification(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteNotification(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -193,7 +349,22 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/notifications/read", wrapper.MarkNotificationsRead)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/notifications/recent", wrapper.ListRecentNotifications)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/notifications/rules", wrapper.ListNotificationRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/notifications/rules", wrapper.UpsertNotificationRule)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/notifications/unread-count", wrapper.GetUnreadCount)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/notifications/{id}", wrapper.DeleteNotification)
 	})
 
 	return r

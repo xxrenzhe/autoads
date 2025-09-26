@@ -1,5 +1,5 @@
 # Use the official Golang image to create a build artifact.
-FROM golang:1.25.1-alpine as builder
+FROM golang:1.23-alpine as builder
 WORKDIR /workspace
 RUN apk add --no-cache git
 RUN git config --global user.name "Cloud Build"
@@ -7,6 +7,8 @@ RUN git config --global user.email "builder@gcp.com"
 RUN git config --global url."https://github.com/".insteadOf "git@github.com:"
 RUN git config --global credential.helper ''
 ENV GIT_TERMINAL_PROMPT=0
+ENV GOTOOLCHAIN=auto
+ENV GOWORK=/workspace/go.work
 # 1) Prime module cache with minimal files
 COPY go.work ./
 RUN mkdir -p services/siterank

@@ -7,10 +7,12 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 
-"$ROOT/scripts/openapi/validate.sh"
+bash "$ROOT/scripts/openapi/validate.sh"
 
 # Attempt stub generation for a quick compile-time schema check
-"$ROOT/scripts/openapi/gen-go-stubs.sh"
+bash "$ROOT/scripts/openapi/gen-go-stubs.sh"
+
+# Generate TypeScript types for FE
+OPENAPI_TS_MODE=types bash "$ROOT/scripts/openapi/gen-ts-sdk.sh"
 
 echo "[DONE] Contract checks passed (validation + stubs generation)"
-

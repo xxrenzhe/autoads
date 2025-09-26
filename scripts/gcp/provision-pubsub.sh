@@ -3,11 +3,11 @@ set -euo pipefail
 
 # Provision Pub/Sub topic and subscriptions for a single-project multi-environment setup.
 # Usage: PROJECT=gen-lang-client-0944935873 REGION=asia-northeast1 STACK=prod \
-#        SERVICES="identity offer workflow billing" ./scripts/gcp/provision-pubsub.sh
+#        SERVICES="offer billing adscenter batchopen siterank notifications" ./scripts/gcp/provision-pubsub.sh
 
 : "${PROJECT:?PROJECT required}"
 : "${STACK:?STACK required}"
-SERVICES=${SERVICES:-"identity offer workflow billing"}
+SERVICES=${SERVICES:-"offer billing adscenter batchopen siterank notifications"}
 TOPIC="domain-events-${STACK}"
 
 echo "[INFO] Using project: ${PROJECT}, stack: ${STACK}"
@@ -31,4 +31,3 @@ for svc in ${SERVICES}; do
 done
 
 echo "[DONE] Pub/Sub topic and subscriptions are ready."
-

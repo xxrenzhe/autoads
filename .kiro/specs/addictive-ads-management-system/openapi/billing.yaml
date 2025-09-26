@@ -5,7 +5,7 @@ info:
   license:
     name: Elastic-Internal
 servers:
-  - url: /api
+  - url: /api/v1/billing
 paths:
   /tokens/balance:
     get:
@@ -55,6 +55,68 @@ paths:
                 $ref: '#/components/schemas/Subscription'
         '401': { description: Unauthorized }
         '404': { description: Not Found }
+  /tokens/reserve:
+    post:
+      operationId: reserveTokens
+      summary: Reserve tokens for a task
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: integer }
+                taskId: { type: string }
+              required: [amount]
+      responses:
+        '202': { description: Reserved }
+        '400': { description: Invalid input }
+        '401': { description: Unauthorized }
+  /tokens/commit:
+    post:
+      operationId: commitTokens
+      summary: Commit reserved tokens for a task
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                txId: { type: string }
+                amount: { type: integer }
+                taskId: { type: string }
+              required: [amount]
+      responses:
+        '200': { description: Committed }
+        '400': { description: Invalid input }
+        '401': { description: Unauthorized }
+  /tokens/release:
+    post:
+      operationId: releaseTokens
+      summary: Release previously reserved tokens
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                txId: { type: string }
+                amount: { type: integer }
+                taskId: { type: string }
+              required: [amount]
+      responses:
+        '200': { description: Released }
+        '400': { description: Invalid input }
+        '401': { description: Unauthorized }
 
 components:
   securitySchemes:

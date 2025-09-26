@@ -19,6 +19,15 @@ type ServerInterface interface {
 	// Get current user's token balance
 	// (GET /tokens/balance)
 	GetTokenBalance(w http.ResponseWriter, r *http.Request)
+	// Commit reserved tokens for a task
+	// (POST /tokens/commit)
+	CommitTokens(w http.ResponseWriter, r *http.Request)
+	// Release previously reserved tokens
+	// (POST /tokens/release)
+	ReleaseTokens(w http.ResponseWriter, r *http.Request)
+	// Reserve tokens for a task
+	// (POST /tokens/reserve)
+	ReserveTokens(w http.ResponseWriter, r *http.Request)
 	// List token transactions (last 50)
 	// (GET /tokens/transactions)
 	ListTokenTransactions(w http.ResponseWriter, r *http.Request)
@@ -37,6 +46,24 @@ func (_ Unimplemented) GetSubscription(w http.ResponseWriter, r *http.Request) {
 // Get current user's token balance
 // (GET /tokens/balance)
 func (_ Unimplemented) GetTokenBalance(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Commit reserved tokens for a task
+// (POST /tokens/commit)
+func (_ Unimplemented) CommitTokens(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Release previously reserved tokens
+// (POST /tokens/release)
+func (_ Unimplemented) ReleaseTokens(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reserve tokens for a task
+// (POST /tokens/reserve)
+func (_ Unimplemented) ReserveTokens(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -86,6 +113,66 @@ func (siw *ServerInterfaceWrapper) GetTokenBalance(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetTokenBalance(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CommitTokens operation middleware
+func (siw *ServerInterfaceWrapper) CommitTokens(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CommitTokens(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReleaseTokens operation middleware
+func (siw *ServerInterfaceWrapper) ReleaseTokens(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReleaseTokens(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReserveTokens operation middleware
+func (siw *ServerInterfaceWrapper) ReserveTokens(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReserveTokens(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -233,6 +320,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tokens/balance", wrapper.GetTokenBalance)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/tokens/commit", wrapper.CommitTokens)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/tokens/release", wrapper.ReleaseTokens)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/tokens/reserve", wrapper.ReserveTokens)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tokens/transactions", wrapper.ListTokenTransactions)

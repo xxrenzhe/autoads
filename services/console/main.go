@@ -9,6 +9,8 @@ import (
     "github.com/xxrenzhe/autoads/services/console/internal/handlers"
 
     "github.com/jackc/pgx/v5/pgxpool"
+    "github.com/xxrenzhe/autoads/pkg/telemetry"
+    "github.com/xxrenzhe/autoads/pkg/middleware"
 )
 
 func main() {
@@ -37,12 +39,17 @@ func main() {
 	
 	apiHandler := handlers.NewHandler(dbpool) // Publisher would be passed here
 	
-	mux := http.NewServeMux()
+    mux := http.NewServeMux()
+    // metrics & logging
+    telemetry.RegisterDefaultMetrics("console")
+    mux.Handle("/metrics", telemetry.MetricsHandler())
+    // wrap mux with logging middleware via top-level handler
+    root := middleware.LoggingMiddleware("console")(mux)
 	// The middleware here should verify ADMIN role.
 	apiHandler.RegisterRoutes(mux) // Admin middleware would be passed here
 
     log.Printf("Console service HTTP server listening on port %s", cfg.Port)
-    if err := http.ListenAndServe(":"+cfg.Port, mux); err != nil {
+    if err := http.ListenAndServe(":"+cfg.Port, root); err != nil {
         log.Fatalf("failed to start server: %v", err)
     }
 }

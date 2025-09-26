@@ -5,3 +5,6 @@ steps:
     args: ["push", "${_IMAGE}"]
 images:
   - "${_IMAGE}"
+options:
+  logging: CLOUD_LOGGING_ONLY
+

@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 )
 
 // ServerInterface represents all server handlers.
@@ -16,12 +17,66 @@ type ServerInterface interface {
 	// List accessible ad accounts
 	// (GET /api/v1/adscenter/accounts)
 	ListAccounts(w http.ResponseWriter, r *http.Request)
+	// List audit events
+	// (GET /api/v1/adscenter/audits)
+	ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams)
+	// List recent bulk action operations for current user
+	// (GET /api/v1/adscenter/bulk-actions)
+	ListBulkActions(w http.ResponseWriter, r *http.Request, params ListBulkActionsParams)
 	// Submit bulk actions
 	// (POST /api/v1/adscenter/bulk-actions)
 	SubmitBulkActions(w http.ResponseWriter, r *http.Request)
+	// Validate a bulk action plan without enqueuing
+	// (POST /api/v1/adscenter/bulk-actions/validate)
+	ValidateBulkActions(w http.ResponseWriter, r *http.Request)
+	// Get bulk action operation status
+	// (GET /api/v1/adscenter/bulk-actions/{id})
+	GetBulkAction(w http.ResponseWriter, r *http.Request, id string)
+	// List audit snapshots for an operation
+	// (GET /api/v1/adscenter/bulk-actions/{id}/audits)
+	GetBulkActionAudits(w http.ResponseWriter, r *http.Request, id string)
+	// Get the submitted plan body of a bulk action
+	// (GET /api/v1/adscenter/bulk-actions/{id}/plan)
+	GetBulkActionPlan(w http.ResponseWriter, r *http.Request, id string)
+	// Get rollback execution report (audit snapshots)
+	// (GET /api/v1/adscenter/bulk-actions/{id}/report)
+	GetRollbackReport(w http.ResponseWriter, r *http.Request, id string, params GetRollbackReportParams)
+	// Mark operation as rolled back and append a rollback snapshot (stub)
+	// (POST /api/v1/adscenter/bulk-actions/{id}/rollback)
+	RollbackBulkAction(w http.ResponseWriter, r *http.Request, id string)
+	// Execute rollback (stub; writes audits only)
+	// (POST /api/v1/adscenter/bulk-actions/{id}/rollback-execute)
+	RollbackExecute(w http.ResponseWriter, r *http.Request, id string)
+	// Generate a rollback plan (inverse actions) without executing
+	// (POST /api/v1/adscenter/bulk-actions/{id}/rollback-plan)
+	GetRollbackPlan(w http.ResponseWriter, r *http.Request, id string)
+	// List stored Google Ads connections (sanitized)
+	// (GET /api/v1/adscenter/connections)
+	ListAdsConnections(w http.ResponseWriter, r *http.Request)
+	// Expand keywords using seed domain/keywords
+	// (POST /api/v1/adscenter/keywords/expand)
+	ExpandKeywords(w http.ResponseWriter, r *http.Request)
+	// Send manager link invitation (stub/live)
+	// (POST /api/v1/adscenter/mcc/link)
+	MccLink(w http.ResponseWriter, r *http.Request)
+	// List MCC links for current user
+	// (GET /api/v1/adscenter/mcc/links)
+	ListMccLinks(w http.ResponseWriter, r *http.Request, params ListMccLinksParams)
+	// Refresh statuses for all pending/invited MCC links (best-effort)
+	// (POST /api/v1/adscenter/mcc/refresh)
+	MccRefresh(w http.ResponseWriter, r *http.Request)
+	// Get manager link status
+	// (GET /api/v1/adscenter/mcc/status)
+	MccStatus(w http.ResponseWriter, r *http.Request, params MccStatusParams)
+	// Request unlink from manager account (stub/live)
+	// (POST /api/v1/adscenter/mcc/unlink)
+	MccUnlink(w http.ResponseWriter, r *http.Request)
 	// OAuth callback
 	// (GET /api/v1/adscenter/oauth/callback)
 	OauthCallback(w http.ResponseWriter, r *http.Request)
+	// Revoke stored Google Ads refresh token for current user (stub)
+	// (POST /api/v1/adscenter/oauth/revoke)
+	OauthRevoke(w http.ResponseWriter, r *http.Request)
 	// Get OAuth URL
 	// (GET /api/v1/adscenter/oauth/url)
 	GetOAuthUrl(w http.ResponseWriter, r *http.Request)
@@ -40,15 +95,123 @@ func (_ Unimplemented) ListAccounts(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// List audit events
+// (GET /api/v1/adscenter/audits)
+func (_ Unimplemented) ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List recent bulk action operations for current user
+// (GET /api/v1/adscenter/bulk-actions)
+func (_ Unimplemented) ListBulkActions(w http.ResponseWriter, r *http.Request, params ListBulkActionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Submit bulk actions
 // (POST /api/v1/adscenter/bulk-actions)
 func (_ Unimplemented) SubmitBulkActions(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Validate a bulk action plan without enqueuing
+// (POST /api/v1/adscenter/bulk-actions/validate)
+func (_ Unimplemented) ValidateBulkActions(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get bulk action operation status
+// (GET /api/v1/adscenter/bulk-actions/{id})
+func (_ Unimplemented) GetBulkAction(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List audit snapshots for an operation
+// (GET /api/v1/adscenter/bulk-actions/{id}/audits)
+func (_ Unimplemented) GetBulkActionAudits(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get the submitted plan body of a bulk action
+// (GET /api/v1/adscenter/bulk-actions/{id}/plan)
+func (_ Unimplemented) GetBulkActionPlan(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get rollback execution report (audit snapshots)
+// (GET /api/v1/adscenter/bulk-actions/{id}/report)
+func (_ Unimplemented) GetRollbackReport(w http.ResponseWriter, r *http.Request, id string, params GetRollbackReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Mark operation as rolled back and append a rollback snapshot (stub)
+// (POST /api/v1/adscenter/bulk-actions/{id}/rollback)
+func (_ Unimplemented) RollbackBulkAction(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Execute rollback (stub; writes audits only)
+// (POST /api/v1/adscenter/bulk-actions/{id}/rollback-execute)
+func (_ Unimplemented) RollbackExecute(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Generate a rollback plan (inverse actions) without executing
+// (POST /api/v1/adscenter/bulk-actions/{id}/rollback-plan)
+func (_ Unimplemented) GetRollbackPlan(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List stored Google Ads connections (sanitized)
+// (GET /api/v1/adscenter/connections)
+func (_ Unimplemented) ListAdsConnections(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Expand keywords using seed domain/keywords
+// (POST /api/v1/adscenter/keywords/expand)
+func (_ Unimplemented) ExpandKeywords(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Send manager link invitation (stub/live)
+// (POST /api/v1/adscenter/mcc/link)
+func (_ Unimplemented) MccLink(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List MCC links for current user
+// (GET /api/v1/adscenter/mcc/links)
+func (_ Unimplemented) ListMccLinks(w http.ResponseWriter, r *http.Request, params ListMccLinksParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Refresh statuses for all pending/invited MCC links (best-effort)
+// (POST /api/v1/adscenter/mcc/refresh)
+func (_ Unimplemented) MccRefresh(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get manager link status
+// (GET /api/v1/adscenter/mcc/status)
+func (_ Unimplemented) MccStatus(w http.ResponseWriter, r *http.Request, params MccStatusParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Request unlink from manager account (stub/live)
+// (POST /api/v1/adscenter/mcc/unlink)
+func (_ Unimplemented) MccUnlink(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // OAuth callback
 // (GET /api/v1/adscenter/oauth/callback)
 func (_ Unimplemented) OauthCallback(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Revoke stored Google Ads refresh token for current user (stub)
+// (POST /api/v1/adscenter/oauth/revoke)
+func (_ Unimplemented) OauthRevoke(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -93,6 +256,88 @@ func (siw *ServerInterfaceWrapper) ListAccounts(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListAuditEvents operation middleware
+func (siw *ServerInterfaceWrapper) ListAuditEvents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAuditEventsParams
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "kind", r.URL.Query(), &params.Kind)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "since" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "since", r.URL.Query(), &params.Since)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "since", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAuditEvents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListBulkActions operation middleware
+func (siw *ServerInterfaceWrapper) ListBulkActions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListBulkActionsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListBulkActions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SubmitBulkActions operation middleware
 func (siw *ServerInterfaceWrapper) SubmitBulkActions(w http.ResponseWriter, r *http.Request) {
 
@@ -113,11 +358,452 @@ func (siw *ServerInterfaceWrapper) SubmitBulkActions(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// ValidateBulkActions operation middleware
+func (siw *ServerInterfaceWrapper) ValidateBulkActions(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ValidateBulkActions(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBulkAction operation middleware
+func (siw *ServerInterfaceWrapper) GetBulkAction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBulkAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBulkActionAudits operation middleware
+func (siw *ServerInterfaceWrapper) GetBulkActionAudits(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBulkActionAudits(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBulkActionPlan operation middleware
+func (siw *ServerInterfaceWrapper) GetBulkActionPlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBulkActionPlan(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRollbackReport operation middleware
+func (siw *ServerInterfaceWrapper) GetRollbackReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRollbackReportParams
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "kind", r.URL.Query(), &params.Kind)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRollbackReport(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RollbackBulkAction operation middleware
+func (siw *ServerInterfaceWrapper) RollbackBulkAction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RollbackBulkAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RollbackExecute operation middleware
+func (siw *ServerInterfaceWrapper) RollbackExecute(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RollbackExecute(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRollbackPlan operation middleware
+func (siw *ServerInterfaceWrapper) GetRollbackPlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRollbackPlan(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdsConnections operation middleware
+func (siw *ServerInterfaceWrapper) ListAdsConnections(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdsConnections(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExpandKeywords operation middleware
+func (siw *ServerInterfaceWrapper) ExpandKeywords(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExpandKeywords(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MccLink operation middleware
+func (siw *ServerInterfaceWrapper) MccLink(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MccLink(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMccLinks operation middleware
+func (siw *ServerInterfaceWrapper) ListMccLinks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMccLinksParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMccLinks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MccRefresh operation middleware
+func (siw *ServerInterfaceWrapper) MccRefresh(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MccRefresh(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MccStatus operation middleware
+func (siw *ServerInterfaceWrapper) MccStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params MccStatusParams
+
+	// ------------- Required query parameter "customerId" -------------
+
+	if paramValue := r.URL.Query().Get("customerId"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customerId"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "customerId", r.URL.Query(), &params.CustomerId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MccStatus(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MccUnlink operation middleware
+func (siw *ServerInterfaceWrapper) MccUnlink(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MccUnlink(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // OauthCallback operation middleware
 func (siw *ServerInterfaceWrapper) OauthCallback(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.OauthCallback(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OauthRevoke operation middleware
+func (siw *ServerInterfaceWrapper) OauthRevoke(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OauthRevoke(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -284,10 +970,64 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/adscenter/accounts", wrapper.ListAccounts)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/audits", wrapper.ListAuditEvents)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/bulk-actions", wrapper.ListBulkActions)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/adscenter/bulk-actions", wrapper.SubmitBulkActions)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/bulk-actions/validate", wrapper.ValidateBulkActions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/bulk-actions/{id}", wrapper.GetBulkAction)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/bulk-actions/{id}/audits", wrapper.GetBulkActionAudits)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/bulk-actions/{id}/plan", wrapper.GetBulkActionPlan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/bulk-actions/{id}/report", wrapper.GetRollbackReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/bulk-actions/{id}/rollback", wrapper.RollbackBulkAction)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/bulk-actions/{id}/rollback-execute", wrapper.RollbackExecute)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/bulk-actions/{id}/rollback-plan", wrapper.GetRollbackPlan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/connections", wrapper.ListAdsConnections)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/keywords/expand", wrapper.ExpandKeywords)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/mcc/link", wrapper.MccLink)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/mcc/links", wrapper.ListMccLinks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/mcc/refresh", wrapper.MccRefresh)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/mcc/status", wrapper.MccStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/mcc/unlink", wrapper.MccUnlink)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/adscenter/oauth/callback", wrapper.OauthCallback)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/oauth/revoke", wrapper.OauthRevoke)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/adscenter/oauth/url", wrapper.GetOAuthUrl)

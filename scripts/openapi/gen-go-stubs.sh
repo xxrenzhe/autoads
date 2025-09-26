@@ -23,6 +23,7 @@ spec_for() {
     batchopen) echo "batchopen.yaml" ;;
     billing) echo "billing.yaml" ;;
     notifications) echo "notifications.yaml" ;;
+    recommendations) echo "recommendations.yaml" ;;
     *) return 1 ;;
   esac
 }

@@ -8,25 +8,26 @@ import (
     "time"
     "github.com/xxrenzhe/autoads/pkg/idempotency"
     "math"
+    "strings"
 )
 
 // Client is a simple wrapper around http.Client.
 type Client struct {
     httpClient *http.Client
+    cb *CircuitBreaker
 }
 
 // New creates a new Client with a default timeout.
 func New(timeout time.Duration) *Client {
-    return &Client{
-        httpClient: &http.Client{
-            Timeout: timeout,
-        },
-    }
+    return &Client{ httpClient: &http.Client{ Timeout: timeout } }
 }
 
 // Do exposes underlying http.Client.Do for advanced use-cases.
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
-    return c.httpClient.Do(req)
+    if c.cb != nil && !c.cb.Allow() { return nil, fmt.Errorf("circuit_open") }
+    resp, err := c.httpClient.Do(req)
+    if c.cb != nil { c.cb.Record(err == nil) }
+    return resp, err
 }
 
 // GetJSON performs a GET request and decodes the JSON response into the target interface.
@@ -78,7 +79,7 @@ func (c *Client) GetJSONWithHeaders(ctx context.Context, url string, headers map
         // apply extra headers
         for k, v := range headers { if k != "User-Agent" && v != "" { req.Header.Set(k, v) } }
 
-        resp, err := c.httpClient.Do(req)
+        resp, err := c.Do(req)
         if err != nil {
             lastErr = fmt.Errorf("request error: %w", err)
         } else {
@@ -103,4 +104,37 @@ func (c *Client) GetJSONWithHeaders(ctx context.Context, url string, headers map
         }
     }
     return lastErr
+}
+
+// PostJSONWithRetry posts JSON body, applies headers, decodes JSON response to target, with retries.
+func (c *Client) PostJSONWithRetry(ctx context.Context, url string, body any, headers map[string]string, retries int, target any) error {
+    if retries <= 0 { retries = 1 }
+    var lastErr error
+    var payload []byte
+    if body != nil { if b, err := json.Marshal(body); err == nil { payload = b } }
+    for attempt := 0; attempt < retries; attempt++ {
+        req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(string(payload)))
+        if err != nil { return err }
+        req.Header.Set("Accept", "application/json")
+        req.Header.Set("Content-Type", "application/json")
+        if k, ok := idempotency.FromContext(ctx); ok && k != "" { req.Header.Set("X-Idempotency-Key", k) }
+        for k, v := range headers { if v != "" { req.Header.Set(k, v) } }
+        resp, err := c.Do(req)
+        if err != nil { lastErr = err } else {
+            func() {
+                defer resp.Body.Close()
+                if resp.StatusCode < 200 || resp.StatusCode >= 300 { lastErr = fmt.Errorf("bad status: %d", resp.StatusCode); return }
+                if target != nil { if err := json.NewDecoder(resp.Body).Decode(target); err != nil { lastErr = err; return } }
+                lastErr = nil
+            }()
+        }
+        if lastErr == nil { return nil }
+        if attempt+1 < retries { sleepMs := int(math.Min(1500, float64(200*int(math.Pow(2, float64(attempt)))))); time.Sleep(time.Duration(sleepMs) * time.Millisecond) }
+    }
+    return lastErr
+}
+
+// EnableCircuitBreaker attaches a simple circuit breaker to the client.
+func (c *Client) EnableCircuitBreaker(failThreshold int, cooldown time.Duration) {
+    c.cb = &CircuitBreaker{failThreshold: failThreshold, cooldown: cooldown}
 }

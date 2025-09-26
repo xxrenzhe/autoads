@@ -75,6 +75,81 @@ func parseUserInfo(b64 string) string {
     return ""
 }
 
+// Info carries basic identity attributes extracted from headers/JWT.
+type Info struct {
+    UserID string
+    Email  string
+}
+
+// ExtractInfo returns best-effort user id and email from standard headers.
+// Order:
+// 1) X-Endpoint-API-UserInfo (preferred: sub + email)
+// 2) Authorization: Bearer <jwt> (RS256 verify when key provided; supports email claim)
+// 3) X-User-Id (only user id; email may be empty)
+func ExtractInfo(r *http.Request) (Info, error) {
+    var out Info
+    // 1) GCP API Gateway user info header (contains both sub/email)
+    if ui := r.Header.Get("X-Endpoint-API-UserInfo"); ui != "" {
+        if id, email := parseUserInfoFull(ui); id != "" {
+            out.UserID, out.Email = id, email
+            return out, nil
+        }
+    }
+    // 2) Authorization: Bearer
+    if authz := r.Header.Get("Authorization"); authz != "" {
+        parts := strings.SplitN(authz, " ", 2)
+        if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+            sub, email := extractFromJWT(parts[1])
+            if sub != "" {
+                out.UserID, out.Email = sub, email
+                return out, nil
+            }
+        }
+    }
+    // 3) Fallback explicit header
+    if uid := r.Header.Get("X-User-Id"); uid != "" {
+        out.UserID = uid
+        return out, nil
+    }
+    return out, ErrUnauthenticated
+}
+
+func parseUserInfoFull(b64 string) (sub, email string) {
+    data, err := base64.StdEncoding.DecodeString(b64)
+    if err != nil {
+        data, err = base64.RawURLEncoding.DecodeString(b64)
+        if err != nil { return "", "" }
+    }
+    var m map[string]any
+    if json.Unmarshal(data, &m) != nil { return "", "" }
+    if v, ok := m["sub"].(string); ok && v != "" { sub = v }
+    if v, ok := m["email"].(string); ok && v != "" { email = v }
+    if sub == "" {
+        if v, ok := m["id"].(string); ok && v != "" { sub = v }
+    }
+    return
+}
+
+func extractFromJWT(token string) (sub, email string) {
+    parts := strings.Split(token, ".")
+    if len(parts) != 3 { return "", "" }
+    _, err1 := base64.RawURLEncoding.DecodeString(parts[0])
+    payloadB, err2 := base64.RawURLEncoding.DecodeString(parts[1])
+    sigB, err3 := base64.RawURLEncoding.DecodeString(parts[2])
+    if err1 != nil || err2 != nil || err3 != nil { return "", "" }
+    // verify if public key provided
+    if pub := os.Getenv("INTERNAL_JWT_PUBLIC_KEY"); pub != "" {
+        if !verifyRS256([]byte(parts[0]+"."+parts[1]), sigB, pub) { return "", "" }
+    } else if strings.ToLower(os.Getenv("ALLOW_INSECURE_INTERNAL_JWT")) != "true" {
+        return "", ""
+    }
+    var claims map[string]any
+    if json.Unmarshal(payloadB, &claims) != nil { return "", "" }
+    if v, ok := claims["sub"].(string); ok && v != "" { sub = v }
+    if v, ok := claims["email"].(string); ok && v != "" { email = v }
+    return
+}
+
 func extractUserFromJWT(token string) string {
     // Expect JWT: header.payload.signature (base64url)
     parts := strings.Split(token, ".")

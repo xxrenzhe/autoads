@@ -33,7 +33,7 @@ echo
 echo "== Cloud Run services =="
 gcloud run services list --platform=managed --region "${REGION}" --format='table(metadata.name,status.url)'
 
-KNOWN_SERVICES=(adscenter identity offer siterank workflow billing batchopen console frontend)
+KNOWN_SERVICES=(adscenter offer siterank billing batchopen console notifications recommendations frontend)
 for svc in "${KNOWN_SERVICES[@]}"; do
   if gcloud run services describe "$svc" --region "$REGION" --format='get(metadata.name)' >/dev/null 2>&1; then
     echo
@@ -65,4 +65,3 @@ gcloud pubsub subscriptions list --project "${PROJECT_ID}" --format='table(name,
 
 echo
 echo "Done."
-

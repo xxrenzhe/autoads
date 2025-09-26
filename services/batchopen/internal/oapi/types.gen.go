@@ -13,5 +13,19 @@ type CreateBatchopenTaskJSONBody struct {
 	SimulationConfig *map[string]interface{} `json:"simulationConfig,omitempty"`
 }
 
+// CompleteBatchopenTaskJSONBody defines parameters for CompleteBatchopenTask.
+type CompleteBatchopenTaskJSONBody map[string]interface{}
+
+// FailBatchopenTaskJSONBody defines parameters for FailBatchopenTask.
+type FailBatchopenTaskJSONBody struct {
+	Reason *string `json:"reason,omitempty"`
+}
+
 // CreateBatchopenTaskJSONRequestBody defines body for CreateBatchopenTask for application/json ContentType.
 type CreateBatchopenTaskJSONRequestBody CreateBatchopenTaskJSONBody
+
+// CompleteBatchopenTaskJSONRequestBody defines body for CompleteBatchopenTask for application/json ContentType.
+type CompleteBatchopenTaskJSONRequestBody CompleteBatchopenTaskJSONBody
+
+// FailBatchopenTaskJSONRequestBody defines body for FailBatchopenTask for application/json ContentType.
+type FailBatchopenTaskJSONRequestBody FailBatchopenTaskJSONBody

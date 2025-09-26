@@ -9,18 +9,6 @@ services:
       - DATABASE_URL_SECRET_NAME=${DATABASE_URL_SECRET_NAME}
     depends_on:
       - cloudsql-proxy
-  identity:
-    build:
-      context: ./services/identity
-    ports:
-      - "8081:8080"
-    environment:
-      - DATABASE_URL_SECRET_NAME=${DATABASE_URL_SECRET_NAME}
-      - FIREBASE_CREDENTIALS_FILE=/app/secrets/firebase-adminsdk.json
-    depends_on:
-      - cloudsql-proxy
-    volumes:
-      - ./secrets/firebase-adminsdk.json:/app/secrets/firebase-adminsdk.json:ro
   billing:
     build:
       context: ./services/billing
@@ -73,25 +61,12 @@ services:
       - cloudsql-proxy
     volumes:
       - ./secrets/firebase-adminsdk.json:/app/secrets/firebase-adminsdk.json:ro
-  workflow:
-    build:
-      context: ./services/workflow
-    ports:
-      - "8087:8080"
-    environment:
-      - DATABASE_URL_SECRET_NAME=${DATABASE_URL_SECRET_NAME}
-      - SITERANK_SERVICE_URL=http://siterank:8080 # For inter-service communication
-    depends_on:
-      - cloudsql-proxy
-    volumes:
-      - ./secrets/firebase-adminsdk.json:/app/secrets/firebase-adminsdk.json:ro
   frontend:
     build:
       context: ./apps/frontend
     ports:
       - "3000:3000"
     environment:
-      - WORKFLOW_SERVICE_URL=http://workflow:8080
       - NEXTAUTH_URL=http://localhost:3000 # For OAuth callbacks
       # Firebase Web SDK (从根目录 .env 读取后注入到前端容器)
       - NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
@@ -103,7 +78,6 @@ services:
       - NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
     depends_on:
       - console
-      - workflow
       - siterank
 
   cloudsql-proxy:

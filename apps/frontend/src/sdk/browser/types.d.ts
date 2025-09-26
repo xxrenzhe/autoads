@@ -14,36 +14,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Parse URL and extract hostname and brand */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        url: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            ok?: boolean;
-                            hostname?: string;
-                            brand?: string;
-                        };
-                    };
-                };
-            };
-        };
+        post: operations["parseUrl"];
         delete?: never;
         options?: never;
         head?: never;
@@ -60,66 +31,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Check URL availability via HTTP HEAD/GET */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        url: string;
-                        timeoutMs?: number;
-                        /** @enum {string} */
-                        method?: "HEAD" | "GET";
-                        fingerprint?: {
-                            locale?: string;
-                            timezoneId?: string;
-                            viewport?: {
-                                width?: number;
-                                height?: number;
-                            };
-                            geolocation?: {
-                                latitude?: number;
-                                longitude?: number;
-                                accuracy?: number;
-                            };
-                            /** @enum {string} */
-                            colorScheme?: "light" | "dark" | "no-preference";
-                            userAgent?: string;
-                        };
-                        proxy?: {
-                            server?: string;
-                            username?: string;
-                            password?: string;
-                        };
-                    };
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            ok?: boolean;
-                            status?: number;
-                            /** @enum {string} */
-                            engine?: "playwright" | "fetch";
-                            timings?: {
-                                navMs?: number;
-                                clickMs?: number;
-                            };
-                            error?: string;
-                        };
-                    };
-                };
-            };
-        };
+        post: operations["checkAvailability"];
         delete?: never;
         options?: never;
         head?: never;
@@ -136,47 +48,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Simulate click (queued) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        url: string;
-                        /** @description CSS selector to click first */
-                        selector?: string;
-                        wait?: {
-                            /** @enum {string} */
-                            until?: "domcontentloaded" | "networkidle" | "selector";
-                            selector?: string;
-                            timeoutMs?: number;
-                        };
-                        /** @description Wait after click (ms) */
-                        dwellMs?: number;
-                        fingerprint?: components["schemas"]["Fingerprint"];
-                        proxy?: components["schemas"]["Proxy"];
-                    };
-                };
-            };
-            responses: {
-                /** @description Accepted */
-                202: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            taskId?: string;
-                            status?: string;
-                        };
-                    };
-                };
-            };
-        };
+        post: operations["simulateClick"];
         delete?: never;
         options?: never;
         head?: never;
@@ -193,40 +65,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Submit tasks for batch execution (queued) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        tasks?: {
-                            url: string;
-                            fingerprint?: components["schemas"]["Fingerprint"];
-                            proxy?: components["schemas"]["Proxy"];
-                        }[];
-                        concurrency?: number;
-                    };
-                };
-            };
-            responses: {
-                /** @description Accepted */
-                202: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            accepted?: number;
-                            taskGroupId?: string;
-                        };
-                    };
-                };
-            };
-        };
+        post: operations["batchExecute"];
         delete?: never;
         options?: never;
         head?: never;
@@ -241,41 +80,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get task status */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @enum {string} */
-                            status?: "queued" | "running" | "completed" | "failed";
-                            result?: Record<string, never>;
-                            error?: string;
-                            groupId?: string;
-                        };
-                    };
-                };
-                /** @description Not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        get: operations["getTask"];
         put?: never;
         post?: never;
         delete?: never;
@@ -317,4 +122,205 @@ export interface components {
     pathItems: never;
 }
 export type $defs = Record<string, never>;
-export type operations = Record<string, never>;
+export interface operations {
+    parseUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    url: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok?: boolean;
+                        hostname?: string;
+                        brand?: string;
+                    };
+                };
+            };
+        };
+    };
+    checkAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    url: string;
+                    timeoutMs?: number;
+                    /** @enum {string} */
+                    method?: "HEAD" | "GET";
+                    fingerprint?: {
+                        locale?: string;
+                        timezoneId?: string;
+                        viewport?: {
+                            width?: number;
+                            height?: number;
+                        };
+                        geolocation?: {
+                            latitude?: number;
+                            longitude?: number;
+                            accuracy?: number;
+                        };
+                        /** @enum {string} */
+                        colorScheme?: "light" | "dark" | "no-preference";
+                        userAgent?: string;
+                    };
+                    proxy?: {
+                        server?: string;
+                        username?: string;
+                        password?: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok?: boolean;
+                        status?: number;
+                        /** @enum {string} */
+                        engine?: "playwright" | "fetch";
+                        timings?: {
+                            navMs?: number;
+                            clickMs?: number;
+                        };
+                        error?: string;
+                    };
+                };
+            };
+        };
+    };
+    simulateClick: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    url: string;
+                    /** @description CSS selector to click first */
+                    selector?: string;
+                    wait?: {
+                        /** @enum {string} */
+                        until?: "domcontentloaded" | "networkidle" | "selector";
+                        selector?: string;
+                        timeoutMs?: number;
+                    };
+                    /** @description Wait after click (ms) */
+                    dwellMs?: number;
+                    fingerprint?: components["schemas"]["Fingerprint"];
+                    proxy?: components["schemas"]["Proxy"];
+                };
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        taskId?: string;
+                        status?: string;
+                    };
+                };
+            };
+        };
+    };
+    batchExecute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    tasks?: {
+                        url: string;
+                        fingerprint?: components["schemas"]["Fingerprint"];
+                        proxy?: components["schemas"]["Proxy"];
+                    }[];
+                    concurrency?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accepted?: number;
+                        taskGroupId?: string;
+                    };
+                };
+            };
+        };
+    };
+    getTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status?: "queued" | "running" | "completed" | "failed";
+                        result?: Record<string, never>;
+                        error?: string;
+                        groupId?: string;
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+}
