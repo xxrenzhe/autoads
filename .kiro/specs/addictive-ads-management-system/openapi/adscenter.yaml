@@ -40,7 +40,12 @@ paths:
                   description: Optional landing page URL to check reachability
               required: []
       responses:
-        '200': { description: Diagnostics result }
+        '200':
+          description: Diagnostics result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreflightResult'
         '400': { description: Bad Request }
         '401': { description: Unauthorized }
   /api/v1/adscenter/bulk-actions:
@@ -76,28 +81,9 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                validateOnly:
-                  type: boolean
-                actions:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      type:
-                        type: string
-                        description: Action type
-                        enum: [ADJUST_CPC, ADJUST_BUDGET, ROTATE_LINK]
-                      filter:
-                        type: object
-                        description: Filter conditions (implementation-defined)
-                        additionalProperties: true
-                      params:
-                        type: object
-                        description: Action parameters (implementation-defined)
-                        additionalProperties: true
-                  minItems: 1
+              oneOf:
+                - $ref: '#/components/schemas/BulkActionPlan'
+                - $ref: '#/components/schemas/OpportunityComboPlan'
       responses:
         '200': { description: OK (validateOnly) }
         '202': { description: Accepted (enqueued) }
@@ -519,6 +505,24 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    PreflightCheck:
+      type: object
+      properties:
+        code: { type: string }
+        severity: { type: string, enum: [info, warn, error, skip] }
+        message: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+      required: [code, severity, message]
+    PreflightResult:
+      type: object
+      properties:
+        summary: { type: string, enum: [ok, warn, error] }
+        checks:
+          type: array
+          items: { $ref: '#/components/schemas/PreflightCheck' }
+      required: [summary, checks]
     BulkActionOperation:
       type: object
       properties:
@@ -549,10 +553,61 @@ components:
                 type: object
                 additionalProperties: true
               params:
-                type: object
-                additionalProperties: true
+                oneOf:
+                  - $ref: '#/components/schemas/AdjustCpcParams'
+                  - $ref: '#/components/schemas/AdjustBudgetParams'
+                  - $ref: '#/components/schemas/RotateLinkParams'
           minItems: 1
       required: [actions]
+    AdjustCpcParams:
+      type: object
+      properties:
+        keyword: { type: string, description: Target keyword text }
+        percent: { type: number, description: Increase/decrease percent (e.g., 10 for +10%) }
+        cpcValue: { type: number, description: Absolute CPC value to set (optional alternative to percent) }
+        reason: { type: string }
+        seedDomain: { type: string }
+        country: { type: string }
+    AdjustBudgetParams:
+      type: object
+      properties:
+        dailyBudget: { type: number, description: New daily budget value }
+        percent: { type: number, description: Percent change; if present, dailyBudget may be omitted }
+    RotateLinkParams:
+      type: object
+      properties:
+        targetDomain: { type: string, description: Target domain for rotation }
+        links:
+          type: array
+          description: Optional list of full URLs to rotate; either targetDomain or links must be provided
+          items: { type: string }
+        seedDomain: { type: string }
+        country: { type: string }
+    OpportunityComboPlan:
+      type: object
+      description: Minimal combo plan built from an Opportunity (keywords/domains) without enumerating low-level actions.
+      properties:
+        validateOnly: { type: boolean }
+        seedDomain: { type: string }
+        country: { type: string }
+        plan:
+          type: object
+          properties:
+            keywords:
+              type: array
+              items:
+                type: object
+                properties:
+                  keyword: { type: string }
+                  score: { type: number }
+                  reason: { type: string }
+            domains:
+              type: array
+              items:
+                type: object
+                properties:
+                  domain: { type: string }
+                  score: { type: number }
     BulkActionValidationResult:
       type: object
       properties:

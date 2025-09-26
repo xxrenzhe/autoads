@@ -16,5 +16,7 @@ curl -sS -o /dev/null -w "%{http_code}\n" "https://${HOST}/api/v1/adscenter/bulk
 echo "[smoke] GET /api/v1/batchopen/templates (expect 401)"
 curl -sS -o /dev/null -w "%{http_code}\n" "https://${HOST}/api/v1/batchopen/templates" || true
 
-echo "[done]"
+echo "[smoke] GET /api/v1/console/users (expect 401)"
+curl -sS -o /dev/null -w "%{http_code}\n" "https://${HOST}/api/v1/console/users" || true
 
+echo "[done]"

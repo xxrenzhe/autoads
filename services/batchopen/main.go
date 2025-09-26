@@ -20,6 +20,10 @@ import (
     "github.com/go-chi/chi/v5"
     api "github.com/xxrenzhe/autoads/services/batchopen/internal/oapi"
     "github.com/xxrenzhe/autoads/pkg/telemetry"
+    "net/url"
+    "sync"
+    "github.com/prometheus/client_golang/prometheus"
+    "sync/atomic"
 )
 
 type createTaskRequest struct {
@@ -41,6 +45,20 @@ func writeJSON(w http.ResponseWriter, code int, v interface{}) {
 
 func health(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK); _, _ = w.Write([]byte("OK")) }
 func ready(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK); _, _ = w.Write([]byte("ready")) }
+func stats(w http.ResponseWriter, r *http.Request) {
+    hit := atomic.LoadInt64(&cacheHits)
+    miss := atomic.LoadInt64(&cacheMiss)
+    total := hit + miss
+    var hitRate int
+    if total > 0 { hitRate = int((hit * 100) / total) }
+    // request/error counters are Prometheus-only here; keep JSON minimal
+    writeJSON(w, http.StatusOK, map[string]any{
+        "inflight": atomic.LoadInt32(&inflightCur),
+        "cacheHits": hit,
+        "cacheMiss": miss,
+        "cacheHitRate": hitRate, // percent
+    })
+}
 
 func createTaskHandler(pub *ev.Publisher) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
@@ -170,6 +188,7 @@ func main() {
     r.Use(middleware.LoggingMiddleware("batchopen"))
     r.Get("/health", health)
     r.Get("/readyz", ready)
+    r.Get("/api/v1/batchopen/stats", stats)
     // OpenAPI chi server mount with auth middleware
     oas := &oasImpl{pub: pub}
     oapiHandler := api.HandlerWithOptions(oas, api.ChiServerOptions{
@@ -301,9 +320,94 @@ func fetchOfferURL(ctx context.Context, offerID, userID string) string {
     return strings.TrimSpace(out.OriginalUrl)
 }
 
+// --- Concurrency & host-level cache ---
+var (
+    inflightOnce  sync.Once
+    inflightSem   chan struct{}
+    hostCache     = map[string]hostCacheEntry{}
+    hostCacheMu   sync.RWMutex
+    sfMu          sync.Mutex
+    sfWaiters     = map[string][]chan singleflightRes{}
+    inflightCur   int32
+    cacheHits     int64
+    cacheMiss     int64
+)
+type hostCacheEntry struct{ ok bool; res map[string]any; exp time.Time }
+type singleflightRes struct{ ok bool; res map[string]any }
+
+// metrics
+var (
+    metricInflight = prometheus.NewGauge(prometheus.GaugeOpts{
+        Name: "batchopen_inflight_current",
+        Help: "Current in-flight browser-exec checks",
+    })
+    metricCacheHits = prometheus.NewCounter(prometheus.CounterOpts{
+        Name: "batchopen_host_cache_hits_total",
+        Help: "Total host-level cache hits",
+    })
+    metricCacheMiss = prometheus.NewCounter(prometheus.CounterOpts{
+        Name: "batchopen_host_cache_miss_total",
+        Help: "Total host-level cache misses",
+    })
+    metricRequests = prometheus.NewCounter(prometheus.CounterOpts{
+        Name: "batchopen_requests_total",
+        Help: "Total availability requests via Browser-Exec",
+    })
+    metricErrors = prometheus.NewCounter(prometheus.CounterOpts{
+        Name: "batchopen_errors_total",
+        Help: "Total failed availability checks",
+    })
+)
+
+func init() {
+    _ = prometheus.Register(metricInflight)
+    _ = prometheus.Register(metricCacheHits)
+    _ = prometheus.Register(metricCacheMiss)
+    _ = prometheus.Register(metricRequests)
+    _ = prometheus.Register(metricErrors)
+}
+
+func initInflight() {
+    inflightOnce.Do(func() {
+        max := 8
+        if v := strings.TrimSpace(os.Getenv("BATCHOPEN_MAX_INFLIGHT")); v != "" {
+            if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= 64 { max = n }
+        }
+        inflightSem = make(chan struct{}, max)
+    })
+}
+
+func acquire() { initInflight(); inflightSem <- struct{}{} }
+func release() { <-inflightSem }
+
 func browserExecCheck(ctx context.Context, url string) (bool, map[string]any) {
     be := strings.TrimRight(os.Getenv("BROWSER_EXEC_URL"), "/")
     if be == "" || url == "" { return false, map[string]any{"error": "missing_browser_exec_or_url"} }
+    // Host-level short cache to reduce duplicate checks
+    host := hostOf(url)
+    if host != "" {
+        if ok, res, hit := lookupHostCache(host); hit {
+            atomic.AddInt64(&cacheHits, 1)
+            metricCacheHits.Inc()
+            return ok, res
+        }
+        atomic.AddInt64(&cacheMiss, 1)
+        metricCacheMiss.Inc()
+        // Singleflight: coalesce parallel checks for same host
+        if ch := joinSingleflight(host); ch != nil {
+            r := <-ch
+            return r.ok, r.res
+        }
+        // mark as leader; ensure notify on return
+        defer func() { leaveSingleflight(host) }()
+    }
+    // Concurrency guard
+    acquire()
+    atomic.AddInt32(&inflightCur, 1)
+    metricInflight.Inc()
+    defer release()
+    defer metricInflight.Dec()
+    defer atomic.AddInt32(&inflightCur, -1)
     body := map[string]any{"url": url, "timeoutMs": 8000}
     b, _ := json.Marshal(body)
     req, _ := http.NewRequestWithContext(ctx, http.MethodPost, be+"/api/v1/browser/check-availability", strings.NewReader(string(b)))
@@ -318,6 +422,15 @@ func browserExecCheck(ctx context.Context, url string) (bool, map[string]any) {
     if !ok && resp.StatusCode >= 200 && resp.StatusCode < 300 {
         // if field missing, treat 2xx as ok
         ok = true
+    }
+    // fill cache
+    if host != "" {
+        ttlMs := 120000
+        if !ok { ttlMs = 30000 }
+        if v := strings.TrimSpace(os.Getenv("BATCHOPEN_DOMAIN_CACHE_MS")); v != "" {
+            if n, err := strconv.Atoi(v); err == nil && n >= 1000 && n <= 600000 { ttlMs = n }
+        }
+        saveHostCache(host, ok, out, time.Duration(ttlMs)*time.Millisecond)
     }
     return ok, out
 }
@@ -334,13 +447,17 @@ func browserExecCheckWithRetry(ctx context.Context, url string) (bool, map[strin
     var last map[string]any
     for attempt := 0; ; attempt++ {
         ok, out := browserExecCheck(ctx, url)
+        metricRequests.Inc()
         last = out
         if ok { return true, out }
         // decide retry by status
         status := 0
         if v, ok := out["status"].(float64); ok { status = int(v) }
         transient := status == 0 || status >= 500 || status == 429
-        if !transient || attempt >= maxRetries { return false, out }
+        if !transient || attempt >= maxRetries {
+            metricErrors.Inc()
+            return false, out
+        }
         wait := time.Duration(backoff*(1<<attempt)) * time.Millisecond
         if wait > 2*time.Second { wait = 2 * time.Second }
         select { case <-time.After(wait): case <-ctx.Done(): return false, last }
@@ -389,7 +506,48 @@ func billingAction(ctx context.Context, userID, action, taskID string) error {
     req, _ := http.NewRequestWithContext(cctx, http.MethodPost, base+"/api/v1/billing/tokens/"+action, strings.NewReader(string(b)))
     req.Header.Set("Content-Type", "application/json")
     req.Header.Set("X-User-Id", userID)
+    // Idempotency key to avoid duplicate charges on retries
+    req.Header.Set("X-Idempotency-Key", "batchopen:"+action+":"+userID+":"+taskID)
     resp, err := http.DefaultClient.Do(req)
     if err == nil && resp != nil { _ = resp.Body.Close() }
     return nil
+}
+
+// helpers for host cache and singleflight
+func hostOf(raw string) string {
+    if u, err := url.Parse(raw); err == nil {
+        h := strings.ToLower(u.Hostname())
+        if h == "" { return "" }
+        if strings.HasPrefix(h, "www.") { h = h[4:] }
+        return h
+    }
+    return ""
+}
+func lookupHostCache(host string) (bool, map[string]any, bool) {
+    hostCacheMu.RLock(); e, ok := hostCache[host]; hostCacheMu.RUnlock()
+    if !ok || time.Now().After(e.exp) { return false, nil, false }
+    return e.ok, e.res, true
+}
+func saveHostCache(host string, ok bool, res map[string]any, ttl time.Duration) {
+    hostCacheMu.Lock(); hostCache[host] = hostCacheEntry{ok: ok, res: res, exp: time.Now().Add(ttl)}; hostCacheMu.Unlock()
+}
+func joinSingleflight(host string) <-chan singleflightRes {
+    sfMu.Lock(); defer sfMu.Unlock()
+    if chs, ok := sfWaiters[host]; ok {
+        ch := make(chan singleflightRes, 1)
+        sfWaiters[host] = append(chs, ch)
+        return ch
+    }
+    // mark leader by creating empty slice
+    sfWaiters[host] = []chan singleflightRes{}
+    return nil
+}
+func leaveSingleflight(host string) {
+    sfMu.Lock(); chs, ok := sfWaiters[host]; if ok { delete(sfWaiters, host) }; sfMu.Unlock()
+    if !ok || len(chs) == 0 { return }
+    // read from cache (which leader should have saved), otherwise send failure
+    ok2, res, hit := lookupHostCache(host)
+    r := singleflightRes{ok: ok2, res: res}
+    if !hit { r = singleflightRes{ok: false, res: map[string]any{"error": "singleflight_miss"}} }
+    for _, ch := range chs { ch <- r; close(ch) }
 }

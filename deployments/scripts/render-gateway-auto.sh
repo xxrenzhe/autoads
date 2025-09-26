@@ -6,6 +6,7 @@ set -euo pipefail
 
 PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-${PROJECT_ID:-}}"
 REGION="${REGION:-asia-northeast1}"
+STACK="${STACK:-}"
 SRC="deployments/gateway/gateway.v2.yaml"
 OUT="deployments/gateway/gateway.v2.rendered.yaml"
 
@@ -22,10 +23,21 @@ cp "$SRC" "$OUT"
 sed -i '' -e "s#<PROJECT_ID>#$PROJECT_ID#g" "$OUT"
 
 discover_and_replace() {
-  local svc="$1"
-  local placeholder="$2"
+  local base="$1"           # logical service name, e.g., siterank
+  local placeholder="$2"     # placeholder token in gateway spec
+  local svc="$base"
   local url host
+  # Prefer stack-suffixed service name when STACK provided
+  if [[ -n "$STACK" ]]; then
+    svc="${base}-${STACK}"
+  fi
   url=$(gcloud run services describe "$svc" --region "$REGION" --format 'value(status.url)' 2>/dev/null || true)
+  # Fallback to base name when suffixed service not found
+  if [[ -z "$url" && -n "$STACK" ]]; then
+    echo "[render] WARN: $svc not found, try base name $base"
+    url=$(gcloud run services describe "$base" --region "$REGION" --format 'value(status.url)' 2>/dev/null || true)
+    svc="$base"
+  fi
   if [[ -z "$url" ]]; then
     echo "[render] WARN: service $svc not found; keep placeholder $placeholder"
     return
@@ -45,4 +57,3 @@ discover_and_replace recommendations recommendations-REPLACE_WITH_RUN_URL
 discover_and_replace console console-REPLACE_WITH_RUN_URL
 
 echo "[render] Rendered -> $OUT"
-

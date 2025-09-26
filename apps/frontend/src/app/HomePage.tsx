@@ -254,6 +254,11 @@ export default function HomePage() {
               onClick={() => handleCTAClick('automation_cta')}
             >配置自动化广告<LinkIcon className="w-5 h-5 ml-2" />
             </Link>
+            <Link 
+              href="/recommend/opportunities"
+              className="inline-flex items-center justify-center bg-white text-blue-600 font-semibold py-3 px-8 rounded-xl hover:bg-gray-50 transition-all duration-300"
+            >我的机会<ArrowRight className="w-5 h-5 ml-2" />
+            </Link>
           </div>
         </div>
       </section>

@@ -103,6 +103,14 @@ export default function AdsCenterClient() {
   const [uiRateLimitMax, setUiRateLimitMax] = useState<number>(getUiDefaultRpm());
   const { data: subscriptionData } = useSubscriptionLimits();
   const [planRpm, setPlanRpm] = useState<number | undefined>(undefined);
+  // Batchopen stats (monitoring)
+  const [boStats, setBoStats] = useState<any>(null);
+  const fetchBoStats = async () => {
+    try {
+      const res = await fetch('/api/batchopen/stats', { cache: 'no-store' })
+      if (res.ok) setBoStats(await res.json());
+    } catch {}
+  }
   const [featureRpm, setFeatureRpm] = useState<number | undefined>(undefined);
   useEffect(() => { fetchUiDefaultRpm().then(setUiRateLimitMax).catch(() => {}); }, []);
   useEffect(() => { const { planRpm: p, featureRpm: f } = getPlanFeatureRpmSync(subscriptionData?.planId, 'adscenter'); setPlanRpm(p); setFeatureRpm(f); }, [subscriptionData?.planId]);
@@ -375,6 +383,56 @@ export default function AdsCenterClient() {
   const [validateResult, setValidateResult] = useState<any>(null);
   const [planText, setPlanText] = useState<string>("");
   const [selectedAccount, setSelectedAccount] = useState<string>("");
+  // --- Preflight (OAS) ---
+  const [preflightLanding, setPreflightLanding] = useState<string>("");
+  const [preflightRes, setPreflightRes] = useState<any>(null);
+  const summarizePreflight = (res: any) => {
+    const checks = Array.isArray(res?.checks) ? res.checks : []
+    const counts = checks.reduce((acc: any, c: any) => {
+      const s = (c?.severity || '').toLowerCase()
+      acc[s] = (acc[s] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    return counts
+  }
+  const sevClass = (sev: string) => {
+    switch ((sev||'').toLowerCase()) {
+      case 'ok': return 'text-green-600'
+      case 'info': return 'text-blue-600'
+      case 'warn': return 'text-yellow-600'
+      case 'error': return 'text-red-600'
+      case 'skip': return 'text-gray-500'
+      default: return 'text-gray-600'
+    }
+  }
+  const runPreflight = async () => {
+    try {
+      setDiagLoading(true);
+      const accId = selectedAccount || accounts?.[0]?.id || ''
+      const body: any = { accountId: accId, validateOnly: true }
+      if (preflightLanding && preflightLanding.trim()) body.landingUrl = preflightLanding.trim()
+      const res = await fetch('/api/adscenter/preflight', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const data = await res.json()
+      setPreflightRes(data)
+      if (res.ok) toast.success('Pre-flight 检查完成')
+      else toast.error('Pre-flight 检查失败')
+    } catch { toast.error('Pre-flight 请求失败') } finally { setDiagLoading(false) }
+  }
+  // --- Keyword expand (OAS) ---
+  const [kwDomain, setKwDomain] = useState<string>("");
+  const [kwSeed, setKwSeed] = useState<string>("");
+  const [kwItems, setKwItems] = useState<any[]>([]);
+  const runKeywordExpand = async () => {
+    try {
+      setDiagLoading(true);
+      const body: any = { seedDomain: kwDomain.trim(), seedKeywords: kwSeed.trim() ? [kwSeed.trim()] : [], validateOnly: true }
+      const res = await fetch('/api/adscenter/keywords/expand', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+      const data = await res.json()
+      setKwItems(Array.isArray(data.items) ? data.items : [])
+      if (res.ok) toast.success('关键词扩展完成')
+      else toast.error('关键词扩展失败')
+    } catch { toast.error('关键词扩展请求失败') } finally { setDiagLoading(false) }
+  }
   const onDiagChange = (k: string, v: string) => {
     const num = Number(v);
     setDiagMetrics((m: any) => ({ ...m, [k]: isNaN(num) ? v : num }));
@@ -592,6 +650,84 @@ export default function AdsCenterClient() {
         </TabsContent>
 
         <TabsContent value="configurations" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pre-flight 检查（OAS 对齐）</CardTitle>
+              <CardDescription>校验环境/授权/结构/预算/落地可达性等</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Label className="min-w-28">Landing URL（可选）</Label>
+                <Input value={preflightLanding} onChange={(e)=>setPreflightLanding(e.target.value)} placeholder="https://example.com" />
+                <Button variant="secondary" onClick={runPreflight} disabled={diagLoading}>Pre-flight</Button>
+              </div>
+              {preflightRes && (
+                <div className="text-sm">
+                  <div className="mb-2 flex items-center gap-4">
+                    <div>结果：<span className="font-medium">{preflightRes.summary}</span>（checks: {Array.isArray(preflightRes.checks) ? preflightRes.checks.length : 0}）</div>
+                    {(() => { const c = summarizePreflight(preflightRes); return (
+                      <div className="flex items-center gap-3">
+                        <span className="text-green-600">ok:{c.ok||0}</span>
+                        <span className="text-yellow-600">warn:{c.warn||0}</span>
+                        <span className="text-red-600">error:{c.error||0}</span>
+                        <span className="text-gray-500">skip:{c.skip||0}</span>
+                      </div>
+                    )})()}
+                  </div>
+                  <div className="max-h-64 overflow-auto border rounded">
+                    <table className="min-w-full text-xs">
+                      <thead className="bg-gray-50">
+                        <tr><th className="px-2 py-1 text-left">code</th><th className="px-2 py-1 text-left">severity</th><th className="px-2 py-1 text-left">message</th></tr>
+                      </thead>
+                      <tbody>
+                        {(preflightRes.checks||[]).map((c:any, i:number)=> (
+                          <tr key={i} className="border-t">
+                            <td className="px-2 py-1 font-mono">{c.code}</td>
+                            <td className={`px-2 py-1 ${sevClass(c.severity)}`}>{c.severity}</td>
+                            <td className="px-2 py-1">{c.message}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>关键词扩展（最小实现）</CardTitle>
+              <CardDescription>基于种子域与关键词生成候选；过滤搜索量>1000且竞争度非HIGH</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Label className="min-w-24">种子域</Label>
+                <Input className="w-64" value={kwDomain} onChange={(e)=>setKwDomain(e.target.value)} placeholder="example.com" />
+                <Label className="min-w-24">种子词（可选）</Label>
+                <Input className="w-48" value={kwSeed} onChange={(e)=>setKwSeed(e.target.value)} placeholder="shoe" />
+                <Button variant="secondary" onClick={runKeywordExpand} disabled={diagLoading}>Expand</Button>
+              </div>
+              {kwItems?.length>0 && (
+                <div className="max-h-64 overflow-auto border rounded">
+                  <table className="min-w-full text-xs">
+                    <thead className="bg-gray-50">
+                      <tr><th className="px-2 py-1 text-left">keyword</th><th className="px-2 py-1 text-left">avgMonthlySearches</th><th className="px-2 py-1 text-left">competition</th></tr>
+                    </thead>
+                    <tbody>
+                      {kwItems.slice(0,20).map((k:any,i:number)=> (
+                        <tr key={i} className="border-t">
+                          <td className="px-2 py-1">{k.keyword}</td>
+                          <td className="px-2 py-1">{k.avgMonthlySearches}</td>
+                          <td className="px-2 py-1">{k.competition}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">配置管理</h2>
             <ProtectedButton 
@@ -835,6 +971,39 @@ export default function AdsCenterClient() {
                   <p className="text-sm text-muted-foreground">成功执行</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Batchopen 执行指标（最小）</span>
+                <Button variant="outline" size="sm" onClick={fetchBoStats}>刷新</Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+              {boStats ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-purple-600">{boStats.inflight ?? 0}</div>
+                    <div className="text-xs text-muted-foreground">当前并发</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">{boStats.cacheHits ?? 0}</div>
+                    <div className="text-xs text-muted-foreground">缓存命中</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-orange-600">{boStats.cacheMiss ?? 0}</div>
+                    <div className="text-xs text-muted-foreground">缓存未命中</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">{boStats.cacheHitRate ?? (() => { const h=boStats.cacheHits||0,m=boStats.cacheMiss||0; const t=h+m; return t>0 ? Math.round((h*100)/t) : 0 })()}%</div>
+                    <div className="text-xs text-muted-foreground">命中率</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-500">点击刷新获取最新指标</div>
+              )}
             </CardContent>
           </Card>
 

@@ -123,6 +123,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recommend/opportunities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recent opportunities for current user */
+        get: operations["listOpportunities"];
+        put?: never;
+        /** Create an opportunity from discovery results */
+        post: operations["createOpportunity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recommend/opportunities/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get opportunity detail */
+        get: operations["getOpportunity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -146,6 +181,48 @@ export interface components {
             missingAliases?: string[];
             /** Format: date-time */
             updatedAt?: string;
+        };
+        OpportunityCreateRequest: {
+            seedDomain: string;
+            country?: string;
+            seedKeywords?: string[];
+            topKeywords?: {
+                keyword?: string;
+                score?: number;
+                reason?: string;
+            }[];
+            topDomains?: {
+                domain?: string;
+                score?: number;
+            }[];
+            meta?: {
+                [key: string]: unknown;
+            };
+        };
+        OpportunityItem: {
+            /** Format: int64 */
+            id?: number;
+            seedDomain?: string;
+            country?: string;
+            /** @description human-readable reason summary */
+            summary?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        Opportunity: components["schemas"]["OpportunityItem"] & {
+            seedKeywords?: string[];
+            topKeywords?: {
+                keyword?: string;
+                score?: number;
+                reason?: string;
+            }[];
+            topDomains?: {
+                domain?: string;
+                score?: number;
+            }[];
+            meta?: {
+                [key: string]: unknown;
+            };
         };
     };
     responses: never;
@@ -434,6 +511,92 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listOpportunities: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+                seedDomain?: string;
+                country?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: components["schemas"]["OpportunityItem"][];
+                        /** @description next cursor for pagination */
+                        next?: string;
+                    };
+                };
+            };
+        };
+    };
+    createOpportunity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpportunityCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        id?: number;
+                        status?: string;
+                    };
+                };
+            };
+        };
+    };
+    getOpportunity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Opportunity"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

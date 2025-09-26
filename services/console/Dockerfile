@@ -29,9 +29,10 @@ WORKDIR /app
 # Copy the Go binary from the builder stage
 COPY --from=builder /console-api /app/console-api
 
-# Here, you would typically copy the pre-built admin UI files
-# For now, we will create a placeholder index.html to prove the concept.
-RUN mkdir -p /app/static && echo "<h1>Admin Console Placeholder</h1>" > /app/static/index.html
+# Copy admin UI static assets (minimal UI)
+COPY services/console/static /app/static
+RUN mkdir -p /app/static && \
+    if [ ! -f /app/static/index.html ]; then echo "<h1>Admin Console Placeholder</h1>" > /app/static/index.html; fi
 
 EXPOSE 8080
 

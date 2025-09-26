@@ -237,7 +237,7 @@
   - 实现失败重试分级
   - _需求: 需求C4 - Batchopen仿真编排_
 
-- [ ] E1.2 集成Browser-Exec执行
+- [x] E1.2 集成Browser-Exec执行
   - 实现执行下沉至Browser-Exec
   - 建立与Billing服务的计费集成
   - 实现任务状态追踪和通知
@@ -304,8 +304,8 @@
 
 - [ ] D1.4 实现简化增强功能
   - 实现深度相似度算法：域名关键词匹配30分+流量规模相似性25分+国家重叠度20分+行业分类匹配25分
-  - 集成Google Ads关键词规划师API，实现关键词扩展建议功能
-  - 建立简单过滤机制：搜索量>1000且竞争度非HIGH
+  - 关键词扩展建议不依赖 Google Ads API：基于 SimilarWeb 指标、域名关键词与规则库生成候选
+  - 建立简单过滤机制：按规则阈值筛选（如访问量阈值、关键词覆盖度阈值），避免外部 Ads API 访问
   - 实现相似度评分详情和推荐理由展示
   - _需求: 需求C7 - 机会发现增强_
 
@@ -328,7 +328,7 @@
 
 ### E1. Pre-flight诊断系统
 
-- [ ] E1.1 实现结构化诊断
+- [x] E1.1 实现结构化诊断
   - 建立Pre-flight检查项：环境/授权/结构/余额/回传/落地/API可达性
   - 实现结构化输出：code/severity/message/details/summary
   - 建立validate-only预检模式
@@ -820,8 +820,8 @@
 - [ ] 15.1 Siterank服务增强
   - 在现有Siterank服务中添加简化相似度算法
   - 实现域名关键词匹配、流量规模相似性、国家重叠度、行业分类匹配四个维度评分
-  - 集成Google Ads关键词规划师API
-  - 实现关键词扩展建议功能，过滤搜索量>1000且竞争度非HIGH的关键词
+  - 关键词扩展不接入 Google Ads 关键词规划师：使用 SimilarWeb 指标 + 规则库（搜索趋势替代、关键词共现、域名拆词）
+  - 实现关键词扩展建议功能（内部规则生成），并提供阈值过滤（如访问量、相似度）
   - _需求: 需求C7 - 机会发现增强_
 
 - [ ] 15.2 Adscenter服务诊断增强
@@ -1217,6 +1217,30 @@
 
 ---
 
+## 新增任务（预发落地）
+
+- [x] A. 机会落表与摘要
+  - Recommendations 服务新增 `opportunities`（保存/列表/详情）
+  - 保存时生成 `summary`（Top关键词/域名+seed/country），落表并写 UI 缓存
+  - 前端新增“我的机会”最小页（列表/详情）
+
+- [x] B. 批量计划（机会→执行）闭环
+  - Adscenter OAS 扩展：bulk-actions 支持 `OpportunityComboPlan`
+  - 服务端支持 combo→actions 转换（ROTATE_LINK、ADJUST_CPC），validate-only 与入队、幂等与审计
+  - 细粒度审计：逐条动作写入审计（kind=other）；计划 before/after 快照
+  - 前端“批量计划”列表/详情（审计可视化）；机会详情提交成功后跳转计划详情页
+
+- [x] C. 导出能力（最小）
+  - 我的机会（列表/详情）支持 CSV/JSON 导出
+
+### 下一阶段（待办）
+
+- [ ] D. 审计报告（after/rollback）渲染
+  - 在批量计划详情页渲染 after/rollback 报告（读取 `/api/v1/adscenter/bulk-actions/{id}/report`），展示影响对象数/成功率/异常摘要
+
+- [ ] E. 动作 params 更详细的 OAS 示例
+  - 在 Adscenter OAS 中为 `ROTATE_LINK`/`ADJUST_CPC`/`ADJUST_BUDGET` 的 params 增加示例与字段说明，并同步生成前端 TS 类型
+
 ## 任务执行指南
 
 ### 优先级说明
@@ -1341,7 +1365,7 @@
 ### 功能完整性验收
 - [ ] **8个核心痛点**：全部通过用户验收测试，用户满意度>90%
 - [ ] **上瘾体验闭环**：发现→评估→测试→监控→操作→优化完整流程验证
-- [ ] **简化增强功能**：深度相似度算法、关键词扩展、精细化诊断、操作指导全部就绪
+- [ ] **简化增强功能**：深度相似度算法、（无 Ads API 的）关键词扩展、精细化诊断、操作指导全部就绪
 
 ### 技术架构验收
 - [ ] **事件驱动架构**：事件存储、投影器、Saga工作流全部正常运行
@@ -1450,7 +1474,7 @@
   - 接口：POST /recommend/brand-coverage/planned（seedDomain, keywords[]）→ 返回覆盖度与缺失别名列表
   - 使用：前端在“变更计划确认前/确认页”展示报告，提示补充与建议；不作为阻塞条件，不依赖 Ads API
 
- - [x] D1.4.b 关键词扩展端点（Stub + 过滤）
+ - [x] D1.4.b 关键词扩展端点（规则化 + 过滤）
   - 新增 POST /api/v1/adscenter/keywords/expand：seedDomain/seedKeywords/validateOnly
-  - 过滤规则：搜索量>1000 且竞争度!=HIGH，按搜索量降序，返回前20
-  - 后续可切换至真实 Google Ads Keyword Planner 客户端
+  - 不接入 Google Ads Keyword Planner；使用内部规则（域名拆词、别名/共现库、SimilarWeb 指标）生成候选
+  - 过滤规则：按内部阈值（如访问量/共现分/覆盖度）筛选，降序返回前 N（默认20）

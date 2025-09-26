@@ -20,7 +20,7 @@ paths:
       operationId: readyz
       # point to one lightweight service health endpoint
       x-google-backend:
-        address: https://siterank-yt54xvsg5q-an.a.run.app/health
+        address: https://siterank-preview-yt54xvsg5q-an.a.run.app/health
         path_translation: CONSTANT_ADDRESS
       responses: { '200': { description: OK } }
   /api/health/adscenter:
@@ -96,13 +96,13 @@ paths:
       operationId: siterankWildcardGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://siterank-yt54xvsg5q-an.a.run.app
+        address: https://siterank-preview-yt54xvsg5q-an.a.run.app
       responses: { '200': { description: OK } }
     post:
       operationId: siterankWildcardPost
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://siterank-yt54xvsg5q-an.a.run.app
+        address: https://siterank-preview-yt54xvsg5q-an.a.run.app
       responses: { '202': { description: Accepted } }
 
   /api/v1/batchopen/*:
@@ -140,7 +140,7 @@ paths:
       operationId: notificationsGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://notifications-yt54xvsg5q-an.a.run.app
+        address: https://notifications-preview-yt54xvsg5q-an.a.run.app
       responses: { '200': { description: OK } }
 
   /api/v1/recommend/*:
@@ -155,4 +155,18 @@ paths:
       security: [ { firebase: [] } ]
       x-google-backend:
         address: https://recommendations-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+
+  /api/v1/console/*:
+    get:
+      operationId: consoleWildcardGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://console-yt54xvsg5q-an.a.run.app
+      responses: { '200': { description: OK } }
+    post:
+      operationId: consoleWildcardPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://console-yt54xvsg5q-an.a.run.app
       responses: { '200': { description: OK } }

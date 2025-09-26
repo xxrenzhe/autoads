@@ -55,6 +55,10 @@ func main() {
     })
     r.Mount("/", oapiHandler)
 
+    // Extra endpoints (not in OAS): opportunities create/list
+    r.Handle("/api/v1/recommend/opportunities", middleware.AuthMiddleware(http.HandlerFunc(srv.createOpportunityHandler)))
+    r.Handle("/api/v1/recommend/opportunities/", middleware.AuthMiddleware(http.HandlerFunc(srv.opportunitiesHandler)))
+
     port := strings.TrimSpace(os.Getenv("PORT"))
     if port == "" { port = "8080" }
     log.Printf("recommendations listening on :%s", port)
@@ -64,6 +68,190 @@ func main() {
 type aliasCache struct{ aliases []string; exp time.Time }
 type Server struct{ cache map[string]aliasCache; db *sql.DB }
 type oasImpl struct{ srv *Server }
+
+// --- Opportunities (persistence) ---
+type opportunityReq struct {
+    SeedDomain   string                   `json:"seedDomain"`
+    Country      string                   `json:"country,omitempty"`
+    SeedKeywords []string                 `json:"seedKeywords,omitempty"`
+    TopKeywords  []map[string]any         `json:"topKeywords,omitempty"`
+    TopDomains   []map[string]any         `json:"topDomains,omitempty"`
+    Metadata     map[string]any           `json:"meta,omitempty"`
+}
+
+func (s *Server) createOpportunityHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost { apperr.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    if s.db == nil { apperr.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "DATABASE_URL not set", nil); return }
+    var body opportunityReq
+    if err := json.NewDecoder(r.Body).Decode(&body); err != nil { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+    seed := strings.TrimSpace(body.SeedDomain)
+    if seed == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "seedDomain required", nil); return }
+    // compute human-readable summary
+    summary := summarizeOpportunity(body)
+    bSeed, _ := json.Marshal(body.SeedKeywords)
+    bTopKw, _ := json.Marshal(body.TopKeywords)
+    bTopDom, _ := json.Marshal(body.TopDomains)
+    bMeta, _ := json.Marshal(body.Metadata)
+    // Ensure table
+    _ = ensureOpportunitiesDDL(s.db)
+    var id int64
+    err := s.db.QueryRow(`
+        INSERT INTO opportunities(user_id, seed_domain, country, seed_keywords, top_keywords, top_domains, metadata, summary)
+        VALUES ($1,$2,$3,$4::jsonb,$5::jsonb,$6::jsonb,$7::jsonb,$8)
+        RETURNING id
+    `, uid, seed, strings.TrimSpace(body.Country), string(bSeed), string(bTopKw), string(bTopDom), string(bMeta), summary).Scan(&id)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "INSERT_FAILED", "insert failed", map[string]string{"error": err.Error()}); return }
+    // Best-effort Firestore UI cache
+    go s.maybeWriteOpportunityUI(r.Context(), uid, id, seed, body, summary)
+    _ = json.NewEncoder(w).Encode(map[string]any{"id": id, "status": "ok", "summary": summary})
+}
+
+func (s *Server) opportunitiesHandler(w http.ResponseWriter, r *http.Request) {
+    // supports GET /api/v1/recommend/opportunities and GET /api/v1/recommend/opportunities/{id}
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    if s.db == nil { _ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}}); return }
+    path := strings.TrimPrefix(r.URL.Path, "/api/v1/recommend/opportunities")
+    if path == "" || path == "/" { // list
+        // optional filters
+        q := r.URL.Query()
+        limit := 50
+        if v := strings.TrimSpace(q.Get("limit")); v != "" { if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 50 { limit = n } }
+        cursor := int64(0)
+        if v := strings.TrimSpace(q.Get("cursor")); v != "" { if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 { cursor = n } }
+        seedFilter := strings.TrimSpace(q.Get("seedDomain"))
+        country := strings.TrimSpace(q.Get("country"))
+
+        where := "user_id=$1"
+        args := []any{uid}
+        idx := 2
+        if seedFilter != "" {
+            where += " AND seed_domain ILIKE $" + strconv.Itoa(idx)
+            args = append(args, "%"+seedFilter+"%")
+            idx++
+        }
+        if country != "" {
+            where += " AND country=$" + strconv.Itoa(idx)
+            args = append(args, country)
+            idx++
+        }
+        if cursor > 0 {
+            where += " AND id < $" + strconv.Itoa(idx)
+            args = append(args, cursor)
+            idx++
+        }
+        sqlStr := "SELECT id, seed_domain, country, COALESCE(top_keywords::text,'[]'), COALESCE(top_domains::text,'[]'), created_at FROM opportunities WHERE " + where + " ORDER BY id DESC LIMIT $" + strconv.Itoa(idx)
+        args = append(args, limit)
+
+        rows, err := s.db.Query(sqlStr, args...)
+        if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+        defer rows.Close()
+        items := make([]map[string]any, 0, limit)
+        lastID := int64(0)
+        for rows.Next() {
+            var id int64; var seed, country, kwj, dj, summary string; var created time.Time
+            if err := rows.Scan(&id, &seed, &country, &kwj, &dj, &created); err == nil {
+                var topKw any; var topDom any
+                _ = json.Unmarshal([]byte(kwj), &topKw); _ = json.Unmarshal([]byte(dj), &topDom)
+                // summary existed only after schema update; for backward rows it will be empty
+                // include summary if present via separate query (to avoid breaking existing select):
+                var sum sql.NullString
+                _ = s.db.QueryRow(`SELECT summary FROM opportunities WHERE id=$1`, id).Scan(&sum)
+                if sum.Valid { summary = sum.String }
+                items = append(items, map[string]any{"id": id, "seedDomain": seed, "country": country, "topKeywords": topKw, "topDomains": topDom, "summary": summary, "createdAt": created})
+                lastID = id
+            }
+        }
+        next := ""
+        if len(items) == limit && lastID > 0 { next = strconv.FormatInt(lastID, 10) }
+        _ = json.NewEncoder(w).Encode(map[string]any{"items": items, "next": next})
+        return
+    }
+    // detail
+    idStr := strings.TrimPrefix(path, "/")
+    var id int64
+    if v, err := strconv.ParseInt(idStr, 10, 64); err == nil { id = v } else { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid id", nil); return }
+    var seed, country, seedKW, topKw, topDom, meta, summary string; var created time.Time
+    err := s.db.QueryRow(`SELECT seed_domain, country, COALESCE(seed_keywords::text,'[]'), COALESCE(top_keywords::text,'[]'), COALESCE(top_domains::text,'[]'), COALESCE(metadata::text,'{}'), COALESCE(summary,''), created_at FROM opportunities WHERE user_id=$1 AND id=$2`, uid, id).
+        Scan(&seed, &country, &seedKW, &topKw, &topDom, &meta, &summary, &created)
+    if err != nil {
+        if err == sql.ErrNoRows { apperr.Write(w, r, http.StatusNotFound, "NOT_FOUND", "opportunity not found", nil); return }
+        apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return
+    }
+    var seedArr, topKwArr, topDomArr any; var metaObj any
+    _ = json.Unmarshal([]byte(seedKW), &seedArr)
+    _ = json.Unmarshal([]byte(topKw), &topKwArr)
+    _ = json.Unmarshal([]byte(topDom), &topDomArr)
+    _ = json.Unmarshal([]byte(meta), &metaObj)
+    _ = json.NewEncoder(w).Encode(map[string]any{"id": id, "seedDomain": seed, "country": country, "seedKeywords": seedArr, "topKeywords": topKwArr, "topDomains": topDomArr, "meta": metaObj, "summary": summary, "createdAt": created})
+}
+
+func ensureOpportunitiesDDL(db *sql.DB) error {
+    _, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS opportunities (
+  id           BIGSERIAL PRIMARY KEY,
+  user_id      TEXT NOT NULL,
+  seed_domain  TEXT NOT NULL,
+  country      TEXT,
+  seed_keywords JSONB,
+  top_keywords JSONB,
+  top_domains  JSONB,
+  metadata     JSONB,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_opportunities_user_created ON opportunities(user_id, created_at DESC);
+ ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS summary TEXT;
+`)
+    return err
+}
+
+func (s *Server) maybeWriteOpportunityUI(ctx context.Context, uid string, id int64, seed string, body opportunityReq, summary string) {
+    if strings.TrimSpace(os.Getenv("FIRESTORE_ENABLED")) != "1" { return }
+    pid := strings.TrimSpace(os.Getenv("GOOGLE_CLOUD_PROJECT"))
+    if pid == "" { pid = strings.TrimSpace(os.Getenv("PROJECT_ID")) }
+    if pid == "" || uid == "" { return }
+    cctx, cancel := context.WithTimeout(ctx, 1500*time.Millisecond); defer cancel()
+    cli, err := firestore.NewClient(cctx, pid)
+    if err != nil { return }
+    defer cli.Close()
+    doc := map[string]any{
+        "seedDomain": seed,
+        "country": body.Country,
+        "seedKeywords": body.SeedKeywords,
+        "topKeywords": body.TopKeywords,
+        "topDomains": body.TopDomains,
+        "summary": summary,
+        "createdAt": time.Now().UTC(),
+    }
+    _, _ = cli.Collection("users/"+uid+"/recommendations/opportunities").Doc(fmt.Sprintf("%d", id)).Set(cctx, doc)
+}
+
+// summarizeOpportunity builds a short human-readable reason summary from keywords and domains.
+func summarizeOpportunity(body opportunityReq) string {
+    kw := make([]string, 0, 3)
+    for _, it := range body.TopKeywords {
+        if s, ok := it["keyword"].(string); ok && strings.TrimSpace(s) != "" {
+            kw = append(kw, s)
+        }
+        if len(kw) >= 3 { break }
+    }
+    dm := make([]string, 0, 3)
+    for _, it := range body.TopDomains {
+        if s, ok := it["domain"].(string); ok && strings.TrimSpace(s) != "" {
+            dm = append(dm, s)
+        }
+        if len(dm) >= 3 { break }
+    }
+    parts := []string{}
+    if len(kw) > 0 { parts = append(parts, "关键词: "+strings.Join(kw, ", ")) }
+    if len(dm) > 0 { parts = append(parts, "相似域名: "+strings.Join(dm, ", ")) }
+    if body.Country != "" { parts = append(parts, "国家: "+body.Country) }
+    if body.SeedDomain != "" { parts = append(parts, "Seed: "+body.SeedDomain) }
+    if len(parts) == 0 { return "自动分析机会" }
+    return strings.Join(parts, " | ")
+}
 
 // POST /recommend/keywords/brand-check
 func (h *oasImpl) BrandCheck(w http.ResponseWriter, r *http.Request) {

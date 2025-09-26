@@ -27,7 +27,8 @@
 - 代码推送到production分支，触发production环境Cloud Build镜像构建和Cloud Run部署：标注 docker image tag 为 prod-latest 和 prod-[commitid]
 - 当production分支打了tag（如v3.0.0），触发production环境Cloud Build镜像构建和Cloud Run部署：标注 docker image tag 为 prod-[tag] 和 和 prod-[commitid]
 10.技术栈
-- 前端: Next.js，部署于Firebase Hosting
+- 用户前端(Next.js + Tailwind CSS)，部署于Firebase Hosting
+- 后台前管理系统前端(Next.js + Ant Design)
 - 后端: Go微服务，部署于Google Cloud Run
 - 认证: Firebase Authentication
 - 配置与缓存: Firestore

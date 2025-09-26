@@ -23,6 +23,7 @@ import (
     "sync"
     "strconv"
     "hash/fnv"
+    "io"
     "golang.org/x/oauth2"
     "golang.org/x/oauth2/google"
     tokencrypto "github.com/xxrenzhe/autoads/services/adscenter/internal/crypto"
@@ -191,23 +192,41 @@ func (s *Server) preflightHandler(w http.ResponseWriter, r *http.Request) {
         AccountID: req.AccountID,
     }, flags.EnableLive && !req.ValidateOnly, client)
 
-    // Backward compatible response shape
+    // Shape aligned to OAS: { summary: ok|warn|error, checks: [{code,severity,message,details?}] }
+    // Map internal summary (ready|degraded|blocked) -> (ok|warn|error)
+    sm := result.Summary
+    switch sm {
+    case "ready": sm = "ok"
+    case "degraded": sm = "warn"
+    case "blocked": sm = "error"
+    }
+    outChecks := make([]map[string]any, 0, len(result.Checks))
     legacyChecks := make([]PreflightCheck, 0, len(result.Checks))
     for _, c := range result.Checks {
-        status := string(c.Severity)
-        if status == "skip" { status = "warn" }
-        legacyChecks = append(legacyChecks, PreflightCheck{Name: c.Code, Status: status, Detail: c.Message})
+        item := map[string]any{
+            "code": c.Code,
+            "severity": string(c.Severity),
+            "message": c.Message,
+        }
+        if c.Details != nil && len(c.Details) > 0 { item["details"] = c.Details }
+        outChecks = append(outChecks, item)
+        // legacy for UI cache (name/status/detail)
+        st := string(c.Severity)
+        if st == "skip" { st = "warn" }
+        legacyChecks = append(legacyChecks, PreflightCheck{Name: c.Code, Status: st, Detail: c.Message})
     }
-    resp := PreflightResponse{Summary: result.Summary, Checks: legacyChecks}
     // Optional landing reachability via Browser-Exec
     if strings.TrimSpace(req.LandingURL) != "" {
         if c := checkLandingReachability(r.Context(), req.LandingURL); c != nil {
-            resp.Checks = append(resp.Checks, *c)
+            outChecks = append(outChecks, map[string]any{"code": c.Name, "severity": c.Status, "message": c.Detail})
+            legacyChecks = append(legacyChecks, *c)
         }
     }
+    resp := map[string]any{"summary": sm, "checks": outChecks}
+    legacy := PreflightResponse{Summary: sm, Checks: legacyChecks}
     writeJSON(w, http.StatusOK, resp)
-    // Best-effort Firestore UI cache
-    _ = writePreflightUI(r.Context(), uid, req.AccountID, resp)
+    // Best-effort Firestore UI cache (legacy shape)
+    _ = writePreflightUI(r.Context(), uid, req.AccountID, legacy)
     // Fill short cache
     ttl := 2 * time.Minute
     if v := strings.TrimSpace(os.Getenv("PREFLIGHT_CACHE_TTL_MS")); v != "" {
@@ -215,7 +234,7 @@ func (s *Server) preflightHandler(w http.ResponseWriter, r *http.Request) {
     }
     s.pcMu.Lock()
     if s.pc == nil { s.pc = map[string]preflightCache{} }
-    s.pc[cacheKey] = preflightCache{val: resp, exp: time.Now().Add(ttl)}
+    s.pc[cacheKey] = preflightCache{val: legacy, exp: time.Now().Add(ttl)}
     s.pcMu.Unlock()
 }
 
@@ -711,6 +730,132 @@ func (s *Server) mccUnlinkHandler(w http.ResponseWriter, r *http.Request) {
     _ = json.NewEncoder(w).Encode(map[string]any{"status": "queued", "message": "stub: unlink requested", "userId": uid, "customerId": req.CustomerID})
 }
 
+// --- Keyword Expansion (rule-based, no Ads API) ---
+// POST /api/v1/adscenter/keywords/expand
+// body: { seedDomain?: string, seedKeywords?: [string], country?: string, limit?: number, minScore?: number, validateOnly?: bool }
+// resp: { items: [{ keyword, score, reason }] }
+func (s *Server) keywordsExpandHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    if r.Method != http.MethodPost { apperr.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    var req struct{
+        SeedDomain    string   `json:"seedDomain"`
+        SeedKeywords  []string `json:"seedKeywords"`
+        Country       string   `json:"country"`
+        Limit         int      `json:"limit"`
+        MinScore      float64  `json:"minScore"`
+        ValidateOnly  bool     `json:"validateOnly"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+    lim := req.Limit
+    if lim <= 0 { if v := strings.TrimSpace(os.Getenv("KEYWORD_EXPAND_LIMIT_DEFAULT")); v != "" { if n, e := strconv.Atoi(v); e==nil && n>0 { lim = n } }; if lim <= 0 { lim = 20 } }
+    minScore := req.MinScore
+    if minScore <= 0 { if v := strings.TrimSpace(os.Getenv("KEYWORD_EXPAND_MIN_SCORE")); v != "" { if f, e := strconv.ParseFloat(v, 64); e==nil && f>0 { minScore = f } } }
+
+    // Seed terms from domain + provided keywords
+    tokens := tokenizeDomain(req.SeedDomain)
+    seeds := map[string]struct{}{}
+    for _, t := range tokens { if t != "" { seeds[t] = struct{}{} } }
+    for _, k := range req.SeedKeywords {
+        for _, t := range tokenizeKeyword(k) { if t != "" { seeds[t] = struct{}{} } }
+    }
+    if len(seeds) == 0 { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "seedDomain or seedKeywords required", nil); return }
+
+    // Generate candidates by simple rule library (multi-lingual)
+    brand := brandFromTokens(tokens)
+    suffixes := []string{"review","reviews","price","discount","coupon","promo","deal","buy","official","free shipping","how to","tutorial","guide","vs"}
+    suffixesCN := []string{"测评","评测","价格","优惠","优惠券","折扣","官网","购买","教程","指南","对比"}
+    baseSeeds := keys(seeds)
+
+    cand := make(map[string]float64)
+    reason := make(map[string][]string)
+    add := func(k string, score float64, why string) { kk := strings.ToLower(strings.TrimSpace(k)); if kk=="" { return }; if cur, ok := cand[kk]; !ok || score>cur { cand[kk] = score; reason[kk] = appendUnique(reason[kk], why) } }
+
+    // 1) brand + suffix
+    if brand != "" {
+        for _, sfx := range suffixes { add(brand+" "+sfx, 70, "brand+suffix") }
+        for _, sfx := range suffixesCN { add(brand+" "+sfx, 72, "brand+suffix.cn") }
+    }
+    // 2) combine seed tokens pairwise
+    for i := 0; i < len(baseSeeds); i++ {
+        for j := i+1; j < len(baseSeeds); j++ {
+            add(baseSeeds[i]+" "+baseSeeds[j], 55, "seeds-pair")
+            add(baseSeeds[j]+" "+baseSeeds[i], 52, "seeds-pair")
+        }
+    }
+    // 3) synonyms/aliases for common commerce intent
+    synonyms := map[string][]string{
+        "discount": {"coupon","promo","deal","sale"},
+        "购买": {"买","下单"},
+        "优惠": {"折扣","优惠券"},
+        "官网": {"官方网站"},
+    }
+    for _, k := range baseSeeds {
+        if alts, ok := synonyms[k]; ok {
+            for _, alt := range alts { add(alt, 40, "synonym") }
+        }
+    }
+    // 4) domain token expansions (token + suffix)
+    for _, t := range tokens {
+        for _, sfx := range suffixes { add(t+" "+sfx, 45, "token+suffix") }
+        for _, sfx := range suffixesCN { add(t+" "+sfx, 47, "token+suffix.cn") }
+    }
+
+    // 5) re-score candidates based on overlap with seeds and simple heuristics
+    scored := make([]struct{ K string; S float64 }, 0, len(cand))
+    for k, base := range cand {
+        overlap := jaccard(tokens, tokenizeKeyword(k))
+        s := base + 30*overlap
+        if req.Country != "" { s += 3 } // slight boost if country specified
+        if s > 100 { s = 100 }
+        if s >= minScore { scored = append(scored, struct{K string; S float64}{k, s}) }
+    }
+    sort.Slice(scored, func(i, j int) bool { return scored[i].S > scored[j].S })
+    if len(scored) > lim { scored = scored[:lim] }
+    items := make([]map[string]any, 0, len(scored))
+    for _, it := range scored { items = append(items, map[string]any{"keyword": it.K, "score": it.S, "reason": strings.Join(reason[it.K], ",")}) }
+    writeJSON(w, http.StatusOK, map[string]any{"items": items, "usedExternal": false})
+}
+
+func tokenizeDomain(d string) []string {
+    d = strings.TrimSpace(strings.ToLower(d))
+    if d == "" { return nil }
+    if strings.HasPrefix(d, "http://") || strings.HasPrefix(d, "https://") { if u, err := neturl.Parse(d); err==nil { d = u.Hostname() } }
+    // strip www. and TLD
+    d = strings.TrimPrefix(d, "www.")
+    parts := strings.FieldsFunc(d, func(r rune) bool { return r=='.' || r=='-' || r=='_' })
+    // drop last part if tld-like
+    if len(parts) >= 2 && len(parts[len(parts)-1]) <= 3 { parts = parts[:len(parts)-1] }
+    out := make([]string, 0, len(parts))
+    stop := map[string]struct{}{"com":{},"net":{},"org":{},"www":{}}
+    for _, p := range parts { p = strings.TrimSpace(p); if p=="" { continue }; if _,bad := stop[p]; bad { continue }; out = append(out, p) }
+    return out
+}
+func tokenizeKeyword(k string) []string {
+    k = strings.ToLower(strings.TrimSpace(k))
+    if k == "" { return nil }
+    seps := func(r rune) bool { return r==' ' || r=='-' || r=='_' || r=='/' }
+    out := strings.FieldsFunc(k, seps)
+    return out
+}
+func jaccard(a []string, b []string) float64 {
+    if len(a)==0 || len(b)==0 { return 0 }
+    A := map[string]struct{}{}; for _, x := range a { A[x] = struct{}{} }
+    B := map[string]struct{}{}; for _, x := range b { B[x] = struct{}{} }
+    inter := 0
+    for k := range A { if _, ok := B[k]; ok { inter++ } }
+    denom := float64(len(A)+len(B)-inter)
+    if denom <= 0 { return 0 }
+    return float64(inter)/denom
+}
+func brandFromTokens(tokens []string) string {
+    if len(tokens)==0 { return "" }
+    // heuristic: last token as brand
+    return tokens[len(tokens)-1]
+}
+func keys(m map[string]struct{}) []string { out := make([]string,0,len(m)); for k := range m { out = append(out,k) }; return out }
+func appendUnique(a []string, v string) []string { for _, x := range a { if x==v { return a } } ; return append(a, v) }
+
 // POST /api/v1/adscenter/mcc/refresh
 // Refresh statuses for all pending links of current user (best-effort; LIVE only when configured)
 func (s *Server) mccRefreshHandler(w http.ResponseWriter, r *http.Request) {
@@ -771,8 +916,85 @@ func fnvHash(s string) int {
 
 func bulkActionsHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodPost { apperr.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    // Read raw to allow combo shape fallback
+    raw, err := io.ReadAll(r.Body)
+    if err != nil { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+    // Try decode as standard BulkActionPlan body first
     var body api.SubmitBulkActionsJSONRequestBody
-    if err := json.NewDecoder(r.Body).Decode(&body); err != nil { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "Invalid body", nil); return }
+    _ = json.Unmarshal(raw, &body)
+    // If no actions present, try to interpret as OpportunityComboPlan and wrap to a single action
+    if body.Actions == nil || len(*body.Actions) == 0 {
+        var combo struct{
+            ValidateOnly *bool `json:"validateOnly"`
+            SeedDomain   *string `json:"seedDomain"`
+            Country      *string `json:"country"`
+            Plan         *struct {
+                Keywords []map[string]any `json:"keywords"`
+                Domains  []map[string]any `json:"domains"`
+            } `json:"plan"`
+        }
+        if err := json.Unmarshal(raw, &combo); err == nil && combo.Plan != nil && (len(combo.Plan.Keywords) > 0 || len(combo.Plan.Domains) > 0) {
+            // Build concrete actions from opportunity combo plan
+            seed := ""; if combo.SeedDomain != nil { seed = strings.TrimSpace(*combo.SeedDomain) }
+            country := ""; if combo.Country != nil { country = strings.TrimSpace(*combo.Country) }
+            mk := func(filter map[string]interface{}, params map[string]interface{}, t api.SubmitBulkActionsJSONBodyActionsType) struct{
+                Filter *map[string]interface{}                            `json:"filter,omitempty"`
+                Params *map[string]interface{}                            `json:"params,omitempty"`
+                Type   *api.SubmitBulkActionsJSONBodyActionsType `json:"type,omitempty"`
+            }{
+                f := filter; p := params; tt := t;
+                return struct{
+                    Filter *map[string]interface{}                            `json:"filter,omitempty"`
+                    Params *map[string]interface{}                            `json:"params,omitempty"`
+                    Type   *api.SubmitBulkActionsJSONBodyActionsType `json:"type,omitempty"`
+                }{Filter: &f, Params: &p, Type: &tt}
+            }
+            actions := make([]struct{
+                Filter *map[string]interface{}                            `json:"filter,omitempty"`
+                Params *map[string]interface{}                            `json:"params,omitempty"`
+                Type   *api.SubmitBulkActionsJSONBodyActionsType `json:"type,omitempty"`
+            }, 0, len(combo.Plan.Domains)+len(combo.Plan.Keywords))
+            // 1) ROTATE_LINK for each suggested domain
+            for _, d := range combo.Plan.Domains {
+                dom, _ := d["domain"].(string)
+                if strings.TrimSpace(dom) == "" { continue }
+                params := map[string]interface{}{
+                    "seedDomain": seed,
+                    "country": country,
+                    "targetDomain": dom,
+                    "source": "opportunity-combo",
+                }
+                actions = append(actions, mk(nil, params, api.SubmitBulkActionsJSONBodyActionsTypeROTATELINK))
+            }
+            // 2) ADJUST_CPC suggestion for each keyword (percent heuristic based on score)
+            for _, k := range combo.Plan.Keywords {
+                kw, _ := k["keyword"].(string)
+                if strings.TrimSpace(kw) == "" { continue }
+                // derive percent by score: >=80 -> +15, >=60 -> +10, else +5
+                var scFloat float64
+                switch v := k["score"].(type) {
+                case float64:
+                    scFloat = v
+                case int:
+                    scFloat = float64(v)
+                }
+                percent := 5
+                if scFloat >= 80 { percent = 15 } else if scFloat >= 60 { percent = 10 }
+                params := map[string]interface{}{
+                    "keyword": kw,
+                    "percent": percent,
+                    "reason": "opportunity-combo",
+                    "seedDomain": seed,
+                    "country": country,
+                }
+                actions = append(actions, mk(nil, params, api.SubmitBulkActionsJSONBodyActionsTypeADJUSTCPC))
+            }
+            if len(actions) > 0 {
+                body.Actions = &actions
+                if combo.ValidateOnly != nil { body.ValidateOnly = combo.ValidateOnly }
+            }
+        }
+    }
     validateOnly := false
     if body.ValidateOnly != nil { validateOnly = *body.ValidateOnly }
     // Basic validation
@@ -818,6 +1040,18 @@ func bulkActionsHandler(w http.ResponseWriter, r *http.Request) {
             _, _ = db.Exec(`INSERT INTO "BulkActionOperation"(id, user_id, plan, status) VALUES ($1,$2,$3,'queued')`, id, uid, string(planBytes))
             // write BEFORE snapshot (stub)
             _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'before',$3::jsonb)`, id, uid, string(planBytes))
+            // Fine-grained action snapshots (kind=other)
+            if body.Actions != nil {
+                for idx, a := range *body.Actions {
+                    atype := ""
+                    if a.Type != nil { atype = string(*a.Type) }
+                    snap := map[string]any{"actionIndex": idx, "type": atype}
+                    if a.Params != nil { snap["params"] = *a.Params }
+                    if a.Filter != nil { snap["filter"] = *a.Filter }
+                    b, _ := json.Marshal(snap)
+                    _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'other',$3::jsonb)`, id, uid, string(b))
+                }
+            }
             if idem != "" {
                 _, _ = db.Exec(`
                     INSERT INTO idempotency_keys(key, user_id, scope, target_id, created_at, expires_at)
@@ -989,6 +1223,8 @@ func main() {
     r.Handle("/api/v1/adscenter/diagnose/plan", middleware.AuthMiddleware(http.HandlerFunc(srv.diagnosePlanHandler)))
     r.Handle("/api/v1/adscenter/diagnose/execute", middleware.AuthMiddleware(http.HandlerFunc(srv.diagnoseExecuteHandler)))
     r.Handle("/api/v1/adscenter/diagnose/metrics", middleware.AuthMiddleware(http.HandlerFunc(srv.diagnoseMetricsHandler)))
+    // Keywords expansion (rule-based, no Ads API)
+    r.Handle("/api/v1/adscenter/keywords/expand", middleware.AuthMiddleware(http.HandlerFunc(srv.keywordsExpandHandler)))
     // Bulk audits & rollback (stubs)
     r.Handle("/api/v1/adscenter/bulk-actions/{id}/audits", middleware.AuthMiddleware(http.HandlerFunc(srv.bulkAuditsHandler)))
     r.Handle("/api/v1/adscenter/bulk-actions/{id}/rollback", middleware.AuthMiddleware(http.HandlerFunc(srv.bulkRollbackHandler)))
@@ -1284,10 +1520,13 @@ func (h *oasImpl) ValidateBulkActions(w http.ResponseWriter, r *http.Request) {
                 warns = append(warns, fmt.Sprintf("actions[%d]: dailyBudget missing", i)); addV("BUDGET_MISSING","warn","dailyBudget missing", i, "params.dailyBudget")
             }
         case "ROTATE_LINK":
+            // Accept either links array or targetDomain string
             if links, ok := params["links"].([]any); ok {
                 if len(links) == 0 { errs = append(errs, fmt.Sprintf("actions[%d]: links empty", i)); addV("LINKS_EMPTY","error","links empty", i, "params.links") }
+            } else if td, ok := params["targetDomain"].(string); ok {
+                if strings.TrimSpace(td) == "" { errs = append(errs, fmt.Sprintf("actions[%d]: targetDomain empty", i)); addV("TARGET_DOMAIN_EMPTY","error","targetDomain empty", i, "params.targetDomain") }
             } else {
-                errs = append(errs, fmt.Sprintf("actions[%d]: links required (array)", i)); addV("LINKS_MISSING","error","links required", i, "params.links")
+                errs = append(errs, fmt.Sprintf("actions[%d]: either links[] or targetDomain required", i)); addV("ROTATE_PARAM_REQUIRED","error","links[] or targetDomain required", i, "params")
             }
         }
         // generic hints
@@ -1361,6 +1600,27 @@ func (h *oasImpl) GetBulkAction(w http.ResponseWriter, r *http.Request, id strin
         EstimatedAffected *int `json:"estimatedAffected,omitempty"`
     }{Actions: func() *int { if actions > 0 { return &actions }; return nil }(), EstimatedAffected: nil}
     writeJSON(w, http.StatusOK, resp)
+}
+
+// GET /api/v1/adscenter/bulk-actions/{id}/report
+func (h *oasImpl) GetRollbackReport(w http.ResponseWriter, r *http.Request, id string, params api.GetRollbackReportParams) {
+    dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+    if dbURL == "" { apperr.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "DATABASE_URL not set", nil); return }
+    db, err := sql.Open("postgres", dbURL)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_OPEN_FAILED", "db open failed", map[string]string{"error": err.Error()}); return }
+    defer db.Close()
+    kind := "rollback"
+    if params.Kind != nil && *params.Kind != "" { kind = string(*params.Kind) }
+    rows, err := db.Query(`SELECT snapshot::text, created_at FROM "BulkActionAudit" WHERE op_id=$1 AND kind=$2 ORDER BY created_at`, id, kind)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    type item struct{ Snapshot json.RawMessage `json:"snapshot"`; CreatedAt time.Time `json:"createdAt"` }
+    out := make([]item, 0, 50)
+    for rows.Next() {
+        var snapTxt string; var created time.Time
+        if err := rows.Scan(&snapTxt, &created); err == nil { out = append(out, item{Snapshot: json.RawMessage(snapTxt), CreatedAt: created}) }
+    }
+    writeJSON(w, http.StatusOK, map[string]any{"items": out, "kind": kind})
 }
 // GET /api/v1/adscenter/mcc/links
 func (h *oasImpl) ListMccLinks(w http.ResponseWriter, r *http.Request, params api.ListMccLinksParams) {

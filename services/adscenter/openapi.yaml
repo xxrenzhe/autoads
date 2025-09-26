@@ -43,6 +43,31 @@ paths:
       responses:
         '202':
           description: Accepted and queued
+  /api/v1/adscenter/keywords/expand:
+    post:
+      summary: Expand keywords using internal rules (no Ads API)
+      description: |
+        Generate keyword suggestions based on seedDomain and seedKeywords using internal rules (domain tokenization,
+        brand+suffix patterns, synonyms). Does not call Google Ads APIs.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                seedDomain: { type: string }
+                seedKeywords: { type: array, items: { type: string } }
+                country: { type: string }
+                limit: { type: integer, default: 20 }
+                minScore: { type: number, default: 0 }
+                validateOnly: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Expanded keywords
+        '400': { description: Invalid request }
 components:
   securitySchemes:
     bearerAuth:

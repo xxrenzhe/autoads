@@ -294,6 +294,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/adscenter/mcc/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh statuses for all pending/invited MCC links (best-effort) */
+        post: operations["mccRefresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/adscenter/mcc/links": {
         parameters: {
             query?: never;
@@ -366,6 +383,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        PreflightCheck: {
+            code: string;
+            /** @enum {string} */
+            severity: "info" | "warn" | "error" | "skip";
+            message: string;
+            details?: {
+                [key: string]: unknown;
+            };
+        };
+        PreflightResult: {
+            /** @enum {string} */
+            summary: "ok" | "warn" | "error";
+            checks: components["schemas"]["PreflightCheck"][];
+        };
         BulkActionOperation: {
             operationId: string;
             /** @enum {string} */
@@ -387,10 +418,50 @@ export interface components {
                 filter?: {
                     [key: string]: unknown;
                 };
-                params?: {
-                    [key: string]: unknown;
-                };
+                params?: components["schemas"]["AdjustCpcParams"] | components["schemas"]["AdjustBudgetParams"] | components["schemas"]["RotateLinkParams"];
             }[];
+        };
+        AdjustCpcParams: {
+            /** @description Target keyword text */
+            keyword?: string;
+            /** @description Increase/decrease percent (e.g. */
+            percent?: number;
+            /** @description Absolute CPC value to set (optional alternative to percent) */
+            cpcValue?: number;
+            reason?: string;
+            seedDomain?: string;
+            country?: string;
+        };
+        AdjustBudgetParams: {
+            /** @description New daily budget value */
+            dailyBudget?: number;
+            /** @description Percent change; if present */
+            percent?: number;
+        };
+        RotateLinkParams: {
+            /** @description Target domain for rotation */
+            targetDomain?: string;
+            /** @description Optional list of full URLs to rotate; either targetDomain or links must be provided */
+            links?: string[];
+            seedDomain?: string;
+            country?: string;
+        };
+        /** @description Minimal combo plan built from an Opportunity (keywords/domains) without enumerating low-level actions. */
+        OpportunityComboPlan: {
+            validateOnly?: boolean;
+            seedDomain?: string;
+            country?: string;
+            plan?: {
+                keywords?: {
+                    keyword?: string;
+                    score?: number;
+                    reason?: string;
+                }[];
+                domains?: {
+                    domain?: string;
+                    score?: number;
+                }[];
+            };
         };
         BulkActionValidationResult: {
             ok: boolean;
@@ -505,7 +576,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PreflightResult"];
+                };
             };
             /** @description Bad Request */
             400: {
@@ -563,24 +636,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    validateOnly?: boolean;
-                    actions?: {
-                        /**
-                         * @description Action type
-                         * @enum {string}
-                         */
-                        type?: "ADJUST_CPC" | "ADJUST_BUDGET" | "ROTATE_LINK";
-                        /** @description Filter conditions (implementation-defined) */
-                        filter?: {
-                            [key: string]: unknown;
-                        };
-                        /** @description Action parameters (implementation-defined) */
-                        params?: {
-                            [key: string]: unknown;
-                        };
-                    }[];
-                };
+                "application/json": components["schemas"]["BulkActionPlan"] | components["schemas"]["OpportunityComboPlan"];
             };
         };
         responses: {
@@ -1120,6 +1176,44 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mccRefresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    shard?: number;
+                    totalShards?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        checked?: number;
+                        updated?: number;
+                        live?: boolean;
+                    };
+                };
             };
             /** @description Unauthorized */
             401: {

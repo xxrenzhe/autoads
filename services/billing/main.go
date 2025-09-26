@@ -25,6 +25,7 @@ import (
     "github.com/xxrenzhe/autoads/pkg/telemetry"
     "github.com/xxrenzhe/autoads/pkg/errors"
     "fmt"
+    cfgpkg "github.com/xxrenzhe/autoads/pkg/config"
 )
 
 func main() {
@@ -344,12 +345,17 @@ func (h *Handler) getBillingConfig(w http.ResponseWriter, r *http.Request) {
         UpdatedAt: time.Now().UTC().Format(time.RFC3339),
         Source: "default",
     }
-    // Try Secret Manager JSON
+    // Try Secret Manager JSON (cache TTL 5m)
+    // Priority 1: explicit env mapping BILLING_PRICING_SECRET (full resource or shorthand)
     if js := strings.TrimSpace(os.Getenv("BILLING_PRICING_SECRET")); js != "" {
-        // Expect shorthand name, e.g., billing-pricing:latest
-        val, err := getSecret(r.Context(), js)
-        if err == nil && strings.TrimSpace(val) != "" {
+        if val, err := cfgpkg.SecretCached(r.Context(), js, 5*time.Minute); err == nil && strings.TrimSpace(val) != "" {
             if m := parsePricingJSON(val); m != nil { out.Pricing = m; out.Source = "secret" }
+        }
+    }
+    // Priority 2: secret inferred by STACK, e.g., billing-pricing-preview → fallback billing-pricing
+    if out.Source == "default" {
+        if val, err := cfgpkg.SecretForStack(r.Context(), "billing-pricing"); err == nil && strings.TrimSpace(val) != "" {
+            if m := parsePricingJSON(val); m != nil { out.Pricing = m; out.Source = "secret(stack)" }
         }
     }
     // Fallback to env JSON
@@ -358,7 +364,7 @@ func (h *Handler) getBillingConfig(w http.ResponseWriter, r *http.Request) {
             if m := parsePricingJSON(val); m != nil { out.Pricing = m; out.Source = "env" }
         }
     }
-    writeJSON(w, http.StatusOK, out)
+    respondWithJSON(w, http.StatusOK, out)
 }
 
 // getTokenTransactionByID returns a transaction that belongs to the current user.
@@ -378,23 +384,14 @@ func (h *Handler) getTokenTransactionByID(w http.ResponseWriter, r *http.Request
     }
     var metadata map[string]any
     if metadataJSON != nil && *metadataJSON != "" { _ = json.Unmarshal([]byte(*metadataJSON), &metadata) }
-    writeJSON(w, http.StatusOK, map[string]any{
+    respondWithJSON(w, http.StatusOK, map[string]any{
         "id": id, "type": tType, "amount": amount, "balanceBefore": before, "balanceAfter": after, "source": source, "description": desc, "createdAt": created, "metadata": metadata,
     })
 }
 
 // helpers
 func mustJSON(v any) string { b, _ := json.Marshal(v); return string(b) }
-func getSecret(ctx context.Context, name string) (string, error) {
-    // Delegate to env-first fallback to avoid adding heavy deps here; services use pkg/config normally.
-    // Here we support shorthand to keep Server self-contained.
-    proj := strings.TrimSpace(os.Getenv("GOOGLE_CLOUD_PROJECT"))
-    if proj == "" { proj = strings.TrimSpace(os.Getenv("PROJECT_ID")) }
-    if proj == "" { return "", fmt.Errorf("missing project id") }
-    // If full resource, just call Secret Manager via HTTP metadata proxy is not feasible here; keep simple by env fallback only.
-    // In most deployments, BILLING_PRICING_JSON is preferred.
-    return "", fmt.Errorf("secret manager not wired in minimal build; use BILLING_PRICING_JSON")
-}
+// removed legacy getSecret helper; using pkg/config.SecretCached instead
 func parsePricingJSON(val string) map[string]int {
     var m map[string]int
     if err := json.Unmarshal([]byte(val), &m); err != nil { return nil }

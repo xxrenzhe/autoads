@@ -156,3 +156,17 @@ paths:
       x-google-backend:
         address: https://recommendations-REPLACE_WITH_RUN_URL
       responses: { '200': { description: OK } }
+
+  /api/v1/console/*:
+    get:
+      operationId: consoleWildcardGet
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://console-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }
+    post:
+      operationId: consoleWildcardPost
+      security: [ { firebase: [] } ]
+      x-google-backend:
+        address: https://console-REPLACE_WITH_RUN_URL
+      responses: { '200': { description: OK } }

@@ -86,6 +86,30 @@ HOST=$(gcloud api-gateway gateways describe autoads-gw --location=asia-northeast
 
 > Tip: All services expose Prometheus metrics at `/metrics`. You can attach a managed collector or scrape via Cloud Run sidecars depending on the environment.
 
+### Batchopen metrics & thresholds (guidance)
+
+The `batchopen` service performs landing reachability checks via Browser‑Exec. It now exposes:
+
+- `batchopen_inflight_current` (gauge): current number of concurrent Browser‑Exec checks.
+- `batchopen_host_cache_hits_total` (counter): total cache hits for host‑level short cache.
+- `batchopen_host_cache_miss_total` (counter): total cache misses.
+
+Recommended monitoring (preview):
+
+- Cache hit ratio (5m):
+  - ratio = rate(batchopen_host_cache_hits_total[5m]) / (rate(batchopen_host_cache_hits_total[5m]) + rate(batchopen_host_cache_miss_total[5m]))
+  - Alert if ratio < 0.30 for 15m (suggest increasing cache TTL or dedup parameters).
+
+- Inflight saturation: alert if `batchopen_inflight_current` > 0.8 * `BATCHOPEN_MAX_INFLIGHT` for 10m.
+
+- Error budget (via Gateway): use existing 5xx rate alerts (see above) as a catch‑all.
+
+Tuning knobs:
+
+- `BATCHOPEN_DOMAIN_CACHE_MS` (default 120000) — increase to improve hit rate for bursty workloads.
+- `BATCHOPEN_MAX_INFLIGHT` (default 8) — raise with care; ensure Browser‑Exec capacity is sufficient.
+- `BATCHOPEN_RETRIES`/`BATCHOPEN_BACKOFF_MS` — tune retry behavior for transient 429/5xx.
+
 ## Notes
 
 - All production traffic should go through API Gateway (Firebase JWT enforced). For local smoke, use `X-User-Id` header to bypass bearer.

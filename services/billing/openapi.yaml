@@ -1,39 +1,69 @@
 openapi: 3.0.0
 info:
   title: Billing Service
-  version: 1.0.0
-  description: Handles subscriptions, plans, and token management.
+  version: 1.1.0
+  description: Handles subscriptions, plans, and token management (atomic reserve/commit/release).
 paths:
-  /api/v1/billing/subscriptions/me:
+  # NOTE: These paths are mounted under BaseURL /api/v1/billing by the server.
+  /subscription:
     get:
       summary: Get current user's subscription
-      security:
-        - bearerAuth: []
+      security: [ { bearerAuth: [] } ]
       responses:
-        '200':
-          description: Subscription
-  /api/v1/billing/tokens/me:
+        '200': { description: Subscription }
+  /tokens/balance:
     get:
       summary: Get current user's token balance
-      security:
-        - bearerAuth: []
+      security: [ { bearerAuth: [] } ]
       responses:
-        '200':
-          description: Token balance
-  /api/v1/billing/tokens/transactions:
+        '200': { description: Token balance }
+  /tokens/transactions:
     get:
-      summary: List token transactions for current user
-      security:
-        - bearerAuth: []
+      summary: List token transactions for current user (last 50)
+      security: [ { bearerAuth: [] } ]
       responses:
-        '200':
-          description: List of token transactions
+        '200': { description: List of token transactions }
+  /tokens/transactions/{id}:
+    get:
+      summary: Get one token transaction by id (must belong to current user)
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Transaction detail }
+  /tokens/reserve:
+    post:
+      summary: Reserve tokens for a task (idempotent)
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '202': { description: Reserved }
+  /tokens/commit:
+    post:
+      summary: Commit reserved tokens (atomic debit)
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200': { description: Committed }
+  /tokens/release:
+    post:
+      summary: Release reservation (no balance change)
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200': { description: Released }
+  /config:
+    get:
+      summary: Pricing/limits config (read-only)
+      description: Returns central pricing and limits. Source Secret Manager `billing-pricing-<STACK>` with fallback.
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200': { description: Billing config JSON }
   /healthz:
     get:
       summary: Health check
       responses:
-        '200':
-          description: OK
+        '200': { description: OK }
 components:
   securitySchemes:
     bearerAuth:
