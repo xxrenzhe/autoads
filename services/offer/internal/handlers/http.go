@@ -16,6 +16,11 @@ import (
     "strings"
     "syscall"
     "fmt"
+    "hash/fnv"
+    "math"
+    "io"
+    "os"
+    "net/url"
 )
 
 // Offer represents the read model for an offer.
@@ -25,6 +30,7 @@ type Offer struct {
 	Name        string    `json:"name"`
 	OriginalUrl string    `json:"originalUrl"`
 	Status      string    `json:"status"`
+	SiterankScore *float64 `json:"siterankScore,omitempty"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
@@ -38,6 +44,7 @@ type Handler struct {
 func NewHandler(db *sql.DB, publisher events.Publisher) *Handler {
     // Ensure read model has expected columns (preview safeguard)
     _, _ = db.Exec(`ALTER TABLE "Offer" ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT ''`)
+    _, _ = db.Exec(`ALTER TABLE "Offer" ADD COLUMN IF NOT EXISTS siterankScore DOUBLE PRECISION`)
     return &Handler{DB: db, Publisher: publisher}
 }
 
@@ -47,7 +54,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Ha
     mux.HandleFunc("/health", h.healthz)
     mux.HandleFunc("/readyz", h.readyz)
     mux.Handle("/api/v1/offers", authMiddleware(http.HandlerFunc(h.offersHandler)))
-    mux.Handle("/api/v1/offers/", authMiddleware(http.HandlerFunc(h.offerByIDHandler)))
+    mux.Handle("/api/v1/offers/", authMiddleware(http.HandlerFunc(h.offerTreeHandler)))
     if v := getenv("DEBUG"); v == "1" {
         mux.Handle("/api/v1/debug/offers", authMiddleware(http.HandlerFunc(h.debugOffers)))
     }
@@ -74,30 +81,165 @@ func (h *Handler) offersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // offerByIDHandler returns a single offer by id for the current user
-func (h *Handler) offerByIDHandler(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodGet { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+// offerTreeHandler handles /api/v1/offers/{id}[/(status)]
+func (h *Handler) offerTreeHandler(w http.ResponseWriter, r *http.Request) {
     userID, ok := r.Context().Value(middleware.UserIDKey).(string)
     if !ok || userID == "" { errors.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized: User ID is missing", nil); return }
-    // path: /api/v1/offers/{id}
     parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/offers/"), "/")
     if len(parts) == 0 || parts[0] == "" { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id required", nil); return }
     id := parts[0]
-    var o Offer
-    var createdAt time.Time
-    err := h.DB.QueryRowContext(r.Context(), `
-        SELECT id, userid AS "userId", name, originalurl AS "originalUrl", status, created_at AS "createdAt"
-        FROM "Offer" WHERE id=$1 AND userid=$2
-    `, id, userID).Scan(&o.ID, &o.UserID, &o.Name, &o.OriginalUrl, &o.Status, &createdAt)
-    if err != nil {
-        if err == sql.ErrNoRows { errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "offer not found", nil); return }
-        log.Printf("offerByID query error: %v", err)
-        errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil)
+    sub := ""
+    if len(parts) >= 2 { sub = parts[1] }
+    switch r.Method {
+    case http.MethodGet:
+        // GET /api/v1/offers/{id}
+        if sub == "kpi" {
+            h.getOfferKPI(w, r, id, userID); return
+        }
+        if sub != "" { errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "not found", nil); return }
+        var o Offer
+        var createdAt time.Time
+        err := h.DB.QueryRowContext(r.Context(), `
+            SELECT id, userid AS "userId", name, originalurl AS "originalUrl", status, siterankScore, created_at AS "createdAt"
+            FROM "Offer" WHERE id=$1 AND userid=$2
+        `, id, userID).Scan(&o.ID, &o.UserID, &o.Name, &o.OriginalUrl, &o.Status, &o.SiterankScore, &createdAt)
+        if err != nil {
+            if err == sql.ErrNoRows { errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "offer not found", nil); return }
+            log.Printf("offerByID query error: %v", err)
+            errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil)
+            return
+        }
+        o.CreatedAt = createdAt
+        w.Header().Set("Content-Type", "application/json")
+        _ = json.NewEncoder(w).Encode(o)
         return
+    case http.MethodPut:
+        // PUT /api/v1/offers/{id}/status
+        if sub != "status" { errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "unsupported subresource", nil); return }
+        var current string
+        if err := h.DB.QueryRowContext(r.Context(), `SELECT status FROM "Offer" WHERE id=$1 AND userid=$2`, id, userID).Scan(&current); err != nil {
+            if err == sql.ErrNoRows { errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "offer not found", nil); return }
+            errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "query failed", nil); return
+        }
+        var body struct{ Status string `json:"status"` }
+        if err := json.NewDecoder(r.Body).Decode(&body); err != nil { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+        newStatus := strings.ToLower(strings.TrimSpace(body.Status))
+        if newStatus == "" { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "status required", nil); return }
+        allowed := map[string]bool{"opportunity":true, "evaluating":true, "simulating":true, "scaling":true, "declining":true, "archived":true, "optimizing":true}
+        if !allowed[newStatus] { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "unsupported status", map[string]string{"status": newStatus}); return }
+        // ensure history table
+        _, _ = h.DB.ExecContext(r.Context(), `CREATE TABLE IF NOT EXISTS "OfferStatusHistory"(
+            id BIGSERIAL PRIMARY KEY,
+            offer_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            from_status TEXT NOT NULL,
+            to_status TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )`)
+        // update
+        tx, err := h.DB.BeginTx(r.Context(), &sql.TxOptions{})
+        if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "begin tx failed", nil); return }
+        defer tx.Rollback()
+        if _, err := tx.ExecContext(r.Context(), `UPDATE "Offer" SET status=$1 WHERE id=$2 AND userid=$3`, newStatus, id, userID); err != nil {
+            errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "update failed", map[string]string{"error": err.Error()}); return
+        }
+        _, _ = tx.ExecContext(r.Context(), `INSERT INTO "OfferStatusHistory"(offer_id,user_id,from_status,to_status) VALUES ($1,$2,$3,$4)`, id, userID, current, newStatus)
+        if err := tx.Commit(); err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "commit failed", map[string]string{"error": err.Error()}); return }
+        _ = json.NewEncoder(w).Encode(map[string]any{"status": "ok", "offerId": id, "from": current, "to": newStatus})
+        return
+    default:
+        errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return
     }
-    o.CreatedAt = createdAt
-    w.Header().Set("Content-Type", "application/json")
-    _ = json.NewEncoder(w).Encode(o)
 }
+
+// getOfferKPI returns stubbed 7-day KPI for an offer (dev/preview) with deterministic values.
+// GET /api/v1/offers/{id}/kpi
+func (h *Handler) getOfferKPI(w http.ResponseWriter, r *http.Request, id, userID string) {
+    // Verify ownership quick
+    var one int
+    if err := h.DB.QueryRowContext(r.Context(), `SELECT 1 FROM "Offer" WHERE id=$1 AND userid=$2`, id, userID).Scan(&one); err != nil {
+        if err == sql.ErrNoRows { errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "offer not found", nil); return }
+        errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "query failed", nil); return
+    }
+    // Try Adscenter diagnose metrics (stub/live) for base values
+    type dm struct{ Impressions int64 `json:"impressions"`; CTR float64 `json:"ctr"`; QS int `json:"qualityScore"`; DailyBudget float64 `json:"dailyBudget"`; BudgetPacing float64 `json:"budgetPacing"` }
+    var base *dm
+    if baseURL := strings.TrimRight(os.Getenv("ADSCENTER_URL"), "/"); baseURL != "" {
+        ctx, cancel := context.WithTimeout(r.Context(), 1500*time.Millisecond)
+        defer cancel()
+        req, _ := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v1/adscenter/diagnose/metrics?accountId="+url.QueryEscape(userID), nil)
+        req.Header.Set("Accept", "application/json"); req.Header.Set("X-User-Id", userID)
+        if resp, err := http.DefaultClient.Do(req); err == nil && resp != nil {
+            b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20)); _ = resp.Body.Close()
+            if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+                var tmp dm; if json.Unmarshal(b, &tmp) == nil { base = &tmp }
+            }
+        }
+    }
+    // Deterministic pseudo metrics by offer id (fallback or augment trend)
+    hsh := fnv.New32a(); _, _ = hsh.Write([]byte(id)); seed := int64(hsh.Sum32())
+    // helper to derive numbers
+    f := func(mod, base int64) int64 { v := (seed%mod + base); if v < 0 { v = -v }; return v }
+    // last 7 days arrays
+    days := 7
+    type point struct{ Date string `json:"date"`; Impressions int64 `json:"impressions"`; Clicks int64 `json:"clicks"`; Spend float64 `json:"spend"`; Revenue float64 `json:"revenue"` }
+    pts := make([]point, 0, days)
+    var sumImp, sumClk int64
+    var sumSpend, sumRev float64
+    now := time.Now().UTC()
+    for i := days - 1; i >= 0; i-- {
+        d := now.AddDate(0, 0, -i)
+        var imp int64
+        var clk int64
+        var spend float64
+        var rev float64
+        if base != nil {
+            // Use base impressions and ctr with small oscillation
+            bimp := base.Impressions
+            if bimp <= 0 { bimp = f(500, 200) }
+            imp = bimp + int64(i*10) - int64((seed%7))
+            if imp < 10 { imp = 10 }
+            ctr := base.CTR; if ctr <= 0 { ctr = 1.0 }
+            clk = int64(float64(imp) * (ctr / 100.0))
+            if clk < 1 { clk = 1 }
+            if base.DailyBudget > 0 {
+                spend = base.DailyBudget * (0.8 + float64((seed%20))/100.0)
+            } else {
+                spend = float64(imp) * (0.01 + float64((seed%3))/100.0)
+            }
+            // revenue scale by QS and pacing
+            q := base.QS; if q <= 0 { q = 6 }
+            scale := 0.6 + float64(q)/10.0 + base.BudgetPacing/2.0
+            if scale < 0.5 { scale = 0.5 }
+            if scale > 2.0 { scale = 2.0 }
+            rev = spend * scale
+        } else {
+            imp = f(500, 200) + int64(i*10)
+            clk = imp * (2 + int64(seed%5)) / 100 // 2-6% CTR
+            spend = float64(imp) * (0.01 + float64((seed%3))/100.0)
+            rev = spend * (0.8 + float64((seed%60))/100.0) // 0.8x-1.39x
+        }
+        sumImp += imp; sumClk += clk; sumSpend += spend; sumRev += rev
+        pts = append(pts, point{Date: d.Format("2006-01-02"), Impressions: imp, Clicks: clk, Spend: round2(spend), Revenue: round2(rev)})
+    }
+    rosc := 0.0
+    if sumSpend > 0 { rosc = sumRev / sumSpend }
+    out := map[string]any{
+        "summary": map[string]any{
+            "impressions": sumImp,
+            "clicks": sumClk,
+            "spend": round2(sumSpend),
+            "revenue": round2(sumRev),
+            "rosc": round2(rosc),
+        },
+        "days": pts,
+        "updatedAt": time.Now().UTC().Format(time.RFC3339),
+    }
+    w.Header().Set("Content-Type", "application/json")
+    _ = json.NewEncoder(w).Encode(out)
+}
+
+func round2(v float64) float64 { return math.Round(v*100) / 100 }
 
 // createOffer validates the request and publishes an OfferCreated event.
 func (h *Handler) createOffer(w http.ResponseWriter, r *http.Request) {
@@ -157,7 +299,7 @@ func (h *Handler) getOffers(w http.ResponseWriter, r *http.Request) {
 	if !ok || userID == "" { errors.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized: User ID is missing", nil); return }
 
     rows, err := h.DB.QueryContext(r.Context(), `
-        SELECT id, userid AS "userId", name, originalurl AS "originalUrl", status, created_at AS "createdAt"
+        SELECT id, userid AS "userId", name, originalurl AS "originalUrl", status, siterankScore, created_at AS "createdAt"
         FROM "Offer" WHERE userid = $1
     `, userID)
 	if err != nil { log.Printf("Error querying offers: %v", err); errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil); return }
@@ -166,7 +308,7 @@ func (h *Handler) getOffers(w http.ResponseWriter, r *http.Request) {
 	var offers []Offer
 	for rows.Next() {
 		var o Offer
-		if err := rows.Scan(&o.ID, &o.UserID, &o.Name, &o.OriginalUrl, &o.Status, &o.CreatedAt); err != nil { log.Printf("Error scanning offer row: %v", err); errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil); return }
+        if err := rows.Scan(&o.ID, &o.UserID, &o.Name, &o.OriginalUrl, &o.Status, &o.SiterankScore, &o.CreatedAt); err != nil { log.Printf("Error scanning offer row: %v", err); errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Internal server error", nil); return }
 		offers = append(offers, o)
 	}
 
@@ -180,7 +322,7 @@ func (h *Handler) debugOffers(w http.ResponseWriter, r *http.Request) {
     userID, ok := r.Context().Value(middleware.UserIDKey).(string)
     if !ok || userID == "" { errors.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
     rows, err := h.DB.QueryContext(r.Context(), `
-        SELECT id, userid AS "userId", name, originalurl AS "originalUrl", status, created_at AS "createdAt"
+        SELECT id, userid AS "userId", name, originalurl AS "originalUrl", status, siterankScore, created_at AS "createdAt"
         FROM "Offer" WHERE userid = $1 ORDER BY created_at DESC LIMIT 5
     `, userID)
     if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "query failed", map[string]string{"error": err.Error()}); return }
@@ -188,7 +330,7 @@ func (h *Handler) debugOffers(w http.ResponseWriter, r *http.Request) {
     var items []Offer
     for rows.Next() {
         var o Offer
-        if err := rows.Scan(&o.ID, &o.UserID, &o.Name, &o.OriginalUrl, &o.Status, &o.CreatedAt); err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "scan failed", map[string]string{"error": err.Error()}); return }
+        if err := rows.Scan(&o.ID, &o.UserID, &o.Name, &o.OriginalUrl, &o.Status, &o.SiterankScore, &o.CreatedAt); err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "scan failed", map[string]string{"error": err.Error()}); return }
         items = append(items, o)
     }
     w.Header().Set("Content-Type", "application/json")

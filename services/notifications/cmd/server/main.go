@@ -246,15 +246,32 @@ func sseNotifications(w http.ResponseWriter, r *http.Request) {
             var maxID int64
             _ = db.QueryRow(`SELECT COALESCE(MAX(id),0) FROM user_notifications WHERE user_id=$1`, uid).Scan(&maxID)
             if maxID > lastID {
-                // Send summary of new notifications (only meta to keep payload small)
-                rows, err := db.Query(`SELECT id, type, title, created_at FROM user_notifications WHERE user_id=$1 AND id>$2 ORDER BY id ASC LIMIT 10`, uid, lastID)
+                // Send summary of new notifications; include minimal payload keys for client-side correlation
+                rows, err := db.Query(`SELECT id, type, title, message, created_at FROM user_notifications WHERE user_id=$1 AND id>$2 ORDER BY id ASC LIMIT 10`, uid, lastID)
                 if err == nil {
                     defer rows.Close()
                     for rows.Next() {
-                        var id int64; var typ, title string; var createdAt time.Time
-                        if err := rows.Scan(&id, &typ, &title, &createdAt); err == nil {
+                        var id int64; var typ, title, message string; var createdAt time.Time
+                        if err := rows.Scan(&id, &typ, &title, &message, &createdAt); err == nil {
+                            // minimal extraction: offerId, analysisId, step (if present in message JSON)
+                            offerId := ""; analysisId := ""; step := ""
+                            if message != "" {
+                                var m map[string]any
+                                if json.Unmarshal([]byte(message), &m) == nil {
+                                    if data, ok := m["data"].(map[string]any); ok {
+                                        if v, ok := data["offerId"].(string); ok { offerId = v }
+                                        if v, ok := data["analysisId"].(string); ok { analysisId = v }
+                                        if v, ok := data["step"].(string); ok { step = v }
+                                        // sometimes nested under workflow fields
+                                        if step == "" {
+                                            if v, ok := data["name"].(string); ok { step = v }
+                                        }
+                                    }
+                                }
+                            }
                             fmt.Fprintf(w, "event: new\n")
-                            fmt.Fprintf(w, "data: {\"id\":%d,\"type\":\"%s\",\"title\":%q,\"createdAt\":%q}\n\n", id, typ, title, createdAt.UTC().Format(time.RFC3339))
+                            // print minimal JSON; ensure proper escaping for title
+                            fmt.Fprintf(w, "data: {\"id\":%d,\"type\":\"%s\",\"title\":%q,\"createdAt\":%q,\"offerId\":%q,\"analysisId\":%q,\"step\":%q}\n\n", id, typ, title, createdAt.UTC().Format(time.RFC3339), offerId, analysisId, step)
                             lastID = id
                         }
                     }

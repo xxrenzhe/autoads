@@ -18,19 +18,19 @@
 3.Firebase项目ID：gen-lang-client-0944935873，Firestore数据库：firestoredb
 4.GCP Project ID：gen-lang-client-0944935873
 5.Cloud SQL数据库：数据库实例autoads，数据库autoads_db，通过VPC Connector进行内网访问数据库
-6.前端: Next.js，部署于Firebase Hosting; 后端: Go微服务，部署于Google Cloud Run
-7.Firebase Hosting 和 Cloud Run 都部署在 asia-northeast1 地区
-8.域名
+6.Firebase Hosting 和 Cloud Run 都部署在 asia-northeast1 地区
+7.域名
 - 预发环境：https://www.urlchecker.dev
 - 生产环境：https://www.autoads.dev
-9.代码分支和部署流程
+8.代码分支和部署流程
 部署流程主要分两步，第一步：推送代码到Github；第二步，触发Github Actions，通过Cloud Build生成不同环境的镜像并部署到Cloud Run
 - 代码推送到main分支，触发preview环境Cloud Build镜像构建和Cloud Run部署：标注 docker image tag 为 preview-latest 和 preview-[commitid]
 - 代码推送到production分支，触发production环境Cloud Build镜像构建和Cloud Run部署：标注 docker image tag 为 prod-latest 和 prod-[commitid]
 - 当production分支打了tag（如v3.0.0），触发production环境Cloud Build镜像构建和Cloud Run部署：标注 docker image tag 为 prod-[tag] 和 和 prod-[commitid]
+9.代理IP服务商，初始配置美国代理IP服务商：Proxy_URL_US="https://api.iprocket.io/api?username=com49692430&password=Qxi9V59e3kNOW6pnRi3i&cc=ROW&ips=1&type=-res-&proxyType=http&responseType=txt"
 10.技术栈
 - 用户前端(Next.js + Tailwind CSS)，部署于Firebase Hosting
-- 后台前管理系统前端(Next.js + Ant Design)
+- 后台管理系统前端(Next.js + Ant Design)
 - 后端: Go微服务，部署于Google Cloud Run
 - 认证: Firebase Authentication
 - 配置与缓存: Firestore

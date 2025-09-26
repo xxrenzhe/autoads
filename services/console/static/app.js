@@ -150,10 +150,20 @@
             const j = await apiGet(`/api/v1/console/users/${id}/tokens`);
             alert(`用户 ${id}\n余额: ${j.balance}\n最近交易: ${j.items?.length||0}`);
             uidTokens.value = id;
-          } else if (act === 'subs') {
-            const j = await apiGet(`/api/v1/console/users/${id}/subscription`);
-            alert(`用户 ${id}\n套餐: ${j.planName}\n状态: ${j.status}\n到期: ${new Date(j.currentPeriodEnd).toLocaleString()}`);
-          } else if (act === 'role-admin' || act === 'role-user') {
+      } else if (act === 'subs') {
+        const j = await apiGet(`/api/v1/console/users/${id}/subscription`);
+        alert(`用户 ${id}\n套餐: ${j.planName}\n状态: ${j.status}\n到期: ${new Date(j.currentPeriodEnd).toLocaleString()}`);
+        const np = prompt('输入新套餐（free | pro | max），留空沿用当前：', (j.planName||'').toLowerCase());
+        const planRaw = (np||'').trim().toLowerCase();
+        const plan = planRaw || ((j.planName||'').toLowerCase());
+        if (!['free','pro','max'].includes(plan)) { alert('无效套餐：仅支持 free/pro/max'); return; }
+        const ns = prompt('输入新状态（active | paused），留空保持不变：', (j.status||'').toLowerCase());
+        const status = (ns||'').trim().toLowerCase();
+        const body = status ? { planName: plan, status } : { planName: plan };
+        const resp = await fetch(`/api/v1/console/users/${id}/subscription`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
+        if (!resp.ok) { const t = await resp.text().catch(()=>'' ); throw new Error(`更新失败 ${resp.status}: ${t}`); }
+        alert('订阅已更新');
+      } else if (act === 'role-admin' || act === 'role-user') {
             const role = act === 'role-admin' ? 'ADMIN' : 'USER';
             if (!confirm(`确认将用户 ${id} 角色改为 ${role} ？`)) return;
             const resp = await fetch(`/api/v1/console/users/${id}/role`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ role }) });
@@ -358,6 +368,8 @@
   // Token 汇总
   const tokenStatsBtn = document.getElementById('tokenStatsBtn');
   const tokenStats = document.getElementById('tokenStats');
+  const dashLoadBtn = document.getElementById('dashLoadBtn');
+  const dashStats = document.getElementById('dashStats');
   tokenStatsBtn.onclick = async () => {
     try {
       const j = await apiGet('/api/v1/console/tokens/stats');
@@ -366,6 +378,31 @@
       tokenStats.textContent = err.message;
     }
   };
+
+  // Admin dashboard stats
+  async function loadDashboard() {
+    if (!dashStats) return;
+    dashStats.textContent = '加载中...';
+    try {
+      const j = await apiGet('/api/v1/console/stats');
+      const c = j.counters || {};
+      const lines = [
+        `用户数: ${c.users}`,
+        `Offer数: ${c.offers}`,
+        `激活订阅: ${c.subscriptionsActive}`,
+        `Token总量: ${c.tokensTotal}`,
+        `近24h通知: ${c.notifications24h}`,
+        `Siterank分析数: ${c.siterankAnalyses}`,
+        `Batchopen任务数: ${c.batchopenTasks}`,
+        `事件总数: ${c.events}`,
+        `更新时间: ${j.updatedAt||''}`
+      ].join('\n');
+      dashStats.innerHTML = `<pre style="white-space:pre-wrap">${lines}</pre>`;
+    } catch (e) {
+      dashStats.textContent = e.message;
+    }
+  }
+  if (dashLoadBtn) dashLoadBtn.onclick = loadDashboard;
 
   // Keyword expansion (rule-based)
   if (kwExpandBtn) {

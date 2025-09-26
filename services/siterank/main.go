@@ -482,6 +482,18 @@ func (s *Server) analyzeURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 // analyzeWithResolveAndAI resolves landing, fetches SimilarWeb by final domain, gets page signals, and computes a 0-100 score using AI (fallback: rule-based).
 func (s *Server) analyzeWithResolveAndAI(ctx context.Context, analysisID, offerURL, country string) {
+    // basic context: resolve offerId & userId for event enrichment
+    var offID, uid string
+    _ = s.db.QueryRowContext(ctx, `SELECT offer_id, user_id FROM "SiterankAnalysis" WHERE id=$1`, analysisID).Scan(&offID, &uid)
+    if s.publisher != nil && offID != "" && uid != "" {
+        _ = s.publisher.Publish(ctx, ev.EventWorkflowStarted, map[string]any{
+            "analysisId": analysisID,
+            "offerId":    offID,
+            "userId":     uid,
+            "time":       time.Now().UTC().Format(time.RFC3339),
+            "name":       "siterank",
+        }, ev.WithSource("siterank"))
+    }
     // Resolve landing via browser-exec
     be := strings.TrimRight(os.Getenv("BROWSER_EXEC_URL"), "/")
     var rr ResolveOfferResult
@@ -507,6 +519,18 @@ func (s *Server) analyzeWithResolveAndAI(ctx context.Context, analysisID, offerU
     } else {
         resolveErr = fmt.Errorf("BROWSER_EXEC_URL not configured")
     }
+    if s.publisher != nil && offID != "" && uid != "" {
+        status := "ok"
+        if resolveErr != nil || (!rr.Ok && rr.Status >= 400) { status = "failed" }
+        _ = s.publisher.Publish(ctx, ev.EventWorkflowStepCompleted, map[string]any{
+            "analysisId": analysisID,
+            "offerId":    offID,
+            "userId":     uid,
+            "time":       time.Now().UTC().Format(time.RFC3339),
+            "name":       "resolve",
+            "status":     status,
+        }, ev.WithSource("siterank"))
+    }
 
     // Determine target domain/brand/final url
     finalDomain := ""
@@ -523,7 +547,18 @@ func (s *Server) analyzeWithResolveAndAI(ctx context.Context, analysisID, offerU
     // Fetch SimilarWeb metrics by finalDomain (measure duration)
     tSw := time.Now()
     sw, _ := s.fetchSimilarWebMetricsRelaxed(ctx, finalDomain, country)
-    metricSwFetchMs.Observe(float64(time.Since(tSw).Milliseconds()))
+    swMs := int(time.Since(tSw).Milliseconds())
+    metricSwFetchMs.Observe(float64(swMs))
+    if s.publisher != nil && offID != "" && uid != "" {
+        _ = s.publisher.Publish(ctx, ev.EventWorkflowStepCompleted, map[string]any{
+            "analysisId": analysisID,
+            "offerId":    offID,
+            "userId":     uid,
+            "time":       time.Now().UTC().Format(time.RFC3339),
+            "name":       "similarweb",
+            "status":     func() string { if sw == nil { return "failed" }; return "ok" }(),
+        }, ev.WithSource("siterank"))
+    }
     // Page signals (best-effort)
     var ps PageSignals
     if be != "" && finalUrl != "" {
@@ -543,12 +578,14 @@ func (s *Server) analyzeWithResolveAndAI(ctx context.Context, analysisID, offerU
     usedAI := false
     ai := strings.TrimSpace(os.Getenv("AI_SCORING_URL"))
     var aiResp *AIScoreResp
+    aiMs := 0
     if ai != "" {
         tAi := time.Now()
         if sc, out, err := s.scoreWithAI(ctx, ai, offerURL, finalUrl, finalSuffix, finalDomain, brand, country, sw, &ps); err == nil {
             score = sc; aiResp = out; usedAI = true
         }
-        metricAiScoreMs.Observe(float64(time.Since(tAi).Milliseconds()))
+        aiMs = int(time.Since(tAi).Milliseconds())
+        metricAiScoreMs.Observe(float64(aiMs))
     }
     if !usedAI {
         score = s.computeScoreManual(finalDomain, sw, &ps)
@@ -582,6 +619,7 @@ func (s *Server) analyzeWithResolveAndAI(ctx context.Context, analysisID, offerU
         "degraded": (sw == nil),
         "usedAI": usedAI,
         "ai": aiResp,
+        "stageTimings": map[string]any{ "swFetchMs": swMs, "aiScoreMs": aiMs },
         "country": country,
         "createdAt": time.Now().UTC().Format(time.RFC3339),
     }
@@ -597,9 +635,18 @@ func (s *Server) analyzeWithResolveAndAI(ctx context.Context, analysisID, offerU
     }
     _ = s.projectHistory(ctx, analysisID, result)
     if s.publisher != nil {
+        if offID != "" && uid != "" {
+            _ = s.publisher.Publish(ctx, ev.EventWorkflowStepCompleted, map[string]any{
+                "analysisId": analysisID,
+                "offerId":    offID,
+                "userId":     uid,
+                "time":       time.Now().UTC().Format(time.RFC3339),
+                "name":       "ai",
+                "status":     "ok",
+                "score":      score,
+            }, ev.WithSource("siterank"))
+        }
         // enrich event with basic fields for notifications
-        var offID, uid string
-        _ = s.db.QueryRowContext(ctx, `SELECT offer_id, user_id FROM "SiterankAnalysis" WHERE id=$1`, analysisID).Scan(&offID, &uid)
         _ = s.publisher.Publish(ctx, ev.EventSiterankCompleted, map[string]any{
             "analysisId": analysisID,
             "offerId":    offID,

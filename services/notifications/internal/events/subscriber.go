@@ -59,13 +59,20 @@ func (s *Subscriber) Start(ctx context.Context) {
                 // unwrap envelope if present
                 if dv, ok := payload["data"].(map[string]any); ok { payload = dv }
                 _ = s.insertNotification(cctx, payload, "SiterankCompleted")
-                // best-effort: project Offer status -> evaluated
+                // best-effort: project Offer status -> evaluated & write siterankScore if present
                 offID, _ := strMap(payload, "offerId")
                 uid, _ := strMap(payload, "userId")
+                var score *float64
+                if v, ok := payload["score"].(float64); ok { score = &v }
                 if offID != "" && uid != "" {
-                    // prefer quoted camel-case columns; fallback to lowercase legacy
-                    if _, err := s.db.ExecContext(cctx, `UPDATE "Offer" SET status='evaluated' WHERE id=$1 AND "userId"=$2`, offID, uid); err != nil {
-                        _, _ = s.db.ExecContext(cctx, `UPDATE "Offer" SET status='evaluated' WHERE id=$1 AND userid=$2`, offID, uid)
+                    if score != nil {
+                        if _, err := s.db.ExecContext(cctx, `UPDATE "Offer" SET status='evaluated', "siterankScore"=$1 WHERE id=$2 AND "userId"=$3`, *score, offID, uid); err != nil {
+                            _, _ = s.db.ExecContext(cctx, `UPDATE "Offer" SET status='evaluated', siterankScore=$1 WHERE id=$2 AND userid=$3`, *score, offID, uid)
+                        }
+                    } else {
+                        if _, err := s.db.ExecContext(cctx, `UPDATE "Offer" SET status='evaluated' WHERE id=$1 AND "userId"=$2`, offID, uid); err != nil {
+                            _, _ = s.db.ExecContext(cctx, `UPDATE "Offer" SET status='evaluated' WHERE id=$1 AND userid=$2`, offID, uid)
+                        }
                     }
                 }
                 msg.Ack()

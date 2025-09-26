@@ -437,7 +437,7 @@
 
 ### G3. Console后台管理
 
-- [ ] G3.1 实现Console管理界面
+- [x] G3.1 实现Console管理界面
   - 建立管理员仪表盘和统计
   - 实现用户管理和权限控制
   - 建立套餐管理和Token充值
@@ -707,14 +707,14 @@
 
 ### 7. 前端MVP实现
 
-- [ ] 7.1 建立前端基础架构
+- [x] 7.1 建立前端基础架构
   - 创建用户前端项目(Next.js 14 + Tailwind CSS)
   - 创建管理后台项目(Next.js 14 + Ant Design)
   - 实现OpenAPI生成的TypeScript SDK集成
   - 建立统一的状态管理和错误处理
   - _需求: 需求14 - 前端UI/UX优化_
 
-- [ ] 7.2 实现核心业务闭环界面
+- [x] 7.2 实现核心业务闭环界面
   - 实现Offer指挥中心看板(拖拽状态流转)
   - 建立10秒评估界面(进度条+阶段反馈)
   - 实现仿真启动和进度监控界面
@@ -974,7 +974,7 @@
 
 ### 7. 前端核心界面开发
 
-- [ ] 7.1 建立双栈前端架构
+- [x] 7.1 建立双栈前端架构
   - 创建用户前端项目(Next.js 14 + Tailwind CSS + Headless UI)
   - 创建后台管理项目(Next.js 14 + Ant Design 5.x)
   - 建立共享包结构(shared-types, api-client, utils)
@@ -982,7 +982,7 @@
   - 配置Firebase SDK集成
   - _需求: 需求14 - 前端UI/UX优化_
 
-- [ ] 7.2 实现Offer指挥中心界面
+- [x] 7.2 实现Offer指挥中心界面
   - 创建看板式视图组件
   - 实现拖拽交互(@dnd-kit/core)
   - 建立Offer卡片组件和状态显示
@@ -1198,6 +1198,50 @@
   - 实现评估结果缓存
   - 优化数据库查询性能
   - _需求: 需求10 - 系统性能与可扩展性_
+
+---
+
+## 新增任务（本阶段落地）
+
+- [x] G3.2 管理端告警与历史故障最小实现
+  - 新增 API：GET /api/v1/console/alerts、GET /api/v1/console/incidents（仅 ADMIN）
+  - 新增页面：/admin/console/alerts、/admin/console/incidents
+
+- [x] H1.3 管理端 SLO 汇总最小实现
+  - 新增 API：GET /api/v1/console/slo（聚合 /metrics 计算 P95 与错误率）
+  - 管理页展示阈值配置与健康检查
+
+- [x] 4.x Offer KPI 接口最小实现
+  - 新增 API：GET /api/v1/offers/{id}/kpi（近7天 KPI 与 ROSC）
+  - 看板卡片渲染 ROSC 与迷你折线
+
+- [x] 4.x Offer 状态更新端点（手动流转）
+  - 新增 API：PUT /api/v1/offers/{id}/status（记录历史）
+
+## 新增任务（后续规划）
+
+- [ ] 4.y KPI 真数据落地
+  - 建立 Offer→Account 映射（读模型表：OfferAccountMap）
+  - 新增 OfferDailyKPI 表（date, offerId, impressions, clicks, spend, revenue, rosc）
+  - 聚合任务（Scheduler/Functions/Job）：每日增量与实时补写（最佳努力）
+  - API：GET /api/v1/offers/{id}/kpi 优先读取真实表（失败回退伪数据）
+  - 前端：看板卡片切换为真实 KPI 展示
+
+- [ ] G3.3 告警规则编辑器（Console）
+  - 扩展 notification_rules：阈值/窗口/目标维度/服务/路径等字段
+  - API：GET/POST/PUT/DELETE /api/v1/notifications/rules（支持 admin/user scope）
+  - 页面：/admin/console/rules 列表/编辑/启停/阈值配置
+  - 生效：阈值触发系统级 NotificationCreated 并入 SSE
+
+- [ ] H1.4 SLO 深化与告警联动
+  - 预计算/缓存 P95 与错误率（降低 /metrics 抓取成本）
+  - 告警联动：达阈触发事件，管理页展示与跳转
+  - 面板：SLO 表格新增快捷跳转到告警/健康/故障页
+
+- [ ] 7.x 看板增强（指标/交互）
+  - 7 天 ROSC sparkline 与 tooltip
+  - 阶段事件 via（resolve 直连/代理）标注与提示
+  - 任务详情页/报告跳转（与 Batchopen 报告端点联动）
 
 - [ ] 14.2 加强安全防护
   - 实现API限流和防护

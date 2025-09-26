@@ -26,3 +26,19 @@ export async function createOffer(body: OfferCreateRequest, init?: RequestInit):
   return res.json()
 }
 
+export async function updateOfferStatus(id: string, status: string, init?: RequestInit): Promise<{ status: string; offerId: string; from: string; to: string }> {
+  const res = await fetch(`${BASE}/offers/${encodeURIComponent(id)}/status`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json', ...(init?.headers || {}) },
+    body: JSON.stringify({ status }),
+    ...init,
+  })
+  if (!res.ok) throw new Error(`updateOfferStatus failed: ${res.status}`)
+  return res.json()
+}
+
+export async function getOfferKPI(id: string, init?: RequestInit): Promise<any> {
+  const res = await fetch(`${BASE}/offers/${encodeURIComponent(id)}/kpi`, { method: 'GET', ...(init||{}) })
+  if (!res.ok) throw new Error(`getOfferKPI failed: ${res.status}`)
+  return res.json()
+}
