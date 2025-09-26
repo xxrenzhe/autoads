@@ -2,6 +2,8 @@ package config
 
 import (
     "context"
+    "encoding/base64"
+    "encoding/json"
     "fmt"
     "os"
     "strings"
@@ -10,7 +12,8 @@ import (
 
     secretmanager "cloud.google.com/go/secretmanager/apiv1"
     "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
-    "encoding/json"
+    kms "cloud.google.com/go/kms/apiv1"
+    kmspb "cloud.google.com/go/kms/apiv1/kmspb"
 )
 
 // Simple environment-backed config with Secret Manager helper.
@@ -144,9 +147,23 @@ func SecretCached(ctx context.Context, name string, ttl time.Duration) (string, 
     return val, nil
 }
 
+// ClearSecretCache clears the in-memory secret cache (best-effort hot reload support).
+func ClearSecretCache() {
+    secMu.Lock()
+    secCache = map[string]secretEntry{}
+    secMu.Unlock()
+}
+
 // JSONSecret loads a secret value and parses it as JSON into v (pointer to map/struct).
 func JSONSecret(ctx context.Context, name string, v any) error {
     s, err := Secret(ctx, name)
+    if err != nil { return err }
+    return json.Unmarshal([]byte(s), v)
+}
+
+// JSONSecretForStack tries "<name>-<STACK>" then falls back to base, and parses JSON into v.
+func JSONSecretForStack(ctx context.Context, base string, v any) error {
+    s, err := SecretForStack(ctx, base)
     if err != nil { return err }
     return json.Unmarshal([]byte(s), v)
 }
@@ -173,4 +190,44 @@ func GetDuration(key string, def time.Duration) time.Duration {
     if v == "" { return def }
     if d, err := time.ParseDuration(v); err == nil { return d }
     return def
+}
+
+// ValidateRequired checks that specified env variables are present.
+func ValidateRequired(keys ...string) error {
+    missing := make([]string, 0)
+    for _, k := range keys {
+        if strings.TrimSpace(os.Getenv(k)) == "" { missing = append(missing, k) }
+    }
+    if len(missing) > 0 {
+        return fmt.Errorf("missing required env: %s", strings.Join(missing, ","))
+    }
+    return nil
+}
+
+// KMS helpers (AES-256 via Cloud KMS symmetric key)
+// resource: projects/<p>/locations/<l>/keyRings/<r>/cryptoKeys/<k>
+// EncryptKMSText takes plaintext and returns base64 ciphertext.
+func EncryptKMSText(ctx context.Context, keyResource, plaintext string) (string, error) {
+    if strings.TrimSpace(keyResource) == "" { return "", fmt.Errorf("kms key resource empty") }
+    cli, err := kms.NewKeyManagementClient(ctx)
+    if err != nil { return "", err }
+    defer cli.Close()
+    req := &kmspb.EncryptRequest{ Name: keyResource, Plaintext: []byte(plaintext) }
+    resp, err := cli.Encrypt(ctx, req)
+    if err != nil { return "", err }
+    return base64.StdEncoding.EncodeToString(resp.Ciphertext), nil
+}
+
+// DecryptKMSText takes base64 ciphertext and returns plaintext.
+func DecryptKMSText(ctx context.Context, keyResource, b64Ciphertext string) (string, error) {
+    if strings.TrimSpace(keyResource) == "" { return "", fmt.Errorf("kms key resource empty") }
+    ct, err := base64.StdEncoding.DecodeString(strings.TrimSpace(b64Ciphertext))
+    if err != nil { return "", fmt.Errorf("invalid base64 ciphertext: %w", err) }
+    cli, err := kms.NewKeyManagementClient(ctx)
+    if err != nil { return "", err }
+    defer cli.Close()
+    req := &kmspb.DecryptRequest{ Name: keyResource, Ciphertext: ct }
+    resp, err := cli.Decrypt(ctx, req)
+    if err != nil { return "", err }
+    return string(resp.Plaintext), nil
 }

@@ -10,7 +10,6 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/xxrenzhe/autoads/services/siterank/internal/events"
-	"github.com/xxrenzhe/autoads/pkg/config"
 	"github.com/xxrenzhe/autoads/pkg/logger"
 )
 
@@ -21,15 +20,11 @@ var (
 )
 
 func main() {
-	cfg, err := config.LoadConfig("config.yaml")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error loading config")
-	}
-
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Fatal().Msg("DATABASE_URL is not set")
 	}
+	var err error
 	db, err = sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error connecting to the database")
@@ -61,8 +56,10 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", healthCheckHandler)
 	
-	log.Info().Str("port", cfg.Server.Port).Msg("Siterank service starting...")
-	if err := http.ListenAndServe(":"+cfg.Server.Port, mux); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" { port = "8080" }
+	log.Info().Str("port", port).Msg("Siterank service starting...")
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal().Err(err).Msg("Failed to start server")
 	}
 }

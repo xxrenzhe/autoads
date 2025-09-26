@@ -9,6 +9,8 @@
 8.完成阶段性的功能迭代后，及时更新进展文档，保存进展
 9.docs/productrefactoring-v2只是项目重构方案文档目录，不参与发布，且服务代码需要放在 services 目录下
 10.secrets目录和其下的所有文件都不能上传Github，也不能打包进入镜像
+11.请自行完成各种GCP和Firebase操作，若缺少权限，请说明并申请
+12.在确保实现业务需求的情况下，功能实现遵循KISS原则，优先实现核心业务逻辑，确保前后端用户体验顺畅
 
 重要信息：
 1.GCP服务账号：codex-dev@gen-lang-client-0944935873.iam.gserviceaccount.com

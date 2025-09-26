@@ -39,7 +39,27 @@ paths:
         content:
           application/json:
             schema:
-              type: object
+              $ref: '#/components/schemas/BulkActionPlan'
+            examples:
+              rotate_and_cpc:
+                summary: Rotate link + adjust CPC combo
+                value:
+                  validateOnly: false
+                  seedDomain: "yitahome.com"
+                  country: "US"
+                  actions:
+                    - type: ROTATE_LINK
+                      params:
+                        targetDomain: "yitahome.com"
+                        seed: "pboost"
+                        country: "US"
+                        source: "opportunity#123"
+                    - type: ADJUST_CPC
+                      filter:
+                        offerId: "offer-abc"
+                        minCtr: 0.02
+                      params:
+                        percent: 10
       responses:
         '202':
           description: Accepted and queued
@@ -74,3 +94,56 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    BulkActionPlan:
+      type: object
+      properties:
+        validateOnly:
+          type: boolean
+          default: false
+        seedDomain:
+          type: string
+          description: Seed domain for context and auditing
+        country:
+          type: string
+          description: Optional ISO country code
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/BulkActionItem'
+    BulkActionItem:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [ROTATE_LINK, ADJUST_CPC, ADJUST_BUDGET]
+        filter:
+          type: object
+          description: Optional filter describing affected entities
+          additionalProperties: true
+        params:
+          oneOf:
+            - $ref: '#/components/schemas/RotateLinkParams'
+            - $ref: '#/components/schemas/AdjustCpcParams'
+            - $ref: '#/components/schemas/AdjustBudgetParams'
+    RotateLinkParams:
+      type: object
+      required: [targetDomain]
+      properties:
+        targetDomain: { type: string, description: 'Target root domain used to derive Final URL & suffix' }
+        seed: { type: string, description: 'Optional seed used for traceability' }
+        country: { type: string, description: 'ISO country code used for routing' }
+        source: { type: string, description: 'Source descriptor (e.g. opportunity id)' }
+    AdjustCpcParams:
+      type: object
+      properties:
+        percent: { type: number, description: 'Relative adjustment % (e.g. +10 means +10%)' }
+        cpcValue: { type: number, description: 'Absolute CPC target value (micros or currency unit)' }
+        floor: { type: number, description: 'Lower bound to guard against over-reduction' }
+        ceil: { type: number, description: 'Upper bound to guard against over-increase' }
+    AdjustBudgetParams:
+      type: object
+      properties:
+        percent: { type: number, description: 'Relative adjustment % for budget' }
+        budgetValue: { type: number, description: 'Absolute budget target value' }

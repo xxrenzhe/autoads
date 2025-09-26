@@ -302,7 +302,7 @@
   - 评分 computeScore 基于 SimilarWeb 响应做简化0-100分（KISS）
   - _需求: 需求C1 - Siterank 10秒评估_
 
-- [ ] D1.4 实现简化增强功能
+- [x] D1.4 实现简化增强功能
   - 实现深度相似度算法：域名关键词匹配30分+流量规模相似性25分+国家重叠度20分+行业分类匹配25分
   - 关键词扩展建议不依赖 Google Ads API：基于 SimilarWeb 指标、域名关键词与规则库生成候选
   - 建立简单过滤机制：按规则阈值筛选（如访问量阈值、关键词覆盖度阈值），避免外部 Ads API 访问
@@ -382,7 +382,7 @@
   - 实现Token余额和预留管理
   - _需求: 需求C5 - Billing原子计费_
 
-- [ ] F1.2 实现计费配置和明细
+- [x] F1.2 实现计费配置和明细
   - 建立价格/限额集中配置（只读下发）
   - 实现动作/对象/任务/事件链路追溯
   - 建立计费明细和交易记录
@@ -393,14 +393,14 @@
 
 ### G1. Billing原子计费系统
 
-- [ ] G1.1 实现原子扣费机制
+- [x] G1.1 实现原子扣费机制
   - 建立reserve(n) → 成功commit(n) / 失败release(n)机制
   - 实现扣费点：评估、仿真、批量操作
   - 建立事务消息和补偿机制
   - 实现Token余额和预留管理
   - _需求: 需求C5 - Billing原子计费_
 
-- [ ] G1.2 实现计费配置和明细
+- [x] G1.2 实现计费配置和明细
   - 建立价格/限额集中配置（只读下发）
   - 实现动作/对象/任务/事件链路追溯
   - 建立计费明细和交易记录
@@ -473,7 +473,7 @@
 
 ### H2. CI/CD与环境管理
 
-- [ ] H2.1 实现环境隔离
+- [x] H2.1 实现环境隔离
   - 建立STACK=dev|preview|prod环境策略
   - 实现{service}-{stack}命名规范
   - 建立资源标签隔离（autoads-stack=dev|preview|prod）
@@ -499,6 +499,24 @@
 - [x] H2.2.b Browser-Exec 扩缩容脚本
   - 新增 deployments/scripts/set-scaling.sh，支持 min/max/concurrency/cpu/mem 配置
 
+- [x] H2.2.c Adscenter 调用层限流/退避与批量分片
+  - 为 Pre-flight/诊断/批量链路增加 Ads API 统一限流与指数退避封装（RPM/并发可配）
+  - Submit Bulk Actions 入队时对大计划进行分片持久化（BulkActionShard），并在模拟/执行端点下按分片推进状态
+  - 新增内部执行端点：POST /api/v1/adscenter/bulk-actions/{id}/execute-next（按序挑选 queued 分片执行，更新审计与状态）
+  - 新增内部执行端点：POST /api/v1/adscenter/bulk-actions/execute-tick?max=N（全局挑选 queued 分片，按 N 个/次推进）
+  - 分片限流/配额与套餐强关联：
+    - 按 用户/账号/动作类型 维护独立限流桶（LRU+TTL），叠加实例内全局限流；确保公平性与总量受控
+    - 策略通过 Secret/环境变量集中配置（ADSCENTER_LIMITS_SECRET / ADSCENTER_LIMITS_JSON），Billing 提供用户套餐信息
+    - 已接入：Pre-flight LIVE 路径（限流）与批量计划校验（每日配额提示）；执行端点（execute-next/execute-tick）按套餐注入 mutate 分片限流
+
+- [x] H2.2.d ads_live 执行（validate-only 起步）
+  - 新增 build tag=ads_live 的最小执行器：ADJUST_CPC/ADJUST_BUDGET/ROTATE_LINK 支持 validate-only mutate
+  - 执行端注入 Ads 凭据（DevToken/OAuth/Refresh/LoginCID/CustomerID），ADS_MUTATE_LIVE 控制是否真实 mutate
+  - mutate 前后 best-effort 查询资源快照（before/after）并写入执行审计详情
+  - 文档与脚本：limits-policy.md、set-adscenter-limits-secret.sh、limits/me 端点（plan/限流/配额自查）
+  - 新增内部执行端点：POST /api/v1/adscenter/bulk-actions/execute-tick?max=N（全局挑选 queued 分片，按 N 个/次推进）
+  - 新增“分片限流/配额”：按 用户/账号/动作类型 维护独立限流桶（LRU+TTL），叠加全局限流；限流参数支持按套餐计划配置（Secret: ADSCENTER_LIMITS_SECRET）
+
 ### 1. 共享底座开发 (pkg/*)
 
  - [x] 1.1 实现认证中间件 (pkg/auth)
@@ -508,14 +526,14 @@
    - 建立统一的认证错误处理
    - _需求: 需求26 - 企业级安全与治理_
 
-- [ ] 1.2 实现配置管理 (pkg/config)
+- [x] 1.2 实现配置管理 (pkg/config)
   - 实现Secret Manager集成和KMS加密
   - 建立环境栈配置(STACK=dev|staging|prod)
   - 实现配置热加载和缓存机制
   - 建立配置验证和默认值处理
   - _需求: 需求26 - 企业级安全与治理_
 
-- [ ] 1.3 实现事件系统 (pkg/events)
+- [x] 1.3 实现事件系统 (pkg/events)
   - 实现事件发布/订阅装饰器
   - 建立幂等性管理(X-Idempotency-Key)
   - 实现事件序列化和反序列化
@@ -1235,11 +1253,20 @@
 
 ### 下一阶段（待办）
 
-- [ ] D. 审计报告（after/rollback）渲染
+- [x] D. 审计报告（after/rollback）渲染
   - 在批量计划详情页渲染 after/rollback 报告（读取 `/api/v1/adscenter/bulk-actions/{id}/report`），展示影响对象数/成功率/异常摘要
 
-- [ ] E. 动作 params 更详细的 OAS 示例
+- [x] E. 动作 params 更详细的 OAS 示例
   - 在 Adscenter OAS 中为 `ROTATE_LINK`/`ADJUST_CPC`/`ADJUST_BUDGET` 的 params 增加示例与字段说明，并同步生成前端 TS 类型
+
+- [x] F. Console 最小闭环（相似度/机会/计划/轮询/导出）
+  - 相似度面板：筛选（最小分/重叠国家）、生成/校验/入队计划、保存为机会、一键导出CSV
+  - 机会详情：一键生成/校验/入队计划（复用计划类型/TopN/CPC% 控件）
+  - 报告面板：状态轮询、After 报告与 Exec 汇总、导出综合报告（status/summary/plan/after/exec）
+
+- [x] G. 预览调优与运维脚本
+  - 一键调优脚本：`deployments/scripts/tune-preview.sh` + `set-env-vars.sh`
+  - 运维指南：`deployments/monitoring/Tuning.md`（默认参数、脚本用法、SLO 关注点）
 
 ## 任务执行指南
 
@@ -1478,3 +1505,16 @@
   - 新增 POST /api/v1/adscenter/keywords/expand：seedDomain/seedKeywords/validateOnly
   - 不接入 Google Ads Keyword Planner；使用内部规则（域名拆词、别名/共现库、SimilarWeb 指标）生成候选
   - 过滤规则：按内部阈值（如访问量/共现分/覆盖度）筛选，降序返回前 N（默认20）
+- [x] H2.2.e 回滚与失败重试闭环
+  - 执行前后快照落库（BulkActionSnapshot），提供快照列表与聚合对比端点
+  - Dead Letter 落库（BulkActionDeadLetter），提供列表与单条/批量重试端点；重试继续沿用套餐化限流+重试
+  - 回滚计划：优先基于执行审计 before 快照生成“精准回滚”，缺失时退回启发式逆向
+
+- [ ] H2.2.f Console 后台（限流/审计/重试）
+  - 套餐限流/配额配置页（读写 Secret：ADSCENTER_LIMITS_SECRET），限流/配额自查与告警
+  - Snapshots 聚合视图（before/after 对比），Dead Letter 列表与单条/批量重试
+  - 用量/限流命中/平均等待看板（per-plan）
+
+- [ ] H2.2.g ads_live 真实 mutate 全量化
+  - 覆盖更多资源类型与变更场景（ad/ad_group/campaign 层），冲突策略与校验
+  - 完善回滚校验与变更前快照策略；失败分级重试与 Notifications 告警

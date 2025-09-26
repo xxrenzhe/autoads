@@ -75,7 +75,30 @@
         <strong>系统配置（只读）：计费</strong>
         <button id="loadBillingCfgBtn">加载</button>
       </div>
+      <div id="billingCfgTbl" class="muted" style="margin-top:6px"></div>
       <pre id="billingCfg" class="muted" style="white-space:pre-wrap"></pre>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <strong>计费明细查询</strong>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label>交易ID：</label><input type="text" id="txId" placeholder="TokenTransaction id" />
+        <button id="txLoadBtn">查询</button>
+      </div>
+      <pre id="txDetail" class="muted" style="white-space:pre-wrap"></pre>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <strong>我的交易（最近50条）</strong>
+        <button id="myTxLoadBtn">加载</button>
+        <button id="myTxExportBtn">导出CSV</button>
+      </div>
+      <div id="myTxList" class="muted" style="margin-top:8px">尚无数据</div>
+      <div class="row" style="margin-top:6px"><strong>选中交易详情</strong></div>
+      <pre id="myTxDetail" class="muted" style="white-space:pre-wrap"></pre>
     </section>
 
     <section class="card">
@@ -102,6 +125,26 @@
       <div class="row" style="margin-top:6px">
         <label>种子域名：</label><input type="text" id="simSeedDomain" placeholder="如 yitahome.com" />
         <label>国家：</label><input type="text" id="simCountry" placeholder="可选，如 US" style="width:80px" />
+        <label>最小分：</label><input type="text" id="simMinScore" placeholder="如 50" style="width:60px" />
+        <label><input type="checkbox" id="simOverlapOnly" /> 仅显示有重叠国家</label>
+        <button id="simExportCsvBtn">导出CSV</button>
+        <button id="simGenPlanBtn">从结果生成计划(校验)</button>
+        <button id="simSubmitPlanBtn">提交入队</button>
+        <button id="simSaveOppBtn">保存为机会</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button id="simToggleAdvancedBtn">高级设置</button>
+        <span id="simMsg" class="muted"></span>
+      </div>
+      <div id="simAdvanced" class="row" style="margin-top:6px; display:none">
+        <label>计划类型：</label>
+        <select id="simPlanType">
+          <option value="ROTATE_LINK">ROTATE_LINK（换链接）</option>
+          <option value="ADJUST_CPC">ADJUST_CPC（调 CPC）</option>
+        </select>
+        <label>TopN：</label><input type="text" id="simTopN" value="10" style="width:60px" />
+        <label>CPC调整%（当选择ADJUST_CPC时）：</label><input type="text" id="simCpcPercent" value="10" style="width:60px" />
+        <span class="muted">提示：提交入队前可先“从结果生成计划(校验)”查看风险与建议</span>
       </div>
       <div class="row" style="margin-top:6px">
         <label>候选域名（逗号或换行分隔）：</label>
@@ -172,6 +215,65 @@
       <div id="oppsList" class="muted" style="margin-top:8px">尚无数据</div>
       <div class="row" style="margin-top:6px"><strong>详情</strong></div>
       <pre id="oppsDetail" class="muted" style="white-space:pre-wrap"></pre>
+      <div class="row" style="margin-top:6px">
+        <button id="oppPlanValidateBtn">从机会生成计划(校验)</button>
+        <button id="oppPlanSubmitBtn">提交计划入队</button>
+        <span class="muted">提示：使用上方“计划类型/TopN/CPC%”控制生成的动作</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <strong>批量计划报告（after/rollback）</strong>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label>Operation ID：</label><input type="text" id="baOpId" placeholder="如 op_20240926_123456" />
+        <label>Kind：</label>
+        <select id="baKind">
+          <option value="">all</option>
+          <option value="after">after</option>
+          <option value="rollback">rollback</option>
+          <option value="rollback_exec">rollback_exec</option>
+        </select>
+        <button id="baLoadBtn">加载报告</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button id="baJumpAfterBtn">查看 after 审计</button>
+        <button id="baJumpRollbackExecBtn">查看 rollback_exec 审计</button>
+        <button id="baPollBtn">开始轮询状态</button>
+        <button id="baStopPollBtn">停止轮询</button>
+        <span id="baStatus" class="muted"></span>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button id="baLoadPlanBtn">查看 Plan</button>
+        <button id="baExportAfterBtn">导出 After JSON</button>
+        <button id="baExportExecCsvBtn">导出 Exec CSV</button>
+        <button id="baExportPlanBtn">导出 Plan JSON</button>
+        <button id="baExportBundleBtn">导出综合报告</button>
+      </div>
+      <pre id="baReport" class="muted" style="white-space:pre-wrap; margin-top:8px"></pre>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <strong>批量计划审计列表（before/after/other/rollback/...）</strong>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label>Operation ID：</label><input type="text" id="baListOpId" placeholder="如 op_20240926_123456" />
+        <label>Kind：</label>
+        <select id="baListKind">
+          <option value="">all</option>
+          <option value="before">before</option>
+          <option value="after">after</option>
+          <option value="other">other</option>
+          <option value="rollback">rollback</option>
+          <option value="rollback_exec">rollback_exec</option>
+        </select>
+        <button id="baListLoadBtn">加载</button>
+        <button id="baListExportBtn">导出JSON</button>
+        <button id="baListExportCsvBtn">导出CSV</button>
+      </div>
+      <div id="baList" class="muted" style="margin-top:8px">尚无数据</div>
     </section>
 
     <script src="./app.js"></script>

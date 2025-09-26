@@ -19,6 +19,16 @@
   const markAllReadBtn = document.getElementById('markAllReadBtn');
   const loadBillingCfgBtn = document.getElementById('loadBillingCfgBtn');
   const billingCfg = document.getElementById('billingCfg');
+  const billingCfgTbl = document.getElementById('billingCfgTbl');
+  // Billing tx detail controls
+  const txId = document.getElementById('txId');
+  const txLoadBtn = document.getElementById('txLoadBtn');
+  const txDetail = document.getElementById('txDetail');
+  // Billing my transactions
+  const myTxLoadBtn = document.getElementById('myTxLoadBtn');
+  const myTxList = document.getElementById('myTxList');
+  const myTxDetail = document.getElementById('myTxDetail');
+  const myTxExportBtn = document.getElementById('myTxExportBtn');
   // Keyword expansion controls
   const kwSeedDomain = document.getElementById('kwSeedDomain');
   const kwSeedKeywords = document.getElementById('kwSeedKeywords');
@@ -33,6 +43,19 @@
   const simCandidates = document.getElementById('simCandidates');
   const simComputeBtn = document.getElementById('simComputeBtn');
   const simResult = document.getElementById('simResult');
+  const simMinScore = document.getElementById('simMinScore');
+  const simOverlapOnly = document.getElementById('simOverlapOnly');
+  const simExportCsvBtn = document.getElementById('simExportCsvBtn');
+  const simGenPlanBtn = document.getElementById('simGenPlanBtn');
+  const simSubmitPlanBtn = document.getElementById('simSubmitPlanBtn');
+  const simSaveOppBtn = document.getElementById('simSaveOppBtn');
+  const simToggleAdvancedBtn = document.getElementById('simToggleAdvancedBtn');
+  const simAdvanced = document.getElementById('simAdvanced');
+  const simMsg = document.getElementById('simMsg');
+  const simPlanType = document.getElementById('simPlanType');
+  const simTopN = document.getElementById('simTopN');
+  const simCpcPercent = document.getElementById('simCpcPercent');
+  let lastSimilarity = [];
   // Combo discovery controls
   const comboSeedDomain = document.getElementById('comboSeedDomain');
   const comboCountry = document.getElementById('comboCountry');
@@ -45,6 +68,18 @@
   const comboSaveBtn = document.getElementById('comboSaveBtn');
   let lastCombo = { kw: null, sim: null };
 
+  // Bulk action report controls
+  const baOpId = document.getElementById('baOpId');
+  const baKind = document.getElementById('baKind');
+  const baLoadBtn = document.getElementById('baLoadBtn');
+  const baReport = document.getElementById('baReport');
+  // Bulk Audits list controls
+  const baListOpId = document.getElementById('baListOpId');
+  const baListKind = document.getElementById('baListKind');
+  const baListLoadBtn = document.getElementById('baListLoadBtn');
+  const baListExportBtn = document.getElementById('baListExportBtn');
+  const baList = document.getElementById('baList');
+
   // Init
   const saved = localStorage.getItem(tokenKey) || '';
   tokenInput.value = saved;
@@ -55,6 +90,19 @@
     alert('已保存 Token 到本地，仅用于管理页调用');
     tryReconnectSSE();
   };
+
+  // Simple busy wrapper (KISS) to avoid duplicate submissions and provide quick feedback
+  function withBusy(btn, fn) {
+    if (!btn) return Promise.resolve().then(fn);
+    if (btn.dataset.busy === '1') return Promise.resolve();
+    btn.dataset.busy = '1';
+    const prev = btn.textContent;
+    btn.disabled = true; btn.textContent = prev + '…';
+    return Promise.resolve()
+      .then(fn)
+      .catch(err => alert(err && err.message ? err.message : String(err)))
+      .finally(() => { btn.dataset.busy=''; btn.disabled=false; btn.textContent = prev; });
+  }
 
   function authHeaders() {
     const t = (localStorage.getItem(tokenKey) || '').trim();
@@ -224,8 +272,32 @@
 
   // Billing config
   loadBillingCfgBtn.onclick = async () => {
+    if (billingCfgTbl) billingCfgTbl.innerHTML = '';
     billingCfg.textContent = '加载中...';
-    try { const j = await apiGet('/api/v1/billing/config'); billingCfg.textContent = JSON.stringify(j, null, 2); }
+    try {
+      const j = await apiGet('/api/v1/billing/config');
+      billingCfg.textContent = JSON.stringify(j, null, 2);
+      // render structured
+      if (billingCfgTbl) {
+        const pricing = j.pricing || {};
+        const limits = j.limits || {};
+        let html = '';
+        const keys = Object.keys(pricing);
+        if (keys.length) {
+          html += '<div><strong>Pricing</strong></div>';
+          html += '<table><thead><tr><th>Action</th><th>Tokens</th></tr></thead><tbody>' +
+            keys.sort().map(k=>`<tr><td>${k}</td><td>${pricing[k]}</td></tr>`).join('') + '</tbody></table>';
+        }
+        const lkeys = Object.keys(limits);
+        if (lkeys.length) {
+          html += '<div class="row" style="margin-top:6px"><strong>Limits</strong></div>';
+          html += '<table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>' +
+            lkeys.sort().map(k=>`<tr><td>${k}</td><td>${limits[k]}</td></tr>`).join('') + '</tbody></table>';
+        }
+        if (!html) html = '<div class="muted">无结构化配置</div>';
+        billingCfgTbl.innerHTML = html;
+      }
+    }
     catch (e) { billingCfg.textContent = e.message; }
   };
 
@@ -233,6 +305,55 @@
   pollUnreadOnce();
   loadRecentNotifications();
   tryReconnectSSE();
+
+  // Billing tx detail
+  if (txLoadBtn) {
+    txLoadBtn.onclick = async () => {
+      const id = (txId && txId.value || '').trim();
+      if (!id) { if (txDetail) txDetail.textContent = '请输入交易ID'; return; }
+      if (txDetail) txDetail.textContent = '查询中...';
+      try {
+        const j = await apiGet(`/api/v1/billing/tokens/transactions/${encodeURIComponent(id)}`);
+        if (txDetail) txDetail.textContent = JSON.stringify(j, null, 2);
+      } catch (e) { if (txDetail) txDetail.textContent = e.message; }
+    };
+  }
+
+  // My last 50 transactions
+  async function myTxLoad() {
+    if (!myTxList) return;
+    myTxList.textContent = '加载中...';
+    try {
+      const j = await apiGet('/api/v1/billing/tokens/transactions');
+      const items = j || [];
+      if (!items.length) { myTxList.textContent = '暂无交易'; if (myTxDetail) myTxDetail.textContent=''; return; }
+      myTxList.innerHTML = '<table><thead><tr><th>ID</th><th>Type</th><th>Amount</th><th>Description</th><th>Created</th><th>Actions</th></tr></thead><tbody>'+
+        items.map(t=>`<tr><td>${t.id}</td><td>${t.type}</td><td>${t.amount}</td><td>${t.description||''}</td><td>${t.createdAt?new Date(t.createdAt).toLocaleString():''}</td><td><button data-tx-id="${t.id}">详情</button></td></tr>`).join('')+
+        '</tbody></table>';
+      myTxList.querySelectorAll('button[data-tx-id]').forEach(btn=>{
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-tx-id');
+          try { const d = await apiGet(`/api/v1/billing/tokens/transactions/${id}`); if (myTxDetail) myTxDetail.textContent = JSON.stringify(d, null, 2); }
+          catch (e) { if (myTxDetail) myTxDetail.textContent = e.message; }
+        });
+      });
+    } catch (e) { myTxList.textContent = e.message; if (myTxDetail) myTxDetail.textContent=''; }
+  }
+  if (myTxLoadBtn) myTxLoadBtn.onclick = myTxLoad;
+  if (myTxExportBtn) {
+    myTxExportBtn.onclick = async () => {
+      try {
+        const items = await apiGet('/api/v1/billing/tokens/transactions');
+        let csv = 'id,type,amount,balanceBefore,balanceAfter,source,description,createdAt\n';
+        (items||[]).forEach(t=>{
+          const line = [t.id, t.type, t.amount, t.balanceBefore, t.balanceAfter, t.source||'', t.description||'', t.createdAt||'']
+            .map(v=>JSON.stringify(v??'')).join(',');
+          csv += line + '\n';
+        });
+        downloadFile('my-transactions.csv', 'text/csv', csv);
+      } catch (e) { alert(e.message); }
+    };
+  }
 
   // Token 汇总
   const tokenStatsBtn = document.getElementById('tokenStatsBtn');
@@ -279,13 +400,132 @@
         const body = { seedDomain: seed, candidates: cands };
         if (country) body.country = country;
         const j = await apiPost('/api/v1/siterank/similar', body);
-        const items = (j.items || j || []);
+        let items = (j.items || j || []);
+        const minScore = parseFloat((simMinScore && simMinScore.value)||'');
+        if (!Number.isNaN(minScore)) { items = items.filter(it => (it.score||0) >= minScore); }
+        if (simOverlapOnly && simOverlapOnly.checked) {
+          items = items.filter(it => {
+            try { const d = it.factors && (it.factors.countryDetail || it.factors.CountryDetail); const ol = d && (d.overlap || d.Overlap); return (ol||[]).length > 0; } catch { return false; }
+          });
+        }
+        lastSimilarity = items;
         if (!items.length) { simResult.textContent = '无结果'; return; }
-        simResult.innerHTML = '<table><thead><tr><th>Domain</th><th>Score</th><th>Factors</th></tr></thead><tbody>' +
-          items.map(it => `<tr><td>${it.domain}</td><td>${(it.score||0).toFixed(1)}</td><td><pre class="muted" style="white-space:pre-wrap">${it.factors?JSON.stringify(it.factors):''}</pre></td></tr>`).join('') +
+        simResult.innerHTML = '<table><thead><tr><th>Domain</th><th>Score</th><th>Reason</th><th>Overlap</th><th>Factors</th></tr></thead><tbody>' +
+          items.map(it => {
+            const reason = (it.factors && (it.factors.reason || it.factors.Reason)) || '';
+            const overlaps = (()=>{ try { const d = it.factors && (it.factors.countryDetail || it.factors.CountryDetail); const ol = d && (d.overlap || d.Overlap); return (ol||[]).join(','); } catch { return ''; } })();
+            const ftxt = it.factors ? JSON.stringify(it.factors) : '';
+            return `<tr><td>${it.domain}</td><td>${(it.score||0).toFixed(1)}</td><td>${reason||'<span class="muted">-</span>'}</td><td>${overlaps||'<span class="muted">-</span>'}</td><td><pre class="muted" style="white-space:pre-wrap">${ftxt}</pre></td></tr>`;
+          }).join('') +
           '</tbody></table>';
       } catch (e) { simResult.textContent = e.message; }
     };
+  }
+  if (simExportCsvBtn) {
+    simExportCsvBtn.onclick = () => {
+      const items = lastSimilarity || [];
+      if (!items.length) { alert('暂无可导出的相似度结果'); return; }
+      let csv = 'domain,score,reason,overlap\n';
+      items.forEach(it => {
+        const reason = (it.factors && (it.factors.reason || it.factors.Reason)) || '';
+        let overlaps = '';
+        try { const d = it.factors && (it.factors.countryDetail || it.factors.CountryDetail); const ol = d && (d.overlap || d.Overlap); overlaps = (ol||[]).join('|'); } catch {}
+        const line = [it.domain, (it.score||0), reason, overlaps].map(v=>JSON.stringify(v??'')).join(',');
+        csv += line + '\n';
+      });
+      downloadFile('similarity.csv', 'text/csv', csv);
+    };
+  }
+
+  if (simGenPlanBtn) {
+    simGenPlanBtn.onclick = () => withBusy(simGenPlanBtn, async () => {
+      try {
+        const seed = (simSeedDomain.value||'').trim();
+        const country = (simCountry.value||'').trim();
+        if (!seed) { alert('请先填写种子域名'); return; }
+        if (!lastSimilarity || !lastSimilarity.length) { alert('请先计算相似度结果'); return; }
+        // Build a minimal plan: ROTATE_LINK per domain (top 10)
+        const n = Math.max(1, Math.min(50, parseInt((simTopN && simTopN.value)||'10', 10) || 10));
+        const top = lastSimilarity.slice(0, n);
+        const type = (simPlanType && simPlanType.value) || 'ROTATE_LINK';
+        const pct = parseFloat((simCpcPercent && simCpcPercent.value)||'10');
+        const normPct = (Number.isNaN(pct) ? 10 : Math.max(-90, Math.min(500, pct)));
+        const mkAction = (it) => {
+          if (type === 'ADJUST_CPC') {
+            return { type: 'ADJUST_CPC', params: { percent: normPct }, filter: { domain: it.domain } };
+          }
+          return { type: 'ROTATE_LINK', params: { targetDomain: it.domain, seed: seed, country: country, source: 'similar' } };
+        };
+        const actions = top.map(mkAction);
+        const plan = { validateOnly: true, seedDomain: seed, country, actions };
+        const h = authHeaders(); h['X-Idempotency-Key'] = `sim-validate-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+        const resp = await fetch('/api/v1/adscenter/bulk-actions/validate', { method: 'POST', headers: h, body: JSON.stringify(plan) });
+        const txt = await resp.text();
+        if (!resp.ok) throw new Error(`validate failed ${resp.status}: ${txt}`);
+        if (simMsg) simMsg.textContent = '计划校验成功';
+        try { const j = JSON.parse(txt); simResult.textContent = JSON.stringify(j, null, 2); } catch { simResult.textContent = txt; }
+      } catch (e) { throw e; }
+    });
+  }
+
+  if (simSubmitPlanBtn) {
+    simSubmitPlanBtn.onclick = () => withBusy(simSubmitPlanBtn, async () => {
+      try {
+        const seed = (simSeedDomain.value||'').trim();
+        const country = (simCountry.value||'').trim();
+        if (!seed) { alert('请先填写种子域名'); return; }
+        if (!lastSimilarity || !lastSimilarity.length) { alert('请先计算相似度结果'); return; }
+        const n = Math.max(1, Math.min(50, parseInt((simTopN && simTopN.value)||'10', 10) || 10));
+        const top = lastSimilarity.slice(0, n);
+        const type = (simPlanType && simPlanType.value) || 'ROTATE_LINK';
+        const pct = parseFloat((simCpcPercent && simCpcPercent.value)||'10');
+        const normPct = (Number.isNaN(pct) ? 10 : Math.max(-90, Math.min(500, pct)));
+        const mkAction = (it) => {
+          if (type === 'ADJUST_CPC') {
+            return { type: 'ADJUST_CPC', params: { percent: normPct }, filter: { domain: it.domain } };
+          }
+          return { type: 'ROTATE_LINK', params: { targetDomain: it.domain, seed: seed, country: country, source: 'similar' } };
+        };
+        const actions = top.map(mkAction);
+        const plan = { validateOnly: false, seedDomain: seed, country, actions };
+        const h = authHeaders(); h['X-Idempotency-Key'] = `sim-submit-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+        const resp = await fetch('/api/v1/adscenter/bulk-actions', { method: 'POST', headers: h, body: JSON.stringify(plan) });
+        const txt = await resp.text();
+        if (!resp.ok) throw new Error(`submit failed ${resp.status}: ${txt}`);
+        let id = '';
+        try { const j = JSON.parse(txt); id = j.operationId || ''; } catch {}
+        if (!id) { if (simMsg) simMsg.textContent = '提交成功（未返回 operationId）'; return; }
+        if (simMsg) simMsg.textContent = `已入队，Operation ID=${id}`;
+        // Pre-fill report/audits views and jump to audits (before snapshot)
+        const baOp = document.getElementById('baOpId'); if (baOp) baOp.value = id;
+        const baListOp = document.getElementById('baListOpId'); if (baListOp) baListOp.value = id;
+        const baListKind = document.getElementById('baListKind'); if (baListKind) baListKind.value = 'before';
+        const loadBtn = document.getElementById('baListLoadBtn'); if (loadBtn) loadBtn.click();
+        const el = document.getElementById('baList'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const pollBtn = document.getElementById('baPollBtn'); if (pollBtn) pollBtn.click();
+      } catch (e) { throw e; }
+    });
+  }
+
+  if (simSaveOppBtn) {
+    simSaveOppBtn.onclick = () => withBusy(simSaveOppBtn, async () => {
+      try {
+        const seed = (simSeedDomain.value||'').trim();
+        const country = (simCountry.value||'').trim();
+        if (!seed) { alert('请先填写种子域名'); return; }
+        if (!lastSimilarity || !lastSimilarity.length) { alert('请先计算相似度结果'); return; }
+        const top = lastSimilarity.slice(0, Math.max(1, Math.min(50, parseInt((simTopN && simTopN.value)||'10', 10) || 10)));
+        const topDomains = top.map(it => ({ domain: it.domain, score: it.score||0, reason: (it.factors && (it.factors.reason || it.factors.Reason)) || '' }));
+        const body = { seedDomain: seed, country, topDomains };
+        const h = authHeaders(); h['X-Idempotency-Key'] = `sim-opp-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+        const resp = await fetch('/api/v1/recommend/opportunities', { method: 'POST', headers: h, body: JSON.stringify(body) });
+        const txt = await resp.text();
+        if (!resp.ok) throw new Error(`save opportunity failed ${resp.status}: ${txt}`);
+        let id = '';
+        try { const j = JSON.parse(txt); id = String(j.id||''); } catch {}
+        if (simMsg) simMsg.textContent = `机会已保存，ID=${id||'n/a'}`;
+      } catch (e) { throw e; }
+    });
   }
 
   // Combo discovery: run keyword expand + similarity and render a simple report
@@ -310,12 +550,15 @@
         }
         lastCombo = { kw, sim };
         const kwList = (kw.items||[]).slice(0,10).map(it=>`<li>${it.keyword} <span class="muted">(${(it.score||0).toFixed(1)})</span></li>`).join('');
-        const simList = (sim.items||[]).slice(0,10).map(it=>`<tr><td>${it.domain}</td><td>${(it.score||0).toFixed(1)}</td></tr>`).join('');
+        const simList = (sim.items||[]).slice(0,10).map(it=>{
+          const reason = (it.factors && (it.factors.reason || it.factors.Reason)) || '';
+          return `<tr><td>${it.domain}</td><td>${(it.score||0).toFixed(1)}</td><td>${reason||'<span class="muted">-</span>'}</td></tr>`;
+        }).join('');
         comboResult.innerHTML = `
           <div class="row"><strong>关键词建议（Top 10）</strong></div>
           <ol>${kwList||'<li class="muted">无</li>'}</ol>
           <div class="row" style="margin-top:8px"><strong>相似域名（Top 10）</strong></div>
-          <table><thead><tr><th>Domain</th><th>Score</th></tr></thead><tbody>${simList||'<tr><td colspan=2 class="muted">无</td></tr>'}</tbody></table>
+          <table><thead><tr><th>Domain</th><th>Score</th><th>Reason</th></tr></thead><tbody>${simList||'<tr><td colspan=3 class="muted">无</td></tr>'}</tbody></table>
         `;
       } catch (e) {
         comboResult.textContent = e.message;
@@ -340,10 +583,19 @@
   if (comboExportCsvBtn) {
     comboExportCsvBtn.onclick = () => {
       const kw = lastCombo.kw?.items||[]; const sim = lastCombo.sim?.items||[];
-      let csv = 'type,value,score\n';
-      kw.forEach(it=>{ csv += `keyword,${JSON.stringify(it.keyword)},${it.score||0}\n`; });
-      sim.forEach(it=>{ csv += `domain,${JSON.stringify(it.domain)},${it.score||0}\n`; });
+      let csv = 'type,value,score,reason\n';
+      kw.forEach(it=>{ csv += `keyword,${JSON.stringify(it.keyword)},${it.score||0},\n`; });
+      sim.forEach(it=>{ const reason = (it.factors && (it.factors.reason || it.factors.Reason)) || ''; csv += `domain,${JSON.stringify(it.domain)},${it.score||0},${JSON.stringify(reason)}\n`; });
       downloadFile('discovery.csv', 'text/csv', csv);
+    };
+  }
+
+  // Advanced toggle (KISS: 默认隐藏复杂选项)
+  if (simToggleAdvancedBtn && simAdvanced) {
+    simToggleAdvancedBtn.onclick = () => {
+      const show = simAdvanced.style.display === 'none';
+      simAdvanced.style.display = show ? '' : 'none';
+      simToggleAdvancedBtn.textContent = show ? '隐藏高级设置' : '高级设置';
     };
   }
 
@@ -378,6 +630,9 @@
   const oppsLoadBtn = document.getElementById('oppsLoadBtn');
   const oppsList = document.getElementById('oppsList');
   const oppsDetail = document.getElementById('oppsDetail');
+  const oppPlanValidateBtn = document.getElementById('oppPlanValidateBtn');
+  const oppPlanSubmitBtn = document.getElementById('oppPlanSubmitBtn');
+  let lastOppDetail = null; let lastOppId = '';
   async function nrLoad() {
     if (!nrList) return;
     nrMsg.textContent = '加载中...';
@@ -441,9 +696,305 @@
           const id = btn.getAttribute('data-opp-id');
           try { const d = await apiGet(`/api/v1/recommend/opportunities/${id}`); if (oppsDetail) oppsDetail.textContent = JSON.stringify(d, null, 2); }
           catch (e) { if (oppsDetail) oppsDetail.textContent = e.message; }
+          try { const d = await apiGet(`/api/v1/recommend/opportunities/${id}`); lastOppDetail = d; lastOppId = String(id); } catch { lastOppDetail = null; lastOppId = ''; }
         });
       });
     } catch (e) { oppsList.textContent = e.message; if (oppsDetail) oppsDetail.textContent=''; }
   }
   if (oppsLoadBtn) oppsLoadBtn.onclick = oppsLoad;
+
+  function buildActionsFromOpportunity(opp) {
+    const typeSel = document.getElementById('simPlanType');
+    const topNSel = document.getElementById('simTopN');
+    const cpcSel = document.getElementById('simCpcPercent');
+    const type = (typeSel && typeSel.value) || 'ROTATE_LINK';
+    const n = Math.max(1, Math.min(50, parseInt((topNSel && topNSel.value)||'10', 10) || 10));
+    const pct = parseFloat((cpcSel && cpcSel.value)||'10');
+    const normPct = (Number.isNaN(pct) ? 10 : Math.max(-90, Math.min(500, pct)));
+    const domains = Array.isArray(opp.topDomains) ? opp.topDomains : [];
+    const top = domains.slice(0, n);
+    const seed = opp.seedDomain || '';
+    const country = opp.country || '';
+    const actions = top.map(it => {
+      const domain = (it && (it.domain || it.Domain)) || '';
+      if (type === 'ADJUST_CPC') {
+        return { type: 'ADJUST_CPC', params: { percent: normPct }, filter: { domain } };
+      }
+      return { type: 'ROTATE_LINK', params: { targetDomain: domain, seed, country, source: 'opportunity' } };
+    });
+    return { actions, seed, country };
+  }
+
+  async function validatePlanFromOpportunity() {
+    if (!lastOppDetail) { alert('请先从列表加载一个机会详情'); return; }
+    const { actions, seed, country } = buildActionsFromOpportunity(lastOppDetail);
+    const plan = { validateOnly: true, seedDomain: seed, country, actions };
+    const h = authHeaders(); h['X-Idempotency-Key'] = `opp-validate-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const resp = await fetch('/api/v1/adscenter/bulk-actions/validate', { method: 'POST', headers: h, body: JSON.stringify(plan) });
+    const txt = await resp.text(); if (!resp.ok) throw new Error(`validate failed ${resp.status}: ${txt}`);
+    try { const j = JSON.parse(txt); oppsDetail.textContent = JSON.stringify(j, null, 2); } catch { oppsDetail.textContent = txt; }
+    alert('计划校验成功');
+  }
+  async function submitPlanFromOpportunity() {
+    if (!lastOppDetail) { alert('请先从列表加载一个机会详情'); return; }
+    const { actions, seed, country } = buildActionsFromOpportunity(lastOppDetail);
+    const plan = { validateOnly: false, seedDomain: seed, country, actions };
+    const h = authHeaders(); h['X-Idempotency-Key'] = `opp-submit-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const resp = await fetch('/api/v1/adscenter/bulk-actions', { method: 'POST', headers: h, body: JSON.stringify(plan) });
+    const txt = await resp.text(); if (!resp.ok) throw new Error(`submit failed ${resp.status}: ${txt}`);
+    let id = ''; try { const j = JSON.parse(txt); id = j.operationId || ''; } catch {}
+    alert(`已入队，Operation ID=${id||'n/a'}`);
+    // Jump to audits
+    const baOp = document.getElementById('baOpId'); if (baOp) baOp.value = id;
+    const baListOp = document.getElementById('baListOpId'); if (baListOp) baListOp.value = id;
+    const baListKindSel = document.getElementById('baListKind'); if (baListKindSel) baListKindSel.value = 'before';
+    const loadBtn = document.getElementById('baListLoadBtn'); if (loadBtn) loadBtn.click();
+    const el = document.getElementById('baList'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const pollBtn = document.getElementById('baPollBtn'); if (pollBtn) pollBtn.click();
+  }
+  if (oppPlanValidateBtn) oppPlanValidateBtn.onclick = () => withBusy(oppPlanValidateBtn, () => validatePlanFromOpportunity());
+  if (oppPlanSubmitBtn) oppPlanSubmitBtn.onclick = () => withBusy(oppPlanSubmitBtn, () => submitPlanFromOpportunity());
+
+  // Bulk Action report loader
+  if (baLoadBtn) {
+    baLoadBtn.onclick = async () => {
+      const id = (baOpId && baOpId.value || '').trim();
+      const kind = (baKind && baKind.value || '').trim();
+      if (!id) { if (baReport) baReport.textContent = '请输入 Operation ID'; return; }
+      if (baReport) baReport.textContent = '加载中...';
+      try {
+        const url = `/api/v1/adscenter/bulk-actions/${encodeURIComponent(id)}/report` + (kind?`?kind=${encodeURIComponent(kind)}`:'');
+        const j = await apiGet(url);
+        const items = j.items || j || [];
+        if (!items.length) { if (baReport) baReport.textContent = '无数据'; return; }
+        // Build summary
+        const summary = (function summarize(list){
+          let planned = 0, executed = 0, errors = 0;
+          const typeDist = {};
+          const samples = [];
+          for (const it of list) {
+            const kind = it.kind || '';
+            let snap = {};
+            try { snap = typeof it.snapshot === 'string' ? JSON.parse(it.snapshot) : (it.snapshot||{}); } catch {}
+            if (kind === 'rollback') {
+              if (snap && Array.isArray(snap.actions)) planned += snap.actions.length;
+            } else if (kind === 'rollback_exec') {
+              const st = (snap.status||'').toLowerCase();
+              if (st === 'ok') executed++; else errors++;
+              const t = snap.action && snap.action.type || '';
+              if (t) typeDist[t] = (typeDist[t]||0)+1;
+              if (samples.length < 3) samples.push(snap.action||snap);
+            }
+          }
+          const total = executed + errors;
+          const successRate = total ? ((executed/total)*100).toFixed(1)+'%' : 'n/a';
+          return { planned, executed, errors, total, successRate, typeDist, samples };
+        })(items);
+        const header = `Summary\n- planned: ${summary.planned}\n- executed: ${summary.executed}\n- errors: ${summary.errors}\n- success: ${summary.successRate}\n- dist: ${JSON.stringify(summary.typeDist)}\n\nItems:`;
+        if (baReport) baReport.textContent = header + '\n' + JSON.stringify(items, null, 2);
+      } catch (e) {
+        if (baReport) baReport.textContent = e.message;
+      }
+    };
+  }
+
+  // Quick jump from report to audits list
+  const baJumpAfterBtn = document.getElementById('baJumpAfterBtn');
+  const baJumpRollbackExecBtn = document.getElementById('baJumpRollbackExecBtn');
+  const baPollBtn = document.getElementById('baPollBtn');
+  const baStopPollBtn = document.getElementById('baStopPollBtn');
+  const baStatus = document.getElementById('baStatus');
+  let baPollTimer = null;
+  const baLoadPlanBtn = document.getElementById('baLoadPlanBtn');
+  const baExportAfterBtn = document.getElementById('baExportAfterBtn');
+  const baExportExecCsvBtn = document.getElementById('baExportExecCsvBtn');
+  const baExportPlanBtn = document.getElementById('baExportPlanBtn');
+  const baExportBundleBtn = document.getElementById('baExportBundleBtn');
+  let lastAfterItems = [];
+  let lastExecItems = [];
+  let lastPlan = null;
+  function jumpToAudits(kind) {
+    if (!baListOpId || !baListKind) return;
+    const id = (baOpId && baOpId.value || '').trim();
+    if (!id) { alert('请先在报告卡片输入 Operation ID 并加载'); return; }
+    baListOpId.value = id;
+    baListKind.value = kind || '';
+    if (baListLoadBtn) baListLoadBtn.click();
+    const el = document.getElementById('baList');
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  if (baJumpAfterBtn) baJumpAfterBtn.onclick = () => jumpToAudits('after');
+  if (baJumpRollbackExecBtn) baJumpRollbackExecBtn.onclick = () => jumpToAudits('rollback_exec');
+
+  async function pollBulkOnce() {
+    const id = (baOpId && baOpId.value || '').trim();
+    if (!id) { if (baStatus) baStatus.textContent = '请输入 Operation ID'; return; }
+    try {
+      const j = await apiGet(`/api/v1/adscenter/bulk-actions/${encodeURIComponent(id)}`);
+      const st = (j && j.status) || 'unknown';
+      if (baStatus) baStatus.textContent = `状态: ${st}${j.updatedAt?(' | 更新时间: '+new Date(j.updatedAt).toLocaleString()):''}`;
+      if (st === 'completed' || st === 'rolled_back') {
+        // auto load after/exec reports and synthesize summary
+        try {
+          const [afterRep, execRep] = await Promise.all([
+            apiGet(`/api/v1/adscenter/bulk-actions/${encodeURIComponent(id)}/report?kind=after`).catch(()=>({items:[]})),
+            apiGet(`/api/v1/adscenter/bulk-actions/${encodeURIComponent(id)}/report?kind=rollback_exec`).catch(()=>({items:[]})),
+          ]);
+          const afterItems = afterRep.items || afterRep || [];
+          const execItems = execRep.items || execRep || [];
+          lastAfterItems = afterItems; lastExecItems = execItems;
+          // summarize exec items
+          let executed = 0, errors = 0; const typeDist = {};
+          execItems.forEach(it => {
+            try {
+              const snap = typeof it.snapshot === 'string' ? JSON.parse(it.snapshot) : (it.snapshot||{});
+              const st = (snap.status||'').toLowerCase(); if (st === 'ok') executed++; else errors++;
+              const t = snap.action && snap.action.type || ''; if (t) typeDist[t] = (typeDist[t]||0)+1;
+            } catch {}
+          });
+          const total = executed + errors; const successRate = total? ((executed/total)*100).toFixed(1)+'%':'n/a';
+          const header = `After 报告 (items=${afterItems.length})\nExec 汇总: executed=${executed} errors=${errors} success=${successRate} dist=${JSON.stringify(typeDist)}`;
+          if (baReport) baReport.textContent = header + '\n' + JSON.stringify(afterItems, null, 2);
+        } catch {}
+        if (baPollTimer) { clearInterval(baPollTimer); baPollTimer = null; }
+      }
+    } catch (e) {
+      if (baStatus) baStatus.textContent = `轮询失败: ${e.message}`;
+    }
+  }
+  if (baPollBtn) baPollBtn.onclick = () => {
+    if (baPollTimer) clearInterval(baPollTimer);
+    pollBulkOnce();
+    baPollTimer = setInterval(pollBulkOnce, 3000);
+  };
+  if (baStopPollBtn) baStopPollBtn.onclick = () => { if (baPollTimer) { clearInterval(baPollTimer); baPollTimer = null; if (baStatus) baStatus.textContent = '已停止轮询'; } };
+
+  if (baLoadPlanBtn) baLoadPlanBtn.onclick = async () => {
+    const id = (baOpId && baOpId.value || '').trim(); if (!id) { alert('请输入 Operation ID'); return; }
+    try {
+      const plan = await apiGet(`/api/v1/adscenter/bulk-actions/${encodeURIComponent(id)}/plan`);
+      lastPlan = plan;
+      if (baReport) baReport.textContent = 'Plan:\n' + JSON.stringify(plan, null, 2);
+    } catch (e) { alert(e.message); }
+  };
+
+  if (baExportAfterBtn) baExportAfterBtn.onclick = () => {
+    if (!lastAfterItems || !lastAfterItems.length) { alert('暂无 After 报告可导出'); return; }
+    downloadFile('bulk-after.json', 'application/json', JSON.stringify(lastAfterItems, null, 2));
+  };
+  if (baExportExecCsvBtn) baExportExecCsvBtn.onclick = () => {
+    const items = lastExecItems || [];
+    if (!items.length) { alert('暂无 Exec 记录可导出'); return; }
+    let csv = 'when,type,status\n';
+    items.forEach(it => {
+      let t = '', st = '', when = it.createdAt || '';
+      try { const snap = typeof it.snapshot === 'string' ? JSON.parse(it.snapshot) : (it.snapshot||{}); t = snap.action && snap.action.type || ''; st = snap.status || ''; } catch {}
+      const line = [when, t, st].map(v=>JSON.stringify(v??'')).join(',');
+      csv += line + '\n';
+    });
+    downloadFile('bulk-exec.csv', 'text/csv', csv);
+  };
+  if (baExportPlanBtn) baExportPlanBtn.onclick = () => {
+    if (!lastPlan) { alert('请先查看 Plan'); return; }
+    downloadFile('bulk-plan.json', 'application/json', JSON.stringify(lastPlan, null, 2));
+  };
+
+  if (baExportBundleBtn) baExportBundleBtn.onclick = async () => {
+    const id = (baOpId && baOpId.value || '').trim(); if (!id) { alert('请输入 Operation ID'); return; }
+    try {
+      // Fetch latest status/plan/after/exec best-effort
+      const [op, plan, afterRep, execRep] = await Promise.all([
+        apiGet(`/api/v1/adscenter/bulk-actions/${encodeURIComponent(id)}`).catch(()=>({})),
+        apiGet(`/api/v1/adscenter/bulk-actions/${encodeURIComponent(id)}/plan`).catch(()=>null),
+        apiGet(`/api/v1/adscenter/bulk-actions/${encodeURIComponent(id)}/report?kind=after`).catch(()=>({items:[]})),
+        apiGet(`/api/v1/adscenter/bulk-actions/${encodeURIComponent(id)}/report?kind=rollback_exec`).catch(()=>({items:[]})),
+      ]);
+      const afterItems = (afterRep && (afterRep.items||afterRep)) || [];
+      const execItems = (execRep && (execRep.items||execRep)) || [];
+      // summarize exec
+      let executed = 0, errors = 0; const typeDist = {};
+      execItems.forEach(it => {
+        try { const snap = typeof it.snapshot === 'string' ? JSON.parse(it.snapshot) : (it.snapshot||{}); const st=(snap.status||'').toLowerCase(); if (st==='ok') executed++; else errors++; const t = snap.action && snap.action.type || ''; if (t) typeDist[t]=(typeDist[t]||0)+1; } catch {}
+      });
+      const total = executed + errors; const successRate = total? ((executed/total)*100).toFixed(1)+'%':'n/a';
+      const bundle = {
+        operationId: id,
+        status: op.status || 'unknown',
+        updatedAt: op.updatedAt || null,
+        summary: { executed, errors, successRate, typeDist },
+        plan: plan || lastPlan,
+        after: afterItems,
+        exec: execItems,
+      };
+      downloadFile(`bulk-report-${id}.json`, 'application/json', JSON.stringify(bundle, null, 2));
+    } catch (e) { alert(e.message); }
+  };
+
+  // Bulk audits list
+  let lastAudits = [];
+  async function loadAuditsList() {
+    if (!baList) return;
+    const id = (baListOpId && baListOpId.value || '').trim();
+    const kind = (baListKind && baListKind.value || '').trim();
+    if (!id) { baList.textContent = '请输入 Operation ID'; return; }
+    baList.textContent = '加载中...';
+    try {
+      const j = await apiGet(`/api/v1/adscenter/bulk-actions/${encodeURIComponent(id)}/audits`);
+      const items = j.items || j || [];
+      lastAudits = items;
+      const filtered = kind ? items.filter(it => (it.kind||'') === kind) : items;
+      if (!filtered.length) { baList.textContent = '无数据'; return; }
+      const rows = filtered.map(it => {
+        let summary = '';
+        try {
+          const snap = typeof it.snapshot === 'string' ? JSON.parse(it.snapshot) : (it.snapshot||{});
+          if (it.kind === 'other') {
+            summary = (snap.type || '') + (snap.actionIndex!==undefined?` #${snap.actionIndex}`:'');
+          } else if (it.kind === 'before') {
+            const ac = Array.isArray(snap.actions) ? snap.actions.length : 0;
+            summary = `plan actions=${ac}`;
+          } else if (it.kind === 'after') {
+            summary = snap.summary && snap.summary.status ? `status=${snap.summary.status}` : '';
+          } else if (it.kind === 'rollback' || it.kind === 'rollback_exec') {
+            summary = snap.status ? `status=${snap.status}` : '';
+          }
+        } catch {}
+        const when = it.createdAt ? new Date(it.createdAt).toLocaleString() : '';
+        return `<tr><td>${it.kind}</td><td>${when}</td><td>${summary||'-'}</td></tr>`;
+      }).join('');
+      baList.innerHTML = '<table><thead><tr><th>Kind</th><th>Time</th><th>Summary</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    } catch (e) {
+      baList.textContent = e.message;
+    }
+  }
+  if (baListLoadBtn) baListLoadBtn.onclick = loadAuditsList;
+  if (baListExportBtn) {
+    baListExportBtn.onclick = () => {
+      const s = JSON.stringify(lastAudits||[], null, 2);
+      downloadFile('bulk-audits.json', 'application/json', s);
+    };
+  }
+  const baListExportCsvBtn = document.getElementById('baListExportCsvBtn');
+  if (baListExportCsvBtn) {
+    baListExportCsvBtn.onclick = () => {
+      const items = lastAudits || [];
+      if (!items.length) { alert('暂无可导出的审计记录'); return; }
+      let csv = 'kind,createdAt,summary\n';
+      const toSummary = (it) => {
+        try {
+          const snap = typeof it.snapshot === 'string' ? JSON.parse(it.snapshot) : (it.snapshot||{});
+          if (it.kind === 'other') { return (snap.type||'') + (snap.actionIndex!==undefined?` #${snap.actionIndex}`:''); }
+          if (it.kind === 'before') { const ac = Array.isArray(snap.actions)?snap.actions.length:0; return `plan actions=${ac}`; }
+          if (it.kind === 'after') { return snap.summary && snap.summary.status ? `status=${snap.summary.status}` : ''; }
+          if (it.kind === 'rollback' || it.kind === 'rollback_exec') { return snap.status ? `status=${snap.status}` : ''; }
+        } catch {}
+        return '';
+      };
+      items.forEach(it => {
+        const line = [it.kind||'', (it.createdAt||''), toSummary(it)].map(v=>JSON.stringify(v??'' )).join(',');
+        csv += line + '\n';
+      });
+      downloadFile('bulk-audits.csv', 'text/csv', csv);
+    };
+  }
 })();

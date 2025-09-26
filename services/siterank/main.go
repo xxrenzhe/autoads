@@ -55,6 +55,12 @@ type SimilarWebResponse struct {
     CountryRank int `json:"country_rank"`
     CategoryRank int `json:"category_rank"`
     TotalVisits float64 `json:"total_visits"`
+    // Optional fields if available from endpoint or alternate sources
+    TopCountries []string `json:"top_countries,omitempty"`
+    CountryShares []struct{
+        Country string  `json:"country"`
+        Share   float64 `json:"share"`
+    } `json:"country_shares,omitempty"`
 }
 
 // ResolveOfferResult is returned by browser-exec /resolve-offer
@@ -939,12 +945,79 @@ func (s *Server) fetchSimilarWebMetrics(ctx context.Context, host, country strin
         }()
     }
     r1 := <-ch
-    if r1.ok && r1.sw != nil { return r1.sw, true }
+    if r1.ok && r1.sw != nil {
+        s.tryAugmentCountry(ctx, host, r1.sw)
+        return r1.sw, true
+    }
     if beURL == "" { return nil, false }
     r2 := <-ch
-    if r2.ok && r2.sw != nil { return r2.sw, true }
+    if r2.ok && r2.sw != nil {
+        s.tryAugmentCountry(ctx, host, r2.sw)
+        return r2.sw, true
+    }
     return nil, false
 }
+
+// tryAugmentCountry attempts to fill TopCountries/CountryShares if SIMILARWEB_GEO_URL is configured.
+func (s *Server) tryAugmentCountry(ctx context.Context, host string, sw *SimilarWebResponse) {
+    if sw == nil { return }
+    if len(sw.TopCountries) > 0 || len(sw.CountryShares) > 0 { return }
+    geoTpl := strings.TrimSpace(os.Getenv("SIMILARWEB_GEO_URL"))
+    if geoTpl == "" { return }
+    geoURL := fmt.Sprintf(geoTpl, host)
+    headers := map[string]string{"User-Agent": defaultUA()}
+    if h := strings.TrimSpace(os.Getenv("SIMILARWEB_USER_AGENT")); h != "" { headers["User-Agent"] = h }
+    // Try direct first, then browser as fallback
+    var body string
+    var ok bool
+    // small timeout for geo fetch
+    ctx2, cancel := context.WithTimeout(ctx, 2500*time.Millisecond)
+    defer cancel()
+    var tmp map[string]any
+    // direct
+    if err := s.httpClient.GetJSONWithHeaders(ctx2, geoURL, headers, 1, &tmp); err == nil {
+        body = mustJSON(tmp); ok = true
+    } else if strings.TrimSpace(os.Getenv("BROWSER_EXEC_URL")) != "" {
+        if txt, good := fetchBrowserJSON(ctx2, geoURL, headers); good { body = txt; ok = true }
+    }
+    if !ok || strings.TrimSpace(body) == "" { return }
+    // Parse flexible shapes
+    type share struct{ Country string `json:"country"`; Share float64 `json:"share"` }
+    var parsed map[string]any
+    if json.Unmarshal([]byte(body), &parsed) != nil { return }
+    // country_shares: prefer explicit array of {country,share}
+    if v, ok := parsed["country_shares"]; ok {
+        if arr, ok2 := v.([]any); ok2 {
+            out := make([]struct{ Country string `json:"country"`; Share float64 `json:"share"` }, 0, len(arr))
+            tops := make([]string, 0, 5)
+            for _, it := range arr {
+                if m, ok3 := it.(map[string]any); ok3 {
+                    c, _ := m["country"].(string)
+                    sh, _ := m["share"].(float64)
+                    if c != "" { out = append(out, struct{ Country string `json:"country"`; Share float64 `json:"share"` }{Country: strings.ToUpper(c), Share: sh}) }
+                }
+            }
+            // build top list by share desc (best-effort)
+            // simple selection up to 5 without sorting fully
+            for i := 0; i < 5 && i < len(out); i++ { tops = append(tops, out[i].Country) }
+            if len(out) > 0 {
+                sw.CountryShares = out
+                if len(sw.TopCountries) == 0 { sw.TopCountries = tops }
+                return
+            }
+        }
+    }
+    // top_countries as []string
+    if v, ok := parsed["top_countries"]; ok {
+        if arr, ok2 := v.([]any); ok2 {
+            tops := make([]string, 0, len(arr))
+            for _, it := range arr { if s, ok3 := it.(string); ok3 && s != "" { tops = append(tops, strings.ToUpper(s)) } }
+            if len(tops) > 0 { sw.TopCountries = tops }
+        }
+    }
+}
+
+func mustJSON(v any) string { b, _ := json.Marshal(v); return string(b) }
 
 // computeSimilarity calculates score (0..100) per simplified rules.
 func computeSimilarity(seed, cand string, s1, s2 *SimilarWebResponse, country string) (float64, map[string]any) {
@@ -982,8 +1055,36 @@ func computeSimilarity(seed, cand string, s1, s2 *SimilarWebResponse, country st
         return score
     }(s1, s2)
 
-    // 3) Country overlap (20%) — simplified: award if provided and non-empty
-    countryScore := func(c string) float64 { if strings.TrimSpace(c) != "" { return 20.0 }; return 0 }(country)
+    // 3) Country overlap (20%) — prefer overlap via SimilarWeb metrics; fallback: provided country implies full score
+    countryScore, countryDetail := func(c string, a, b *SimilarWebResponse) (score float64, detail any) {
+        // Build sets
+        setFrom := func(sw *SimilarWebResponse) map[string]struct{} {
+            m := map[string]struct{}{}
+            if sw == nil { return m }
+            for _, cc := range sw.TopCountries { if cc != "" { m[strings.ToUpper(cc)] = struct{}{} } }
+            for _, kv := range sw.CountryShares { if kv.Country != "" { m[strings.ToUpper(kv.Country)] = struct{}{} } }
+            return m
+        }
+        A := setFrom(a)
+        B := setFrom(b)
+        // If both have distributions, compute Jaccard*20
+        if len(A) > 0 && len(B) > 0 {
+            inter := 0
+            uni := map[string]struct{}{}
+            for k := range A { uni[k] = struct{}{} }
+            for k := range B { uni[k] = struct{}{} }
+            for k := range A { if _, ok := B[k]; ok { inter++ } }
+            if len(uni) == 0 { return 0, map[string]any{"overlap": []string{}} }
+            // collect overlap list (up to 5)
+            ol := []string{}
+            for k := range A { if _, ok := B[k]; ok { if len(ol) < 5 { ol = append(ol, k) } } }
+            s := (float64(inter) / float64(len(uni))) * 20.0
+            return s, map[string]any{"overlap": ol}
+        }
+        // Fallback: if request specifies a country, award full score (keeps previous behavior)
+        if strings.TrimSpace(c) != "" { return 20.0, map[string]any{"hint": strings.ToUpper(c)} }
+        return 0, nil
+    }(country, s1, s2)
 
     // 4) Category match (25%) — simplified: both have category_rank > 0
     cat := func(a, b *SimilarWebResponse) float64 {
@@ -993,7 +1094,25 @@ func computeSimilarity(seed, cand string, s1, s2 *SimilarWebResponse, country st
 
     total := kwScore + traffic + countryScore + cat
     if total > 100 { total = 100 }
-    return total, map[string]any{"keyword": kwScore, "traffic": traffic, "country": countryScore, "category": cat}
+    // Build a short human-readable reason for UI display (fits D1.4 需求：评分详情与推荐理由)
+    reasons := make([]string, 0, 4)
+    if kwScore > 0 { reasons = append(reasons, "域名关键词匹配") }
+    if traffic > 0 { reasons = append(reasons, "流量规模相近") }
+    if cat > 0 { reasons = append(reasons, "行业分类相近") }
+    if countryScore > 0 {
+        if strings.TrimSpace(country) != "" { reasons = append(reasons, "目标国家一致/覆盖") } else { reasons = append(reasons, "国家分布有重叠") }
+    }
+    reason := strings.Join(reasons, " · ")
+    if reason == "" { reason = "基础条件较弱，建议人工复核" }
+    out := map[string]any{
+        "keyword":  kwScore,
+        "traffic":  traffic,
+        "country":  countryScore,
+        "category": cat,
+        "reason":   reason,
+    }
+    if countryDetail != nil { out["countryDetail"] = countryDetail }
+    return total, out
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {

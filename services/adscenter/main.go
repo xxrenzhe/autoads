@@ -13,6 +13,7 @@ import (
     // unified auth via pkg/middleware.AuthMiddleware
     adscfg "github.com/xxrenzhe/autoads/services/adscenter/internal/config"
     "github.com/xxrenzhe/autoads/services/adscenter/internal/preflight"
+    exectr "github.com/xxrenzhe/autoads/services/adscenter/internal/executor"
     adsstub "github.com/xxrenzhe/autoads/services/adscenter/internal/ads"
     "github.com/xxrenzhe/autoads/services/adscenter/internal/storage"
     adsconfig "github.com/xxrenzhe/autoads/services/adscenter/internal/config"
@@ -27,6 +28,7 @@ import (
     "golang.org/x/oauth2"
     "golang.org/x/oauth2/google"
     tokencrypto "github.com/xxrenzhe/autoads/services/adscenter/internal/crypto"
+    ratelimit "github.com/xxrenzhe/autoads/services/adscenter/internal/ratelimit"
     "cloud.google.com/go/firestore"
     "github.com/go-chi/chi/v5"
     api "github.com/xxrenzhe/autoads/services/adscenter/internal/oapi"
@@ -57,6 +59,43 @@ func writeJSON(w http.ResponseWriter, code int, v interface{}) {
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(code)
     _ = json.NewEncoder(w).Encode(v)
+}
+
+// --- Global limiters for execute paths (mutate) ---
+var (
+    execKeyedOnce sync.Once
+    execKeyedMgr *ratelimit.KeyedManager
+    execGlobalOnce sync.Once
+    execGlobalLimiter *ratelimit.Limiter
+)
+
+func getExecKeyedMgr(ctx context.Context) *ratelimit.KeyedManager {
+    execKeyedOnce.Do(func(){
+        pol := ratelimit.LoadPolicy(ctx)
+        ttl := time.Duration(pol.KeyTTLSeconds) * time.Second
+        if ttl <= 0 { ttl = time.Hour }
+        if pol.MaxKeys <= 0 { pol.MaxKeys = 1000 }
+        execKeyedMgr = ratelimit.NewKeyedManager(ttl, pol.MaxKeys)
+    })
+    return execKeyedMgr
+}
+
+func getExecGlobalLimiter() *ratelimit.Limiter {
+    execGlobalOnce.Do(func(){
+        rpm := getEnvInt("ADS_RATE_LIMIT_RPM", 60)
+        conc := getEnvInt("ADS_CONCURRENCY_MAX", 4)
+        l := ratelimit.NewLimiter(rpm, conc)
+        l.Start()
+        execGlobalLimiter = l
+    })
+    return execGlobalLimiter
+}
+
+func getEnvInt(k string, def int) int {
+    v := strings.TrimSpace(os.Getenv(k))
+    if v == "" { return def }
+    if n, err := strconv.Atoi(v); err == nil { return n }
+    return def
 }
 
 // accountsHandler returns the list of accessible customer resource names for the current user.
@@ -165,8 +204,10 @@ func (s *Server) preflightHandler(w http.ResponseWriter, r *http.Request) {
     var client preflight.LiveClient
     // Live only if env enables AND not validateOnly
     if flags.EnableLive && !req.ValidateOnly {
-        // By default, use stub; live implementation provided under build tag 'ads_live'
-        client = adsstub.NewClientStub()
+        // 默认使用 stub；当启用 ads_live 构建标签时，NewClient 返回真实客户端
+        baseClient := adsstub.NewClientStub()
+        // 包一层速率限制与指数退避
+        client = preflight.WrapWithThrottle(baseClient)
     }
 
     // Short cache by user + account
@@ -179,6 +220,16 @@ func (s *Server) preflightHandler(w http.ResponseWriter, r *http.Request) {
     }
     s.pcMu.RUnlock()
 
+    // Per-user/plan/action 限流参数注入（仅 LIVE 路径）
+    // Key: userId:actionType[:accountId]
+    if client != nil {
+        plan := ratelimit.ResolveUserPlan(r.Context(), uid)
+        pol := ratelimit.LoadPolicy(r.Context())
+        rl := pol.For(plan, "preflight")
+        key := uid + ":preflight"
+        if strings.TrimSpace(req.AccountID) != "" { key += ":" + strings.TrimSpace(req.AccountID) }
+        ctx = ratelimit.WithParams(ctx, ratelimit.RateParams{Key: key, RPM: rl.RPM, Concurrency: rl.Concurrency})
+    }
     // Run checks with timeout guard
     ctx, cancel := context.WithTimeout(ctx, time.Duration(adscfg.LoadPrecheckFlags().TotalTimeoutMS)*time.Millisecond)
     defer cancel()
@@ -344,16 +395,70 @@ func (s *Server) diagnoseExecuteHandler(w http.ResponseWriter, r *http.Request) 
     db, err := sql.Open("postgres", dbURL)
     if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_OPEN_FAILED", "db open failed", map[string]string{"error": err.Error()}); return }
     defer db.Close()
+    // Enforce per-plan daily quota before creating an operation
+    planName := ratelimit.ResolveUserPlan(r.Context(), uid)
+    pol := ratelimit.LoadPolicy(r.Context())
+    if daily := pol.QuotaDailyFor(planName); daily > 0 {
+        usage := 0
+        _ = db.QueryRow(`SELECT COUNT(1) FROM "BulkActionOperation" WHERE user_id=$1 AND created_at::date = CURRENT_DATE`, uid).Scan(&usage)
+        if usage >= daily {
+            apperr.Write(w, r, http.StatusTooManyRequests, "QUOTA_EXCEEDED", "daily quota exceeded", map[string]string{"plan": planName})
+            return
+        }
+    }
     _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionOperation"(id TEXT PRIMARY KEY, user_id TEXT, plan JSONB, status TEXT, created_at TIMESTAMPTZ DEFAULT now(), updated_at TIMESTAMPTZ DEFAULT now());`)
     _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionAudit"(id BIGSERIAL PRIMARY KEY, op_id TEXT NOT NULL, user_id TEXT NOT NULL, kind TEXT NOT NULL, snapshot JSONB NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());`)
     planBytes, _ := json.Marshal(plan)
     opID := strings.ReplaceAll(time.Now().UTC().Format("20060102150405.000000000"), ".", "")
     _, _ = db.Exec(`INSERT INTO "BulkActionOperation"(id, user_id, plan, status) VALUES ($1,$2,$3,'queued')`, opID, uid, string(planBytes))
     _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'before',$3::jsonb)`, opID, uid, string(planBytes))
-    // async update to running->completed and write after snapshot
+    // shard planning
+    _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionShard"(
+        id BIGSERIAL PRIMARY KEY,
+        op_id TEXT NOT NULL,
+        seq INT NOT NULL,
+        actions JSONB NOT NULL,
+        status TEXT NOT NULL DEFAULT 'queued',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`)
+    if len(plan.Actions) > 0 {
+        batchSize := 20
+        if v := strings.TrimSpace(os.Getenv("ADS_MUTATE_BATCH_SIZE")); v != "" {
+            if n, err := strconv.Atoi(v); err == nil && n > 0 { batchSize = n }
+        }
+        total := len(plan.Actions)
+        if total > batchSize {
+            shards := 0
+            for i := 0; i < total; i += batchSize {
+                j := i + batchSize
+                if j > total { j = total }
+                part := plan.Actions[i:j]
+                pb, _ := json.Marshal(map[string]any{"actions": part})
+                _, _ = db.Exec(`INSERT INTO "BulkActionShard"(op_id, seq, actions, status) VALUES ($1,$2,$3,'queued')`, opID, shards, string(pb))
+                shards++
+            }
+            sp := map[string]any{"kind": "shard_plan", "batchSize": batchSize, "shards": shards, "totalActions": total}
+            sb, _ := json.Marshal(sp)
+            _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'other',$3::jsonb)`, opID, uid, string(sb))
+        }
+    }
+    // async update to running->completed with shard simulation
     go func(opId, user string) {
         time.Sleep(300 * time.Millisecond)
         _, _ = db.Exec(`UPDATE "BulkActionOperation" SET status='running', updated_at=NOW() WHERE id=$1`, opId)
+        rows, err := db.Query(`SELECT id, seq FROM "BulkActionShard" WHERE op_id=$1 ORDER BY seq ASC`, opId)
+        if err == nil {
+            for rows.Next() {
+                var shardID int64; var seq int
+                if err := rows.Scan(&shardID, &seq); err == nil {
+                    _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='running', updated_at=NOW() WHERE id=$1`, shardID)
+                    time.Sleep(200 * time.Millisecond)
+                    _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='completed', updated_at=NOW() WHERE id=$1`, shardID)
+                }
+            }
+            rows.Close()
+        }
         // simulate after snapshot
         snap := map[string]any{"executed": len(plan.Actions)}
         b, _ := json.Marshal(snap)
@@ -404,6 +509,15 @@ func (s *Server) diagnoseMetricsHandler(w http.ResponseWriter, r *http.Request) 
     accountID := strings.TrimSpace(r.URL.Query().Get("accountId"))
     if accountID == "" { accountID = uid }
     if live {
+        // per-user plan limiter（action=diagnose）
+        plan := ratelimit.ResolveUserPlan(r.Context(), uid)
+        pol := ratelimit.LoadPolicy(r.Context())
+        rl := pol.For(plan, "diagnose")
+        km := getExecKeyedMgr(r.Context())
+        if km != nil {
+            if rel, err := km.Get(uid+":diagnose", rl.RPM, rl.Concurrency).Acquire(r.Context()); err == nil { defer rel() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
+        }
+        if relG, err := getExecGlobalLimiter().Acquire(r.Context()); err == nil { defer relG() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
         // Attempt Live client; fallback to stub if build tag not enabled or errors occur.
         cfgAds, _ := adscfg.LoadAdsCreds(r.Context())
         // Try user-level refresh token for better permissions
@@ -652,6 +766,15 @@ func (s *Server) mccLinkHandler(w http.ResponseWriter, r *http.Request) {
         _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "MccLink"(user_id TEXT NOT NULL, customer_id TEXT NOT NULL, status TEXT NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (user_id, customer_id))`)
     }
     if strings.EqualFold(strings.TrimSpace(os.Getenv("ADS_MCC_ENABLE_LIVE")), "true") {
+        // per-user plan limiter（action=mcc）
+        plan := ratelimit.ResolveUserPlan(r.Context(), uid)
+        pol := ratelimit.LoadPolicy(r.Context())
+        rl := pol.For(plan, "mcc")
+        km := getExecKeyedMgr(r.Context())
+        if km != nil {
+            if rel, err := km.Get(uid+":mcc", rl.RPM, rl.Concurrency).Acquire(r.Context()); err == nil { defer rel() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
+        }
+        if relG, err := getExecGlobalLimiter().Acquire(r.Context()); err == nil { defer relG() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
         cfg, _ := adscfg.LoadAdsCreds(r.Context())
         client, err := adsstub.NewClient(r.Context(), adsstub.LiveConfig{
             DeveloperToken: cfg.DeveloperToken,
@@ -677,6 +800,15 @@ func (s *Server) mccStatusHandler(w http.ResponseWriter, r *http.Request) {
     customerID := r.URL.Query().Get("customerId")
     if strings.TrimSpace(customerID) == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "customerId required", nil); return }
     if strings.EqualFold(strings.TrimSpace(os.Getenv("ADS_MCC_ENABLE_LIVE")), "true") {
+        // per-user plan limiter（action=mcc）
+        plan := ratelimit.ResolveUserPlan(r.Context(), uid)
+        pol := ratelimit.LoadPolicy(r.Context())
+        rl := pol.For(plan, "mcc")
+        km := getExecKeyedMgr(r.Context())
+        if km != nil {
+            if rel, err := km.Get(uid+":mcc", rl.RPM, rl.Concurrency).Acquire(r.Context()); err == nil { defer rel() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
+        }
+        if relG, err := getExecGlobalLimiter().Acquire(r.Context()); err == nil { defer relG() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
         cfg, _ := adscfg.LoadAdsCreds(r.Context())
         client, err := adsstub.NewClient(r.Context(), adsstub.LiveConfig{
             DeveloperToken: cfg.DeveloperToken,
@@ -848,6 +980,11 @@ func jaccard(a []string, b []string) float64 {
     if denom <= 0 { return 0 }
     return float64(inter)/denom
 }
+func toString(v interface{}) string { if s, ok := v.(string); ok { return s }; return "" }
+func toMap(v interface{}) map[string]interface{} { if m, ok := v.(map[string]interface{}); ok { return m }; return nil }
+func int64From(v interface{}) int64 { switch t := v.(type) { case float64: return int64(t); case int64: return t; case int: return int64(t); case string: 
+    if n, err := strconv.ParseInt(strings.TrimSpace(t), 10, 64); err == nil { return n } 
+    return 0; default: return 0 } }
 func brandFromTokens(tokens []string) string {
     if len(tokens)==0 { return "" }
     // heuristic: last token as brand
@@ -1037,9 +1174,55 @@ func bulkActionsHandler(w http.ResponseWriter, r *http.Request) {
                     return
                 }
             }
+            // Quota enforcement (per plan) before enqueue
+            planName := ratelimit.ResolveUserPlan(r.Context(), uid)
+            pol := ratelimit.LoadPolicy(r.Context())
+            if daily := pol.QuotaDailyFor(planName); daily > 0 {
+                usage := 0
+                _ = db.QueryRow(`SELECT COUNT(1) FROM "BulkActionOperation" WHERE user_id=$1 AND created_at::date = CURRENT_DATE`, uid).Scan(&usage)
+                if usage >= daily {
+                    _ = db.Close()
+                    apperr.Write(w, r, http.StatusTooManyRequests, "QUOTA_EXCEEDED", "daily quota exceeded", map[string]string{"plan": planName})
+                    return
+                }
+            }
             _, _ = db.Exec(`INSERT INTO "BulkActionOperation"(id, user_id, plan, status) VALUES ($1,$2,$3,'queued')`, id, uid, string(planBytes))
             // write BEFORE snapshot (stub)
             _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'before',$3::jsonb)`, id, uid, string(planBytes))
+            // Optional shard planning for large plans
+            _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionShard"(
+                id BIGSERIAL PRIMARY KEY,
+                op_id TEXT NOT NULL,
+                seq INT NOT NULL,
+                actions JSONB NOT NULL,
+                status TEXT NOT NULL DEFAULT 'queued',
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )`)
+            if body.Actions != nil && len(*body.Actions) > 0 {
+                // batch size via env ADS_MUTATE_BATCH_SIZE (default 20)
+                batchSize := 20
+                if v := strings.TrimSpace(os.Getenv("ADS_MUTATE_BATCH_SIZE")); v != "" {
+                    if n, err := strconv.Atoi(v); err == nil && n > 0 { batchSize = n }
+                }
+                total := len(*body.Actions)
+                if total > batchSize {
+                    // split into shards and persist
+                    shards := 0
+                    for i := 0; i < total; i += batchSize {
+                        j := i + batchSize
+                        if j > total { j = total }
+                        part := (*body.Actions)[i:j]
+                        pb, _ := json.Marshal(map[string]any{"actions": part})
+                        _, _ = db.Exec(`INSERT INTO "BulkActionShard"(op_id, seq, actions, status) VALUES ($1,$2,$3,'queued')`, id, shards, string(pb))
+                        shards++
+                    }
+                    // audit shard plan
+                    sp := map[string]any{"kind": "shard_plan", "batchSize": batchSize, "shards": shards, "totalActions": total}
+                    sb, _ := json.Marshal(sp)
+                    _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'other',$3::jsonb)`, id, uid, string(sb))
+                }
+            }
             // Fine-grained action snapshots (kind=other)
             if body.Actions != nil {
                 for idx, a := range *body.Actions {
@@ -1062,21 +1245,31 @@ func bulkActionsHandler(w http.ResponseWriter, r *http.Request) {
             // simulate progress for demo if enabled
             if strings.EqualFold(strings.TrimSpace(os.Getenv("SIMULATE_BULK_ACTION")), "1") {
                 go func(opId string) {
-                    // best-effort status transitions
-                    time.Sleep(800 * time.Millisecond)
+                    // best-effort status transitions with shard simulation
+                    time.Sleep(500 * time.Millisecond)
                     _, _ = db.Exec(`UPDATE "BulkActionOperation" SET status='running', updated_at=NOW() WHERE id=$1`, opId)
-                    time.Sleep(1200 * time.Millisecond)
+                    // iterate shards if any
+                    rows, err := db.Query(`SELECT id, seq FROM "BulkActionShard" WHERE op_id=$1 ORDER BY seq ASC`, opId)
+                    if err == nil {
+                        for rows.Next() {
+                            var shardID int64; var seq int
+                            if err := rows.Scan(&shardID, &seq); err == nil {
+                                _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='running', updated_at=NOW() WHERE id=$1`, shardID)
+                                time.Sleep(400 * time.Millisecond)
+                                _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='completed', updated_at=NOW() WHERE id=$1`, shardID)
+                            }
+                        }
+                        rows.Close()
+                    }
+                    time.Sleep(500 * time.Millisecond)
                     _, _ = db.Exec(`UPDATE "BulkActionOperation" SET status='completed', updated_at=NOW() WHERE id=$1`, opId)
                     // AFTER snapshot (stub summary)
-                    _ = func() error {
-                        var planTxt string
-                        _ = db.QueryRow(`SELECT plan::text FROM "BulkActionOperation" WHERE id=$1`, opId).Scan(&planTxt)
-                        snap := map[string]any{"summary": map[string]any{"status": "completed"}}
-                        if planTxt != "" { snap["plan"] = json.RawMessage(planTxt) }
-                        b, _ := json.Marshal(snap)
-                        _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'after',$3::jsonb)`, opId, uid, string(b))
-                        return nil
-                    }()
+                    var planTxt string
+                    _ = db.QueryRow(`SELECT plan::text FROM "BulkActionOperation" WHERE id=$1`, opId).Scan(&planTxt)
+                    snap := map[string]any{"summary": map[string]any{"status": "completed"}}
+                    if planTxt != "" { snap["plan"] = json.RawMessage(planTxt) }
+                    b, _ := json.Marshal(snap)
+                    _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'after',$3::jsonb)`, opId, uid, string(b))
                 }(id)
             }
             _ = db.Close()
@@ -1223,6 +1416,17 @@ func main() {
     r.Handle("/api/v1/adscenter/diagnose/plan", middleware.AuthMiddleware(http.HandlerFunc(srv.diagnosePlanHandler)))
     r.Handle("/api/v1/adscenter/diagnose/execute", middleware.AuthMiddleware(http.HandlerFunc(srv.diagnoseExecuteHandler)))
     r.Handle("/api/v1/adscenter/diagnose/metrics", middleware.AuthMiddleware(http.HandlerFunc(srv.diagnoseMetricsHandler)))
+    // Limits info endpoint（非OAS，便于前端获知套餐限流/配额）
+    r.Handle("/api/v1/adscenter/limits/me", middleware.AuthMiddleware(http.HandlerFunc(srv.limitsInfoHandler)))
+    // Internal worker endpoints (requires auth)
+    r.Handle("/api/v1/adscenter/bulk-actions/{id}/execute-next", middleware.AuthMiddleware(http.HandlerFunc(srv.executeNextShardHandler)))
+    r.Handle("/api/v1/adscenter/bulk-actions/execute-tick", middleware.AuthMiddleware(http.HandlerFunc(srv.executeTickHandler)))
+    r.Handle("/api/v1/adscenter/bulk-actions/{id}/shards", middleware.AuthMiddleware(http.HandlerFunc(srv.listShardsHandler)))
+    r.Handle("/api/v1/adscenter/bulk-actions/{id}/snapshots", middleware.AuthMiddleware(http.HandlerFunc(srv.listSnapshotsHandler)))
+    r.Handle("/api/v1/adscenter/bulk-actions/{id}/snapshot-aggregate", middleware.AuthMiddleware(http.HandlerFunc(srv.listSnapshotAggregateHandler)))
+    r.Handle("/api/v1/adscenter/bulk-actions/{id}/deadletters", middleware.AuthMiddleware(http.HandlerFunc(srv.listDeadLettersHandler)))
+    r.Handle("/api/v1/adscenter/bulk-actions/{id}/deadletters/{dlid}/retry", middleware.AuthMiddleware(http.HandlerFunc(srv.retryDeadLetterHandler)))
+    r.Handle("/api/v1/adscenter/bulk-actions/{id}/deadletters/retry-batch", middleware.AuthMiddleware(http.HandlerFunc(srv.retryDeadLetterBatchHandler)))
     // Keywords expansion (rule-based, no Ads API)
     r.Handle("/api/v1/adscenter/keywords/expand", middleware.AuthMiddleware(http.HandlerFunc(srv.keywordsExpandHandler)))
     // Bulk audits & rollback (stubs)
@@ -1299,7 +1503,105 @@ func (h *oasImpl) GetRollbackPlan(w http.ResponseWriter, r *http.Request, id str
         if err == sql.ErrNoRows { apperr.Write(w, r, http.StatusNotFound, "NOT_FOUND", "operation not found", nil); return }
         apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return
     }
-    // naive inverse: if type=ADJUST_CPC(±), invert sign or set percent to -percent; for BUDGET reduce 50%; for ROTATE_LINK return empty plan (manual)
+    // 1) 尝试基于执行审计（exec）生成“精准回滚”计划（用 before 快照还原）
+    invPlan := map[string]any{"validateOnly": true}
+    type actionT struct{ Type string; Params map[string]any }
+    precise := make([]actionT, 0)
+    rows, err := db.Query(`SELECT snapshot::text FROM "BulkActionAudit" WHERE op_id=$1 AND kind='exec' ORDER BY id ASC`, id)
+    if err == nil {
+        defer rows.Close()
+        for rows.Next() {
+            var snapTxt string
+            if rows.Scan(&snapTxt) != nil { continue }
+            var snap map[string]any
+            if json.Unmarshal([]byte(snapTxt), &snap) != nil { continue }
+            // expect: { action: {type, params}, result: { details: { before: {...}, targets: [...] } } }
+            act, _ := snap["action"].(map[string]any)
+            t := toString(act["type"])
+            res, _ := snap["result"].(map[string]any)
+            det := toMap(res["details"])
+            if t == "" || det == nil { continue }
+            switch strings.ToUpper(t) {
+            case "ADJUST_CPC":
+                // details.before: { resourceName: cpcMicros }
+                if before := toMap(det["before"]); before != nil {
+                    targets := make([]string, 0, len(before))
+                    var firstVal int64
+                    same := true
+                    idx := 0
+                    for rn, val := range before {
+                        targets = append(targets, rn)
+                        v := int64From(val)
+                        if idx == 0 { firstVal = v } else if v != firstVal { same = false }
+                        idx++
+                    }
+                    if len(targets) > 0 {
+                        if same {
+                            precise = append(precise, actionT{Type: "ADJUST_CPC", Params: map[string]any{"targetResourceNames": targets, "cpcMicros": firstVal}})
+                        } else {
+                            for rn, val := range before {
+                                precise = append(precise, actionT{Type: "ADJUST_CPC", Params: map[string]any{"targetResourceNames": []string{rn}, "cpcMicros": int64From(val)}})
+                            }
+                        }
+                    }
+                }
+            case "ADJUST_BUDGET":
+                if before := toMap(det["before"]); before != nil {
+                    targets := make([]string, 0, len(before))
+                    var firstVal int64
+                    same := true
+                    idx := 0
+                    for rn, val := range before {
+                        targets = append(targets, rn)
+                        v := int64From(val)
+                        if idx == 0 { firstVal = v } else if v != firstVal { same = false }
+                        idx++
+                    }
+                    if len(targets) > 0 {
+                        if same {
+                            precise = append(precise, actionT{Type: "ADJUST_BUDGET", Params: map[string]any{"campaignBudgetResourceNames": targets, "amountMicros": firstVal}})
+                        } else {
+                            for rn, val := range before {
+                                precise = append(precise, actionT{Type: "ADJUST_BUDGET", Params: map[string]any{"campaignBudgetResourceNames": []string{rn}, "amountMicros": int64From(val)}})
+                            }
+                        }
+                    }
+                }
+            case "ROTATE_LINK":
+                // details.before: { resourceName: suffix }
+                if before := toMap(det["before"]); before != nil {
+                    targets := make([]string, 0, len(before))
+                    var firstS string
+                    same := true
+                    idx := 0
+                    for rn, val := range before {
+                        s := toString(val)
+                        targets = append(targets, rn)
+                        if idx == 0 { firstS = s } else if s != firstS { same = false }
+                        idx++
+                    }
+                    if len(targets) > 0 {
+                        if same {
+                            precise = append(precise, actionT{Type: "ROTATE_LINK", Params: map[string]any{"adResourceNames": targets, "finalUrlSuffix": firstS}})
+                        } else {
+                            for rn, val := range before {
+                                precise = append(precise, actionT{Type: "ROTATE_LINK", Params: map[string]any{"adResourceNames": []string{rn}, "finalUrlSuffix": toString(val)}})
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if len(precise) > 0 {
+        arr := make([]any, 0, len(precise))
+        for _, a := range precise { arr = append(arr, map[string]any{"type": a.Type, "params": a.Params}) }
+        invPlan["actions"] = arr
+        writeJSON(w, http.StatusOK, map[string]any{"plan": invPlan, "source": "exec_audit"})
+        return
+    }
+
+    // 2) 回退：基于原计划生成“启发式逆向计划”（兼容旧逻辑）
     inverse := map[string]any{"validateOnly": true}
     if strings.TrimSpace(planTxt.String) != "" {
         var in map[string]any
@@ -1316,7 +1618,6 @@ func (h *oasImpl) GetRollbackPlan(w http.ResponseWriter, r *http.Request, id str
                 case "ADJUST_BUDGET":
                     if v, ok := params["dailyBudget"].(float64); ok { params["dailyBudget"] = v * 0.5 }
                 case "ROTATE_LINK":
-                    // No automatic inverse; leave empty
                     params = map[string]any{"note": "manual review required"}
                 }
                 inv = append(inv, map[string]any{"type": t, "filter": m["filter"], "params": params})
@@ -1324,7 +1625,7 @@ func (h *oasImpl) GetRollbackPlan(w http.ResponseWriter, r *http.Request, id str
             inverse["actions"] = inv
         }
     }
-    writeJSON(w, http.StatusOK, map[string]any{"plan": inverse})
+    writeJSON(w, http.StatusOK, map[string]any{"plan": inverse, "source": "original_plan"})
 }
 // GET /api/v1/adscenter/audits
 func (h *oasImpl) ListAuditEvents(w http.ResponseWriter, r *http.Request, params api.ListAuditEventsParams) {
@@ -1468,11 +1769,11 @@ func (h *oasImpl) GetRollbackReport(w http.ResponseWriter, r *http.Request, id s
     if params.Kind != nil { kind = strings.TrimSpace(string(*params.Kind)) }
     q := `SELECT kind, snapshot::text, created_at FROM "BulkActionAudit" WHERE op_id=$1 AND user_id=$2`
     args := []any{id, uid}
-    if kind == "rollback" || kind == "rollback_exec" {
+    if kind == "rollback" || kind == "rollback_exec" || kind == "after" {
         q += ` AND kind=$3`
         args = append(args, kind)
     } else {
-        q += ` AND kind IN ('rollback','rollback_exec')`
+        q += ` AND kind IN ('rollback','rollback_exec','after')`
     }
     q += ` ORDER BY created_at ASC`
     rows, err := db.QueryContext(r.Context(), q, args...)
@@ -1532,16 +1833,22 @@ func (h *oasImpl) ValidateBulkActions(w http.ResponseWriter, r *http.Request) {
         // generic hints
         if _, ok := a["filter"].(map[string]any); !ok { warns = append(warns, fmt.Sprintf("actions[%d]: filter missing (may affect many entities)", i)); addV("FILTER_MISSING","warn","filter missing (may affect many entities)", i, "filter") }
     }
-    // Quota & rate-limit checks (env-driven)
-    getInt := func(k string) (int, bool) { if v := strings.TrimSpace(os.Getenv(k)); v != "" { if n, err := strconv.Atoi(v); err == nil { return n, true } }; return 0, false }
-    if quota, ok := getInt("ADS_QUOTA_DAILY"); ok {
-        usage, _ := getInt("ADS_USAGE_TODAY")
-        if usage >= quota { errs = append(errs, "daily quota exceeded"); addV("QUOTA_EXCEEDED","error","daily quota exceeded", -1, "quota") }
-        if usage > int(float64(quota)*0.8) && usage < quota { warns = append(warns, "daily quota near limit"); addV("QUOTA_NEAR_LIMIT","warn","daily quota near 80%", -1, "quota") }
-    }
-    if limit, ok := getInt("ADS_RATE_LIMIT_RPM"); ok {
-        rpm, _ := getInt("ADS_CURRENT_RPM")
-        if rpm > limit { errs = append(errs, "rate limit exceeded (rpm)"); addV("RATE_LIMIT","error","rate per minute exceeded", -1, "rpm") } else if rpm > int(float64(limit)*0.8) { warns = append(warns, "rate near limit"); addV("RATE_NEAR_LIMIT","warn","rate per minute near 80%", -1, "rpm") }
+    // Quota（按套餐）：读取用户套餐的每日配额，并基于今日使用量给出告警/错误
+    if uid, _ := r.Context().Value(middleware.UserIDKey).(string); uid != "" {
+        plan := ratelimit.ResolveUserPlan(r.Context(), uid)
+        pol := ratelimit.LoadPolicy(r.Context())
+        if daily := pol.QuotaDailyFor(plan); daily > 0 {
+            // 估算今日使用量：按用户统计今日创建的 BulkActionOperation 数
+            usage := 0
+            if dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL")); dbURL != "" {
+                if db2, err := sql.Open("postgres", dbURL); err == nil {
+                    defer db2.Close()
+                    _ = db2.QueryRow(`SELECT COUNT(1) FROM "BulkActionOperation" WHERE user_id=$1 AND created_at::date = CURRENT_DATE`, uid).Scan(&usage)
+                }
+            }
+            if usage >= daily { errs = append(errs, "daily quota exceeded"); addV("QUOTA_EXCEEDED","error","daily quota exceeded", -1, "quota.daily") }
+            if usage > int(float64(daily)*0.8) && usage < daily { warns = append(warns, "daily quota near limit"); addV("QUOTA_NEAR_LIMIT","warn","daily quota near 80%", -1, "quota.daily") }
+        }
     }
     // naive estimatedAffected: per action baseline 10，ADJUST_BUDGET=15，ROTATE_LINK=8
     est := 0
@@ -1603,25 +1910,7 @@ func (h *oasImpl) GetBulkAction(w http.ResponseWriter, r *http.Request, id strin
 }
 
 // GET /api/v1/adscenter/bulk-actions/{id}/report
-func (h *oasImpl) GetRollbackReport(w http.ResponseWriter, r *http.Request, id string, params api.GetRollbackReportParams) {
-    dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
-    if dbURL == "" { apperr.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "DATABASE_URL not set", nil); return }
-    db, err := sql.Open("postgres", dbURL)
-    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_OPEN_FAILED", "db open failed", map[string]string{"error": err.Error()}); return }
-    defer db.Close()
-    kind := "rollback"
-    if params.Kind != nil && *params.Kind != "" { kind = string(*params.Kind) }
-    rows, err := db.Query(`SELECT snapshot::text, created_at FROM "BulkActionAudit" WHERE op_id=$1 AND kind=$2 ORDER BY created_at`, id, kind)
-    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
-    defer rows.Close()
-    type item struct{ Snapshot json.RawMessage `json:"snapshot"`; CreatedAt time.Time `json:"createdAt"` }
-    out := make([]item, 0, 50)
-    for rows.Next() {
-        var snapTxt string; var created time.Time
-        if err := rows.Scan(&snapTxt, &created); err == nil { out = append(out, item{Snapshot: json.RawMessage(snapTxt), CreatedAt: created}) }
-    }
-    writeJSON(w, http.StatusOK, map[string]any{"items": out, "kind": kind})
-}
+// duplicate GetRollbackReport removed; unified implementation above uses h.srv.db and supports kind filter including rollback_exec
 // GET /api/v1/adscenter/mcc/links
 func (h *oasImpl) ListMccLinks(w http.ResponseWriter, r *http.Request, params api.ListMccLinksParams) {
     uid, _ := r.Context().Value(middleware.UserIDKey).(string)
@@ -1717,4 +2006,563 @@ func (s *Server) expandKeywordsHandler(w http.ResponseWriter, r *http.Request) {
     if len(items) > 20 { items = items[:20] }
     w.Header().Set("Content-Type", "application/json")
     _ = json.NewEncoder(w).Encode(struct{ Items []idea `json:"items"` }{Items: items})
+}
+
+// executeNextShardHandler picks the next queued shard for a bulk operation and executes it (stub),
+// emitting fine-grained audits and updating shard/operation status.
+// POST /api/v1/adscenter/bulk-actions/{id}/execute-next
+func (s *Server) executeNextShardHandler(w http.ResponseWriter, r *http.Request) {
+    uidRaw := r.Context().Value(middleware.UserIDKey)
+    uid, _ := uidRaw.(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    // get op id
+    id := ""
+    parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/adscenter/bulk-actions/"), "/")
+    if len(parts) >= 2 { id = parts[0] }
+    if id == "" { id = strings.TrimSpace(r.URL.Query().Get("id")) }
+    if id == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "operationId required", nil); return }
+    dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+    if dbURL == "" { apperr.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "DATABASE_URL not set", nil); return }
+    db, err := sql.Open("postgres", dbURL)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_OPEN_FAILED", "db open failed", map[string]string{"error": err.Error()}); return }
+    defer db.Close()
+    // ensure tables
+    _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionOperation"(id TEXT PRIMARY KEY, user_id TEXT, plan JSONB, status TEXT, created_at TIMESTAMPTZ DEFAULT now(), updated_at TIMESTAMPTZ DEFAULT now())`)
+    _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionShard"(id BIGSERIAL PRIMARY KEY, op_id TEXT NOT NULL, seq INT NOT NULL, actions JSONB NOT NULL, status TEXT NOT NULL DEFAULT 'queued', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)
+    // pick next queued shard
+    var shardID int64
+    var actionsTxt string
+    err = db.QueryRow(`SELECT id, actions::text FROM "BulkActionShard" WHERE op_id=$1 AND status='queued' ORDER BY seq ASC LIMIT 1`, id).Scan(&shardID, &actionsTxt)
+    if err == sql.ErrNoRows {
+        // nothing to do; if no running shards, finalize operation
+        var cnt int
+        _ = db.QueryRow(`SELECT COUNT(1) FROM "BulkActionShard" WHERE op_id=$1 AND status IN ('queued','running')`, id).Scan(&cnt)
+        if cnt == 0 {
+            _, _ = db.Exec(`UPDATE "BulkActionOperation" SET status='completed', updated_at=NOW() WHERE id=$1`, id)
+        }
+        writeJSON(w, http.StatusOK, map[string]any{"status": "idle", "remaining": cnt})
+        return
+    } else if err != nil {
+        apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return
+    }
+    // mark running
+    _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='running', updated_at=NOW() WHERE id=$1`, shardID)
+    // parse actions JSON
+    var payload struct{ Actions []map[string]any `json:"actions"` }
+    _ = json.Unmarshal([]byte(actionsTxt), &payload)
+    // Apply per-user (owner) plan limiters for mutate
+    var ownerUID string
+    _ = db.QueryRow(`SELECT user_id FROM "BulkActionOperation" WHERE id=$1`, id).Scan(&ownerUID)
+    if strings.TrimSpace(ownerUID) != "" {
+        plan := ratelimit.ResolveUserPlan(r.Context(), ownerUID)
+        pol := ratelimit.LoadPolicy(r.Context())
+        rl := pol.For(plan, "mutate")
+        km := getExecKeyedMgr(r.Context())
+        if km != nil {
+            if rel, err := km.Get(ownerUID+":mutate", rl.RPM, rl.Concurrency).Acquire(r.Context()); err == nil { defer rel() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
+        }
+        if relG, err := getExecGlobalLimiter().Acquire(r.Context()); err == nil { defer relG() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
+    }
+    executed := 0
+    errorsN := 0
+    // Prepare executor config with Ads credentials (best-effort)
+    cfgAds, _ := adscfg.LoadAdsCreds(r.Context())
+    // owner refresh token
+    rtEnc, loginCID, _, _ := storage.GetUserRefreshToken(r.Context(), s.db, ownerUID)
+    rt := rtEnc
+    if pt, ok := decryptWithRotation(rtEnc); ok { rt = pt }
+    exec := exectr.New(exectr.Config{
+        BrowserExecURL: strings.TrimSpace(os.Getenv("BROWSER_EXEC_URL")),
+        InternalToken:  strings.TrimSpace(os.Getenv("BROWSER_INTERNAL_TOKEN")),
+        Timeout:        8 * time.Second,
+        ValidateOnly:   false,
+        LiveMutate:     strings.EqualFold(strings.TrimSpace(os.Getenv("ADS_MUTATE_LIVE")), "true"),
+        DeveloperToken: cfgAds.DeveloperToken,
+        OAuthClientID:  cfgAds.OAuthClientID,
+        OAuthClientSecret: cfgAds.OAuthClientSecret,
+        RefreshToken:   rt,
+        LoginCustomerID: func() string { if cfgAds.LoginCustomerID != "" { return cfgAds.LoginCustomerID }; return loginCID }(),
+        CustomerID:     loginCID,
+    })
+    for idx, a := range payload.Actions {
+        act := exectr.Action{Type: toString(a["type"]), Filter: toMap(a["filter"]), Params: toMap(a["params"])}
+        // execute with retry
+        var res exectr.Result
+        err := ratelimit.Retry(r.Context(), 3, 200*time.Millisecond, 1500*time.Millisecond, func(c context.Context) error {
+            rr, e := exec.ExecuteOne(c, act); res = rr; return e
+        })
+        snap := map[string]any{"actionIndex": idx, "action": a, "executedAt": time.Now().UTC(), "result": res}
+        if err != nil || !res.Success { errorsN++ ; snap["status"] = "error"; if err != nil { snap["error"] = err.Error() } } else { executed++; snap["status"] = "ok" }
+        b, _ := json.Marshal(snap)
+        _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'exec',$3::jsonb)`, id, uid, string(b))
+        // write before/after snapshots (best-effort)
+        _ = writeSnapshots(r.Context(), db, id, idx, toString(a["type"]), res)
+        if err != nil || !res.Success {
+            _ = writeDeadLetter(r.Context(), db, id, idx, toString(a["type"]), a, res, err)
+        }
+    }
+    _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='completed', updated_at=NOW() WHERE id=$1`, shardID)
+    // if no remaining shards, finalize operation
+    var remaining int
+    _ = db.QueryRow(`SELECT COUNT(1) FROM "BulkActionShard" WHERE op_id=$1 AND status IN ('queued','running')`, id).Scan(&remaining)
+    if remaining == 0 {
+        _, _ = db.Exec(`UPDATE "BulkActionOperation" SET status='completed', updated_at=NOW() WHERE id=$1`, id)
+        // AFTER snapshot aggregate
+        snap := map[string]any{"summary": map[string]any{"status": "completed"}}
+        b, _ := json.Marshal(snap)
+        _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'after',$3::jsonb)`, id, uid, string(b))
+    }
+    writeJSON(w, http.StatusOK, map[string]any{"processedShard": shardID, "executed": executed, "errors": errorsN, "remaining": remaining})
+}
+
+// executeTickHandler picks up to ?max=N queued shards across all operations and executes them (stub),
+// intended to be triggered by Cloud Scheduler with OIDC.
+// POST /api/v1/adscenter/bulk-actions/execute-tick?max=1
+func (s *Server) executeTickHandler(w http.ResponseWriter, r *http.Request) {
+    uidRaw := r.Context().Value(middleware.UserIDKey)
+    uid, _ := uidRaw.(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    max := 1
+    if v := strings.TrimSpace(r.URL.Query().Get("max")); v != "" {
+        if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 50 { max = n }
+    }
+    dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+    if dbURL == "" { apperr.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "DATABASE_URL not set", nil); return }
+    db, err := sql.Open("postgres", dbURL)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_OPEN_FAILED", "db open failed", map[string]string{"error": err.Error()}); return }
+    defer db.Close()
+    // ensure tables
+    _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionShard"(id BIGSERIAL PRIMARY KEY, op_id TEXT NOT NULL, seq INT NOT NULL, actions JSONB NOT NULL, status TEXT NOT NULL DEFAULT 'queued', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)
+    processed := 0
+    for i := 0; i < max; i++ {
+        var shardID int64
+        var actionsTxt string
+        var opId string
+        err := db.QueryRow(`SELECT id, actions::text, op_id FROM "BulkActionShard" WHERE status='queued' ORDER BY created_at ASC LIMIT 1`).Scan(&shardID, &actionsTxt, &opId)
+        if err == sql.ErrNoRows { break }
+        if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+        // mark running
+        _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='running', updated_at=NOW() WHERE id=$1`, shardID)
+        // parse actions JSON
+        var payload struct{ Actions []map[string]any `json:"actions"` }
+        _ = json.Unmarshal([]byte(actionsTxt), &payload)
+        // per-user plan limiters (mutate)
+        ownerUID := ""
+        if strings.TrimSpace(opId) != "" {
+            
+            _ = db.QueryRow(`SELECT user_id FROM "BulkActionOperation" WHERE id=$1`, opId).Scan(&ownerUID)
+            if strings.TrimSpace(ownerUID) != "" {
+                plan := ratelimit.ResolveUserPlan(r.Context(), ownerUID)
+                pol := ratelimit.LoadPolicy(r.Context())
+                rl := pol.For(plan, "mutate")
+                km := getExecKeyedMgr(r.Context())
+                if km != nil {
+                    if rel, err := km.Get(ownerUID+":mutate", rl.RPM, rl.Concurrency).Acquire(r.Context()); err == nil { defer rel() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
+                }
+                if relG, err := getExecGlobalLimiter().Acquire(r.Context()); err == nil { defer relG() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
+            }
+        }
+        // Prepare executor config with Ads credentials (best-effort per op)
+        cfgAds, _ := adscfg.LoadAdsCreds(r.Context())
+        rtEnc, loginCID, _, _ := storage.GetUserRefreshToken(r.Context(), s.db, ownerUID)
+        rt := rtEnc
+        if pt, ok := decryptWithRotation(rtEnc); ok { rt = pt }
+        exec := exectr.New(exectr.Config{
+            BrowserExecURL: strings.TrimSpace(os.Getenv("BROWSER_EXEC_URL")),
+            InternalToken:  strings.TrimSpace(os.Getenv("BROWSER_INTERNAL_TOKEN")),
+            Timeout:        8 * time.Second,
+            ValidateOnly:   false,
+            LiveMutate:     strings.EqualFold(strings.TrimSpace(os.Getenv("ADS_MUTATE_LIVE")), "true"),
+            DeveloperToken: cfgAds.DeveloperToken,
+            OAuthClientID:  cfgAds.OAuthClientID,
+            OAuthClientSecret: cfgAds.OAuthClientSecret,
+            RefreshToken:   rt,
+            LoginCustomerID: func() string { if cfgAds.LoginCustomerID != "" { return cfgAds.LoginCustomerID }; return loginCID }(),
+            CustomerID:     loginCID,
+        })
+        for idx, a := range payload.Actions {
+            act := exectr.Action{Type: toString(a["type"]), Filter: toMap(a["filter"]), Params: toMap(a["params"])}
+            var res exectr.Result
+            err := ratelimit.Retry(r.Context(), 3, 200*time.Millisecond, 1500*time.Millisecond, func(c context.Context) error { rr, e := exec.ExecuteOne(c, act); res = rr; return e })
+            snap := map[string]any{"actionIndex": idx, "action": a, "executedAt": time.Now().UTC(), "result": res}
+            if err != nil || !res.Success { snap["status"] = "error"; if err != nil { snap["error"] = err.Error() } } else { snap["status"] = "ok" }
+            b, _ := json.Marshal(snap)
+            _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'exec',$3::jsonb)`, opId, uid, string(b))
+            _ = writeSnapshots(r.Context(), db, opId, idx, toString(a["type"]), res)
+            if err != nil || !res.Success {
+                _ = writeDeadLetter(r.Context(), db, opId, idx, toString(a["type"]), a, res, err)
+            }
+        }
+        _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='completed', updated_at=NOW() WHERE id=$1`, shardID)
+        // finalize operation if needed
+        var remaining int
+        _ = db.QueryRow(`SELECT COUNT(1) FROM "BulkActionShard" WHERE op_id=$1 AND status IN ('queued','running')`, opId).Scan(&remaining)
+        if remaining == 0 {
+            _, _ = db.Exec(`UPDATE "BulkActionOperation" SET status='completed', updated_at=NOW() WHERE id=$1`, opId)
+            // AFTER snapshot aggregate
+            snap := map[string]any{"summary": map[string]any{"status": "completed"}}
+            b, _ := json.Marshal(snap)
+            _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'after',$3::jsonb)`, opId, uid, string(b))
+        }
+        processed++
+    }
+    writeJSON(w, http.StatusOK, map[string]any{"processed": processed})
+}
+
+// listShardsHandler returns shard statuses for a given operation id.
+// GET /api/v1/adscenter/bulk-actions/{id}/shards
+func (s *Server) listShardsHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    id := ""
+    parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/adscenter/bulk-actions/"), "/")
+    if len(parts) >= 2 { id = parts[0] }
+    if id == "" { id = strings.TrimSpace(r.URL.Query().Get("id")) }
+    if id == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "operationId required", nil); return }
+    dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+    if dbURL == "" { apperr.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "DATABASE_URL not set", nil); return }
+    db, err := sql.Open("postgres", dbURL)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_OPEN_FAILED", "db open failed", map[string]string{"error": err.Error()}); return }
+    defer db.Close()
+    rows, err := db.Query(`SELECT id, seq, status, updated_at FROM "BulkActionShard" WHERE op_id=$1 ORDER BY seq ASC`, id)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    type shard struct{ ID int64 `json:"id"`; Seq int `json:"seq"`; Status string `json:"status"`; UpdatedAt time.Time `json:"updatedAt"` }
+    out := []shard{}
+    for rows.Next() {
+        var sh shard
+        if err := rows.Scan(&sh.ID, &sh.Seq, &sh.Status, &sh.UpdatedAt); err == nil { out = append(out, sh) }
+    }
+    writeJSON(w, http.StatusOK, map[string]any{"items": out})
+}
+
+// listSnapshotsHandler lists before/after snapshots for an operation.
+// GET /api/v1/adscenter/bulk-actions/{id}/snapshots?kind=before|after
+func (s *Server) listSnapshotsHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    id := ""
+    parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/adscenter/bulk-actions/"), "/")
+    if len(parts) >= 2 { id = parts[0] }
+    if id == "" { id = strings.TrimSpace(r.URL.Query().Get("id")) }
+    if id == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "operationId required", nil); return }
+    dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+    if dbURL == "" { apperr.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "DATABASE_URL not set", nil); return }
+    db, err := sql.Open("postgres", dbURL)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_OPEN_FAILED", "db open failed", map[string]string{"error": err.Error()}); return }
+    defer db.Close()
+    _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionSnapshot"(
+        id BIGSERIAL PRIMARY KEY,
+        op_id TEXT NOT NULL,
+        action_idx INT NOT NULL,
+        action_type TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        snapshot JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`)
+    kind := strings.TrimSpace(r.URL.Query().Get("kind"))
+    q := `SELECT id, action_idx, action_type, kind, snapshot::text, created_at FROM "BulkActionSnapshot" WHERE op_id=$1`
+    args := []any{id}
+    if kind == "before" || kind == "after" {
+        q += ` AND kind=$2`
+        args = append(args, kind)
+    }
+    q += ` ORDER BY id ASC LIMIT 500`
+    rows, err := db.QueryContext(r.Context(), q, args...)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    type item struct{ ID int64 `json:"id"`; ActionIdx int `json:"actionIdx"`; ActionType string `json:"actionType"`; Kind string `json:"kind"`; Snapshot json.RawMessage `json:"snapshot"`; CreatedAt time.Time `json:"createdAt"` }
+    out := []item{}
+    for rows.Next() { var it item; var snapTxt string; if err := rows.Scan(&it.ID, &it.ActionIdx, &it.ActionType, &it.Kind, &snapTxt, &it.CreatedAt); err == nil { it.Snapshot = json.RawMessage(snapTxt); out = append(out, it) } }
+    writeJSON(w, http.StatusOK, map[string]any{"items": out})
+}
+
+// writeSnapshots persists before/after snapshots (best-effort) if present in the result details.
+func writeSnapshots(ctx context.Context, db *sql.DB, opId string, idx int, actionType string, res exectr.Result) error {
+    if db == nil { return nil }
+    // ensure table
+    _, _ = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS "BulkActionSnapshot"(
+        id BIGSERIAL PRIMARY KEY,
+        op_id TEXT NOT NULL,
+        action_idx INT NOT NULL,
+        action_type TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        snapshot JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`)
+    det := toMap(res.Details)
+    if det == nil { return nil }
+    insert := func(kind string, m map[string]any) {
+        for rn, val := range m {
+            snap := map[string]any{"resourceName": rn, "value": val}
+            b, _ := json.Marshal(snap)
+            _, _ = db.ExecContext(ctx, `INSERT INTO "BulkActionSnapshot"(op_id, action_idx, action_type, kind, snapshot) VALUES ($1,$2,$3,$4,$5::jsonb)`, opId, idx, actionType, kind, string(b))
+        }
+    }
+    if b := toMap(det["before"]); b != nil { insert("before", b) }
+    if a := toMap(det["after"]); a != nil { insert("after", a) }
+    return nil
+}
+
+// Dead letters: persist failed actions for later inspection/retry.
+func writeDeadLetter(ctx context.Context, db *sql.DB, opId string, idx int, actionType string, action map[string]any, res exectr.Result, execErr error) error {
+    if db == nil { return nil }
+    _, _ = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS "BulkActionDeadLetter"(
+        id BIGSERIAL PRIMARY KEY,
+        op_id TEXT NOT NULL,
+        action_idx INT NOT NULL,
+        action_type TEXT NOT NULL,
+        error TEXT,
+        action JSONB NOT NULL,
+        result JSONB,
+        retry_count INT NOT NULL DEFAULT 0,
+        retried_at TIMESTAMPTZ NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`)
+    a, _ := json.Marshal(action)
+    r, _ := json.Marshal(res)
+    errMsg := ""
+    if execErr != nil { errMsg = execErr.Error() } else if !res.Success { errMsg = toString(res.Message) }
+    _, _ = db.ExecContext(ctx, `INSERT INTO "BulkActionDeadLetter"(op_id, action_idx, action_type, error, action, result) VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb)`, opId, idx, actionType, errMsg, string(a), string(r))
+    return nil
+}
+
+// listDeadLettersHandler lists dead letters for an operation id.
+func (s *Server) listDeadLettersHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    id := strings.TrimSpace(strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/adscenter/bulk-actions/"), "/")[0])
+    if id == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "operationId required", nil); return }
+    dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+    if dbURL == "" { apperr.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "DATABASE_URL not set", nil); return }
+    db, err := sql.Open("postgres", dbURL)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_OPEN_FAILED", "db open failed", map[string]string{"error": err.Error()}); return }
+    defer db.Close()
+    _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionDeadLetter"(id BIGSERIAL PRIMARY KEY, op_id TEXT NOT NULL, action_idx INT NOT NULL, action_type TEXT NOT NULL, error TEXT, action JSONB NOT NULL, result JSONB, retry_count INT NOT NULL DEFAULT 0, retried_at TIMESTAMPTZ NULL, status TEXT NOT NULL DEFAULT 'pending', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)
+    rows, err := db.QueryContext(r.Context(), `SELECT id, action_idx, action_type, error, action::text, result::text, retry_count, retried_at, status, created_at FROM "BulkActionDeadLetter" WHERE op_id=$1 ORDER BY id ASC LIMIT 500`, id)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    type item struct{ ID int64 `json:"id"`; ActionIdx int `json:"actionIdx"`; ActionType string `json:"actionType"`; Error string `json:"error"`; Action json.RawMessage `json:"action"`; Result json.RawMessage `json:"result"`; RetryCount int `json:"retryCount"`; RetriedAt *time.Time `json:"retriedAt"`; Status string `json:"status"`; CreatedAt time.Time `json:"createdAt"` }
+    out := []item{}
+    for rows.Next() { var it item; var aj, rj string; var retried sql.NullTime; if err := rows.Scan(&it.ID, &it.ActionIdx, &it.ActionType, &it.Error, &aj, &rj, &it.RetryCount, &retried, &it.Status, &it.CreatedAt); err == nil { it.Action = json.RawMessage(aj); it.Result = json.RawMessage(rj); if retried.Valid { t := retried.Time; it.RetriedAt = &t }; out = append(out, it) } }
+    writeJSON(w, http.StatusOK, map[string]any{"items": out})
+}
+
+// retryDeadLetterHandler retries executing a specific dead letter row and updates its status.
+// POST /api/v1/adscenter/bulk-actions/{id}/deadletters/{dlid}/retry
+func (s *Server) retryDeadLetterHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/adscenter/bulk-actions/"), "/")
+    if len(parts) < 4 || parts[2] != "deadletters" || parts[3] == "" || parts[1] == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id/dlid required", nil); return }
+    opId := parts[0]
+    dlid := strings.TrimSpace(parts[3])
+    dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+    if dbURL == "" { apperr.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "DATABASE_URL not set", nil); return }
+    db, err := sql.Open("postgres", dbURL)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_OPEN_FAILED", "db open failed", map[string]string{"error": err.Error()}); return }
+    defer db.Close()
+    // ensure tables
+    _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionDeadLetter"(id BIGSERIAL PRIMARY KEY, op_id TEXT NOT NULL, action_idx INT NOT NULL, action_type TEXT NOT NULL, error TEXT, action JSONB NOT NULL, result JSONB, retry_count INT NOT NULL DEFAULT 0, retried_at TIMESTAMPTZ NULL, status TEXT NOT NULL DEFAULT 'pending', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)
+    var idx int
+    var at, actionJSON string
+    err = db.QueryRowContext(r.Context(), `SELECT action_idx, action_type, action::text FROM "BulkActionDeadLetter" WHERE id=$1 AND op_id=$2`, dlid, opId).Scan(&idx, &at, &actionJSON)
+    if err != nil { if err == sql.ErrNoRows { apperr.Write(w, r, http.StatusNotFound, "NOT_FOUND", "dead letter not found", nil); return } ; apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+    var action map[string]any
+    _ = json.Unmarshal([]byte(actionJSON), &action)
+    // prepare executor
+    ownerUID := ""
+    _ = db.QueryRow(`SELECT user_id FROM "BulkActionOperation" WHERE id=$1`, opId).Scan(&ownerUID)
+    cfgAds, _ := adscfg.LoadAdsCreds(r.Context())
+    rtEnc, loginCID, _, _ := storage.GetUserRefreshToken(r.Context(), s.db, ownerUID)
+    rt := rtEnc
+    if pt, ok := decryptWithRotation(rtEnc); ok { rt = pt }
+    exec := exectr.New(exectr.Config{
+        BrowserExecURL: strings.TrimSpace(os.Getenv("BROWSER_EXEC_URL")),
+        InternalToken:  strings.TrimSpace(os.Getenv("BROWSER_INTERNAL_TOKEN")),
+        Timeout:        8 * time.Second,
+        ValidateOnly:   false,
+        LiveMutate:     strings.EqualFold(strings.TrimSpace(os.Getenv("ADS_MUTATE_LIVE")), "true"),
+        DeveloperToken: cfgAds.DeveloperToken,
+        OAuthClientID:  cfgAds.OAuthClientID,
+        OAuthClientSecret: cfgAds.OAuthClientSecret,
+        RefreshToken:   rt,
+        LoginCustomerID: func() string { if cfgAds.LoginCustomerID != "" { return cfgAds.LoginCustomerID }; return loginCID }(),
+        CustomerID:     loginCID,
+    })
+    // limits (mutate)
+    plan := ratelimit.ResolveUserPlan(r.Context(), ownerUID)
+    pol := ratelimit.LoadPolicy(r.Context())
+    rl := pol.For(plan, "mutate")
+    km := getExecKeyedMgr(r.Context())
+    if km != nil {
+        if rel, e := km.Get(ownerUID+":mutate", rl.RPM, rl.Concurrency).Acquire(r.Context()); e == nil { defer rel() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
+    }
+    if relG, e := getExecGlobalLimiter().Acquire(r.Context()); e == nil { defer relG() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
+    // execute
+    act := exectr.Action{Type: at, Params: toMap(action["params"]), Filter: toMap(action["filter"]) }
+    var res exectr.Result
+    execErr := ratelimit.Retry(r.Context(), 3, 200*time.Millisecond, 1500*time.Millisecond, func(c context.Context) error { rr, e := exec.ExecuteOne(c, act); res = rr; return e })
+    // audit + snapshots
+    snap := map[string]any{"actionIndex": idx, "action": action, "executedAt": time.Now().UTC(), "result": res}
+    if execErr != nil || !res.Success { snap["status"] = "error"; if execErr != nil { snap["error"] = execErr.Error() } } else { snap["status"] = "ok" }
+    b, _ := json.Marshal(snap)
+    _, _ = db.ExecContext(r.Context(), `INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'exec',$3::jsonb)`, opId, uid, string(b))
+    _ = writeSnapshots(r.Context(), db, opId, idx, at, res)
+    // update dead letter row
+    st := "resolved"
+    if execErr != nil || !res.Success { st = "failed" }
+    _, _ = db.ExecContext(r.Context(), `UPDATE "BulkActionDeadLetter" SET retry_count=retry_count+1, retried_at=NOW(), status=$1, result=$2::jsonb, error=$3 WHERE id=$4`, st, string(b), func() string { if execErr != nil { return execErr.Error() }; return toString(res.Message) }(), dlid)
+    writeJSON(w, http.StatusOK, map[string]any{"status": st, "result": res})
+}
+
+// retryDeadLetterBatchHandler retries up to ?limit deadletters for an operation, optionally filtered by actionType.
+// POST /api/v1/adscenter/bulk-actions/{id}/deadletters/retry-batch?actionType=ADJUST_CPC&limit=10
+func (s *Server) retryDeadLetterBatchHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    id := strings.TrimSpace(strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/adscenter/bulk-actions/"), "/")[0])
+    if id == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "operationId required", nil); return }
+    filterType := strings.TrimSpace(r.URL.Query().Get("actionType"))
+    limit := 10
+    if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" { if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 200 { limit = n } }
+    dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+    if dbURL == "" { apperr.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "DATABASE_URL not set", nil); return }
+    db, err := sql.Open("postgres", dbURL)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_OPEN_FAILED", "db open failed", map[string]string{"error": err.Error()}); return }
+    defer db.Close()
+    // prepare executor/context
+    ownerUID := ""
+    _ = db.QueryRow(`SELECT user_id FROM "BulkActionOperation" WHERE id=$1`, id).Scan(&ownerUID)
+    cfgAds, _ := adscfg.LoadAdsCreds(r.Context())
+    rtEnc, loginCID, _, _ := storage.GetUserRefreshToken(r.Context(), s.db, ownerUID)
+    rt := rtEnc
+    if pt, ok := decryptWithRotation(rtEnc); ok { rt = pt }
+    exec := exectr.New(exectr.Config{
+        BrowserExecURL: strings.TrimSpace(os.Getenv("BROWSER_EXEC_URL")),
+        InternalToken:  strings.TrimSpace(os.Getenv("BROWSER_INTERNAL_TOKEN")),
+        Timeout:        8 * time.Second,
+        ValidateOnly:   false,
+        LiveMutate:     strings.EqualFold(strings.TrimSpace(os.Getenv("ADS_MUTATE_LIVE")), "true"),
+        DeveloperToken: cfgAds.DeveloperToken,
+        OAuthClientID:  cfgAds.OAuthClientID,
+        OAuthClientSecret: cfgAds.OAuthClientSecret,
+        RefreshToken:   rt,
+        LoginCustomerID: func() string { if cfgAds.LoginCustomerID != "" { return cfgAds.LoginCustomerID }; return loginCID }(),
+        CustomerID:     loginCID,
+    })
+    // limits
+    plan := ratelimit.ResolveUserPlan(r.Context(), ownerUID)
+    pol := ratelimit.LoadPolicy(r.Context())
+    rl := pol.For(plan, "mutate")
+    km := getExecKeyedMgr(r.Context())
+    if km != nil {
+        if rel, e := km.Get(ownerUID+":mutate", rl.RPM, rl.Concurrency).Acquire(r.Context()); e == nil { defer rel() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
+    }
+    if relG, e := getExecGlobalLimiter().Acquire(r.Context()); e == nil { defer relG() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
+    // query rows
+    _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionDeadLetter"(id BIGSERIAL PRIMARY KEY, op_id TEXT NOT NULL, action_idx INT NOT NULL, action_type TEXT NOT NULL, error TEXT, action JSONB NOT NULL, result JSONB, retry_count INT NOT NULL DEFAULT 0, retried_at TIMESTAMPTZ NULL, status TEXT NOT NULL DEFAULT 'pending', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)
+    q := `SELECT id, action_idx, action_type, action::text FROM "BulkActionDeadLetter" WHERE op_id=$1 AND status IN ('pending','failed')`
+    args := []any{id}
+    if filterType != "" { q += ` AND action_type=$2`; args = append(args, filterType) }
+    q += ` ORDER BY id ASC LIMIT ` + fmt.Sprintf("%d", limit)
+    rows, err := db.QueryContext(r.Context(), q, args...)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    retried := 0
+    resolved := 0
+    for rows.Next() {
+        var dlid int64
+        var idx int
+        var at, aj string
+        if rows.Scan(&dlid, &idx, &at, &aj) != nil { continue }
+        var action map[string]any
+        _ = json.Unmarshal([]byte(aj), &action)
+        act := exectr.Action{Type: at, Params: toMap(action["params"]), Filter: toMap(action["filter"]) }
+        var res exectr.Result
+        execErr := ratelimit.Retry(r.Context(), 3, 200*time.Millisecond, 1500*time.Millisecond, func(c context.Context) error { rr, e := exec.ExecuteOne(c, act); res = rr; return e })
+        // audit/snapshots
+        snap := map[string]any{"actionIndex": idx, "action": action, "executedAt": time.Now().UTC(), "result": res}
+        if execErr != nil || !res.Success { snap["status"] = "error"; if execErr != nil { snap["error"] = execErr.Error() } } else { snap["status"] = "ok" }
+        b, _ := json.Marshal(snap)
+        _, _ = db.ExecContext(r.Context(), `INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'exec',$3::jsonb)`, id, uid, string(b))
+        _ = writeSnapshots(r.Context(), db, id, idx, at, res)
+        // update DL row
+        st := "resolved"
+        if execErr != nil || !res.Success { st = "failed" } else { resolved++ }
+        _, _ = db.ExecContext(r.Context(), `UPDATE "BulkActionDeadLetter" SET retry_count=retry_count+1, retried_at=NOW(), status=$1, result=$2::jsonb, error=$3 WHERE id=$4`, st, string(b), func() string { if execErr != nil { return execErr.Error() }; return toString(res.Message) }(), dlid)
+        retried++
+    }
+    writeJSON(w, http.StatusOK, map[string]any{"retried": retried, "resolved": resolved})
+}
+
+// listSnapshotAggregateHandler aggregates before/after snapshots into a compact diff view.
+func (s *Server) listSnapshotAggregateHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    id := strings.TrimSpace(strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/adscenter/bulk-actions/"), "/")[0])
+    if id == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "operationId required", nil); return }
+    dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+    if dbURL == "" { apperr.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "DATABASE_URL not set", nil); return }
+    db, err := sql.Open("postgres", dbURL)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_OPEN_FAILED", "db open failed", map[string]string{"error": err.Error()}); return }
+    defer db.Close()
+    actionFilter := strings.TrimSpace(r.URL.Query().Get("actionType"))
+    limit := 500
+    if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" { if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 2000 { limit = n } }
+    q := `SELECT action_type, kind, snapshot::text FROM "BulkActionSnapshot" WHERE op_id=$1`
+    args := []any{id}
+    if actionFilter != "" { q += ` AND action_type=$2`; args = append(args, actionFilter) }
+    q += ` ORDER BY id ASC LIMIT $` + fmt.Sprintf("%d", len(args)+1)
+    args = append(args, limit)
+    rows, err := db.QueryContext(r.Context(), q, args...)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    // aggregate by resourceName
+    ag := map[string]map[string]any{} // key=resourceName -> {actionType, before, after}
+    for rows.Next() {
+        var at, kind, snapTxt string
+        if rows.Scan(&at, &kind, &snapTxt) != nil { continue }
+        var m map[string]any
+        if json.Unmarshal([]byte(snapTxt), &m) != nil { continue }
+        rn := toString(m["resourceName"])
+        if rn == "" { continue }
+        entry, ok := ag[rn]
+        if !ok { entry = map[string]any{"actionType": at}; ag[rn] = entry }
+        entry[kind] = m["value"]
+    }
+    out := make([]map[string]any, 0, len(ag))
+    for rn, e := range ag {
+        out = append(out, map[string]any{"resourceName": rn, "actionType": e["actionType"], "before": e["before"], "after": e["after"]})
+    }
+    writeJSON(w, http.StatusOK, map[string]any{"items": out})
+}
+
+// limitsInfoHandler returns current user's plan and effective limits (preflight/mutate per plan) and daily quota.
+// GET /api/v1/adscenter/limits/me
+func (s *Server) limitsInfoHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    plan := ratelimit.ResolveUserPlan(r.Context(), uid)
+    pol := ratelimit.LoadPolicy(r.Context())
+    pf := pol.For(plan, "preflight")
+    mt := pol.For(plan, "mutate")
+    daily := pol.QuotaDailyFor(plan)
+    // today usage (best-effort)
+    used := 0
+    if dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL")); dbURL != "" {
+        if db, err := sql.Open("postgres", dbURL); err == nil {
+            defer db.Close()
+            _ = db.QueryRow(`SELECT COUNT(1) FROM "BulkActionOperation" WHERE user_id=$1 AND created_at::date=CURRENT_DATE`, uid).Scan(&used)
+        }
+    }
+    writeJSON(w, http.StatusOK, map[string]any{
+        "plan": plan,
+        "limits": map[string]any{
+            "preflight": map[string]any{"rpm": pf.RPM, "concurrency": pf.Concurrency},
+            "mutate":    map[string]any{"rpm": mt.RPM, "concurrency": mt.Concurrency},
+        },
+        "quota": map[string]any{"daily": daily, "usedToday": used},
+    })
 }
