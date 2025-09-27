@@ -4,13 +4,11 @@ set -euo pipefail
 # This script checks the health of all microservices.
 
 SERVICES=(
-  "identity:8081"
   "billing:8082"
   "offer:8083"
   "siterank:8084"
   "batchopen:8085"
   "adscenter:8086"
-  "workflow:8087"
 )
 
 echo "--- Starting Health Checks ---"

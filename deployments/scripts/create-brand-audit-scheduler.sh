@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# DEPRECATED: 使用 Pub/Sub 分发器替代 HTTP+OIDC 调度。
+# 推荐：`deployments/scripts/create-scheduler-pubsub-dispatch.sh` 并设置
+#   URL="https://<recommend>/api/v1/recommend/internal/offline/brand-coverage-audit?days=30&shard=0&totalShards=1" HEADERS_JSON='{"X-Service-Token":"ENV","Accept":"application/json"}'
+#
 # Create/Update Cloud Scheduler job to trigger Recommendations offline brand audit periodically.
 # Usage:
 #   PROJECT_ID=... REGION=asia-northeast1 STACK=preview \
@@ -71,4 +75,3 @@ else
 fi
 
 echo "[DONE] Scheduler job ${JOB_ID} created/updated"
-

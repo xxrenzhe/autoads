@@ -9,6 +9,29 @@
 > - 数据迁移集中到 Go：启动前执行 `npm run migrate:backend`。
 > - 支付/充值入口默认隐藏（`NEXT_PUBLIC_PAYMENTS_ENABLED=false`）。
 
+## 运维速查卡（Cheatsheet）
+
+- 定时任务（推荐 Pub/Sub 分发器）
+  - 部署函数：`deployments/scripts/create-pubsub-dispatcher.sh`
+  - 创建作业：`deployments/scripts/create-scheduler-pubsub-dispatch.sh`（设置 `URL`/`HEADERS_JSON='{"X-Service-Token":"ENV"}'`）
+  - 说明与示例：见 docs/productrefactoring-v2/Operations.md 的“定时任务（推荐方案）”
+- 内部自动化鉴权
+  - AdminOnly 支持 `X-Service-Token` 与环境变量 `INTERNAL_SERVICE_TOKEN` 放行（仅用于内部作业）
+  - 分发器载荷中设置 `X-Service-Token=ENV` 自动注入内部令牌
+- OpenAPI 契约
+  - 规范路径：`.kiro/specs/addictive-ads-management-system/openapi/*.yaml`
+  - 校验/生成：`scripts/openapi/ci-check.sh`；GitHub Actions `OpenAPI CI` 已启用
+- 构建（Kaniko）
+  - 使用 Kaniko 时移除 `cloudbuild.yaml` 的 `images:` 字段，仅保留 `--destination=${_IMAGE}`
+- 数据库迁移
+  - 路径：`schemas/sql/*.sql`（按字典序应用，例如 012/013/014）
+  - 执行：`DATABASE_URL=... ./scripts/db/apply-sql.sh`
+- 看板体验
+  - KPI 预热串行节流（默认前 3 条，每 300ms 一次），占位→真实自动聚合与刷新
+  - SSE 解析按空行分帧，拼接完整 `data:` 后再 JSON 解析
+
+更多常见问题与解决方案：docs/productrefactoring-v2/BugFix.md
+
 ## 项目结构
 
 ```

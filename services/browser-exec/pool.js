@@ -4,8 +4,8 @@ const USE_PW = String(process.env.PLAYWRIGHT || '').toLowerCase() === '1'
 // Optional stealth plugin (best-effort); not required for JSON fetch
 ;(async () => { if (USE_PW) { try { const m = await import('playwright-extra-plugin-stealth'); playwright.use(m.default()); } catch {} } })()
 
-const MAX_CONTEXTS = Number(process.env.BROWSER_MAX_CONTEXTS || 12)
-const MAX_MEMORY_MB = Number(process.env.BROWSER_MAX_MEMORY_MB || 1024)
+let MAX_CONTEXTS = Number(process.env.BROWSER_MAX_CONTEXTS || 12)
+let MAX_MEMORY_MB = Number(process.env.BROWSER_MAX_MEMORY_MB || 1024)
 
 function buildContextOptions(fp = {}) {
   const {
@@ -75,3 +75,17 @@ class BrowserPool {
 
 export const pool = new BrowserPool()
 export { buildContextOptions }
+
+// Allow dynamic limit updates from ops endpoint
+export function setLimits({ maxContexts, maxMemoryMb } = {}) {
+  if (Number.isFinite(maxContexts) && maxContexts > 0) {
+    MAX_CONTEXTS = Math.min(64, Math.max(1, maxContexts|0))
+  }
+  if (Number.isFinite(maxMemoryMb) && maxMemoryMb > 128) {
+    MAX_MEMORY_MB = Math.min(8192, Math.max(128, maxMemoryMb|0))
+  }
+}
+
+export function getLimits() {
+  return { maxContexts: MAX_CONTEXTS, maxMemoryMb: MAX_MEMORY_MB }
+}

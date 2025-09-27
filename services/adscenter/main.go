@@ -25,6 +25,7 @@ import (
     "strconv"
     "hash/fnv"
     "io"
+    "math"
     "golang.org/x/oauth2"
     "golang.org/x/oauth2/google"
     tokencrypto "github.com/xxrenzhe/autoads/services/adscenter/internal/crypto"
@@ -624,6 +625,230 @@ func (s *Server) diagnoseMetricsHandler(w http.ResponseWriter, r *http.Request) 
         "dailyBudget": budget,
         "budgetPacing": pacing,
     })
+}
+
+// --- A/B Test MVP ---
+// POST /api/v1/adscenter/ab-tests
+// Body: { accountId, offerId, seedAdGroupId, splitA?, splitB?, notes? }
+func (s *Server) abTestsCreateHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    if r.Method != http.MethodPost { apperr.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    var req struct{
+        AccountID string `json:"accountId"`
+        OfferID string `json:"offerId"`
+        SeedAdGroupID string `json:"seedAdGroupId"`
+        SplitA *int `json:"splitA"`
+        SplitB *int `json:"splitB"`
+        Notes string `json:"notes"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+    if strings.TrimSpace(req.AccountID)=="" || strings.TrimSpace(req.OfferID)=="" || strings.TrimSpace(req.SeedAdGroupID)=="" {
+        apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "accountId/offerId/seedAdGroupId required", nil); return
+    }
+    splitA := 50; splitB := 50
+    if req.SplitA != nil { splitA = *req.SplitA }
+    if req.SplitB != nil { splitB = *req.SplitB }
+    if splitA+splitB != 100 { splitA, splitB = 50, 50 }
+    id := "ab_" + strings.ReplaceAll(time.Now().UTC().Format("20060102150405.000000000"), ".", "")
+    // ensure tables exist (idempotent)
+    _, _ = s.db.Exec(`CREATE TABLE IF NOT EXISTS "ABTest"(id TEXT PRIMARY KEY, user_id TEXT NOT NULL, account_id TEXT NOT NULL, offer_id TEXT NOT NULL, seed_ad_group_id TEXT NOT NULL, variant_a_group_id TEXT, variant_b_group_id TEXT, split_a INT NOT NULL DEFAULT 50, split_b INT NOT NULL DEFAULT 50, status TEXT NOT NULL DEFAULT 'planned', notes TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)
+    _, _ = s.db.Exec(`CREATE TABLE IF NOT EXISTS "ABTestMetric"(id BIGSERIAL PRIMARY KEY, test_id TEXT NOT NULL, variant CHAR(1) NOT NULL, impressions BIGINT NOT NULL DEFAULT 0, clicks BIGINT NOT NULL DEFAULT 0, conversions BIGINT NOT NULL DEFAULT 0, cost_cents BIGINT NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)
+    varA := req.SeedAdGroupID
+    varB := req.SeedAdGroupID + "_B" // default
+    // Live path: copy ad group minimal when enabled
+    if strings.EqualFold(strings.TrimSpace(os.Getenv("ADS_ABTEST_LIVE")), "true") {
+        cfgAds, _ := adscfg.LoadAdsCreds(r.Context())
+        tokenEnc, loginCID, _, _ := storage.GetUserRefreshToken(r.Context(), s.db, uid)
+        rt := tokenEnc
+        if pt, ok := decryptWithRotation(tokenEnc); ok { rt = pt }
+        if rt == "" { rt = cfgAds.RefreshToken }
+        client, errLC := adsstub.NewClient(r.Context(), adsstub.LiveConfig{
+            DeveloperToken:    cfgAds.DeveloperToken,
+            OAuthClientID:     cfgAds.OAuthClientID,
+            OAuthClientSecret: cfgAds.OAuthClientSecret,
+            RefreshToken:      rt,
+            LoginCustomerID:   func() string { if cfgAds.LoginCustomerID != "" { return cfgAds.LoginCustomerID }; return loginCID }(),
+        })
+        if errLC == nil && client != nil {
+            if id2, err2 := client.CopyAdGroupMinimal(r.Context(), req.AccountID, req.SeedAdGroupID, "_B"); err2 == nil && strings.TrimSpace(id2) != "" {
+                varB = id2
+            }
+        }
+    }
+    _, err := s.db.Exec(`INSERT INTO "ABTest"(id,user_id,account_id,offer_id,seed_ad_group_id,variant_a_group_id,variant_b_group_id,split_a,split_b,status,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'running',$10)`, id, uid, req.AccountID, req.OfferID, req.SeedAdGroupID, varA, varB, splitA, splitB, req.Notes)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "DB_INSERT_FAILED", "insert failed", map[string]string{"error": err.Error()}); return }
+    // init metrics rows
+    _, _ = s.db.Exec(`INSERT INTO "ABTestMetric"(test_id, variant) VALUES ($1,'A'),($1,'B')`, id)
+    writeJSON(w, http.StatusOK, map[string]any{
+        "id": id,
+        "status": "running",
+        "variants": map[string]any{"A": varA, "B": varB},
+        "split": map[string]int{"A": splitA, "B": splitB},
+    })
+}
+
+// GET /api/v1/adscenter/ab-tests?limit=20
+func (s *Server) abTestsListHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    lim := 20
+    if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" { if n, err := strconv.Atoi(v); err==nil && n>0 && n<=100 { lim = n } }
+    // ensure tables exist
+    _, _ = s.db.Exec(`CREATE TABLE IF NOT EXISTS "ABTest"(id TEXT PRIMARY KEY, user_id TEXT NOT NULL, account_id TEXT NOT NULL, offer_id TEXT NOT NULL, seed_ad_group_id TEXT NOT NULL, variant_a_group_id TEXT, variant_b_group_id TEXT, split_a INT NOT NULL DEFAULT 50, split_b INT NOT NULL DEFAULT 50, status TEXT NOT NULL DEFAULT 'planned', notes TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)
+    _, _ = s.db.Exec(`CREATE TABLE IF NOT EXISTS "ABTestMetric"(id BIGSERIAL PRIMARY KEY, test_id TEXT NOT NULL, variant CHAR(1) NOT NULL, impressions BIGINT NOT NULL DEFAULT 0, clicks BIGINT NOT NULL DEFAULT 0, conversions BIGINT NOT NULL DEFAULT 0, cost_cents BIGINT NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)
+    rows, err := s.db.Query(`SELECT id, account_id, offer_id, seed_ad_group_id, variant_a_group_id, variant_b_group_id, split_a, split_b, status, COALESCE(notes,'') FROM "ABTest" WHERE user_id=$1 ORDER BY created_at DESC LIMIT $2`, uid, lim)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    items := []map[string]any{}
+    for rows.Next() {
+        var id, acc, off, seed, va, vb, status, notes string
+        var sa, sb int
+        if err := rows.Scan(&id, &acc, &off, &seed, &va, &vb, &sa, &sb, &status, &notes); err != nil { continue }
+        // load metrics
+        var aImp, aClk, bImp, bClk int64
+        _ = s.db.QueryRow(`SELECT COALESCE(SUM(impressions),0), COALESCE(SUM(clicks),0) FROM "ABTestMetric" WHERE test_id=$1 AND variant='A'`, id).Scan(&aImp, &aClk)
+        _ = s.db.QueryRow(`SELECT COALESCE(SUM(impressions),0), COALESCE(SUM(clicks),0) FROM "ABTestMetric" WHERE test_id=$1 AND variant='B'`, id).Scan(&bImp, &bClk)
+        // compute recommendation via two-proportion z-test (CTR A vs CTR B)
+        rec, p := recommendWinner(aImp, aClk, bImp, bClk)
+        items = append(items, map[string]any{
+            "id": id,
+            "accountId": acc,
+            "offerId": off,
+            "seedAdGroupId": seed,
+            "variants": map[string]any{"A": va, "B": vb},
+            "split": map[string]int{"A": sa, "B": sb},
+            "status": status,
+            "metrics": map[string]any{"A": map[string]any{"impressions": aImp, "clicks": aClk}, "B": map[string]any{"impressions": bImp, "clicks": bClk}},
+            "recommendation": rec,
+            "pValue": p,
+            "notes": notes,
+        })
+    }
+    writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+// recommendWinner returns "A"/"B"/"inconclusive" and p-value for CTR difference.
+func recommendWinner(aImp, aClk, bImp, bClk int64) (string, float64) {
+    if aImp <= 0 || bImp <= 0 { return "inconclusive", 1.0 }
+    pA := float64(aClk) / float64(aImp)
+    pB := float64(bClk) / float64(bImp)
+    // pooled proportion
+    p := float64(aClk+bClk) / float64(aImp+bImp)
+    // guard division by zero
+    denom := p*(1-p)*(1/float64(aImp)+1/float64(bImp))
+    if denom <= 0 { return "inconclusive", 1.0 }
+    z := (pA - pB) / (math.Sqrt(denom))
+    // two-tailed p-value approximated via error function
+    pval := 2 * (1 - 0.5*(1+math.Erf(math.Abs(z)/math.Sqrt2)))
+    winner := "inconclusive"
+    if pval < 0.05 { if pA > pB { winner = "A" } else { winner = "B" } }
+    return winner, pval
+}
+
+// POST /api/v1/adscenter/ab-tests/{id}/metrics { variant:"A"|"B", impressions, clicks, conversions, costCents }
+func (s *Server) abTestsIngestMetricsHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    if r.Method != http.MethodPost { apperr.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    // parse id from path
+    parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/adscenter/ab-tests/"), "/")
+    if len(parts) < 2 || strings.TrimSpace(parts[1]) != "metrics" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "path not recognized", nil); return }
+    id := strings.TrimSpace(parts[0])
+    if id == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id required", nil); return }
+    var body struct{
+        Variant string `json:"variant"`
+        Impressions int64 `json:"impressions"`
+        Clicks int64 `json:"clicks"`
+        Conversions int64 `json:"conversions"`
+        CostCents int64 `json:"costCents"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&body); err != nil { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+    v := strings.ToUpper(strings.TrimSpace(body.Variant))
+    if v != "A" && v != "B" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "variant must be A or B", nil); return }
+    // Ownership verify (simple): ensure user_id matches
+    var owner sql.NullString
+    _ = s.db.QueryRow(`SELECT user_id FROM "ABTest" WHERE id=$1`, id).Scan(&owner)
+    if !owner.Valid || owner.String != uid { apperr.Write(w, r, http.StatusForbidden, "FORBIDDEN", "not owner", nil); return }
+    // Upsert by accumulating into latest row
+    _, _ = s.db.Exec(`INSERT INTO "ABTestMetric"(test_id, variant, impressions, clicks, conversions, cost_cents) VALUES ($1,$2,$3,$4,$5,$6)`, id, v, body.Impressions, body.Clicks, body.Conversions, body.CostCents)
+    writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// GET /api/v1/adscenter/ab-tests/{id}
+func (s *Server) abTestsGetHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/adscenter/ab-tests/"), "/")
+    id := strings.TrimSpace(parts[0])
+    if id == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id required", nil); return }
+    var acc, off, seed, va, vb, status, notes string
+    var sa, sb int
+    err := s.db.QueryRow(`SELECT account_id, offer_id, seed_ad_group_id, variant_a_group_id, variant_b_group_id, split_a, split_b, status, COALESCE(notes,'') FROM "ABTest" WHERE id=$1 AND user_id=$2`, id, uid).Scan(&acc, &off, &seed, &va, &vb, &sa, &sb, &status, &notes)
+    if err != nil {
+        if err == sql.ErrNoRows { apperr.Write(w, r, http.StatusNotFound, "NOT_FOUND", "ab test not found", nil); return }
+        apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return
+    }
+    var aImp, aClk, bImp, bClk int64
+    _ = s.db.QueryRow(`SELECT COALESCE(SUM(impressions),0), COALESCE(SUM(clicks),0) FROM "ABTestMetric" WHERE test_id=$1 AND variant='A'`, id).Scan(&aImp, &aClk)
+    _ = s.db.QueryRow(`SELECT COALESCE(SUM(impressions),0), COALESCE(SUM(clicks),0) FROM "ABTestMetric" WHERE test_id=$1 AND variant='B'`, id).Scan(&bImp, &bClk)
+    win, p := recommendWinner(aImp, aClk, bImp, bClk)
+    writeJSON(w, http.StatusOK, map[string]any{
+        "id": id,
+        "accountId": acc,
+        "offerId": off,
+        "seedAdGroupId": seed,
+        "variants": map[string]any{"A": va, "B": vb},
+        "split": map[string]int{"A": sa, "B": sb},
+        "status": status,
+        "metrics": map[string]any{"A": map[string]any{"impressions": aImp, "clicks": aClk}, "B": map[string]any{"impressions": bImp, "clicks": bClk}},
+        "recommendation": win,
+        "pValue": p,
+        "notes": notes,
+    })
+}
+
+// POST /api/v1/adscenter/ab-tests/{id}/refresh-metrics
+func (s *Server) abTestsRefreshMetricsHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/adscenter/ab-tests/"), "/")
+    if len(parts) < 2 || strings.TrimSpace(parts[1]) != "refresh-metrics" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "path not recognized", nil); return }
+    id := strings.TrimSpace(parts[0])
+    if id == "" { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id required", nil); return }
+    // lookup test
+    var acc, va, vb string
+    err := s.db.QueryRow(`SELECT account_id, variant_a_group_id, variant_b_group_id FROM "ABTest" WHERE id=$1 AND user_id=$2`, id, uid).Scan(&acc, &va, &vb)
+    if err != nil { apperr.Write(w, r, http.StatusNotFound, "NOT_FOUND", "ab test not found", nil); return }
+    // live client
+    cfgAds, _ := adscfg.LoadAdsCreds(r.Context())
+    tokenEnc, loginCID, _, _ := storage.GetUserRefreshToken(r.Context(), s.db, uid)
+    rt := tokenEnc
+    if pt, ok := decryptWithRotation(tokenEnc); ok { rt = pt }
+    if rt == "" { rt = cfgAds.RefreshToken }
+    client, err := adsstub.NewClient(r.Context(), adsstub.LiveConfig{
+        DeveloperToken:    cfgAds.DeveloperToken,
+        OAuthClientID:     cfgAds.OAuthClientID,
+        OAuthClientSecret: cfgAds.OAuthClientSecret,
+        RefreshToken:      rt,
+        LoginCustomerID:   func() string { if cfgAds.LoginCustomerID != "" { return cfgAds.LoginCustomerID }; return loginCID }(),
+    })
+    if err != nil { apperr.Write(w, r, http.StatusBadRequest, "LIVE_CLIENT_ERROR", "cannot init live client", nil); return }
+    // fetch metrics last 7 days
+    ids := []string{}
+    if strings.TrimSpace(va) != "" { ids = append(ids, va) }
+    if strings.TrimSpace(vb) != "" { ids = append(ids, vb) }
+    m, err := client.RefreshAdGroupMetrics(r.Context(), acc, ids, "LAST_7_DAYS")
+    if err != nil { apperr.Write(w, r, http.StatusBadRequest, "LIVE_METRICS_ERROR", err.Error(), nil); return }
+    // upsert snapshot into ABTestMetric (aggregate only: impressions/clicks)
+    for adg, v := range m {
+        // map to A/B
+        var variant string
+        if adg == va { variant = "A" } else if adg == vb { variant = "B" } else { continue }
+        _, _ = s.db.Exec(`INSERT INTO "ABTestMetric"(test_id, variant, impressions, clicks, conversions, cost_cents) VALUES ($1,$2,$3,$4,0,$5)`,
+            id, variant, v.Impressions, v.Clicks, v.CostMicros/10000)
+    }
+    writeJSON(w, http.StatusOK, map[string]any{"ok": true, "fetched": len(m)})
 }
 
 // checkLandingReachability calls browser-exec /check-availability to verify landing URL.
@@ -1448,22 +1673,13 @@ func main() {
         w.WriteHeader(http.StatusOK)
     })
     r.Handle("/metrics", telemetry.MetricsHandler())
-    // Mount OpenAPI chi server
-    oas := &oasImpl{srv: srv}
-    oapiHandler := api.HandlerWithOptions(oas, api.ChiServerOptions{
-        BaseURL: "/",
-        Middlewares: []api.MiddlewareFunc{
-            func(next http.Handler) http.Handler { return middleware.IdempotencyMiddleware(next) },
-            func(next http.Handler) http.Handler { return middleware.AuthMiddleware(next) },
-        },
-        ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
-            apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error(), nil)
-        },
-    })
-    r.Mount("/", oapiHandler)
-    // Extra endpoints not in OAS
+    // Extra endpoints not in OAS (register BEFORE OAS mount to ensure precedence)
     r.HandleFunc("/api/v1/adscenter/oauth/callback", srv.oauthCallbackHandler)
     r.Handle("/api/v1/adscenter/mcc/link", middleware.AuthMiddleware(http.HandlerFunc(srv.mccLinkHandler)))
+    r.Handle("/api/v1/adscenter/oauth/url", middleware.AuthMiddleware(http.HandlerFunc(srv.oauthURLHandler)))
+    // Expose accounts/preflight as custom routes to avoid OAS mounting差异导致的404
+    r.Handle("/api/v1/adscenter/accounts", middleware.AuthMiddleware(http.HandlerFunc(srv.accountsHandler)))
+    r.Handle("/api/v1/adscenter/preflight", middleware.AuthMiddleware(http.HandlerFunc(srv.preflightHandler)))
     r.Handle("/api/v1/adscenter/mcc/status", middleware.AuthMiddleware(http.HandlerFunc(srv.mccStatusHandler)))
     r.Handle("/api/v1/adscenter/mcc/unlink", middleware.AuthMiddleware(http.HandlerFunc(srv.mccUnlinkHandler)))
     r.Handle("/api/v1/adscenter/mcc/refresh", middleware.AuthMiddleware(http.HandlerFunc(srv.mccRefreshHandler)))
@@ -1492,6 +1708,42 @@ func main() {
     // Bulk audits & rollback (stubs)
     r.Handle("/api/v1/adscenter/bulk-actions/{id}/audits", middleware.AuthMiddleware(http.HandlerFunc(srv.bulkAuditsHandler)))
     r.Handle("/api/v1/adscenter/bulk-actions/{id}/rollback", middleware.AuthMiddleware(http.HandlerFunc(srv.bulkRollbackHandler)))
+    // A/B tests (MVP)
+    r.Get("/api/v1/adscenter/ab-tests", func(w http.ResponseWriter, r *http.Request) {
+        middleware.AuthMiddleware(http.HandlerFunc(srv.abTestsListHandler)).ServeHTTP(w, r)
+    })
+    r.Get("/api/v1/adscenter/ab-tests/", func(w http.ResponseWriter, r *http.Request) {
+        middleware.AuthMiddleware(http.HandlerFunc(srv.abTestsListHandler)).ServeHTTP(w, r)
+    })
+    r.Get("/api/v1/adscenter/ab-tests/{id}", func(w http.ResponseWriter, r *http.Request) {
+        middleware.AuthMiddleware(http.HandlerFunc(srv.abTestsGetHandler)).ServeHTTP(w, r)
+    })
+    r.Post("/api/v1/adscenter/ab-tests", func(w http.ResponseWriter, r *http.Request) {
+        middleware.AuthMiddleware(http.HandlerFunc(srv.abTestsCreateHandler)).ServeHTTP(w, r)
+    })
+    r.Post("/api/v1/adscenter/ab-tests/", func(w http.ResponseWriter, r *http.Request) {
+        middleware.AuthMiddleware(http.HandlerFunc(srv.abTestsCreateHandler)).ServeHTTP(w, r)
+    })
+    r.Post("/api/v1/adscenter/ab-tests/{id}/metrics", func(w http.ResponseWriter, r *http.Request) {
+        middleware.AuthMiddleware(http.HandlerFunc(srv.abTestsIngestMetricsHandler)).ServeHTTP(w, r)
+    })
+    r.Post("/api/v1/adscenter/ab-tests/{id}/refresh-metrics", func(w http.ResponseWriter, r *http.Request) {
+        middleware.AuthMiddleware(http.HandlerFunc(srv.abTestsRefreshMetricsHandler)).ServeHTTP(w, r)
+    })
+
+    // Mount OpenAPI chi server (after custom routes)
+    oas := &oasImpl{srv: srv}
+    oapiHandler := api.HandlerWithOptions(oas, api.ChiServerOptions{
+        BaseURL: "/",
+        Middlewares: []api.MiddlewareFunc{
+            func(next http.Handler) http.Handler { return middleware.IdempotencyMiddleware(next) },
+            func(next http.Handler) http.Handler { return middleware.AuthMiddleware(next) },
+        },
+        ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+            apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error(), nil)
+        },
+    })
+    r.Mount("/", oapiHandler)
 
     port := cfg.Port
     if port == "" { port = "8080" }
@@ -1747,6 +1999,91 @@ func (h *oasImpl) OauthRevoke(w http.ResponseWriter, r *http.Request) {
     if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "UPDATE_FAILED", "failed to clear token", map[string]string{"error": err.Error()}); return }
     _ = writeAudit(r.Context(), db, uid, "oauth_revoke", map[string]any{"live": strings.EqualFold(strings.TrimSpace(os.Getenv("OAUTH_REVOKE_LIVE")), "true")})
     writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// --- Settings: Link Rotation (frequency control) ---
+
+func (h *oasImpl) GetLinkRotationSettings(w http.ResponseWriter, r *http.Request) {
+    uidRaw := r.Context().Value(middleware.UserIDKey)
+    uid, _ := uidRaw.(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    ensureLinkRotationSettingsTable(h.srv.db, r.Context())
+    type resp struct {
+        Enabled            bool `json:"enabled"`
+        MinIntervalMinutes int  `json:"minIntervalMinutes"`
+        MaxPerDayPerOffer  int  `json:"maxPerDayPerOffer"`
+        MaxPerHourPerAccount int `json:"maxPerHourPerAccount"`
+        RollbackOnError    bool `json:"rollbackOnError"`
+    }
+    // defaults
+    out := resp{Enabled: false, MinIntervalMinutes: 60, MaxPerDayPerOffer: 24, MaxPerHourPerAccount: 3, RollbackOnError: true}
+    var (
+        enabled sql.NullBool
+        min sql.NullInt32
+        perDay sql.NullInt32
+        perHour sql.NullInt32
+        rb sql.NullBool
+    )
+    err := h.srv.db.QueryRowContext(r.Context(), `
+        SELECT enabled, min_interval_minutes, max_per_day_per_offer, max_per_hour_per_account, rollback_on_error
+        FROM "LinkRotationSettings" WHERE user_id=$1
+    `, uid).Scan(&enabled, &min, &perDay, &perHour, &rb)
+    if err == nil {
+        if enabled.Valid { out.Enabled = enabled.Bool }
+        if min.Valid && min.Int32 > 0 { out.MinIntervalMinutes = int(min.Int32) }
+        if perDay.Valid && perDay.Int32 >= 0 { out.MaxPerDayPerOffer = int(perDay.Int32) }
+        if perHour.Valid && perHour.Int32 >= 0 { out.MaxPerHourPerAccount = int(perHour.Int32) }
+        if rb.Valid { out.RollbackOnError = rb.Bool }
+    }
+    writeJSON(w, http.StatusOK, out)
+}
+
+func (h *oasImpl) UpdateLinkRotationSettings(w http.ResponseWriter, r *http.Request) {
+    uidRaw := r.Context().Value(middleware.UserIDKey)
+    uid, _ := uidRaw.(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    ensureLinkRotationSettingsTable(h.srv.db, r.Context())
+    var body struct{
+        Enabled            bool `json:"enabled"`
+        MinIntervalMinutes int  `json:"minIntervalMinutes"`
+        MaxPerDayPerOffer  int  `json:"maxPerDayPerOffer"`
+        MaxPerHourPerAccount int `json:"maxPerHourPerAccount"`
+        RollbackOnError    bool `json:"rollbackOnError"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+        apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return
+    }
+    // sanitize
+    if body.MinIntervalMinutes <= 0 { body.MinIntervalMinutes = 60 }
+    if body.MaxPerDayPerOffer < 0 { body.MaxPerDayPerOffer = 0 }
+    if body.MaxPerHourPerAccount < 0 { body.MaxPerHourPerAccount = 0 }
+    _, err := h.srv.db.ExecContext(r.Context(), `
+        INSERT INTO "LinkRotationSettings"(user_id, enabled, min_interval_minutes, max_per_day_per_offer, max_per_hour_per_account, rollback_on_error, updated_at)
+        VALUES ($1,$2,$3,$4,$5,$6,NOW())
+        ON CONFLICT (user_id) DO UPDATE SET
+            enabled=EXCLUDED.enabled,
+            min_interval_minutes=EXCLUDED.min_interval_minutes,
+            max_per_day_per_offer=EXCLUDED.max_per_day_per_offer,
+            max_per_hour_per_account=EXCLUDED.max_per_hour_per_account,
+            rollback_on_error=EXCLUDED.rollback_on_error,
+            updated_at=NOW()
+    `, uid, body.Enabled, body.MinIntervalMinutes, body.MaxPerDayPerOffer, body.MaxPerHourPerAccount, body.RollbackOnError)
+    if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "INTERNAL", "upsert failed", map[string]string{"error": err.Error()}); return }
+    writeJSON(w, http.StatusOK, map[string]any{"status":"ok"})
+}
+
+func ensureLinkRotationSettingsTable(db *sql.DB, ctx context.Context) {
+    _, _ = db.ExecContext(ctx, `
+        CREATE TABLE IF NOT EXISTS "LinkRotationSettings"(
+            user_id TEXT PRIMARY KEY,
+            enabled BOOLEAN NOT NULL DEFAULT FALSE,
+            min_interval_minutes INTEGER NOT NULL DEFAULT 60,
+            max_per_day_per_offer INTEGER NOT NULL DEFAULT 24,
+            max_per_hour_per_account INTEGER NOT NULL DEFAULT 3,
+            rollback_on_error BOOLEAN NOT NULL DEFAULT TRUE,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    `)
 }
 // GET /api/v1/adscenter/bulk-actions/{id}/plan
 func (h *oasImpl) GetBulkActionPlan(w http.ResponseWriter, r *http.Request, id string) {
@@ -2056,6 +2393,8 @@ func (h *oasImpl) GetBulkAction(w http.ResponseWriter, r *http.Request, id strin
     }{Actions: func() *int { if actions > 0 { return &actions }; return nil }(), EstimatedAffected: nil}
     writeJSON(w, http.StatusOK, resp)
 }
+
+func (h *oasImpl) GetLimitsMe(w http.ResponseWriter, r *http.Request) { h.srv.limitsInfoHandler(w, r) }
 
 // GET /api/v1/adscenter/bulk-actions/{id}/report
 // duplicate GetRollbackReport removed; unified implementation above uses h.srv.db and supports kind filter including rollback_exec

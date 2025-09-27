@@ -105,3 +105,5 @@ func startBatchopenTask(event eventbus.Event) {
 		// In a real app, you would start the simulation here
 	}
 }
+//go:build ignore
+// +build ignore

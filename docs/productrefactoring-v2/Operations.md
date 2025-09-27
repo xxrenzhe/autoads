@@ -26,6 +26,33 @@
 - 批量异常回滚：通过审计快照一键回滚，生成工单与告警。
 - 仿真质量偏低：检查代理/Referer/UA 权重配置与地域一致性。
 
+## 定时任务（推荐方案）
+
+为降低 OIDC 配置复杂度与跨服务鉴权不一致带来的 401/5xx 风险，定时作业统一采用：Scheduler → Pub/Sub → Cloud Functions(Dispatcher) → 服务 HTTP。
+
+步骤：
+1) 部署分发函数（Gen2）：`deployments/scripts/create-pubsub-dispatcher.sh`
+2) 使用 `deployments/scripts/create-scheduler-pubsub-dispatch.sh` 创建 Pub/Sub 作业，设置：
+   - `TOPIC=jobs-dispatcher`
+   - `URL` 指向目标服务 API，例如：
+     - 执行 tick：`https://<adscenter>/api/v1/adscenter/bulk-actions/execute-tick?max=2`
+     - KPI 分片日更：`https://<offer>/api/v1/offers/internal/kpi/aggregate-daily?shard=0&totalShards=4`
+   - `HEADERS_JSON='{"X-Service-Token":"ENV","Accept":"application/json"}'`
+
+示例（execute-tick）：
+```bash
+PROJECT_ID=gen-lang-client-0944935873 REGION=asia-northeast1 \
+INTERNAL_SERVICE_TOKEN=xxxx ./deployments/scripts/create-pubsub-dispatcher.sh
+
+PROJECT_ID=gen-lang-client-0944935873 REGION=asia-northeast1 TOPIC=jobs-dispatcher \
+SCHEDULE="*/5 * * * *" \
+URL="https://<adscenter>/api/v1/adscenter/bulk-actions/execute-tick?max=2" \
+HEADERS_JSON='{"X-Service-Token":"ENV","Accept":"application/json"}' \
+./deployments/scripts/create-scheduler-pubsub-dispatch.sh
+```
+
+注意：旧的 HTTP+OIDC 调度脚本已标注 DEPRECATED，仅作兼容保留。
+
 ## 执行指引（Hosting）
 - GitHub Actions（推荐）：
   - 配置仓库 Secrets：`FIREBASE_SERVICE_ACCOUNT`

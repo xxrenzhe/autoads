@@ -192,6 +192,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/adscenter/settings/link-rotation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get link rotation frequency control settings */
+        get: operations["getLinkRotationSettings"];
+        /** Update link rotation frequency control settings */
+        put: operations["updateLinkRotationSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/adscenter/oauth/url": {
         parameters: {
             query?: never;
@@ -602,6 +620,18 @@ export interface components {
             summary: "ok" | "warn" | "error";
             rules: components["schemas"]["DiagnoseRule"][];
             suggestedActions?: components["schemas"]["SuggestedAction"][];
+        };
+        LinkRotationSettings: {
+            /** @description Master switch for scheduled link rotation. */
+            enabled?: boolean;
+            /** @description Minimum interval between rotations for the same entity. */
+            minIntervalMinutes?: number;
+            /** @description Max rotations per Offer per day (0 = unlimited). */
+            maxPerDayPerOffer?: number;
+            /** @description Max rotations per account per hour (0 = unlimited). */
+            maxPerHourPerAccount?: number;
+            /** @description Automatically rollback to previous stable suffix on errors. */
+            rollbackOnError?: boolean;
         };
         MccLink: {
             customerId: string;
@@ -1073,6 +1103,69 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getLinkRotationSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkRotationSettings"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateLinkRotationSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkRotationSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

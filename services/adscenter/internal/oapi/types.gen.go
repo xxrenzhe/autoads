@@ -227,6 +227,24 @@ type KeywordIdea struct {
 // KeywordIdeaCompetition defines model for KeywordIdea.Competition.
 type KeywordIdeaCompetition string
 
+// LinkRotationSettings defines model for LinkRotationSettings.
+type LinkRotationSettings struct {
+	// Enabled Master switch for scheduled link rotation.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// MaxPerDayPerOffer Max rotations per Offer per day (0 = unlimited).
+	MaxPerDayPerOffer *int `json:"maxPerDayPerOffer,omitempty"`
+
+	// MaxPerHourPerAccount Max rotations per account per hour (0 = unlimited).
+	MaxPerHourPerAccount *int `json:"maxPerHourPerAccount,omitempty"`
+
+	// MinIntervalMinutes Minimum interval between rotations for the same entity.
+	MinIntervalMinutes *int `json:"minIntervalMinutes,omitempty"`
+
+	// RollbackOnError Automatically rollback to previous stable suffix on errors.
+	RollbackOnError *bool `json:"rollbackOnError,omitempty"`
+}
+
 // MccLink defines model for MccLink.
 type MccLink struct {
 	CustomerId string        `json:"customerId"`
@@ -434,6 +452,9 @@ type MccUnlinkJSONRequestBody MccUnlinkJSONBody
 
 // RunPreflightJSONRequestBody defines body for RunPreflight for application/json ContentType.
 type RunPreflightJSONRequestBody RunPreflightJSONBody
+
+// UpdateLinkRotationSettingsJSONRequestBody defines body for UpdateLinkRotationSettings for application/json ContentType.
+type UpdateLinkRotationSettingsJSONRequestBody = LinkRotationSettings
 
 // AsAdjustCpcParams returns the union data inside the BulkActionPlan_Actions_Params as a AdjustCpcParams
 func (t BulkActionPlan_Actions_Params) AsAdjustCpcParams() (AdjustCpcParams, error) {

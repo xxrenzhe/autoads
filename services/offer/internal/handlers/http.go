@@ -123,6 +123,38 @@ func (h *Handler) offerTreeHandler(w http.ResponseWriter, r *http.Request) {
             _ = json.NewEncoder(w).Encode(struct{ Items []item `json:"items"` }{Items: items})
             return
         }
+        if sub == "preferences" {
+            // GET /api/v1/offers/{id}/preferences
+            ensureOfferPreferencesTable(h.DB, r.Context())
+            type prefs struct {
+                AutoStatusEnabled bool `json:"autoStatusEnabled"`
+                StatusRules struct {
+                    ZeroPerfDays   int `json:"zeroPerfDays"`
+                    RoscDeclineDays int `json:"roscDeclineDays"`
+                } `json:"statusRules,omitempty"`
+            }
+            // defaults
+            p := prefs{AutoStatusEnabled: false}
+            p.StatusRules.ZeroPerfDays = 5
+            p.StatusRules.RoscDeclineDays = 7
+            var (
+                auto sql.NullBool
+                zero sql.NullInt32
+                rosc sql.NullInt32
+            )
+            err := h.DB.QueryRowContext(r.Context(), `
+                SELECT auto_status_enabled, zero_perf_days, rosc_decline_days
+                FROM "OfferPreferences" WHERE offer_id=$1 AND user_id=$2
+            `, id, userID).Scan(&auto, &zero, &rosc)
+            if err == nil {
+                if auto.Valid { p.AutoStatusEnabled = auto.Bool }
+                if zero.Valid && zero.Int32 > 0 { p.StatusRules.ZeroPerfDays = int(zero.Int32) }
+                if rosc.Valid && rosc.Int32 > 0 { p.StatusRules.RoscDeclineDays = int(rosc.Int32) }
+            }
+            w.Header().Set("Content-Type", "application/json")
+            _ = json.NewEncoder(w).Encode(p)
+            return
+        }
         if sub != "" { errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "not found", nil); return }
         var o Offer
         var createdAt time.Time
@@ -220,6 +252,37 @@ func (h *Handler) offerTreeHandler(w http.ResponseWriter, r *http.Request) {
             _ = json.NewEncoder(w).Encode(o)
             return
         }
+        if sub == "preferences" {
+            // PUT /api/v1/offers/{id}/preferences
+            ensureOfferPreferencesTable(h.DB, r.Context())
+            var body struct {
+                AutoStatusEnabled bool `json:"autoStatusEnabled"`
+                StatusRules *struct {
+                    ZeroPerfDays   *int `json:"zeroPerfDays"`
+                    RoscDeclineDays *int `json:"roscDeclineDays"`
+                } `json:"statusRules"`
+            }
+            if err := json.NewDecoder(r.Body).Decode(&body); err != nil { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+            zero := 5
+            rosc := 7
+            if body.StatusRules != nil {
+                if body.StatusRules.ZeroPerfDays != nil && *body.StatusRules.ZeroPerfDays > 0 && *body.StatusRules.ZeroPerfDays <= 30 { zero = *body.StatusRules.ZeroPerfDays }
+                if body.StatusRules.RoscDeclineDays != nil && *body.StatusRules.RoscDeclineDays > 0 && *body.StatusRules.RoscDeclineDays <= 30 { rosc = *body.StatusRules.RoscDeclineDays }
+            }
+            if _, err := h.DB.ExecContext(r.Context(), `
+                INSERT INTO "OfferPreferences"(user_id, offer_id, auto_status_enabled, zero_perf_days, rosc_decline_days, updated_at)
+                VALUES ($1,$2,$3,$4,$5, NOW())
+                ON CONFLICT (user_id, offer_id) DO UPDATE SET
+                    auto_status_enabled=EXCLUDED.auto_status_enabled,
+                    zero_perf_days=EXCLUDED.zero_perf_days,
+                    rosc_decline_days=EXCLUDED.rosc_decline_days,
+                    updated_at=NOW()
+            `, userID, id, body.AutoStatusEnabled, zero, rosc); err != nil {
+                errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "upsert failed", map[string]string{"error": err.Error()}); return
+            }
+            _ = json.NewEncoder(w).Encode(map[string]any{"status": "ok"})
+            return
+        }
         errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "unsupported subresource", nil); return
     case http.MethodPost:
         // POST /api/v1/offers/{id}/kpi/aggregate
@@ -277,6 +340,21 @@ func (h *Handler) offerTreeHandler(w http.ResponseWriter, r *http.Request) {
         }
         errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return
     }
+}
+
+// ensureOfferPreferencesTable creates the preferences table if not exists.
+func ensureOfferPreferencesTable(db *sql.DB, ctx context.Context) {
+    _, _ = db.ExecContext(ctx, `
+        CREATE TABLE IF NOT EXISTS "OfferPreferences"(
+            user_id TEXT NOT NULL,
+            offer_id TEXT NOT NULL,
+            auto_status_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+            zero_perf_days INTEGER NOT NULL DEFAULT 5,
+            rosc_decline_days INTEGER NOT NULL DEFAULT 7,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            PRIMARY KEY (user_id, offer_id)
+        )
+    `)
 }
 
 // getOfferKPI returns stubbed 7-day KPI for an offer (dev/preview) with deterministic values.

@@ -16,6 +16,7 @@ import (
 
     "github.com/jackc/pgx/v5/pgxpool"
     "github.com/xxrenzhe/autoads/pkg/errors"
+    "github.com/xxrenzhe/autoads/pkg/auth"
     "github.com/xxrenzhe/autoads/pkg/middleware"
     secretmanager "cloud.google.com/go/secretmanager/apiv1"
     "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
@@ -82,6 +83,9 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
     mux.Handle("/api/v1/console/notifications/rules", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.rulesHandler))))
     mux.Handle("/api/v1/console/notifications/rules/", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.rulesTree))))
     mux.Handle("/api/v1/console/notifications/rules/evaluate", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.rulesEvaluate))))
+    // Notifications settings (throttling & channels)
+    // user scope: authenticated用户可访问；system scope: 仅ADMIN
+    mux.Handle("/api/v1/console/notifications/settings", middleware.AuthMiddleware(http.HandlerFunc(h.notificationSettingsHandler)))
     // Offer KPI DLQ (admin)
     mux.Handle("/api/v1/console/offers/kpi/deadletters", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.offerKpiDeadLetters))))
     mux.Handle("/api/v1/console/offers/kpi/retry", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.offerKpiRetry))))
@@ -107,6 +111,131 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 		// Use StripPrefix to remove the /console/ prefix before handing it to the file server
 		http.StripPrefix("/console/", fileServer).ServeHTTP(w,r)
 	})
+}
+
+// notificationSettingsHandler handles GET/PUT /api/v1/console/notifications/settings?scope=user|system
+func (h *Handler) notificationSettingsHandler(w http.ResponseWriter, r *http.Request) {
+    scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+    if scope == "" { scope = "user" }
+    if scope != "user" && scope != "system" { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "scope must be user or system", nil); return }
+    uid := ""
+    if scope == "user" {
+        if v := r.Context().Value(middleware.UserIDKey); v != nil { if s, ok := v.(string); ok { uid = s } }
+        if uid == "" { errors.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "missing user context", nil); return }
+    } else {
+        // system scope requires admin
+        u, _ := auth.ExtractUserID(r)
+        info, _ := auth.ExtractInfo(r)
+        if !isAdmin(u, info.Email) {
+            errors.Write(w, r, http.StatusForbidden, "FORBIDDEN", "Admin role required for system scope", nil)
+            return
+        }
+        // for system scope, keep user_id empty key
+    }
+    ensureNotificationSettingsTable(r.Context(), h.DB)
+    type settings struct {
+        Enabled           bool    `json:"enabled"`
+        MinConfidence     float64 `json:"minConfidence"`
+        ThrottlePerMinute int     `json:"throttlePerMinute"`
+        GroupWindowSec    int     `json:"groupWindowSec"`
+        Channels struct {
+            InApp   bool `json:"inApp"`
+            Email   bool `json:"email"`
+            Webhook bool `json:"webhook"`
+        } `json:"channels"`
+    }
+    switch r.Method {
+    case http.MethodGet:
+        out := settings{Enabled: true, MinConfidence: 0.6, ThrottlePerMinute: 30, GroupWindowSec: 60}
+        out.Channels.InApp = true
+        var (
+            enabled *bool
+            minc *float64
+            tpm *int
+            gws *int
+            chRaw []byte
+        )
+        row := h.DB.QueryRow(r.Context(), `SELECT enabled, min_confidence, throttle_per_minute, group_window_sec, channels FROM "NotificationSettings" WHERE scope=$1 AND user_id=$2`, scope, uid)
+        if err := row.Scan(&enabled, &minc, &tpm, &gws, &chRaw); err == nil {
+            if enabled != nil { out.Enabled = *enabled }
+            if minc != nil && *minc >= 0 && *minc <= 1 { out.MinConfidence = *minc }
+            if tpm != nil && *tpm >= 0 { out.ThrottlePerMinute = *tpm }
+            if gws != nil && *gws >= 0 { out.GroupWindowSec = *gws }
+            if len(chRaw) > 0 {
+                var ch map[string]bool
+                if json.Unmarshal(chRaw, &ch) == nil {
+                    out.Channels.InApp = ch["inApp"]
+                    out.Channels.Email = ch["email"]
+                    out.Channels.Webhook = ch["webhook"]
+                }
+            }
+        }
+        w.Header().Set("Content-Type", "application/json")
+        _ = json.NewEncoder(w).Encode(out)
+        return
+    case http.MethodPut:
+        var body settings
+        if err := json.NewDecoder(r.Body).Decode(&body); err != nil { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+        if body.MinConfidence < 0 || body.MinConfidence > 1 { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "minConfidence must be in [0,1]", nil); return }
+        chMap := map[string]bool{"inApp": body.Channels.InApp, "email": body.Channels.Email, "webhook": body.Channels.Webhook}
+        chBytes, _ := json.Marshal(chMap)
+        _, err := h.DB.Exec(r.Context(), `
+            INSERT INTO "NotificationSettings"(scope, user_id, enabled, min_confidence, throttle_per_minute, group_window_sec, channels, updated_at)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())
+            ON CONFLICT (scope, user_id) DO UPDATE SET
+                enabled=EXCLUDED.enabled,
+                min_confidence=EXCLUDED.min_confidence,
+                throttle_per_minute=EXCLUDED.throttle_per_minute,
+                group_window_sec=EXCLUDED.group_window_sec,
+                channels=EXCLUDED.channels,
+                updated_at=NOW()
+        `, scope, uid, body.Enabled, body.MinConfidence, body.ThrottlePerMinute, body.GroupWindowSec, chBytes)
+        if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "upsert failed", map[string]string{"error": err.Error()}); return }
+        _ = json.NewEncoder(w).Encode(map[string]any{"status": "ok"})
+        return
+    default:
+        errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return
+    }
+}
+
+func ensureNotificationSettingsTable(ctx context.Context, db *pgxpool.Pool) {
+    _, _ = db.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS "NotificationSettings"(
+            scope TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            enabled BOOLEAN NOT NULL DEFAULT TRUE,
+            min_confidence DOUBLE PRECISION NOT NULL DEFAULT 0.6,
+            throttle_per_minute INTEGER NOT NULL DEFAULT 30,
+            group_window_sec INTEGER NOT NULL DEFAULT 60,
+            channels JSONB NOT NULL DEFAULT '{}'::jsonb,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            PRIMARY KEY (scope, user_id)
+        )
+    `)
+}
+
+// isAdmin replicates AdminOnly checks for inline scope control
+func isAdmin(uid, email string) bool {
+    email = strings.TrimSpace(strings.ToLower(email))
+    if email != "" {
+        if sa := strings.TrimSpace(strings.ToLower(os.Getenv("SUPER_ADMIN_EMAIL"))); sa != "" && sa == email {
+            return true
+        }
+        if list := os.Getenv("ADMIN_EMAILS"); list != "" {
+            for _, e := range strings.Split(list, ",") {
+                if strings.TrimSpace(strings.ToLower(e)) == email { return true }
+            }
+        }
+    }
+    uid = strings.TrimSpace(uid)
+    if uid != "" {
+        if list := os.Getenv("ADMIN_UIDS"); list != "" {
+            for _, u := range strings.Split(list, ",") {
+                if strings.TrimSpace(u) == uid { return true }
+            }
+        }
+    }
+    return false
 }
 
 func (h *Handler) getUsers(w http.ResponseWriter, r *http.Request) {

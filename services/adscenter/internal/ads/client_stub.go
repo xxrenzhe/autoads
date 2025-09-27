@@ -12,6 +12,9 @@ type Client interface{
     GetManagerLinkStatus(ctx context.Context, clientCustomerID string) (string, error)
     RemoveManagerLink(ctx context.Context, clientCustomerID string) error
     KeywordIdeas(ctx context.Context, seedDomain string, seeds []string) ([]KeywordIdea, error)
+    // AB test helpers (MVP): minimal live ops
+    CopyAdGroupMinimal(ctx context.Context, customerID, srcAdGroupID, nameSuffix string) (newAdGroupID string, err error)
+    RefreshAdGroupMetrics(ctx context.Context, customerID string, adGroupIDs []string, dateRange string) (map[string]AdGroupMetrics, error)
 }
 
 // StubClient implements Client but returns not-available results.
@@ -47,6 +50,7 @@ func (c *StubClient) HasActiveConversionTracking(ctx context.Context, accountID 
 func (c *StubClient) HasSufficientBudget(ctx context.Context, accountID string) (bool, error) { return false, nil }
 
 type KeywordIdea struct { Text string; AvgMonthlySearches int; Competition string }
+type AdGroupMetrics struct { Impressions int64; Clicks int64; CostMicros int64 }
 
 func (c *StubClient) KeywordIdeas(ctx context.Context, seedDomain string, seeds []string) ([]KeywordIdea, error) {
     // Simple stub: derive few ideas per seed
@@ -79,5 +83,17 @@ func (c *StubClient) KeywordIdeas(ctx context.Context, seedDomain string, seeds 
             }
         }
     }
+    return out, nil
+}
+
+func (c *StubClient) CopyAdGroupMinimal(ctx context.Context, customerID, srcAdGroupID, nameSuffix string) (string, error) {
+    // Stub: return synthetic id
+    if nameSuffix == "" { nameSuffix = "_B" }
+    return srcAdGroupID + nameSuffix, nil
+}
+
+func (c *StubClient) RefreshAdGroupMetrics(ctx context.Context, customerID string, adGroupIDs []string, dateRange string) (map[string]AdGroupMetrics, error) {
+    out := make(map[string]AdGroupMetrics, len(adGroupIDs))
+    for _, id := range adGroupIDs { out[id] = AdGroupMetrics{} }
     return out, nil
 }

@@ -71,3 +71,26 @@ export async function unlinkOfferAccount(id: string, accountId: string, init?: R
   const res = await fetch(`${BASE}/offers/${encodeURIComponent(id)}/accounts/${encodeURIComponent(accountId)}`, { method: 'DELETE', ...(init||{}) })
   if (res.status !== 204) throw new Error(`unlinkOfferAccount failed: ${res.status}`)
 }
+
+// Preferences: automation for offer status
+export type OfferPreferences = {
+  autoStatusEnabled: boolean
+  statusRules?: { zeroPerfDays?: number; roscDeclineDays?: number }
+}
+
+export async function getOfferPreferences(id: string, init?: RequestInit): Promise<OfferPreferences> {
+  const res = await fetch(`${BASE}/offers/${encodeURIComponent(id)}/preferences`, { method: 'GET', ...(init||{}) })
+  if (!res.ok) throw new Error(`getOfferPreferences failed: ${res.status}`)
+  return res.json()
+}
+
+export async function updateOfferPreferences(id: string, prefs: OfferPreferences, init?: RequestInit): Promise<{ status: string }> {
+  const res = await fetch(`${BASE}/offers/${encodeURIComponent(id)}/preferences`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json', ...(init?.headers || {}) },
+    body: JSON.stringify(prefs),
+    ...(init||{}),
+  })
+  if (!res.ok) throw new Error(`updateOfferPreferences failed: ${res.status}`)
+  return res.json()
+}

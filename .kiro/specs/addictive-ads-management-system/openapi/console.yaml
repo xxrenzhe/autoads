@@ -137,6 +137,37 @@ paths:
       security: [ { bearerAuth: [] } ]
       responses:
         '200': { description: OK }
+  /api/v1/console/notifications/settings:
+    get:
+      summary: Get global notification/throttling settings (system or user scope)
+      operationId: getNotificationSettings
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: query
+          name: scope
+          schema: { type: string, enum: [system, user], default: user }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationSettings' }
+    put:
+      summary: Update global notification/throttling settings (system or user scope)
+      operationId: updateNotificationSettings
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: query
+          name: scope
+          schema: { type: string, enum: [system, user], default: user }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificationSettings' }
+      responses:
+        '200': { description: OK }
+        '400': { description: Bad Request }
   /api/v1/console/offers/kpi/deadletters:
     get:
       summary: List Offer KPI DLQ items
@@ -170,5 +201,31 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
-
+  bearerFormat: JWT
+  schemas:
+    NotificationSettings:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: Master switch for notifications/alerts.
+        minConfidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Minimum confidence to trigger alert delivery.
+        throttlePerMinute:
+          type: integer
+          minimum: 0
+          description: Max number of alerts delivered per minute (0 = unlimited).
+        groupWindowSec:
+          type: integer
+          minimum: 0
+          description: Window to group similar alerts for de-duplication.
+        channels:
+          type: object
+          additionalProperties: false
+          properties:
+            inApp: { type: boolean }
+            email: { type: boolean }
+            webhook: { type: boolean }

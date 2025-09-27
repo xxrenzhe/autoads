@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# DEPRECATED: 使用 Pub/Sub 分发器替代 HTTP+OIDC 调度。
+# 推荐：`deployments/scripts/create-scheduler-pubsub-dispatch.sh` 并设置
+#   URL="https://<adscenter>/api/v1/adscenter/bulk-actions/execute-tick?max=N" HEADERS_JSON='{"X-Service-Token":"ENV","Accept":"application/json"}'
+#
 # Create/Update a Cloud Scheduler job to drive bulk action shard execution.
 # It calls the Adscenter Cloud Run endpoint:
 #   POST /api/v1/adscenter/bulk-actions/execute-tick?max=N
@@ -72,4 +76,3 @@ fi
 
 echo "[scheduler] Done. To run immediately:"
 echo "  gcloud scheduler jobs run $JOB_NAME --location=$REGION"
-

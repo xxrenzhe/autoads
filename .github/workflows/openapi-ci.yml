@@ -1,0 +1,42 @@
+name: OpenAPI CI
+
+on:
+  push:
+    branches: [ main, production ]
+  pull_request:
+    branches: [ main, production ]
+
+jobs:
+  openapi-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install oapi-codegen
+        run: go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest
+
+      - name: Validate and Generate from OpenAPI
+        run: |
+          chmod +x scripts/openapi/*.sh || true
+          scripts/openapi/ci-check.sh
+
+      - name: Upload generated TS types (artifact)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-ts-types
+          path: |
+            apps/frontend/src/sdk/**/types.d.ts
+          if-no-files-found: ignore
+

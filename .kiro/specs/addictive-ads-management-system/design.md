@@ -34,6 +34,14 @@
 - 最终形态直达（无需历史迁移）
 - 避免技术债务积累
 
+## KANO优先级与默认策略
+
+- Must-be：统一认证/鉴权、Offer看板与ROSC、预检/批量的预览-审计-回滚、事件驱动与读模型、原子计费、基础风险识别。
+- Performance：10秒评估分阶段SLO、批量成功率与吞吐、Browser-Exec并发稳定性、全局聚合性能、预警节流与精准度、数据同步时效、国际化与SEO。
+- Attractive：机会雷达、一键诊断/修复、A/B统计显著性与推荐、变更计划可视化、换链接时间轴。
+
+默认策略：业务自动化默认“建议+确认”，可按用户开关启用自动处置；预警需节流/合并并设置置信度门限；换链接/批量变更需频控与回退。
+
 ## 系统架构
 
 ## 架构总览
@@ -154,7 +162,7 @@ POST   /api/v1/evaluation/batch-analyze  // 批量分析
 - 以Offer为中心的批量操作界面
 - 自动关联Offer下的所有Google Ads账户和广告组
 - 智能筛选和操作预览
-- 换链接定时任务
+- 换链接定时任务（频控+回退）
 - A/B测试管理
 - 操作历史和撤销
 
@@ -525,8 +533,8 @@ func (ac *AvailabilityChecker) CheckOfferAvailability(offerURL string) (*Availab
 **技术栈：** Go + Cloud Run + Firebase AI Logic + 规则引擎
 
 **核心功能：**
-- 实时数据监控和自动状态转换（连续5天0曝光0点击→衰退期）
-- 风险识别和预警
+- 实时数据监控与“建议+确认”的状态建议（可配置自动状态转换：连续5天0曝光0点击→衰退期）
+- 风险识别与预警（内置节流/合并/置信度门限）
 - Firebase AI Logic多场景应用：内容分析、优化建议、合规检查
 - 效果跟踪反馈
 - 规则引擎管理
@@ -1131,13 +1139,19 @@ func HandleLinkRotation(ctx context.Context, m PubSubMessage) error {
 }
 
 func processLinkRotation(task LinkRotationTask) {
+    // 0. 频控与安全检查（按 Offer/Account 限速与时间窗口防抖）
+    if exceededRotationRate(task.OfferID, task.AccountID) {
+        logSkippedByRateLimit(task)
+        return
+    }
+
     // 1. 解析新的URL获取suffix
     newSuffix := parseOfferURL(task.OfferURL)
     
     // 2. 批量更新Google Ads
     updateAdGroupSuffixes(task.AdGroupIDs, newSuffix)
     
-    // 3. 记录操作历史
+    // 3. 记录操作历史（包含可回退快照）
     logRotationOperation(task, newSuffix)
 }
 ```
@@ -1187,11 +1201,25 @@ func syncAccountData(account AdsAccount) {
     // 3. 更新Firestore中的实时数据
     updateRealtimeMetrics(account.ID, data)
     
-    // 4. 检查自动状态转换条件
+    // 4. 检查状态建议/自动转换（默认仅建议+确认）
     checkAutoStatusTransition(account.UserID, data)
 }
 
 func checkAutoStatusTransition(userID string, performanceData []*PerformanceData) {
+    // 未开启自动化：仅生成建议与通知
+    if !isAutoStatusEnabled(userID) {
+        offers := getActiveOffers(userID)
+        for _, offer := range offers {
+            if hasZeroPerformanceFor5Days(offer.ID, performanceData) {
+                notifyStatusSuggestion(userID, offer.ID, "建议转入衰退期：连续5天无曝光无点击")
+            }
+            if hasROSCDeclineFor7Days(offer.ID, performanceData) {
+                notifyStatusSuggestion(userID, offer.ID, "建议转入衰退期：ROSC连续下滑")
+            }
+        }
+        return
+    }
+
     offers := getActiveOffers(userID)
     
     for _, offer := range offers {
@@ -1273,6 +1301,21 @@ src/
 ```
 
 ### 服务与边界
+
+### 设置项清单（用户可配置）
+
+- Offer自动状态转换
+  - 字段：autoStatusEnabled（默认false），zeroPerfDays，roscDeclineDays
+  - 接口：`GET/PUT /api/v1/offers/{id}/preferences`
+- 通知/预警节流
+  - 字段：enabled，minConfidence，throttlePerMinute，groupWindowSec，channels{inApp,email,webhook}
+  - 接口：`GET/PUT /api/v1/console/notifications/settings?scope=user|system`
+- 换链接频控
+  - 字段：enabled，minIntervalMinutes，maxPerDayPerOffer，maxPerHourPerAccount，rollbackOnError
+  - 接口：`GET/PUT /api/v1/adscenter/settings/link-rotation`
+- 国际化
+  - 字段：language（zh|en）、date/number格式偏好
+  - 存储：本地+Firestore配置，Next.js i18n routing
 
 ### 7个核心微服务（基于架构决策优化）
 

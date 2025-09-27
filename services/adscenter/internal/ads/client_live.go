@@ -220,3 +220,106 @@ func (c *LiveClient) KeywordIdeas(ctx context.Context, seedDomain string, seeds 
     }
     return out, nil
 }
+
+// --- AB test live helpers (MVP) ---
+
+type AdGroupMetrics struct { Impressions int64; Clicks int64; CostMicros int64 }
+
+// CopyAdGroupMinimal creates a new ad group under the same campaign with name suffix.
+// NOTE: This minimal copy does not clone ads/criteria; it only creates an empty group.
+func (c *LiveClient) CopyAdGroupMinimal(ctx context.Context, customerID, srcAdGroupID, nameSuffix string) (string, error) {
+    if nameSuffix == "" { nameSuffix = "_B" }
+    // 1) Lookup source ad group campaign and name
+    camp, name, err := c.lookupAdGroup(ctx, customerID, srcAdGroupID)
+    if err != nil { return "", err }
+    // 2) Create new ad group
+    newName := name + nameSuffix
+    rn, err := c.createAdGroup(ctx, customerID, camp, newName)
+    if err != nil { return "", err }
+    // extract id suffix after last '/'
+    id := rn
+    if i := strings.LastIndex(rn, "/"); i >= 0 { id = rn[i+1:] }
+    return id, nil
+}
+
+func (c *LiveClient) lookupAdGroup(ctx context.Context, customerID, adGroupID string) (campaignResource, name string, err error) {
+    url := fmt.Sprintf("https://googleads.googleapis.com/v16/customers/%s/googleAds:searchStream", customerID)
+    q := fmt.Sprintf("SELECT ad_group.resource_name, ad_group.name, ad_group.campaign FROM ad_group WHERE ad_group.id = %s", adGroupID)
+    data, _, err := c.doJSON(ctx, http.MethodPost, url, map[string]any{"query": q})
+    if err != nil { return "", "", err }
+    var arr []map[string]any
+    if json.Unmarshal(data, &arr) != nil { return "", "", fmt.Errorf("gaql parse") }
+    for _, chunk := range arr {
+        if results, ok := chunk["results"].([]any); ok {
+            for _, it := range results {
+                if m, ok := it.(map[string]any); ok {
+                    if ag, ok := m["adGroup"].(map[string]any); ok {
+                        name, _ = ag["name"].(string)
+                        campaignResource, _ = ag["campaign"].(string)
+                        if name != "" && campaignResource != "" { return campaignResource, name, nil }
+                    }
+                }
+            }
+        }
+    }
+    return "", "", fmt.Errorf("ad group not found")
+}
+
+func (c *LiveClient) createAdGroup(ctx context.Context, customerID, campaignResource, name string) (resourceName string, err error) {
+    url := fmt.Sprintf("https://googleads.googleapis.com/v16/customers/%s/adGroups:mutate", customerID)
+    body := map[string]any{
+        "operations": []any{
+            map[string]any{
+                "create": map[string]any{
+                    "name": name,
+                    "campaign": campaignResource,
+                    "status": "ENABLED",
+                },
+            },
+        },
+    }
+    data, _, err := c.doJSON(ctx, http.MethodPost, url, body)
+    if err != nil { return "", err }
+    var resp struct{ Results []struct{ ResourceName string `json:"resourceName"` } `json:"results"` }
+    if json.Unmarshal(data, &resp) != nil || len(resp.Results) == 0 { return "", fmt.Errorf("create ad group failed") }
+    return resp.Results[0].ResourceName, nil
+}
+
+// RefreshAdGroupMetrics returns last 7 days metrics per ad group (impressions/clicks/cost_micros)
+func (c *LiveClient) RefreshAdGroupMetrics(ctx context.Context, customerID string, adGroupIDs []string, dateRange string) (map[string]AdGroupMetrics, error) {
+    if dateRange == "" { dateRange = "LAST_7_DAYS" }
+    // Build IN clause for GAQL
+    in := make([]string, 0, len(adGroupIDs))
+    for _, id := range adGroupIDs { in = append(in, id) }
+    // Note: GAQL IN for id fields expects numeric list
+    cond := strings.Join(in, ",")
+    q := fmt.Sprintf("SELECT ad_group.id, metrics.impressions, metrics.clicks, metrics.cost_micros FROM ad_group WHERE ad_group.id IN (%s) DURING %s", cond, dateRange)
+    url := fmt.Sprintf("https://googleads.googleapis.com/v16/customers/%s/googleAds:searchStream", customerID)
+    data, _, err := c.doJSON(ctx, http.MethodPost, url, map[string]any{"query": q})
+    if err != nil { return nil, err }
+    var arr []map[string]any
+    if json.Unmarshal(data, &arr) != nil { return nil, fmt.Errorf("gaql parse") }
+    out := map[string]AdGroupMetrics{}
+    for _, chunk := range arr {
+        if results, ok := chunk["results"].([]any); ok {
+            for _, it := range results {
+                if m, ok := it.(map[string]any); ok {
+                    var id string
+                    if ag, ok := m["adGroup"].(map[string]any); ok {
+                        if v, ok := ag["id"].(string); ok { id = v }
+                    }
+                    if id == "" { continue }
+                    var imps, clicks, cost int64
+                    if mt, ok := m["metrics"].(map[string]any); ok {
+                        if v, ok := mt["impressions"].(string); ok { if n, err := strconv.ParseInt(v, 10, 64); err==nil { imps=n } }
+                        if v, ok := mt["clicks"].(string); ok { if n, err := strconv.ParseInt(v, 10, 64); err==nil { clicks=n } }
+                        if v, ok := mt["costMicros"].(string); ok { if n, err := strconv.ParseInt(v, 10, 64); err==nil { cost=n } }
+                        if v, ok := mt["cost_micros"].(string); ok { if n, err := strconv.ParseInt(v, 10, 64); err==nil { cost=n } }
+                    }
+                    out[id] = AdGroupMetrics{Impressions: imps, Clicks: clicks, CostMicros: cost}
+                }
+            }
+        }
+    }
+    return out, nil
+}

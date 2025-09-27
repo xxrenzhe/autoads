@@ -70,6 +70,7 @@ export default function OpportunitiesPage() {
       {items.length === 0 ? (
         <div className="text-gray-500">暂无数据</div>
       ) : (
+        <>
         <table className="w-full border border-gray-200 text-sm">
           <thead className="bg-gray-50">
             <tr>
@@ -108,6 +109,7 @@ export default function OpportunitiesPage() {
         <div className="mt-3">
           <button className="px-3 py-1 border rounded" disabled={loading || !next} onClick={()=>load(false)}>{loading? '加载中…' : (next? '加载更多' : '没有更多了')}</button>
         </div>
+        </>
       )}
     </div>
   );

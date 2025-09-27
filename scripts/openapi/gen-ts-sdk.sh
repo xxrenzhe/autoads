@@ -44,6 +44,7 @@ generate() {
 generate offer.yaml offer
 generate siterank.yaml siterank
 generate adscenter.yaml adscenter
+generate console.yaml console
 generate batchopen.yaml batchopen
 generate billing.yaml billing
 generate notifications.yaml notifications

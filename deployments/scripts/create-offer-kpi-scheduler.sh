@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# DEPRECATED: 使用 Pub/Sub 分发器替代 HTTP+OIDC 调度。
+# 推荐：`deployments/scripts/create-offer-aggregate-daily-pubsub.sh`（分片）或
+#      `deployments/scripts/create-offer-kpi-retry-pubsub.sh`（DLQ 重试）
+#
 # Create or update a Cloud Scheduler job to aggregate KPI for a specific offer daily.
 # The job will call offer service endpoint with an OIDC token and an explicit X-User-Id header.
 #
@@ -70,4 +74,3 @@ else
 fi
 
 echo "[DONE] Scheduler job ${JOB_ID} -> ${TARGET_URL}"
-

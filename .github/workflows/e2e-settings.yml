@@ -1,0 +1,31 @@
+name: E2E Settings (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: API Gateway host (e.g., autoads-gw-preview-xxxx.an.gateway.dev)
+        required: true
+      offerId:
+        description: Optional Offer ID to test preferences
+        required: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run E2E Settings
+        env:
+          HOST: ${{ inputs.host }}
+          AUTH: ${{ secrets.PREVIEW_TEST_ID_TOKEN }}
+          ADMIN_AUTH: ${{ secrets.PREVIEW_ADMIN_ID_TOKEN }}
+          NONADMIN_AUTH: ${{ secrets.PREVIEW_NONADMIN_ID_TOKEN }}
+          OFFER_ID: ${{ inputs.offerId }}
+        shell: bash
+        run: |
+          if [[ -z "${AUTH:-}" ]]; then echo "AUTH token not set in secrets (PREVIEW_TEST_ID_TOKEN)" >&2; exit 1; fi
+          sudo apt-get update >/dev/null 2>&1 || true
+          sudo apt-get install -y jq >/dev/null 2>&1 || true
+          bash scripts/ops/e2e-settings.sh

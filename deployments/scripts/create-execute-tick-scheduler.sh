@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# DEPRECATED: 使用 Pub/Sub 分发器替代 HTTP+OIDC 调度。
+# 推荐：`deployments/scripts/create-scheduler-pubsub-dispatch.sh` 并设置
+#   TOPIC=jobs-dispatcher URL="https://<adscenter>/api/v1/adscenter/bulk-actions/execute-tick?max=N" \
+#   HEADERS_JSON='{"X-Service-Token":"ENV","Accept":"application/json"}'
+#
 # Create or update a Cloud Scheduler job to call adscenter execute-tick periodically with OIDC.
 # Usage:
 #   PROJECT_ID=gen-lang-client-... REGION=asia-northeast1 STACK=preview \
@@ -65,4 +70,3 @@ else
 fi
 
 echo "[DONE] Scheduler job ${JOB_ID} -> ${TARGET_URL}"
-

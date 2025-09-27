@@ -170,6 +170,30 @@ docker logs autoads-saas-production
 - 普通用户登录站点（NextAuth）与管理员登录后台（AdminJWT）完全独立，Cookie/Session 不共享。
 - 旧前缀 `/admin/*` 与 `/api/v1/admin/*` 已下线，请使用 `/console/*` 与 `/api/v1/console/*`。
 
+## 定时任务（推荐：Pub/Sub 分发器）
+
+为降低 OIDC 配置复杂度与跨服务鉴权不一致带来的失败风险，统一采用 Cloud Scheduler → Pub/Sub → Cloud Functions(Dispatcher) → Service HTTP 的链路。
+
+步骤：
+1) 部署分发函数（Gen2）：
+```bash
+PROJECT_ID=<project> REGION=asia-northeast1 INTERNAL_SERVICE_TOKEN=<token> \
+./deployments/scripts/create-pubsub-dispatcher.sh
+```
+
+2) 创建定时作业（向 Topic 发布 JSON 载荷）：
+```bash
+PROJECT_ID=<project> REGION=asia-northeast1 TOPIC=jobs-dispatcher \
+SCHEDULE="*/5 * * * *" \
+URL="https://<adscenter>/api/v1/adscenter/bulk-actions/execute-tick?max=2" \
+HEADERS_JSON='{"X-Service-Token":"ENV","Accept":"application/json"}' \
+./deployments/scripts/create-scheduler-pubsub-dispatch.sh
+```
+
+3) 迁移注意：
+- 旧的 HTTP+OIDC 脚本（如 `create-execute-tick-scheduler.sh`）已标注 DEPRECATED，仅作兼容保留；新环境一律使用 Pub/Sub 分发器。
+- `INTERNAL_SERVICE_TOKEN` 由目标服务在 AdminOnly 中识别，仅供内部作业使用，不应暴露给前端。
+
 ### Go 服务器特点
 - **静态文件服务**：直接服务 Next.js 构建产物
 - **API 路由**：RESTful API 和 WebSocket 支持

@@ -34,6 +34,8 @@ export default function OfferKanbanPage() {
   const [taskOpen, setTaskOpen] = useState(false);
   const [taskOffer, setTaskOffer] = useState<Offer | null>(null);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportData, setReportData] = useState<any>(null);
   const [trendOpen, setTrendOpen] = useState(false);
   const [trendOffer, setTrendOffer] = useState<Offer | null>(null);
   const [trend, setTrend] = useState<Array<{ date: string; avg: number }>>([]);
@@ -45,6 +47,7 @@ export default function OfferKanbanPage() {
   const [, setTick] = useState(0);
   const [sseAbort, setSseAbort] = useState<AbortController | null>(null);
   const [times, setTimes] = useState<Record<string, { resolveNav?: number; resolveStab?: number; sw?: number; ai?: number }>>({});
+  const [via, setVia] = useState<Record<string, string|undefined>>({});
   const [rosc, setRosc] = useState<Record<string, number | undefined>>({});
   type KpiDay = { date: string; impressions: number; clicks: number; spend: number; revenue: number };
   const [kpiDays, setKpiDays] = useState<Record<string, Array<KpiDay> | undefined>>({});
@@ -79,6 +82,16 @@ export default function OfferKanbanPage() {
         if (typeof v === 'number') sc[it.id] = v;
       }
       setScores(sc);
+      // KPI 预热：对前 N 个 Offer（按创建时间/列表顺序）尝试加载 KPI（受 loadKPI 内部聚合保护）
+      try {
+        const N = 3;
+        const pre = (list||[]).slice(0, N);
+        for (let i=0; i<pre.length; i++) {
+          const o = pre[i];
+          // 以 300ms 间隔串行触发，避免瞬时并发
+          setTimeout(() => { loadKPI(o as any).catch(()=>{}); }, i * 300);
+        }
+      } catch {}
     } finally { setLoading(false) }
   };
 
@@ -208,6 +221,15 @@ export default function OfferKanbanPage() {
       const filtered = items.filter((x:any) => (x.offerId||x.offer_id) === offer.id);
       setTasks(filtered);
     } catch {}
+  };
+
+  const viewReport = async (opId: string) => {
+    try {
+      const r = await fetch(`/api/go/api/v1/adscenter/bulk-actions/snapshot-aggregate?id=${encodeURIComponent(opId)}`, { cache: 'no-store' });
+      if (!r.ok) throw new Error(String(r.status));
+      const j = await r.json();
+      setReportData(j||{}); setReportOpen(true);
+    } catch (e:any) { alert(`获取报告失败：${e?.message||e}`) }
   };
 
   const loadKPI = async (offer: Offer) => {
@@ -370,6 +392,7 @@ export default function OfferKanbanPage() {
                     // 顺序刷新，避免瞬时高并发
                     (async () => { for (const id of ids) { const o = items.find(x => x.id === id); if (o) await refreshScore(o); } })();
                   }
+                  try { const data = JSON.parse(data || '{}'); if (data.via && data.offerId) setVia(prev => ({ ...prev, [String(data.offerId)]: String(data.via) })); } catch {}
                 }
               } catch {}
             }
@@ -448,6 +471,9 @@ export default function OfferKanbanPage() {
                       <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">同步中…</span>
                     )}
                     <Button variant="outline" size="sm" className="ml-2 h-7" onClick={()=>loadKPI(o)} disabled={!!kpiSyncing[o.id]}>刷新KPI</Button>
+                    {via[o.id] && (
+                      <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">via: {via[o.id]}</span>
+                    )}
                   </div>
                   {trendMap[o.id] && trendMap[o.id]!.length > 0 && (
                     <div className="mt-1" style={{ width: '100%', height: 60 }}>
@@ -568,6 +594,11 @@ export default function OfferKanbanPage() {
                     );
                   } catch { return null }
                 })()}
+                {t.id && (
+                  <div className="mt-2">
+                    <Button variant="outline" size="sm" onClick={()=>viewReport(String(t.id))}>报告</Button>
+                  </div>
+                )}
               </div>
             ))}
             {tasks.length > 0 && (
@@ -603,6 +634,17 @@ export default function OfferKanbanPage() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>批量操作报告</DialogTitle>
+          </DialogHeader>
+          <pre style={{ maxHeight: 400, overflow: 'auto', background:'#f8fafc', padding: 8, fontSize: 12 }}>
+            {reportData ? JSON.stringify(reportData, null, 2) : '无数据'}
+          </pre>
         </DialogContent>
       </Dialog>
 

@@ -85,6 +85,21 @@ type OfferKpiResponse struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+// OfferPreferences Per-offer automation preferences. Defaults may be provided by user profile; this endpoint stores overrides.
+type OfferPreferences struct {
+	// AutoStatusEnabled If true, system may automatically update offer status based on rules; otherwise only suggest changes.
+	AutoStatusEnabled bool `json:"autoStatusEnabled"`
+
+	// StatusRules Optional thresholds overriding defaults.
+	StatusRules *struct {
+		// RoscDeclineDays Days of continuous ROSC decline to suggest/trigger decline.
+		RoscDeclineDays *int `json:"roscDeclineDays,omitempty"`
+
+		// ZeroPerfDays Days with zero impressions and zero clicks to suggest/trigger decline.
+		ZeroPerfDays *int `json:"zeroPerfDays,omitempty"`
+	} `json:"statusRules,omitempty"`
+}
+
 // OfferStatusUpdate defines model for OfferStatusUpdate.
 type OfferStatusUpdate struct {
 	Status string `json:"status"`
@@ -107,11 +122,28 @@ type OfferUpdateRequest struct {
 	OriginalUrl *string `json:"originalUrl,omitempty"`
 }
 
+// LinkOfferAccountJSONBody defines parameters for LinkOfferAccount.
+type LinkOfferAccountJSONBody struct {
+	AccountId string `json:"accountId"`
+}
+
+// AggregateOfferKpiParams defines parameters for AggregateOfferKpi.
+type AggregateOfferKpiParams struct {
+	// Date Day to aggregate (UTC). Default today.
+	Date *openapi_types.Date `form:"date,omitempty" json:"date,omitempty"`
+}
+
 // CreateOfferJSONRequestBody defines body for CreateOffer for application/json ContentType.
 type CreateOfferJSONRequestBody = OfferCreateRequest
 
 // UpdateOfferJSONRequestBody defines body for UpdateOffer for application/json ContentType.
 type UpdateOfferJSONRequestBody = OfferUpdateRequest
+
+// LinkOfferAccountJSONRequestBody defines body for LinkOfferAccount for application/json ContentType.
+type LinkOfferAccountJSONRequestBody LinkOfferAccountJSONBody
+
+// UpdateOfferPreferencesJSONRequestBody defines body for UpdateOfferPreferences for application/json ContentType.
+type UpdateOfferPreferencesJSONRequestBody = OfferPreferences
 
 // UpdateOfferStatusJSONRequestBody defines body for UpdateOfferStatus for application/json ContentType.
 type UpdateOfferStatusJSONRequestBody = OfferStatusUpdate

@@ -1,5 +1,5 @@
 import express from 'express'
-import { pool } from './pool.js'
+import { pool, setLimits, getLimits } from './pool.js'
 import client from 'prom-client'
 
 const app = express()
@@ -44,11 +44,16 @@ app.post('/api/v1/browser/parse-url', (req, res) => {
   }
 })
 
-// --- Concurrency guard ---
-const MAX_CONCURRENCY = Number(process.env.BROWSER_MAX_CONCURRENCY || 4)
+// --- Ops config & guards ---
+let MAX_CONCURRENCY = Number(process.env.BROWSER_MAX_CONCURRENCY || 4)
 let running = 0
+let MAINTENANCE = false
 function withSlot(fn) {
   return async (req, res) => {
+    if (MAINTENANCE) {
+      res.set('Retry-After', '60')
+      return res.status(503).json({ error: { code: 'MAINTENANCE', message: 'Service in maintenance mode' } })
+    }
     if (running >= MAX_CONCURRENCY) {
       res.set('Retry-After', '1')
       return res.status(503).json({ error: { code: 'OVERLOADED', message: 'Too many concurrent tasks' } })
@@ -86,6 +91,46 @@ function enforceInternal(req, res, next) {
   return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'internal token required' } })
 }
 app.use('/api/v1/browser', enforceInternal)
+
+// --- Ops & maintenance endpoints ---
+// GET current config and runtime stats
+app.get('/api/v1/browser/config', (req, res) => {
+  try {
+    return res.json({
+      concurrency: MAX_CONCURRENCY,
+      limits: getLimits(),
+      maintenance: MAINTENANCE,
+      stats: pool.stats(),
+    })
+  } catch (e) { return res.status(500).json({ error: { code: 'CONFIG_READ_FAILED', message: String(e?.message || e) } }) }
+})
+// PUT to update in-memory config: { concurrency?, maxContexts?, maxMemoryMb? }
+app.put('/api/v1/browser/config', (req, res) => {
+  try {
+    const { concurrency, maxContexts, maxMemoryMb } = req.body || {}
+    if (Number.isFinite(concurrency) && concurrency > 0) {
+      MAX_CONCURRENCY = Math.min(256, Math.max(1, concurrency|0))
+    }
+    setLimits({ maxContexts, maxMemoryMb })
+    return res.json({ ok: true, concurrency: MAX_CONCURRENCY, limits: getLimits() })
+  } catch (e) { return res.status(400).json({ error: { code: 'CONFIG_UPDATE_FAILED', message: String(e?.message || e) } }) }
+})
+// Maintenance toggle
+app.get('/api/v1/browser/maintenance', (req, res) => res.json({ maintenance: MAINTENANCE }))
+app.post('/api/v1/browser/maintenance', (req, res) => {
+  const enabled = !!(req.body && (req.body.enabled === true || String(req.body.enabled).toLowerCase() === 'true'))
+  MAINTENANCE = enabled
+  return res.json({ ok: true, maintenance: MAINTENANCE })
+})
+// Capacity view (static computation based on current limits)
+app.get('/api/v1/browser/capacity', (req, res) => {
+  try {
+    const st = pool.stats()
+    const perCtxPerMin = 10 // heuristic: each context ~10 tasks/min for lightweight ops
+    const estPerMin = st.maxContexts * perCtxPerMin
+    return res.json({ maxContexts: st.maxContexts, maxMemoryMb: st.maxMemoryMb, running, estTasksPerMinute: estPerMin })
+  } catch (e) { return res.status(500).json({ error: { code: 'CAPACITY_FAILED', message: String(e?.message || e) } }) }
+})
 
 // Resolve an affiliate Offer URL to final landing page; return final URL, suffix, domain, brand
 app.post('/api/v1/browser/resolve-offer', withSlot(async (req, res) => {

@@ -184,9 +184,10 @@ func main() {
 
     r := chi.NewRouter()
     telemetry.RegisterDefaultMetrics("batchopen")
+    // Middlewares must be defined before routes
     r.Use(telemetry.ChiMiddleware("batchopen"))
-    r.Handle("/metrics", telemetry.MetricsHandler())
     r.Use(middleware.LoggingMiddleware("batchopen"))
+    r.Handle("/metrics", telemetry.MetricsHandler())
     r.Get("/health", health)
     r.Get("/readyz", ready)
     r.Get("/api/v1/batchopen/stats", stats)

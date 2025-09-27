@@ -119,13 +119,13 @@ paths:
       operationId: batchopenWildcardGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://batchopen-644672509127.asia-northeast1.run.app
+        address: https://batchopen-preview-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
     post:
       operationId: batchopenWildcardPost
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://batchopen-644672509127.asia-northeast1.run.app
+        address: https://batchopen-preview-644672509127.asia-northeast1.run.app
       responses: { '202': { description: Accepted } }
 
   /api/v1/adscenter/*:

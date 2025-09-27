@@ -11,6 +11,7 @@
 10.执行过程中生成的文档请放置在.kiro/specs/addictive-ads-management-system/目录下
 11.请自行完成各种GCP和Firebase操作，若缺少权限，请说明并申请
 12.在确保实现业务需求的情况下，功能实现遵循KISS原则，优先实现核心业务逻辑，确保前后端用户体验顺畅
+13.涉及到产品设计和功能实现的任务时，优先根据KANO模型进行评估，并给出理由，得到确认后再决定是否执行落地
 
 重要信息：
 1.GCP服务账号：codex-dev@gen-lang-client-0944935873.iam.gserviceaccount.com

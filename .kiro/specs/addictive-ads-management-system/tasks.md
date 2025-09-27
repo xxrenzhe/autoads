@@ -52,6 +52,15 @@
 - **G组**：Billing原子计费 + Notifications通知管理 + Console后台管理
 - **H组**：观测性 + SLO监控 + CI/CD部署
 
+## KANO路线图与优先级
+
+- M0 Must-be（先行落地）
+  - 统一认证与访问控制（Gateway合并Identity）、Offer看板与ROSC、Adscenter预检与批量的预览/审计/回滚、事件驱动与读模型、原子计费、基础风险识别与通知。
+- P1 Performance（强化）
+  - 10秒评估分阶段SLO与降级、批量成功率与吞吐、Browser-Exec并发与稳定性、全局聚合性能、预警节流与精准度、数据同步时效、国际化与SEO。
+- D1 Delighters（增值）
+  - 机会雷达与相似推荐、一键诊断与一键修复、A/B统计显著性与推荐、变更计划可视化、换链接时间轴。
+
 ---
 
 ## 变更决议（2025-09-26）
@@ -371,6 +380,12 @@
   - 建立操作历史记录和效果跟踪
   - _需求: 需求8 - 广告诊断与优化系统增强_
 
+- [ ] E2.4 换链接频控设置端点
+  - 新增端点：GET/PUT /api/v1/adscenter/settings/link-rotation
+  - 字段：enabled、minIntervalMinutes、maxPerDayPerOffer、maxPerHourPerAccount、rollbackOnError
+  - 前端设置页联动：显示频控与回退配置
+  - _需求: 需求5 - 批量操作管理系统（换链接频控）_
+
 ## F组：Billing（reserve/commit/release）
 
 ### F1. 原子计费系统
@@ -434,6 +449,12 @@
 
 - [x] G2.3 实时通知（SSE）
   - 提供 /api/v1/notifications/stream（SSE）推送 unread 与新通知摘要；前端导航未读红点接入
+  
+- [ ] G2.4 通知/预警节流设置端点
+  - 新增端点：GET/PUT /api/v1/console/notifications/settings?scope=user|system
+  - 字段：enabled、minConfidence、throttlePerMinute、groupWindowSec、channels{inApp,email,webhook}
+  - UI：设置页联动，提供预设与自定义模板
+  - _需求: 需求6 - AI智能预警与优化建议（节流/合并/置信度）_
 
 ### G3. Console后台管理
 
@@ -486,7 +507,7 @@
 - [x] H2.1.b Secret 管理同步脚本
   - 新增 deployments/scripts/secret-env-sync.sh，从 Secret Manager 读取并更新 Cloud Run 环境变量
 
-- [ ] H2.2 实现性能和成本优化
+- [x] H2.2 实现性能和成本优化
   - 建立Browser-Exec独立镜像和扩缩容
   - 实现Ads API的validate-only预检+限流/退避+批量分片
   - 建立Siterank（域名+国家）与OAuth配置缓存
@@ -621,13 +642,6 @@
 
 ### 4. 核心微服务实现
 
-- [ ] 4.1 实现Identity服务
-  - 建立用户注册、登录、认证API
-  - 实现Firebase Auth集成和Token管理
-  - 建立用户权限和角色管理
-  - 实现用户事件发布(UserRegistered等)
-  - _需求: 需求13 - 用户认证与访问控制_
-
 - [ ] 4.2 实现Billing服务
   - 建立双分录账本模型(balance/hold/expense)
   - 实现原子扣费机制(reserve/commit/release)
@@ -638,8 +652,10 @@
 - [ ] 4.3 实现Offer服务
   - 建立Offer CRUD和状态管理
   - 实现Offer事件发布(OfferCreated等)
-  - 建立状态流转和自动转换规则
+  - 建立状态流转与“默认建议+确认”的自动化规则，可配置启用自动转换
   - 实现批量Offer创建和管理
+  - 新增端点：GET/PUT /api/v1/offers/{id}/preferences（autoStatusEnabled、zeroPerfDays、roscDeclineDays）
+  - 前端设置页联动：提供“自动状态转换”开关与阈值配置
   - _需求: 需求1 - Offer生命周期可视化管理_
 
 ### 5. 高并发浏览器执行服务 (Browser-Exec)
@@ -676,7 +692,7 @@
   - 实现代理池管理：按国家/质量维度，失败隔离和指数退避
   - _需求: 需求15 - 高并发浏览器执行服务_
 
-- [ ] 5.5 实现监控和运维系统
+- [x] 5.5 实现监控和运维系统
   - 建立MetricsCollector：任务执行指标、成功率、响应时间
   - 实现HealthChecker：实例健康检查和故障检测
   - 建立告警系统：容量预警、性能异常、故障通知
@@ -686,14 +702,14 @@
 
 ### 6. Siterank评估服务
 
-- [ ] 6.1 实现10秒评估SLO
+- [x] 6.1 实现10秒评估SLO
   - 建立分阶段评估流程(域名→SimilarWeb→评分)
   - 实现并行处理和结果缓存
   - 建立评估进度追踪和通知
   - 实现超时降级和错误处理
   - _需求: 需求2 - 智能Offer评估系统_
 
-- [ ] 6.2 集成外部API
+- [x] 6.2 集成外部API
   - 实现SimilarWeb API集成和数据解析
   - 建立Firebase AI Logic内容分析
   - 实现浏览器执行服务调用
@@ -753,7 +769,7 @@
 
 ### 9. Adscenter服务 (广告中心)
 
-- [ ] 9.1 实现Google Ads集成
+- [x] 9.1 实现Google Ads集成
   - 建立OAuth 2.0认证和Token管理
   - 实现AES-GCM加密存储和轮换策略
   - 建立Live/Stub模式分离(build tag)
@@ -776,23 +792,21 @@
   - 实现局部回滚和重试机制
   - _需求: 需求5 - 批量操作管理系统_
 
-- [ ] 10.2 实现A/B测试MVP
+- [x] 10.2 实现A/B测试MVP
   - 建立广告组复制和流量分配
   - 实现A/B测试事件追踪
   - 建立统计显著性分析
   - 实现获胜版本推荐机制
   - _需求: 需求5 - 批量操作管理系统_
 
-### 11. Workflow服务 (工作流编排)
+#### 10.2.a 接入 ads_live 最小复制与指标刷新（预发）
+- [x] 在预发开启 ADS_ABTEST_LIVE，注入 Google Ads Secret（DeveloperToken、OAuth Client、Login CID）
+- [x] 创建测试时最小复制（CopyAdGroupMinimal）；提供指标刷新端点（RefreshAdGroupMetrics）
+- [ ] 接入 Experiments 做真实分流（A/B），并补充 Ads/关键词克隆
 
-- [ ] 11.1 实现业务流程编排
-  - 建立工作流定义和状态机
-  - 实现流程启动、暂停、恢复、取消
-  - 建立流程事件发布和追踪
-  - 实现流程超时和异常处理
-  - _需求: 需求17 - 定时任务管理系统_
+### 11. Risk Engine基础（保留）
 
-- [x] 11.2 实现Risk Engine基础
+- [x] 11.1 实现Risk Engine基础
   - 建立风险规则引擎和配置
   - 实现低曝光低点击检测
   - 建立落地页不可用监控
@@ -954,7 +968,7 @@
   - 实现批量录入功能
   - _需求: 需求1 - Offer生命周期可视化管理_
 
-- [ ] 4.2 实现Offer状态自动转换
+- [ ] 4.2 实现Offer状态建议与可配置自动转换
   - 实现连续5天0曝光0点击检测逻辑
   - 实现ROSC连续下滑检测
   - 建立自动状态转换机制
@@ -1139,7 +1153,7 @@
   - 创建图表和趋势分析界面
   - _需求: 需求12 - 后台管理系统_
 
-- [ ] 11.2 实现用户管理功能
+- [x] 11.2 实现用户管理功能
   - 建立用户列表和搜索筛选
   - 实现用户详情查看和状态管理
   - 建立套餐变更和Token充值
@@ -1272,6 +1286,22 @@
 - [x] D.x DB Migrator Cloud Run Job + 只读校验
   - 部署 `db-migrator-preview`（迁移执行）与 `db-check-preview`（CHECK_ONLY 校验核心表存在）
 
+- [x] 4.2 Offer 状态建议与可配置自动转换（最小实现）
+  - 新增内部端点：POST /api/v1/offers/internal/auto-status（X-Service-Token）
+  - 规则：连续 5 天零曝光零点击 → declining；ROSC 连续下滑 5 天 → declining；平均 ROSC>1.2 且曝光>500 → optimizing
+  - 后续可由 Scheduler 定期触发
+
+- [x] H2.x CI/CD 清理（下线 identity/workflow 构建）
+  - 移除 GitHub Actions 与检测脚本中的 identity/workflow 全量构建项
+  - 默认部署列表仅包含有效服务（billing/offer/siterank/adscenter/batchopen/console/recommendations/notifications）
+
+- [x] 7.x 前端推荐机会页修复（编译错误）
+  - 修复 JSX 三元表达式 else 分支需要 Fragment 包裹的问题
+
+- [x] H2.x Docker 构建稳定性（最小 COPY + GOWORK=off）
+  - 为 adscenter/offer/siterank/batchopen 的 Dockerfile 采用最小 COPY（go.work/pkg/服务目录）
+  - 设置 GOWORK=off，避免容器内 go.work 解析未复制模块导致构建失败
+
 - [x] 4.y.a KPI 分片日更与 DLQ 重试（最小实现）
   - 新表：OfferKpiDeadLetter（记录失败原因/重试次数/状态）
   - Offer 内部接口：GET /api/v1/offers/internal/kpi/deadletters、POST /api/v1/offers/internal/kpi/retry（X-Service-Token）
@@ -1280,9 +1310,24 @@
 
 - [x] 7.x.a 看板增强（ROSC sparkline 最小实现）
  
+- [x] 7.x.b 看板增强（阶段事件 via 标注 + 任务报告查看 最小实现）
+  - 阶段事件 via：SSE 捕获 SiterankCompleted 的 via 字段并在卡片展示
+  - 任务报告：任务列表支持查看批量操作快照聚合报告（调用 `/api/v1/adscenter/bulk-actions/snapshot-aggregate`）
+
+- [x] 7.x.c 看板增强（Top N KPI 预热 最小实现）
+  - 列表加载后自动对前 N（默认 3）个 Offer 触发 KPI 加载；若返回占位数据，自动聚合并刷新
+ 
 - [x] 2.1.a Console OpenAPI 规范（最小实现）
   - 新增 OAS：.kiro/specs/addictive-ads-management-system/openapi/console.yaml（slo/alerts/incidents/rules/rules-evaluate, KPI-DLQ 运维接口）
   - 与 Console 后端接口对齐，可用于后续 SDK/契约校验
+
+- [x] 2.1.b OpenAPI 生成与校验脚本（最小实现）
+  - 新增脚本：`scripts/openapi/validate.sh`（Redocly/Spectral lint）
+  - 新增脚本：`scripts/openapi/generate.sh`（oapi-codegen + openapi-typescript 代码生成）
+  - 新增脚本：`scripts/openapi/ci-check.sh`（组合校验）
+
+- [x] 2.1.c OpenAPI CI 校验工作流（最小实现）
+  - 新增工作流：`.github/workflows/openapi-ci.yml`（Node 20 + Go 1.22，安装 oapi-codegen，执行 `scripts/openapi/ci-check.sh`）
   - 前端看板卡片内新增 7 天 ROSC 迷你折线与 Tooltip，配合已接入的曝光/点击、花费/收入小图
 
 ## 新增任务（后续规划）

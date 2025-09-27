@@ -2,6 +2,8 @@
 FROM golang:1.25 as builder
 WORKDIR /workspace
 ENV GO111MODULE=on
+# Ignore workspace to prevent go from trying to load non-copied modules from go.work
+ENV GOWORK=off
 # Copy only necessary modules to avoid pulling frontend/node assets
 COPY go.work ./go.work
 COPY pkg ./pkg

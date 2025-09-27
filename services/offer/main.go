@@ -117,6 +117,18 @@ func (o *oasImpl) UpdateOffer(w http.ResponseWriter, r *http.Request, id string)
 func (o *oasImpl) DeleteOffer(w http.ResponseWriter, r *http.Request, id string)        { o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id)) }
 func (o *oasImpl) UpdateOfferStatus(w http.ResponseWriter, r *http.Request, id string)  { o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id+"/status")) }
 func (o *oasImpl) GetOfferKpi(w http.ResponseWriter, r *http.Request, id string)        { o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id+"/kpi")) }
+func (o *oasImpl) AggregateOfferKpi(w http.ResponseWriter, r *http.Request, id string, _ api.AggregateOfferKpiParams) {
+    o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id+"/kpi/aggregate"))
+}
+func (o *oasImpl) ListOfferAccounts(w http.ResponseWriter, r *http.Request, id string)  { o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id+"/accounts")) }
+func (o *oasImpl) LinkOfferAccount(w http.ResponseWriter, r *http.Request, id string)   { o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id+"/accounts")) }
+func (o *oasImpl) UnlinkOfferAccount(w http.ResponseWriter, r *http.Request, id string, accountId string) {
+    o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id+"/accounts/"+accountId))
+}
+func (o *oasImpl) GetOfferPreferences(w http.ResponseWriter, r *http.Request, id string) { o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id+"/preferences")) }
+func (o *oasImpl) UpdateOfferPreferences(w http.ResponseWriter, r *http.Request, id string) {
+    o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id+"/preferences"))
+}
 
 // withPath clones r with an overridden URL.Path so that legacy path-parsing code works
 // regardless of chi/oapi mounting details.

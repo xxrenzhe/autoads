@@ -19,7 +19,7 @@ if [[ -n "${SERVICES:-}" ]]; then
   # 兼容逗号或空格
   IFS=', ' read -r -a SERVICES_ARR <<< "${SERVICES}"
 else
-  SERVICES_ARR=(identity billing offer workflow siterank adscenter frontend)
+  SERVICES_ARR=(billing offer siterank adscenter batchopen console recommendations notifications)
 fi
 
 gcloud config set project "${PROJECT_ID}" >/dev/null
@@ -60,7 +60,6 @@ EOF
   SET_SECRETS_ARGS=()
   if [[ "${FORCE_SET_SECRETS:-0}" == "1" ]]; then
     # Only set DATABASE_URL secret for services that rely on it directly.
-    # identity prefers DATABASE_URL_SECRET_NAME and will ignore DATABASE_URL if present.
     SET_SECRETS_ARGS+=("--set-secrets=DATABASE_URL=projects/${PROJECT_ID}/secrets/DATABASE_URL:latest")
   fi
 

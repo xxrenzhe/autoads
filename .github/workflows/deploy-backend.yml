@@ -70,7 +70,7 @@ jobs:
           set -euo pipefail
           # Force full deploy when building a tag (release)
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            services='["identity","billing","offer","workflow","siterank","adscenter","batchopen","console","recommendations"]'
+            services='["billing","offer","siterank","adscenter","batchopen","console","recommendations","notifications"]'
             echo "Tag build detected (${GITHUB_REF}); forcing full deploy: $services"
           else
             BASE_SHA="${{ github.event.before || '' }}"
@@ -209,3 +209,44 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --project "${PROJECT_ID}"
+
+  e2e-settings:
+    name: E2E (Settings via API Gateway)
+    runs-on: ubuntu-latest
+    needs: [deploy-services, meta]
+    if: ${{ needs.meta.outputs.environment == 'preview' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      - name: Resolve Gateway Host
+        id: gw
+        env:
+          PROJECT_ID: ${{ env.PROJECT_ID }}
+          REGION: ${{ env.REGION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          GATEWAY_ID="autoads-gw-preview"
+          host=$(gcloud api-gateway gateways describe "$GATEWAY_ID" --location "${REGION:-asia-northeast1}" --project "$PROJECT_ID" --format='value(defaultHostname)')
+          echo "host=${host}" >> "$GITHUB_OUTPUT"
+          echo "Gateway: https://${host}"
+      - name: Run settings E2E
+        env:
+          HOST: ${{ steps.gw.outputs.host }}
+          AUTH: ${{ secrets.PREVIEW_TEST_ID_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${AUTH:-}" ]]; then
+            echo "[warn] PREVIEW_TEST_ID_TOKEN not set; skipping E2E";
+            exit 0
+          fi
+          sudo apt-get update >/dev/null 2>&1 || true
+          sudo apt-get install -y jq >/dev/null 2>&1 || true
+          bash scripts/ops/e2e-settings.sh

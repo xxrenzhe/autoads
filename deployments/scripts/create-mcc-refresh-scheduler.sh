@@ -5,6 +5,10 @@ set -euo pipefail
 # It calls the Adscenter Cloud Run service endpoint:
 #   POST /api/v1/adscenter/mcc/refresh
 #
+# DEPRECATED: 使用 Pub/Sub 分发器替代 HTTP+OIDC 调用。
+# 推荐：`deployments/scripts/create-scheduler-pubsub-dispatch.sh` 并设置
+#   URL="https://<adscenter>/api/v1/adscenter/mcc/refresh" HEADERS_JSON='{"X-Service-Token":"ENV","Accept":"application/json"}'
+#
 # Auth: Uses Cloud Scheduler OIDC to authenticate to Cloud Run, and injects X-User-Id=scheduler
 # so that backend AuthMiddleware passes (pkg/auth supports X-User-Id explicit header).
 #

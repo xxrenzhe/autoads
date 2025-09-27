@@ -68,6 +68,9 @@ type ServerInterface interface {
 	// Expand keywords using seed domain/keywords
 	// (POST /api/v1/adscenter/keywords/expand)
 	ExpandKeywords(w http.ResponseWriter, r *http.Request)
+	// Get current plan limits and daily quota usage for the user
+	// (GET /api/v1/adscenter/limits/me)
+	GetLimitsMe(w http.ResponseWriter, r *http.Request)
 	// Send manager link invitation (stub/live)
 	// (POST /api/v1/adscenter/mcc/link)
 	MccLink(w http.ResponseWriter, r *http.Request)
@@ -95,6 +98,12 @@ type ServerInterface interface {
 	// Run pre-flight diagnostics
 	// (POST /api/v1/adscenter/preflight)
 	RunPreflight(w http.ResponseWriter, r *http.Request)
+	// Get link rotation frequency control settings
+	// (GET /api/v1/adscenter/settings/link-rotation)
+	GetLinkRotationSettings(w http.ResponseWriter, r *http.Request)
+	// Update link rotation frequency control settings
+	// (PUT /api/v1/adscenter/settings/link-rotation)
+	UpdateLinkRotationSettings(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -209,6 +218,12 @@ func (_ Unimplemented) ExpandKeywords(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Get current plan limits and daily quota usage for the user
+// (GET /api/v1/adscenter/limits/me)
+func (_ Unimplemented) GetLimitsMe(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Send manager link invitation (stub/live)
 // (POST /api/v1/adscenter/mcc/link)
 func (_ Unimplemented) MccLink(w http.ResponseWriter, r *http.Request) {
@@ -260,6 +275,18 @@ func (_ Unimplemented) GetOAuthUrl(w http.ResponseWriter, r *http.Request) {
 // Run pre-flight diagnostics
 // (POST /api/v1/adscenter/preflight)
 func (_ Unimplemented) RunPreflight(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get link rotation frequency control settings
+// (GET /api/v1/adscenter/settings/link-rotation)
+func (_ Unimplemented) GetLinkRotationSettings(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update link rotation frequency control settings
+// (PUT /api/v1/adscenter/settings/link-rotation)
+func (_ Unimplemented) UpdateLinkRotationSettings(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -775,6 +802,26 @@ func (siw *ServerInterfaceWrapper) ExpandKeywords(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// GetLimitsMe operation middleware
+func (siw *ServerInterfaceWrapper) GetLimitsMe(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLimitsMe(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // MccLink operation middleware
 func (siw *ServerInterfaceWrapper) MccLink(w http.ResponseWriter, r *http.Request) {
 
@@ -982,6 +1029,46 @@ func (siw *ServerInterfaceWrapper) RunPreflight(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// GetLinkRotationSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetLinkRotationSettings(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLinkRotationSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateLinkRotationSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateLinkRotationSettings(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateLinkRotationSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -1150,6 +1237,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/v1/adscenter/keywords/expand", wrapper.ExpandKeywords)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/limits/me", wrapper.GetLimitsMe)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/adscenter/mcc/link", wrapper.MccLink)
 	})
 	r.Group(func(r chi.Router) {
@@ -1175,6 +1265,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/adscenter/preflight", wrapper.RunPreflight)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/settings/link-rotation", wrapper.GetLinkRotationSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/adscenter/settings/link-rotation", wrapper.UpdateLinkRotationSettings)
 	})
 
 	return r
