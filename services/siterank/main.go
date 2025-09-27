@@ -28,6 +28,7 @@ import (
     "github.com/xxrenzhe/autoads/services/siterank/internal/pkg/database"
     "github.com/xxrenzhe/autoads/services/siterank/internal/pkg/secrets"
     ev "github.com/xxrenzhe/autoads/pkg/events"
+    estore "github.com/xxrenzhe/autoads/pkg/eventstore"
     api "github.com/xxrenzhe/autoads/services/siterank/internal/oapi"
     "github.com/xxrenzhe/autoads/pkg/middleware"
 )
@@ -88,6 +89,13 @@ type AIScoreResp struct {
     Score      float64                `json:"score"`
     Confidence float64                `json:"confidence,omitempty"`
     Factors    []map[string]any       `json:"factors,omitempty"`
+}
+
+// KeywordSuggestion represents a simple suggestion with score and reason
+type KeywordSuggestion struct {
+    Keyword string  `json:"keyword"`
+    Score   float64 `json:"score"` // 0..1
+    Reason  string  `json:"reason,omitempty"`
 }
 
 type Server struct {
@@ -411,6 +419,8 @@ func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
         _ = s.maybeWriteFirestoreUI(ctx, analysisID, first.result)
         _ = s.projectHistory(ctx, analysisID, first.result)
         _ = s.upsertDomainCountryCache(ctx, host, country, first.result, true, 7*24*time.Hour)
+        // best-effort event store write
+        _ = s.writeEventStore(ctx, analysisID, "SiterankCompleted", host, first.result, map[string]any{"via": first.via, "country": country})
         // fill local in-memory cache (short TTL) with country in key
         key := host + "|" + country
         s.cacheMu.Lock(); if s.cache == nil { s.cache = map[string]cacheEntry{} }; s.cache[key] = cacheEntry{val: first.result, exp: time.Now().Add(5 * time.Minute)}; s.cacheMu.Unlock()
@@ -434,6 +444,7 @@ func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
         _ = s.maybeWriteFirestoreUI(ctx, analysisID, second.result)
         _ = s.projectHistory(ctx, analysisID, second.result)
         _ = s.upsertDomainCountryCache(ctx, host, country, second.result, true, 7*24*time.Hour)
+        _ = s.writeEventStore(ctx, analysisID, "SiterankCompleted", host, second.result, map[string]any{"via": second.via, "country": country})
         key := host + "|" + country
         s.cacheMu.Lock(); if s.cache == nil { s.cache = map[string]cacheEntry{} }; s.cache[key] = cacheEntry{val: second.result, exp: time.Now().Add(5 * time.Minute)}; s.cacheMu.Unlock()
         if s.publisher != nil {
@@ -758,6 +769,21 @@ func (s *Server) updateAnalysisStatus(ctx context.Context, analysisID, status, r
     if err != nil {
         log.Printf("Failed to update analysis %s to %s: %v", analysisID, status, err)
     }
+}
+
+// writeEventStore stores a minimal event record into SQL event_store (best-effort).
+func (s *Server) writeEventStore(ctx context.Context, analysisID, name, aggregateID string, payload string, extra map[string]any) error {
+    if s.db == nil { return nil }
+    if err := estore.EnsureDDL(s.db); err != nil { return err }
+    // payload is JSON text; wrap to keep storage consistent
+    var obj any
+    if err := json.Unmarshal([]byte(payload), &obj); err != nil {
+        obj = map[string]any{"raw": payload}
+    }
+    meta := map[string]any{"analysisId": analysisID}
+    for k, v := range extra { meta[k] = v }
+    // event_id: use analysisID for idempotency; version fixed 1 for now
+    return estore.WriteWithDB(ctx, s.db, analysisID, name, "offer", aggregateID, 1, obj, meta)
 }
 
 // tryBrowserJSON calls browser-exec /json-fetch with optional proxy provider to fetch SimilarWeb JSON.
@@ -1336,6 +1362,142 @@ func (h *oasImpl) ComputeSimilarOffers(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     _ = json.NewEncoder(w).Encode(struct{ Items []api.SimilarityItem `json:"items"` }{Items: out})
 }
+
+// POST /siterank/keywords/suggest
+func (h *oasImpl) SuggestKeywords(w http.ResponseWriter, r *http.Request) {
+    userID, _ := auth.ExtractUserID(r)
+    if userID == "" { errors.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized: User ID is missing", nil); return }
+    var body api.SuggestKeywordsJSONRequestBody
+    if err := json.NewDecoder(r.Body).Decode(&body); err != nil { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "Invalid body", nil); return }
+    seed := strings.ToLower(strings.TrimSpace(body.SeedDomain))
+    if seed == "" { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "seedDomain is required", nil); return }
+    country := ""
+    if body.Country != nil { country = strings.TrimSpace(*body.Country) }
+    topN := 20
+    if body.TopN != nil && *body.TopN > 0 && *body.TopN <= 100 { topN = *body.TopN }
+    minScore := 0.4
+    if body.MinScore != nil { if v := float64(*body.MinScore); v >= 0 && v <= 1 { minScore = v } }
+
+    // Collect signals: domain tokens + optional page title/site name via browser-exec
+    brand, domTokens := tokenizeDomain(seed)
+    titleTokens := []string{}
+    // Try resolve + page-signals best-effort within 8s budget
+    be := strings.TrimRight(os.Getenv("BROWSER_EXEC_URL"), "/")
+    finalURL := "https://" + seed
+    if be != "" {
+        // resolve final URL (6s)
+        ctxRes, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+        defer cancel()
+        var rr ResolveOfferResult
+        _ = h.srv.httpClient.DoJSON(ctxRes, http.MethodPost, be+"/api/v1/browser/resolve-offer", map[string]any{
+            "url": finalURL, "waitUntil": "domcontentloaded", "timeoutMs": 5000, "stabilizeMs": 800,
+        }, map[string]string{"Content-Type": "application/json"}, 1, &rr)
+        if rr.FinalUrl != "" { finalURL = rr.FinalUrl }
+        // page-signals (3s)
+        ctxPg, cancel2 := context.WithTimeout(r.Context(), 3*time.Second)
+        defer cancel2()
+        var ps PageSignals
+        _ = h.srv.httpClient.DoJSON(ctxPg, http.MethodPost, be+"/api/v1/browser/page-signals", map[string]any{
+            "url": finalURL, "timeoutMs": 2500,
+        }, map[string]string{"Content-Type": "application/json"}, 1, &ps)
+        if strings.TrimSpace(ps.Title) != "" { titleTokens = append(titleTokens, tokenizeText(ps.Title)... ) }
+        if strings.TrimSpace(ps.SiteName) != "" { titleTokens = append(titleTokens, tokenizeText(ps.SiteName)... ) }
+    }
+
+    // Build candidate suggestions
+    cands := suggestFromSignals(brand, domTokens, titleTokens, country)
+    // Rank + filter
+    // Deduplicate by keyword lowercased
+    uniq := map[string]KeywordSuggestion{}
+    for _, s := range cands {
+        if s.Score < minScore { continue }
+        k := strings.ToLower(s.Keyword)
+        if prev, ok := uniq[k]; !ok || s.Score > prev.Score {
+            uniq[k] = s
+        }
+    }
+    out := make([]api.KeywordSuggestion, 0, len(uniq))
+    for _, v := range uniq { 
+        it := api.KeywordSuggestion{Keyword: v.Keyword, Score: float32(v.Score)}
+        if strings.TrimSpace(v.Reason) != "" { rs := v.Reason; it.Reason = &rs }
+        out = append(out, it)
+    }
+    sort.Slice(out, func(i, j int) bool { return out[i].Score > out[j].Score })
+    if len(out) > topN { out = out[:topN] }
+    w.Header().Set("Content-Type", "application/json")
+    _ = json.NewEncoder(w).Encode(struct{ Items []api.KeywordSuggestion `json:"items"` }{Items: out})
+}
+
+// --- Keyword helpers ---
+
+func tokenizeDomain(host string) (brand string, tokens []string) {
+    // strip scheme if present
+    if u, err := url.Parse(host); err == nil && u.Hostname() != "" { host = u.Hostname() }
+    host = strings.ToLower(strings.TrimSpace(host))
+    host = strings.TrimPrefix(host, "www.")
+    parts := strings.Split(host, ".")
+    if len(parts) >= 2 { brand = parts[len(parts)-2] }
+    raw := strings.ReplaceAll(strings.Join(parts, "-"), "_", "-")
+    for _, t := range strings.Split(raw, "-") {
+        t = strings.TrimSpace(t)
+        if isStopToken(t) { continue }
+        if len(t) < 3 || len(t) > 20 { continue }
+        tokens = append(tokens, t)
+    }
+    // ensure brand present as first token
+    if brand != "" && !contains(tokens, brand) { tokens = append([]string{brand}, tokens...) }
+    return brand, unique(tokens)
+}
+
+func tokenizeText(s string) []string {
+    s = strings.ToLower(s)
+    // replace non-letters/digits with space
+    b := strings.Builder{}
+    for _, r := range s {
+        if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == ' ' { b.WriteRune(r) } else { b.WriteRune(' ') }
+    }
+    parts := strings.Fields(b.String())
+    out := make([]string, 0, len(parts))
+    for _, t := range parts { if !isStopToken(t) && len(t) >= 3 && len(t) <= 20 { out = append(out, t) } }
+    return unique(out)
+}
+
+func isStopToken(t string) bool {
+    if t == "" { return true }
+    stop := map[string]struct{}{
+        "com":{}, "net":{}, "org":{}, "www":{}, "app":{}, "site":{}, "online":{}, "the":{}, "and":{}, "for":{}, "with":{}, "you":{}, "your":{}, "free":{}, "home":{}, "shop":{}, "store":{}, "best":{}, "top":{}, "new":{},
+    }
+    _, ok := stop[t]
+    return ok
+}
+
+func contains(arr []string, v string) bool { for _, x := range arr { if x == v { return true } }; return false }
+func unique(arr []string) []string { m := map[string]struct{}{}; out := make([]string,0,len(arr)); for _, x := range arr { if _, ok := m[x]; !ok { m[x]=struct{}{}; out = append(out, x) } }; return out }
+
+func suggestFromSignals(brand string, domTokens, titleTokens []string, country string) []KeywordSuggestion {
+    out := make([]KeywordSuggestion, 0, 64)
+    add := func(k, reason string, score float64) { if k == "" { return }; out = append(out, KeywordSuggestion{Keyword: k, Reason: reason, Score: clamp01(score)}) }
+    // Base from title tokens (higher intent)
+    for _, t := range titleTokens {
+        sc := 0.6
+        if contains(domTokens, t) { sc += 0.3 }
+        if brand != "" && t != brand { add(brand+" "+t, "品牌+标题", sc+0.2) }
+        add(t, "来自标题", sc)
+        if country != "" { add(t+" "+strings.ToLower(country), "标题+国家", sc+0.1) }
+    }
+    // From domain tokens
+    for _, t := range domTokens {
+        sc := 0.4
+        if contains(titleTokens, t) { sc += 0.3 }
+        add(t, "来自域名", sc)
+        if brand != "" && t != brand { add(brand+" "+t, "品牌+域名", sc+0.2) }
+    }
+    // Add brand only if meaningful
+    if brand != "" && !isStopToken(brand) { add(brand, "品牌词", 0.5) }
+    return out
+}
+
+func clamp01(v float64) float64 { if v < 0 { return 0 }; if v > 1 { return 1 }; return v }
 
 // ensureDomainCacheDDL creates domain_cache table/index if not exists.
 func ensureDomainCacheDDL(db *sql.DB) error {

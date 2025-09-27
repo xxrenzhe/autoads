@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { listOffers, createOffer, updateOfferStatus, getOfferKPI } from '@/sdk/offer/client';
+import { listOffers, createOffer, updateOfferStatus, getOfferKPI, aggregateOfferKPI, listOfferAccounts, linkOfferAccount, unlinkOfferAccount } from '@/sdk/offer/client';
 import { analyze as analyzeSiterank, getLatestByOffer as getLatestSiterank } from '@/sdk/siterank/client';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -46,7 +46,16 @@ export default function OfferKanbanPage() {
   const [sseAbort, setSseAbort] = useState<AbortController | null>(null);
   const [times, setTimes] = useState<Record<string, { resolveNav?: number; resolveStab?: number; sw?: number; ai?: number }>>({});
   const [rosc, setRosc] = useState<Record<string, number | undefined>>({});
-  const [kpiDays, setKpiDays] = useState<Record<string, Array<{ date: string; impressions: number; clicks: number; spend: number; revenue: number }> | undefined>>({});
+  type KpiDay = { date: string; impressions: number; clicks: number; spend: number; revenue: number };
+  const [kpiDays, setKpiDays] = useState<Record<string, Array<KpiDay> | undefined>>({});
+  const [kpiRoscDays, setKpiRoscDays] = useState<Record<string, Array<{ date: string; rosc: number }> | undefined>>({});
+  const [kpiSource, setKpiSource] = useState<Record<string, string|undefined>>({});
+  const [kpiSyncing, setKpiSyncing] = useState<Record<string, boolean>>({});
+  const [kpiUpdatedAt, setKpiUpdatedAt] = useState<Record<string, string|undefined>>({});
+  const [acctOpen, setAcctOpen] = useState(false);
+  const [acctOffer, setAcctOffer] = useState<Offer | null>(null);
+  const [acctList, setAcctList] = useState<string[]>([]);
+  const [acctNew, setAcctNew] = useState('');
 
   const grouped = useMemo(() => {
     const g: Record<string, Offer[]> = {};
@@ -206,7 +215,55 @@ export default function OfferKanbanPage() {
       const j = await getOfferKPI(offer.id);
       const ro = j?.summary?.rosc;
       if (typeof ro === 'number') setRosc(prev => ({ ...prev, [offer.id]: ro }));
-      if (Array.isArray(j?.days)) setKpiDays(prev => ({ ...prev, [offer.id]: j.days }));
+      if (Array.isArray(j?.days)) {
+        const arr = (j.days as Array<any>).map(d => ({
+          date: String(d.date),
+          impressions: Number(d.impressions||0),
+          clicks: Number(d.clicks||0),
+          spend: Number(d.spend||0),
+          revenue: Number(d.revenue||0),
+        })) as Array<KpiDay>;
+        setKpiDays(prev => ({ ...prev, [offer.id]: arr }));
+        setKpiRoscDays(prev => ({ ...prev, [offer.id]: arr.map(x => ({ date: x.date, rosc: (x.spend>0 ? (x.revenue/x.spend) : 0) })) }));
+      }
+      // display hint if synthetic
+      const source = (j?.source || '').toString();
+      if (source) setKpiSource(prev => ({ ...prev, [offer.id]: source }));
+      if (j?.updatedAt) setKpiUpdatedAt(prev => ({ ...prev, [offer.id]: String(j.updatedAt) }));
+      if (source && source !== 'real') {
+        // 自动触发聚合写入真实日KPI，然后延迟刷新
+        try {
+          setKpiSyncing(prev => ({ ...prev, [offer.id]: true }));
+          await aggregateOfferKPI(offer.id);
+          setTimeout(async () => {
+            try {
+              const jj = await getOfferKPI(offer.id, { cache: 'no-store' });
+              const ro2 = jj?.summary?.rosc;
+              if (typeof ro2 === 'number') setRosc(prev => ({ ...prev, [offer.id]: ro2 }));
+              if (Array.isArray(jj?.days)) {
+                const arr2 = (jj.days as Array<any>).map(d => ({
+                  date: String(d.date),
+                  impressions: Number(d.impressions||0),
+                  clicks: Number(d.clicks||0),
+                  spend: Number(d.spend||0),
+                  revenue: Number(d.revenue||0),
+                })) as Array<KpiDay>;
+                setKpiDays(prev => ({ ...prev, [offer.id]: arr2 }));
+                setKpiRoscDays(prev => ({ ...prev, [offer.id]: arr2.map(x => ({ date: x.date, rosc: (x.spend>0 ? (x.revenue/x.spend) : 0) })) }));
+              }
+              const src2 = (jj?.source || '').toString();
+              if (src2) setKpiSource(prev => ({ ...prev, [offer.id]: src2 }));
+              if (jj?.updatedAt) setKpiUpdatedAt(prev => ({ ...prev, [offer.id]: String(jj.updatedAt) }));
+            } finally {
+              setKpiSyncing(prev => ({ ...prev, [offer.id]: false }));
+            }
+          }, 1500);
+        } catch {
+          setKpiSyncing(prev => ({ ...prev, [offer.id]: false }));
+        }
+      } else {
+        setKpiSyncing(prev => ({ ...prev, [offer.id]: false }));
+      }
     } catch {}
   };
 
@@ -218,6 +275,27 @@ export default function OfferKanbanPage() {
       const pts = Array.isArray(j.points) ? j.points : [];
       setTrend(pts.map((p:any) => ({ date: p.date || p.Date || '', avg: Number(p.avgScore || p.avg || 0) })));
     } catch {}
+  };
+
+  const openAccounts = async (offer: Offer) => {
+    setAcctOffer(offer); setAcctOpen(true); setAcctList([]); setAcctNew('');
+    try {
+      const j = await listOfferAccounts(offer.id, { cache: 'no-store' });
+      const ids = Array.isArray(j?.items) ? j.items.map(x=>x.accountId) : [];
+      setAcctList(ids);
+    } catch {}
+  };
+  const addAccount = async () => {
+    if (!acctOffer || !acctNew) return;
+    try {
+      await linkOfferAccount(acctOffer.id, acctNew);
+      setAcctList(prev => Array.from(new Set([acctNew, ...prev])));
+      setAcctNew('');
+    } catch (e:any) { alert(`添加失败: ${e?.message||e}`) }
+  };
+  const removeAccount = async (cid: string) => {
+    if (!acctOffer) return;
+    try { await unlinkOfferAccount(acctOffer.id, cid); setAcctList(prev => prev.filter(x=>x!==cid)); } catch {}
   };
 
   // polling for tasks when drawer is open
@@ -361,7 +439,15 @@ export default function OfferKanbanPage() {
                     <Button variant="outline" size="sm" className="ml-2 h-7" onClick={()=>refreshScore(o)}>刷新评分</Button>
                     <span className="ml-3 text-gray-600">ROSC：</span>
                     <span className={`font-medium ${(() => { const r = rosc[o.id]; if (r===undefined) return ''; return r>=1.3? 'text-green-600' : (r>=1.0? 'text-amber-600':'text-red-600') })()}`}>{rosc[o.id]?.toFixed(2) ?? '-'}</span>
-                    <Button variant="outline" size="sm" className="ml-2 h-7" onClick={()=>loadKPI(o)}>刷新KPI</Button>
+                    {kpiSource[o.id] && (
+                      <span className={`ml-2 text-[11px] px-1.5 py-0.5 rounded ${kpiSource[o.id]==='real' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                        {kpiSource[o.id]==='real' ? '真实' : '占位'}
+                      </span>
+                    )}
+                    {kpiSyncing[o.id] && (
+                      <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">同步中…</span>
+                    )}
+                    <Button variant="outline" size="sm" className="ml-2 h-7" onClick={()=>loadKPI(o)} disabled={!!kpiSyncing[o.id]}>刷新KPI</Button>
                   </div>
                   {trendMap[o.id] && trendMap[o.id]!.length > 0 && (
                     <div className="mt-1" style={{ width: '100%', height: 60 }}>
@@ -386,6 +472,7 @@ export default function OfferKanbanPage() {
                     </Select>
                     <Button variant="outline" size="sm" onClick={()=>runAnalyze(o)} disabled={busy===`analyze:${o.id}`}>评估</Button>
                     <Button variant="outline" size="sm" onClick={()=>runSimulate(o)} disabled={busy===`sim:${o.id}`}>仿真</Button>
+                    <Button variant="outline" size="sm" onClick={()=>openAccounts(o)}>账号</Button>
                     <Button variant="outline" size="sm" onClick={()=>viewTasks(o)}>任务</Button>
                     <Button variant="outline" size="sm" onClick={()=>viewTrend(o)}>趋势</Button>
                     <Button variant="outline" size="sm" onClick={()=>moveTo(o, 'archived')} disabled={busy===o.id}>归档</Button>
@@ -430,7 +517,19 @@ export default function OfferKanbanPage() {
                           </LineChart>
                         </ResponsiveContainer>
                       </div>
+                      <div className="w-full h-20 col-span-2">
+                        <ResponsiveContainer>
+                          <LineChart data={kpiRoscDays[o.id]}
+                            margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                            <Tooltip formatter={(v:any)=>Number(v).toFixed(2)} labelFormatter={(l:any)=>`日期 ${l}`}/>
+                            <Line type="monotone" dataKey="rosc" stroke="#0ea5e9" strokeWidth={1.8} dot={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
+                  )}
+                  {kpiUpdatedAt[o.id] && (
+                    <div className="mt-1 text-[11px] text-gray-500">KPI更新时间：{new Date(kpiUpdatedAt[o.id] as string).toLocaleString()}</div>
                   )}
                 </div>
                 );
@@ -503,6 +602,29 @@ export default function OfferKanbanPage() {
                 <Line type="monotone" dataKey="avg" stroke="#22c55e" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={acctOpen} onOpenChange={setAcctOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>已关联账号 — {acctOffer?.name || acctOffer?.id}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Input placeholder="输入 Google Ads Customer ID（不含短横）" value={acctNew} onChange={e=>setAcctNew(e.target.value)} />
+              <Button onClick={addAccount} disabled={!acctNew}>添加</Button>
+            </div>
+            <div className="space-y-1">
+              {acctList.length===0 && <div className="text-sm text-gray-500">暂无关联账号</div>}
+              {acctList.map(cid => (
+                <div key={cid} className="flex items-center justify-between border rounded px-2 py-1 text-sm">
+                  <div>{cid}</div>
+                  <Button variant="outline" size="sm" onClick={()=>removeAccount(cid)}>移除</Button>
+                </div>
+              ))}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -1,10 +1,10 @@
 steps:
-  - name: gcr.io/cloud-builders/docker
-    args: ["build", "-t", "${_IMAGE}", "-f", "services/siterank/Dockerfile", "."]
-  - name: gcr.io/cloud-builders/docker
-    args: ["push", "${_IMAGE}"]
-images:
-  - "${_IMAGE}"
+  - name: gcr.io/kaniko-project/executor:latest
+    args:
+      - "--destination=${_IMAGE}"
+      - "--dockerfile=services/siterank/Dockerfile"
+      - "--context=dir:///workspace"
+      - "--single-snapshot"
+      - "--use-new-run"
 options:
   logging: CLOUD_LOGGING_ONLY
-

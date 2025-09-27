@@ -569,7 +569,7 @@
 - [x] 2.1.a Batchopen 扩展端点契约
   - 补充 /batchopen/tasks/{id}/start|complete|fail OpenAPI 定义
 
-- [ ] 2.2 实现代码生成工具
+- [x] 2.2 实现代码生成工具
   - 建立Go服务端代码生成器
   - 实现TypeScript客户端SDK生成
   - 建立API Gateway配置渲染
@@ -600,14 +600,14 @@
 
 - [x] 3.1.a 事件查询与最小写入（Console/Notifications）
 
-- [ ] 3.2 实现投影器框架
+- [x] 3.2 实现投影器框架
   - 建立Cloud Functions投影器模板
   - 实现Pub/Sub事件分发机制
   - 建立投影器幂等性和错误处理
   - 实现读模型更新和同步
   - _需求: 需求24 - 事件驱动架构与CQRS_
 
-- [ ] 3.3 建立CI/CD流水线
+- [x] 3.3 建立CI/CD流水线
   - 实现单repo多服务构建缓存
   - 建立分服务发布和部署
   - 实现环境隔离和Secret管理
@@ -700,7 +700,7 @@
   - 建立API限流和错误重试
   - _需求: 需求2 - 智能Offer评估系统_
 
-- [ ] 6.3 实现评估事件流
+- [x] 6.3 实现评估事件流
   - 发布SiterankRequested/Completed事件
   - 实现评估结果投影到读模型
   - 建立评估历史和趋势分析
@@ -725,7 +725,7 @@
 
 ### 8. 高并发性能测试与验证
 
-- [ ] 8.1 浏览器执行服务并发测试
+- [x] 8.1 浏览器执行服务并发测试
   - 测试单实例8-12个浏览器并发处理能力
   - 验证集群2-50个实例弹性扩缩容机制
   - 测试数百用户同时提交任务的处理能力
@@ -760,7 +760,7 @@
   - 实现MCC链接状态机管理
   - _需求: 需求16 - Google Ads账号授权与关联管理_
 
-- [ ] 9.2 实现Pre-flight检查
+- [x] 9.2 实现Pre-flight检查
   - 建立validate-only预检机制
   - 实现配额和限流控制
   - 建立审计快照和差异对比
@@ -769,7 +769,7 @@
 
 ### 10. Batchopen服务 (批量操作)
 
-- [ ] 10.1 实现批量操作矩阵
+- [x] 10.1 实现批量操作矩阵
   - 建立变更计划创建和预览
   - 实现干跑验证和风险评估
   - 建立批量执行和进度追踪
@@ -792,7 +792,7 @@
   - 实现流程超时和异常处理
   - _需求: 需求17 - 定时任务管理系统_
 
-- [ ] 11.2 实现Risk Engine基础
+- [x] 11.2 实现Risk Engine基础
   - 建立风险规则引擎和配置
   - 实现低曝光低点击检测
   - 建立落地页不可用监控
@@ -834,17 +834,57 @@
 - [x] 数据库迁移（通知读模型）
   - 通过 Cloud Run Job 执行 009_user_notifications.sql，落地 user_notifications 表
 
+- [x] 诊断→计划→校验→入队→执行脚本联通（预发）
+  - 新增脚本 scripts/ops/diagnose-plan-enqueue.sh，贯通 metrics→plan→validate→submit→execute-tick
+
+- [x] 基于建议的诊断闭环脚本（预发）
+  - 新增脚本 scripts/ops/diagnose-suggest-plan-enqueue.sh，贯通 diagnose→suggestedActions→plan→validate→submit→execute-tick
+
+- [x] execute-tick 公平性优化（按 owner 分组轮询）
+  - 在 adscenter 服务按 user_id 分组挑选 shard，避免单用户长队列饿死
+
+- [x] Adscenter 限流/配额查询端点
+  - 新增 GET /api/v1/adscenter/limits/me，返回 plan 限流与每日配额使用
+
+- [x] 数据库迁移（BulkActionDeadLetter）
+  - 新增 011_adscenter_deadletter.sql，落地 BulkActionDeadLetter 表
+
+- [x] 诊断计划支持建议输入
+  - /api/v1/adscenter/diagnose/plan 支持 suggestedActions 映射生成计划
+
+- [x] 限流/配额自查脚本
+  - 新增脚本 scripts/ops/check-limits.sh：调用 /api/v1/adscenter/limits/me 输出当前用户有效限流/配额
+
+- [x] SLO 告警联动脚本
+  - 新增脚本 deployments/monitoring/bootstrap-slo-alerts.sh：为 siterank/batchopen/adscenter/billing 创建 P95 时延与 5xx 错误率告警
+
+- [x] 执行Tick调度任务脚本
+  - 新增脚本 deployments/scripts/create-execute-tick-scheduler.sh：创建 Cloud Scheduler Job 定时触发 `/api/v1/adscenter/bulk-actions/execute-tick?max=N`
+
+- [x] 离线品牌审计调度脚本
+  - 新增脚本 deployments/scripts/create-brand-audit-scheduler.sh：周期触发 `/api/v1/recommend/internal/offline/brand-audit`（支持 seedDomain/country/shards）
+
+- [x] 浏览器执行服务并发测试脚本
+  - 新增脚本 scripts/ops/stress-browser-exec.sh：并发压测 /api/v1/browser/check-availability
+
+- [x] 预发 E2E 冒烟与性能脚本
+  - 新增脚本 scripts/ops/e2e-preview.sh（串联 Siterank analyze-url 与 Adscenter diagnose→plan→validate→submit→execute）
+  - 新增脚本 scripts/ops/e2e-perf.sh（循环采样 N 次，输出 avg/p95/成功率）
+
+- [x] Opportunity→Bulk 执行脚本
+  - 新增脚本 scripts/ops/opportunity-to-bulk.sh：将推荐机会（domains/keywords）映射为 ROTATE_LINK/ADJUST_CPC 计划，校验/入队/执行
+
 
 ### 15. 痛点7&8增强实施
 
-- [ ] 15.1 Siterank服务增强
+- [x] 15.1 Siterank服务增强
   - 在现有Siterank服务中添加简化相似度算法
   - 实现域名关键词匹配、流量规模相似性、国家重叠度、行业分类匹配四个维度评分
   - 关键词扩展不接入 Google Ads 关键词规划师：使用 SimilarWeb 指标 + 规则库（搜索趋势替代、关键词共现、域名拆词）
   - 实现关键词扩展建议功能（内部规则生成），并提供阈值过滤（如访问量、相似度）
   - _需求: 需求C7 - 机会发现增强_
 
-- [ ] 15.2 Adscenter服务诊断增强
+- [x] 15.2 Adscenter服务诊断增强
   - 在现有Adscenter服务中添加诊断规则引擎
   - 建立预定义诊断规则库（无曝光、低CTR等）
   - 实现操作模板库和一键执行功能
@@ -895,7 +935,7 @@
   - 建立API访问控制
   - _需求: 需求11 - 套餐管理与订阅系统_
 
-- [ ] 3.3 实现Google Ads OAuth集成
+- [x] 3.3 实现Google Ads OAuth集成
   - 配置Google Ads API OAuth流程
   - 实现账号授权和Token管理
   - 建立账号关联和状态管理
@@ -1044,7 +1084,7 @@
 
 ### 9. 定时任务系统
 
-- [ ] 9.1 建立Cloud Scheduler + Pub/Sub架构
+- [x] 9.1 建立Cloud Scheduler + Pub/Sub架构
   - 配置Cloud Scheduler作业
   - 建立Pub/Sub主题和订阅
   - 实现Cloud Functions任务执行器
@@ -1093,7 +1133,7 @@
 
 ### 11. 后台管理系统
 
-- [ ] 11.1 实现管理员仪表盘
+- [x] 11.1 实现管理员仪表盘
   - 建立实时统计数据聚合
   - 实现用户、收入、系统状态监控
   - 创建图表和趋势分析界面
@@ -1220,22 +1260,47 @@
 - [x] 4.x Offer 状态更新端点（手动流转）
   - 新增 API：PUT /api/v1/offers/{id}/status（记录历史）
 
+- [x] H1.x API Gateway Uptime Check（/readyz）
+  - 在 Monitoring 中创建 Uptime Check，目标 `/readyz`（API Gateway 域名）
+
+- [x] H1.x 预发 SLO 告警（P95 时延）
+  - 为 siterank/batchopen/adscenter/billing 创建 P95 时延告警策略
+
+- [x] 9.x 预发 Cloud Scheduler 定时任务（execute-tick）
+  - 创建 `adscenter-preview-execute-tick` Job（OIDC 调用 Cloud Run，*/5 分钟）
+
+- [x] D.x DB Migrator Cloud Run Job + 只读校验
+  - 部署 `db-migrator-preview`（迁移执行）与 `db-check-preview`（CHECK_ONLY 校验核心表存在）
+
+- [x] 4.y.a KPI 分片日更与 DLQ 重试（最小实现）
+  - 新表：OfferKpiDeadLetter（记录失败原因/重试次数/状态）
+  - Offer 内部接口：GET /api/v1/offers/internal/kpi/deadletters、POST /api/v1/offers/internal/kpi/retry（X-Service-Token）
+  - 调度脚本：deployments/scripts/create-offer-aggregate-daily-schedulers.sh（分片日更）、deployments/scripts/create-offer-kpi-retry-scheduler.sh（失败重试）
+  - Console 管理接口：GET /api/v1/console/offers/kpi/deadletters、POST /api/v1/console/offers/kpi/retry（代理内部重试端点）
+
+- [x] 7.x.a 看板增强（ROSC sparkline 最小实现）
+ 
+- [x] 2.1.a Console OpenAPI 规范（最小实现）
+  - 新增 OAS：.kiro/specs/addictive-ads-management-system/openapi/console.yaml（slo/alerts/incidents/rules/rules-evaluate, KPI-DLQ 运维接口）
+  - 与 Console 后端接口对齐，可用于后续 SDK/契约校验
+  - 前端看板卡片内新增 7 天 ROSC 迷你折线与 Tooltip，配合已接入的曝光/点击、花费/收入小图
+
 ## 新增任务（后续规划）
 
-- [ ] 4.y KPI 真数据落地
+- [x] 4.y KPI 真数据落地
   - 建立 Offer→Account 映射（读模型表：OfferAccountMap）
   - 新增 OfferDailyKPI 表（date, offerId, impressions, clicks, spend, revenue, rosc）
   - 聚合任务（Scheduler/Functions/Job）：每日增量与实时补写（最佳努力）
   - API：GET /api/v1/offers/{id}/kpi 优先读取真实表（失败回退伪数据）
   - 前端：看板卡片切换为真实 KPI 展示
 
-- [ ] G3.3 告警规则编辑器（Console）
+- [x] G3.3 告警规则编辑器（Console）
   - 扩展 notification_rules：阈值/窗口/目标维度/服务/路径等字段
   - API：GET/POST/PUT/DELETE /api/v1/notifications/rules（支持 admin/user scope）
   - 页面：/admin/console/rules 列表/编辑/启停/阈值配置
   - 生效：阈值触发系统级 NotificationCreated 并入 SSE
 
-- [ ] H1.4 SLO 深化与告警联动
+- [x] H1.4 SLO 深化与告警联动
   - 预计算/缓存 P95 与错误率（降低 /metrics 抓取成本）
   - 告警联动：达阈触发事件，管理页展示与跳转
   - 面板：SLO 表格新增快捷跳转到告警/健康/故障页

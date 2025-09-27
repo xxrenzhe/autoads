@@ -20,21 +20,21 @@ paths:
       operationId: readyz
       # point to one lightweight service health endpoint
       x-google-backend:
-        address: https://console-yt54xvsg5q-an.a.run.app/health
+        address: https://console-644672509127.asia-northeast1.run.app/health
         path_translation: CONSTANT_ADDRESS
       responses: { '200': { description: OK } }
   /api/health/adscenter:
     get:
       operationId: healthAdscenter
       x-google-backend:
-        address: https://adscenter-yt54xvsg5q-an.a.run.app/health
+        address: https://adscenter-preview-644672509127.asia-northeast1.run.app/health
         path_translation: CONSTANT_ADDRESS
       responses: { '200': { description: OK } }
   /api/health/console:
     get:
       operationId: healthConsole
       x-google-backend:
-        address: https://console-yt54xvsg5q-an.a.run.app/health
+        address: https://console-644672509127.asia-northeast1.run.app/health
         path_translation: CONSTANT_ADDRESS
       responses: { '200': { description: OK } }
 
@@ -43,7 +43,7 @@ paths:
     get:
       operationId: healthAggregate
       x-google-backend:
-        address: https://console-yt54xvsg5q-an.a.run.app/health
+        address: https://console-644672509127.asia-northeast1.run.app/health
         path_translation: CONSTANT_ADDRESS
       responses: { '200': { description: OK } }
 
@@ -53,7 +53,7 @@ paths:
       operationId: adscenterOauthCallback
       # 不配置 security 即为公开
       x-google-backend:
-        address: https://adscenter-yt54xvsg5q-an.a.run.app
+        address: https://adscenter-preview-644672509127.asia-northeast1.run.app
         path_translation: APPEND_PATH_TO_ADDRESS
       responses: { '200': { description: OK } }
 
@@ -64,13 +64,13 @@ paths:
       operationId: billingProxyGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://billing-yt54xvsg5q-an.a.run.app
+        address: https://billing-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
     post:
       operationId: billingProxyPost
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://billing-yt54xvsg5q-an.a.run.app
+        address: https://billing-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
 
   /api/v1/offers:
@@ -78,26 +78,26 @@ paths:
       operationId: offersList
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://offer-yt54xvsg5q-an.a.run.app
+        address: https://offer-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
     post:
       operationId: offersCreate
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://offer-yt54xvsg5q-an.a.run.app
+        address: https://offer-644672509127.asia-northeast1.run.app
       responses: { '201': { description: Created } }
   /api/v1/offers/*:
     get:
       operationId: offersWildcardGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://offer-yt54xvsg5q-an.a.run.app
+        address: https://offer-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
     post:
       operationId: offersWildcardPost
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://offer-yt54xvsg5q-an.a.run.app
+        address: https://offer-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
 
   /api/v1/siterank/*:
@@ -105,13 +105,13 @@ paths:
       operationId: siterankWildcardGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://siterank-preview-yt54xvsg5q-an.a.run.app
+        address: https://siterank-preview-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
     post:
       operationId: siterankWildcardPost
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://siterank-preview-yt54xvsg5q-an.a.run.app
+        address: https://siterank-preview-644672509127.asia-northeast1.run.app
       responses: { '202': { description: Accepted } }
 
   /api/v1/batchopen/*:
@@ -119,13 +119,13 @@ paths:
       operationId: batchopenWildcardGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://batchopen-yt54xvsg5q-an.a.run.app
+        address: https://batchopen-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
     post:
       operationId: batchopenWildcardPost
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://batchopen-yt54xvsg5q-an.a.run.app
+        address: https://batchopen-644672509127.asia-northeast1.run.app
       responses: { '202': { description: Accepted } }
 
   /api/v1/adscenter/*:
@@ -133,13 +133,13 @@ paths:
       operationId: adscenterWildcardGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://adscenter-yt54xvsg5q-an.a.run.app
+        address: https://adscenter-preview-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
     post:
       operationId: adscenterWildcardPost
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://adscenter-yt54xvsg5q-an.a.run.app
+        address: https://adscenter-preview-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
 
   # Workflow routes removed in v2.
@@ -149,7 +149,7 @@ paths:
       operationId: notificationsGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://notifications-preview-yt54xvsg5q-an.a.run.app
+        address: https://notifications-preview-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
 
   /api/v1/recommend/*:
@@ -157,13 +157,13 @@ paths:
       operationId: recommendGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://recommendations-yt54xvsg5q-an.a.run.app
+        address: https://recommendations-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
     post:
       operationId: recommendPost
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://recommendations-yt54xvsg5q-an.a.run.app
+        address: https://recommendations-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
 
   /api/v1/console/*:
@@ -171,11 +171,11 @@ paths:
       operationId: consoleWildcardGet
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://console-yt54xvsg5q-an.a.run.app
+        address: https://console-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }
     post:
       operationId: consoleWildcardPost
       security: [ { firebase: [] } ]
       x-google-backend:
-        address: https://console-yt54xvsg5q-an.a.run.app
+        address: https://console-644672509127.asia-northeast1.run.app
       responses: { '200': { description: OK } }

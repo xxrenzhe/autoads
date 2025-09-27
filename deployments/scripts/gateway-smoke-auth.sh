@@ -13,6 +13,13 @@ auth=( -H "Authorization: Bearer ${TOKEN}" )
 echo "[smoke] GET /api/health/adscenter (200)"
 curl -sS -o /dev/null -w "%{http_code}\n" "https://${HOST}/api/health/adscenter"
 
+echo "[smoke] POST /api/v1/siterank/analyze (202)"
+curl -sS -o /dev/null -w "%{http_code}\n" \
+  -X POST "https://${HOST}/api/v1/siterank/analyze" \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -d '{"offerId":"gw-smoke-offer-1"}'
+
 echo "[smoke] GET /api/v1/adscenter/bulk-actions (200 or 204)"
 curl -sS -o /dev/null -w "%{http_code}\n" "https://${HOST}/api/v1/adscenter/bulk-actions" "${auth[@]}"
 

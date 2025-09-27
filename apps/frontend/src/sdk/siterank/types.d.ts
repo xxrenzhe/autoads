@@ -89,6 +89,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/siterank/keywords/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest expanded keywords based on domain and page signals
+         * @description Generate keyword suggestions without Google Ads dependency. Uses domain tokenization +
+         *     page title/siteName signals (via browser-exec) and SimilarWeb basics to score.
+         *
+         */
+        post: operations["suggestKeywords"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -130,6 +152,13 @@ export interface components {
             factors?: {
                 [key: string]: unknown;
             };
+        };
+        KeywordSuggestion: {
+            keyword: string;
+            /** @description 0..1 */
+            score: number;
+            /** @description brief why this keyword was suggested */
+            reason?: string;
         };
     };
     responses: never;
@@ -315,6 +344,52 @@ export interface operations {
                 content: {
                     "application/json": {
                         items?: components["schemas"]["SimilarityItem"][];
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    suggestKeywords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Domain to analyze */
+                    seedDomain: string;
+                    /** @description Optional ISO country code */
+                    country?: string;
+                    /** @default 20 */
+                    topN?: number;
+                    /**
+                     * Format: float
+                     * @description 0..1 score threshold
+                     * @default 0.4
+                     */
+                    minScore?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: components["schemas"]["KeywordSuggestion"][];
                     };
                 };
             };

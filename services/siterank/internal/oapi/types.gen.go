@@ -43,6 +43,17 @@ type HistoryItem struct {
 	UserId     string                  `json:"userId"`
 }
 
+// KeywordSuggestion defines model for KeywordSuggestion.
+type KeywordSuggestion struct {
+	Keyword string `json:"keyword"`
+
+	// Reason brief why this keyword was suggested
+	Reason *string `json:"reason,omitempty"`
+
+	// Score 0..1
+	Score float32 `json:"score"`
+}
+
 // SimilarityItem defines model for SimilarityItem.
 type SimilarityItem struct {
 	Domain  string                  `json:"domain"`
@@ -62,6 +73,19 @@ type TrendPoint struct {
 // RequestSiterankAnalysisJSONBody defines parameters for RequestSiterankAnalysis.
 type RequestSiterankAnalysisJSONBody struct {
 	OfferId string `json:"offerId"`
+}
+
+// SuggestKeywordsJSONBody defines parameters for SuggestKeywords.
+type SuggestKeywordsJSONBody struct {
+	// Country Optional ISO country code
+	Country *string `json:"country,omitempty"`
+
+	// MinScore 0..1 score threshold
+	MinScore *float32 `json:"minScore,omitempty"`
+
+	// SeedDomain Domain to analyze
+	SeedDomain string `json:"seedDomain"`
+	TopN       *int   `json:"topN,omitempty"`
 }
 
 // ComputeSimilarOffersJSONBody defines parameters for ComputeSimilarOffers.
@@ -85,6 +109,9 @@ type GetSiterankTrendParams struct {
 
 // RequestSiterankAnalysisJSONRequestBody defines body for RequestSiterankAnalysis for application/json ContentType.
 type RequestSiterankAnalysisJSONRequestBody RequestSiterankAnalysisJSONBody
+
+// SuggestKeywordsJSONRequestBody defines body for SuggestKeywords for application/json ContentType.
+type SuggestKeywordsJSONRequestBody SuggestKeywordsJSONBody
 
 // ComputeSimilarOffersJSONRequestBody defines body for ComputeSimilarOffers for application/json ContentType.
 type ComputeSimilarOffersJSONRequestBody ComputeSimilarOffersJSONBody

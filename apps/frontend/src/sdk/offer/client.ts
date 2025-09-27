@@ -42,3 +42,32 @@ export async function getOfferKPI(id: string, init?: RequestInit): Promise<any> 
   if (!res.ok) throw new Error(`getOfferKPI failed: ${res.status}`)
   return res.json()
 }
+
+export async function aggregateOfferKPI(id: string, date?: string, init?: RequestInit): Promise<any> {
+  const q = date ? `?date=${encodeURIComponent(date)}` : ''
+  const res = await fetch(`${BASE}/offers/${encodeURIComponent(id)}/kpi/aggregate${q}`, { method: 'POST', ...(init||{}) })
+  if (!res.ok) throw new Error(`aggregateOfferKPI failed: ${res.status}`)
+  return res.json()
+}
+
+export async function listOfferAccounts(id: string, init?: RequestInit): Promise<{ items: { accountId: string }[] }> {
+  const res = await fetch(`${BASE}/offers/${encodeURIComponent(id)}/accounts`, { method: 'GET', ...(init||{}) })
+  if (!res.ok) throw new Error(`listOfferAccounts failed: ${res.status}`)
+  return res.json()
+}
+
+export async function linkOfferAccount(id: string, accountId: string, init?: RequestInit): Promise<{ status: string; offerId: string; accountId: string }> {
+  const res = await fetch(`${BASE}/offers/${encodeURIComponent(id)}/accounts`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...(init?.headers || {}) },
+    body: JSON.stringify({ accountId }),
+    ...(init||{}),
+  })
+  if (!res.ok) throw new Error(`linkOfferAccount failed: ${res.status}`)
+  return res.json()
+}
+
+export async function unlinkOfferAccount(id: string, accountId: string, init?: RequestInit): Promise<void> {
+  const res = await fetch(`${BASE}/offers/${encodeURIComponent(id)}/accounts/${encodeURIComponent(accountId)}`, { method: 'DELETE', ...(init||{}) })
+  if (res.status !== 204) throw new Error(`unlinkOfferAccount failed: ${res.status}`)
+}

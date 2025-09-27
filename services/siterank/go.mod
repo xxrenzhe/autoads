@@ -16,6 +16,8 @@ replace github.com/xxrenzhe/autoads/pkg/events => ../../pkg/events
 replace github.com/xxrenzhe/autoads/pkg/telemetry => ../../pkg/telemetry
 
 replace github.com/xxrenzhe/autoads/pkg/middleware => ../../pkg/middleware
+replace github.com/xxrenzhe/autoads/pkg/eventstore => ../../pkg/eventstore
+replace github.com/xxrenzhe/autoads/pkg/idempotency => ../../pkg/idempotency
 
 	require (
 	cloud.google.com/go/firestore v1.18.0
@@ -34,6 +36,7 @@ replace github.com/xxrenzhe/autoads/pkg/middleware => ../../pkg/middleware
 	github.com/xxrenzhe/autoads/pkg/logger v0.0.1
 	github.com/xxrenzhe/autoads/pkg/middleware v0.0.0-20250921095352-ef8078c06b83
 	github.com/xxrenzhe/autoads/pkg/telemetry v0.0.0-00010101000000-000000000000
+	github.com/xxrenzhe/autoads/pkg/eventstore v0.0.0-00010101000000-000000000000
 )
 
 require (

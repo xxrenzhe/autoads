@@ -12,6 +12,7 @@ import (
     "context"
     "sort"
     "fmt"
+    "bytes"
 
     "github.com/jackc/pgx/v5/pgxpool"
     "github.com/xxrenzhe/autoads/pkg/errors"
@@ -19,6 +20,7 @@ import (
     secretmanager "cloud.google.com/go/secretmanager/apiv1"
     "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
     httpx "github.com/xxrenzhe/autoads/pkg/http"
+    "sync"
 )
 
 type User struct {
@@ -76,6 +78,13 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
     mux.Handle("/api/v1/console/adscenter/bulk-actions/deadletters", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.acDeadLetters))))
     mux.Handle("/api/v1/console/adscenter/bulk-actions/deadletters/retry", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.acDeadLetterRetry))))
     mux.Handle("/api/v1/console/adscenter/bulk-actions/deadletters/retry-batch", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.acDeadLetterRetryBatch))))
+    // Notification rules (admin)
+    mux.Handle("/api/v1/console/notifications/rules", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.rulesHandler))))
+    mux.Handle("/api/v1/console/notifications/rules/", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.rulesTree))))
+    mux.Handle("/api/v1/console/notifications/rules/evaluate", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.rulesEvaluate))))
+    // Offer KPI DLQ (admin)
+    mux.Handle("/api/v1/console/offers/kpi/deadletters", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.offerKpiDeadLetters))))
+    mux.Handle("/api/v1/console/offers/kpi/retry", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.offerKpiRetry))))
     // Alerts & incidents (admin-only)
     mux.Handle("/api/v1/console/alerts", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.getAlerts))))
     mux.Handle("/api/v1/console/incidents", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.getIncidents))))
@@ -332,6 +341,12 @@ func (h *Handler) getAdminStats(w http.ResponseWriter, r *http.Request) {
 // Env vars: *_URL (base) for siterank/billing/batchopen/adscenter/offer/notifications
 func (h *Handler) getSLO(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    // caching
+    if out, ok := getSLOCache(); ok && strings.TrimSpace(r.URL.Query().Get("force")) != "1" {
+        w.Header().Set("Content-Type", "application/json")
+        _ = json.NewEncoder(w).Encode(out)
+        return
+    }
     type serviceCfg struct{ name, url string }
     cfgs := []serviceCfg{
         {"siterank", strings.TrimRight(os.Getenv("SITERANK_URL"), "/")},
@@ -355,9 +370,36 @@ func (h *Handler) getSLO(w http.ResponseWriter, r *http.Request) {
         p95, total, errRate, notes := computeFromMetrics(string(b), c.name)
         out[c.name] = slo{P95: p95, Total: total, ErrorRate: errRate, Notes: notes}
     }
+    res := map[string]any{"services": out, "updatedAt": time.Now().UTC().Format(time.RFC3339)}
+    setSLOCache(res)
     w.Header().Set("Content-Type", "application/json")
-    _ = json.NewEncoder(w).Encode(map[string]any{"services": out, "updatedAt": time.Now().UTC().Format(time.RFC3339)})
+    _ = json.NewEncoder(w).Encode(res)
 }
+
+// --- SLO cache ---
+var sloCacheMu sync.RWMutex
+var sloCache map[string]any
+var sloCacheAt time.Time
+const sloCacheTTL = 60 * time.Second
+
+func getSLOCache() (map[string]any, bool) {
+    sloCacheMu.RLock()
+    defer sloCacheMu.RUnlock()
+    if sloCache != nil && time.Since(sloCacheAt) < sloCacheTTL {
+        // shallow copy to avoid mutation
+        out := map[string]any{}
+        for k, v := range sloCache { out[k] = v }
+        return out, true
+    }
+    return nil, false
+}
+func setSLOCache(m map[string]any) {
+    sloCacheMu.Lock()
+    defer sloCacheMu.Unlock()
+    sloCache = m
+    sloCacheAt = time.Now()
+}
+
 
 // limitsPolicy supports GET (read current policy JSON) and PUT (update policy by creating a new secret version).
 // Env: ADSCENTER_LIMITS_SECRET = projects/<pid>/secrets/<name>/versions/latest
@@ -545,6 +587,51 @@ func (h *Handler) acDeadLetterRetryBatch(w http.ResponseWriter, r *http.Request)
     _ = json.NewEncoder(w).Encode(out)
 }
 
+// --- Offer KPI DLQ admin ---
+
+// List Offer KPI deadletters (direct DB read)
+// GET /api/v1/console/offers/kpi/deadletters?limit=50
+func (h *Handler) offerKpiDeadLetters(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    lim := 50
+    if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" { if n, e := strconv.Atoi(v); e == nil && n > 0 && n <= 500 { lim = n } }
+    rows, err := h.DB.Query(r.Context(), `SELECT id,user_id,offer_id,date,reason,payload::text,retry_count,last_error,status,created_at,updated_at FROM "OfferKpiDeadLetter" WHERE status<>'resolved' ORDER BY created_at DESC LIMIT $1`, lim)
+    if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    type item struct{ ID int64 `json:"id"`; UserID string `json:"userId"`; OfferID string `json:"offerId"`; Date string `json:"date"`; Reason string `json:"reason"`; Payload string `json:"payload"`; RetryCount int `json:"retryCount"`; LastError string `json:"lastError"`; Status string `json:"status"`; CreatedAt string `json:"createdAt"`; UpdatedAt string `json:"updatedAt"` }
+    var items []item
+    for rows.Next() {
+        var it item; var d, ca, ua time.Time
+        if err := rows.Scan(&it.ID, &it.UserID, &it.OfferID, &d, &it.Reason, &it.Payload, &it.RetryCount, &it.LastError, &it.Status, &ca, &ua); err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "scan failed", nil); return }
+        it.Date = d.Format("2006-01-02"); it.CreatedAt = ca.Format(time.RFC3339); it.UpdatedAt = ua.Format(time.RFC3339)
+        items = append(items, it)
+    }
+    _ = json.NewEncoder(w).Encode(map[string]any{"items": items})
+}
+
+// Retry Offer KPI DLQ (proxy to offer service internal)
+// POST /api/v1/console/offers/kpi/retry { id? , max? }
+func (h *Handler) offerKpiRetry(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    var body struct { ID string `json:"id"`; Max int `json:"max"` }
+    if err := json.NewDecoder(r.Body).Decode(&body); err != nil { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+    base := strings.TrimRight(os.Getenv("OFFER_URL"), "/")
+    if base == "" { errors.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "OFFER_URL not set", nil); return }
+    token := strings.TrimSpace(os.Getenv("INTERNAL_SERVICE_TOKEN"))
+    if token == "" { errors.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "INTERNAL_SERVICE_TOKEN not set", nil); return }
+    cli := httpx.New(6 * time.Second)
+    hdr := map[string]string{"X-Service-Token": token}
+    // build URL
+    url := base+"/api/v1/offers/internal/kpi/retry"
+    vals := []string{}
+    if strings.TrimSpace(body.ID) != "" { vals = append(vals, "id="+body.ID) }
+    if body.Max > 0 { vals = append(vals, "max="+strconv.Itoa(body.Max)) }
+    if len(vals) > 0 { url += "?"+strings.Join(vals, "&") }
+    var out map[string]any
+    if err := cli.DoJSON(r.Context(), http.MethodPost, url, nil, hdr, 1, &out); err != nil { errors.Write(w, r, http.StatusBadGateway, "UPSTREAM", err.Error(), nil); return }
+    _ = json.NewEncoder(w).Encode(out)
+}
+
 func (h *Handler) lookupBulkOwner(ctx context.Context, opId string) string {
     var uid string
     _ = h.DB.QueryRow(ctx, `SELECT user_id FROM "BulkActionOperation" WHERE id=$1`, opId).Scan(&uid)
@@ -645,6 +732,196 @@ func (h *Handler) exportEventsCSV(w http.ResponseWriter, r *http.Request) {
         }
     }
 }
+
+// --- Notification Rules (admin) ---
+
+// rulesHandler handles /api/v1/console/notifications/rules (GET list, POST create)
+func (h *Handler) rulesHandler(w http.ResponseWriter, r *http.Request) {
+    switch r.Method {
+    case http.MethodGet:
+        // filters: service, metric, scope, enabled
+        q := r.URL.Query()
+        service := strings.TrimSpace(q.Get("service"))
+        metric := strings.TrimSpace(q.Get("metric"))
+        scope := strings.TrimSpace(q.Get("scope"))
+        enabled := strings.TrimSpace(q.Get("enabled"))
+        wh := []string{}
+        args := []any{}
+        if service != "" { wh = append(wh, fmt.Sprintf("service=$%d", len(args)+1)); args = append(args, service) }
+        if metric != "" { wh = append(wh, fmt.Sprintf("metric=$%d", len(args)+1)); args = append(args, metric) }
+        if scope != "" { wh = append(wh, fmt.Sprintf("scope=$%d", len(args)+1)); args = append(args, scope) }
+        if enabled != "" { wh = append(wh, fmt.Sprintf("enabled=$%d", len(args)+1)); args = append(args, enabled == "true") }
+        sql := "SELECT id,scope,COALESCE(user_id,''),service,metric,comparator,threshold,window_sec,enabled,COALESCE(params,'{}')::text,created_at,updated_at FROM notification_rules"
+        if len(wh) > 0 { sql += " WHERE "+strings.Join(wh, " AND ") }
+        sql += " ORDER BY created_at DESC LIMIT 500"
+        rows, err := h.DB.Query(r.Context(), sql, args...)
+        if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "query failed", map[string]string{"error": err.Error()}); return }
+        defer rows.Close()
+        type item struct{ ID int64 `json:"id"`; Scope, UserID, Service, Metric, Comparator string; Threshold float64; WindowSec int; Enabled bool; Params string; CreatedAt, UpdatedAt time.Time }
+        var items []item
+        for rows.Next() {
+            var it item
+            if err := rows.Scan(&it.ID, &it.Scope, &it.UserID, &it.Service, &it.Metric, &it.Comparator, &it.Threshold, &it.WindowSec, &it.Enabled, &it.Params, &it.CreatedAt, &it.UpdatedAt); err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "scan failed", nil); return }
+            items = append(items, it)
+        }
+        _ = json.NewEncoder(w).Encode(map[string]any{"items": items})
+        return
+    case http.MethodPost:
+        var body struct{ Scope, UserID, Service, Metric, Comparator string; Threshold float64; WindowSec int; Enabled *bool; Params map[string]any }
+        if err := json.NewDecoder(r.Body).Decode(&body); err != nil { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+        if strings.TrimSpace(body.Service) == "" || strings.TrimSpace(body.Metric) == "" { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "service/metric required", nil); return }
+        if body.Comparator == "" { body.Comparator = "gt" }
+        if body.WindowSec <= 0 { body.WindowSec = 300 }
+        en := true; if body.Enabled != nil { en = *body.Enabled }
+        pb, _ := json.Marshal(body.Params)
+        var id int64
+        err := h.DB.QueryRow(r.Context(), `
+            INSERT INTO notification_rules(scope, user_id, service, metric, comparator, threshold, window_sec, enabled, params, created_at, updated_at)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,NOW(),NOW()) RETURNING id
+        `, strings.TrimSpace(body.Scope), strings.TrimSpace(body.UserID), strings.TrimSpace(body.Service), strings.TrimSpace(body.Metric), strings.TrimSpace(body.Comparator), body.Threshold, body.WindowSec, en, string(pb)).Scan(&id)
+        if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "insert failed", map[string]string{"error": err.Error()}); return }
+        _ = json.NewEncoder(w).Encode(map[string]any{"status": "ok", "id": id})
+        return
+    default:
+        errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return
+    }
+}
+
+// rulesTree handles /api/v1/console/notifications/rules/{id} (GET, PUT, DELETE)
+func (h *Handler) rulesTree(w http.ResponseWriter, r *http.Request) {
+    path := strings.TrimPrefix(r.URL.Path, "/api/v1/console/notifications/rules/")
+    id := strings.TrimSpace(path)
+    if id == "" { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id required", nil); return }
+    switch r.Method {
+    case http.MethodGet:
+        var rec struct{ ID int64; Scope, UserID, Service, Metric, Comparator string; Threshold float64; WindowSec int; Enabled bool; Params string; CreatedAt, UpdatedAt time.Time }
+        err := h.DB.QueryRow(r.Context(), `SELECT id,scope,COALESCE(user_id,''),service,metric,comparator,threshold,window_sec,enabled,COALESCE(params,'{}')::text,created_at,updated_at FROM notification_rules WHERE id=$1`, id).
+            Scan(&rec.ID, &rec.Scope, &rec.UserID, &rec.Service, &rec.Metric, &rec.Comparator, &rec.Threshold, &rec.WindowSec, &rec.Enabled, &rec.Params, &rec.CreatedAt, &rec.UpdatedAt)
+        if err != nil { errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "rule not found", nil); return }
+        _ = json.NewEncoder(w).Encode(rec)
+        return
+    case http.MethodPut:
+        var body struct{ Scope, UserID, Service, Metric, Comparator string; Threshold *float64; WindowSec *int; Enabled *bool; Params map[string]any }
+        if err := json.NewDecoder(r.Body).Decode(&body); err != nil { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+        // Build dynamic update
+        sets := []string{"updated_at=NOW()"}
+        args := []any{}
+        if strings.TrimSpace(body.Scope) != "" { sets = append(sets, fmt.Sprintf("scope=$%d", len(args)+1)); args = append(args, strings.TrimSpace(body.Scope)) }
+        if body.UserID != "" { sets = append(sets, fmt.Sprintf("user_id=$%d", len(args)+1)); args = append(args, strings.TrimSpace(body.UserID)) }
+        if strings.TrimSpace(body.Service) != "" { sets = append(sets, fmt.Sprintf("service=$%d", len(args)+1)); args = append(args, strings.TrimSpace(body.Service)) }
+        if strings.TrimSpace(body.Metric) != "" { sets = append(sets, fmt.Sprintf("metric=$%d", len(args)+1)); args = append(args, strings.TrimSpace(body.Metric)) }
+        if strings.TrimSpace(body.Comparator) != "" { sets = append(sets, fmt.Sprintf("comparator=$%d", len(args)+1)); args = append(args, strings.TrimSpace(body.Comparator)) }
+        if body.Threshold != nil { sets = append(sets, fmt.Sprintf("threshold=$%d", len(args)+1)); args = append(args, *body.Threshold) }
+        if body.WindowSec != nil { sets = append(sets, fmt.Sprintf("window_sec=$%d", len(args)+1)); args = append(args, *body.WindowSec) }
+        if body.Enabled != nil { sets = append(sets, fmt.Sprintf("enabled=$%d", len(args)+1)); args = append(args, *body.Enabled) }
+        if body.Params != nil { pb, _ := json.Marshal(body.Params); sets = append(sets, fmt.Sprintf("params=$%d::jsonb", len(args)+1)); args = append(args, string(pb)) }
+        args = append(args, id)
+        sql := fmt.Sprintf("UPDATE notification_rules SET %s WHERE id=$%d", strings.Join(sets, ","), len(args))
+        ct, err := h.DB.Exec(r.Context(), sql, args...)
+        if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "update failed", map[string]string{"error": err.Error()}); return }
+        if ct.RowsAffected() == 0 { errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "rule not found", nil); return }
+        _ = json.NewEncoder(w).Encode(map[string]any{"status": "ok", "id": id})
+        return
+    case http.MethodDelete:
+        ct, err := h.DB.Exec(r.Context(), `DELETE FROM notification_rules WHERE id=$1`, id)
+        if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "delete failed", map[string]string{"error": err.Error()}); return }
+        if ct.RowsAffected() == 0 { errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "rule not found", nil); return }
+        w.WriteHeader(http.StatusNoContent)
+        return
+    default:
+        errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return
+    }
+}
+
+// rulesEvaluate evaluates enabled rules against current snapshot and emits alerts into user_notifications.
+// POST /api/v1/console/notifications/rules/evaluate?force=1
+func (h *Handler) rulesEvaluate(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    // fetch snapshot (cached unless force=1)
+    var snap map[string]any
+    var ok bool
+    if strings.TrimSpace(r.URL.Query().Get("force")) == "1" {
+        // recompute by calling getSLO backend logic via local HTTP (reuse code path)
+        // to keep it simple, clear cache then call getSLO via function style isn't straightforward; re-run computation inline like getSLO
+        // fallback: call HTTP GET /api/v1/console/slo?force=1
+        req, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, "/api/v1/console/slo?force=1", nil)
+        rr := httptestResponse()
+        h.getSLO(rr, req)
+        if rr.status == 200 { _ = json.Unmarshal(rr.buf.Bytes(), &snap) }
+    } else {
+        snap, ok = getSLOCache()
+        if !ok {
+            req, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, "/api/v1/console/slo?force=1", nil)
+            rr := httptestResponse()
+            h.getSLO(rr, req)
+            if rr.status == 200 { _ = json.Unmarshal(rr.buf.Bytes(), &snap) }
+        }
+    }
+    if snap == nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "SLO snapshot unavailable", nil); return }
+    services, _ := snap["services"].(map[string]any)
+    // load rules
+    rows, err := h.DB.Query(r.Context(), `SELECT id, scope, COALESCE(user_id,''), service, metric, comparator, threshold, window_sec, enabled FROM notification_rules WHERE enabled=true LIMIT 1000`)
+    if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "query rules failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    type rule struct{ id int64; scope, user, service, metric, cmp string; th float64; win int }
+    var rules []rule
+    for rows.Next() { var x rule; if err := rows.Scan(&x.id,&x.scope,&x.user,&x.service,&x.metric,&x.cmp,&x.th,&x.win, new(bool)); err==nil { rules = append(rules, x) } }
+    triggered := 0
+    for _, rl := range rules {
+        val := 0.0
+        switch strings.ToLower(rl.metric) {
+        case "p95_latency_ms":
+            if s, ok := services[rl.service].(map[string]any); ok { if v, ok := s["p95"].(float64); ok { val = v } }
+        case "error_rate":
+            if s, ok := services[rl.service].(map[string]any); ok { if v, ok := s["errorRate"].(float64); ok { val = v } }
+        case "dlq_size":
+            if rl.service == "offer" { // minimal: Offer KPI DLQ
+                _ = h.DB.QueryRow(r.Context(), `SELECT COUNT(1) FROM "OfferKpiDeadLetter" WHERE status<>'resolved'`).Scan(&val)
+            }
+        default:
+            continue
+        }
+        if evalCmp(val, rl.cmp, rl.th) {
+            if h.emitAlertOnce(r.Context(), rl.service, rl.metric, rl.cmp, rl.th, val) { triggered++ }
+        }
+    }
+    _ = json.NewEncoder(w).Encode(map[string]any{"status":"ok","triggered": triggered})
+}
+
+func evalCmp(val float64, cmp string, th float64) bool {
+    switch strings.ToLower(strings.TrimSpace(cmp)) {
+    case "gt": return val > th
+    case "ge": return val >= th
+    case "lt": return val < th
+    case "le": return val <= th
+    case "eq": return val == th
+    case "ne": return val != th
+    default: return false
+    }
+}
+
+// emitAlertOnce writes an ALERT into user_notifications with simple suppression within last 10 minutes.
+func (h *Handler) emitAlertOnce(ctx context.Context, svc, metric, cmp string, th, value float64) bool {
+    ttl := 10 // minutes
+    var exists int
+    _ = h.DB.QueryRow(ctx, `SELECT COUNT(1) FROM user_notifications WHERE created_at > NOW() - ($1 || ' minutes')::interval AND type='ALERT' AND title ILIKE $2`, ttl, "%"+svc+"."+metric+"%").Scan(&exists)
+    if exists > 0 { return false }
+    title := fmt.Sprintf("SLO 告警：%s.%s %s %.2f，当前值 %.2f", svc, metric, cmp, th, value)
+    msg := map[string]any{"severity":"warn","category":"slo","service":svc,"metric":metric,"comparator":cmp,"threshold":th,"value":value}
+    b, _ := json.Marshal(msg)
+    // use 'admin' as user scope for console alerts aggregation
+    _, err := h.DB.Exec(ctx, `INSERT INTO user_notifications(user_id,type,title,message,created_at) VALUES ($1,'ALERT',$2,$3,NOW())`, "admin", title, string(b))
+    return err == nil
+}
+
+// minimal ResponseRecorder for internal call reuse
+type rrw struct{ buf bytes.Buffer; header http.Header; status int }
+func httptestResponse() *rrw { return &rrw{header: http.Header{}, status: 200} }
+func (r *rrw) Header() http.Header { return r.header }
+func (r *rrw) Write(b []byte) (int, error) { return r.buf.Write(b) }
+func (r *rrw) WriteHeader(code int) { r.status = code }
+
+
 
 func safeCSV(s string) string {
     if strings.ContainsAny(s, ",\n\r\"") {

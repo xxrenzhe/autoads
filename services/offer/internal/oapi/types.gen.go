@@ -5,6 +5,8 @@ package oapi
 
 import (
 	"time"
+
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
@@ -17,6 +19,11 @@ const (
 	Evaluating OfferStatus = "evaluating"
 	Optimizing OfferStatus = "optimizing"
 	Scaling    OfferStatus = "scaling"
+)
+
+// Defines values for OfferStatusUpdatedStatus.
+const (
+	Ok OfferStatusUpdatedStatus = "ok"
 )
 
 // Error defines model for Error.
@@ -59,5 +66,52 @@ type OfferCreatedEvent struct {
 	UserId      string    `json:"userId"`
 }
 
+// OfferKpiResponse defines model for OfferKpiResponse.
+type OfferKpiResponse struct {
+	Days []struct {
+		Clicks      int64              `json:"clicks"`
+		Date        openapi_types.Date `json:"date"`
+		Impressions int64              `json:"impressions"`
+		Revenue     float32            `json:"revenue"`
+		Spend       float32            `json:"spend"`
+	} `json:"days"`
+	Summary struct {
+		Clicks      int64   `json:"clicks"`
+		Impressions int64   `json:"impressions"`
+		Revenue     float32 `json:"revenue"`
+		Rosc        float32 `json:"rosc"`
+		Spend       float32 `json:"spend"`
+	} `json:"summary"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// OfferStatusUpdate defines model for OfferStatusUpdate.
+type OfferStatusUpdate struct {
+	Status string `json:"status"`
+}
+
+// OfferStatusUpdated defines model for OfferStatusUpdated.
+type OfferStatusUpdated struct {
+	From    string                   `json:"from"`
+	OfferId string                   `json:"offerId"`
+	Status  OfferStatusUpdatedStatus `json:"status"`
+	To      string                   `json:"to"`
+}
+
+// OfferStatusUpdatedStatus defines model for OfferStatusUpdated.Status.
+type OfferStatusUpdatedStatus string
+
+// OfferUpdateRequest defines model for OfferUpdateRequest.
+type OfferUpdateRequest struct {
+	Name        *string `json:"name,omitempty"`
+	OriginalUrl *string `json:"originalUrl,omitempty"`
+}
+
 // CreateOfferJSONRequestBody defines body for CreateOffer for application/json ContentType.
 type CreateOfferJSONRequestBody = OfferCreateRequest
+
+// UpdateOfferJSONRequestBody defines body for UpdateOffer for application/json ContentType.
+type UpdateOfferJSONRequestBody = OfferUpdateRequest
+
+// UpdateOfferStatusJSONRequestBody defines body for UpdateOfferStatus for application/json ContentType.
+type UpdateOfferStatusJSONRequestBody = OfferStatusUpdate

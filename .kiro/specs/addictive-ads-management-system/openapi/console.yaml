@@ -1,0 +1,174 @@
+openapi: 3.0.3
+info:
+  title: Console Service
+  version: 0.1.0
+servers:
+  - url: /
+paths:
+  /api/v1/console/slo:
+    get:
+      summary: Get SLO snapshot for services
+      operationId: getSlo
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: query
+          name: force
+          schema: { type: string, enum: ["1"] }
+      responses:
+        '200': { description: OK }
+  /api/v1/console/alerts:
+    get:
+      summary: List recent alerts
+      operationId: getAlerts
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: query
+          name: level
+          schema: { type: string, enum: [warn, error] }
+        - in: query
+          name: sinceHours
+          schema: { type: integer, minimum: 1, maximum: 2160 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 1000 }
+      responses:
+        '200': { description: OK }
+  /api/v1/console/incidents:
+    get:
+      summary: Aggregate incidents by day
+      operationId: getIncidents
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: query
+          name: days
+          schema: { type: integer, minimum: 1, maximum: 90 }
+      responses:
+        '200': { description: OK }
+  /api/v1/console/notifications/rules:
+    get:
+      summary: List notification rules
+      operationId: listRules
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: query
+          name: service
+          schema: { type: string }
+        - in: query
+          name: metric
+          schema: { type: string }
+        - in: query
+          name: scope
+          schema: { type: string }
+        - in: query
+          name: enabled
+          schema: { type: boolean }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create a notification rule
+      operationId: createRule
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scope: { type: string, enum: [system, user] }
+                userID: { type: string }
+                service: { type: string }
+                metric: { type: string }
+                comparator: { type: string, enum: [gt, ge, lt, le, eq, ne] }
+                threshold: { type: number }
+                windowSec: { type: integer }
+                enabled: { type: boolean }
+                params: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: OK }
+  /api/v1/console/notifications/rules/{id}:
+    get:
+      summary: Get rule by id
+      operationId: getRule
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+        '404': { description: Not Found }
+    put:
+      summary: Update rule by id
+      operationId: updateRule
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200': { description: OK }
+        '404': { description: Not Found }
+    delete:
+      summary: Delete rule by id
+      operationId: deleteRule
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: No Content }
+        '404': { description: Not Found }
+  /api/v1/console/notifications/rules/evaluate:
+    post:
+      summary: Evaluate rules against current SLO snapshot
+      operationId: evaluateRules
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200': { description: OK }
+  /api/v1/console/offers/kpi/deadletters:
+    get:
+      summary: List Offer KPI DLQ items
+      operationId: listOfferKpiDLQ
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500 }
+      responses:
+        '200': { description: OK }
+  /api/v1/console/offers/kpi/retry:
+    post:
+      summary: Retry Offer KPI DLQ items
+      operationId: retryOfferKpiDLQ
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id: { type: string }
+                max: { type: integer }
+      responses:
+        '200': { description: OK }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+

@@ -36,7 +36,7 @@
 - 配置与缓存: Firestore
 - 事件总线: Google Cloud Pub/Sub
 - 数据库：Google Cloud SQL for PostgreSQL
-- API网关：Google Cloud API Gateway
+- API网关：Google Cloud API Gateway （预发环境：autoads-api-preview，生产环境：autoads-api）
 - 异步工作单元：Google Cloud Functions
 - 镜像仓库：Google Cloud Artifact Registry （代码库：autoads-services）
 - AI能力接入：Firebase AI Logic

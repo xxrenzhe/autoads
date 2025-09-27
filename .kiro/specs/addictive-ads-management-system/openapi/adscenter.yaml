@@ -498,6 +498,138 @@ paths:
                       $ref: '#/components/schemas/KeywordIdea'
         '400': { description: Bad Request }
         '401': { description: Unauthorized }
+
+  /api/v1/adscenter/diagnose:
+    post:
+      operationId: diagnose
+      summary: Diagnose ad account issues based on provided metrics and landing URL
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId: { type: string }
+                landingUrl: { type: string }
+                metrics:
+                  type: object
+                  additionalProperties: true
+              required: [accountId]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiagnoseResult'
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+
+  /api/v1/adscenter/diagnose/plan:
+    post:
+      operationId: diagnosePlan
+      summary: Generate a validate-only bulk action plan from metrics
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId: { type: string }
+                metrics:
+                  type: object
+                  additionalProperties: true
+                suggestedActions:
+                  type: array
+                  items: { $ref: '#/components/schemas/SuggestedAction' }
+              required: [accountId, metrics]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkActionPlan'
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+
+  /api/v1/adscenter/diagnose/metrics:
+    get:
+      operationId: getDiagnoseMetrics
+      summary: Get metrics stub or live for diagnosis
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: accountId
+          required: false
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+        '401': { description: Unauthorized }
+
+  /api/v1/adscenter/diagnose/execute:
+    post:
+      operationId: diagnoseExecute
+      summary: Generate a plan from metrics and enqueue as a bulk operation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                metrics:
+                  type: object
+                  additionalProperties: true
+              required: [metrics]
+      responses:
+        '202': { description: Accepted }
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+
+  /api/v1/adscenter/limits/me:
+    get:
+      operationId: getLimitsMe
+      summary: Get current plan limits and daily quota usage for the user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan: { type: string }
+                  limits:
+                    type: object
+                    properties:
+                      preflight:
+                        type: object
+                        properties:
+                          rpm: { type: integer }
+                          concurrency: { type: integer }
+                      mutate:
+                        type: object
+                        properties:
+                          rpm: { type: integer }
+                          concurrency: { type: integer }
+                  quota:
+                    type: object
+                    properties:
+                      daily: { type: integer }
+                      usedToday: { type: integer }
+        '401': { description: Unauthorized }
 components:
   securitySchemes:
     bearerAuth:
@@ -658,6 +790,36 @@ components:
           type: string
           enum: [LOW, MEDIUM, HIGH]
       required: [keyword, avgMonthlySearches, competition]
+    DiagnoseRule:
+      type: object
+      properties:
+        code: { type: string }
+        severity: { type: string, enum: [info, warn, error] }
+        message: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+      required: [code, severity, message]
+    SuggestedAction:
+      type: object
+      properties:
+        action: { type: string }
+        params:
+          type: object
+          additionalProperties: true
+        reason: { type: string }
+      required: [action]
+    DiagnoseResult:
+      type: object
+      properties:
+        summary: { type: string, enum: [ok, warn, error] }
+        rules:
+          type: array
+          items: { $ref: '#/components/schemas/DiagnoseRule' }
+        suggestedActions:
+          type: array
+          items: { $ref: '#/components/schemas/SuggestedAction' }
+      required: [summary, rules]
     MccLink:
       type: object
       properties:

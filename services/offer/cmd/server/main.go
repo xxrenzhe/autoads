@@ -14,10 +14,10 @@ import (
     _ "github.com/lib/pq"
     "github.com/xxrenzhe/autoads/services/offer/internal/domain"
     "github.com/xxrenzhe/autoads/services/offer/internal/events"
-    "github.com/xxrenzhe/autoads/pkg/config"
     "github.com/xxrenzhe/autoads/pkg/logger"
     "github.com/xxrenzhe/autoads/pkg/middleware"
     apperr "github.com/xxrenzhe/autoads/pkg/errors"
+    "strings"
 )
 
 // OfferCreateRequest defines the expected JSON body for creating an offer.
@@ -34,10 +34,10 @@ var (
 )
 
 func main() {
-	cfg, err := config.LoadConfig("config.yaml")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error loading config")
-	}
+    // Minimal config: use PORT from env (fallback 8080). Avoid external file dependencies in Cloud Run.
+    port := os.Getenv("PORT")
+    if strings.TrimSpace(port) == "" { port = "8080" }
+    var err error
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
@@ -74,8 +74,8 @@ func main() {
 
 	mux.Handle("/api/", http.StripPrefix("/api", middleware.AuthMiddleware(protectedRoutes)))
 
-	log.Info().Str("port", cfg.Server.Port).Msg("Offer service starting...")
-	if err := http.ListenAndServe(":"+cfg.Server.Port, mux); err != nil {
+    log.Info().Str("port", port).Msg("Offer service starting...")
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal().Err(err).Msg("Failed to start server")
 	}
 }

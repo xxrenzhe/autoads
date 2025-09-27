@@ -43,6 +43,13 @@ discover_and_replace() {
     return
   fi
   host=${url#https://}
+  # Prefer stable domain form <service>-<projectNumber>.<region>.run.app when possible
+  if [[ -n "$PROJECT_ID" ]]; then
+    PN=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+    if [[ -n "$PN" ]]; then
+      host="${svc}-${PN}.${REGION}.run.app"
+    fi
+  fi
   echo "[render] $svc -> $url"
   sed -i '' -e "s#$placeholder#$host#g" "$OUT"
 }

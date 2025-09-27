@@ -38,6 +38,7 @@ import (
     "fmt"
     neturl "net/url"
     httpx "github.com/xxrenzhe/autoads/pkg/http"
+    ev "github.com/xxrenzhe/autoads/pkg/events"
 )
 
 type PreflightRequest struct {
@@ -326,39 +327,50 @@ func (s *Server) diagnoseHandler(w http.ResponseWriter, r *http.Request) {
     rules := []map[string]any{}
     add := func(code, sev, msg string, details map[string]any) { rules = append(rules, map[string]any{"code": code, "severity": sev, "message": msg, "details": details}) }
     suggest := []map[string]any{}
-    addSug := func(kind string, params map[string]any, reason string) { suggest = append(suggest, map[string]any{"action": kind, "params": params, "reason": reason}) }
+    addSug := func(kind string, params map[string]any, reason string, impact map[string]any) {
+        m := map[string]any{"action": kind, "params": params, "reason": reason}
+        if impact != nil && len(impact) > 0 { m["impact"] = impact }
+        suggest = append(suggest, m)
+    }
 
     // Rule: no impressions
     if impressions <= 0 {
         add("NO_IMPRESSIONS", "error", "近7天曝光为0，广告未投放或被限制", map[string]any{"impressions": impressions})
-        addSug("ENABLE_CAMPAIGNS", nil, "启用被暂停的广告系列")
-        addSug("FIX_TARGETING", map[string]any{"hint": "放宽地域/时段/设备定向"}, "扩大受众范围")
+        addSug("ENABLE_CAMPAIGNS", nil, "启用被暂停的广告系列", map[string]any{"expectedImprDelta": "+100~+500"})
+        addSug("FIX_TARGETING", map[string]any{"hint": "放宽地域/时段/设备定向"}, "扩大受众范围", map[string]any{"expectedImprDelta": "+10%~+30%"})
     }
     // Rule: low CTR
     if impressions > 100 && ctr < 0.5 {
-        add("LOW_CTR", "warn", "点击率较低，建议优化创意与匹配类型", map[string]any{"ctr": ctr})
-        addSug("ADJUST_MATCH_TYPE", map[string]any{"to": "phrase"}, "降低流量噪声并提升相关性")
-        addSug("ADD_AD_VARIANTS", map[string]any{"count": 2}, "增加创意版本做AB测试")
+        add("LOW_CTR", "warn", "点击率较低，建议优化创意与匹配类型", map[string]any{"ctr": ctr, "threshold": 0.8})
+        addSug("ADJUST_MATCH_TYPE", map[string]any{"to": "phrase"}, "降低流量噪声并提升相关性", map[string]any{"expectedCtrDelta": "+0.2~+0.5"})
+        addSug("ADD_AD_VARIANTS", map[string]any{"count": 2}, "增加创意版本做AB测试", map[string]any{"expectedCtrDelta": "+0.1~+0.3"})
     }
     // Rule: low quality score
     if qs > 0 && qs < 5 {
-        add("LOW_QUALITY_SCORE", "warn", "质量得分偏低，建议优化落地页相关性与加载速度", map[string]any{"qualityScore": qs})
-        addSug("INCREASE_CPC", map[string]any{"percent": 10}, "短期提升排名与曝光")
+        add("LOW_QUALITY_SCORE", "warn", "质量得分偏低，建议优化落地页相关性与加载速度", map[string]any{"qualityScore": qs, "threshold": 6})
+        addSug("INCREASE_CPC", map[string]any{"percent": 10}, "短期提升排名与曝光", map[string]any{"expectedImprDelta": "+5%~+15%", "risk": "CPC上涨"})
     }
     // Rule: budget issues
     if dailyBudget <= 0 {
         add("BUDGET_MISSING", "error", "未设置或预算为0", map[string]any{"dailyBudget": dailyBudget})
-        addSug("ADJUST_BUDGET", map[string]any{"dailyBudget": 50}, "设置合理日预算")
+        addSug("ADJUST_BUDGET", map[string]any{"dailyBudget": 50}, "设置合理日预算", map[string]any{"expectedImprDelta": "+20%~+50%"})
     } else if budgetPacing >= 1.0 {
         add("BUDGET_EXHAUSTED", "warn", "预算已耗尽，建议提升预算或优化投放时段", map[string]any{"pacing": budgetPacing})
-        addSug("ADJUST_BUDGET", map[string]any{"percent": 20}, "提升预算避免漏量")
+        addSug("ADJUST_BUDGET", map[string]any{"percent": 20}, "提升预算避免漏量", map[string]any{"expectedImprDelta": "+10%~+30%"})
     }
     // Rule: tracking missing (heuristic based on landing URL)
     if u := strings.TrimSpace(body.LandingURL); u != "" {
         if !strings.Contains(u, "utm_") && !strings.Contains(u, "gclid=") {
             add("TRACKING_MISSING", "warn", "缺少常见跟踪参数（utm_* 或 gclid）", map[string]any{"landingUrl": u})
-            addSug("ENABLE_AUTO_TAGGING", nil, "启用自动标记以提升转化归因")
+            addSug("ENABLE_AUTO_TAGGING", nil, "启用自动标记以提升转化归因", map[string]any{"expectedConvDelta": "+5%~+15%"})
         }
+    }
+    // Rule: no conversions despite impressions and acceptable CTR
+    conversions := getNum("conversions", 0)
+    if impressions > 300 && ctr >= 0.8 && conversions <= 0 {
+        add("NO_CONVERSIONS", "warn", "有曝光和点击但无转化，需检查落地页与转化追踪", map[string]any{"impressions": impressions, "ctr": ctr, "conversions": conversions})
+        addSug("IMPROVE_LANDING", map[string]any{"hint": "提升加载速度/相关性"}, "优化落地页体验", map[string]any{"expectedConvDelta": "+5%~+20%"})
+        addSug("ENABLE_CONV_TRACKING", map[string]any{"hint": "GA4/Ads 转化事件"}, "完善转化追踪", map[string]any{"expectedConvDelta": "+10%~+30%"})
     }
     // Overall severity
     summary := "ok"
@@ -374,9 +386,50 @@ func (s *Server) diagnosePlanHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodPost { apperr.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
     var body struct{
         Metrics map[string]any `json:"metrics"`
+        Suggested []api.SuggestedAction `json:"suggestedActions"`
     }
     if err := json.NewDecoder(r.Body).Decode(&body); err != nil { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
-    plan := buildPlanFromMetrics(body.Metrics)
+    // Prefer suggestions if provided, otherwise derive from metrics
+    var plan struct{
+        ValidateOnly bool `json:"validateOnly"`
+        Actions []map[string]any `json:"actions"`
+    }
+    if len(body.Suggested) > 0 {
+        plan.ValidateOnly = true
+        for _, sgg := range body.Suggested {
+            t := strings.ToUpper(strings.TrimSpace(sgg.Action))
+            p := map[string]any{}
+            if sgg.Params != nil { for k, v := range *sgg.Params { p[k] = v } }
+            switch t {
+            case "INCREASE_CPC":
+                if _, ok := p["percent"]; !ok { p["percent"] = 10 }
+                plan.Actions = append(plan.Actions, map[string]any{"type": "ADJUST_CPC", "params": p})
+            case "ADJUST_BUDGET":
+                plan.Actions = append(plan.Actions, map[string]any{"type": "ADJUST_BUDGET", "params": p})
+            case "ROTATE_LINK":
+                // accept either targetDomain string or links[] array
+                if _, ok := p["targetDomain"]; ok {
+                    plan.Actions = append(plan.Actions, map[string]any{"type": "ROTATE_LINK", "params": p})
+                } else if v, ok := p["links"].([]any); ok && len(v) > 0 {
+                    plan.Actions = append(plan.Actions, map[string]any{"type": "ROTATE_LINK", "params": p})
+                }
+            // other suggestion kinds currently not mapped to supported plan actions
+            default:
+                // ignore unsupported suggestion types to keep plan valid
+            }
+        }
+        if len(plan.Actions) == 0 {
+            // fallback to metrics if nothing mapped
+            mplan := buildPlanFromMetrics(body.Metrics)
+            // mplan is struct{ValidateOnly bool; Actions []map[string]any}
+            plan.ValidateOnly = mplan.ValidateOnly
+            plan.Actions = mplan.Actions
+        }
+    } else {
+        mplan := buildPlanFromMetrics(body.Metrics)
+        plan.ValidateOnly = mplan.ValidateOnly
+        plan.Actions = mplan.Actions
+    }
     w.Header().Set("Content-Type", "application/json")
     _ = json.NewEncoder(w).Encode(map[string]any{"plan": plan, "validateOnly": true})
 }
@@ -1052,89 +1105,86 @@ func bulkActionsHandler(w http.ResponseWriter, r *http.Request) {
     // Read raw to allow combo shape fallback
     raw, err := io.ReadAll(r.Body)
     if err != nil { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
-    // Try decode as standard BulkActionPlan body first
-    var body api.SubmitBulkActionsJSONRequestBody
-    _ = json.Unmarshal(raw, &body)
-    // If no actions present, try to interpret as OpportunityComboPlan and wrap to a single action
-    if body.Actions == nil || len(*body.Actions) == 0 {
-        var combo struct{
-            ValidateOnly *bool `json:"validateOnly"`
-            SeedDomain   *string `json:"seedDomain"`
-            Country      *string `json:"country"`
-            Plan         *struct {
-                Keywords []map[string]any `json:"keywords"`
-                Domains  []map[string]any `json:"domains"`
-            } `json:"plan"`
-        }
-        if err := json.Unmarshal(raw, &combo); err == nil && combo.Plan != nil && (len(combo.Plan.Keywords) > 0 || len(combo.Plan.Domains) > 0) {
-            // Build concrete actions from opportunity combo plan
+    // Try decode as BulkActionPlan first (typed struct)
+    var plan api.BulkActionPlan
+    _ = json.Unmarshal(raw, &plan)
+    // If no actions, try to interpret as OpportunityComboPlan and convert
+    if len(plan.Actions) == 0 {
+        var combo api.OpportunityComboPlan
+        if err := json.Unmarshal(raw, &combo); err == nil && combo.Plan != nil {
             seed := ""; if combo.SeedDomain != nil { seed = strings.TrimSpace(*combo.SeedDomain) }
             country := ""; if combo.Country != nil { country = strings.TrimSpace(*combo.Country) }
-            mk := func(filter map[string]interface{}, params map[string]interface{}, t api.SubmitBulkActionsJSONBodyActionsType) struct{
-                Filter *map[string]interface{}                            `json:"filter,omitempty"`
-                Params *map[string]interface{}                            `json:"params,omitempty"`
-                Type   *api.SubmitBulkActionsJSONBodyActionsType `json:"type,omitempty"`
+            // helper to construct typed action with Param union
+            mk := func(filter map[string]interface{}, params map[string]interface{}, t api.BulkActionPlanActionsType) struct{
+                Filter *map[string]interface{}                 `json:"filter,omitempty"`
+                Params *api.BulkActionPlan_Actions_Params     `json:"params,omitempty"`
+                Type   *api.BulkActionPlanActionsType         `json:"type,omitempty"`
             }{
-                f := filter; p := params; tt := t;
+                f := filter
+                var p api.BulkActionPlan_Actions_Params
+                switch t {
+                case api.ROTATELINK:
+                    var rp api.RotateLinkParams
+                    if v, ok := params["targetDomain"].(string); ok { rp.TargetDomain = &v }
+                    if v, ok := params["seedDomain"].(string); ok { rp.SeedDomain = &v }
+                    if v, ok := params["country"].(string); ok { rp.Country = &v }
+                    _ = p.FromRotateLinkParams(rp)
+                case api.ADJUSTCPC:
+                    var ap api.AdjustCpcParams
+                    if v, ok := params["keyword"].(string); ok { ap.Keyword = &v }
+                    if v, ok := params["seedDomain"].(string); ok { ap.SeedDomain = &v }
+                    if v, ok := params["country"].(string); ok { ap.Country = &v }
+                    if v, ok := params["percent"].(int); ok { vv := float32(v); ap.Percent = &vv } else if v, ok := params["percent"].(float64); ok { vv := float32(v); ap.Percent = &vv }
+                    if v, ok := params["cpcValue"].(float64); ok { vv := float32(v); ap.CpcValue = &vv }
+                    _ = p.FromAdjustCpcParams(ap)
+                default:
+                }
+                tt := t
                 return struct{
-                    Filter *map[string]interface{}                            `json:"filter,omitempty"`
-                    Params *map[string]interface{}                            `json:"params,omitempty"`
-                    Type   *api.SubmitBulkActionsJSONBodyActionsType `json:"type,omitempty"`
+                    Filter *map[string]interface{}                 `json:"filter,omitempty"`
+                    Params *api.BulkActionPlan_Actions_Params     `json:"params,omitempty"`
+                    Type   *api.BulkActionPlanActionsType         `json:"type,omitempty"`
                 }{Filter: &f, Params: &p, Type: &tt}
             }
-            actions := make([]struct{
-                Filter *map[string]interface{}                            `json:"filter,omitempty"`
-                Params *map[string]interface{}                            `json:"params,omitempty"`
-                Type   *api.SubmitBulkActionsJSONBodyActionsType `json:"type,omitempty"`
-            }, 0, len(combo.Plan.Domains)+len(combo.Plan.Keywords))
-            // 1) ROTATE_LINK for each suggested domain
-            for _, d := range combo.Plan.Domains {
-                dom, _ := d["domain"].(string)
-                if strings.TrimSpace(dom) == "" { continue }
-                params := map[string]interface{}{
-                    "seedDomain": seed,
-                    "country": country,
-                    "targetDomain": dom,
-                    "source": "opportunity-combo",
+            // build actions
+            if combo.Plan.Domains != nil {
+                for _, d := range *combo.Plan.Domains {
+                    if d.Domain == nil || strings.TrimSpace(*d.Domain) == "" { continue }
+                    params := map[string]interface{}{"seedDomain": seed, "country": country, "targetDomain": *d.Domain, "source": "opportunity-combo"}
+                    plan.Actions = append(plan.Actions, mk(nil, params, api.ROTATELINK))
                 }
-                actions = append(actions, mk(nil, params, api.SubmitBulkActionsJSONBodyActionsTypeROTATELINK))
             }
-            // 2) ADJUST_CPC suggestion for each keyword (percent heuristic based on score)
-            for _, k := range combo.Plan.Keywords {
-                kw, _ := k["keyword"].(string)
-                if strings.TrimSpace(kw) == "" { continue }
-                // derive percent by score: >=80 -> +15, >=60 -> +10, else +5
-                var scFloat float64
-                switch v := k["score"].(type) {
-                case float64:
-                    scFloat = v
-                case int:
-                    scFloat = float64(v)
+            if combo.Plan.Keywords != nil {
+                for _, k := range *combo.Plan.Keywords {
+                    if k.Keyword == nil || strings.TrimSpace(*k.Keyword) == "" { continue }
+                    percent := 5
+                    if k.Score != nil { if *k.Score >= 80 { percent = 15 } else if *k.Score >= 60 { percent = 10 } }
+                    params := map[string]interface{}{"keyword": *k.Keyword, "percent": percent, "reason": "opportunity-combo", "seedDomain": seed, "country": country}
+                    plan.Actions = append(plan.Actions, mk(nil, params, api.ADJUSTCPC))
                 }
-                percent := 5
-                if scFloat >= 80 { percent = 15 } else if scFloat >= 60 { percent = 10 }
-                params := map[string]interface{}{
-                    "keyword": kw,
-                    "percent": percent,
-                    "reason": "opportunity-combo",
-                    "seedDomain": seed,
-                    "country": country,
-                }
-                actions = append(actions, mk(nil, params, api.SubmitBulkActionsJSONBodyActionsTypeADJUSTCPC))
             }
-            if len(actions) > 0 {
-                body.Actions = &actions
-                if combo.ValidateOnly != nil { body.ValidateOnly = combo.ValidateOnly }
-            }
+            plan.ValidateOnly = combo.ValidateOnly
         }
     }
+    // Compute normalized controls
     validateOnly := false
-    if body.ValidateOnly != nil { validateOnly = *body.ValidateOnly }
-    // Basic validation
-    if body.Actions == nil || len(*body.Actions) == 0 { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "actions required", nil); return }
-    // Compute naive summary
+    if plan.ValidateOnly != nil { validateOnly = *plan.ValidateOnly }
+    if len(plan.Actions) == 0 { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "actions required", nil); return }
+    // Project typed to generic slice for shard/audit/summary
+    actionsAny := make([]map[string]any, 0, len(plan.Actions))
+    for _, a := range plan.Actions {
+        m := map[string]any{}
+        if a.Type != nil { m["type"] = string(*a.Type) }
+        if a.Filter != nil { m["filter"] = *a.Filter }
+        if a.Params != nil {
+            var pm map[string]any
+            if b, err := json.Marshal(a.Params); err == nil { _ = json.Unmarshal(b, &pm) }
+            if len(pm) > 0 { m["params"] = pm }
+        }
+        actionsAny = append(actionsAny, m)
+    }
     type Sum struct{ Actions int `json:"actions"`; EstimatedAffected int `json:"estimatedAffected"` }
-    sum := Sum{Actions: len(*body.Actions), EstimatedAffected: 0}
+    sum := Sum{Actions: len(actionsAny), EstimatedAffected: 0}
     if validateOnly {
         writeJSON(w, http.StatusOK, map[string]any{"summary": sum})
         return
@@ -1148,7 +1198,7 @@ func bulkActionsHandler(w http.ResponseWriter, r *http.Request) {
         if s, ok := v.(string); ok { uid = s }
     }
     if uid == "" { if v := r.Header.Get("X-User-Id"); v != "" { uid = v } }
-    planBytes, _ := json.Marshal(body)
+    planBytes, _ := json.Marshal(map[string]any{"validateOnly": plan.ValidateOnly, "actions": actionsAny})
     dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
     if dbURL != "" {
         db, err := sql.Open("postgres", dbURL)
@@ -1195,20 +1245,20 @@ func bulkActionsHandler(w http.ResponseWriter, r *http.Request) {
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )`)
-            if body.Actions != nil && len(*body.Actions) > 0 {
+            if len(actionsAny) > 0 {
                 // batch size via env ADS_MUTATE_BATCH_SIZE (default 20)
                 batchSize := 20
                 if v := strings.TrimSpace(os.Getenv("ADS_MUTATE_BATCH_SIZE")); v != "" {
                     if n, err := strconv.Atoi(v); err == nil && n > 0 { batchSize = n }
                 }
-                total := len(*body.Actions)
+                total := len(actionsAny)
                 if total > batchSize {
                     // split into shards and persist
                     shards := 0
                     for i := 0; i < total; i += batchSize {
                         j := i + batchSize
                         if j > total { j = total }
-                        part := (*body.Actions)[i:j]
+                        part := actionsAny[i:j]
                         pb, _ := json.Marshal(map[string]any{"actions": part})
                         _, _ = db.Exec(`INSERT INTO "BulkActionShard"(op_id, seq, actions, status) VALUES ($1,$2,$3,'queued')`, id, shards, string(pb))
                         shards++
@@ -1220,14 +1270,9 @@ func bulkActionsHandler(w http.ResponseWriter, r *http.Request) {
                 }
             }
             // Fine-grained action snapshots (kind=other)
-            if body.Actions != nil {
-                for idx, a := range *body.Actions {
-                    atype := ""
-                    if a.Type != nil { atype = string(*a.Type) }
-                    snap := map[string]any{"actionIndex": idx, "type": atype}
-                    if a.Params != nil { snap["params"] = *a.Params }
-                    if a.Filter != nil { snap["filter"] = *a.Filter }
-                    b, _ := json.Marshal(snap)
+            if len(actionsAny) > 0 {
+                for idx, a := range actionsAny {
+                    b, _ := json.Marshal(map[string]any{"actionIndex": idx, "action": a})
                     _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'other',$3::jsonb)`, id, uid, string(b))
                 }
             }
@@ -1387,7 +1432,9 @@ func main() {
     srv := &Server{db: db}
     r := chi.NewRouter()
     telemetry.RegisterDefaultMetrics("adscenter")
+    // Middlewares must be registered before any routes are added
     r.Use(telemetry.ChiMiddleware("adscenter"))
+    r.Use(middleware.LoggingMiddleware("adscenter"))
     // healthz/readyz for k8s/Cloud Run probes (unified convention)
     r.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
     r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
@@ -1401,7 +1448,6 @@ func main() {
         w.WriteHeader(http.StatusOK)
     })
     r.Handle("/metrics", telemetry.MetricsHandler())
-    r.Use(middleware.LoggingMiddleware("adscenter"))
     // Mount OpenAPI chi server
     oas := &oasImpl{srv: srv}
     oapiHandler := api.HandlerWithOptions(oas, api.ChiServerOptions{
@@ -1426,6 +1472,10 @@ func main() {
     r.Handle("/api/v1/adscenter/diagnose/plan", middleware.AuthMiddleware(http.HandlerFunc(srv.diagnosePlanHandler)))
     r.Handle("/api/v1/adscenter/diagnose/execute", middleware.AuthMiddleware(http.HandlerFunc(srv.diagnoseExecuteHandler)))
     r.Handle("/api/v1/adscenter/diagnose/metrics", middleware.AuthMiddleware(http.HandlerFunc(srv.diagnoseMetricsHandler)))
+    // Bulk actions matrix (capability introspection)
+    r.Handle("/api/v1/adscenter/bulk-actions/matrix", middleware.AuthMiddleware(http.HandlerFunc(srv.bulkMatrixHandler)))
+    // Risk Engine (basic rules)
+    r.Handle("/api/v1/adscenter/risk/evaluate", middleware.AuthMiddleware(http.HandlerFunc(srv.riskEvaluateHandler)))
     // Limits info endpoint（非OAS，便于前端获知套餐限流/配额）
     r.Handle("/api/v1/adscenter/limits/me", middleware.AuthMiddleware(http.HandlerFunc(srv.limitsInfoHandler)))
     // Internal worker endpoints (requires auth)
@@ -1794,6 +1844,85 @@ func (h *oasImpl) GetRollbackReport(w http.ResponseWriter, r *http.Request, id s
     for rows.Next() { var it item; var snapTxt string; if err := rows.Scan(&it.Kind, &snapTxt, &it.CreatedAt); err == nil { it.Snapshot = json.RawMessage(snapTxt); out = append(out, it) } }
     writeJSON(w, http.StatusOK, map[string]any{"items": out})
 }
+
+// bulkMatrixHandler returns supported bulk actions and expected params (static capability matrix).
+// GET /api/v1/adscenter/bulk-actions/matrix
+func (s *Server) bulkMatrixHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet { apperr.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    w.Header().Set("Content-Type", "application/json")
+    _ = json.NewEncoder(w).Encode(map[string]any{
+        "actions": []map[string]any{
+            {"type": "ADJUST_CPC", "params": []map[string]any{
+                {"name": "keyword", "type": "string", "required": false},
+                {"name": "percent", "type": "number", "required": false, "note": "percent or cpcValue required"},
+                {"name": "cpcValue", "type": "number", "required": false},
+                {"name": "seedDomain", "type": "string", "required": false},
+                {"name": "country", "type": "string", "required": false},
+            }},
+            {"type": "ADJUST_BUDGET", "params": []map[string]any{
+                {"name": "dailyBudget", "type": "number", "required": false},
+                {"name": "percent", "type": "number", "required": false},
+            }},
+            {"type": "ROTATE_LINK", "params": []map[string]any{
+                {"name": "targetDomain", "type": "string", "required": false},
+                {"name": "links", "type": "string[]", "required": false},
+                {"name": "seedDomain", "type": "string", "required": false},
+                {"name": "country", "type": "string", "required": false},
+            }},
+        },
+        "notes": []string{
+            "ADJUST_CPC: require either percent or cpcValue",
+            "ADJUST_BUDGET: dailyBudget>0 or percent specified",
+            "ROTATE_LINK: require targetDomain or non-empty links[]",
+        },
+    })
+}
+
+// riskEvaluateHandler evaluates basic risk signals and writes an audit event; optionally publishes a notification.
+// POST /api/v1/adscenter/risk/evaluate { accountId, landingUrl?, metrics }
+func (s *Server) riskEvaluateHandler(w http.ResponseWriter, r *http.Request) {
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { apperr.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    if r.Method != http.MethodPost { apperr.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    var body struct{ AccountID string `json:"accountId"`; LandingURL string `json:"landingUrl"`; Metrics map[string]any `json:"metrics"` }
+    if err := json.NewDecoder(r.Body).Decode(&body); err != nil { apperr.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid body", nil); return }
+    get := func(k string, def float64) float64 {
+        if body.Metrics == nil { return def }
+        if v, ok := body.Metrics[k]; ok {
+            switch t := v.(type) { case float64: return t; case int: return float64(t); case string: if f, e := strconv.ParseFloat(t, 64); e == nil { return f } }
+        }
+        return def
+    }
+    impressions := get("impressions", 0)
+    ctr := get("ctr", 0)
+    qs := get("qualityScore", 0)
+    risks := []map[string]any{}
+    add := func(code, sev, msg string, details map[string]any) { risks = append(risks, map[string]any{"code": code, "severity": sev, "message": msg, "details": details}) }
+    if impressions <= 0 { add("NO_IMPRESSIONS", "error", "近7天曝光为0，广告未投放或被限制", map[string]any{"impressions": impressions}) }
+    if impressions > 100 && ctr < 0.5 { add("LOW_CTR", "warn", "点击率较低", map[string]any{"ctr": ctr}) }
+    if qs > 0 && qs < 5 { add("LOW_QUALITY_SCORE", "warn", "质量得分偏低", map[string]any{"qualityScore": qs}) }
+    if u := strings.TrimSpace(body.LandingURL); u != "" {
+        if !strings.Contains(u, "utm_") && !strings.Contains(u, "gclid=") { add("TRACKING_MISSING", "warn", "缺少utm/gclid跟踪参数", map[string]any{"landingUrl": u}) }
+    }
+    // audit best-effort
+    _ = writeAudit(r.Context(), s.db, uid, "risk_detected", map[string]any{"accountId": body.AccountID, "risks": risks})
+    // optional notification publish
+    go func() {
+        defer func(){ recover() }()
+        if pub, err := ev.NewPublisher(context.Background()); err == nil && len(risks) > 0 {
+            _ = pub.Publish(context.Background(), ev.EventNotificationCreated, map[string]any{
+                "userId": uid,
+                "type": "risk",
+                "title": "检测到广告风险",
+                "data": map[string]any{"accountId": body.AccountID, "risks": risks},
+                "createdAt": time.Now().UTC().Format(time.RFC3339),
+            }, ev.WithSource("adscenter"))
+            pub.Close()
+        }
+    }()
+    w.Header().Set("Content-Type", "application/json")
+    _ = json.NewEncoder(w).Encode(map[string]any{"items": risks})
+}
 // POST /api/v1/adscenter/bulk-actions/validate
 func (h *oasImpl) ValidateBulkActions(w http.ResponseWriter, r *http.Request) {
     var body struct{
@@ -1875,6 +2004,15 @@ func (h *oasImpl) ValidateBulkActions(w http.ResponseWriter, r *http.Request) {
     // audit best-effort
     if uid, _ := r.Context().Value(middleware.UserIDKey).(string); uid != "" { _ = writeAudit(r.Context(), h.srv.db, uid, "bulk_validate", out) }
     writeJSON(w, http.StatusOK, out)
+}
+
+// Ads diagnose endpoints (OAS bindings)
+func (h *oasImpl) Diagnose(w http.ResponseWriter, r *http.Request)                 { h.srv.diagnoseHandler(w, r) }
+func (h *oasImpl) DiagnosePlan(w http.ResponseWriter, r *http.Request)            { h.srv.diagnosePlanHandler(w, r) }
+func (h *oasImpl) DiagnoseExecute(w http.ResponseWriter, r *http.Request)         { h.srv.diagnoseExecuteHandler(w, r) }
+func (h *oasImpl) GetDiagnoseMetrics(w http.ResponseWriter, r *http.Request, params api.GetDiagnoseMetricsParams) {
+    // Pass-through to existing handler (reads accountId from query)
+    h.srv.diagnoseMetricsHandler(w, r)
 }
 
 // writeAudit writes an audit event best-effort.
@@ -2144,23 +2282,38 @@ func (s *Server) executeTickHandler(w http.ResponseWriter, r *http.Request) {
     // ensure tables
     _, _ = db.Exec(`CREATE TABLE IF NOT EXISTS "BulkActionShard"(id BIGSERIAL PRIMARY KEY, op_id TEXT NOT NULL, seq INT NOT NULL, actions JSONB NOT NULL, status TEXT NOT NULL DEFAULT 'queued', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)
     processed := 0
-    for i := 0; i < max; i++ {
-        var shardID int64
-        var actionsTxt string
-        var opId string
-        err := db.QueryRow(`SELECT id, actions::text, op_id FROM "BulkActionShard" WHERE status='queued' ORDER BY created_at ASC LIMIT 1`).Scan(&shardID, &actionsTxt, &opId)
-        if err == sql.ErrNoRows { break }
+    for processed < max {
+        // pick a fair window grouped by owner (user_id), taking first per owner
+        rows, err := db.Query(`
+            SELECT s.id, s.actions::text, s.op_id, o.user_id
+            FROM "BulkActionShard" s
+            JOIN "BulkActionOperation" o ON s.op_id = o.id
+            WHERE s.status='queued'
+            ORDER BY o.user_id, s.created_at ASC
+            LIMIT 200`)
         if err != nil { apperr.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
-        // mark running
-        _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='running', updated_at=NOW() WHERE id=$1`, shardID)
-        // parse actions JSON
-        var payload struct{ Actions []map[string]any `json:"actions"` }
-        _ = json.Unmarshal([]byte(actionsTxt), &payload)
-        // per-user plan limiters (mutate)
-        ownerUID := ""
-        if strings.TrimSpace(opId) != "" {
-            
-            _ = db.QueryRow(`SELECT user_id FROM "BulkActionOperation" WHERE id=$1`, opId).Scan(&ownerUID)
+        type rec struct{ shardID int64; actionsTxt, opId, owner string }
+        picked := make(map[string]rec)
+        for rows.Next() {
+            var sid int64; var atxt, op, owner string
+            if err := rows.Scan(&sid, &atxt, &op, &owner); err == nil {
+                if _, ok := picked[owner]; !ok { picked[owner] = rec{shardID: sid, actionsTxt: atxt, opId: op, owner: owner} }
+            }
+        }
+        rows.Close()
+        if len(picked) == 0 { break }
+        for _, pr := range picked {
+            if processed >= max { break }
+            // mark running (optimistic)
+            _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='running', updated_at=NOW() WHERE id=$1 AND status='queued'`, pr.shardID)
+            var st string
+            _ = db.QueryRow(`SELECT status FROM "BulkActionShard" WHERE id=$1`, pr.shardID).Scan(&st)
+            if st != "running" { continue }
+            // parse actions JSON
+            var payload struct{ Actions []map[string]any `json:"actions"` }
+            _ = json.Unmarshal([]byte(pr.actionsTxt), &payload)
+            // rate limits (per owner)
+            ownerUID := pr.owner
             if strings.TrimSpace(ownerUID) != "" {
                 plan := ratelimit.ResolveUserPlan(r.Context(), ownerUID)
                 pol := ratelimit.LoadPolicy(r.Context())
@@ -2171,50 +2324,50 @@ func (s *Server) executeTickHandler(w http.ResponseWriter, r *http.Request) {
                 }
                 if relG, err := getExecGlobalLimiter().Acquire(r.Context()); err == nil { defer relG() } else { apperr.Write(w, r, http.StatusTooManyRequests, "RATE_LIMIT", "rate limited", nil); return }
             }
-        }
-        // Prepare executor config with Ads credentials (best-effort per op)
-        cfgAds, _ := adscfg.LoadAdsCreds(r.Context())
-        rtEnc, loginCID, _, _ := storage.GetUserRefreshToken(r.Context(), s.db, ownerUID)
-        rt := rtEnc
-        if pt, ok := decryptWithRotation(rtEnc); ok { rt = pt }
-        exec := exectr.New(exectr.Config{
-            BrowserExecURL: strings.TrimSpace(os.Getenv("BROWSER_EXEC_URL")),
-            InternalToken:  strings.TrimSpace(os.Getenv("BROWSER_INTERNAL_TOKEN")),
-            Timeout:        8 * time.Second,
-            ValidateOnly:   false,
-            LiveMutate:     strings.EqualFold(strings.TrimSpace(os.Getenv("ADS_MUTATE_LIVE")), "true"),
-            DeveloperToken: cfgAds.DeveloperToken,
-            OAuthClientID:  cfgAds.OAuthClientID,
-            OAuthClientSecret: cfgAds.OAuthClientSecret,
-            RefreshToken:   rt,
-            LoginCustomerID: func() string { if cfgAds.LoginCustomerID != "" { return cfgAds.LoginCustomerID }; return loginCID }(),
-            CustomerID:     loginCID,
-        })
-        for idx, a := range payload.Actions {
-            act := exectr.Action{Type: toString(a["type"]), Filter: toMap(a["filter"]), Params: toMap(a["params"])}
-            var res exectr.Result
-            err := ratelimit.Retry(r.Context(), 3, 200*time.Millisecond, 1500*time.Millisecond, func(c context.Context) error { rr, e := exec.ExecuteOne(c, act); res = rr; return e })
-            snap := map[string]any{"actionIndex": idx, "action": a, "executedAt": time.Now().UTC(), "result": res}
-            if err != nil || !res.Success { snap["status"] = "error"; if err != nil { snap["error"] = err.Error() } } else { snap["status"] = "ok" }
-            b, _ := json.Marshal(snap)
-            _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'exec',$3::jsonb)`, opId, uid, string(b))
-            _ = writeSnapshots(r.Context(), db, opId, idx, toString(a["type"]), res)
-            if err != nil || !res.Success {
-                _ = writeDeadLetter(r.Context(), db, opId, idx, toString(a["type"]), a, res, err)
+            // executor with owner creds
+            cfgAds, _ := adscfg.LoadAdsCreds(r.Context())
+            rtEnc, loginCID, _, _ := storage.GetUserRefreshToken(r.Context(), s.db, ownerUID)
+            rt := rtEnc
+            if pt, ok := decryptWithRotation(rtEnc); ok { rt = pt }
+            exec := exectr.New(exectr.Config{
+                BrowserExecURL: strings.TrimSpace(os.Getenv("BROWSER_EXEC_URL")),
+                InternalToken:  strings.TrimSpace(os.Getenv("BROWSER_INTERNAL_TOKEN")),
+                Timeout:        8 * time.Second,
+                ValidateOnly:   false,
+                LiveMutate:     strings.EqualFold(strings.TrimSpace(os.Getenv("ADS_MUTATE_LIVE")), "true"),
+                DeveloperToken: cfgAds.DeveloperToken,
+                OAuthClientID:  cfgAds.OAuthClientID,
+                OAuthClientSecret: cfgAds.OAuthClientSecret,
+                RefreshToken:   rt,
+                LoginCustomerID: func() string { if cfgAds.LoginCustomerID != "" { return cfgAds.LoginCustomerID }; return loginCID }(),
+                CustomerID:     loginCID,
+            })
+            for idx, a := range payload.Actions {
+                act := exectr.Action{Type: toString(a["type"]), Filter: toMap(a["filter"]), Params: toMap(a["params"])}
+                var res exectr.Result
+                err := ratelimit.Retry(r.Context(), 3, 200*time.Millisecond, 1500*time.Millisecond, func(c context.Context) error { rr, e := exec.ExecuteOne(c, act); res = rr; return e })
+                snap := map[string]any{"actionIndex": idx, "action": a, "executedAt": time.Now().UTC(), "result": res}
+                if err != nil || !res.Success { snap["status"] = "error"; if err != nil { snap["error"] = err.Error() } } else { snap["status"] = "ok" }
+                b, _ := json.Marshal(snap)
+                _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'exec',$3::jsonb)`, pr.opId, uid, string(b))
+                _ = writeSnapshots(r.Context(), db, pr.opId, idx, toString(a["type"]), res)
+                if err != nil || !res.Success {
+                    _ = writeDeadLetter(r.Context(), db, pr.opId, idx, toString(a["type"]), a, res, err)
+                }
             }
+            _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='completed', updated_at=NOW() WHERE id=$1`, pr.shardID)
+            // finalize op if no shards left
+            var remaining int
+            _ = db.QueryRow(`SELECT COUNT(1) FROM "BulkActionShard" WHERE op_id=$1 AND status IN ('queued','running')`, pr.opId).Scan(&remaining)
+            if remaining == 0 {
+                _, _ = db.Exec(`UPDATE "BulkActionOperation" SET status='completed', updated_at=NOW() WHERE id=$1`, pr.opId)
+                snap := map[string]any{"summary": map[string]any{"status": "completed"}}
+                b, _ := json.Marshal(snap)
+                _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'after',$3::jsonb)`, pr.opId, uid, string(b))
+            }
+            processed++
+            if processed >= max { break }
         }
-        _, _ = db.Exec(`UPDATE "BulkActionShard" SET status='completed', updated_at=NOW() WHERE id=$1`, shardID)
-        // finalize operation if needed
-        var remaining int
-        _ = db.QueryRow(`SELECT COUNT(1) FROM "BulkActionShard" WHERE op_id=$1 AND status IN ('queued','running')`, opId).Scan(&remaining)
-        if remaining == 0 {
-            _, _ = db.Exec(`UPDATE "BulkActionOperation" SET status='completed', updated_at=NOW() WHERE id=$1`, opId)
-            // AFTER snapshot aggregate
-            snap := map[string]any{"summary": map[string]any{"status": "completed"}}
-            b, _ := json.Marshal(snap)
-            _, _ = db.Exec(`INSERT INTO "BulkActionAudit"(op_id, user_id, kind, snapshot) VALUES ($1,$2,'after',$3::jsonb)`, opId, uid, string(b))
-        }
-        processed++
     }
     writeJSON(w, http.StatusOK, map[string]any{"processed": processed})
 }

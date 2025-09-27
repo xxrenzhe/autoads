@@ -97,6 +97,9 @@ func main() {
     })
     r.Mount("/", oapiHandler)
 
+    // Internal auto-status endpoint (protected via X-Service-Token)
+    r.Handle("/api/v1/offers/internal/auto-status", http.HandlerFunc(h.AutoStatusHandler))
+
     log.Printf("Offer service listening on port %s", cfg.Port)
     if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {
         log.Fatalf("Failed to start server: %v", err)
@@ -108,3 +111,24 @@ type oasImpl struct{ h *handlers.Handler }
 
 func (o *oasImpl) CreateOffer(w http.ResponseWriter, r *http.Request) { o.h.OffersHandler(w, r) }
 func (o *oasImpl) ListOffers(w http.ResponseWriter, r *http.Request)   { o.h.OffersHandler(w, r) }
+// Below endpoints reuse the consolidated tree handler to avoid duplication.
+func (o *oasImpl) GetOffer(w http.ResponseWriter, r *http.Request, id string)           { o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id)) }
+func (o *oasImpl) UpdateOffer(w http.ResponseWriter, r *http.Request, id string)        { o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id)) }
+func (o *oasImpl) DeleteOffer(w http.ResponseWriter, r *http.Request, id string)        { o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id)) }
+func (o *oasImpl) UpdateOfferStatus(w http.ResponseWriter, r *http.Request, id string)  { o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id+"/status")) }
+func (o *oasImpl) GetOfferKpi(w http.ResponseWriter, r *http.Request, id string)        { o.h.OffersHandler(w, withPath(r, "/api/v1/offers/"+id+"/kpi")) }
+
+// withPath clones r with an overridden URL.Path so that legacy path-parsing code works
+// regardless of chi/oapi mounting details.
+func withPath(r *http.Request, path string) *http.Request {
+    // shallow clone is sufficient; body and context are reused
+    rr := new(http.Request)
+    *rr = *r
+    // clone URL struct to avoid mutating original
+    if r.URL != nil {
+        u := *r.URL
+        u.Path = path
+        rr.URL = &u
+    }
+    return rr
+}

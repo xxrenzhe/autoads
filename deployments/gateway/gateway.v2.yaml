@@ -43,8 +43,8 @@ paths:
     get:
       operationId: healthAggregate
       x-google-backend:
-        address: https://console-REPLACE_WITH_RUN_URL
-        path_translation: APPEND_PATH_TO_ADDRESS
+        address: https://console-REPLACE_WITH_RUN_URL/health
+        path_translation: CONSTANT_ADDRESS
       responses: { '200': { description: OK } }
 
   # OAuth 回调无需鉴权（由 Google 调用）

@@ -53,6 +53,18 @@ type ServerInterface interface {
 	// List stored Google Ads connections (sanitized)
 	// (GET /api/v1/adscenter/connections)
 	ListAdsConnections(w http.ResponseWriter, r *http.Request)
+	// Diagnose ad account issues based on provided metrics and landing URL
+	// (POST /api/v1/adscenter/diagnose)
+	Diagnose(w http.ResponseWriter, r *http.Request)
+	// Generate a plan from metrics and enqueue as a bulk operation
+	// (POST /api/v1/adscenter/diagnose/execute)
+	DiagnoseExecute(w http.ResponseWriter, r *http.Request)
+	// Get metrics stub or live for diagnosis
+	// (GET /api/v1/adscenter/diagnose/metrics)
+	GetDiagnoseMetrics(w http.ResponseWriter, r *http.Request, params GetDiagnoseMetricsParams)
+	// Generate a validate-only bulk action plan from metrics
+	// (POST /api/v1/adscenter/diagnose/plan)
+	DiagnosePlan(w http.ResponseWriter, r *http.Request)
 	// Expand keywords using seed domain/keywords
 	// (POST /api/v1/adscenter/keywords/expand)
 	ExpandKeywords(w http.ResponseWriter, r *http.Request)
@@ -164,6 +176,30 @@ func (_ Unimplemented) GetRollbackPlan(w http.ResponseWriter, r *http.Request, i
 // List stored Google Ads connections (sanitized)
 // (GET /api/v1/adscenter/connections)
 func (_ Unimplemented) ListAdsConnections(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Diagnose ad account issues based on provided metrics and landing URL
+// (POST /api/v1/adscenter/diagnose)
+func (_ Unimplemented) Diagnose(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Generate a plan from metrics and enqueue as a bulk operation
+// (POST /api/v1/adscenter/diagnose/execute)
+func (_ Unimplemented) DiagnoseExecute(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get metrics stub or live for diagnosis
+// (GET /api/v1/adscenter/diagnose/metrics)
+func (_ Unimplemented) GetDiagnoseMetrics(w http.ResponseWriter, r *http.Request, params GetDiagnoseMetricsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Generate a validate-only bulk action plan from metrics
+// (POST /api/v1/adscenter/diagnose/plan)
+func (_ Unimplemented) DiagnosePlan(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -626,6 +662,99 @@ func (siw *ServerInterfaceWrapper) ListAdsConnections(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// Diagnose operation middleware
+func (siw *ServerInterfaceWrapper) Diagnose(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Diagnose(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DiagnoseExecute operation middleware
+func (siw *ServerInterfaceWrapper) DiagnoseExecute(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DiagnoseExecute(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDiagnoseMetrics operation middleware
+func (siw *ServerInterfaceWrapper) GetDiagnoseMetrics(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDiagnoseMetricsParams
+
+	// ------------- Optional query parameter "accountId" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "accountId", r.URL.Query(), &params.AccountId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDiagnoseMetrics(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DiagnosePlan operation middleware
+func (siw *ServerInterfaceWrapper) DiagnosePlan(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DiagnosePlan(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ExpandKeywords operation middleware
 func (siw *ServerInterfaceWrapper) ExpandKeywords(w http.ResponseWriter, r *http.Request) {
 
@@ -1004,6 +1133,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/adscenter/connections", wrapper.ListAdsConnections)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/diagnose", wrapper.Diagnose)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/diagnose/execute", wrapper.DiagnoseExecute)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/adscenter/diagnose/metrics", wrapper.GetDiagnoseMetrics)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/adscenter/diagnose/plan", wrapper.DiagnosePlan)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/adscenter/keywords/expand", wrapper.ExpandKeywords)

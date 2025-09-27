@@ -20,6 +20,7 @@ gofly_admin_v3/
 # Ignore all apps by default, except frontend for its own Docker build
 apps/**
 !apps/frontend/**
+apps/frontend/node_modules/**
 
 # Environment and secrets (keep README only)
 .env
@@ -37,3 +38,13 @@ secrets/*
 # Keep any Dockerfiles
 !Dockerfile
 !Dockerfile.*
+
+# Exclude large compiled binaries at repo root to shrink build context
+/# Exclude only root-level compiled binaries to shrink Docker context
+/adscenter
+/batchopen
+/billing
+/console
+/recommendations
+/server
+/siterank

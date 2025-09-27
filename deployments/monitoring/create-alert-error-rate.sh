@@ -40,6 +40,7 @@ fetch cloud_run_revision
 MQL
 
 DISPLAY="run ${SERVICE} 5xx error rate > $(printf '%.2f' $(echo "$THRESHOLD * 100" | bc -l))%"
+esc_query=$(printf '%s' "$QUERY" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
 read -r -d '' BODY <<JSON || true
 {
   "displayName": "${DISPLAY}",
@@ -49,7 +50,7 @@ read -r -d '' BODY <<JSON || true
     {
       "displayName": "5xx error ratio (${SERVICE})",
       "conditionMonitoringQueryLanguage": {
-        "query": ${QUERY@Q},
+        "query": ${esc_query},
         "duration": "${DURATION}",
         "trigger": { "count": 1 }
       }
@@ -63,4 +64,3 @@ curl -sS -X POST -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Content-Type: ap
   "https://monitoring.googleapis.com/v3/${NAME}" -d "${BODY}" | sed -e 's/.*/[api] &/' || true
 
 echo "[alert] Done. Check Monitoring > Alerting policies."
-

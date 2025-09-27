@@ -17,6 +17,9 @@ type ServerInterface interface {
 	// Request siterank analysis for an offer
 	// (POST /siterank/analyze)
 	RequestSiterankAnalysis(w http.ResponseWriter, r *http.Request)
+	// Suggest expanded keywords based on domain and page signals
+	// (POST /siterank/keywords/suggest)
+	SuggestKeywords(w http.ResponseWriter, r *http.Request)
 	// Compute similarity scores for candidate domains
 	// (POST /siterank/similar)
 	ComputeSimilarOffers(w http.ResponseWriter, r *http.Request)
@@ -38,6 +41,12 @@ type Unimplemented struct{}
 // Request siterank analysis for an offer
 // (POST /siterank/analyze)
 func (_ Unimplemented) RequestSiterankAnalysis(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Suggest expanded keywords based on domain and page signals
+// (POST /siterank/keywords/suggest)
+func (_ Unimplemented) SuggestKeywords(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -85,6 +94,26 @@ func (siw *ServerInterfaceWrapper) RequestSiterankAnalysis(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RequestSiterankAnalysis(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SuggestKeywords operation middleware
+func (siw *ServerInterfaceWrapper) SuggestKeywords(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SuggestKeywords(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -344,6 +373,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/siterank/analyze", wrapper.RequestSiterankAnalysis)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/siterank/keywords/suggest", wrapper.SuggestKeywords)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/siterank/similar", wrapper.ComputeSimilarOffers)

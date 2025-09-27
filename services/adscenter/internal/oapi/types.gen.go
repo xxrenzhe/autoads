@@ -4,7 +4,10 @@
 package oapi
 
 import (
+	"encoding/json"
 	"time"
+
+	"github.com/oapi-codegen/runtime"
 )
 
 const (
@@ -29,9 +32,23 @@ const (
 
 // Defines values for BulkActionPlanActionsType.
 const (
-	BulkActionPlanActionsTypeADJUSTBUDGET BulkActionPlanActionsType = "ADJUST_BUDGET"
-	BulkActionPlanActionsTypeADJUSTCPC    BulkActionPlanActionsType = "ADJUST_CPC"
-	BulkActionPlanActionsTypeROTATELINK   BulkActionPlanActionsType = "ROTATE_LINK"
+	ADJUSTBUDGET BulkActionPlanActionsType = "ADJUST_BUDGET"
+	ADJUSTCPC    BulkActionPlanActionsType = "ADJUST_CPC"
+	ROTATELINK   BulkActionPlanActionsType = "ROTATE_LINK"
+)
+
+// Defines values for DiagnoseResultSummary.
+const (
+	DiagnoseResultSummaryError DiagnoseResultSummary = "error"
+	DiagnoseResultSummaryOk    DiagnoseResultSummary = "ok"
+	DiagnoseResultSummaryWarn  DiagnoseResultSummary = "warn"
+)
+
+// Defines values for DiagnoseRuleSeverity.
+const (
+	DiagnoseRuleSeverityError DiagnoseRuleSeverity = "error"
+	DiagnoseRuleSeverityInfo  DiagnoseRuleSeverity = "info"
+	DiagnoseRuleSeverityWarn  DiagnoseRuleSeverity = "warn"
 )
 
 // Defines values for KeywordIdeaCompetition.
@@ -49,18 +66,26 @@ const (
 	MccLinkStatusPending  MccLinkStatus = "pending"
 )
 
+// Defines values for PreflightCheckSeverity.
+const (
+	PreflightCheckSeverityError PreflightCheckSeverity = "error"
+	PreflightCheckSeverityInfo  PreflightCheckSeverity = "info"
+	PreflightCheckSeveritySkip  PreflightCheckSeverity = "skip"
+	PreflightCheckSeverityWarn  PreflightCheckSeverity = "warn"
+)
+
+// Defines values for PreflightResultSummary.
+const (
+	PreflightResultSummaryError PreflightResultSummary = "error"
+	PreflightResultSummaryOk    PreflightResultSummary = "ok"
+	PreflightResultSummaryWarn  PreflightResultSummary = "warn"
+)
+
 // Defines values for ValidationViolationSeverity.
 const (
 	Error ValidationViolationSeverity = "error"
 	Info  ValidationViolationSeverity = "info"
 	Warn  ValidationViolationSeverity = "warn"
-)
-
-// Defines values for SubmitBulkActionsJSONBodyActionsType.
-const (
-	SubmitBulkActionsJSONBodyActionsTypeADJUSTBUDGET SubmitBulkActionsJSONBodyActionsType = "ADJUST_BUDGET"
-	SubmitBulkActionsJSONBodyActionsTypeADJUSTCPC    SubmitBulkActionsJSONBodyActionsType = "ADJUST_CPC"
-	SubmitBulkActionsJSONBodyActionsTypeROTATELINK   SubmitBulkActionsJSONBodyActionsType = "ROTATE_LINK"
 )
 
 // Defines values for GetRollbackReportParamsKind.
@@ -76,6 +101,31 @@ const (
 	ListMccLinksParamsStatusInvited  ListMccLinksParamsStatus = "invited"
 	ListMccLinksParamsStatusPending  ListMccLinksParamsStatus = "pending"
 )
+
+// AdjustBudgetParams defines model for AdjustBudgetParams.
+type AdjustBudgetParams struct {
+	// DailyBudget New daily budget value
+	DailyBudget *float32 `json:"dailyBudget,omitempty"`
+
+	// Percent Percent change; if present
+	Percent *float32 `json:"percent,omitempty"`
+}
+
+// AdjustCpcParams defines model for AdjustCpcParams.
+type AdjustCpcParams struct {
+	Country *string `json:"country,omitempty"`
+
+	// CpcValue Absolute CPC value to set (optional alternative to percent)
+	CpcValue *float32 `json:"cpcValue,omitempty"`
+
+	// Keyword Target keyword text
+	Keyword *string `json:"keyword,omitempty"`
+
+	// Percent Increase/decrease percent (e.g.
+	Percent    *float32 `json:"percent,omitempty"`
+	Reason     *string  `json:"reason,omitempty"`
+	SeedDomain *string  `json:"seedDomain,omitempty"`
+}
 
 // AdsConnection defines model for AdsConnection.
 type AdsConnection struct {
@@ -119,11 +169,16 @@ type BulkActionOperationStatus string
 // BulkActionPlan defines model for BulkActionPlan.
 type BulkActionPlan struct {
 	Actions []struct {
-		Filter *map[string]interface{}    `json:"filter,omitempty"`
-		Params *map[string]interface{}    `json:"params,omitempty"`
-		Type   *BulkActionPlanActionsType `json:"type,omitempty"`
+		Filter *map[string]interface{}        `json:"filter,omitempty"`
+		Params *BulkActionPlan_Actions_Params `json:"params,omitempty"`
+		Type   *BulkActionPlanActionsType     `json:"type,omitempty"`
 	} `json:"actions"`
 	ValidateOnly *bool `json:"validateOnly,omitempty"`
+}
+
+// BulkActionPlan_Actions_Params defines model for BulkActionPlan.Actions.Params.
+type BulkActionPlan_Actions_Params struct {
+	union json.RawMessage
 }
 
 // BulkActionPlanActionsType defines model for BulkActionPlan.Actions.Type.
@@ -140,6 +195,27 @@ type BulkActionValidationResult struct {
 	Violations *[]ValidationViolation `json:"violations,omitempty"`
 	Warnings   *[]string              `json:"warnings,omitempty"`
 }
+
+// DiagnoseResult defines model for DiagnoseResult.
+type DiagnoseResult struct {
+	Rules            []DiagnoseRule        `json:"rules"`
+	SuggestedActions *[]SuggestedAction    `json:"suggestedActions,omitempty"`
+	Summary          DiagnoseResultSummary `json:"summary"`
+}
+
+// DiagnoseResultSummary defines model for DiagnoseResult.Summary.
+type DiagnoseResultSummary string
+
+// DiagnoseRule defines model for DiagnoseRule.
+type DiagnoseRule struct {
+	Code     string                  `json:"code"`
+	Details  *map[string]interface{} `json:"details,omitempty"`
+	Message  string                  `json:"message"`
+	Severity DiagnoseRuleSeverity    `json:"severity"`
+}
+
+// DiagnoseRuleSeverity defines model for DiagnoseRule.Severity.
+type DiagnoseRuleSeverity string
 
 // KeywordIdea defines model for KeywordIdea.
 type KeywordIdea struct {
@@ -160,6 +236,63 @@ type MccLink struct {
 
 // MccLinkStatus defines model for MccLink.Status.
 type MccLinkStatus string
+
+// OpportunityComboPlan Minimal combo plan built from an Opportunity (keywords/domains) without enumerating low-level actions.
+type OpportunityComboPlan struct {
+	Country *string `json:"country,omitempty"`
+	Plan    *struct {
+		Domains *[]struct {
+			Domain *string  `json:"domain,omitempty"`
+			Score  *float32 `json:"score,omitempty"`
+		} `json:"domains,omitempty"`
+		Keywords *[]struct {
+			Keyword *string  `json:"keyword,omitempty"`
+			Reason  *string  `json:"reason,omitempty"`
+			Score   *float32 `json:"score,omitempty"`
+		} `json:"keywords,omitempty"`
+	} `json:"plan,omitempty"`
+	SeedDomain   *string `json:"seedDomain,omitempty"`
+	ValidateOnly *bool   `json:"validateOnly,omitempty"`
+}
+
+// PreflightCheck defines model for PreflightCheck.
+type PreflightCheck struct {
+	Code     string                  `json:"code"`
+	Details  *map[string]interface{} `json:"details,omitempty"`
+	Message  string                  `json:"message"`
+	Severity PreflightCheckSeverity  `json:"severity"`
+}
+
+// PreflightCheckSeverity defines model for PreflightCheck.Severity.
+type PreflightCheckSeverity string
+
+// PreflightResult defines model for PreflightResult.
+type PreflightResult struct {
+	Checks  []PreflightCheck       `json:"checks"`
+	Summary PreflightResultSummary `json:"summary"`
+}
+
+// PreflightResultSummary defines model for PreflightResult.Summary.
+type PreflightResultSummary string
+
+// RotateLinkParams defines model for RotateLinkParams.
+type RotateLinkParams struct {
+	Country *string `json:"country,omitempty"`
+
+	// Links Optional list of full URLs to rotate; either targetDomain or links must be provided
+	Links      *[]string `json:"links,omitempty"`
+	SeedDomain *string   `json:"seedDomain,omitempty"`
+
+	// TargetDomain Target domain for rotation
+	TargetDomain *string `json:"targetDomain,omitempty"`
+}
+
+// SuggestedAction defines model for SuggestedAction.
+type SuggestedAction struct {
+	Action string                  `json:"action"`
+	Params *map[string]interface{} `json:"params,omitempty"`
+	Reason *string                 `json:"reason,omitempty"`
+}
 
 // ValidationViolation defines model for ValidationViolation.
 type ValidationViolation struct {
@@ -187,21 +320,8 @@ type ListBulkActionsParams struct {
 
 // SubmitBulkActionsJSONBody defines parameters for SubmitBulkActions.
 type SubmitBulkActionsJSONBody struct {
-	Actions *[]struct {
-		// Filter Filter conditions (implementation-defined)
-		Filter *map[string]interface{} `json:"filter,omitempty"`
-
-		// Params Action parameters (implementation-defined)
-		Params *map[string]interface{} `json:"params,omitempty"`
-
-		// Type Action type
-		Type *SubmitBulkActionsJSONBodyActionsType `json:"type,omitempty"`
-	} `json:"actions,omitempty"`
-	ValidateOnly *bool `json:"validateOnly,omitempty"`
+	union json.RawMessage
 }
-
-// SubmitBulkActionsJSONBodyActionsType defines parameters for SubmitBulkActions.
-type SubmitBulkActionsJSONBodyActionsType string
 
 // GetRollbackReportParams defines parameters for GetRollbackReport.
 type GetRollbackReportParams struct {
@@ -210,6 +330,30 @@ type GetRollbackReportParams struct {
 
 // GetRollbackReportParamsKind defines parameters for GetRollbackReport.
 type GetRollbackReportParamsKind string
+
+// DiagnoseJSONBody defines parameters for Diagnose.
+type DiagnoseJSONBody struct {
+	AccountId  string                  `json:"accountId"`
+	LandingUrl *string                 `json:"landingUrl,omitempty"`
+	Metrics    *map[string]interface{} `json:"metrics,omitempty"`
+}
+
+// DiagnoseExecuteJSONBody defines parameters for DiagnoseExecute.
+type DiagnoseExecuteJSONBody struct {
+	Metrics map[string]interface{} `json:"metrics"`
+}
+
+// GetDiagnoseMetricsParams defines parameters for GetDiagnoseMetrics.
+type GetDiagnoseMetricsParams struct {
+	AccountId *string `form:"accountId,omitempty" json:"accountId,omitempty"`
+}
+
+// DiagnosePlanJSONBody defines parameters for DiagnosePlan.
+type DiagnosePlanJSONBody struct {
+	AccountId        string                 `json:"accountId"`
+	Metrics          map[string]interface{} `json:"metrics"`
+	SuggestedActions *[]SuggestedAction     `json:"suggestedActions,omitempty"`
+}
 
 // ExpandKeywordsJSONBody defines parameters for ExpandKeywords.
 type ExpandKeywordsJSONBody struct {
@@ -267,6 +411,15 @@ type SubmitBulkActionsJSONRequestBody SubmitBulkActionsJSONBody
 // ValidateBulkActionsJSONRequestBody defines body for ValidateBulkActions for application/json ContentType.
 type ValidateBulkActionsJSONRequestBody = BulkActionPlan
 
+// DiagnoseJSONRequestBody defines body for Diagnose for application/json ContentType.
+type DiagnoseJSONRequestBody DiagnoseJSONBody
+
+// DiagnoseExecuteJSONRequestBody defines body for DiagnoseExecute for application/json ContentType.
+type DiagnoseExecuteJSONRequestBody DiagnoseExecuteJSONBody
+
+// DiagnosePlanJSONRequestBody defines body for DiagnosePlan for application/json ContentType.
+type DiagnosePlanJSONRequestBody DiagnosePlanJSONBody
+
 // ExpandKeywordsJSONRequestBody defines body for ExpandKeywords for application/json ContentType.
 type ExpandKeywordsJSONRequestBody ExpandKeywordsJSONBody
 
@@ -281,3 +434,91 @@ type MccUnlinkJSONRequestBody MccUnlinkJSONBody
 
 // RunPreflightJSONRequestBody defines body for RunPreflight for application/json ContentType.
 type RunPreflightJSONRequestBody RunPreflightJSONBody
+
+// AsAdjustCpcParams returns the union data inside the BulkActionPlan_Actions_Params as a AdjustCpcParams
+func (t BulkActionPlan_Actions_Params) AsAdjustCpcParams() (AdjustCpcParams, error) {
+	var body AdjustCpcParams
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAdjustCpcParams overwrites any union data inside the BulkActionPlan_Actions_Params as the provided AdjustCpcParams
+func (t *BulkActionPlan_Actions_Params) FromAdjustCpcParams(v AdjustCpcParams) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAdjustCpcParams performs a merge with any union data inside the BulkActionPlan_Actions_Params, using the provided AdjustCpcParams
+func (t *BulkActionPlan_Actions_Params) MergeAdjustCpcParams(v AdjustCpcParams) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAdjustBudgetParams returns the union data inside the BulkActionPlan_Actions_Params as a AdjustBudgetParams
+func (t BulkActionPlan_Actions_Params) AsAdjustBudgetParams() (AdjustBudgetParams, error) {
+	var body AdjustBudgetParams
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAdjustBudgetParams overwrites any union data inside the BulkActionPlan_Actions_Params as the provided AdjustBudgetParams
+func (t *BulkActionPlan_Actions_Params) FromAdjustBudgetParams(v AdjustBudgetParams) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAdjustBudgetParams performs a merge with any union data inside the BulkActionPlan_Actions_Params, using the provided AdjustBudgetParams
+func (t *BulkActionPlan_Actions_Params) MergeAdjustBudgetParams(v AdjustBudgetParams) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsRotateLinkParams returns the union data inside the BulkActionPlan_Actions_Params as a RotateLinkParams
+func (t BulkActionPlan_Actions_Params) AsRotateLinkParams() (RotateLinkParams, error) {
+	var body RotateLinkParams
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromRotateLinkParams overwrites any union data inside the BulkActionPlan_Actions_Params as the provided RotateLinkParams
+func (t *BulkActionPlan_Actions_Params) FromRotateLinkParams(v RotateLinkParams) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeRotateLinkParams performs a merge with any union data inside the BulkActionPlan_Actions_Params, using the provided RotateLinkParams
+func (t *BulkActionPlan_Actions_Params) MergeRotateLinkParams(v RotateLinkParams) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t BulkActionPlan_Actions_Params) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *BulkActionPlan_Actions_Params) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}

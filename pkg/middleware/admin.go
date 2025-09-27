@@ -15,6 +15,11 @@ import (
 // - ADMIN_UIDS (comma-separated uid list)
 func AdminOnly(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Allow internal automation via X-Service-Token when matches INTERNAL_SERVICE_TOKEN
+        if tok := strings.TrimSpace(r.Header.Get("X-Service-Token")); tok != "" && tok == strings.TrimSpace(os.Getenv("INTERNAL_SERVICE_TOKEN")) {
+            next.ServeHTTP(w, r)
+            return
+        }
         uid, err := auth.ExtractUserID(r)
         if err != nil || strings.TrimSpace(uid) == "" {
             errors.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
@@ -54,4 +59,3 @@ func isUIDAdmin(uid string) bool {
     }
     return false
 }
-

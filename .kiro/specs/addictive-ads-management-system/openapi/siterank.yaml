@@ -144,6 +144,41 @@ paths:
                       $ref: '#/components/schemas/SimilarityItem'
         '401': { description: Unauthorized }
 
+  /siterank/keywords/suggest:
+    post:
+      operationId: suggestKeywords
+      summary: Suggest expanded keywords based on domain and page signals
+      description: |
+        Generate keyword suggestions without Google Ads dependency. Uses domain tokenization +
+        page title/siteName signals (via browser-exec) and SimilarWeb basics to score.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                seedDomain: { type: string, description: Domain to analyze, e.g. example.com }
+                country: { type: string, description: Optional ISO country code }
+                topN: { type: integer, minimum: 1, maximum: 100, default: 20 }
+                minScore: { type: number, format: float, description: 0..1 score threshold, default: 0.4 }
+              required: [seedDomain]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KeywordSuggestion'
+        '401': { description: Unauthorized }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -194,3 +229,10 @@ components:
           type: object
           additionalProperties: true
       required: [domain, score]
+    KeywordSuggestion:
+      type: object
+      properties:
+        keyword: { type: string }
+        score: { type: number, description: 0..1, minimum: 0, maximum: 1 }
+        reason: { type: string, description: brief why this keyword was suggested }
+      required: [keyword, score]

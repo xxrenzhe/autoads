@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 )
 
 // ServerInterface represents all server handlers.
@@ -19,6 +20,21 @@ type ServerInterface interface {
 	// Create a new offer (202)
 	// (POST /offers)
 	CreateOffer(w http.ResponseWriter, r *http.Request)
+	// Delete an offer by id
+	// (DELETE /offers/{id})
+	DeleteOffer(w http.ResponseWriter, r *http.Request, id string)
+	// Get offer by id for current user
+	// (GET /offers/{id})
+	GetOffer(w http.ResponseWriter, r *http.Request, id string)
+	// Update offer basic fields
+	// (PUT /offers/{id})
+	UpdateOffer(w http.ResponseWriter, r *http.Request, id string)
+	// Get 7-day KPI summary and daily points for an offer
+	// (GET /offers/{id}/kpi)
+	GetOfferKpi(w http.ResponseWriter, r *http.Request, id string)
+	// Manually update offer status and record history
+	// (PUT /offers/{id}/status)
+	UpdateOfferStatus(w http.ResponseWriter, r *http.Request, id string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -34,6 +50,36 @@ func (_ Unimplemented) ListOffers(w http.ResponseWriter, r *http.Request) {
 // Create a new offer (202)
 // (POST /offers)
 func (_ Unimplemented) CreateOffer(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete an offer by id
+// (DELETE /offers/{id})
+func (_ Unimplemented) DeleteOffer(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get offer by id for current user
+// (GET /offers/{id})
+func (_ Unimplemented) GetOffer(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update offer basic fields
+// (PUT /offers/{id})
+func (_ Unimplemented) UpdateOffer(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get 7-day KPI summary and daily points for an offer
+// (GET /offers/{id}/kpi)
+func (_ Unimplemented) GetOfferKpi(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Manually update offer status and record history
+// (PUT /offers/{id}/status)
+func (_ Unimplemented) UpdateOfferStatus(w http.ResponseWriter, r *http.Request, id string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -77,6 +123,161 @@ func (siw *ServerInterfaceWrapper) CreateOffer(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateOffer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteOffer operation middleware
+func (siw *ServerInterfaceWrapper) DeleteOffer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteOffer(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOffer operation middleware
+func (siw *ServerInterfaceWrapper) GetOffer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOffer(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateOffer operation middleware
+func (siw *ServerInterfaceWrapper) UpdateOffer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateOffer(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOfferKpi operation middleware
+func (siw *ServerInterfaceWrapper) GetOfferKpi(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOfferKpi(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateOfferStatus operation middleware
+func (siw *ServerInterfaceWrapper) UpdateOfferStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateOfferStatus(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -204,6 +405,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/offers", wrapper.CreateOffer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/offers/{id}", wrapper.DeleteOffer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/offers/{id}", wrapper.GetOffer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/offers/{id}", wrapper.UpdateOffer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/offers/{id}/kpi", wrapper.GetOfferKpi)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/offers/{id}/status", wrapper.UpdateOfferStatus)
 	})
 
 	return r

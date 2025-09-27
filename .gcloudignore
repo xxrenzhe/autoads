@@ -21,6 +21,7 @@ node_modules/
 **/node_modules/
 # Allow frontend app for Cloud Run builds
 !apps/frontend/**
+apps/frontend/node_modules/**
 gofly_admin_v3/
 dist/
 build/
@@ -37,3 +38,13 @@ secrets/*
 !go.work
 !services/**
 !pkg/**
+
+# Exclude large compiled binaries at repo root to shrink upload size
+/# Exclude only root-level compiled binaries to shrink upload size
+/adscenter
+/batchopen
+/billing
+/console
+/recommendations
+/server
+/siterank
