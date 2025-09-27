@@ -43,8 +43,8 @@ export async function middleware(req: NextRequest) {
     return res
   }
 
-  // 仅对 /console 做强校验
-  if (pathname === '/console' || pathname.startsWith('/console/')) {
+  // 仅对 /admin、/console 与 /ops 做强校验（管理员入口）
+  if (pathname === '/console' || pathname.startsWith('/console/') || pathname.startsWith('/ops') || pathname === '/admin' || pathname.startsWith('/admin/')) {
     try {
       // 支持从 Authorization 或 Cookie 获取 Firebase ID Token
       const authHeader = headers.get('authorization') || ''
@@ -62,7 +62,10 @@ export async function middleware(req: NextRequest) {
         ok = allow.includes(email.toLowerCase())
       }
       if (!ok) throw new Error('forbidden')
-      return NextResponse.next()
+      const res = NextResponse.next()
+      // 管理入口强制 noindex
+      res.headers.set('X-Robots-Tag', 'noindex, nofollow')
+      return res
     } catch (e) {
       const url = new URL('/auth/admin-signin', req.url)
       url.searchParams.set('callbackUrl', nextUrl.pathname)

@@ -380,7 +380,7 @@
   - 建立操作历史记录和效果跟踪
   - _需求: 需求8 - 广告诊断与优化系统增强_
 
-- [ ] E2.4 换链接频控设置端点
+- [x] E2.4 换链接频控设置端点
   - 新增端点：GET/PUT /api/v1/adscenter/settings/link-rotation
   - 字段：enabled、minIntervalMinutes、maxPerDayPerOffer、maxPerHourPerAccount、rollbackOnError
   - 前端设置页联动：显示频控与回退配置
@@ -450,7 +450,7 @@
 - [x] G2.3 实时通知（SSE）
   - 提供 /api/v1/notifications/stream（SSE）推送 unread 与新通知摘要；前端导航未读红点接入
   
-- [ ] G2.4 通知/预警节流设置端点
+- [x] G2.4 通知/预警节流设置端点
   - 新增端点：GET/PUT /api/v1/console/notifications/settings?scope=user|system
   - 字段：enabled、minConfidence、throttlePerMinute、groupWindowSec、channels{inApp,email,webhook}
   - UI：设置页联动，提供预设与自定义模板
@@ -537,6 +537,33 @@
   - 文档与脚本：limits-policy.md、set-adscenter-limits-secret.sh、limits/me 端点（plan/限流/配额自查）
   - 新增内部执行端点：POST /api/v1/adscenter/bulk-actions/execute-tick?max=N（全局挑选 queued 分片，按 N 个/次推进）
   - 新增“分片限流/配额”：按 用户/账号/动作类型 维护独立限流桶（LRU+TTL），叠加全局限流；限流参数支持按套餐计划配置（Secret: ADSCENTER_LIMITS_SECRET）
+
+- [x] H2.3 Gateway Smoke 健康检查（CI）
+  - CI中在部署后增加 `/api/health`、`/api/health/console`、`/api/health/adscenter` 冒烟
+  - 失败时阻断流水线，便于快速定位 Gateway/后端健康问题
+
+- [x] H2.4 e2e Settings（预发）
+  - 在预发完成后，自动执行 settings 相关端点的 e2e（link-rotation、notifications、offer.preferences）
+  - 支持 system scope 的管理员用例与非管理员负例
+
+## FEX组：前端构建稳定性（SSR/CSR）
+
+- [x] FEX1. 图表组件动态导入与禁用SSR（构建页）
+  - 对仅客户端库（如 Recharts）在管理页中改为动态导入，禁用SSR，避免构建期预渲染报错
+  - 典型：/admin/autoclick/history 改造为动态组件（ssr:false）+ dynamic='force-dynamic'
+
+## UI组：导航与信息架构优化
+
+- [x] U1. 顶部导航优化（最终形态）
+  - 导航聚焦：Offers / Operations / Insights / Settings
+  - 移除：/batchopen、/siterank、/changelink 系列独立入口
+  - 管理入口：/ops/console（管理员可见）
+  - U1.a 定价页仅未登录显示，登录后从导航隐藏
+  - U1.b 计费中心移入 Settings/头像菜单（订阅/计费），不做顶级入口
+
+- [x] U2. 页面路由整合（不保留旧路由）
+  - 合并：/changelink → /operations?tab=rotate-link；/siterank → Offer 详情/看板；报告整合到 /operations/reports
+  - 移除：/batchopen、/changelink/settings、/changelink/reports、/monitoring、/test-environment（生产）
 
 ### 1. 共享底座开发 (pkg/*)
 

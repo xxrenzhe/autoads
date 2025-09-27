@@ -58,6 +58,10 @@ func main() {
     // Plain route (fallback) + streaming + OpenAPI chi server
     r.With(middleware.AuthMiddleware).Get("/api/v1/notifications/recent", recentHandler)
     r.With(middleware.AuthMiddleware).Get("/api/v1/notifications/stream", sseNotifications)
+    // Minimal event_store query for current user (3.1 部分落地)
+    r.With(middleware.AuthMiddleware).Get("/api/v1/console/events", listEventsHandler)
+    r.With(middleware.AuthMiddleware).Get("/api/v1/console/events/export", exportEventsHandler)
+    r.With(middleware.AuthMiddleware).Get("/api/v1/console/events/types", listEventTypesHandler)
     
     // OpenAPI chi server
     oas := &oasImpl{}
@@ -203,6 +207,230 @@ func recentHandler(w http.ResponseWriter, r *http.Request) {
         Items []Notification `json:"items"`
         Next  string         `json:"next,omitempty"`
     }{ Items: items, Next: func() string { if len(items) == limit { return lastID }; return "" }() })
+}
+
+// listEventsHandler: GET /api/v1/console/events?limit=50
+// 返回与当前用户相关的最近事件（基于 payload/metadata.userId 过滤，最小实现）
+func listEventsHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+        return
+    }
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { errors.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    q := r.URL.Query()
+    limit := 50
+    if v := q.Get("limit"); v != "" {
+        if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 200 { limit = n }
+    }
+    cursor := strings.TrimSpace(q.Get("cursor")) // id cursor: return id < cursor
+    // support multiple types separated by comma
+    evType := strings.TrimSpace(q.Get("type"))
+    var evTypes []string
+    if evType != "" {
+        for _, t := range strings.Split(evType, ",") {
+            t = strings.TrimSpace(t)
+            if t != "" { evTypes = append(evTypes, t) }
+        }
+    }
+    aggType := strings.TrimSpace(q.Get("aggregateType"))
+    aggID := strings.TrimSpace(q.Get("aggregateId"))
+    sinceStr := strings.TrimSpace(q.Get("since"))
+    untilStr := strings.TrimSpace(q.Get("until"))
+
+    // dynamic query builder
+    where := []string{"(payload->>'userId' = $1 OR metadata->>'userId' = $1)"}
+    args := []any{uid}
+    idx := 2
+    if len(evTypes) > 0 {
+        placeholders := make([]string, 0, len(evTypes))
+        for range evTypes { placeholders = append(placeholders, "$"+strconv.Itoa(idx)); idx++ }
+        where = append(where, "event_name IN ("+strings.Join(placeholders, ",")+")")
+        for _, t := range evTypes { args = append(args, t) }
+    }
+    if aggType != "" { where = append(where, "aggregate_type = $"+strconv.Itoa(idx)); args = append(args, aggType); idx++ }
+    if aggID != "" { where = append(where, "aggregate_id = $"+strconv.Itoa(idx)); args = append(args, aggID); idx++ }
+    if sinceStr != "" {
+        if t, err := time.Parse(time.RFC3339, sinceStr); err == nil {
+            where = append(where, "occurred_at >= $"+strconv.Itoa(idx)); args = append(args, t); idx++
+        }
+    }
+    if untilStr != "" {
+        if t, err := time.Parse(time.RFC3339, untilStr); err == nil {
+            where = append(where, "occurred_at <= $"+strconv.Itoa(idx)); args = append(args, t); idx++
+        }
+    }
+    if cursor != "" {
+        if _, err := strconv.ParseInt(cursor, 10, 64); err == nil {
+            where = append(where, "id < $"+strconv.Itoa(idx)); args = append(args, cursor); idx++
+        }
+    }
+    query := "SELECT id, event_id, event_name, aggregate_type, aggregate_id, occurred_at FROM event_store WHERE " + strings.Join(where, " AND ") + " ORDER BY id DESC LIMIT $" + strconv.Itoa(idx)
+    args = append(args, limit)
+    rows, err := db.Query(query, args...)
+    if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    type item struct {
+        Id           int64  `json:"id"`
+        EventId       string `json:"eventId"`
+        EventName     string `json:"eventName"`
+        AggregateType string `json:"aggregateType"`
+        AggregateId   string `json:"aggregateId"`
+        OccurredAt    string `json:"occurredAt"`
+    }
+    out := make([]item, 0, limit)
+    var lastID int64
+    for rows.Next() {
+        var it item
+        var t time.Time
+        if err := rows.Scan(&it.Id, &it.EventId, &it.EventName, &it.AggregateType, &it.AggregateId, &t); err != nil {
+            errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Scan failed", map[string]string{"error": err.Error()}); return
+        }
+        it.OccurredAt = t.UTC().Format(time.RFC3339)
+        out = append(out, it)
+        lastID = it.Id
+    }
+    w.Header().Set("Content-Type", "application/json")
+    _ = json.NewEncoder(w).Encode(struct{
+        Items []item `json:"items"`
+        Next  string `json:"next,omitempty"`
+    }{Items: out, Next: func() string { if len(out) == limit { return strconv.FormatInt(lastID, 10) } ; return "" }()})
+}
+
+// exportEventsHandler: GET /api/v1/console/events/export?format=ndjson&limit=1000
+// 简单导出：按当前用户过滤，支持同 list 的过滤参数，输出 NDJSON（默认）
+func exportEventsHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+        return
+    }
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { errors.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+
+    q := r.URL.Query()
+    limit := 1000
+    if v := q.Get("limit"); v != "" {
+        if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 5000 { limit = n }
+    }
+    cursor := strings.TrimSpace(q.Get("cursor"))
+    // type list support
+    evType := strings.TrimSpace(q.Get("type"))
+    var evTypes []string
+    if evType != "" {
+        for _, t := range strings.Split(evType, ",") {
+            t = strings.TrimSpace(t)
+            if t != "" { evTypes = append(evTypes, t) }
+        }
+    }
+    aggType := strings.TrimSpace(q.Get("aggregateType"))
+    aggID := strings.TrimSpace(q.Get("aggregateId"))
+    sinceStr := strings.TrimSpace(q.Get("since"))
+    untilStr := strings.TrimSpace(q.Get("until"))
+
+    where := []string{"(payload->>'userId' = $1 OR metadata->>'userId' = $1)"}
+    args := []any{uid}
+    idx := 2
+    if len(evTypes) > 0 {
+        placeholders := make([]string, 0, len(evTypes))
+        for range evTypes { placeholders = append(placeholders, "$"+strconv.Itoa(idx)); idx++ }
+        where = append(where, "event_name IN ("+strings.Join(placeholders, ",")+")")
+        for _, t := range evTypes { args = append(args, t) }
+    }
+    if aggType != "" { where = append(where, "aggregate_type = $"+strconv.Itoa(idx)); args = append(args, aggType); idx++ }
+    if aggID != "" { where = append(where, "aggregate_id = $"+strconv.Itoa(idx)); args = append(args, aggID); idx++ }
+    if sinceStr != "" {
+        if t, err := time.Parse(time.RFC3339, sinceStr); err == nil { where = append(where, "occurred_at >= $"+strconv.Itoa(idx)); args = append(args, t); idx++ }
+    }
+    if untilStr != "" {
+        if t, err := time.Parse(time.RFC3339, untilStr); err == nil { where = append(where, "occurred_at <= $"+strconv.Itoa(idx)); args = append(args, t); idx++ }
+    }
+    if cursor != "" {
+        if _, err := strconv.ParseInt(cursor, 10, 64); err == nil { where = append(where, "id < $"+strconv.Itoa(idx)); args = append(args, cursor); idx++ }
+    }
+    query := "SELECT id, event_id, event_name, aggregate_type, aggregate_id, occurred_at, payload FROM event_store WHERE " + strings.Join(where, " AND ") + " ORDER BY id DESC LIMIT $" + strconv.Itoa(idx)
+    args = append(args, limit)
+    rows, err := db.Query(query, args...)
+    if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+
+    format := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("format")))
+    if format == "csv" {
+        w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+        w.Header().Set("Content-Disposition", "attachment; filename=events.csv")
+        // header
+        _, _ = w.Write([]byte("id,eventId,eventName,aggregateType,aggregateId,occurredAt\n"))
+        for rows.Next() {
+            var id int64
+            var eid, name, atype, aid string
+            var t time.Time
+            var payload json.RawMessage
+            if err := rows.Scan(&id, &eid, &name, &atype, &aid, &t, &payload); err != nil { continue }
+            line := strings.NewReplacer(
+                ",", " ", "\n", " ", "\r", " ", "\t", " ",
+            ).Replace(name)
+            at := strings.NewReplacer(",", " ").Replace(atype)
+            ai := strings.NewReplacer(",", " ").Replace(aid)
+            _, _ = w.Write([]byte(
+                strconv.FormatInt(id, 10) + "," + eid + "," + line + "," + at + "," + ai + "," + t.UTC().Format(time.RFC3339) + "\n",
+            ))
+        }
+        return
+    }
+
+    // NDJSON default
+    w.Header().Set("Content-Type", "application/x-ndjson; charset=utf-8")
+    w.Header().Set("Content-Disposition", "attachment; filename=events.ndjson")
+    enc := json.NewEncoder(w)
+    type outItem struct {
+        Id           int64       `json:"id"`
+        EventId      string      `json:"eventId"`
+        EventName    string      `json:"eventName"`
+        AggregateType string     `json:"aggregateType"`
+        AggregateId  string      `json:"aggregateId"`
+        OccurredAt   string      `json:"occurredAt"`
+        Payload      interface{} `json:"payload"`
+    }
+    for rows.Next() {
+        var id int64
+        var eid, name, atype, aid string
+        var t time.Time
+        var payload json.RawMessage
+        if err := rows.Scan(&id, &eid, &name, &atype, &aid, &t, &payload); err != nil { continue }
+        var p any
+        _ = json.Unmarshal(payload, &p)
+        _ = enc.Encode(outItem{Id: id, EventId: eid, EventName: name, AggregateType: atype, AggregateId: aid, OccurredAt: t.UTC().Format(time.RFC3339), Payload: p})
+    }
+}
+
+// listEventTypesHandler: GET /api/v1/console/events/types
+// 返回当前用户可见事件的类型及计数（最多 100 类）
+func listEventTypesHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+        return
+    }
+    uid, _ := r.Context().Value(middleware.UserIDKey).(string)
+    if uid == "" { errors.Write(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil); return }
+    rows, err := db.Query(`
+        SELECT event_name, COUNT(1) AS cnt
+        FROM event_store
+        WHERE (payload->>'userId' = $1 OR metadata->>'userId' = $1)
+        GROUP BY event_name
+        ORDER BY cnt DESC
+        LIMIT 100
+    `, uid)
+    if err != nil { errors.Write(w, r, http.StatusInternalServerError, "INTERNAL", "Query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    type it struct{ Name string `json:"name"`; Count int64 `json:"count"` }
+    out := make([]it, 0, 20)
+    for rows.Next() {
+        var name string
+        var cnt int64
+        if err := rows.Scan(&name, &cnt); err != nil { continue }
+        out = append(out, it{Name: name, Count: cnt})
+    }
+    w.Header().Set("Content-Type", "application/json")
+    _ = json.NewEncoder(w).Encode(struct{ Items []it `json:"items"` }{Items: out})
 }
 
 // sseNotifications streams unread count and new notification tips for current user.

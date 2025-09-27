@@ -69,24 +69,24 @@ export default function Navigation({ currentPage = "home" }: NavigationProps) {
     );
   }
 
-  // 新的导航项目
+  // 顶部导航（最终形态）：Offers / Operations / Insights / Settings
+  // - 移除 Billing 顶级入口（计费入口迁移至 Settings）
+  // - 移除 Workflow 顶级入口（通过事件驱动替代）
+  // - 定价页仅未登录显示（追加到更多中）
   const navItems = [
-    { href: "/dashboard", label: "仪表盘", icon: LayoutDashboard, color: "blue" },
-    { href: "/offers", label: "Offer库", icon: Briefcase, color: "green" },
-    { href: "/workflows", label: "工作流", icon: Workflow, color: "purple" },
-    { href: "/blog", label: "博客", icon: Rss, color: "orange" },
-    { href: "/billing", label: "计费中心", icon: CreditCard, color: "red" },
+    { href: "/offers", label: "Offers", icon: Briefcase, color: "green" },
+    { href: "/operations", label: "Operations", icon: LayoutDashboard, color: "blue" },
+    { href: "/insights", label: "Insights", icon: BarChart3, color: "orange" },
+    { href: "/settings", label: "Settings", icon: Settings, color: "purple" },
   ];
 
   // 下拉菜单项目
   const dropdownItems = [
-    { 
-      href: "/changelog", 
-      label: "更新日志",
-      icon: History, 
-      color: "purple", 
-      description: "最新功能与版本发布"
-    },
+    { href: "/changelog", label: "更新日志", icon: History, color: "purple", description: "最新功能与版本发布" },
+    // 未登录时显示定价页入口
+    ...(session ? [] : [{ href: "/pricing", label: "定价", icon: CreditCard, color: "red", description: "方案与价格" }]),
+    // 其他信息类入口
+    { href: "/blog", label: "博客", icon: Rss, color: "orange", description: "产品洞察与实践" },
   ];
 
   

@@ -51,9 +51,20 @@
     - `COPY services/offer ./services/offer`
     - `go build -o /offer-service`；runtime 使用 `gcr.io/distroless/base-debian12`
   - 确保 `.dockerignore`、`.gcloudignore` 均包含 `apps/frontend/node_modules/**`（已经落地）
-  - 重新触发构建：
+- 重新触发构建：
     - `gcloud builds submit . --config deployments/offer/cloudbuild.yaml --substitutions _IMAGE=asia-northeast1-docker.pkg.dev/<PROJECT>/autoads-services/offer:preview-oapi`
   - 验证观察点：构建日志不应再出现 `COPY . .`，而是只看到 `COPY go.work`、`COPY pkg`、`COPY services/offer`。
+
+【补充】Next.js 15 构建期预渲染触发 Recharts/客户端 Hook 错误
+- 现象
+  - `Error occurred prerendering page "/admin/autoclick/history"`，`TypeError: Cannot read properties of null (reading 'useState')`
+- 根因
+  - 页面使用 Recharts/React Hooks，虽然标注了 `use client`，但构建期仍会对页面做 SSR 预渲染，导致仅客户端库在 SSR 环境里执行
+- 解决
+  - 将图表部分拆分为独立客户端组件，并用 `next/dynamic` 禁用 SSR：
+    - `const SSRFreeChart = dynamic(() => import('./ssr-free-chart').then(m => m.SSRFreeChart), { ssr:false })`
+  - 对页面导出 `export const dynamic = 'force-dynamic'`，避免 Next 在构建期静态预渲染该页面
+  - 文件：apps/frontend/src/app/admin/autoclick/history/page.tsx、apps/frontend/src/app/admin/autoclick/history/ssr-free-chart.tsx
 
 【补充】Next.js TSX 三元渲染语法错误（Unexpected token `div`）
 - 现象
@@ -80,6 +91,104 @@
       - `replace github.com/xxrenzhe/autoads/pkg/httpclient => ../../pkg/httpclient`
       - 以及 `events`、`middleware`、`telemetry`、`config` 等实际用到的内部包
   - 必要时在 `require` 中添加占位版本（`v0.0.0-00010101000000-000000000000`）以显式纳入依赖图，再由 `replace` 覆盖到本地。
+
+【本次新增案例：console 服务 Cloud Build 失败】
+- 现象
+  - `github.com/xxrenzhe/autoads/pkg/auth@v0.0.1: unknown revision`、`pkg/httpclient` 等内部包找不到
+- 根因
+  - console/go.mod 仅包含 `pkg/errors` 的 replace，其它内部包未被 replace，Cloud Build 远程 `go mod tidy` 尝试去外网拉对应 tag 失败
+- 解决
+  - 在 services/console/go.mod 增加 require + replace 到本地路径：
+    - middleware、telemetry、http、auth、logger、idempotency、httpclient
+  - 保证构建上下文包含 `pkg/` 目录（Dockerfile 用最小复制：`COPY go.work ./go.work && COPY pkg ./pkg && COPY services/console ./services/console`）
+
+## 4.1 go.work 导致 `go mod download` 报本地模块不存在
+
+- 现象
+  - Dockerfile 在早期步骤执行 `go mod download`，由于 `go.work` 引用了多个 `services/*`，但镜像内尚未 COPY 这些目录，报 `cannot load module services/<svc> listed in go.work`
+- 解决
+  - 避免在仅复制 `go.mod` 场景调用 `go mod download`；改为在 COPY 完 `go.work`、`pkg` 与对应 `services/<svc>` 后再 `go mod tidy && go build`
+  - 或在该步骤使用 `GOWORK=off` 以忽略 workspace，明确依赖通过 replace 相对路径解决
+
+## 4.2 oapi 接口未实现导致编译失败
+
+- 现象
+  - `*oasImpl does not implement oapi.ServerInterface (missing method AggregateOfferKpi|LinkOfferAccount|GetLinkRotationSettings|...)`
+- 解决
+  - 在服务 `main.go` 中实现新增加的接口方法，直接映射到已有 handler（必要时用一个 `withPath` 适配以复用老的路径树处理器）
+  - 示例（offer）：
+    - `AggregateOfferKpi()`、`ListOfferAccounts()`、`LinkOfferAccount()`、`UnlinkOfferAccount()`，统一转发到 `OffersHandler`
+
+## 4.3 handler 新增 case 导致 `duplicate case http.MethodPut`
+
+- 现象
+  - 在 `switch r.Method` 中重复添加了 `case http.MethodPut` 分支，编译报错
+- 解决
+  - 将新增的子资源（如 `/offers/{id}/preferences`）放入同一个 `case http.MethodPut` 分支内，根据 `sub` 路径再细分逻辑；避免重复的 `case` 标签
+
+## 4.4 路由鉴权策略：按 scope 在 handler 内细分
+
+- 现象
+  - `/api/v1/console/notifications/settings` 最初被 `AdminOnly` 全局保护，user scope 也被误拦截
+- 解决
+  - 路由仅挂 `AuthMiddleware`，在 handler 中读取 `scope`：`user` 放行、`system` 走 `AdminOnly` 等价校验（复用邮件/UID白名单 + `X-Service-Token`）
+  - 保持原有 `/api/v1/console/notifications/rules` 等端点继续 `AdminOnly`
+
+## 4.5 API Gateway 资源已存在 & 配置更新策略
+
+- 现象
+  - `gcloud api-gateway apis create` 报 `ALREADY_EXISTS`；更新 config 时需处理不可变版本
+- 解决
+  - 更新策略：创建带时间戳的新 config 名称（如 `autoads-v2-<ts>`），然后 `gateways update` 指向新的 `api-config`
+  - 渲染脚本（render-gateway-auto.sh）中：自动发现 Cloud Run 服务 URL；优先取 `{service}-{STACK}`，找不到回退到 base 名称
+
+## 4.6 Cloud Build 网络抖动（oauth2.googleapis.com DNS 解析失败）
+
+- 现象
+  - 构建阶段偶发 `Failed to resolve 'oauth2.googleapis.com'`，导致步骤失败
+- 解决
+  - 重试构建；或将这类步骤交由 GitHub Actions/Cloud Build 重试策略处理
+  - 观察：重试后可成功推送镜像
+
+## 4.7 e2e 依赖令牌的门禁策略
+
+- 现象
+  - 预发 e2e（settings）需要 Firebase ID Token（用户/管理员），Secrets 不全会导致流程卡住
+- 解决
+  - 在 CI 中（deploy-backend.yml）：
+    - 若 PREVIEW_TEST_ID_TOKEN 缺失则跳过 e2e（提示警告），避免阻断发布
+    - 另提供手动工作流 e2e-settings.yml，允许在 Secrets 就绪后随时触发
+
+## 4.9 npm ci 锁文件不同步导致构建失败
+
+- 现象
+  - Node 构建阶段 `npm ci` 报错：`can only install packages when package.json and package-lock.json are in sync`，列出大量缺失包
+- 根因
+  - apps/frontend 的 package.json 更新后未同步更新 lock 文件；CI 使用 `npm ci` 会严格校验
+- 解决
+  - 首选：在本地执行 `npm install -w apps/frontend` 更新锁文件并提交（或 `npm i -w apps/frontend --package-lock-only` 更新 lock）
+  - 兜底：Dockerfile/Cloud Build pipeline 中 `npm ci ... || npm install -w apps/frontend`，确保构建不中断；但应尽快提交锁文件以避免漂移
+  - 建议：CI 增加锁文件一致性校验步骤，防止漂移进入主干
+
+## 5.0 信息架构/导航易错点（产品层面）
+
+- 现象
+  - 导航项过多且重复（/batchopen、/siterank、/changelink 独立存在），同一能力分散在多个入口，造成用户心智负担与转化漏斗断裂。
+  - 登录后仍显示“定价页”，以及“计费中心”顶级入口与“设置/头像菜单”发生重复。
+- 解决
+  - 最终形态导航（登录后）：Offers / Operations / Insights / Settings；管理员入口仅 /ops/console，不出现在公共导航。
+  - 定价页：仅未登录显示（转化CTA）；登录后从导航隐藏。
+  - 计费中心：不做顶级入口，归并到 Settings（订阅/计费）或头像菜单（订阅/计费）。
+  - 页面收敛：不保留旧路由的独立页面，评估（siterank）归并到 Offer 看板/详情，换链接（changelink）作为批量操作的一类（ROTATE_LINK），报告统一到 Operations → Reports。
+  - SEO：/ops/* 强制 noindex；不发布 test-environment 到生产 sitemap。
+
+## 4.8 Pipeline 中增设 Gateway 冒烟检查
+
+- 背景
+  - 端到端 e2e 之前，先对 `/api/health` 与关键服务健康端点进行冒烟，可快速定位网关/后端健康问题
+- 实施
+  - 在 `deploy-backend.yml` 中增加 `gateway-smoke` 作业，对 `/api/health`、`/api/health/console`、`/api/health/adscenter` 做无鉴权探测
+  - 失败直接阻断流水线，减少后续排障范围
 
 ## 5. 使用 Cloud Build 指定服务账号的参数格式错误
 
@@ -146,7 +255,66 @@
 - 解决
   - 在 GCP 控制台启用 API Keys API：`apikeys.googleapis.com`。
   - 使用具备相应权限的服务账号（通常需要 `roles/serviceusage.serviceUsageAdmin` + `roles/serviceusage.apiKeysAdmin`）。
-  - 备选：从 Firebase 控制台（项目设置 → Web App 配置）复制现有 Web API Key，并存入 Secret Manager（NEXT_PUBLIC_FIREBASE_API_KEY）。
+- 备选：从 Firebase 控制台（项目设置 → Web App 配置）复制现有 Web API Key，并存入 Secret Manager（NEXT_PUBLIC_FIREBASE_API_KEY）。
+
+## 15. event_store 表结构不一致（UUID vs TEXT）导致写入/查询异常
+
+- 现象
+  - 某些服务（pkg/eventstore、notifications subscriber）使用 `TEXT` 写入 `event_id`，而基础 SQL 定义为 `UUID`，导致类型不一致；查询或插入时可能报类型错误或隐式转换失败。
+- 解决
+  - 统一 `schemas/sql/001_event_store.sql` 为 `TEXT` 类型，并保留唯一索引与聚合/名称时序索引。
+  - 路径：schemas/sql/001_event_store.sql
+
+## 16. Adscenter 动作参数命名漂移（percent/cpcValue vs adjustPercent/targetCpcMicros）
+
+- 现象
+  - 前端/脚本历史上使用 `adjustPercent/targetCpcMicros/dailyBudgetMicros`，而 OAS/后端期望 `percent/cpcValue/dailyBudget`，导致校验失败或执行无效。
+- 解决
+  - 前端计划编辑、校验提示与建议生成统一改用 OAS 字段：
+    - ADJUST_CPC：`percent` 或 `cpcValue`
+    - ADJUST_BUDGET：`percent` 或 `dailyBudget`（>0）
+    - ROTATE_LINK：`links[]` 或 `targetDomain`
+  - 文件：apps/frontend/src/app/offers/[id]/page.tsx；services/adscenter/openapi.yaml（参考）
+
+## 17. /ops 与 /admin 入口被搜索引擎索引/权限绕过风险
+
+- 现象
+  - 管理入口 `/ops/*`、`/admin/*` 在未加额外保护时有可能被索引或被直接访问。
+- 解决
+  - 中间件对 `/ops` 与 `/admin` 做管理员校验（Firebase Token + 角色/白名单），并在响应头加 `X-Robots-Tag: noindex, nofollow`；robots.txt 屏蔽 `/monitoring` 与 `/test-environment`。
+  - 文件：apps/frontend/src/middleware.ts、apps/frontend/src/app/robots.ts
+
+## 18. 事件查询需支持多类型筛选（type 多选）
+
+- 现象
+  - 管理页期望按多个事件类型过滤；后端仅支持单值 `type=`。
+- 解决
+  - 后端接受 `type=a,b,c` 并构建 `IN (...)` 查询；前端类型多选拼接逗号分隔。
+  - 文件：services/notifications/cmd/server.main.go、apps/frontend/src/app/admin/system/events/page.tsx
+
+## 19. 批量执行监控易引发“羊群效应”（并发拉取导致短时高压）
+
+- 现象
+  - 聚合视图中同时对多个操作拉取分片/审计详情，可能在浏览器端形成瞬时并发风暴。
+- 解决
+  - 全局分片总览对每个操作顺序拉取、避免洪峰；局部查看时按需展开再拉取，并限量展示（最新3条）。
+  - 文件：apps/frontend/src/app/operations/page.tsx
+
+## 20. 计划 JSON 字段定位不准确（仅字符串搜索）
+
+- 现象
+  - 早期仅靠字符串搜索字段名，定位误差较大，难以快速定位 actions[i] 内的具体字段。
+- 解决
+  - 基于括号匹配在 `actions` 数组内定位第 i 个对象范围，再在范围内查找字段名；失败时选中整个对象片段并滚动定位；后续建议引入 AST 解析进一步提升精度。
+  - 文件：apps/frontend/src/app/offers/[id]/page.tsx
+
+## 21. 导出列与筛选记忆缺失（事件管理）
+
+- 现象
+  - 管理页面导出 CSV 时列固定、筛选刷新后丢失。
+- 解决
+  - 前端生成 CSV 并支持导出列选择，筛选与列选择持久化到 localStorage；NDJSON 仍走后端导出。
+  - 文件：apps/frontend/src/app/admin/system/events/page.tsx
 
 ## 15. 创建 Cloud Scheduler Job 报 PERMISSION_DENIED
 - 现象

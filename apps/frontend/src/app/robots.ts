@@ -15,6 +15,8 @@ export default function robots(): MetadataRoute.Robots {
           "/_next/", // Next.js内部文件
           "/admin/", // 旧管理路径，保持屏蔽
           "/ops/",   // 管理网关，仅供管理员直达
+          "/monitoring/", // 监控页面不对外索引
+          "/test-environment/", // 测试环境页面不对外索引
           "/private/", // 私有内容（未来可能添加）
           "*.json", // JSON文件
           "/sitemap-*.xml", // 子sitemap文件（只索引主sitemap）
@@ -26,7 +28,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "Googlebot",
         allow: "/",
-        disallow: ["/api/", "/_next/", "/admin/", "/ops/", "/private/"],
+        disallow: ["/api/", "/_next/", "/admin/", "/ops/", "/monitoring/", "/test-environment/", "/private/"],
         crawlDelay: 0.5, // Google可以更频繁地爬取
       },
 
@@ -34,7 +36,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "Bingbot",
         allow: "/",
-        disallow: ["/api/", "/_next/", "/admin/", "/ops/", "/private/"],
+        disallow: ["/api/", "/_next/", "/admin/", "/ops/", "/monitoring/", "/test-environment/", "/private/"],
         crawlDelay: 1,
       },
 
@@ -42,7 +44,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "Baiduspider",
         allow: "/",
-        disallow: ["/api/", "/_next/", "/admin/", "/ops/", "/private/"],
+        disallow: ["/api/", "/_next/", "/admin/", "/ops/", "/monitoring/", "/test-environment/", "/private/"],
         crawlDelay: 2, // 百度爬虫较慢一些
       },
 

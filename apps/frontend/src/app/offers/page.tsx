@@ -116,7 +116,9 @@ export default function OffersPage() {
         <TableBody>
           {offers.map((offer) => (
             <TableRow key={offer.id}>
-              <TableCell className="font-medium">{offer.name}</TableCell>
+              <TableCell className="font-medium">
+                <a className="text-blue-600 underline" href={`/offers/${offer.id}`}>{offer.name}</a>
+              </TableCell>
               <TableCell>{offer.originalUrl}</TableCell>
               <TableCell>{offer.status}</TableCell>
               <TableCell>{new Date(offer.createdAt).toLocaleDateString()}</TableCell>

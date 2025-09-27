@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { AdminDashboardLayout } from '@/components/layout/DashboardLayout';
 import { UI_CONSTANTS } from '@/components/ui/ui-constants';
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 type Row = { date: string; total: number; success: number; fail: number };
+
+// 避免在构建期对该页面进行静态预渲染（包含仅客户端图表组件）
+export const dynamic = 'force-dynamic';
 
 export default function AutoClickHistoryPage() {
   const [rows, setRows] = useState<Row[]>([])
@@ -53,18 +56,7 @@ export default function AutoClickHistoryPage() {
           ) : rows.length === 0 ? (
             <div className="text-gray-500">暂无数据</div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={rows} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="total" stroke="#8884d8" name="总数" />
-                <Line type="monotone" dataKey="success" stroke="#82ca9d" name="成功" />
-                <Line type="monotone" dataKey="fail" stroke="#ff6b6b" name="失败" />
-              </LineChart>
-            </ResponsiveContainer>
+            <SSRFreeChart data={rows} />
           )}
         </div>
 
@@ -95,3 +87,8 @@ export default function AutoClickHistoryPage() {
   );
 }
 
+// 动态加载图表，禁用SSR以避免构建期Recharts在SSR环境的问题
+const SSRFreeChart = dynamic(
+  () => import('./ssr-free-chart').then(m => m.SSRFreeChart),
+  { ssr: false }
+);

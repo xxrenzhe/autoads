@@ -69,6 +69,21 @@ export default function SettingsPage() {
     <div className="container mx-auto py-8 space-y-8">
       <h1 className="text-3xl font-bold">设置</h1>
 
+      {/* 订阅/计费聚合入口（替代 Billing 顶级导航） */}
+      <Card>
+        <CardHeader>
+          <CardTitle>订阅与计费</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">在此管理订阅计划、余额与扣费明细。原“计费中心”已迁移至设置页。</p>
+          <div className="flex items-center gap-3">
+            <a href="/billing" className="inline-block">
+              <Button variant="outline">进入计费中心</Button>
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>通知与预警（节流/置信度/通道）</CardTitle>
@@ -198,4 +213,3 @@ export default function SettingsPage() {
     </div>
   )
 }
-
