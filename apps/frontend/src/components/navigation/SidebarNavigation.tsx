@@ -194,6 +194,18 @@ const adminNavigationItems: NavigationItem[] = [
         href: '/admin/adscenter/metrics',
         icon: Database,
         description: '回填触发与CSV导出'
+      },
+      {
+        title: '限流/配额策略',
+        href: '/admin/console/limits',
+        icon: Settings,
+        description: 'Adscenter 限制策略编辑（Secret）'
+      },
+      {
+        title: '执行审计/重试',
+        href: '/admin/console/adscenter-ops',
+        icon: Activity,
+        description: '查看快照/死信并重试'
       }
     ]
   },
@@ -202,6 +214,12 @@ const adminNavigationItems: NavigationItem[] = [
     href: '/ops/console/notifications',
     icon: Bell,
     description: 'Notification management'
+  }
+  ,{
+    title: '事件存储',
+    href: '/admin/console/events',
+    icon: FileText,
+    description: '查看 event_store 最近事件'
   }
 ]
 

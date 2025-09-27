@@ -5,6 +5,8 @@ import (
     "os"
     "strings"
     "strconv"
+    "sync"
+    "time"
 
     "github.com/xxrenzhe/autoads/services/adscenter/internal/secrets"
 )
@@ -24,6 +26,8 @@ type AdsCreds struct {
 // GOOGLE_ADS_OAUTH_CLIENT_SECRET_SECRET_NAME, GOOGLE_ADS_REFRESH_TOKEN_SECRET_NAME,
 // GOOGLE_ADS_LOGIN_CUSTOMER_ID_SECRET_NAME, GOOGLE_ADS_TEST_CUSTOMER_ID_SECRET_NAME
 func LoadAdsCreds(ctx context.Context) (*AdsCreds, error) {
+    // in-process cache with TTL to reduce Secret Manager calls
+    if c := cachedCreds.get(); c != nil { return c, nil }
     get := func(key, secretNameKey string) (string, error) {
         if v := strings.TrimSpace(os.Getenv(key)); v != "" { return v, nil }
         if sn := strings.TrimSpace(os.Getenv(secretNameKey)); sn != "" {
@@ -37,14 +41,9 @@ func LoadAdsCreds(ctx context.Context) (*AdsCreds, error) {
     rt, _ := get("GOOGLE_ADS_REFRESH_TOKEN", "GOOGLE_ADS_REFRESH_TOKEN_SECRET_NAME")
     login, _ := get("GOOGLE_ADS_LOGIN_CUSTOMER_ID", "GOOGLE_ADS_LOGIN_CUSTOMER_ID_SECRET_NAME")
     test, _ := get("GOOGLE_ADS_TEST_CUSTOMER_ID", "GOOGLE_ADS_TEST_CUSTOMER_ID_SECRET_NAME")
-    return &AdsCreds{
-        DeveloperToken: dev,
-        OAuthClientID: cid,
-        OAuthClientSecret: csec,
-        RefreshToken: rt,
-        LoginCustomerID: login,
-        TestCustomerID: test,
-    }, nil
+    out := &AdsCreds{DeveloperToken: dev, OAuthClientID: cid, OAuthClientSecret: csec, RefreshToken: rt, LoginCustomerID: login, TestCustomerID: test}
+    cachedCreds.put(out)
+    return out, nil
 }
 
 type PrecheckFlags struct {
@@ -75,4 +74,38 @@ func LoadPrecheckFlags() PrecheckFlags {
         PerCheckTimeoutMS: toInt("ADS_PRECHECK_TIMEOUT_MS", 1500),
         TotalTimeoutMS: toInt("ADS_PRECHECK_TOTAL_TIMEOUT_MS", 2500),
     }
+}
+
+// --- simple in-memory cache for AdsCreds ---
+var cachedCreds = &adsCredsCache{}
+
+type adsCredsCache struct {
+    mu  sync.RWMutex
+    val *AdsCreds
+    exp time.Time
+}
+
+func (c *adsCredsCache) ttl() time.Duration {
+    // default: 10m, override via ADS_CREDS_CACHE_TTL_MS
+    if s := strings.TrimSpace(os.Getenv("ADS_CREDS_CACHE_TTL_MS")); s != "" {
+        if n, err := strconv.Atoi(s); err == nil && n > 0 { return time.Duration(n) * time.Millisecond }
+    }
+    return 10 * time.Minute
+}
+
+func (c *adsCredsCache) get() *AdsCreds {
+    c.mu.RLock()
+    v := c.val
+    exp := c.exp
+    c.mu.RUnlock()
+    if v != nil && time.Now().Before(exp) { return v }
+    return nil
+}
+
+func (c *adsCredsCache) put(v *AdsCreds) {
+    if v == nil { return }
+    c.mu.Lock()
+    c.val = v
+    c.exp = time.Now().Add(c.ttl())
+    c.mu.Unlock()
 }

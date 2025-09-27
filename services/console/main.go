@@ -15,6 +15,9 @@ import (
 
 func main() {
 	ctx := context.Background()
+    // optional OTel trace (no-op if disabled)
+    shutdown := telemetry.SetupTracing("console")
+    defer func(){ _ = shutdown(context.Background()) }()
 	cfg, err := config.Load(ctx)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
@@ -43,10 +46,10 @@ func main() {
     // metrics & logging
     telemetry.RegisterDefaultMetrics("console")
     mux.Handle("/metrics", telemetry.MetricsHandler())
-    // wrap mux with logging middleware via top-level handler
-    root := middleware.LoggingMiddleware("console")(mux)
-	// The middleware here should verify ADMIN role.
-	apiHandler.RegisterRoutes(mux) // Admin middleware would be passed here
+    // wrap mux with metrics+trace + logging middleware via top-level handler
+    root := telemetry.Middleware("console", middleware.LoggingMiddleware("console")(mux))
+    // The middleware here should verify ADMIN role.
+    apiHandler.RegisterRoutes(mux) // Admin middleware would be passed here
 
     log.Printf("Console service HTTP server listening on port %s", cfg.Port)
     if err := http.ListenAndServe(":"+cfg.Port, root); err != nil {

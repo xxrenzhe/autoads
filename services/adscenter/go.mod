@@ -11,6 +11,7 @@ require (
 	github.com/xxrenzhe/autoads/pkg/auth v0.0.1
 	github.com/xxrenzhe/autoads/pkg/errors v0.0.1
 	github.com/xxrenzhe/autoads/pkg/logger v0.0.1
+	github.com/xxrenzhe/autoads/pkg/http v0.0.0-00010101000000-000000000000
 	golang.org/x/oauth2 v0.31.0
 )
 
@@ -57,3 +58,5 @@ replace github.com/xxrenzhe/autoads/pkg/auth => ../../pkg/auth
 replace github.com/xxrenzhe/autoads/pkg/errors => ../../pkg/errors
 
 replace github.com/xxrenzhe/autoads/pkg/logger => ../../pkg/logger
+
+replace github.com/xxrenzhe/autoads/pkg/http => ../../pkg/http

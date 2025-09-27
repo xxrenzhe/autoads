@@ -20,7 +20,7 @@ paths:
       operationId: readyz
       # point to one lightweight service health endpoint
       x-google-backend:
-        address: https://siterank-preview-yt54xvsg5q-an.a.run.app/health
+        address: https://console-yt54xvsg5q-an.a.run.app/health
         path_translation: CONSTANT_ADDRESS
       responses: { '200': { description: OK } }
   /api/health/adscenter:
@@ -33,6 +33,15 @@ paths:
   /api/health/console:
     get:
       operationId: healthConsole
+      x-google-backend:
+        address: https://console-yt54xvsg5q-an.a.run.app/health
+        path_translation: CONSTANT_ADDRESS
+      responses: { '200': { description: OK } }
+
+  # Health aggregate
+  /api/health:
+    get:
+      operationId: healthAggregate
       x-google-backend:
         address: https://console-yt54xvsg5q-an.a.run.app/health
         path_translation: CONSTANT_ADDRESS

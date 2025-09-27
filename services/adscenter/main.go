@@ -37,6 +37,7 @@ import (
     apperr "github.com/xxrenzhe/autoads/pkg/errors"
     "fmt"
     neturl "net/url"
+    httpx "github.com/xxrenzhe/autoads/pkg/http"
 )
 
 type PreflightRequest struct {
@@ -577,17 +578,12 @@ func checkLandingReachability(ctx context.Context, url string) *PreflightCheck {
     be := strings.TrimRight(os.Getenv("BROWSER_EXEC_URL"), "/")
     if be == "" { return &PreflightCheck{Name:"landing.reachability", Status:"warn", Detail:"browser-exec not configured"} }
     type reqT struct{ URL string `json:"url"`; Timeout int `json:"timeoutMs"` }
-    body, _ := json.Marshal(reqT{URL:url, Timeout: 1200})
     cctx, cancel := context.WithTimeout(ctx, 1500*time.Millisecond)
     defer cancel()
-    req, _ := http.NewRequestWithContext(cctx, http.MethodPost, be+"/api/v1/browser/check-availability", strings.NewReader(string(body)))
-    req.Header.Set("Content-Type", "application/json")
-    if tok := strings.TrimSpace(os.Getenv("BROWSER_INTERNAL_TOKEN")); tok != "" { req.Header.Set("Authorization", "Bearer "+tok) }
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil { return &PreflightCheck{Name:"landing.reachability", Status:"warn", Detail:"request failed"} }
-    defer resp.Body.Close()
+    hdr := map[string]string{"Content-Type": "application/json"}
+    if tok := strings.TrimSpace(os.Getenv("BROWSER_INTERNAL_TOKEN")); tok != "" { hdr["Authorization"] = "Bearer "+tok }
     var out struct{ Ok bool `json:"ok"`; Status int `json:"status"` }
-    _ = json.NewDecoder(resp.Body).Decode(&out)
+    _ = httpx.New(1500*time.Millisecond).DoJSON(cctx, http.MethodPost, be+"/api/v1/browser/check-availability", reqT{URL:url, Timeout: 1200}, hdr, 1, &out)
     if out.Ok || (out.Status >= 200 && out.Status < 400) {
         return &PreflightCheck{Name:"landing.reachability", Status:"ok", Detail:"reachable"}
     }
@@ -1378,6 +1374,9 @@ func runMigrations(databaseURL string) error {
 func main() {
     log.Println("Starting Adscenter service...")
     ctx := context.Background()
+    // optional OTel trace (no-op if disabled)
+    shutdown := telemetry.SetupTracing("adscenter")
+    defer func(){ _ = shutdown(context.Background()) }()
     cfg, err := adsconfig.Load(ctx)
     if err != nil { log.Fatalf("config load: %v", err) }
     if err := runMigrations(cfg.DatabaseURL); err != nil { log.Fatalf("migrations: %v", err) }
@@ -1389,7 +1388,18 @@ func main() {
     r := chi.NewRouter()
     telemetry.RegisterDefaultMetrics("adscenter")
     r.Use(telemetry.ChiMiddleware("adscenter"))
+    // healthz/readyz for k8s/Cloud Run probes (unified convention)
     r.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+    r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+    r.Get("/readyz", func(w http.ResponseWriter, r *http.Request) {
+        ctx, cancel := context.WithTimeout(r.Context(), 800*time.Millisecond)
+        defer cancel()
+        if err := srv.db.PingContext(ctx); err != nil {
+            apperr.Write(w, r, http.StatusInternalServerError, "NOT_READY", "dependencies not ready", map[string]string{"db": err.Error()})
+            return
+        }
+        w.WriteHeader(http.StatusOK)
+    })
     r.Handle("/metrics", telemetry.MetricsHandler())
     r.Use(middleware.LoggingMiddleware("adscenter"))
     // Mount OpenAPI chi server
@@ -1675,12 +1685,12 @@ func (h *oasImpl) OauthRevoke(w http.ResponseWriter, r *http.Request) {
     if pt, ok := decryptWithRotation(tokenEnc); ok { token = pt }
     // 2) call revoke if enabled
     if strings.EqualFold(strings.TrimSpace(os.Getenv("OAUTH_REVOKE_LIVE")), "true") && strings.TrimSpace(token) != "" {
-        c := &http.Client{ Timeout: 5 * time.Second }
+        // Use unified http client for tracing/circuit; keep form encoding
         form := neturl.Values{}
         form.Set("token", token)
         req, _ := http.NewRequestWithContext(r.Context(), http.MethodPost, "https://oauth2.googleapis.com/revoke", strings.NewReader(form.Encode()))
         req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-        if resp, err := c.Do(req); err == nil { if resp.Body != nil { _ = resp.Body.Close() } }
+        _ , _ = httpx.New(5 * time.Second).DoRaw(req)
     }
     // 3) clear stored token (best-effort)
     _, err := db.ExecContext(r.Context(), `UPDATE "UserAdsConnection" SET "refreshToken"='' WHERE "userId"=$1`, uid)

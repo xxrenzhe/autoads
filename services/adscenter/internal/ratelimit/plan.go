@@ -2,11 +2,10 @@ package ratelimit
 
 import (
     "context"
-    "encoding/json"
-    "net/http"
     "os"
     "strings"
     "time"
+    httpx "github.com/xxrenzhe/autoads/pkg/http"
 )
 
 // ResolveUserPlan queries billing service for current user's plan name.
@@ -14,16 +13,10 @@ import (
 func ResolveUserPlan(ctx context.Context, userID string) string {
     base := strings.TrimSpace(os.Getenv("BILLING_URL"))
     if base == "" || userID == "" { return "Free" }
-    c := &http.Client{ Timeout: 2 * time.Second }
-    req, _ := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(base, "/")+"/api/v1/billing/subscriptions/me", nil)
-    req.Header.Set("X-User-Id", userID)
-    resp, err := c.Do(req)
-    if err != nil { return "Free" }
-    defer resp.Body.Close()
-    if resp.StatusCode != http.StatusOK { return "Free" }
+    cli := httpx.New(2 * time.Second)
+    hdr := map[string]string{"X-User-Id": userID}
     var out struct{ PlanName string `json:"planName"` }
-    if json.NewDecoder(resp.Body).Decode(&out) != nil { return "Free" }
+    if err := cli.DoJSON(ctx, "GET", strings.TrimRight(base, "/")+"/api/v1/billing/subscriptions/me", nil, hdr, 1, &out); err != nil { return "Free" }
     if strings.TrimSpace(out.PlanName) == "" { return "Free" }
     return out.PlanName
 }
-

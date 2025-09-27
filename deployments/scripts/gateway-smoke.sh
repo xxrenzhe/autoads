@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Quick smoke for API Gateway endpoints.
-# Usage:
-#   HOST=autoads-gw-xxxxx.an.gateway.dev ./deployments/scripts/gateway-smoke.sh
+PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-${PROJECT_ID:-}}"
+REGION="${REGION:-asia-northeast1}"
+if [[ -z "$PROJECT_ID" ]]; then echo "PROJECT_ID required" >&2; exit 1; fi
+HOST=$(gcloud api-gateway gateways describe autoads-gw --location "$REGION" --format='value(defaultHostname)' --project "$PROJECT_ID")
+if [[ -z "$HOST" ]]; then echo "gateway not found" >&2; exit 1; fi
+echo "[gw] host=$HOST"
 
-HOST=${HOST:?HOST required}
+urls=(
+  "/readyz"
+  "/api/health"
+  "/api/health/console"
+  "/api/health/adscenter"
+)
+for u in "${urls[@]}"; do
+  code=$(curl -s -o /dev/null -w '%{http_code}\n' "https://$HOST$u" || true)
+  echo "  $u -> $code"
+done
 
-echo "[smoke] GET /api/health/adscenter"
-curl -sS -o /dev/null -w "%{http_code}\n" "https://${HOST}/api/health/adscenter"
+echo "[tip] If 503 persists shortly after deploy, wait 3-5 minutes and retry. Ensure Cloud Run backends allow unauthenticated access for health endpoints."
 
-echo "[smoke] GET /api/v1/adscenter/bulk-actions (expect 401)"
-curl -sS -o /dev/null -w "%{http_code}\n" "https://${HOST}/api/v1/adscenter/bulk-actions" || true
-
-echo "[smoke] GET /api/v1/batchopen/templates (expect 401)"
-curl -sS -o /dev/null -w "%{http_code}\n" "https://${HOST}/api/v1/batchopen/templates" || true
-
-echo "[smoke] GET /api/v1/console/users (expect 401)"
-curl -sS -o /dev/null -w "%{http_code}\n" "https://${HOST}/api/v1/console/users" || true
-
-echo "[done]"

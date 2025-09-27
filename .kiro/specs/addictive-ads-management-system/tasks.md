@@ -540,7 +540,7 @@
   - 建立事件版本管理和兼容性
   - _需求: 需求24 - 事件驱动架构与CQRS_
 
-- [ ] 1.4 实现HTTP客户端 (pkg/http)
+- [x] 1.4 实现HTTP客户端 (pkg/http)
   - 实现统一错误码和响应格式
   - 建立重试策略和指数退避
   - 实现限流和熔断机制
@@ -550,7 +550,7 @@
 - [x] 1.4.a HTTP客户端最小增强（重试/退避 + 断路器骨架）
   - 新增 PostJSONWithRetry 与可选 CircuitBreaker；保留 Idempotency-Key 透传
 
-- [ ] 1.5 实现可观测性 (pkg/telemetry)
+- [x] 1.5 实现可观测性 (pkg/telemetry)
   - 实现结构化日志(JSON格式)
   - 建立指标收集和上报(Prometheus格式)
   - 实现OpenTelemetry分布式追踪
@@ -597,6 +597,8 @@
   - 建立事件版本管理和迁移
   - 实现事件快照和归档策略
   - _需求: 需求24 - 事件驱动架构与CQRS_
+
+- [x] 3.1.a 事件查询与最小写入（Console/Notifications）
 
 - [ ] 3.2 实现投影器框架
   - 建立Cloud Functions投影器模板
@@ -1554,7 +1556,7 @@
   - Dead Letter 落库（BulkActionDeadLetter），提供列表与单条/批量重试端点；重试继续沿用套餐化限流+重试
   - 回滚计划：优先基于执行审计 before 快照生成“精准回滚”，缺失时退回启发式逆向
 
-- [ ] H2.2.f Console 后台（限流/审计/重试）
+ - [x] H2.2.f Console 后台（限流/审计/重试）
   - 套餐限流/配额配置页（读写 Secret：ADSCENTER_LIMITS_SECRET），限流/配额自查与告警
   - Snapshots 聚合视图（before/after 对比），Dead Letter 列表与单条/批量重试
   - 用量/限流命中/平均等待看板（per-plan）

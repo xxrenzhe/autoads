@@ -1,7 +1,6 @@
 package main
 
 import (
-    "bytes"
     "context"
     "database/sql"
     "encoding/json"
@@ -23,7 +22,7 @@ import (
     "github.com/google/uuid"
     _ "github.com/lib/pq"
     "github.com/go-chi/chi/v5"
-    "github.com/xxrenzhe/autoads/pkg/httpclient"
+    httpx "github.com/xxrenzhe/autoads/pkg/http"
     "github.com/xxrenzhe/autoads/pkg/errors"
     "github.com/xxrenzhe/autoads/pkg/auth"
     "github.com/xxrenzhe/autoads/services/siterank/internal/pkg/database"
@@ -93,7 +92,7 @@ type AIScoreResp struct {
 
 type Server struct {
     db          *sql.DB
-    httpClient  *httpclient.Client
+    httpClient  *httpx.Client
     publisher   *ev.Publisher
     cacheMu     sync.RWMutex
     cache       map[string]cacheEntry
@@ -330,7 +329,7 @@ func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
                 req, _ := http.NewRequestWithContext(cctx, "GET", url, nil)
                 req.Header.Set("X-User-Id", uid)
                 req.Header.Set("Accept", "application/json")
-                resp, herr := s.httpClient.Do(req)
+                resp, herr := s.httpClient.DoRaw(req)
                 if herr == nil && resp != nil && resp.StatusCode == 200 {
                     _ = json.NewDecoder(resp.Body).Decode(&or)
                     resp.Body.Close()
@@ -392,7 +391,7 @@ func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
     // direct fetch
     go func() {
         var apiResponse SimilarWebResponse
-        err := s.httpClient.GetJSONWithHeaders(ctxAll, apiURL, headers, retries, &apiResponse)
+        err := s.httpClient.DoJSON(ctxAll, http.MethodGet, apiURL, nil, headers, retries, &apiResponse)
         if err != nil { resCh <- fetchRes{ok: false, err: err, via: "direct"}; return }
         b, _ := json.Marshal(apiResponse)
         resCh <- fetchRes{ok: true, result: string(b), via: "direct"}
@@ -402,7 +401,7 @@ func (s *Server) performAnalysis(ctx context.Context, analysisID string) {
     if beURL != "" {
         go func() {
             time.Sleep(300 * time.Millisecond)
-            if j, ok := fetchBrowserJSON(ctxAll, apiURL, headers); ok { resCh <- fetchRes{ok: true, result: j, via: "browser"}; return }
+            if j, ok := s.fetchBrowserJSON(ctxAll, apiURL, headers); ok { resCh <- fetchRes{ok: true, result: j, via: "browser"}; return }
             resCh <- fetchRes{ok: false, err: fmt.Errorf("browser-exec fetch failed"), via: "browser"}
         }()
     }
@@ -507,14 +506,8 @@ func (s *Server) analyzeWithResolveAndAI(ctx context.Context, analysisID, offerU
             "timeoutMs": 60000,
             "stabilizeMs": 1200,
         }
-        b, _ := json.Marshal(body)
-        req, _ := http.NewRequestWithContext(ctxRes, "POST", be+"/api/v1/browser/resolve-offer", bytes.NewReader(b))
-        req.Header.Set("Content-Type", "application/json")
-        resp, err := http.DefaultClient.Do(req)
-        if err != nil { resolveErr = err }
-        if resp != nil {
-            defer resp.Body.Close()
-            _ = json.NewDecoder(resp.Body).Decode(&rr)
+        if err := s.httpClient.DoJSON(ctxRes, http.MethodPost, be+"/api/v1/browser/resolve-offer", body, map[string]string{"Content-Type": "application/json"}, 1, &rr); err != nil {
+            resolveErr = err
         }
     } else {
         resolveErr = fmt.Errorf("BROWSER_EXEC_URL not configured")
@@ -564,13 +557,8 @@ func (s *Server) analyzeWithResolveAndAI(ctx context.Context, analysisID, offerU
     if be != "" && finalUrl != "" {
         ctxPg, cancel := context.WithTimeout(ctx, 12*time.Second)
         defer cancel()
-        pb, _ := json.Marshal(map[string]any{"url": finalUrl, "timeoutMs": 8000})
-        req, _ := http.NewRequestWithContext(ctxPg, "POST", be+"/api/v1/browser/page-signals", bytes.NewReader(pb))
-        req.Header.Set("Content-Type", "application/json")
-        if resp, err := http.DefaultClient.Do(req); err == nil && resp != nil {
-            defer resp.Body.Close()
-            _ = json.NewDecoder(resp.Body).Decode(&ps)
-        }
+        body := map[string]any{"url": finalUrl, "timeoutMs": 8000}
+        _ = s.httpClient.DoJSON(ctxPg, http.MethodPost, be+"/api/v1/browser/page-signals", body, map[string]string{"Content-Type": "application/json"}, 1, &ps)
     }
 
     // Score with AI
@@ -682,7 +670,7 @@ func (s *Server) fetchSimilarWebMetricsRelaxed(ctx context.Context, host, countr
     go func() {
         sub, c := context.WithTimeout(ctxAll, 10*time.Second); defer c()
         var sw SimilarWebResponse
-        err := s.httpClient.GetJSONWithHeaders(sub, apiURL, headers, 2, &sw)
+        err := s.httpClient.DoJSON(sub, http.MethodGet, apiURL, nil, headers, 2, &sw)
         if err != nil { ch <- res{ok: false}; return }
         ch <- res{ok: true, via: "direct", sw: &sw}
     }()
@@ -691,17 +679,10 @@ func (s *Server) fetchSimilarWebMetricsRelaxed(ctx context.Context, host, countr
     if beURL != "" {
         go func() {
             time.Sleep(200 * time.Millisecond)
-            // assemble body
             body := map[string]any{"url": apiURL, "headers": headers, "waitUntil": "networkidle", "timeoutMs": 30000}
-            b, _ := json.Marshal(body)
             sub, c := context.WithTimeout(ctxAll, 32*time.Second); defer c()
-            req, _ := http.NewRequestWithContext(sub, "POST", strings.TrimRight(beURL, "/")+"/api/v1/browser/json-fetch", bytes.NewReader(b))
-            req.Header.Set("Content-Type", "application/json")
-            resp, err := http.DefaultClient.Do(req)
-            if err != nil || resp == nil { ch <- res{ok: false}; return }
-            defer resp.Body.Close()
             var out struct{ Status int `json:"status"`; Json map[string]any `json:"json"` }
-            if json.NewDecoder(resp.Body).Decode(&out) == nil && out.Status >= 200 && out.Status < 300 && out.Json != nil {
+            if s.httpClient.DoJSON(sub, http.MethodPost, strings.TrimRight(beURL, "/")+"/api/v1/browser/json-fetch", body, map[string]string{"Content-Type": "application/json"}, 1, &out) == nil && out.Status >= 200 && out.Json != nil {
                 var sw SimilarWebResponse
                 if b, err := json.Marshal(out.Json); err == nil && json.Unmarshal(b, &sw) == nil {
                     ch <- res{ok: true, via: "browser", sw: &sw}; return
@@ -731,15 +712,8 @@ func (s *Server) scoreWithAI(ctx context.Context, endpoint, offerURL, finalUrl, 
         "similarweb": sw,
         "pageSignals": ps,
     }
-    b, _ := json.Marshal(payload)
-    req, _ := http.NewRequestWithContext(ctxAi, "POST", endpoint, bytes.NewReader(b))
-    req.Header.Set("Content-Type", "application/json")
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil { return 0, nil, err }
-    defer resp.Body.Close()
-    if resp.StatusCode < 200 || resp.StatusCode >= 300 { return 0, nil, fmt.Errorf("ai status=%d", resp.StatusCode) }
     var out AIScoreResp
-    if err := json.NewDecoder(resp.Body).Decode(&out); err != nil { return 0, nil, err }
+    if err := s.httpClient.DoJSON(ctxAi, http.MethodPost, endpoint, payload, nil, 1, &out); err != nil { return 0, nil, err }
     return out.Score, &out, nil
 }
 
@@ -804,14 +778,8 @@ func tryBrowserJSON(ctx context.Context, s *Server, apiURL string, headers map[s
         "headers": headers,
     }
     if provider != "" { body["proxyProviderURL"] = provider }
-    b, _ := json.Marshal(body)
-    req, _ := http.NewRequestWithContext(ctx, "POST", beURL+"/api/v1/browser/json-fetch", strings.NewReader(string(b)))
-    req.Header.Set("Content-Type", "application/json")
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil { return false }
-    defer resp.Body.Close()
     var out struct{ Status int `json:"status"`; Json map[string]any `json:"json"`; Text string `json:"text"` }
-    if err := json.NewDecoder(resp.Body).Decode(&out); err != nil { return false }
+    if err := s.httpClient.DoJSON(ctx, http.MethodPost, beURL+"/api/v1/browser/json-fetch", body, nil, 1, &out); err != nil { return false }
     if out.Status >= 200 && out.Status < 300 && out.Json != nil {
         // success: write completed and cache 7 days
         resultBytes, _ := json.Marshal(out.Json)
@@ -933,20 +901,14 @@ func (s *Server) upsertDomainCountryCache(ctx context.Context, host, country, pa
 }
 
 // fetchBrowserJSON performs a browser-exec json-fetch without side effects; returns JSON text and ok flag.
-func fetchBrowserJSON(ctx context.Context, apiURL string, headers map[string]string) (string, bool) {
+func (s *Server) fetchBrowserJSON(ctx context.Context, apiURL string, headers map[string]string) (string, bool) {
     beURL := strings.TrimRight(os.Getenv("BROWSER_EXEC_URL"), "/")
     if beURL == "" { return "", false }
     provider := os.Getenv("PROXY_URL_US")
     body := map[string]any{"url": apiURL, "headers": headers}
     if provider != "" { body["proxyProviderURL"] = provider }
-    b, _ := json.Marshal(body)
-    req, _ := http.NewRequestWithContext(ctx, "POST", beURL+"/api/v1/browser/json-fetch", strings.NewReader(string(b)))
-    req.Header.Set("Content-Type", "application/json")
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil { return "", false }
-    defer resp.Body.Close()
     var out struct{ Status int `json:"status"`; Json map[string]any `json:"json"`; Text string `json:"text"` }
-    if err := json.NewDecoder(resp.Body).Decode(&out); err != nil { return "", false }
+    if err := s.httpClient.DoJSON(ctx, http.MethodPost, beURL+"/api/v1/browser/json-fetch", body, map[string]string{"Content-Type": "application/json"}, 1, &out); err != nil { return "", false }
     if out.Status >= 200 && out.Status < 300 && out.Json != nil {
         resultBytes, _ := json.Marshal(out.Json)
         return string(resultBytes), true
@@ -976,7 +938,7 @@ func (s *Server) fetchSimilarWebMetrics(ctx context.Context, host, country strin
     ch := make(chan res, 2)
     go func() {
         var sw SimilarWebResponse
-        err := s.httpClient.GetJSONWithHeaders(ctxAll, apiURL, headers, retries, &sw)
+        err := s.httpClient.DoJSON(ctxAll, http.MethodGet, apiURL, nil, headers, retries, &sw)
         if err != nil { ch <- res{ok: false} ; return }
         ch <- res{ok: true, via: "direct", sw: &sw}
     }()
@@ -984,7 +946,7 @@ func (s *Server) fetchSimilarWebMetrics(ctx context.Context, host, country strin
     if beURL != "" {
         go func() {
             time.Sleep(200 * time.Millisecond)
-            if txt, ok := fetchBrowserJSON(ctxAll, apiURL, headers); ok {
+            if txt, ok := s.fetchBrowserJSON(ctxAll, apiURL, headers); ok {
                 var sw SimilarWebResponse
                 if json.Unmarshal([]byte(txt), &sw) == nil { ch <- res{ok: true, via: "browser", sw: &sw}; return }
             }
@@ -1022,10 +984,10 @@ func (s *Server) tryAugmentCountry(ctx context.Context, host string, sw *Similar
     defer cancel()
     var tmp map[string]any
     // direct
-    if err := s.httpClient.GetJSONWithHeaders(ctx2, geoURL, headers, 1, &tmp); err == nil {
+    if err := s.httpClient.DoJSON(ctx2, http.MethodGet, geoURL, nil, headers, 1, &tmp); err == nil {
         body = mustJSON(tmp); ok = true
     } else if strings.TrimSpace(os.Getenv("BROWSER_EXEC_URL")) != "" {
-        if txt, good := fetchBrowserJSON(ctx2, geoURL, headers); good { body = txt; ok = true }
+        if txt, good := s.fetchBrowserJSON(ctx2, geoURL, headers); good { body = txt; ok = true }
     }
     if !ok || strings.TrimSpace(body) == "" { return }
     // Parse flexible shapes
@@ -1186,6 +1148,9 @@ func defaultUA() string {
 
 func main() {
     log.Println("Starting Siterank service...")
+    // optional OTel trace (no-op if disabled)
+    shutdown := telemetry.SetupTracing("siterank")
+    defer func(){ _ = shutdown(context.Background()) }()
 
     // Prefer standard name; fall back to legacy
     dbSecretName := os.Getenv("DATABASE_URL_SECRET_NAME")
@@ -1213,7 +1178,7 @@ func main() {
 	defer db.Close()
 	log.Println("Database connection successful.")
 
-    httpClient := httpclient.New(15 * time.Second)
+    httpClient := httpx.New(15 * time.Second)
 
     // Init publisher (best-effort)
     var pub *ev.Publisher

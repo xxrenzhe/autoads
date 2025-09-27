@@ -41,6 +41,8 @@ func NewSubscriber(ctx context.Context, db *sql.DB, pub *ev.Publisher) (*Subscri
         s, err = c.CreateSubscription(ctx, subID, pubsub.SubscriptionConfig{Topic: t, AckDeadline: 20 * time.Second})
         if err != nil { return nil, err }
     }
+    // Ensure event store DDL (idempotent)
+    if err := ensureEventStoreDDL(db); err != nil { log.Printf("notifications: WARN ensure event_store ddl failed: %v", err) }
     log.Printf("notifications: subscriber initialized (project=%s, sub=%s)", projectID, subID)
     return &Subscriber{client: c, sub: s, db: db, pub: pub}, nil
 }
@@ -52,6 +54,8 @@ func (s *Subscriber) Start(ctx context.Context) {
             et := msg.Attributes["eventType"]
             if et == "" { log.Printf("notifications: drop message(no eventType)"); msg.Ack(); return }
             log.Printf("notifications: received event type=%s", et)
+            // Persist event to SQL event store (best-effort)
+            _ = s.storeEvent(cctx, et, msg)
             switch et {
             case "SiterankCompleted":
                 var payload map[string]any
@@ -162,6 +166,66 @@ func (s *Subscriber) insertNotification(ctx context.Context, payload map[string]
             "time": time.Now().UTC().Format(time.RFC3339),
         }, ev.WithSource("notifications"), ev.WithSubject(fmt.Sprintf("%d", id)))
     }
+    return err
+}
+
+// --- Event Store sink (3.1: 事件存储基础设施最小实现) ---
+
+func ensureEventStoreDDL(db *sql.DB) error {
+    _, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS event_store (
+  id            BIGSERIAL PRIMARY KEY,
+  event_id      TEXT        NOT NULL,
+  event_name    TEXT        NOT NULL,
+  aggregate_id  TEXT        NOT NULL DEFAULT '',
+  aggregate_type TEXT       NOT NULL DEFAULT '',
+  version       INT         NOT NULL DEFAULT 1,
+  payload       JSONB       NOT NULL,
+  metadata      JSONB       DEFAULT '{}'::jsonb NOT NULL,
+  occurred_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_event_store_name_time ON event_store(event_name, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS ix_event_store_aggregate ON event_store(aggregate_type, aggregate_id);
+`)
+    return err
+}
+
+func (s *Subscriber) storeEvent(ctx context.Context, eventType string, msg *pubsub.Message) error {
+    if s == nil || s.db == nil || msg == nil { return nil }
+    // Try to parse envelope for id/type/data
+    var env map[string]any
+    _ = json.Unmarshal(msg.Data, &env)
+    eid := strings.TrimSpace(msg.Attributes["id"]) // optional
+    if eid == "" {
+        if v, ok := env["id"].(string); ok && v != "" { eid = v }
+    }
+    if eid == "" { eid = fmt.Sprintf("%d", time.Now().UnixNano()) }
+    name := eventType
+    if v, ok := env["type"].(string); ok && v != "" { name = v }
+    // payload
+    payload := json.RawMessage(msg.Data)
+    // try extract aggregate from common keys
+    aggType := ""
+    aggID := ""
+    // unwrap data if present
+    var data map[string]any
+    if dv, ok := env["data"]; ok {
+        b, _ := json.Marshal(dv); _ = json.Unmarshal(b, &data)
+    } else {
+        _ = json.Unmarshal(msg.Data, &data)
+    }
+    if data != nil {
+        if v, ok := data["offerId"].(string); ok && v != "" { aggType, aggID = "Offer", v }
+        if v, ok := data["taskId"].(string); ok && v != "" { aggType, aggID = "BatchopenTask", v }
+        if v, ok := data["analysisId"].(string); ok && v != "" { aggType, aggID = "SiterankAnalysis", v }
+    }
+    // metadata
+    meta := map[string]any{"attrs": msg.Attributes}
+    if v, ok := env["source"].(string); ok && v != "" { meta["source"] = v }
+    if v, ok := env["subject"].(string); ok && v != "" { meta["subject"] = v }
+    mb, _ := json.Marshal(meta)
+    _, err := s.db.ExecContext(ctx, `INSERT INTO event_store(event_id,event_name,aggregate_id,aggregate_type,version,payload,metadata,occurred_at) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7::jsonb,NOW())`, eid, name, aggID, aggType, 1, string(payload), string(mb))
+    if err != nil { log.Printf("notifications: storeEvent failed: %v", err) }
     return err
 }
 

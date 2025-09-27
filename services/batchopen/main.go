@@ -24,6 +24,7 @@ import (
     "sync"
     "github.com/prometheus/client_golang/prometheus"
     "sync/atomic"
+    httpx "github.com/xxrenzhe/autoads/pkg/http"
 )
 
 type createTaskRequest struct {
@@ -309,14 +310,9 @@ func updateTaskUI(ctx context.Context, userID, taskID string, patch map[string]a
 func fetchOfferURL(ctx context.Context, offerID, userID string) string {
     base := strings.TrimRight(os.Getenv("OFFER_SERVICE_URL"), "/")
     if base == "" || offerID == "" || userID == "" { return "" }
-    req, _ := http.NewRequestWithContext(ctx, http.MethodGet, base+"/api/v1/offers/"+offerID, nil)
-    req.Header.Set("X-User-Id", userID)
-    req.Header.Set("Accept", "application/json")
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil { return "" }
-    defer resp.Body.Close()
+    hdr := map[string]string{"X-User-Id": userID, "Accept": "application/json"}
     var out struct{ OriginalUrl string `json:"originalUrl"` }
-    if resp.StatusCode == 200 { _ = json.NewDecoder(resp.Body).Decode(&out) }
+    if err := httpx.New(2*time.Second).DoJSON(ctx, http.MethodGet, base+"/api/v1/offers/"+offerID, nil, hdr, 1, &out); err != nil { return "" }
     return strings.TrimSpace(out.OriginalUrl)
 }
 
@@ -409,20 +405,14 @@ func browserExecCheck(ctx context.Context, url string) (bool, map[string]any) {
     defer metricInflight.Dec()
     defer atomic.AddInt32(&inflightCur, -1)
     body := map[string]any{"url": url, "timeoutMs": 8000}
-    b, _ := json.Marshal(body)
-    req, _ := http.NewRequestWithContext(ctx, http.MethodPost, be+"/api/v1/browser/check-availability", strings.NewReader(string(b)))
-    req.Header.Set("Content-Type", "application/json")
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil { return false, map[string]any{"error": err.Error()} }
-    defer resp.Body.Close()
+    hdr := map[string]string{"Content-Type": "application/json"}
     var out map[string]any
-    _ = json.NewDecoder(resp.Body).Decode(&out)
+    if err := httpx.New(5*time.Second).DoJSON(ctx, http.MethodPost, be+"/api/v1/browser/check-availability", body, hdr, 1, &out); err != nil {
+        return false, map[string]any{"error": err.Error()}
+    }
     ok := false
     if v, ok2 := out["ok"].(bool); ok2 { ok = v }
-    if !ok && resp.StatusCode >= 200 && resp.StatusCode < 300 {
-        // if field missing, treat 2xx as ok
-        ok = true
-    }
+    // if 'ok' not provided, consider http-level 2xx success path already implied by DoJSON
     // fill cache
     if host != "" {
         ttlMs := 120000
@@ -500,16 +490,10 @@ func billingAction(ctx context.Context, userID, action, taskID string) error {
     body := map[string]any{"amount": amount, "taskId": taskID}
     // For commit/release, allow idempotent txId to be taskID
     if action == "commit" || action == "release" { body["txId"] = taskID }
-    b, _ := json.Marshal(body)
     cctx, cancel := context.WithTimeout(ctx, 2*time.Second)
     defer cancel()
-    req, _ := http.NewRequestWithContext(cctx, http.MethodPost, base+"/api/v1/billing/tokens/"+action, strings.NewReader(string(b)))
-    req.Header.Set("Content-Type", "application/json")
-    req.Header.Set("X-User-Id", userID)
-    // Idempotency key to avoid duplicate charges on retries
-    req.Header.Set("X-Idempotency-Key", "batchopen:"+action+":"+userID+":"+taskID)
-    resp, err := http.DefaultClient.Do(req)
-    if err == nil && resp != nil { _ = resp.Body.Close() }
+    hdr := map[string]string{"Content-Type": "application/json", "X-User-Id": userID, "X-Idempotency-Key": "batchopen:"+action+":"+userID+":"+taskID}
+    _ = httpx.New(2*time.Second).DoJSON(cctx, http.MethodPost, base+"/api/v1/billing/tokens/"+action, body, hdr, 1, nil)
     return nil
 }
 

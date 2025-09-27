@@ -25,6 +25,7 @@ import (
     "google.golang.org/api/iterator"
     "hash/fnv"
     apperr "github.com/xxrenzhe/autoads/pkg/errors"
+    httpx "github.com/xxrenzhe/autoads/pkg/http"
 )
 
 func main() {
@@ -608,20 +609,15 @@ func fetchLandingSignals(u string, timeout time.Duration) []string {
     // Try browser-exec page-signals first
     if be := strings.TrimSpace(os.Getenv("BROWSER_EXEC_URL")); be != "" {
         type reqT struct{ URL string `json:"url"`; Timeout int `json:"timeoutMs"` }
-        body, _ := json.Marshal(reqT{URL: u, Timeout: int(timeout / time.Millisecond)})
-        c := &http.Client{Timeout: timeout}
-        req, _ := http.NewRequest("POST", strings.TrimRight(be, "/")+"/api/v1/browser/page-signals", strings.NewReader(string(body)))
-        req.Header.Set("Content-Type", "application/json")
-        if tok := strings.TrimSpace(os.Getenv("BROWSER_INTERNAL_TOKEN")); tok != "" { req.Header.Set("Authorization", "Bearer "+tok) }
-        if resp, err := c.Do(req); err == nil && resp != nil {
-            defer resp.Body.Close()
-            var out struct{ Title string `json:"title"`; SiteName string `json:"siteName"` }
-            if err := json.NewDecoder(resp.Body).Decode(&out); err == nil {
-                arr := make([]string, 0, 2)
-                if strings.TrimSpace(out.Title) != "" { arr = append(arr, out.Title) }
-                if strings.TrimSpace(out.SiteName) != "" { arr = append(arr, out.SiteName) }
-                if len(arr) > 0 { return arr }
-            }
+        body := reqT{URL: u, Timeout: int(timeout / time.Millisecond)}
+        hdr := map[string]string{"Content-Type": "application/json"}
+        if tok := strings.TrimSpace(os.Getenv("BROWSER_INTERNAL_TOKEN")); tok != "" { hdr["Authorization"] = "Bearer "+tok }
+        var out struct{ Title string `json:"title"`; SiteName string `json:"siteName"` }
+        if err := httpx.New(timeout).DoJSON(context.Background(), http.MethodPost, strings.TrimRight(be, "/")+"/api/v1/browser/page-signals", body, hdr, 1, &out); err == nil {
+            arr := make([]string, 0, 2)
+            if strings.TrimSpace(out.Title) != "" { arr = append(arr, out.Title) }
+            if strings.TrimSpace(out.SiteName) != "" { arr = append(arr, out.SiteName) }
+            if len(arr) > 0 { return arr }
         }
     }
     // naive HTML fetcher: title and og:site_name
@@ -629,11 +625,10 @@ func fetchLandingSignals(u string, timeout time.Duration) []string {
     if pu, err := url.Parse(u); err != nil || (pu.Scheme != "http" && pu.Scheme != "https") {
         return nil
     }
-    c := &http.Client{Timeout: timeout}
     req, _ := http.NewRequest("GET", u, nil)
     req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; RecoBot/1.0)")
-    resp, err := c.Do(req)
-    if err != nil { return nil }
+    resp, err := httpx.New(timeout).DoRaw(req)
+    if err != nil || resp == nil { return nil }
     defer resp.Body.Close()
     if resp.StatusCode < 200 || resp.StatusCode >= 400 { return nil }
     // limit read

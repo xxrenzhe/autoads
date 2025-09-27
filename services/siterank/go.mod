@@ -3,6 +3,7 @@ module github.com/xxrenzhe/autoads/services/siterank
 go 1.25.1
 
 replace github.com/xxrenzhe/autoads/pkg/httpclient => ../../pkg/httpclient
+replace github.com/xxrenzhe/autoads/pkg/http => ../../pkg/http
 
 replace github.com/xxrenzhe/autoads/pkg/errors => ../../pkg/errors
 
@@ -16,7 +17,7 @@ replace github.com/xxrenzhe/autoads/pkg/telemetry => ../../pkg/telemetry
 
 replace github.com/xxrenzhe/autoads/pkg/middleware => ../../pkg/middleware
 
-require (
+	require (
 	cloud.google.com/go/firestore v1.18.0
 	cloud.google.com/go/pubsub v1.50.1
 	cloud.google.com/go/secretmanager v1.15.0
@@ -29,6 +30,7 @@ require (
 	github.com/xxrenzhe/autoads/pkg/errors v0.0.1
 	github.com/xxrenzhe/autoads/pkg/events v0.0.0-00010101000000-000000000000
 	github.com/xxrenzhe/autoads/pkg/httpclient v0.0.1
+	github.com/xxrenzhe/autoads/pkg/http v0.0.0-00010101000000-000000000000
 	github.com/xxrenzhe/autoads/pkg/logger v0.0.1
 	github.com/xxrenzhe/autoads/pkg/middleware v0.0.0-20250921095352-ef8078c06b83
 	github.com/xxrenzhe/autoads/pkg/telemetry v0.0.0-00010101000000-000000000000

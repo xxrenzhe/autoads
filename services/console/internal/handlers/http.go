@@ -11,10 +11,14 @@ import (
     "io"
     "context"
     "sort"
+    "fmt"
 
     "github.com/jackc/pgx/v5/pgxpool"
     "github.com/xxrenzhe/autoads/pkg/errors"
     "github.com/xxrenzhe/autoads/pkg/middleware"
+    secretmanager "cloud.google.com/go/secretmanager/apiv1"
+    "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+    httpx "github.com/xxrenzhe/autoads/pkg/http"
 )
 
 type User struct {
@@ -47,6 +51,9 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
         w.WriteHeader(http.StatusOK)
     })
 
+    // Health aggregate for Gateway (/api/health) - unauthenticated, read-only
+    mux.HandleFunc("/api/health", h.healthAggregate)
+
     // API routes (admin-only)
     mux.Handle("/api/v1/console/users", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.getUsers))))
     // Users tree: /api/v1/console/users/{id}[/(tokens|subscription|role)]
@@ -57,6 +64,18 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
     mux.Handle("/api/v1/console/stats", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.getAdminStats))))
     // SLO aggregator
     mux.Handle("/api/v1/console/slo", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.getSLO))))
+    // Limits policy (Adscenter)
+    mux.Handle("/api/v1/console/limits/policy", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.limitsPolicy))))
+    mux.Handle("/api/v1/console/events/export", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.exportEventsCSV))))
+    // Event store query (admin-only)
+    mux.Handle("/api/v1/console/events", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.getEvents))))
+    mux.Handle("/api/v1/console/events/", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.getEventByID))))
+    // Adscenter bulk actions (admin proxies)
+    mux.Handle("/api/v1/console/adscenter/bulk-actions/snapshots", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.acSnapshots))))
+    mux.Handle("/api/v1/console/adscenter/bulk-actions/snapshot-aggregate", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.acSnapshotAggregate))))
+    mux.Handle("/api/v1/console/adscenter/bulk-actions/deadletters", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.acDeadLetters))))
+    mux.Handle("/api/v1/console/adscenter/bulk-actions/deadletters/retry", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.acDeadLetterRetry))))
+    mux.Handle("/api/v1/console/adscenter/bulk-actions/deadletters/retry-batch", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.acDeadLetterRetryBatch))))
     // Alerts & incidents (admin-only)
     mux.Handle("/api/v1/console/alerts", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.getAlerts))))
     mux.Handle("/api/v1/console/incidents", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(h.getIncidents))))
@@ -328,7 +347,7 @@ func (h *Handler) getSLO(w http.ResponseWriter, r *http.Request) {
         if c.url == "" { continue }
         ctx, cancel := context.WithTimeout(r.Context(), 1500*time.Millisecond)
         req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.url+"/metrics", nil)
-        resp, err := http.DefaultClient.Do(req)
+        resp, err := httpx.New(1500*time.Millisecond).DoRaw(req)
         cancel()
         if err != nil || resp == nil || resp.StatusCode != 200 { continue }
         b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
@@ -338,6 +357,301 @@ func (h *Handler) getSLO(w http.ResponseWriter, r *http.Request) {
     }
     w.Header().Set("Content-Type", "application/json")
     _ = json.NewEncoder(w).Encode(map[string]any{"services": out, "updatedAt": time.Now().UTC().Format(time.RFC3339)})
+}
+
+// limitsPolicy supports GET (read current policy JSON) and PUT (update policy by creating a new secret version).
+// Env: ADSCENTER_LIMITS_SECRET = projects/<pid>/secrets/<name>/versions/latest
+func (h *Handler) limitsPolicy(w http.ResponseWriter, r *http.Request) {
+    name := strings.TrimSpace(os.Getenv("ADSCENTER_LIMITS_SECRET"))
+    if name == "" { errors.Write(w, r, http.StatusBadRequest, "SERVER_NOT_CONFIGURED", "ADSCENTER_LIMITS_SECRET not set", nil); return }
+    ctx := r.Context()
+    switch r.Method {
+    case http.MethodGet:
+        // read latest
+        cli, err := secretmanager.NewClient(ctx)
+        if err != nil { errors.Write(w, r, http.StatusInternalServerError, "SECRET_CLIENT", err.Error(), nil); return }
+        defer cli.Close()
+        res, err := cli.AccessSecretVersion(ctx, &secretmanagerpb.AccessSecretVersionRequest{Name: name})
+        if err != nil { errors.Write(w, r, http.StatusInternalServerError, "SECRET_ACCESS", err.Error(), nil); return }
+        // try JSON parse; if失败则以 text 形式返回
+        var js map[string]any
+        b := res.Payload.GetData()
+        if json.Unmarshal(b, &js) == nil {
+            _ = json.NewEncoder(w).Encode(map[string]any{"policy": js, "name": name})
+            return
+        }
+        _ = json.NewEncoder(w).Encode(map[string]any{"policyText": string(b), "name": name})
+    case http.MethodPut:
+        // body: { policy: <object> } 或 { policyText: <string> }
+        var body struct{ Policy any `json:"policy"`; PolicyText string `json:"policyText"` }
+        if err := json.NewDecoder(r.Body).Decode(&body); err != nil { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "invalid json", nil); return }
+        var payload []byte
+        if body.Policy != nil { if b, err := json.Marshal(body.Policy); err == nil { payload = b } }
+        if len(payload) == 0 && strings.TrimSpace(body.PolicyText) != "" { payload = []byte(body.PolicyText) }
+        if len(payload) == 0 { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "missing policy", nil); return }
+        // parent from versioned name: drop '/versions/...'
+        parent := name
+        if i := strings.LastIndex(parent, "/versions/"); i > 0 { parent = parent[:i] }
+        cli, err := secretmanager.NewClient(ctx)
+        if err != nil { errors.Write(w, r, http.StatusInternalServerError, "SECRET_CLIENT", err.Error(), nil); return }
+        defer cli.Close()
+        res, err := cli.AddSecretVersion(ctx, &secretmanagerpb.AddSecretVersionRequest{ Parent: parent, Payload: &secretmanagerpb.SecretPayload{ Data: payload } })
+        if err != nil { errors.Write(w, r, http.StatusInternalServerError, "SECRET_ADD_VERSION", err.Error(), nil); return }
+        _ = json.NewEncoder(w).Encode(map[string]any{"version": res.GetName()})
+    default:
+        errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+    }
+}
+
+// getEvents returns recent events from event_store with optional filters.
+// GET /api/v1/console/events?eventName=&aggregateType=&aggregateId=&sinceHours=168&limit=100&offset=0
+func (h *Handler) getEvents(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    q := r.URL.Query()
+    eventName := strings.TrimSpace(q.Get("eventName"))
+    aggType := strings.TrimSpace(q.Get("aggregateType"))
+    aggId := strings.TrimSpace(q.Get("aggregateId"))
+    sinceHours := 168
+    if v := strings.TrimSpace(q.Get("sinceHours")); v != "" { if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= (90*24) { sinceHours = n } }
+    limit := 100
+    if v := strings.TrimSpace(q.Get("limit")); v != "" { if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 500 { limit = n } }
+    offset := 0
+    if v := strings.TrimSpace(q.Get("offset")); v != "" { if n, err := strconv.Atoi(v); err == nil && n >= 0 { offset = n } }
+
+    where := []string{"occurred_at > NOW() - ($1 || ' hours')::interval"}
+    args := []any{ sinceHours }
+    argi := 2
+    if eventName != "" { where = append(where, "event_name = $"+strconv.Itoa(argi)); args = append(args, eventName); argi++ }
+    if aggType != "" { where = append(where, "aggregate_type = $"+strconv.Itoa(argi)); args = append(args, aggType); argi++ }
+    if aggId != "" { where = append(where, "aggregate_id = $"+strconv.Itoa(argi)); args = append(args, aggId); argi++ }
+    sqlStr := "SELECT id, event_id, event_name, aggregate_type, aggregate_id, occurred_at, payload::text FROM event_store WHERE " + strings.Join(where, " AND ") + " ORDER BY occurred_at DESC LIMIT $"+strconv.Itoa(argi)+" OFFSET $"+strconv.Itoa(argi+1)
+    args = append(args, limit, offset)
+    rows, err := h.DB.Query(r.Context(), sqlStr, args...)
+    if err != nil { errors.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    type item struct { ID int64 `json:"id"`; EventID string `json:"eventId"`; EventName string `json:"eventName"`; AggregateType string `json:"aggregateType"`; AggregateID string `json:"aggregateId"`; OccurredAt string `json:"occurredAt"`; Payload string `json:"payload"` }
+    out := []item{}
+    for rows.Next() {
+        var it item
+        var t time.Time
+        if err := rows.Scan(&it.ID, &it.EventID, &it.EventName, &it.AggregateType, &it.AggregateID, &t, &it.Payload); err == nil {
+            it.OccurredAt = t.UTC().Format(time.RFC3339)
+            out = append(out, it)
+        }
+    }
+    _ = json.NewEncoder(w).Encode(map[string]any{"items": out})
+}
+
+// getEventByID returns a single event by numeric id.
+// GET /api/v1/console/events/{id}
+func (h *Handler) getEventByID(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    path := strings.TrimPrefix(r.URL.Path, "/api/v1/console/events/")
+    id := strings.TrimSpace(path)
+    if id == "" { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id required", nil); return }
+    row := h.DB.QueryRow(r.Context(), `SELECT id, event_id, event_name, aggregate_type, aggregate_id, occurred_at, payload::text, metadata::text FROM event_store WHERE id=$1`, id)
+    var it struct { ID int64 `json:"id"`; EventID string `json:"eventId"`; EventName string `json:"eventName"`; AggregateType string `json:"aggregateType"`; AggregateID string `json:"aggregateId"`; OccurredAt string `json:"occurredAt"`; Payload string `json:"payload"`; Metadata string `json:"metadata"` }
+    var t time.Time
+    if err := row.Scan(&it.ID, &it.EventID, &it.EventName, &it.AggregateType, &it.AggregateID, &t, &it.Payload, &it.Metadata); err != nil {
+        errors.Write(w, r, http.StatusNotFound, "NOT_FOUND", "event not found", nil); return
+    }
+    it.OccurredAt = t.UTC().Format(time.RFC3339)
+    _ = json.NewEncoder(w).Encode(it)
+}
+
+// --- Adscenter admin proxies ---
+
+func (h *Handler) acSnapshots(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    id := strings.TrimSpace(r.URL.Query().Get("id"))
+    if id == "" { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id required", nil); return }
+    owner := h.lookupBulkOwner(r.Context(), id)
+    base := strings.TrimRight(os.Getenv("ADSCENTER_URL"), "/")
+    if base == "" { errors.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "ADSCENTER_URL not set", nil); return }
+    cli := httpx.New(3 * time.Second)
+    hdr := map[string]string{"X-User-Id": owner}
+    var out map[string]any
+    if err := cli.DoJSON(r.Context(), http.MethodGet, base+"/api/v1/adscenter/bulk-actions/"+id+"/snapshots", nil, hdr, 1, &out); err != nil { errors.Write(w, r, http.StatusBadGateway, "UPSTREAM", err.Error(), nil); return }
+    _ = json.NewEncoder(w).Encode(out)
+}
+
+func (h *Handler) acSnapshotAggregate(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    id := strings.TrimSpace(r.URL.Query().Get("id"))
+    if id == "" { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id required", nil); return }
+    owner := h.lookupBulkOwner(r.Context(), id)
+    base := strings.TrimRight(os.Getenv("ADSCENTER_URL"), "/")
+    if base == "" { errors.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "ADSCENTER_URL not set", nil); return }
+    cli := httpx.New(3 * time.Second)
+    hdr := map[string]string{"X-User-Id": owner}
+    var out map[string]any
+    if err := cli.DoJSON(r.Context(), http.MethodGet, base+"/api/v1/adscenter/bulk-actions/"+id+"/snapshot-aggregate", nil, hdr, 1, &out); err != nil { errors.Write(w, r, http.StatusBadGateway, "UPSTREAM", err.Error(), nil); return }
+    _ = json.NewEncoder(w).Encode(out)
+}
+
+func (h *Handler) acDeadLetters(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    id := strings.TrimSpace(r.URL.Query().Get("id"))
+    if id == "" { errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id required", nil); return }
+    owner := h.lookupBulkOwner(r.Context(), id)
+    base := strings.TrimRight(os.Getenv("ADSCENTER_URL"), "/")
+    if base == "" { errors.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "ADSCENTER_URL not set", nil); return }
+    q := r.URL.RawQuery
+    cli := httpx.New(4 * time.Second)
+    hdr := map[string]string{"X-User-Id": owner}
+    var out map[string]any
+    url := base+"/api/v1/adscenter/bulk-actions/"+id+"/deadletters"
+    if q != "" { url += "?"+q }
+    if err := cli.DoJSON(r.Context(), http.MethodGet, url, nil, hdr, 1, &out); err != nil { errors.Write(w, r, http.StatusBadGateway, "UPSTREAM", err.Error(), nil); return }
+    _ = json.NewEncoder(w).Encode(out)
+}
+
+func (h *Handler) acDeadLetterRetry(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    var body struct{ ID string `json:"id"`; DLID string `json:"dlid"` }
+    if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.ID)=="" || strings.TrimSpace(body.DLID)=="" {
+        errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id/dlid required", nil); return
+    }
+    owner := h.lookupBulkOwner(r.Context(), body.ID)
+    base := strings.TrimRight(os.Getenv("ADSCENTER_URL"), "/")
+    if base == "" { errors.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "ADSCENTER_URL not set", nil); return }
+    cli := httpx.New(6 * time.Second)
+    hdr := map[string]string{"X-User-Id": owner}
+    var out map[string]any
+    url := base+"/api/v1/adscenter/bulk-actions/"+body.ID+"/deadletters/"+body.DLID+"/retry"
+    if err := cli.DoJSON(r.Context(), http.MethodPost, url, nil, hdr, 1, &out); err != nil { errors.Write(w, r, http.StatusBadGateway, "UPSTREAM", err.Error(), nil); return }
+    _ = json.NewEncoder(w).Encode(out)
+}
+
+func (h *Handler) acDeadLetterRetryBatch(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    var body struct{ ID string `json:"id"`; ActionType string `json:"actionType"`; Limit int `json:"limit"` }
+    if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.ID)=="" {
+        errors.Write(w, r, http.StatusBadRequest, "INVALID_ARGUMENT", "id required", nil); return
+    }
+    owner := h.lookupBulkOwner(r.Context(), body.ID)
+    base := strings.TrimRight(os.Getenv("ADSCENTER_URL"), "/")
+    if base == "" { errors.Write(w, r, http.StatusInternalServerError, "SERVER_NOT_CONFIGURED", "ADSCENTER_URL not set", nil); return }
+    cli := httpx.New(15 * time.Second)
+    hdr := map[string]string{"X-User-Id": owner}
+    // construct query
+    url := base+"/api/v1/adscenter/bulk-actions/"+body.ID+"/deadletters/retry-batch"
+    vals := []string{}
+    if strings.TrimSpace(body.ActionType) != "" { vals = append(vals, "actionType="+body.ActionType) }
+    if body.Limit > 0 { vals = append(vals, "limit="+strconv.Itoa(body.Limit)) }
+    if len(vals) > 0 { url += "?"+strings.Join(vals, "&") }
+    var out map[string]any
+    if err := cli.DoJSON(r.Context(), http.MethodPost, url, nil, hdr, 1, &out); err != nil { errors.Write(w, r, http.StatusBadGateway, "UPSTREAM", err.Error(), nil); return }
+    _ = json.NewEncoder(w).Encode(out)
+}
+
+func (h *Handler) lookupBulkOwner(ctx context.Context, opId string) string {
+    var uid string
+    _ = h.DB.QueryRow(ctx, `SELECT user_id FROM "BulkActionOperation" WHERE id=$1`, opId).Scan(&uid)
+    return strings.TrimSpace(uid)
+}
+
+// healthAggregate queries configured services' readiness endpoints and returns a unified health result.
+// Env: *_URL (base) for siterank/billing/batchopen/adscenter/offer/notifications/console; uses /readyz then /health fallback.
+// Response: { overall: ok|degraded|down, services: { name: { status, code, latency_ms, error? } }, updatedAt }
+func (h *Handler) healthAggregate(w http.ResponseWriter, r *http.Request) {
+    type svc struct{ name, url string }
+    cfgs := []svc{
+        {"siterank", strings.TrimRight(os.Getenv("SITERANK_URL"), "/")},
+        {"billing", strings.TrimRight(os.Getenv("BILLING_URL"), "/")},
+        {"batchopen", strings.TrimRight(os.Getenv("BATCHOPEN_URL"), "/")},
+        {"adscenter", strings.TrimRight(os.Getenv("ADSCENTER_URL"), "/")},
+        {"offer", strings.TrimRight(os.Getenv("OFFER_URL"), "/")},
+        {"notifications", strings.TrimRight(os.Getenv("NOTIFICATIONS_URL"), "/")},
+        {"console", strings.TrimRight(os.Getenv("CONSOLE_URL"), "/")},
+    }
+    type item struct { Status string `json:"status"`; Code int `json:"code"`; Latency int64 `json:"latency_ms"`; Error string `json:"error,omitempty"` }
+    out := map[string]item{}
+    overall := "ok"
+    for _, c := range cfgs {
+        if c.url == "" { continue }
+        start := time.Now()
+        ctx, cancel := context.WithTimeout(r.Context(), 1200*time.Millisecond)
+        // prefer /readyz then fallback /health
+        endpoints := []string{"/readyz", "/health"}
+        var resp *http.Response
+        var err error
+        for _, ep := range endpoints {
+            req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.url+ep, nil)
+            resp, err = httpx.New(1200*time.Millisecond).DoRaw(req)
+            if err == nil && resp != nil { break }
+        }
+        cancel()
+        lat := time.Since(start).Milliseconds()
+        it := item{Latency: lat}
+        if err != nil || resp == nil {
+            it.Status = "down"
+            it.Code = 0
+            if err != nil { it.Error = err.Error() }
+            overall = "down"
+        } else {
+            it.Code = resp.StatusCode
+            _ = resp.Body.Close()
+            if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+                it.Status = "up"
+            } else if resp.StatusCode >= 500 {
+                it.Status = "down"
+                overall = "down"
+            } else {
+                it.Status = "degraded"
+                if overall == "ok" { overall = "degraded" }
+            }
+        }
+        out[c.name] = it
+    }
+    w.Header().Set("Content-Type", "application/json")
+    _ = json.NewEncoder(w).Encode(map[string]any{"overall": overall, "services": out, "updatedAt": time.Now().UTC().Format(time.RFC3339)})
+}
+
+// exportEventsCSV streams CSV for events with same filters as getEvents.
+func (h *Handler) exportEventsCSV(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet { errors.Write(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil); return }
+    q := r.URL.Query()
+    eventName := strings.TrimSpace(q.Get("eventName"))
+    aggType := strings.TrimSpace(q.Get("aggregateType"))
+    aggId := strings.TrimSpace(q.Get("aggregateId"))
+    sinceHours := 168
+    if v := strings.TrimSpace(q.Get("sinceHours")); v != "" { if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= (90*24) { sinceHours = n } }
+    limit := 1000
+    if v := strings.TrimSpace(q.Get("limit")); v != "" { if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 5000 { limit = n } }
+    offset := 0
+    if v := strings.TrimSpace(q.Get("offset")); v != "" { if n, err := strconv.Atoi(v); err == nil && n >= 0 { offset = n } }
+
+    where := []string{"occurred_at > NOW() - ($1 || ' hours')::interval"}
+    args := []any{ sinceHours }
+    argi := 2
+    if eventName != "" { where = append(where, "event_name = $"+strconv.Itoa(argi)); args = append(args, eventName); argi++ }
+    if aggType != "" { where = append(where, "aggregate_type = $"+strconv.Itoa(argi)); args = append(args, aggType); argi++ }
+    if aggId != "" { where = append(where, "aggregate_id = $"+strconv.Itoa(argi)); args = append(args, aggId); argi++ }
+    sqlStr := "SELECT id, event_id, event_name, aggregate_type, aggregate_id, occurred_at FROM event_store WHERE " + strings.Join(where, " AND ") + " ORDER BY occurred_at DESC LIMIT $"+strconv.Itoa(argi)+" OFFSET $"+strconv.Itoa(argi+1)
+    args = append(args, limit, offset)
+    rows, err := h.DB.Query(r.Context(), sqlStr, args...)
+    if err != nil { errors.Write(w, r, http.StatusInternalServerError, "QUERY_FAILED", "query failed", map[string]string{"error": err.Error()}); return }
+    defer rows.Close()
+    w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+    w.Header().Set("Content-Disposition", "attachment; filename=events.csv")
+    // write header
+    _, _ = w.Write([]byte("id,eventId,eventName,aggregateType,aggregateId,occurredAt\n"))
+    for rows.Next() {
+        var id int64; var eid, en, at, aid string; var t time.Time
+        if err := rows.Scan(&id, &eid, &en, &at, &aid, &t); err == nil {
+            line := fmt.Sprintf("%d,%s,%s,%s,%s,%s\n", id, safeCSV(eid), safeCSV(en), safeCSV(at), safeCSV(aid), t.UTC().Format(time.RFC3339))
+            _, _ = w.Write([]byte(line))
+        }
+    }
+}
+
+func safeCSV(s string) string {
+    if strings.ContainsAny(s, ",\n\r\"") {
+        s = strings.ReplaceAll(s, "\"", "\"\"")
+        return "\"" + s + "\""
+    }
+    return s
 }
 
 // getAlerts returns recent warn/error notifications across users (admin-only).

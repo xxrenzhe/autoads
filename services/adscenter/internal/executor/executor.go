@@ -3,13 +3,12 @@
 package executor
 
 import (
-    "bytes"
     "context"
-    "encoding/json"
     "errors"
     "net/http"
     "strings"
     "time"
+    httpx "github.com/xxrenzhe/autoads/pkg/http"
 )
 
 // Action represents a single bulk action unit.
@@ -42,11 +41,11 @@ type Config struct {
     CustomerID        string
 }
 
-type Executor struct{ cfg Config; http *http.Client }
+type Executor struct{ cfg Config; http *httpx.Client }
 
 func New(cfg Config) *Executor {
     if cfg.Timeout <= 0 { cfg.Timeout = 5 * time.Second }
-    return &Executor{cfg: cfg, http: &http.Client{Timeout: cfg.Timeout}}
+    return &Executor{cfg: cfg, http: httpx.New(cfg.Timeout)}
 }
 
 // ExecuteOne performs a single action. This is a minimal stub implementation:
@@ -92,17 +91,11 @@ func (e *Executor) rotateLink(ctx context.Context, a Action) (Result, error) {
         return Result{Success: true, Message: "rotated (stub)", Details: map[string]interface{}{"target": url, "finalUrlSuffix": time.Now().UTC().Format("20060102150405")}}, nil
     }
     body := map[string]interface{}{"url": url, "timeoutMs": int(e.cfg.Timeout / time.Millisecond)}
-    b, _ := json.Marshal(body)
-    req, _ := http.NewRequestWithContext(ctx, http.MethodPost, be+"/api/v1/browser/resolve-offer", bytes.NewReader(b))
-    req.Header.Set("Content-Type", "application/json")
-    if e.cfg.InternalToken != "" { req.Header.Set("Authorization", "Bearer "+e.cfg.InternalToken) }
-    resp, err := e.http.Do(req)
-    if err != nil { return Result{Success: false, Message: err.Error()}, err }
-    defer resp.Body.Close()
-    var out map[string]interface{}
-    _ = json.NewDecoder(resp.Body).Decode(&out)
-    if resp.StatusCode >= 400 {
-        return Result{Success: false, Message: "browser-exec resolve failed", Details: out}, errors.New("resolve failed")
+    hdr := map[string]string{}
+    if e.cfg.InternalToken != "" { hdr["Authorization"] = "Bearer "+e.cfg.InternalToken }
+    out := map[string]interface{}{}
+    if err := e.http.DoJSON(ctx, http.MethodPost, be+"/api/v1/browser/resolve-offer", body, hdr, 1, &out); err != nil {
+        return Result{Success: false, Message: err.Error()}, err
     }
     return Result{Success: true, Message: "rotated (resolved)", Details: out}, nil
 }

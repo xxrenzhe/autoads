@@ -19,4 +19,5 @@ use (
 	./pkg/idempotency
 	./pkg/events
 	./pkg/telemetry
+	./pkg/http
 )
